@@ -1,0 +1,146 @@
+.notification-link-button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.notification-link-button:hover,
+.notification-link-button:focus-visible {
+  text-decoration: none;
+}
+
+.notification-link-button:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: -3px;
+}
+
+.notification-link-button time,
+.notification-center-copy time {
+  font-size: 0.8rem;
+  opacity: 0.72;
+}
+
+.notification-view-all {
+  display: inline-flex;
+  margin-top: 0.75rem;
+}
+
+.notification-center-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.notification-center-summary {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.notification-center-summary strong {
+  font-size: 1.6rem;
+}
+
+.notification-test-control {
+  align-items: center;
+  border: 1px solid var(--border-subtle, #d7dce2);
+  border-radius: 0.75rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.notification-test-control h2 {
+  font-size: 1rem;
+  margin: 0 0 0.25rem;
+}
+
+.notification-test-control p {
+  margin: 0;
+  max-width: 68ch;
+}
+
+.notification-center-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notification-center-item {
+  align-items: center;
+  border: 1px solid var(--border-subtle, #d7dce2);
+  border-radius: 0.75rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.notification-center-item.notification-unread {
+  border-width: 2px;
+}
+
+.notification-center-copy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.notification-center-copy h2,
+.notification-center-copy p {
+  margin: 0;
+}
+
+.notification-center-copy h2 {
+  font-size: 1rem;
+}
+
+.notification-center-title-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.notification-center-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.notification-center-actions form {
+  margin: 0;
+}
+
+.notification-empty-state,
+.notification-failure-state {
+  min-height: 10rem;
+}
+
+@media (max-width: 700px) {
+  .notification-test-control,
+  .notification-center-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notification-center-summary {
+    align-items: flex-start;
+  }
+
+  .notification-center-actions .button,
+  .notification-center-actions form {
+    width: 100%;
+  }
+}

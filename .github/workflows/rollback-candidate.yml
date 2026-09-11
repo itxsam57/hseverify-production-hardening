@@ -1,0 +1,75 @@
+name: Build rollback candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: Commit SHA or approved tag to rebuild as a rollback candidate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rollback-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: rollback-candidate
+
+    steps:
+      - name: Check out requested release
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.target_ref }}
+
+      - name: Resolve immutable release SHA
+        run: echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate rollback source
+        env:
+          HSE_APP_ENV: test
+          HSE_RELEASE_SHA: ${{ env.RELEASE_SHA }}
+          HSE_SESSION_SECRET: rollback-candidate-session-secret-with-at-least-thirty-two-characters
+          HSE_DATABASE_DRIVER: pglite
+          HSE_PGLITE_DATA_DIR: memory://
+          HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+          HSE_USE_WORKER_DEMO_DATA: "false"
+        run: npm run check
+
+      - name: Smoke test rollback artifact
+        env:
+          HSE_APP_ENV: test
+          HSE_RELEASE_SHA: ${{ env.RELEASE_SHA }}
+          HSE_SESSION_SECRET: rollback-candidate-session-secret-with-at-least-thirty-two-characters
+          HSE_DATABASE_DRIVER: pglite
+          HSE_PGLITE_DATA_DIR: memory://
+        run: npm run preview:smoke
+
+      - name: Create rollback release evidence
+        env:
+          HSE_RELEASE_SHA: ${{ env.RELEASE_SHA }}
+          HSE_RELEASE_ENV: preview
+        run: npm run release:manifest
+
+      - name: Upload rollback candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: hseverify-rollback-${{ env.RELEASE_SHA }}
+          path: |
+            .preview-bundle
+            release-manifest.json
+            database/migrations
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,13 @@
+I’m unable to continue the Codex native execution in this turn because the required native Codex tool is not available in the current tool set. I only have file tools available, so I cannot access the repository shell, run tests, inspect the working tree, update `mission.md`, or make verified code changes.
+
+No repository state was modified.
+
+To continue the mission, this same task needs to be resumed in a Codex Native session with repository tools enabled, using the existing working tree and branch:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Repo path: `/home/ubuntu/work/hseverify-codex-hardening`
+- Continue from the current dirty tree and ledger state
+- Read [.codex-governor/mission.md](<.codex-governor/mission.md>)
+- Complete remaining actionable rows with evidence and update the ledger
+
+I cannot truthfully claim any HSE-M or HSE-X items are completed without the native repository execution environment.

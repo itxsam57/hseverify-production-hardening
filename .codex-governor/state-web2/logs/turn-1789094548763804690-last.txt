@@ -1,0 +1,15 @@
+I can continue the mission, but this session does not have the repository execution tools available, so I cannot truthfully run the remaining audits, modify `mission.md`, or produce verified evidence.
+
+The next required step is to reopen the native Codex workspace on the same branch:
+
+`codex/hseverify-full-hardening-20260911`
+
+with the existing working tree preserved, then continue from the remaining `ACTIONABLE` ledger rows. Do not reset changes. The first actions should be:
+
+1. Read [.codex-governor/mission.md](<.codex-governor/mission.md>).
+2. Run the remaining real gates for M1.08–M1.12 and M2/M3 items.
+3. Audit against `docs/Masterplan(HSE Verify).md`.
+4. Update each ledger row only with actual test/tool evidence.
+5. Finish HSE-X01 through HSE-X04 release verification.
+
+I cannot mark any rows complete without those repository results.

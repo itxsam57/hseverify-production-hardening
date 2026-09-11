@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": ".secure-access-test-dist",
+    "rootDir": "src/lib",
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"],
+    "noEmitOnError": true
+  },
+  "include": [
+    "tests/types/server-only.d.ts",
+    "src/lib/auth/auth-domain.ts",
+    "src/lib/authorization/authorization-domain.ts",
+    "src/lib/authorization/authorization-context-domain.ts",
+    "src/lib/secure-files/secure-file-domain.ts",
+    "src/lib/secure-files/secure-file-access-domain.ts",
+    "src/lib/secure-files/secure-file-access-core.ts",
+    "src/lib/secure-files/secure-file-access-request.ts"
+  ]
+}

@@ -1,0 +1,16 @@
+import { spawnSync } from "node:child_process";
+import { existsSync,mkdirSync,readFileSync,rmSync,writeFileSync } from "node:fs";
+import { dirname,relative,resolve } from "node:path";
+import ts from "typescript";
+const out=resolve(".question-bank-runtime-test-dist"),root=resolve("src","lib"),ALIAS="@/lib/";rmSync(out,{recursive:true,force:true});
+const ENTRIES=["question-bank/question-bank-domain.ts","question-bank/question-bank-service.ts","question-bank/question-delivery-service.ts"];
+const STUBS=new Set(["database/database.ts"]);
+const fail=m=>{console.error(m);process.exit(1);};
+function rel(p){const v=relative(root,p).replaceAll("\\","/");if(v.startsWith("../")||v==="..")throw new Error(`M2.04 runtime dependency escaped src/lib: ${p}`);return v;}
+function resolveImport(importer,spec){let base;if(spec.startsWith("."))base=resolve(dirname(importer),spec);else if(spec.startsWith(ALIAS))base=resolve(root,spec.slice(ALIAS.length));else return null;for(const c of [base,`${base}.ts`,resolve(base,"index.ts")])if(c.endsWith(".ts")&&existsSync(c)){rel(c);return c;}throw new Error(`M2.04 runtime dependency unresolved: ${spec} from ${importer}`);}
+function specifier(importer,dep){let v=relative(dirname(importer),dep).replaceAll("\\","/").replace(/\.ts$/,"");if(!v.startsWith("."))v=`./${v}`;return v;}
+function source(path){let s=readFileSync(path,"utf8").replace(/^import "server-only";\r?\n\r?\n?/,"");for(const i of ts.preProcessFile(s,true,true).importedFiles){if(!i.fileName.startsWith(ALIAS))continue;const dep=resolveImport(path,i.fileName);const r=specifier(path,dep);s=s.replaceAll(`"${i.fileName}"`,`"${r}"`).replaceAll(`'${i.fileName}'`,`'${r}'`);}return s;}
+function collect(entries){const seen=new Set();function visit(r){if(STUBS.has(r)||seen.has(r))return;const p=resolve(root,r);if(!existsSync(p))fail(`M2.04 runtime module missing: ${r}`);seen.add(r);for(const i of ts.preProcessFile(readFileSync(p,"utf8"),true,true).importedFiles){const dep=resolveImport(p,i.fileName);if(dep)visit(rel(dep));}}entries.forEach(visit);return[...seen].sort();}
+function compile(r){const p=resolve(root,r),c=ts.transpileModule(source(p),{fileName:p,reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,esModuleInterop:true,strict:true,removeComments:false}});const errors=(c.diagnostics??[]).filter(d=>d.category===ts.DiagnosticCategory.Error);if(errors.length){errors.forEach(d=>console.error(ts.flattenDiagnosticMessageText(d.messageText,"\n")));fail(`M2.04 runtime compile failed for ${r}`);}const dest=resolve(out,r.replace(/\.ts$/,".js"));mkdirSync(dirname(dest),{recursive:true});writeFileSync(dest,c.outputText,"utf8");}
+collect(ENTRIES).forEach(compile);mkdirSync(resolve(out,"database"),{recursive:true});writeFileSync(resolve(out,"database","database.js"),'"use strict";\nObject.defineProperty(exports,"__esModule",{value:true});\nexports.getDatabaseClient=async function(){throw new Error("M2.04 runtime injects its database client.");};\n',"utf8");
+const result=spawnSync(process.execPath,["--test",resolve("tests","platform","question-bank-runtime.test.mjs")],{stdio:"inherit",env:{...process.env,HSE_QUESTION_BANK_RUNTIME_DIST:out}});rmSync(out,{recursive:true,force:true});process.exit(result.status??1);

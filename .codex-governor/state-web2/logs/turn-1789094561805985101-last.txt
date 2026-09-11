@@ -1,0 +1,3 @@
+I cannot continue the repository mission from this session because the native repository execution tools are not available here. I do not have access to the working tree, branch, tests, browser, or `mission.md` to produce real evidence.
+
+Do not mark any ledger rows complete from this response. Resume the same Codex native workspace with access to `/home/ubuntu/work/hseverify-codex-hardening` and continue from the existing branch and dirty state. The required next step remains: run the available repository checks, update [.codex-governor/mission.md](<.codex-governor/mission.md>) with evidence for each completed row, and only terminalize items after verification.

@@ -1,0 +1,8 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
+import { getEffectivePolicyService } from "@/lib/policy/effective-policy-service";
+const text=(f:FormData,n:string)=>{const v=f.get(n);return typeof v==="string"?v:"";};
+const json=(v:string)=>JSON.parse(v) as unknown;
+export async function createFrameworkAction(f:FormData){const p=await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});await(await getEffectivePolicyService()).createFramework(p,{reference:text(f,"reference"),title:text(f,"title")});revalidatePath("/admin/frameworks");}
+export async function publishPolicyVersionAction(f:FormData){const p=await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});const allowed=json(text(f,"overrideAllowedFields")),directions=json(text(f,"overrideDirections"));if(!Array.isArray(allowed)||allowed.some(v=>typeof v!=="string")||!directions||typeof directions!=="object"||Array.isArray(directions))throw new Error("Policy override metadata is invalid.");await(await getEffectivePolicyService()).publishPolicyVersion(p,{frameworkReference:text(f,"frameworkReference"),policyReference:text(f,"policyReference"),title:text(f,"title"),effectiveFrom:new Date(text(f,"effectiveFrom")),effectiveTo:text(f,"effectiveTo")?new Date(text(f,"effectiveTo")):null,policyValues:json(text(f,"policyValues")),overrideAllowedFields:allowed as string[],overrideDirections:directions as Record<string,string>});revalidatePath("/admin/frameworks");}

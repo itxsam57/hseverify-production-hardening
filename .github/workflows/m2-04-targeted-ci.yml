@@ -1,0 +1,33 @@
+name: M2.04 targeted TDD gate
+on:
+  push:
+    branches: [build/m2-04-question-bank]
+  pull_request:
+    paths:
+      - "database/migrations/0036_question_bank.*"
+      - "src/lib/question-bank/**"
+      - "src/app/admin/(portal)/question-bank/**"
+      - "src/lib/audit/audit-domain.ts"
+      - "tests/platform/question-bank-*.test.mjs"
+      - "scripts/run-question-bank-tests.mjs"
+      - ".github/workflows/m2-04-targeted-ci.yml"
+permissions:
+  contents: read
+jobs:
+  m2-04:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/platform/question-bank-contract.test.mjs
+      - if: success()
+        run: node scripts/run-question-bank-tests.mjs
+      - if: success()
+        run: npm run typecheck
+      - if: success()
+        run: npm run lint

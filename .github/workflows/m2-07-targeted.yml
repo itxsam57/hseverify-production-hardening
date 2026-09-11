@@ -1,0 +1,89 @@
+name: M2.07 targeted TDD gate
+
+on:
+  push:
+    branches: [feat/m2-07-assessment-window]
+    paths:
+      - "database/migrations/0042_assessment_attempt_lifecycle.*"
+      - "src/lib/assessment-attempt/**"
+      - "src/lib/assessment-generation/assessment-form-generation-service.ts"
+      - "src/lib/audit/audit-domain.ts"
+      - "src/app/worker/(portal)/available-assessments/**"
+      - "src/app/worker/(portal)/assessments/**"
+      - "src/components/worker/assessment-workspace.tsx"
+      - "tests/platform/assessment-attempt-*.test.mjs"
+      - "scripts/run-assessment-attempt-tests.mjs"
+      - "scripts/check-assessment-attempt-window.mjs"
+      - "scripts/run-engineering-gate.mjs"
+      - "scripts/m2-07-browser-qa.mjs"
+      - "package.json"
+      - ".github/workflows/m2-07-targeted.yml"
+      - ".github/workflows/m2-07-browser.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "database/migrations/0042_assessment_attempt_lifecycle.*"
+      - "src/lib/assessment-attempt/**"
+      - "src/lib/assessment-generation/assessment-form-generation-service.ts"
+      - "src/lib/audit/audit-domain.ts"
+      - "src/app/worker/(portal)/available-assessments/**"
+      - "src/app/worker/(portal)/assessments/**"
+      - "src/components/worker/assessment-workspace.tsx"
+      - "tests/platform/assessment-attempt-*.test.mjs"
+      - "scripts/run-assessment-attempt-tests.mjs"
+      - "scripts/check-assessment-attempt-window.mjs"
+      - "scripts/run-engineering-gate.mjs"
+      - "scripts/m2-07-browser-qa.mjs"
+      - "package.json"
+      - ".github/workflows/m2-07-targeted.yml"
+      - ".github/workflows/m2-07-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_SESSION_SECRET: m2-07-targeted-session-secret-with-at-least-thirty-two-characters
+      HSE_AUTH_PEPPER: m2-07-targeted-auth-pepper-with-at-least-thirty-two-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: m2-07-targeted-sandbox-key
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: m2-07-targeted
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: M2.07 persistence and domain RED/GREEN contract
+        run: node --test tests/platform/assessment-attempt-contract.test.mjs
+      - name: M2.07 migration rollback/reapply proof
+        run: node --test tests/platform/assessment-attempt-rollback.test.mjs
+      - name: M2.07 atomic begin RED/GREEN runtime
+        run: node scripts/run-assessment-attempt-tests.mjs --begin
+      - name: M2.07 answer progression RED/GREEN runtime
+        run: node scripts/run-assessment-attempt-tests.mjs --answers
+      - name: M2.07 answer concurrency RED/GREEN runtime
+        run: node scripts/run-assessment-attempt-tests.mjs --concurrency
+      - name: M2.07 Worker assessment window RED/GREEN contract
+        run: node --test tests/platform/assessment-attempt-ui-contract.test.mjs tests/platform/assessment-attempt-action-boundary.test.mjs
+      - name: M2.07 real browser proof RED/GREEN contract
+        run: node --test tests/platform/assessment-attempt-browser-contract.test.mjs
+      - name: M2.07 attempt audit RED/GREEN contract
+        run: node --test tests/platform/assessment-attempt-audit-contract.test.mjs
+      - name: M2.07 permanent Engineering gate RED/GREEN contract
+        run: node --test tests/platform/assessment-attempt-permanent-gate-contract.test.mjs
+      - name: Strict TypeScript
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint

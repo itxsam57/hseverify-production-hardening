@@ -1,0 +1,8 @@
+-- Worker identity versions and their audit facts are durable personal/security
+-- history. A local/test logical rollback may move the migration ledger back, but
+-- it must not destructively delete submitted identity state, correction lineage,
+-- or append-only audit vocabulary. Reapplying 0015 is deterministic because the
+-- up migration uses idempotent table/index creation and replaces its guards.
+--
+-- Production/preview destructive rollback remains prohibited by the migration
+-- runner. Build and validate a previous release artifact instead.

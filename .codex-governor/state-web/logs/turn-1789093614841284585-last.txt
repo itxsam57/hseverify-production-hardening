@@ -1,0 +1,16 @@
+I cannot continue the repository execution from this turn because the Codex Native workspace tools required to inspect, edit, test, and update the HSE Verify branch are not available in this session.
+
+The last verified state remains:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- M2.08 existing draft persistence suite: **55/55 passing**
+- Remaining terminal work still requires actual repository execution:
+  
+  - implement missing M2.08 interruption lifecycle/session binding/replacement form behavior
+  - hard reverify M1.08–M1.12
+  - audit and complete M2.01–M2.13
+  - audit M3.01–M3.12
+  - complete X01–X04 release evidence
+  - update [.codex-governor/mission.md](<.codex-governor/mission.md>) with evidence
+
+Resume this exact task in a Codex environment with repository tools enabled and continue from the current branch state.

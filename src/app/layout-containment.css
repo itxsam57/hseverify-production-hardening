@@ -1,0 +1,64 @@
+html,
+body {
+  max-width: 100%;
+}
+
+.portal-shell {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.portal-sidebar {
+  width: 260px;
+  min-width: 0;
+  max-width: 260px;
+  overflow-x: hidden;
+}
+
+.portal-main-column,
+.portal-header,
+.portal-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.portal-main-column,
+.portal-content {
+  width: 100%;
+}
+
+.portal-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.portal-header > *,
+.header-actions,
+.header-menu,
+.profile-summary-text {
+  min-width: 0;
+}
+
+.header-actions {
+  max-width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .profile-summary-text {
+    display: none;
+  }
+
+  .portal-header {
+    gap: 10px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+}
+
+@media (max-width: 860px) {
+  .portal-sidebar {
+    width: auto;
+    max-width: none;
+  }
+}

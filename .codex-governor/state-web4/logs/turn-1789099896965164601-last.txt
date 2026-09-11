@@ -1,0 +1,3 @@
+I cannot continue the repository mission from this turn because the native Codex execution tools for the workspace are not available here. I do not have access to the working tree, branch, `mission.md`, tests, or browser/staging environment in this session, so I cannot truthfully update evidence or terminalize the remaining ledger items.
+
+No repository changes were made. A fresh native Codex session with repository tool access is required to continue from `codex/hseverify-full-hardening-20260911` and process the remaining HSE-M and HSE-X items.

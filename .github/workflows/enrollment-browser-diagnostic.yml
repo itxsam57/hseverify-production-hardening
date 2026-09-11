@@ -1,0 +1,82 @@
+name: Enrollment browser diagnostic
+
+on:
+  push:
+    branches: [qa/hard-browser-m2-02-m2-06]
+    paths:
+      - "scripts/staff-enrollment-cookie-diagnostic.mjs"
+      - "src/app/staff/invite/sandbox/diagnostic/**"
+      - "src/app/staff/invite/[token]/**"
+      - "src/lib/auth/staff-enrollment-cookie.ts"
+      - "src/lib/auth/staff-provisioning-service.ts"
+      - "src/lib/auth/auth-access-repository.ts"
+      - "database/migrations/0037_public_concern_service_principal_portal_role_fix.*"
+      - ".github/workflows/enrollment-browser-diagnostic.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/staff-enrollment-cookie-diagnostic.mjs"
+      - "src/app/staff/invite/sandbox/diagnostic/**"
+      - "src/app/staff/invite/[token]/**"
+      - "src/lib/auth/staff-enrollment-cookie.ts"
+      - "src/lib/auth/staff-provisioning-service.ts"
+      - "src/lib/auth/auth-access-repository.ts"
+      - "database/migrations/0037_public_concern_service_principal_portal_role_fix.*"
+      - ".github/workflows/enrollment-browser-diagnostic.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  enrollment-browser-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: /tmp/hseverify-enrollment-browser-diagnostic-db
+      HSE_SESSION_SECRET: enrollment-browser-diagnostic-session-secret-2026-64chars
+      HSE_AUTH_PEPPER: enrollment-browser-diagnostic-auth-pepper-2026-64chars-value
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: enrollment-browser-diagnostic-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: enrollment-browser-diagnostic
+      HSE_BROWSER_BASE_URL: http://127.0.0.1:3001
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run db:migrate
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated Next.js diagnostic server
+        run: |
+          npm run dev -- --hostname 127.0.0.1 --port 3001 > /tmp/hse-enrollment-diagnostic-server.log 2>&1 &
+          echo $! > /tmp/hse-enrollment-diagnostic-server.pid
+          for attempt in $(seq 1 120); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3001/; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/hse-enrollment-diagnostic-server.pid)" 2>/dev/null; then
+              cat /tmp/hse-enrollment-diagnostic-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/hse-enrollment-diagnostic-server.log
+          exit 1
+      - name: Run safe enrollment-state diagnostic in real Chromium
+        run: node scripts/staff-enrollment-cookie-diagnostic.mjs
+      - name: Upload diagnostic server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enrollment-browser-diagnostic-${{ github.sha }}
+          path: /tmp/hse-enrollment-diagnostic-server.log
+          if-no-files-found: warn
+          retention-days: 7

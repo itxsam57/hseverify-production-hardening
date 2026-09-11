@@ -1,0 +1,10 @@
+-- M1.07 identity drafts contain durable personal/contact-verification history and
+-- may already be referenced by immutable identity submission/audit facts.
+-- Local/test rollback is therefore logical: the migration ledger may move back,
+-- but draft rows, verified contact snapshots, guards and append-only audit
+-- vocabulary are retained so accepted history is never made illegal or erased.
+-- Reapplying 0016 is deterministic because its table/index creation is
+-- idempotent and its functions/triggers/constraints are replaced explicitly.
+--
+-- Production/preview destructive rollback remains prohibited by the migration
+-- runner. Build and validate a previous release artifact instead.

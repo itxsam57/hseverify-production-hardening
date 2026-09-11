@@ -1,0 +1,42 @@
+name: Auth runtime diagnostic
+
+on:
+  push:
+    branches: [qa/hard-browser-m2-02-m2-06]
+    paths:
+      - "scripts/pglite-timestamp-shape.mjs"
+      - "tests/platform/staff-invite-origin-preservation.test.mjs"
+      - "tests/platform/staff-enrollment-completion-feedback.test.mjs"
+      - "src/app/staff/invite/[token]/route.ts"
+      - "src/components/auth/role-login-page.tsx"
+      - ".github/workflows/auth-runtime-diagnostic.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/pglite-timestamp-shape.mjs"
+      - "tests/platform/staff-invite-origin-preservation.test.mjs"
+      - "tests/platform/staff-enrollment-completion-feedback.test.mjs"
+      - "src/app/staff/invite/[token]/route.ts"
+      - "src/components/auth/role-login-page.tsx"
+      - ".github/workflows/auth-runtime-diagnostic.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  auth-route-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Staff invitation origin-preservation contract
+        run: node --test tests/platform/staff-invite-origin-preservation.test.mjs
+      - name: Staff enrollment completion feedback contract
+        run: node --test tests/platform/staff-enrollment-completion-feedback.test.mjs
+      - name: PGlite timestamp runtime shape diagnostic
+        run: node scripts/pglite-timestamp-shape.mjs

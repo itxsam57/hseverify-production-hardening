@@ -1,0 +1,3 @@
+I’m unable to continue the HSE mission execution from this turn because the Codex Native repository execution tools are not available in the current session. I cannot inspect `/home/ubuntu/work/hseverify-codex-hardening`, run verification, modify `mission.md`, or produce evidence-backed completion claims without the live repository tool connection.
+
+No repository state was changed in this turn.

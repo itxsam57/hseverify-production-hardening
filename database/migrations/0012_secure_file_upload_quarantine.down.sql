@@ -1,0 +1,4 @@
+-- Secure-file quarantine audit facts are immutable accepted history. The
+-- expanded audit action/target vocabularies intentionally remain valid after
+-- rollback so already-recorded events are never invalidated. Reapplication
+-- replaces the same constraints deterministically.

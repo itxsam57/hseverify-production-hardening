@@ -1,0 +1,6 @@
+-- M1.07 Subunit 3 owns durable Worker identity evidence history.
+-- Rollback is intentionally logical/monotonic: do not delete evidence bindings,
+-- replacement lineage, document metadata, or secure-file references once written.
+-- Local/test migration-ledger rollback may remove only the migration ledger row;
+-- re-applying this migration is idempotent and restores the current guards.
+-- Production destructive rollback remains prohibited by the migration runner.

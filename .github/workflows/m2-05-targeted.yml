@@ -1,0 +1,81 @@
+name: M2.05 targeted TDD gate
+
+on:
+  push:
+    branches: [feat/m2-05-randomized-assessment-forms]
+    paths:
+      - "database/migrations/0039_randomized_assessment_forms.*"
+      - "src/lib/assessment-generation/**"
+      - "src/app/admin/(portal)/assessment-blueprints/**"
+      - "tests/platform/randomized-assessment-form-contract.test.mjs"
+      - "tests/platform/randomized-assessment-form-integrity.test.mjs"
+      - "tests/platform/randomized-assessment-form-rollback.test.mjs"
+      - "tests/platform/question-current-version-integrity.test.mjs"
+      - "tests/platform/randomized-assessment-selector-matching.test.mjs"
+      - "tests/platform/assessment-blueprint-runtime.test.mjs"
+      - "tests/platform/randomized-assessment-form-runtime.test.mjs"
+      - "tests/platform/randomized-assessment-cross-case-race.test.mjs"
+      - "tests/platform/assessment-form-delivery.test.mjs"
+      - "src/lib/audit/audit-domain.ts"
+      - "scripts/run-assessment-selector-matching-tests.mjs"
+      - "scripts/run-assessment-blueprint-runtime-tests.mjs"
+      - "scripts/run-assessment-generation-runtime-tests.mjs"
+      - "scripts/run-assessment-form-delivery-tests.mjs"
+      - "scripts/run-assessment-generation-tests.mjs"
+      - ".github/workflows/m2-05-targeted.yml"
+  pull_request:
+    branches: [main, qa/hard-browser-m2-02-m2-06]
+    paths:
+      - "database/migrations/0039_randomized_assessment_forms.*"
+      - "src/lib/assessment-generation/**"
+      - "src/app/admin/(portal)/assessment-blueprints/**"
+      - "tests/platform/randomized-assessment-form-contract.test.mjs"
+      - "tests/platform/randomized-assessment-form-integrity.test.mjs"
+      - "tests/platform/randomized-assessment-form-rollback.test.mjs"
+      - "tests/platform/question-current-version-integrity.test.mjs"
+      - "tests/platform/randomized-assessment-selector-matching.test.mjs"
+      - "tests/platform/assessment-blueprint-runtime.test.mjs"
+      - "tests/platform/randomized-assessment-form-runtime.test.mjs"
+      - "tests/platform/randomized-assessment-cross-case-race.test.mjs"
+      - "tests/platform/assessment-form-delivery.test.mjs"
+      - "src/lib/audit/audit-domain.ts"
+      - "scripts/run-assessment-selector-matching-tests.mjs"
+      - "scripts/run-assessment-blueprint-runtime-tests.mjs"
+      - "scripts/run-assessment-generation-runtime-tests.mjs"
+      - "scripts/run-assessment-form-delivery-tests.mjs"
+      - "scripts/run-assessment-generation-tests.mjs"
+      - ".github/workflows/m2-05-targeted.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_SESSION_SECRET: m2-05-targeted-session-secret-with-at-least-thirty-two-characters
+      HSE_AUTH_PEPPER: m2-05-targeted-auth-pepper-with-at-least-thirty-two-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: m2-05-targeted-sandbox-key
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: m2-05-targeted
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: M2.05 aggregate behavioral verification
+        run: node scripts/run-assessment-generation-tests.mjs
+      - name: Strict TypeScript
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint

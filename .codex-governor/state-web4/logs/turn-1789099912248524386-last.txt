@@ -1,0 +1,38 @@
+Resumed the HSE Verify hardening mission from the existing working tree.
+
+Current verified state:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- HEAD: `b8fd9609284bea8b52a6bcb159f208796ff6480f`
+- Mission ledger loaded successfully.
+- Existing changes were preserved.
+
+I started the full engineering gate and verified a large portion of the remaining acceptance path:
+
+- Release gate coverage: passed
+- Assessment runtime isolation: passed
+- M2.01 Assurance Order/Case/Action Centre contracts and runtime hard tests: passed
+- M2.02 Evidence verification queues contracts and runtime tests: passed
+- M2.03 Frameworks/effective policy contracts and runtime tests: passed
+- M2.04 Question Bank contracts and runtime tests: passed
+- M2.05 Randomized assessment generation contracts, integrity, allocation, runtime, and delivery tests: passed
+- M2.06 Catalogue eligibility tests: passed
+- M2.07 Candidate assessment window contract and runtime tests: passed
+- M2.08 Answer recovery contract/runtime/browser-boundary tests: passed (55/55)
+- Complete application gate started and passed through:
+  
+  - environment validation
+  - engineering checks
+  - routes
+  - authorization
+  - tenant scope
+  - audit
+  - outbox
+  - notifications
+  - email delivery
+  - secure files
+  - secure upload start
+  - dependency security checks
+  - production audit (`0 vulnerabilities`)
+
+The gate was still running when the native execution polling was interrupted by the tool safety layer. I did not reset the repository or discard changes. The remaining work is to let the current gate finish, capture the final result, then continue with the remaining actionable ledger items and update the mission evidence.

@@ -1,0 +1,49 @@
+{
+  "active_thread_id": "01a08dd4-2f65-7282-887a-9b5178882a01",
+  "completion_challenges": 0,
+  "final_verification_complete": false,
+  "final_verification_sent": false,
+  "last_completed_event": "item_41",
+  "last_error": "unknown_recovery_exhausted",
+  "ledger_fingerprint": null,
+  "mission_id": "hseverify-full-hardening-20260911",
+  "phase": "OWNER_REQUIRED_RECOVERY",
+  "recovery_history": [
+    {
+      "attempt": 1,
+      "delay_seconds": 300.0,
+      "kind": "rate_limit",
+      "last_completed_event": "item_41",
+      "timestamp": "2026-09-11T00:22:23.147665+00:00"
+    },
+    {
+      "attempt": 1,
+      "delay_seconds": 0,
+      "kind": "unknown",
+      "last_completed_event": "item_41",
+      "timestamp": "2026-09-11T00:27:25.949774+00:00"
+    },
+    {
+      "attempt": 2,
+      "delay_seconds": 0,
+      "kind": "unknown",
+      "last_completed_event": "item_41",
+      "timestamp": "2026-09-11T00:27:28.624215+00:00"
+    }
+  ],
+  "repo_path": "/home/ubuntu/work/hseverify-codex-hardening",
+  "repository_checkpoint": {
+    "branch": "codex/hseverify-full-hardening-20260911",
+    "dirty": true,
+    "head": "b8fd9609284bea8b52a6bcb159f208796ff6480f",
+    "status_sha256": "4e100e35cdefbd1619b1432613ca2cdf3fc4854e330962fc71b99165f3c95f94"
+  },
+  "retry_counters": {
+    "context": 0,
+    "rate_limit": 1,
+    "transport": 0,
+    "unknown": 3
+  },
+  "session_generation": 1,
+  "version": 2
+}

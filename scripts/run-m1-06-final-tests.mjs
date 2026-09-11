@@ -1,0 +1,165 @@
+import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
+import { dirname, relative, resolve } from "node:path";
+import ts from "typescript";
+
+const outputDirectory = resolve(".m1-06-final-runtime-test-dist");
+const sourceRoot = resolve("src", "lib");
+const LIB_ALIAS_PREFIX = "@/lib/";
+rmSync(outputDirectory, { recursive: true, force: true });
+
+const ENTRY_FILES = Object.freeze([
+  "audit/audit-repository.ts",
+  "outbox/outbox-repository.ts",
+  "secure-files/secure-file-repository.ts",
+  "secure-files/secure-file-service.ts",
+  "secure-files/secure-file-upload-service.ts",
+  "secure-files/secure-file-scan-repository.ts",
+  "secure-files/secure-file-scan-handler-core.ts",
+  "secure-files/malware-scanner-core.ts",
+  "secure-files/private-object-storage-core.ts",
+  "secure-files/secure-file-access-core.ts",
+  "secure-files/secure-file-access-audit.ts"
+]);
+const RUNTIME_STUBS = new Set(["database/database.ts"]);
+
+function normalizeRelativeSourcePath(sourcePath) {
+  const value = relative(sourceRoot, sourcePath).replaceAll("\\", "/");
+  if (value.startsWith("../") || value === "..") {
+    throw new Error(`M1.06 final runtime dependency escaped src/lib: ${sourcePath}`);
+  }
+  return value;
+}
+
+function resolveSourceImport(importerPath, specifier) {
+  let base;
+  if (specifier.startsWith(".")) {
+    base = resolve(dirname(importerPath), specifier);
+  } else if (specifier.startsWith(LIB_ALIAS_PREFIX)) {
+    base = resolve(sourceRoot, specifier.slice(LIB_ALIAS_PREFIX.length));
+  } else {
+    return null;
+  }
+
+  const candidates = [base, `${base}.ts`, resolve(base, "index.ts")];
+  for (const candidate of candidates) {
+    if (!candidate.endsWith(".ts") || !existsSync(candidate)) continue;
+    normalizeRelativeSourcePath(candidate);
+    return candidate;
+  }
+  throw new Error(
+    `M1.06 final runtime dependency could not be resolved: ${specifier} from ${importerPath}`
+  );
+}
+
+function runtimeSpecifier(importerPath, dependencyPath) {
+  let value = relative(dirname(importerPath), dependencyPath)
+    .replaceAll("\\", "/")
+    .replace(/\.ts$/, "");
+  if (!value.startsWith(".")) value = `./${value}`;
+  return value;
+}
+
+function runtimeSource(sourcePath) {
+  let source = readFileSync(sourcePath, "utf8").replace(
+    /^import "server-only";\r?\n\r?\n?/,
+    ""
+  );
+  const preprocessed = ts.preProcessFile(source, true, true);
+  for (const imported of preprocessed.importedFiles) {
+    if (!imported.fileName.startsWith(LIB_ALIAS_PREFIX)) continue;
+    const dependencyPath = resolveSourceImport(sourcePath, imported.fileName);
+    if (!dependencyPath) {
+      throw new Error(
+        `M1.06 final runtime alias could not be resolved: ${imported.fileName} from ${sourcePath}`
+      );
+    }
+    const replacement = runtimeSpecifier(sourcePath, dependencyPath);
+    source = source
+      .replaceAll(`"${imported.fileName}"`, `"${replacement}"`)
+      .replaceAll(`'${imported.fileName}'`, `'${replacement}'`);
+  }
+  return source;
+}
+
+function collectRuntimeSources(entryFiles) {
+  const collected = new Set();
+
+  function visit(relativePath) {
+    if (RUNTIME_STUBS.has(relativePath) || collected.has(relativePath)) return;
+    collected.add(relativePath);
+    const sourcePath = resolve(sourceRoot, relativePath);
+    const preprocessed = ts.preProcessFile(readFileSync(sourcePath, "utf8"), true, true);
+    for (const imported of preprocessed.importedFiles) {
+      const dependencyPath = resolveSourceImport(sourcePath, imported.fileName);
+      if (!dependencyPath) continue;
+      visit(normalizeRelativeSourcePath(dependencyPath));
+    }
+  }
+
+  for (const entry of entryFiles) visit(entry);
+  return [...collected].sort();
+}
+
+function compileRuntimeModule(relativePath) {
+  const sourcePath = resolve(sourceRoot, relativePath);
+  const compiled = ts.transpileModule(runtimeSource(sourcePath), {
+    fileName: sourcePath,
+    reportDiagnostics: true,
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      esModuleInterop: true,
+      strict: true,
+      removeComments: false
+    }
+  });
+  const errors = (compiled.diagnostics ?? []).filter(
+    (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error
+  );
+  if (errors.length > 0) {
+    for (const diagnostic of errors) {
+      console.error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
+    }
+    process.exit(1);
+  }
+  const destination = resolve(outputDirectory, relativePath.replace(/\.ts$/, ".js"));
+  mkdirSync(dirname(destination), { recursive: true });
+  writeFileSync(destination, compiled.outputText, "utf8");
+}
+
+const runtimeSources = collectRuntimeSources(ENTRY_FILES);
+for (const file of runtimeSources) compileRuntimeModule(file);
+
+mkdirSync(resolve(outputDirectory, "database"), { recursive: true });
+writeFileSync(
+  resolve(outputDirectory, "database", "database.js"),
+  '"use strict";\nObject.defineProperty(exports, "__esModule", { value: true });\nexports.getDatabaseClient = async function getDatabaseClient() { throw new Error("M1.06 final runtime test must inject a database client."); };\n',
+  "utf8"
+);
+
+const tests = spawnSync(
+  process.execPath,
+  [
+    "--test",
+    resolve("tests", "platform", "m1-06-final-acceptance.test.mjs"),
+    resolve("tests", "platform", "m1-06-final-restart-migration.test.mjs"),
+    resolve("tests", "platform", "migration-checksum-repair.test.mjs")
+  ],
+  {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      HSE_M1_06_FINAL_RUNTIME_DIST: outputDirectory
+    }
+  }
+);
+
+rmSync(outputDirectory, { recursive: true, force: true });
+process.exit(tests.status ?? 1);

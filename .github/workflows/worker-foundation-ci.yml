@@ -1,0 +1,69 @@
+name: Engineering verification gate
+
+on:
+  pull_request:
+    branches: [main, qa/hard-browser-m2-02-m2-06]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engineering-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HANDOFF_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || 'HEAD^' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run full engineering gate
+        env:
+          HSE_APP_ENV: test
+          HSE_RELEASE_SHA: ${{ env.VERIFIED_SHA }}
+          HSE_SESSION_SECRET: ci-session-secret-with-at-least-thirty-two-characters
+          HSE_AUTH_PEPPER: ci-auth-pepper-with-at-least-thirty-two-characters
+          HSE_DATABASE_DRIVER: pglite
+          HSE_PGLITE_DATA_DIR: memory://
+          HSE_ENABLE_AUTH_SANDBOX: "false"
+          HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+          HSE_USE_WORKER_DEMO_DATA: "false"
+          HANDOFF_REQUEST: ${{ github.event.pull_request.title || github.event.head_commit.message || 'Manual engineering verification' }}
+        run: npm run verify:full
+
+      - name: Upload concise handoff and release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hseverify-engineering-${{ env.VERIFIED_SHA }}
+          path: |
+            .engineering/manual-test-handoff.md
+            .engineering/verification-result.json
+            .preview-bundle
+            release-manifest.json
+            database/migrations
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7

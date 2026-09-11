@@ -1,0 +1,35 @@
+.profile-panel .ds-dialog .ds-button {
+  display: inline-flex;
+  width: auto;
+  min-height: var(--ds-touch-target);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-md);
+  padding: 0.625rem 1rem;
+  font-weight: 750;
+}
+
+.profile-panel .ds-dialog .ds-button-secondary {
+  border-color: var(--ds-color-border);
+  background: var(--ds-color-surface);
+  color: var(--navy-900);
+}
+
+.profile-panel .ds-dialog .ds-button-danger {
+  border-color: var(--ds-color-danger);
+  background: var(--ds-color-danger);
+  color: var(--white);
+}
+
+.profile-panel .ds-dialog .ds-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+@media (max-width: 680px) {
+  .profile-panel .ds-dialog .ds-button,
+  .profile-panel .ds-dialog form {
+    width: 100%;
+  }
+}

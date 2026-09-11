@@ -1,0 +1,15 @@
+I cannot execute the HSE Verify continuation from this turn because the repository execution tools (Codex Native shell/edit/test access) are not available here. The available file tools cannot inspect or modify the git workspace, run migrations, update `mission.md`, commit, or run the required verification gates.
+
+The last verified repository state remains:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- M2.08 existing suite: `55/55` passing
+- Remaining mission work is still nonterminal:
+  
+  - M2.08 interruption/session binding/replacement-form lifecycle
+  - M1.08–M1.12 hard verification
+  - M2.01–M2.13 completion audit
+  - M3.01–M3.12 completion or evidence-backed external classification
+  - X01–X04 final release certification
+
+Resume this exact mission in a Codex session with the repository workspace tools enabled, and continue from the existing branch rather than restarting.

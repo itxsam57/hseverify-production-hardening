@@ -1,0 +1,14 @@
+Continued from the previous native session checkpoint.
+
+Completed:
+
+- Read the mission ledger and preserved the existing dirty working tree on `codex/hseverify-full-hardening-20260911`.
+- Verified current HEAD: `b8fd9609284bea8b52a6bcb159f208796ff6480f`.
+- Reverified M2.08 instead of assuming the old certificate:
+  
+  - `npm run test:m2-08` ✅ 55/55 passed
+  - `npm run check:m2-08` ✅ 27/27 passed
+  - `npm run test:next-system` ✅ 4/4 passed
+- Updated [.codex-governor/mission.md](<.codex-governor/mission.md>) with evidence and moved HSE-M2.08 to `VERIFIED_DONE`.
+
+Remaining actionable work is still the broader hardening pass (M2/M3 items plus HSE-X release verification). I have preserved the branch state and will continue from the next actionable ledger item.

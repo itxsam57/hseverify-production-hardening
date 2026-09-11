@@ -1,0 +1,52 @@
+name: M1.11 targeted TDD gate
+
+on:
+  push:
+    branches:
+      - build/m1-11-worker-evidence-records
+  pull_request:
+    paths:
+      - "database/migrations/0030_worker_evidence_records.*"
+      - "src/lib/worker-evidence/**"
+      - "src/app/worker/(portal)/evidence/**"
+      - "src/components/worker/worker-evidence*"
+      - "src/components/worker/worker-navigation.tsx"
+      - "src/lib/audit/audit-domain.ts"
+      - "tests/platform/worker-evidence-*.test.mjs"
+      - "scripts/check-worker-evidence-records.mjs"
+      - "scripts/run-worker-evidence-record-tests.mjs"
+      - "package.json"
+      - ".github/workflows/m1-11-targeted-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m1-11-targeted-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m1-11:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: M1.11 static architecture contract
+        continue-on-error: true
+        id: static_contract
+        run: node scripts/check-worker-evidence-records.mjs
+      - name: M1.11 migration runtime contract
+        continue-on-error: true
+        id: migration_contract
+        run: node scripts/run-worker-evidence-record-tests.mjs
+      - name: Require both M1.11 contracts
+        if: always()
+        shell: bash
+        run: |
+          test "${{ steps.static_contract.outcome }}" = "success"
+          test "${{ steps.migration_contract.outcome }}" = "success"

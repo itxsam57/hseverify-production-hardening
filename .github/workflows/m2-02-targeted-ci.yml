@@ -1,0 +1,38 @@
+name: M2.02 targeted TDD gate
+
+on:
+  push:
+    branches: [build/m2-02-evidence-verification-queues]
+  pull_request:
+    paths:
+      - "database/migrations/0034_evidence_verification_queues.*"
+      - "src/lib/review/**"
+      - "src/app/verifier/(portal)/reviews/**"
+      - "tests/platform/evidence-review-*.test.mjs"
+      - "scripts/check-evidence-review-queues.mjs"
+      - "scripts/run-evidence-review-tests.mjs"
+      - ".github/workflows/m2-02-targeted-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  m2-02:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/platform/evidence-review-queue-contract.test.mjs
+      - if: success()
+        run: node scripts/check-evidence-review-queues.mjs
+      - if: success()
+        run: node scripts/run-evidence-review-tests.mjs
+      - if: success()
+        run: npm run typecheck
+      - if: success()
+        run: npm run lint

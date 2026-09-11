@@ -1,0 +1,14 @@
+I cannot execute the requested continuation in this environment because the native Codex repository tools required for this mission are not available in this session. The only available tool surface is file/library access, which cannot inspect or modify the HSEVerify working tree, run tests, use browser/staging verification, or update [.codex-governor/mission.md](<.codex-governor/mission.md>).
+
+No repository changes were made and no mission items were falsely marked complete.
+
+The mission should be resumed in a Codex Native session with repository execution enabled, continuing from the existing state:
+
+- Repository: `/home/ubuntu/work/hseverify-codex-hardening`
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Preserve current dirty working tree
+- Read: [.codex-governor/mission.md](<.codex-governor/mission.md>)
+- Continue remaining HSE-M and HSE-X rows with actual evidence
+- Update the ledger only after verification
+
+I cannot claim completion of HSE-M1.08 through HSE-X04 without those execution capabilities.

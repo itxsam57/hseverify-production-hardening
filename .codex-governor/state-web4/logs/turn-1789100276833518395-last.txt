@@ -1,0 +1,8 @@
+I could not resume the native Codex execution because the provided Codex session token was rejected as expired/revoked before any repository operation could run.
+
+No repository state was changed in this attempt. The next step is to start a new native Codex session for the same branch and rerun from the existing working tree checkpoint:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Working tree: preserve current changes
+- First action: read [.codex-governor/mission.md](<.codex-governor/mission.md>)
+- Continue from the current HEAD and finish remaining actionable items with verification.

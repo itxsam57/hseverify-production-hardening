@@ -1,0 +1,4 @@
+-- M1.06 Subunit 4 adds immutable signed-access audit vocabulary only.
+-- Existing authorization/serve facts must remain readable after logical rollback,
+-- so this migration is intentionally monotonic and does not narrow the audit
+-- action constraint. Reapplication restores the same deterministic vocabulary.

@@ -1,0 +1,9 @@
+I can continue the mission, but this turn does not have access to the repository execution tools needed to inspect, edit, test, commit, or update `mission.md`.
+
+The previous verification state is only partial: `verify:quick` had passed through TypeScript and reached lint, but no final completed gate result or release evidence was produced. I cannot truthfully terminalize the remaining HSE-M1/M2/M3/X rows without fresh repository evidence.
+
+Resume this same task in a Codex session with repository tools enabled and continue from:
+
+- branch: `codex/hseverify-full-hardening-20260911`
+- current verified dependency state: `npm audit --omit=dev --audit-level=high` = 0 vulnerabilities
+- active requirement: continue full hardening, update [.codex-governor/mission.md](<.codex-governor/mission.md>) rows with evidence, then produce final SHA and gate evidence.

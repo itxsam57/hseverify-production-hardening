@@ -1,0 +1,3 @@
+I cannot execute the repository continuation from this turn because the available tool surface does not provide access to the Codex Native workspace or shell for `/home/ubuntu/work/hseverify-codex-hardening`.
+
+No repository changes, verification, or `mission.md` updates were performed in this turn. I need a live Codex Native session with repository tools enabled to continue the HSE mission items and produce evidence-backed updates.

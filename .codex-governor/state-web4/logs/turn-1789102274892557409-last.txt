@@ -1,0 +1,10 @@
+I cannot continue the repository execution in this turn because the native Codex execution tool is not available in the current session, so I cannot inspect the working tree, run verification, or update `mission.md` with real evidence.
+
+No repository changes were made in this attempt.
+
+Resume the same native Codex session with access to the repository tools and continue from:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Preserve dirty working tree
+- Read [.codex-governor/mission.md](<.codex-governor/mission.md>)
+- Continue remaining ACTIONABLE rows with actual verification evidence before changing ledger states.

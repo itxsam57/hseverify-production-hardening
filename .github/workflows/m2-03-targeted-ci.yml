@@ -1,0 +1,37 @@
+name: M2.03 targeted TDD gate
+
+on:
+  push:
+    branches: [build/m2-03-frameworks-effective-policy]
+  pull_request:
+    paths:
+      - "database/migrations/0035_frameworks_effective_policy.*"
+      - "src/lib/policy/**"
+      - "src/lib/assurance/assurance-order-service.ts"
+      - "src/app/admin/(portal)/frameworks/**"
+      - "src/app/company/(portal)/settings/policy/**"
+      - "tests/platform/framework-effective-policy-*.test.mjs"
+      - "scripts/run-effective-policy-tests.mjs"
+      - ".github/workflows/m2-03-targeted-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  m2-03:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/platform/framework-effective-policy-contract.test.mjs
+      - if: success()
+        run: node scripts/run-effective-policy-tests.mjs
+      - if: success()
+        run: npm run typecheck
+      - if: success()
+        run: npm run lint

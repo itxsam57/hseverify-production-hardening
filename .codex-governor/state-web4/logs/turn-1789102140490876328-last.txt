@@ -1,0 +1,16 @@
+Resumed the same mission from the existing working tree.
+
+Verified:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- HEAD preserved: `b8fd9609284bea8b52a6bcb159f208796ff6480f`
+- Dirty changes preserved.
+
+Completed checkpoint verification:
+
+- `npm run test:m2-08` ✅ 55/55 passed
+- `npm run check:m2-08` ✅ 27/27 passed
+
+Updated [.codex-governor/mission.md](<.codex-governor/mission.md>) with the restart checkpoint evidence.
+
+Remaining actionable ledger items are still open (M1.08–M3/X release hardening work). I continued from the existing state and did not reset or repeat completed work.

@@ -1,0 +1,148 @@
+name: M2.08 real browser QA
+
+on:
+  push:
+    branches: [feat/m2-08-answer-recovery, main]
+    paths:
+      - "database/migrations/0042_assessment_attempt_lifecycle.*"
+      - "database/migrations/0043_assessment_attempt_drafts.*"
+      - "src/lib/assessment-attempt/**"
+      - "src/app/worker/(portal)/available-assessments/**"
+      - "src/app/worker/(portal)/assessments/**"
+      - "src/components/worker/**"
+      - "scripts/m2-07-browser-qa.mjs"
+      - "scripts/m2-08-browser-qa.mjs"
+      - "scripts/check-assessment-attempt-drafts.mjs"
+      - "scripts/run-assessment-attempt-tests.mjs"
+      - "tests/platform/assessment-attempt-*.test.mjs"
+      - "package.json"
+      - ".github/workflows/m2-08-browser.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "database/migrations/0042_assessment_attempt_lifecycle.*"
+      - "database/migrations/0043_assessment_attempt_drafts.*"
+      - "src/lib/assessment-attempt/**"
+      - "src/app/worker/(portal)/available-assessments/**"
+      - "src/app/worker/(portal)/assessments/**"
+      - "src/components/worker/**"
+      - "scripts/m2-07-browser-qa.mjs"
+      - "scripts/m2-08-browser-qa.mjs"
+      - "scripts/check-assessment-attempt-drafts.mjs"
+      - "scripts/run-assessment-attempt-tests.mjs"
+      - "tests/platform/assessment-attempt-*.test.mjs"
+      - "package.json"
+      - ".github/workflows/m2-08-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m2-08-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: /tmp/hseverify-m208-browser-db
+      HSE_SESSION_SECRET: m2-08-browser-session-secret-2026-with-at-least-thirty-two-characters
+      HSE_AUTH_PEPPER: m2-08-browser-auth-pepper-2026-with-at-least-thirty-two-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: m2-08-browser-sandbox-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: ${{ github.sha }}
+      HSE_BROWSER_BASE_URL: http://127.0.0.1:3004
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out exact commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run permanent M2.08 targeted suite
+        run: npm run test:m2-08
+
+      - name: Migrate clean M2.08 browser database
+        run: |
+          rm -rf "$HSE_PGLITE_DATA_DIR"
+          rm -rf artifacts/m2-07-browser artifacts/m2-08-browser
+          npm run db:migrate
+
+      - name: Install pinned Playwright without modifying lockfile
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Seed authoritative M2.08 browser scenario
+        run: node scripts/m2-08-browser-qa.mjs --seed-only
+
+      - name: Start real Next.js application
+        run: |
+          npm run dev -- --hostname 127.0.0.1 --port 3004 > /tmp/hse-m208-browser-server.log 2>&1 &
+          echo $! > /tmp/hse-m208-browser-server.pid
+          for attempt in $(seq 1 120); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3004/; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/hse-m208-browser-server.pid)" 2>/dev/null; then
+              cat /tmp/hse-m208-browser-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/hse-m208-browser-server.log
+          exit 1
+
+      - name: Run M2.08 real Chromium journey
+        run: node scripts/m2-08-browser-qa.mjs
+
+      - name: Reject unexpected application server errors
+        if: success()
+        run: |
+          if grep -Ein "Hydration failed|Unhandled Runtime Error|uncaughtException|unhandledRejection|TypeError:|ReferenceError:" /tmp/hse-m208-browser-server.log; then
+            echo "Unexpected server/runtime error marker found during M2.08 browser QA."
+            exit 1
+          fi
+
+      - name: Strict TypeScript after browser exercise
+        if: success()
+        run: npm run typecheck
+
+      - name: Lint after browser exercise
+        if: success()
+        run: npm run lint
+
+      - name: Collect browser evidence
+        if: always()
+        run: |
+          mkdir -p artifacts/m2-08-browser
+          cp /tmp/hse-m208-browser-server.log artifacts/m2-08-browser/server.log || true
+          test -f artifacts/m2-08-browser/results.json || true
+          test -f artifacts/m2-08-browser/traffic-summary.json || true
+
+      - name: Upload M2.08 browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-08-browser-${{ github.sha }}
+          path: artifacts/m2-08-browser
+          if-no-files-found: warn
+          retention-days: 14

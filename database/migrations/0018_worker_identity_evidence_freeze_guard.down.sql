@@ -1,0 +1,3 @@
+-- Monotonic S3 hardening. Do not weaken the evidence freeze guard during a
+-- logical local/test rollback; the migration ledger may roll back/reapply while
+-- durable identity history and the strongest accepted invariant remain intact.

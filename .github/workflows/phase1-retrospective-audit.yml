@@ -1,0 +1,247 @@
+name: Phase 1 retrospective audit
+
+on:
+  push:
+    branches: [feat/m2-06-assessment-catalogue-eligibility]
+    paths:
+      - "scripts/hard-browser-retrospective.mjs"
+      - "scripts/hard-browser-retrospective-worker-evidence.mjs"
+      - "scripts/hard-browser-retrospective-company-registration.mjs"
+      - "scripts/hard-browser-public-concern.mjs"
+      - "scripts/hard-browser-mixed-role-burst.mjs"
+      - "scripts/seed-public-verification-browser.mjs"
+      - "tests/platform/hard-browser-audit-contract.test.mjs"
+      - "tests/platform/company-registration-server-action-boundary.test.mjs"
+      - "tests/platform/company-verification-review-ui-contract.test.mjs"
+      - "tests/platform/phase1-retrospective-performance.test.mjs"
+      - "scripts/run-phase1-retrospective-performance.mjs"
+      - ".github/workflows/phase1-retrospective-audit.yml"
+      - "src/**"
+      - "database/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/hard-browser-retrospective.mjs"
+      - "scripts/hard-browser-retrospective-worker-evidence.mjs"
+      - "scripts/hard-browser-retrospective-company-registration.mjs"
+      - "scripts/hard-browser-public-concern.mjs"
+      - "scripts/hard-browser-mixed-role-burst.mjs"
+      - "scripts/seed-public-verification-browser.mjs"
+      - "tests/platform/hard-browser-audit-contract.test.mjs"
+      - "tests/platform/company-registration-server-action-boundary.test.mjs"
+      - "tests/platform/company-verification-review-ui-contract.test.mjs"
+      - "tests/platform/phase1-retrospective-performance.test.mjs"
+      - "scripts/run-phase1-retrospective-performance.mjs"
+      - ".github/workflows/phase1-retrospective-audit.yml"
+      - "src/**"
+      - "database/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Completed-workflow browser coverage contract
+        run: node --test tests/platform/hard-browser-audit-contract.test.mjs
+
+  retrospective-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_SESSION_SECRET: retrospective-performance-session-secret-2026-at-least-32-characters
+      HSE_AUTH_PEPPER: retrospective-performance-auth-pepper-2026-at-least-32-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: retrospective-performance-sandbox-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: phase1-retrospective-performance
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Performance audit contract
+        run: node --test tests/platform/phase1-retrospective-performance.test.mjs
+      - name: Run correctness-under-concurrency audit
+        run: node scripts/run-phase1-retrospective-performance.mjs
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-retrospective-performance-${{ github.sha }}
+          path: artifacts/phase1-retrospective
+          if-no-files-found: warn
+          retention-days: 14
+
+  mixed-role-http-burst:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: /tmp/hseverify-mixed-role-burst-db
+      HSE_SESSION_SECRET: mixed-role-burst-session-secret-2026-at-least-32-characters
+      HSE_AUTH_PEPPER: mixed-role-burst-auth-pepper-2026-at-least-32-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: mixed-role-burst-sandbox-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: phase1-retrospective-mixed-role-burst
+      HSE_BROWSER_BASE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Syntax-check mixed-role browser harness
+        run: node --check scripts/hard-browser-mixed-role-burst.mjs
+      - name: Migrate clean mixed-role database
+        run: npm run db:migrate
+      - name: Assert clean mixed-role bootstrap database
+        run: node scripts/hard-browser-zero-state.mjs
+      - name: Install pinned Playwright without lockfile changes
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Install Chromium runtime
+        run: npx playwright install --with-deps chromium
+      - name: Start real Next.js application
+        run: |
+          npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/hse-mixed-role-server.log 2>&1 &
+          echo $! > /tmp/hse-mixed-role-server.pid
+          for attempt in $(seq 1 120); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3000/; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/hse-mixed-role-server.pid)" 2>/dev/null; then
+              cat /tmp/hse-mixed-role-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/hse-mixed-role-server.log
+          exit 1
+      - name: Run 50-request authenticated mixed-role real-server burst
+        run: node scripts/hard-browser-mixed-role-burst.mjs
+      - name: Preserve mixed-role server log
+        if: always()
+        run: |
+          mkdir -p artifacts/phase1-retrospective
+          cp /tmp/hse-mixed-role-server.log artifacts/phase1-retrospective/mixed-role-server.log || true
+      - name: Upload mixed-role HTTP burst evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-retrospective-mixed-role-${{ github.sha }}
+          path: artifacts/phase1-retrospective
+          if-no-files-found: warn
+          retention-days: 14
+
+  retrospective-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: /tmp/hseverify-retrospective-browser-db
+      HSE_SESSION_SECRET: retrospective-browser-session-secret-2026-at-least-32-characters
+      HSE_AUTH_PEPPER: retrospective-browser-auth-pepper-2026-at-least-32-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: retrospective-browser-sandbox-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: phase1-retrospective-browser
+      HSE_BROWSER_BASE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Company registration server-action boundary
+        run: node --test tests/platform/company-registration-server-action-boundary.test.mjs
+      - name: Company verification Admin review contract
+        run: node --test tests/platform/company-verification-review-ui-contract.test.mjs
+      - name: Syntax-check retrospective Chromium harnesses
+        run: |
+          node --check scripts/hard-browser-retrospective.mjs
+          node --check scripts/hard-browser-retrospective-worker-evidence.mjs
+          node --check scripts/hard-browser-retrospective-company-registration.mjs
+          node --check scripts/seed-public-verification-browser.mjs
+          node --check scripts/hard-browser-public-concern.mjs
+      - name: Migrate clean retrospective browser database
+        run: npm run db:migrate
+      - name: Assert clean bootstrap database
+        run: node scripts/hard-browser-zero-state.mjs
+      - name: Seed guarded public-verification browser fixture
+        run: node scripts/seed-public-verification-browser.mjs
+      - name: Install pinned Playwright without lockfile changes
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Install Chromium runtime
+        run: npx playwright install --with-deps chromium
+      - name: Start real Next.js application
+        run: |
+          npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/hse-retrospective-browser-server.log 2>&1 &
+          echo $! > /tmp/hse-retrospective-browser-server.pid
+          for attempt in $(seq 1 120); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3000/; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/hse-retrospective-browser-server.pid)" 2>/dev/null; then
+              cat /tmp/hse-retrospective-browser-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/hse-retrospective-browser-server.log
+          exit 1
+      - name: Run Worker registration/profile/identity retrospective Chromium
+        run: node scripts/hard-browser-retrospective.mjs
+      - name: Run Worker secure evidence/history retrospective Chromium
+        run: node scripts/hard-browser-retrospective-worker-evidence.mjs
+      - name: Run Company registration/verification retrospective Chromium
+        run: node scripts/hard-browser-retrospective-company-registration.mjs
+      - name: Run public Report Concern retrospective Chromium
+        run: node scripts/hard-browser-public-concern.mjs
+      - name: Typecheck after retrospective browser exercise
+        if: success()
+        run: npm run typecheck
+      - name: Lint after retrospective browser exercise
+        if: success()
+        run: npm run lint
+      - name: Preserve server log
+        if: always()
+        run: |
+          mkdir -p artifacts/hard-browser-retrospective
+          cp /tmp/hse-retrospective-browser-server.log artifacts/hard-browser-retrospective/server.log || true
+      - name: Upload retrospective browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-retrospective-browser-${{ github.sha }}
+          path: |
+            artifacts/hard-browser-retrospective
+            artifacts/hard-browser-retrospective-evidence
+            artifacts/hard-browser-retrospective-company
+            artifacts/hard-browser-public-concern
+          if-no-files-found: warn
+          retention-days: 14

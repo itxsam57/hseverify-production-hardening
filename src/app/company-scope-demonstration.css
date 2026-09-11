@@ -1,0 +1,65 @@
+.company-scope-context-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.company-scope-context-card {
+  display: grid;
+  min-width: 0;
+  min-height: 9rem;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+}
+
+.company-scope-context-card > strong {
+  min-height: 1.75rem;
+}
+
+.company-scope-context-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.company-scope-form {
+  margin-top: 1.25rem;
+}
+
+.company-scope-field-grid {
+  align-items: start;
+}
+
+.company-scope-field-grid > .ds-field {
+  min-width: 0;
+  align-content: start;
+}
+
+.company-scope-create-card > .page-intro {
+  margin-bottom: 0;
+}
+
+.company-scope-record-card {
+  display: grid;
+  min-width: 0;
+  gap: 1.25rem;
+}
+
+.company-scope-record-card > .page-heading-row,
+.company-scope-record-card > .profile-form {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .company-scope-context-grid,
+  .company-scope-field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .company-scope-field-grid .profile-field-wide {
+    grid-column: auto;
+  }
+
+  .company-scope-context-card {
+    min-height: 0;
+  }
+}

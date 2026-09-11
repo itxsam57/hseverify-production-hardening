@@ -1,0 +1,15 @@
+I cannot execute the HSE Verify mission continuation from this turn because the required Codex repository tools (shell, git, file editing, test execution, browser/runtime access) are not available. The only available tool surface here is conversation/library file access, which cannot modify the repository branch or run the verification workflow.
+
+The last verified state remains:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- M2.08 existing implementation verification: `55/55` passing
+- Remaining ledger items are still nonterminal:
+  
+  - M2.08 interruption recovery/session binding/replacement form lifecycle
+  - M1.08–M1.12 hard verification
+  - M2.01–M2.13 audit and completion
+  - M3.01–M3.12 implementation or evidence-backed external classification
+  - X01–X04 final release certification and `mission.md` evidence updates
+
+Continue this exact thread inside a Codex session with the repository workspace enabled so the branch can be inspected, modified, tested, committed, and the ledger updated with real evidence.

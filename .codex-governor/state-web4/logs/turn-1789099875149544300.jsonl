@@ -1,0 +1,5 @@
+{"type":"thread.started","thread_id":"01a08ea9-9bd4-7501-bc50-8a068b0ab4a8"}
+{"type":"turn.started"}
+2026-09-11T04:11:15.774590Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:17841/v1/responses
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I could not resume the native Codex session because the provided Codex tool token was rejected as invalid or expired before any repository command could run.\n\nNo repository state was changed. The next step is to start a new native Codex session with a fresh task token so I can read [.codex-governor/mission.md](<.codex-governor/mission.md>), inspect the current branch/dirty state, and continue from the existing checkpoint."}}
+{"type":"turn.completed","usage":{"input_tokens":17271,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":111,"reasoning_output_tokens":0}}

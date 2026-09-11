@@ -1,0 +1,9 @@
+I cannot continue the repository work in this turn because the native Codex execution tools for the workspace are not available here. I only have file-library access, so I cannot inspect the working tree, run the remaining gate, update `mission.md`, or verify repository state.
+
+The mission remains at the last known checkpoint:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- HEAD: `b8fd9609284bea8b52a6bcb159f208796ff6480f`
+- Full application gate was still running after the previously verified passing checks.
+
+Resume this exact mission in a native Codex session with repository tool access and continue from the existing dirty working tree without resetting changes.

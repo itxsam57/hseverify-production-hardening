@@ -1,0 +1,16 @@
+{
+  "mission_id": "hseverify-full-hardening-20260911",
+  "codex_bin": "/home/ubuntu/apps/chatgpt-linux/usr/lib/chatgpt/resources/codex",
+  "repo_path": "/home/ubuntu/work/hseverify-codex-hardening",
+  "mission_path": "/home/ubuntu/work/hseverify-codex-hardening/.codex-governor/mission.md",
+  "state_dir": "/home/ubuntu/work/hseverify-codex-hardening/.codex-governor/state",
+  "sandbox": "workspace-write",
+  "approval": "never",
+  "workspace_network_access": true,
+  "context_max": 3,
+  "rate_limit_delays": [300, 900, 1800, 3600],
+  "transport_delays": [30, 90, 180],
+  "unknown_max": 2,
+  "max_no_progress": 4,
+  "require_graph_evidence": false
+}

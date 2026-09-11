@@ -1,0 +1,4 @@
+-- M1.07 Subunit 4 automated-check runs/results and outbox vocabulary are durable
+-- history. Rollback is intentionally logical/monotonic: do not delete runs,
+-- results, job bindings or narrow the outbox job-type envelope. Production
+-- destructive rollback remains prohibited by the migration runner.

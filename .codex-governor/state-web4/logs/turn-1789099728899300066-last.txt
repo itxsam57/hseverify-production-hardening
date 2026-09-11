@@ -1,0 +1,16 @@
+I cannot continue the repository mission from this turn because the required Codex Native repository tools are not available in the current execution environment. I do not have a valid way to inspect the branch, edit `mission.md`, run tests, use browser verification, or create commits from here.
+
+The last verified state remains:
+
+- Security dependency floor checks passed.
+- Production audit passed with `0 vulnerabilities`.
+- M2.08 regression suite passed `55/55`.
+- Git commit creation was blocked by the workspace returning `Read-only file system` when creating [.git/index.lock](<.git/index.lock>).
+
+To continue the same mission, the Codex Native workspace needs to be restored with repository write access and tool access. Once available, the next actions are:
+
+1. Reopen `codex/hseverify-full-hardening-20260911`.
+2. Audit remaining ledger rows against actual code/tests.
+3. Update `mission.md` with terminal evidence row by row.
+4. Run the full engineering gate, browser/security matrix, and final release certification.
+5. Commit verified checkpoints and push only the hardening branch.

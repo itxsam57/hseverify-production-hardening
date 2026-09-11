@@ -1,0 +1,132 @@
+.formGrid {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.passwordNote,
+.verificationMeta,
+.sandboxNote,
+.stepLine,
+.deliveryLine {
+  margin: 0;
+  color: var(--slate-600);
+  font-size: 0.86rem;
+}
+
+.stepLine {
+  margin-top: 22px;
+  color: var(--blue-700);
+  font-weight: 800;
+}
+
+.deliveryLine {
+  margin-top: 8px;
+  color: var(--slate-700);
+}
+
+.codeInput {
+  min-height: 56px;
+  width: 100%;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.secondaryActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.startOver {
+  margin-top: 20px;
+  border-top: 1px solid var(--slate-200);
+  padding-top: 16px;
+}
+
+.startOver summary {
+  cursor: pointer;
+  color: var(--slate-700);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.startOver form {
+  margin-top: 12px;
+}
+
+.completionCard {
+  display: grid;
+  gap: 16px;
+  margin-top: 26px;
+  border: 1px solid #a7ddca;
+  border-radius: var(--radius-md);
+  background: var(--green-100);
+  padding: 20px;
+}
+
+.completionCard p {
+  margin: 0;
+}
+
+.reference {
+  overflow-wrap: anywhere;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 12px 14px;
+  color: var(--green-700);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 800;
+}
+
+.sandboxPanel {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.sandboxResult {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #c5dae8;
+  border-radius: var(--radius-md);
+  background: var(--blue-100);
+  padding: 18px;
+}
+
+.sandboxCode {
+  color: var(--navy-900);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.linkRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.linkRow a {
+  color: var(--blue-700);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+@media (max-width: 760px) {
+  .secondaryActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .codeInput {
+    font-size: 1.15rem;
+    letter-spacing: 0.16em;
+  }
+}

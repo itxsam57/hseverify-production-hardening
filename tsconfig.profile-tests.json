@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": ".profile-test-dist",
+    "rootDir": "src/lib/worker",
+    "lib": ["ES2022", "DOM"],
+    "noEmitOnError": true
+  },
+  "include": ["src/lib/worker/profile-domain.ts"]
+}

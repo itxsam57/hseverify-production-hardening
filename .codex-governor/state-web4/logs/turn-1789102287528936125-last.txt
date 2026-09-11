@@ -1,0 +1,9 @@
+I could not continue the native Codex work because the local Codex tool execution was blocked by the runtime safety check before any command ran. No repository state was changed.
+
+The attempted continuation was:
+
+- open the existing mission ledger
+- verify current branch/HEAD/dirty state
+- continue remaining actionable items from the checkpoint
+
+The tool layer rejected the local execution request, so I do not have fresh evidence from the repository to safely claim progress.

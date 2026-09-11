@@ -1,0 +1,17 @@
+I’m unable to continue the repository mission from this turn because the native repository execution tools (shell/Codex workspace access) are not available in the current tool set. I cannot truthfully update `mission.md`, inspect the branch, run gates, or claim progress without fresh repository evidence.
+
+The continuation point remains:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Last known HEAD: `b8fd9609284bea8b52a6bcb159f208796ff6480f`
+- Working tree must be preserved.
+- Next required actions remain:
+  
+  1. Read [.codex-governor/mission.md](<.codex-governor/mission.md>).
+  2. Reconcile all remaining actionable rows against the actual implementation.
+  3. Run available repository/browser/staging checks.
+  4. Fix discovered issues.
+  5. Write concrete evidence back into `mission.md`.
+  6. Run final certification gates.
+
+I will not mark the mission complete until those actions have been executed with repository evidence.

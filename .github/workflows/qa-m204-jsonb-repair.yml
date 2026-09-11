@@ -1,0 +1,88 @@
+name: QA M2.04 JSONB Repair
+
+on:
+  push:
+    branches: [qa/hard-browser-m2-02-m2-06]
+    paths:
+      - ".github/workflows/qa-m204-jsonb-repair.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: qa/hard-browser-m2-02-m2-06
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Apply exact JSONB boundary and runtime-stack repairs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          service = Path('src/lib/question-bank/question-bank-service.ts')
+          text = service.read_text()
+          old = '''const iso=(value:string|Date)=>value instanceof Date?value.toISOString():new Date(value).toISOString();
+          function json(value:unknown):unknown{return typeof value==="string"?JSON.parse(value):value;}
+          function stringArray(value:unknown):readonly string[]{const parsed=json(value);if(!Array.isArray(parsed)||parsed.some(v=>typeof v!=="string"))throw new QuestionBankConflictError("Stored question options/tags are invalid.");return Object.freeze(parsed as string[]);}
+          function answer(value:unknown):QuestionAnswerKey{const parsed=json(value);if(parsed===null||typeof parsed==="string"||typeof parsed==="boolean"||(typeof parsed==="number"&&Number.isFinite(parsed)))return parsed;throw new QuestionBankConflictError("Stored question answer key is invalid.");}
+          function rubric(value:unknown):WrittenRubric|null{if(value===null||value===undefined)return null;const parsed=json(value);if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new QuestionBankConflictError("Stored question rubric is invalid.");return parsed as WrittenRubric;}
+          '''
+          new = '''const iso=(value:string|Date)=>value instanceof Date?value.toISOString():new Date(value).toISOString();
+          function jsonContainer(value:unknown):unknown{if(typeof value!=="string")return value;const trimmed=value.trim();if(!(trimmed.startsWith("[")||trimmed.startsWith("{")))return value;try{return JSON.parse(trimmed);}catch{throw new QuestionBankConflictError("Stored question JSON is invalid.");}}
+          function stringArray(value:unknown):readonly string[]{const parsed=jsonContainer(value);if(!Array.isArray(parsed)||parsed.some(v=>typeof v!=="string"))throw new QuestionBankConflictError("Stored question options/tags are invalid.");return Object.freeze(parsed as string[]);}
+          function answer(value:unknown,questionType:QuestionType):QuestionAnswerKey{if(questionType==="MULTIPLE_CHOICE"&&typeof value==="string")return value;if(questionType==="TRUE_FALSE"&&typeof value==="boolean")return value;if((questionType==="INTEGER"||questionType==="DECIMAL")&&typeof value==="number"&&Number.isFinite(value))return value;throw new QuestionBankConflictError("Stored question answer key is invalid.");}
+          function rubric(value:unknown):WrittenRubric|null{if(value===null||value===undefined)return null;const parsed=jsonContainer(value);if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new QuestionBankConflictError("Stored question rubric is invalid.");return parsed as WrittenRubric;}
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one JSON helper block, found {text.count(old)}; refusing unsafe patch.')
+          text = text.replace(old, new, 1)
+          old_call = 'answerKey:row.answer_key_json===null?null:answer(row.answer_key_json)'
+          new_call = 'answerKey:row.answer_key_json===null?null:answer(row.answer_key_json,row.question_type)'
+          if text.count(old_call) != 1:
+              raise SystemExit(f'Expected one answer decoder call, found {text.count(old_call)}; refusing unsafe patch.')
+          service.write_text(text.replace(old_call, new_call, 1))
+
+          runtime = Path('tests/platform/question-bank-runtime.test.mjs')
+          text = runtime.read_text()
+          old_ceiling = 'applyMigrationsThrough(d,ENV.releaseSha,"0036_question_bank")'
+          new_ceiling = 'applyMigrationsThrough(d,ENV.releaseSha,"0038_m2_04_audit_action_constraint_fix")'
+          if text.count(old_ceiling) != 1:
+              raise SystemExit(f'Expected one M2.04 migration ceiling, found {text.count(old_ceiling)}.')
+          text = text.replace(old_ceiling, new_ceiling, 1)
+          old_assert = 'assert.equal(made.version.questionType,type);assert.equal(made.version.versionNo,1);}'
+          new_assert = 'assert.equal(made.version.questionType,type);assert.equal(made.version.versionNo,1);if(Object.hasOwn(extra,"answerKey"))assert.deepEqual(made.version.answerKey,extra.answerKey);else{assert.equal(made.version.answerKey,null);assert.deepEqual(made.version.rubric,rubric);}}'
+          if text.count(old_assert) != 1:
+              raise SystemExit(f'Expected one canonical-type assertion loop, found {text.count(old_assert)}.')
+          runtime.write_text(text.replace(old_assert, new_assert, 1))
+          PY
+          git diff --check
+
+      - name: Prove M2.04 runtime and contracts
+        run: node scripts/run-question-bank-tests.mjs
+
+      - name: Typecheck and lint
+        run: |
+          npm run typecheck
+          npm run lint
+
+      - name: Commit only after green proof
+        run: |
+          git config user.name "hseverify-qa-bot"
+          git config user.email "hseverify-qa-bot@users.noreply.github.com"
+          rm .github/workflows/qa-m204-jsonb-repair.yml
+          git add src/lib/question-bank/question-bank-service.ts tests/platform/question-bank-runtime.test.mjs .github/workflows/qa-m204-jsonb-repair.yml
+          git diff --cached --check
+          git commit -m "fix(m2.04): decode JSONB scalar answer keys safely"
+          git push origin HEAD:qa/hard-browser-m2-02-m2-06

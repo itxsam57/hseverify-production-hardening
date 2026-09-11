@@ -1,0 +1,17 @@
+# M1.06 Subunit 1 Regression Addendum
+
+These stable IDs extend `docs/engineering/REGRESSION-REGISTER.md` for defects discovered while building the M1.06 secure-file storage authority foundation. They must remain protected even if this subunit is later refactored.
+
+| ID | Defect prevented | Root cause | Expected behaviour | Permanent automated guard | Status |
+|---|---|---|---|---|---|
+| REG-036 | A metadata-only file reservation changes M1.05 audit/outbox vocabulary before any bytes have been accepted or quarantined | The first 0011 draft treated reserving a future object slot as a material evidence lifecycle event and prematurely coupled Subunit 1 to later upload semantics | Subunit 1 owns only secure-file metadata/storage authority; migration 0011 and its rollback do not alter `platform_audit_events` or `platform_outbox_jobs`. Material file audit/job vocabulary begins only with the later subunit that actually accepts/processes bytes | `check-secure-file-foundation.mjs` explicitly rejects M1.05 audit/outbox mutation in migration 0011 and rollback | PROTECTED |
+| REG-037 | Application code can choose its own “trusted” local storage base and thereby turn an arbitrary filesystem path into storage authority | The first server wrapper re-exported the low-level `LocalTestPrivateObjectStorage` constructor, including its caller-supplied trusted base | Application code receives only a server-only factory pinned to `process.cwd()` and the single fixed `.data/private-objects` root; direct imports of the low-level storage core from other application source are rejected | `check-secure-file-foundation.mjs`; `private-object-storage.test.mjs` root/traversal cases | PROTECTED |
+| REG-038 | A symlink inside an otherwise valid private-storage path redirects object reads/writes outside the trusted root | Lexical `relative()` containment alone does not prove the filesystem-resolved path remains inside the trusted base and does not prove an existing object is a regular file | Every base-to-root directory segment and the `secure-files` object directory reject symlinks; the real resolved root/object directory must remain contained; existing object paths must be regular non-symlink files before read/retry/stat/delete | `check-secure-file-foundation.mjs`; `private-object-storage.test.mjs` symbolic-link escape cases | PROTECTED |
+
+## Inherited regression classes exercised during this build
+
+- **REG-027 — forward migration compatibility:** adding `0011` exposed accepted tests that incorrectly treated `0010` as the repository-wide latest migration. The M1.05 final and email-delivery tests now derive the live migration manifest while still proving their owned-layer order and rollback semantics.
+- **REG-033 — valid lower-layer fixture discipline:** the first secure-file platform fixture fabricated non-hex “hashes”; the database correctly rejected them. The fixture now generates real SHA-256 values rather than weakening storage constraints.
+- **REG-035 — semantic source guards:** an early secure-file source guard rejected an internal property spelling instead of testing the actual storage-root authority. The guard now asserts the public factory contract and fixed server-owned root semantically.
+
+The central register should preserve REG-036 through REG-038 when it is next consolidated; this addendum is already part of the permanent engineering gate evidence for M1.06 Subunit 1.

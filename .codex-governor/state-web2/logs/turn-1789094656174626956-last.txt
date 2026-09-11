@@ -1,0 +1,11 @@
+I cannot continue the repository execution from this turn because the native Codex execution tools needed to inspect, modify, test, and update the working tree are not available in the current session.
+
+The mission state to resume is clear:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Continue from existing dirty tree.
+- Read [.codex-governor/mission.md](<.codex-governor/mission.md>).
+- Process remaining actionable rows starting with M1.08–M1.11, then M2/M3, then X01–X04.
+- Update `mission.md` only with verified evidence from actual repository/browser/test results.
+
+No repository state has been changed in this turn.

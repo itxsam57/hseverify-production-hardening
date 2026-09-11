@@ -1,0 +1,3 @@
+I could not resume the native Codex session because the provided Codex tool token was rejected as invalid or expired before any repository command could run.
+
+No repository state was changed. The next step is to start a new native Codex session with a fresh task token so I can read [.codex-governor/mission.md](<.codex-governor/mission.md>), inspect the current branch/dirty state, and continue from the existing checkpoint.

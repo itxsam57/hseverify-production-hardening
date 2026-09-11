@@ -1,0 +1,83 @@
+name: M2.06 targeted TDD gate
+
+on:
+  push:
+    branches: [feat/m2-06-assessment-catalogue-eligibility]
+    paths:
+      - "database/migrations/0040_assessment_catalogue_eligibility.*"
+      - "src/lib/assessment-catalogue/**"
+      - "src/lib/authorization/authorization-domain.ts"
+      - "src/lib/audit/audit-domain.ts"
+      - "src/app/admin/(portal)/assessment-catalogue/**"
+      - "src/app/worker/(portal)/available-assessments/**"
+      - "src/components/auth/role-portal-shell.tsx"
+      - "tests/platform/assessment-catalogue-contract.test.mjs"
+      - "tests/platform/assessment-catalogue-runtime.test.mjs"
+      - "tests/platform/assessment-catalogue-eligibility-runtime.test.mjs"
+      - "tests/platform/assessment-catalogue-ui-contract.test.mjs"
+      - "scripts/run-assessment-catalogue-runtime-tests.mjs"
+      - "scripts/run-assessment-catalogue-eligibility-tests.mjs"
+      - "scripts/run-assessment-catalogue-tests.mjs"
+      - "scripts/hard-browser-m2-06.mjs"
+      - ".github/workflows/m2-06-targeted.yml"
+      - ".github/workflows/m2-06-browser.yml"
+  pull_request:
+    branches: [feat/m2-05-randomized-assessment-forms, qa/hard-browser-m2-02-m2-06, main]
+    paths:
+      - "database/migrations/0040_assessment_catalogue_eligibility.*"
+      - "src/lib/assessment-catalogue/**"
+      - "src/lib/authorization/authorization-domain.ts"
+      - "src/lib/audit/audit-domain.ts"
+      - "src/app/admin/(portal)/assessment-catalogue/**"
+      - "src/app/worker/(portal)/available-assessments/**"
+      - "src/components/auth/role-portal-shell.tsx"
+      - "tests/platform/assessment-catalogue-contract.test.mjs"
+      - "tests/platform/assessment-catalogue-runtime.test.mjs"
+      - "tests/platform/assessment-catalogue-eligibility-runtime.test.mjs"
+      - "tests/platform/assessment-catalogue-ui-contract.test.mjs"
+      - "scripts/run-assessment-catalogue-runtime-tests.mjs"
+      - "scripts/run-assessment-catalogue-eligibility-tests.mjs"
+      - "scripts/run-assessment-catalogue-tests.mjs"
+      - "scripts/hard-browser-m2-06.mjs"
+      - ".github/workflows/m2-06-targeted.yml"
+      - ".github/workflows/m2-06-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_SESSION_SECRET: m2-06-targeted-session-secret-with-at-least-thirty-two-characters
+      HSE_AUTH_PEPPER: m2-06-targeted-auth-pepper-with-at-least-thirty-two-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: m2-06-targeted-sandbox-key
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_RELEASE_SHA: m2-06-targeted
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: M2.06 contract RED/GREEN suite
+        run: node --test tests/platform/assessment-catalogue-contract.test.mjs
+      - name: M2.06 Admin and Worker UI RED/GREEN contract
+        run: node --test tests/platform/assessment-catalogue-ui-contract.test.mjs
+      - name: M2.06 audit action domain/schema synchronization
+        run: node --test tests/platform/audit-action-constraint-sync.test.mjs
+      - name: M2.06 Admin catalogue runtime RED/GREEN suite
+        run: node scripts/run-assessment-catalogue-runtime-tests.mjs
+      - name: M2.06 Worker eligibility runtime RED/GREEN suite
+        run: node scripts/run-assessment-catalogue-eligibility-tests.mjs
+      - name: Strict TypeScript
+        run: npm run typecheck

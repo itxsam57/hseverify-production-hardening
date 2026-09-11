@@ -1,0 +1,36 @@
+name: M1.10 targeted TDD gate
+
+on:
+  push:
+    branches:
+      - build/m1-10-worker-invitations-company-codes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m1-10-targeted-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m1-10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: M1.10 static architecture contract
+        run: node scripts/check-company-worker-invitations.mjs
+      - name: M1.10 runtime and migration contract
+        if: always()
+        run: node scripts/run-company-worker-invitation-tests.mjs
+      - name: Lower-brick authentication rollback regression
+        if: always()
+        run: npm run test:auth-platform

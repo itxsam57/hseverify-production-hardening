@@ -1,0 +1,59 @@
+name: M1.12 targeted TDD gate
+
+on:
+  push:
+    branches:
+      - build/m1-12-public-verification-foundation
+  pull_request:
+    paths:
+      - "database/migrations/0031_public_verification_foundation.*"
+      - "database/migrations/0032_public_verification_concern_evidence.*"
+      - "src/lib/public-verification/**"
+      - "src/lib/secure-files/secure-file-domain.ts"
+      - "src/app/verify/**"
+      - "src/app/contact/**"
+      - "src/components/public-verification/**"
+      - "tests/platform/public-verification-*.test.mjs"
+      - "scripts/check-public-verification-foundation.mjs"
+      - "scripts/run-public-verification-tests.mjs"
+      - "package.json"
+      - ".github/workflows/m1-12-targeted-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m1-12-targeted-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  m1-12:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact M1.12 head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: M1.12 fail-closed source contract
+        run: npm run check:m1-12
+
+      - name: M1.12 runtime and migration contract
+        run: npm run test:m1-12
+
+      - name: Strict TypeScript
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint

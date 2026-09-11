@@ -1,0 +1,19 @@
+Continued from the previous native session checkpoint.
+
+Completed:
+
+- Read [.codex-governor/mission.md](<.codex-governor/mission.md>).
+- Stayed on `codex/hseverify-full-hardening-20260911`.
+- Preserved the dirty working tree and continued from `b8fd9609284bea8b52a6bcb159f208796ff6480f`.
+- Reverified M1.12 public verification work.
+
+Evidence:
+
+- `npm run test:m1-12` ✅ passed **28/28**
+- `npm run check:m1-12` ✅ passed
+
+Updated the mission ledger:
+
+- Marked **HSE-M1.12 VERIFIED\_DONE** with the test and contract evidence.
+
+Remaining actionable items are still the broader hardening work (M1.08–M1.11 revalidation, M2/M3 audit/completion, X release certification, UI/browser matrix, external behavior checks). I will continue from the next actionable item.

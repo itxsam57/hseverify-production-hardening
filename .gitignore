@@ -1,0 +1,56 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+/.profile-test-dist
+/.auth-test-dist
+/.authorization-test-dist
+/playwright-report/
+/test-results/
+/screenshots/
+/videos/
+/traces/
+/full-terminal-logs/
+
+# generated engineering summaries and reports
+/.engineering/
+/.reports/
+
+# next.js generated output
+/.next/
+/.next-development/
+/.next-typecheck/
+/.next-runtime-smoke/
+/.hse-next/
+/out/
+
+# production and preview artifacts
+/build
+/.preview-bundle/
+/release-manifest.json
+
+# local application data
+/.data/
+
+# local environment files
+.env*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# operating systems and editors
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# TypeScript generated files
+*.tsbuildinfo
+next-env.d.ts

@@ -1,0 +1,212 @@
+name: Independent full-system audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "database/**"
+      - "scripts/**"
+      - "tests/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.*"
+      - "tsconfig*.json"
+      - "eslint.config.*"
+      - ".github/workflows/**"
+      - ".engineering/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "database/**"
+      - "scripts/**"
+      - "tests/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.*"
+      - "tsconfig*.json"
+      - "eslint.config.*"
+      - ".github/workflows/**"
+      - ".engineering/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      HSE_APP_ENV: test
+      HSE_RELEASE_SHA: independent-audit
+      HSE_DEPLOYMENT_ID: independent-audit
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: /tmp/hseverify-independent-audit-db
+      HSE_SESSION_SECRET: independent-audit-session-secret-2026-at-least-32-characters
+      HSE_AUTH_PEPPER: independent-audit-auth-pepper-2026-at-least-32-characters
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: independent-audit-sandbox-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_DEMO_PROFILE_IDENTITY_LOCKED: "false"
+      HSE_BROWSER_BASE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact tested head
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked application dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate independent audit harness syntax
+        run: |
+          node --check scripts/independent-audit-static.mjs
+          node --check scripts/independent-audit-database.mjs
+          node --check scripts/independent-audit-seed.mjs
+          node --check scripts/independent-audit-browser.mjs
+          node --check scripts/independent-audit-contract-corrections.mjs
+          node --check scripts/independent-audit-finalize.mjs
+
+      - name: Fresh static and dead-code audit
+        run: node scripts/independent-audit-static.mjs
+
+      - name: Fresh database migration and integrity audit
+        run: node scripts/independent-audit-database.mjs
+
+      - name: Run generic compiler dependency and production-build checks without stopping at first failure
+        shell: bash
+        run: |
+          mkdir -p artifacts/independent-audit
+          : > artifacts/independent-audit/commands.tsv
+          run_check() {
+            local name="$1"
+            shift
+            set +e
+            "$@" > "artifacts/independent-audit/${name}.log" 2>&1
+            local code=$?
+            set -e
+            printf '%s\t%s\n' "$name" "$code" >> artifacts/independent-audit/commands.tsv
+            echo "${name}: exit ${code}"
+            return 0
+          }
+          run_check validate_env npm run validate:env
+          run_check typecheck npm run typecheck
+          run_check lint npm run lint
+          run_check dependency_audit npm audit --omit=dev --audit-level=moderate
+          run_check production_build npm run build
+
+      - name: Create clean persistent browser database
+        run: |
+          rm -rf "$HSE_PGLITE_DATA_DIR"
+          npm run db:migrate
+
+      - name: Seed independent role fixtures
+        run: node scripts/independent-audit-seed.mjs
+
+      - name: Install pinned Playwright without changing the repository lockfile
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Start application in production mode when build passed, otherwise development fallback for continued bug discovery
+        shell: bash
+        run: |
+          build_code=$(awk -F '\t' '$1=="production_build" {print $2}' artifacts/independent-audit/commands.tsv | tail -1)
+          if [ "$build_code" = "0" ]; then
+            echo production > artifacts/independent-audit/server-mode.txt
+            npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/independent-audit-server.log 2>&1 &
+          else
+            echo development-fallback > artifacts/independent-audit/server-mode.txt
+            npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/independent-audit-server.log 2>&1 &
+          fi
+          echo $! > /tmp/independent-audit-server.pid
+          for attempt in $(seq 1 150); do
+            if curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/ | grep -Eq '^[234][0-9][0-9]$'; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/independent-audit-server.pid)" 2>/dev/null; then
+              cat /tmp/independent-audit-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/independent-audit-server.log
+          exit 1
+
+      - name: Fresh consumer and UI UX Chromium audit
+        run: node scripts/independent-audit-browser.mjs
+
+      - name: Re-probe known audit-harness ambiguities with production contracts
+        if: always()
+        run: node scripts/independent-audit-contract-corrections.mjs
+
+      - name: Preserve server log
+        if: always()
+        run: |
+          mkdir -p artifacts/independent-audit
+          cp /tmp/independent-audit-server.log artifacts/independent-audit/server.log || true
+
+      - name: Produce complete independent defect ledger
+        if: always()
+        run: node scripts/independent-audit-finalize.mjs
+
+      - name: Upload pre-crosscheck independent audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-audit-pre-crosscheck-${{ github.sha }}
+          path: artifacts/independent-audit
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Existing full regression gate cross-check after independent audit
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          npm run verify:full > artifacts/independent-audit/existing_full_regression_crosscheck.log 2>&1
+          code=$?
+          set -e
+          printf '%s\t%s\n' existing_full_regression_crosscheck "$code" >> artifacts/independent-audit/commands.tsv
+          echo "existing_full_regression_crosscheck: exit ${code}"
+          node scripts/independent-audit-finalize.mjs
+          exit 0
+
+      - name: Upload full independent audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-full-system-audit-${{ github.sha }}
+          path: artifacts/independent-audit
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Enforce zero critical and high independent-audit findings
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const report = JSON.parse(await readFile("artifacts/independent-audit/FINAL-AUDIT.json", "utf8"));
+          console.log(JSON.stringify({ verdict: report.verdict, counts: report.counts }, null, 2));
+          if (report.verdict !== "NO_BLOCKING_DEFECTS_FOUND" || report.counts?.critical !== 0 || report.counts?.high !== 0) {
+            console.error("Independent full-system audit found blocking defects.");
+            process.exit(1);
+          }
+          NODE

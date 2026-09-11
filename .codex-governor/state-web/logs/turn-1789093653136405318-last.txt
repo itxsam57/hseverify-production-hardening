@@ -1,0 +1,20 @@
+I cannot continue the HSE Verify implementation from this turn because the available tools only provide access to conversation/library files. They do not provide the repository workspace operations required for this mission:
+
+- inspect the current git branch/worktree
+- edit source and migrations
+- run the test suites and browser checks
+- update [.codex-governor/mission.md](<.codex-governor/mission.md>)
+- commit/push `codex/hseverify-full-hardening-20260911`
+
+The last verified state remains:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- M2.08 existing draft/autosave verification: **55/55 passing**
+- Mission ledger still requires real execution evidence for:
+  
+  - M1.08–M1.12
+  - M2.01–M2.13
+  - M3.01–M3.12
+  - X01–X04
+
+A Codex session with the repository tools enabled is required to continue the same mission and produce the evidence-backed ledger updates.

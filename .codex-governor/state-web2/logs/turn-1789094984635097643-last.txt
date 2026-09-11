@@ -1,0 +1,18 @@
+I can continue the mission, but this session does not currently have access to the repository execution tools needed to inspect the working tree, run tests, modify `mission.md`, or verify the remaining HSE rows.
+
+The previous checkpoint information is preserved:
+
+- Branch: `codex/hseverify-full-hardening-20260911`
+- Last known HEAD: `b8fd9609284bea8b52a6bcb159f208796ff6480f`
+- Remaining ledger work includes M1.08–M1.11, M2.01–M2.13, M3.01–M3.12, X01–X04.
+
+Once the native repository tools are available again, the next actions are:
+
+1. Read [.codex-governor/mission.md](<.codex-governor/mission.md>).
+2. Map every remaining actionable row to actual code paths.
+3. Run the required implementation and external behavior verification.
+4. Fix any discovered gaps.
+5. Update each ledger row with concrete evidence.
+6. Run final release certification gates.
+
+I won’t mark anything complete until the repository evidence supports it.
