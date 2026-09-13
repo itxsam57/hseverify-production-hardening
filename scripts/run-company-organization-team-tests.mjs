@@ -139,6 +139,10 @@ writeFileSync(
   "utf8"
 );
 
+if (process.env.HSE_COMPANY_ORGANIZATION_TEAM_SKIP_TEST === "1") {
+  process.exit(0);
+}
+
 const tests = spawnSync(
   process.execPath,
   [

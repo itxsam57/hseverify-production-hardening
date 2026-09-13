@@ -5,7 +5,9 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { ensureCompanyWorkforceRuntime } from "../helpers/company-workforce-runtime-bootstrap.mjs";
 
+ensureCompanyWorkforceRuntime();
 const runtime = process.env.HSE_COMPANY_WORKFORCE_RUNTIME_DIST;
 assert.ok(runtime, "HSE_COMPANY_WORKFORCE_RUNTIME_DIST is required");
 const serviceModule = await import(pathToFileURL(join(runtime, "company", "company-workforce-service.js")).href);

@@ -6,8 +6,18 @@ import test from "node:test";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
-const runtime = process.env.HSE_COMPANY_ORGANIZATION_TEAM_RUNTIME_DIST;
-assert.ok(runtime, "HSE_COMPANY_ORGANIZATION_TEAM_RUNTIME_DIST is required");
+const runtime = process.env.HSE_COMPANY_ORGANIZATION_TEAM_RUNTIME_DIST ??
+  ".company-organization-team-runtime-test-dist";
+
+if (!process.env.HSE_COMPANY_ORGANIZATION_TEAM_RUNTIME_DIST) {
+  const { spawnSync } = await import("node:child_process");
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/run-company-organization-team-tests.mjs"],
+    { stdio: "inherit", env: { ...process.env, HSE_COMPANY_ORGANIZATION_TEAM_SKIP_TEST: "1" } }
+  );
+  assert.equal(result.status, 0, "M1.09 runtime preparation failed");
+}
 
 const organizationModule = await import(
   pathToFileURL(join(runtime, "company", "company-organization-repository.js")).href

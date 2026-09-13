@@ -326,11 +326,12 @@ export function useAssessmentDraftAutosave(input: {
 
   useEffect(() => {
     mountedRef.current = true;
+    const idleWaiters = idleWaitersRef.current;
     return () => {
       mountedRef.current = false;
       clearDebounce();
       clearRetry();
-      for (const resolve of idleWaitersRef.current.splice(0)) resolve();
+      for (const resolve of idleWaiters.splice(0)) resolve();
     };
   }, [clearDebounce, clearRetry]);
 

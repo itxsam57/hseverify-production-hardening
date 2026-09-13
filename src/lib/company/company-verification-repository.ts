@@ -458,7 +458,7 @@ export class CompanyVerificationRepository {
             normalized.companySize,
             normalized.website,
             normalized.authorizedRepresentative,
-            manager.verifiedEmail,
+            versionRow.business_email_normalized,
             normalized.businessPhone,
             input.expectedDraftRevision
           ]
@@ -624,13 +624,11 @@ export class CompanyVerificationRepository {
            ON files.file_id = evidence.secure_file_id
          WHERE evidence.version_id = $1
            AND evidence.binding_status = 'active'
-           AND files.owner_account_id = $2
            AND files.owner_role = 'company'
-           AND files.tenant_id = $3
-           AND files.membership_id = $4
+           AND files.tenant_id = $2
            AND files.lifecycle_status = 'available'
          FOR UPDATE OF evidence, files`,
-        [versionRow.version_id, manager.accountId, manager.tenantId, manager.membershipId]
+        [versionRow.version_id, manager.tenantId]
       );
       if (evidence.rows.length < 1) requirements.push("Company evidence");
       if (requirements.length > 0) {
@@ -803,7 +801,7 @@ export class CompanyVerificationRepository {
           current.company_size,
           current.website,
           current.authorized_representative,
-          manager.verifiedEmail,
+          current.business_email_normalized,
           current.business_phone_e164,
           current.terms_accepted_at,
           current.privacy_accepted_at

@@ -1,0 +1,40 @@
+{
+  "milestone": "HSE-M2.06",
+  "implementationFiles": [
+    "src/lib/assessment-catalogue/assessment-catalogue-domain.ts",
+    "src/lib/assessment-catalogue/assessment-catalogue-service.ts",
+    "src/lib/assessment-catalogue/assessment-catalogue-eligibility-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/worker/(portal)/available-assessments/page.tsx",
+    "src/app/admin/(portal)/assessment-catalogue/page.tsx"
+  ],
+  "behaviorTests": [
+    "tests/platform/assessment-catalogue-eligibility-runtime.test.mjs",
+    "tests/platform/assessment-catalogue-runtime.test.mjs",
+    "tests/platform/assessment-catalogue-rollback.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/assessment-catalogue-eligibility-runtime.test.mjs"],
+    ["node", "scripts/run-assessment-catalogue-runtime-tests.mjs"],
+    ["node", "--test", "tests/platform/assessment-catalogue-rollback.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m2-06-assessment-catalogue.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m2-06-assessment-catalogue.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/assessment-catalogue-eligibility-runtime.test.mjs",
+    "tests/platform/assessment-catalogue-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/assessment-catalogue-eligibility-runtime.test.mjs"],
+    ["node", "scripts/run-assessment-catalogue-runtime-tests.mjs"]
+  ],
+  "regressionCommands": [
+    ["node", "scripts/run-assessment-catalogue-eligibility-tests.mjs"],
+    ["node", "scripts/run-assessment-catalogue-runtime-tests.mjs"]
+  ]
+}

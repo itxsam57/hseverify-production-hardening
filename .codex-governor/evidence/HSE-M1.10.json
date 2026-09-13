@@ -1,0 +1,34 @@
+{
+  "milestone": "HSE-M1.10",
+  "implementationFiles": [
+    "src/lib/company/company-workforce-domain.ts",
+    "src/lib/company/company-workforce-service.ts",
+    "src/lib/company/company-workforce-registration-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/company/(portal)/invitations/actions.ts",
+    "src/app/company/(portal)/invitations/page.tsx",
+    "src/components/company/company-workforce-invitations-workspace.tsx",
+    "src/app/worker/company-invitations/[token]/page.tsx",
+    "src/app/worker/(portal)/company-access/page.tsx",
+    "scripts/run-company-worker-invitation-tests.mjs",
+    "scripts/check-company-worker-invitations.mjs",
+    "tests/browser/m1-10-company-worker-invitations.browser.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/company-worker-invitations.test.mjs",
+    "tests/platform/company-worker-registration-binding.test.mjs",
+    "tests/platform/company-worker-login-return.test.mjs",
+    "tests/platform/company-worker-expiry-lifecycle.test.mjs",
+    "tests/platform/company-worker-invitations-migration-stack.test.mjs"
+  ],
+  "behaviorCommands": [["node", "--test", "tests/platform/company-worker-invitations.test.mjs"], ["node", "--test", "tests/platform/company-worker-registration-binding.test.mjs"], ["node", "--test", "tests/platform/company-worker-login-return.test.mjs"], ["node", "--test", "tests/platform/company-worker-expiry-lifecycle.test.mjs"], ["node", "--test", "tests/platform/company-worker-invitations-migration-stack.test.mjs"]],
+  "browserTests": ["tests/browser/m1-10-company-worker-invitations.browser.test.mjs"],
+  "browserCommands": [["node", "--test", "tests/browser/m1-10-company-worker-invitations.browser.test.mjs"]],
+  "securityTests": [
+    "tests/platform/company-worker-invitations.test.mjs",
+    "tests/platform/company-worker-registration-binding.test.mjs"
+  ],
+  "securityCommands": [["node", "--test", "tests/platform/company-worker-invitations.test.mjs"], ["node", "--test", "tests/platform/company-worker-registration-binding.test.mjs"]],
+  "regressionCommands": [["npm", "run", "check:m1-10"]]
+}

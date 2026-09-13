@@ -1,0 +1,8 @@
+[
+  {
+    "name": "provision real M2.06 Admin through Root invitation flow",
+    "status": "FAIL",
+    "ms": 15319,
+    "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.security-key-card strong') to be visible\u001b[22m\n"
+  }
+]

@@ -8,6 +8,7 @@ const links = [
   { href: "/worker/profile", label: "My profile", icon: "◎" },
   { href: "/worker/identity", label: "Identity", icon: "◇" },
   { href: "/worker/evidence", label: "Evidence", icon: "▤" },
+  { href: "/worker/passport", label: "Digital passport", icon: "▣" },
   { href: "/worker/available-assessments", label: "Available assessments", icon: "▦" },
   { href: "/worker/company-access", label: "Company access", icon: "↔" },
   { href: "/worker/notifications", label: "Notifications", icon: "♢" }

@@ -1,0 +1,98 @@
+{
+  "milestone": "HSE-M2.05",
+  "implementationFiles": [
+    "src/lib/assessment-generation/assessment-blueprint-domain.ts",
+    "src/lib/assessment-generation/assessment-blueprint-service.ts",
+    "src/lib/assessment-generation/assessment-form-generation-service.ts",
+    "src/lib/assessment-generation/assessment-form-delivery-service.ts",
+    "src/lib/assessment-generation/assessment-selector-matching.ts"
+  ],
+  "integrationFiles": [
+    "src/app/admin/(portal)/assessment-blueprints/page.tsx",
+    "src/app/worker/(portal)/assessments/[attemptId]/page.tsx"
+  ],
+  "behaviorTests": [
+    "tests/platform/randomized-assessment-form-contract.test.mjs",
+    "tests/platform/randomized-assessment-form-integrity.test.mjs",
+    "tests/platform/randomized-assessment-form-rollback.test.mjs",
+    "tests/platform/randomized-assessment-selector-matching.test.mjs",
+    "tests/platform/randomized-assessment-form-runtime.test.mjs",
+    "tests/platform/randomized-assessment-cross-case-race.test.mjs",
+    "tests/platform/assessment-form-delivery.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-form-contract.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-form-integrity.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-form-rollback.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-selector-matching.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-form-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-cross-case-race.test.mjs"
+    ],
+    [
+      "node",
+      "scripts/run-assessment-form-delivery-tests.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m2-05-assessment-generation.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m2-05-assessment-generation.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/assessment-form-delivery.test.mjs",
+    "tests/platform/randomized-assessment-form-integrity.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "scripts/run-assessment-form-delivery-tests.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/randomized-assessment-form-integrity.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "node",
+      "scripts/run-assessment-generation-tests.mjs"
+    ],
+    [
+      "node",
+      "scripts/run-assessment-generation-runtime-tests.mjs"
+    ],
+    [
+      "node",
+      "scripts/run-assessment-blueprint-runtime-tests.mjs"
+    ]
+  ]
+}

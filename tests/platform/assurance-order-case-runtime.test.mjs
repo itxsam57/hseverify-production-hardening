@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -6,8 +7,11 @@ import test from "node:test";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
+if (!process.env.HSE_ASSURANCE_ORDER_RUNTIME_DIST) {
+  const result = spawnSync(process.execPath, ["scripts/run-assurance-order-case-runtime-tests.mjs"], { stdio: "inherit" });
+  process.exit(result.status ?? 1);
+}
 const runtime = process.env.HSE_ASSURANCE_ORDER_RUNTIME_DIST;
-assert.ok(runtime, "HSE_ASSURANCE_ORDER_RUNTIME_DIST is required");
 const domainModule = await import(pathToFileURL(join(runtime, "assurance", "assurance-order-domain.js")).href);
 const serviceModule = await import(pathToFileURL(join(runtime, "assurance", "assurance-order-service.js")).href);
 const actionModule = await import(pathToFileURL(join(runtime, "assurance", "assurance-action-centre-service.js")).href);

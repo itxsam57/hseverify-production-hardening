@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { loadAssessmentAttemptRuntime } from "../helpers/assessment-attempt-runtime-loader.mjs";
 import {
   ATTEMPT_NOW_DATE,
   countRows,
@@ -12,8 +13,7 @@ import {
   seedWorkerPrincipal
 } from "../helpers/assessment-attempt-fixture.mjs";
 
-const runtime = process.env.HSE_ASSESSMENT_ATTEMPT_RUNTIME_DIST;
-assert.ok(runtime, "HSE_ASSESSMENT_ATTEMPT_RUNTIME_DIST is required");
+const runtime = process.env.HSE_ASSESSMENT_ATTEMPT_RUNTIME_DIST ?? loadAssessmentAttemptRuntime();
 const serviceModule = await import(
   pathToFileURL(join(runtime, "assessment-attempt", "assessment-attempt-service.js")).href
 );

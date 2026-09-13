@@ -1,0 +1,35 @@
+{
+  "milestone": "HSE-M2.04",
+  "implementationFiles": [
+    "src/lib/question-bank/question-bank-domain.ts",
+    "src/lib/question-bank/question-bank-service.ts",
+    "src/lib/question-bank/question-delivery-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/admin/(portal)/question-bank/page.tsx"
+  ],
+  "behaviorTests": [
+    "tests/platform/question-bank-contract.test.mjs",
+    "tests/platform/question-bank-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/question-bank-contract.test.mjs"],
+    ["node", "--test", "tests/platform/question-bank-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m2-04-question-bank.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m2-04-question-bank.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/question-bank-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/question-bank-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["node", "scripts/run-question-bank-tests.mjs"],
+    ["node", "scripts/run-question-bank-runtime-tests.mjs"]
+  ]
+}

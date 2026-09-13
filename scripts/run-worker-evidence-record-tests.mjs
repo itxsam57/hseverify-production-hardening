@@ -174,5 +174,7 @@ const result = spawnSync(
   }
 );
 
-rmSync(outputDirectory, { recursive: true, force: true });
+if (!process.env.KEEP_HSE_WORKER_EVIDENCE_RUNTIME_DIST) {
+  rmSync(outputDirectory, { recursive: true, force: true });
+}
 process.exit(result.status ?? 1);

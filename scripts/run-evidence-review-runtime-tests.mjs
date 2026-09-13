@@ -100,6 +100,10 @@ writeFileSync(
   "utf8"
 );
 
+if (process.env.HSE_EVIDENCE_REVIEW_PREPARE_ONLY === "1") {
+  process.exit(0);
+}
+
 const tests = spawnSync(process.execPath, ["--test", resolve("tests", "platform", "evidence-review-queue-runtime.test.mjs")], {
   stdio: "inherit",
   env: { ...process.env, HSE_EVIDENCE_REVIEW_RUNTIME_DIST: outputDirectory }

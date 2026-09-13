@@ -1,0 +1,70 @@
+{
+  "milestone": "HSE-M1.12",
+  "implementationFiles": [
+    "src/lib/public-verification/public-verification-domain.ts",
+    "src/lib/public-verification/public-verification-service.ts",
+    "src/lib/public-verification/public-concern-file-service.ts",
+    "src/lib/public-verification/public-verification-repository.ts"
+  ],
+  "integrationFiles": [
+    "src/app/verify/page.tsx",
+    "src/app/verify/result/[publicToken]/page.tsx",
+    "src/app/verify/actions.ts",
+    "scripts/check-public-verification-foundation.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/public-verification-domain.test.mjs",
+    "tests/platform/public-verification-concern.test.mjs",
+    "tests/platform/public-verification-concern-evidence.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "scripts/run-public-verification-single-test.mjs",
+      "tests/platform/public-verification-domain.test.mjs"
+    ],
+    [
+      "node",
+      "scripts/run-public-verification-single-test.mjs",
+      "tests/platform/public-verification-concern.test.mjs"
+    ],
+    [
+      "node",
+      "scripts/run-public-verification-single-test.mjs",
+      "tests/platform/public-verification-concern-evidence.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m1-12-public-verification.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "scripts/run-public-verification-single-test.mjs",
+      "tests/browser/m1-12-public-verification.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/public-verification-rate-limit.test.mjs",
+    "tests/platform/public-verification-concern-evidence-rollback.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "scripts/run-public-verification-single-test.mjs",
+      "tests/platform/public-verification-rate-limit.test.mjs"
+    ],
+    [
+      "node",
+      "scripts/run-public-verification-single-test.mjs",
+      "tests/platform/public-verification-concern-evidence-rollback.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "check:m1-12"
+    ]
+  ]
+}

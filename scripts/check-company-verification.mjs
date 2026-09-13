@@ -17,6 +17,7 @@ const required = [
   "database/migrations/0025_company_verification_authority_integration.up.sql",
   "src/lib/company/company-verification-domain.ts",
   "src/lib/company/company-verification-repository.ts",
+  "src/lib/company/company-verification-review-service.ts",
   "src/lib/company/company-verification-service.ts",
   "src/lib/company/company-verification-secure-file-authority-repository.ts",
   "src/lib/company/company-registration-repository.ts",
@@ -28,6 +29,7 @@ const required = [
   "src/app/company/(portal)/settings/profile/actions.ts",
   "src/components/company/company-verification-workspace.tsx",
   "tests/platform/company-verification.test.mjs",
+  "tests/platform/company-verification-review-storage-boundary.test.mjs",
   "tests/platform/company-verification-transition-guards.test.mjs"
 ];
 for (const path of required) if (!existsSync(resolve(path))) fail(`M1.08 implementation is missing ${path}`);
@@ -102,6 +104,18 @@ for (const marker of [
 ]) requireMarker(verificationRepository, marker, "M1.08 verification repository");
 for (const forbidden of ["clientTenantId", "reviewerId:", "verifierId:", "providerId:", "storageRoot:", "objectKey: input"])
   forbidMarker(verificationRepository, forbidden, "M1.08 verification repository");
+
+const verificationReviewService = read("src/lib/company/company-verification-review-service.ts");
+for (const marker of [
+  "requireLocalTestStorageEnvironment",
+  'value !== "development" && value !== "test"',
+  "createLocalTestPrivateObjectStorage(storageEnvironment)"
+]) requireMarker(verificationReviewService, marker, "M1.08 verification evidence preview storage boundary");
+forbidMarker(
+  verificationReviewService,
+  "createLocalTestPrivateObjectStorage(env.appEnvironment)",
+  "M1.08 verification evidence preview must fail closed outside local/test storage"
+);
 
 const registrationService = read("src/lib/company/company-registration-service.ts");
 for (const marker of ["verifyTotp", "lastAcceptedCounter: factor.lastAcceptedCounter", "registrationFingerprint: companyRegistrationFingerprint", "createTotpSecret", "pending_email"])

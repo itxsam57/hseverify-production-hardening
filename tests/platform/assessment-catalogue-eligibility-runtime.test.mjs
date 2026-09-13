@@ -5,9 +5,9 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { ensureAssessmentCatalogueEligibilityRuntime } from "../helpers/assessment-catalogue-eligibility-runtime.mjs";
 
-const runtime = process.env.HSE_ASSESSMENT_CATALOGUE_ELIGIBILITY_RUNTIME_DIST;
-assert.ok(runtime, "HSE_ASSESSMENT_CATALOGUE_ELIGIBILITY_RUNTIME_DIST is required");
+const runtime = ensureAssessmentCatalogueEligibilityRuntime();
 const eligibilityModule = await import(
   pathToFileURL(join(runtime, "assessment-catalogue", "assessment-catalogue-eligibility-service.js")).href
 );

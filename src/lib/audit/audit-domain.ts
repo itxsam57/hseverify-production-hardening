@@ -116,7 +116,12 @@ export const AUDIT_ACTIONS = [
   "assessment.catalogue.revised",
   "assessment.catalogue.status.changed",
   "assessment.attempt.started",
-  "assessment.attempt.submitted"
+  "assessment.attempt.submitted",
+  "billing.checkout.created",
+  "billing.refund.requested",
+  "billing.reconciliation.completed",
+  "billing.subscription.started",
+  "billing.subscription.cancelled"
 ] as const;
 
 export const AUDIT_OUTCOMES = ["succeeded", "denied", "failed"] as const;

@@ -91,6 +91,12 @@ function compile(relativePath) {
 collect().forEach(compile);
 mkdirSync(resolve(out, "database"), { recursive: true });
 writeFileSync(resolve(out, "database", "database.js"), '"use strict";\nObject.defineProperty(exports,"__esModule",{value:true});\nexports.getDatabaseClient=async function(){throw new Error("M2.05 runtime injects its database client.");};\n', "utf8");
+
+if (process.env.HSE_ASSESSMENT_GENERATION_PREPARE_ONLY === "1") {
+  console.log(out);
+  process.exit(0);
+}
+
 const result = spawnSync(
   process.execPath,
   [

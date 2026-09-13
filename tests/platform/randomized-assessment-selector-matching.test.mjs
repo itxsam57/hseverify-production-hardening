@@ -1,10 +1,33 @@
 import assert from "node:assert/strict";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
+import ts from "typescript";
 
-const runtime = process.env.HSE_ASSESSMENT_SELECTOR_MATCHING_RUNTIME_DIST;
-assert.ok(runtime, "HSE_ASSESSMENT_SELECTOR_MATCHING_RUNTIME_DIST is required");
+const root = resolve("src", "lib");
+const generatedRuntime = resolve(".assessment-selector-matching-runtime-test-dist");
+const runtime = process.env.HSE_ASSESSMENT_SELECTOR_MATCHING_RUNTIME_DIST ?? generatedRuntime;
+
+if (!process.env.HSE_ASSESSMENT_SELECTOR_MATCHING_RUNTIME_DIST) {
+  rmSync(generatedRuntime, { recursive: true, force: true });
+  const source = resolve(root, "assessment-generation", "assessment-selector-matching.ts");
+  assert.ok(existsSync(source), "assessment selector matching source is required");
+  const compiled = ts.transpileModule(readFileSync(source, "utf8"), {
+    fileName: source,
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      esModuleInterop: true,
+      strict: true
+    }
+  });
+  const destination = join(generatedRuntime, "assessment-generation", "assessment-selector-matching.js");
+  mkdirSync(dirname(destination), { recursive: true });
+  writeFileSync(destination, compiled.outputText, "utf8");
+}
+
 const matching = await import(
   pathToFileURL(join(runtime, "assessment-generation", "assessment-selector-matching.js")).href
 );

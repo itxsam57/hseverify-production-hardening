@@ -109,6 +109,15 @@ function optionalIso(value: string | Date | null): string | null {
   return value === null ? null : iso(value);
 }
 
+function requireLocalTestStorageEnvironment(
+  value: string
+): "development" | "test" {
+  if (value !== "development" && value !== "test") {
+    throw new CompanyVerificationAccessDeniedError();
+  }
+  return value;
+}
+
 async function assertLiveDecider(
   database: DatabaseClient,
   principal: AuthorizationPrincipal
@@ -259,9 +268,9 @@ export class CompanyVerificationReviewService {
   ) {
     await assertLiveDecider(this.database, principal);
     const env = getServerEnvironment();
-    if (env.appEnvironment !== "development" && env.appEnvironment !== "test") {
-      throw new CompanyVerificationAccessDeniedError();
-    }
+    const storageEnvironment = requireLocalTestStorageEnvironment(
+      env.appEnvironment
+    );
 
     const result = await this.database.query<PreviewFileRow>(
       `SELECT files.*
@@ -315,7 +324,7 @@ export class CompanyVerificationReviewService {
       expectedPurpose: "preview",
       signingSecret: env.sessionSecret,
       repository: lookup,
-      storage: createLocalTestPrivateObjectStorage(env.appEnvironment),
+      storage: createLocalTestPrivateObjectStorage(storageEnvironment),
       now
     });
   }

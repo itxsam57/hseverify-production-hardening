@@ -5,8 +5,9 @@ import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { ensureEffectivePolicyRuntime } from "../helpers/effective-policy-runtime-bootstrap.mjs";
 
-const runtime=process.env.HSE_EFFECTIVE_POLICY_RUNTIME_DIST;assert.ok(runtime,"HSE_EFFECTIVE_POLICY_RUNTIME_DIST is required");
+const runtime=ensureEffectivePolicyRuntime();
 const domain=await import(pathToFileURL(join(runtime,"policy","effective-policy-domain.js")).href);
 const serviceModule=await import(pathToFileURL(join(runtime,"policy","effective-policy-service.js")).href);
 const assuranceModule=await import(pathToFileURL(join(runtime,"assurance","assurance-order-service.js")).href);

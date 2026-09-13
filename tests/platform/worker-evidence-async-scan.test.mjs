@@ -5,9 +5,9 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { ensureWorkerEvidenceRuntime } from "../helpers/worker-evidence-runtime.mjs";
 
-const runtime = process.env.HSE_WORKER_EVIDENCE_RUNTIME_DIST;
-assert.ok(runtime, "HSE_WORKER_EVIDENCE_RUNTIME_DIST is required");
+const runtime = ensureWorkerEvidenceRuntime();
 
 const attachmentModule = await import(
   pathToFileURL(join(runtime, "worker-evidence", "worker-evidence-attachment-service.js")).href

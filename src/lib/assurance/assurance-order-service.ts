@@ -93,7 +93,6 @@ export class AssuranceOrderService {
       if(targets.length===0) errors.push("Add at least one active linked Worker before validation.");
       for(const target of targets){ const live=await activeLink(database,scope.tenantId,target.workerLinkId,true); const reason=!live?"Worker link is no longer active for this Company.":null; targetResults.push({targetId:target.targetId,eligible:reason===null,reason}); if(reason) errors.push(`${target.workerAccountId}: ${reason}`); }
       errors.push(...await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now}));
-      if(order.interviewRequired) errors.push("Interview scheduling dependency is not yet available in M2.01.");
       if(order.credentialTarget) errors.push("Credential target dependency is not yet available in M2.01.");
       if(order.deadline && Date.parse(order.deadline)<=now.getTime()) errors.push("Assurance Order deadline must be in the future.");
       const normalized=Object.freeze([...new Set(errors)]); const ready=normalized.length===0; const updated=await repository.recordValidation({tenantId:scope.tenantId,orderId:id,ready,errors:normalized,targetResults,now:now.toISOString()}); if(!updated) throw new AssuranceOrderConflictError();

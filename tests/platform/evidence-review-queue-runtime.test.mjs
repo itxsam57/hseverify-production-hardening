@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -7,8 +9,14 @@ import test from "node:test";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
-const runtime = process.env.HSE_EVIDENCE_REVIEW_RUNTIME_DIST;
-assert.ok(runtime, "HSE_EVIDENCE_REVIEW_RUNTIME_DIST is required");
+const runtime = process.env.HSE_EVIDENCE_REVIEW_RUNTIME_DIST ?? ".evidence-review-runtime-test-dist";
+if (!existsSync(runtime)) {
+  const prepared = spawnSync(process.execPath, ["scripts/run-evidence-review-runtime-tests.mjs"], {
+    env: { ...process.env, HSE_EVIDENCE_REVIEW_PREPARE_ONLY: "1" },
+    stdio: "inherit"
+  });
+  assert.equal(prepared.status, 0, "M2.02 runtime preparation failed");
+}
 const domainModule = await import(pathToFileURL(join(runtime, "review", "evidence-review-domain.js")).href);
 const serviceModule = await import(pathToFileURL(join(runtime, "review", "evidence-review-service.js")).href);
 const { EvidenceReviewAccessError, EvidenceReviewConflictError } = domainModule;

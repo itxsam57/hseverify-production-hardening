@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
+import { ensureCompanyWorkforceRuntime } from "../helpers/company-workforce-runtime-bootstrap.mjs";
 
+ensureCompanyWorkforceRuntime();
 const runtime = process.env.HSE_COMPANY_WORKFORCE_RUNTIME_DIST;
 assert.ok(runtime, "HSE_COMPANY_WORKFORCE_RUNTIME_DIST is required");
 

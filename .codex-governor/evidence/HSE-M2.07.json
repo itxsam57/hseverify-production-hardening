@@ -1,0 +1,80 @@
+{
+  "milestone": "HSE-M2.07",
+  "implementationFiles": [
+    "src/lib/assessment-attempt/assessment-attempt-domain.ts",
+    "src/lib/assessment-attempt/assessment-attempt-service.ts",
+    "src/lib/assessment-attempt/assessment-attempt-repository.ts",
+    "src/lib/assessment-attempt/assessment-attempt-client-view.ts"
+  ],
+  "integrationFiles": [
+    "src/app/worker/(portal)/assessments/[attemptId]/actions.ts",
+    "src/app/worker/(portal)/assessments/[attemptId]/page.tsx",
+    "src/components/worker/assessment-workspace.tsx"
+  ],
+  "behaviorTests": [
+    "tests/platform/assessment-attempt-answer-runtime.test.mjs",
+    "tests/platform/assessment-attempt-concurrency-runtime.test.mjs",
+    "tests/platform/assessment-attempt-rollback.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "scripts/run-assessment-attempt-tests.mjs",
+      "--answers"
+    ],
+    [
+      "node",
+      "scripts/run-assessment-attempt-tests.mjs",
+      "--concurrency"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/assessment-attempt-rollback.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m2-07-assessment-attempt.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m2-07-assessment-attempt.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/assessment-attempt-action-boundary.test.mjs",
+    "tests/platform/assessment-attempt-audit-contract.test.mjs",
+    "tests/platform/assessment-attempt-concurrency-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/assessment-attempt-action-boundary.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/assessment-attempt-audit-contract.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/assessment-attempt-concurrency-runtime.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "test:m2-07"
+    ],
+    [
+      "npm",
+      "run",
+      "check:m2-07"
+    ]
+  ]
+}

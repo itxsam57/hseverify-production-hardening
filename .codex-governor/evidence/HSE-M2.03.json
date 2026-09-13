@@ -1,0 +1,36 @@
+{
+  "milestone": "HSE-M2.03",
+  "implementationFiles": [
+    "src/lib/policy/effective-policy-domain.ts",
+    "src/lib/policy/effective-policy-service.ts",
+    "src/lib/policy/effective-policy-read-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/company/(portal)/settings/policy/page.tsx",
+    "src/app/company/(portal)/settings/policy/actions.ts",
+    "src/lib/assurance/assurance-order-service.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/framework-effective-policy-runtime.test.mjs",
+    "tests/platform/framework-effective-policy-admin-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/framework-effective-policy-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/framework-effective-policy-admin-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m2-03-effective-policy.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m2-03-effective-policy.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/framework-effective-policy-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/framework-effective-policy-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["node", "scripts/run-effective-policy-tests.mjs"]
+  ]
+}

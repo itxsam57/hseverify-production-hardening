@@ -323,7 +323,6 @@ export type CompanyVerificationManager = Readonly<{
   membershipId: string;
   membershipRole: "owner" | "admin";
   tenantStatus: "pending" | "active";
-  verifiedEmail: string;
   [COMPANY_VERIFICATION_MANAGER]: true;
 }>;
 
@@ -352,7 +351,6 @@ export function bindCompanyVerificationManager(
     membershipId: membership.membershipId,
     membershipRole: membership.role,
     tenantStatus: membership.tenantStatus,
-    verifiedEmail: normalizeCompanyBusinessEmail(principal.email),
     [COMPANY_VERIFICATION_MANAGER]: true as const
   });
   COMPANY_VERIFICATION_MANAGERS.add(manager);

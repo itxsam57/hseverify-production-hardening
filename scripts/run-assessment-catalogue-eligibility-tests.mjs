@@ -112,6 +112,11 @@ writeFileSync(
   "utf8"
 );
 
+if (process.env.HSE_ASSESSMENT_CATALOGUE_ELIGIBILITY_PREPARE_ONLY === "1") {
+  console.log(out);
+  process.exit(0);
+}
+
 const result = spawnSync(
   process.execPath,
   ["--test", resolve("tests", "platform", "assessment-catalogue-eligibility-runtime.test.mjs")],

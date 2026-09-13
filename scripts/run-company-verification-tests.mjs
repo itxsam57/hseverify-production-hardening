@@ -1,22 +1,26 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdtempSync,
   mkdirSync,
   readFileSync,
   rmSync,
   writeFileSync
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, relative, resolve } from "node:path";
 import ts from "typescript";
 
-const outputDirectory = resolve(".company-verification-runtime-test-dist");
+const outputDirectory = mkdtempSync(
+  resolve(tmpdir(), "hse-company-verification-runtime-")
+);
 const sourceRoot = resolve("src", "lib");
 const LIB_ALIAS_PREFIX = "@/lib/";
-rmSync(outputDirectory, { recursive: true, force: true });
 
 const ENTRY_FILES = Object.freeze([
   "company/company-verification-domain.ts",
   "company/company-verification-repository.ts",
+  "company/company-verification-review-service.ts",
   "company/company-verification-service.ts",
   "company/company-verification-secure-file-authority-repository.ts",
   "company/company-registration-repository.ts",
@@ -147,13 +151,17 @@ writeFileSync(
   "utf8"
 );
 
+const requestedTests = process.argv.slice(2);
+const testFiles = requestedTests.length > 0
+  ? requestedTests.map((testFile) => resolve(testFile))
+  : [
+      resolve("tests", "platform", "company-verification.test.mjs"),
+      resolve("tests", "platform", "company-verification-latest-schema-regression.test.mjs")
+    ];
+
 const tests = spawnSync(
   process.execPath,
-  [
-    "--test",
-    resolve("tests", "platform", "company-verification.test.mjs"),
-    resolve("tests", "platform", "company-verification-latest-schema-regression.test.mjs")
-  ],
+  ["--test", ...testFiles],
   {
     stdio: "inherit",
     env: {

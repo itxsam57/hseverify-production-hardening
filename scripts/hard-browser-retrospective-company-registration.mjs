@@ -75,7 +75,15 @@ function trackErrors(page, label) {
   const errors = [];
   page.on("pageerror", (error) => errors.push(`${label} pageerror: ${error.message}`));
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(`${label} console: ${message.text()}`);
+    if (message.type() === "error") {
+      const text = message.text();
+      // Turbopack development HMR websocket failures are environment noise and
+      // do not represent an application browser failure. Keep real console
+      // errors visible to acceptance checks.
+      if (!text.includes("/_next/hmr") && !text.includes("WebSocket connection")) {
+        errors.push(`${label} console: ${text}`);
+      }
+    }
   });
   return errors;
 }

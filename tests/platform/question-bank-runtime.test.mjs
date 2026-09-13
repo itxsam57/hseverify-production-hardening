@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -7,7 +8,12 @@ import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
 const runtime = process.env.HSE_QUESTION_BANK_RUNTIME_DIST;
-assert.ok(runtime, "HSE_QUESTION_BANK_RUNTIME_DIST is required");
+if (!runtime) {
+  const result = spawnSync(process.execPath, ["scripts/run-question-bank-runtime-tests.mjs"], {
+    stdio: "inherit"
+  });
+  process.exit(result.status ?? 1);
+}
 const domain = await import(pathToFileURL(join(runtime, "question-bank", "question-bank-domain.js")).href);
 const serviceModule = await import(pathToFileURL(join(runtime, "question-bank", "question-bank-service.js")).href);
 const deliveryModule = await import(pathToFileURL(join(runtime, "question-bank", "question-delivery-service.js")).href);

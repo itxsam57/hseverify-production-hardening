@@ -29,8 +29,8 @@ export const DEFERRED_INTEGRATIONS = {
   },
   payments: {
     owner: "Billing",
-    currentMode: "Deferred until the core assurance workflow is complete",
-    providerEntryPoint: "Future M3.05 billing adapter",
+    currentMode: "Sandbox billing provider only; production payment activation remains deferred",
+    providerEntryPoint: "src/lib/billing/billing-provider.ts",
     productionTarget:
       "Keep payment intents, webhooks and reconciliation behind one provider interface."
   },

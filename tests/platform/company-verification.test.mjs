@@ -5,6 +5,9 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { bootstrapCompanyVerificationRuntimeTest } from "../helpers/company-verification-runtime-bootstrap.mjs";
+
+bootstrapCompanyVerificationRuntimeTest(import.meta.url);
 
 const runtime = process.env.HSE_COMPANY_VERIFICATION_RUNTIME_DIST;
 assert.ok(runtime, "HSE_COMPANY_VERIFICATION_RUNTIME_DIST is required");
@@ -20,6 +23,9 @@ const verificationRepositoryModule = await import(
 );
 const verificationServiceModule = await import(
   pathToFileURL(join(runtime, "company", "company-verification-service.js")).href
+);
+const verificationReviewServiceModule = await import(
+  pathToFileURL(join(runtime, "company", "company-verification-review-service.js")).href
 );
 const verificationAuthorityModule = await import(
   pathToFileURL(join(runtime, "company", "company-verification-secure-file-authority-repository.js")).href
@@ -41,6 +47,7 @@ const { CompanyRegistrationRepository } = registrationRepositoryModule;
 const { CompanyRegistrationService, CompanyRegistrationServiceError } = registrationServiceModule;
 const { CompanyVerificationRepository } = verificationRepositoryModule;
 const { CompanyVerificationService } = verificationServiceModule;
+const { CompanyVerificationReviewService } = verificationReviewServiceModule;
 const { CompanyVerificationSecureFileAuthorityRepository } = verificationAuthorityModule;
 const {
   CompanyVerificationAccessDeniedError,
@@ -308,6 +315,70 @@ async function seedAdmin(database, suffix = "review") {
   });
 }
 
+async function seedSameTenantCompanyAdmin(database, company, suffix = "team-admin") {
+  sequence += 1;
+  const fixtureId = token24(`team-${sequence}-${suffix}`);
+  const accountId = `account_${fixtureId}`;
+  const membershipId = `membership_${fixtureId}`;
+  const sessionId = `session_${fixtureId}`;
+  const email = `company-${suffix}-${sequence}@example.com`;
+
+  await database.query(
+    `INSERT INTO auth_accounts (
+       account_id, email_normalized, display_name, account_status,
+       password_hash, email_verified_at, password_set_at,
+       created_at, updated_at
+     ) VALUES ($1, $2, $3, 'active', $4, $5, $5, $5, $5)`,
+    [accountId, email, `Company ${suffix}`, "scrypt$16384$8$1$salt$hash", NOW]
+  );
+  await database.query(
+    `INSERT INTO auth_account_roles (account_id, role, created_at)
+     VALUES ($1, 'company', $2)`,
+    [accountId, NOW]
+  );
+  await database.query(
+    `INSERT INTO auth_tenant_memberships (
+       membership_id, tenant_id, account_id, portal_role,
+       membership_role, membership_status, created_by_account_id,
+       created_at, updated_at, activated_at
+     ) VALUES ($1, $2, $3, 'company', 'admin', 'active', $4, $5, $5, $5)`,
+    [membershipId, company.tenantId, accountId, company.accountId, NOW]
+  );
+  await database.query(
+    `INSERT INTO auth_sessions (
+       session_id, account_id, active_role, token_hash, csrf_token_hash,
+       created_at, last_seen_at, expires_at
+     ) VALUES ($1, $2, 'company', $3, $4, $5, $5, $6)`,
+    [
+      sessionId,
+      accountId,
+      `company_team_token_${suffix}_${sequence}`,
+      `company_team_csrf_${suffix}_${sequence}`,
+      NOW,
+      FAR_FUTURE
+    ]
+  );
+
+  return Object.freeze({
+    accountId,
+    sessionId,
+    activeRole: "company",
+    tenantMembership: Object.freeze({
+      tenantId: company.tenantId,
+      membershipId,
+      role: "admin",
+      status: "active",
+      tenantStatus: "pending"
+    }),
+    accountStatus: "active",
+    email,
+    displayName: `Company ${suffix}`,
+    createdAt: NOW,
+    lastSeenAt: NOW,
+    expiresAt: FAR_FUTURE
+  });
+}
+
 async function markCompanyFileAvailable(database, principal, fileId) {
   sequence += 1;
   const jobId = `job_${token24(`company-scan-${sequence}`)}`;
@@ -489,6 +560,317 @@ test("M1.08 pending Company evidence requires an immutable application claim whi
       SecureFileAccessDeniedError
     );
     assert.equal(ordinaryRead, undefined);
+  } finally {
+    await database.close();
+  }
+});
+
+test("M1.08 same-tenant Company admins cannot rewrite the registration-verified business email", async () => {
+  const env = environment("m1-08-business-email-authority");
+  const database = await openScriptDatabase(env);
+  try {
+    await applyMigrationsThrough(database, env.releaseSha, OWNED_MIGRATION);
+    const company = await registerCompany(database, "business-email-authority");
+    const teamAdmin = await seedSameTenantCompanyAdmin(database, company, "business-email-authority");
+    const platformAdmin = await seedAdmin(database, "business-email-authority");
+    const service = new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+
+    let snapshot = await service.loadOwn(teamAdmin);
+    assert.equal(snapshot.currentVersion.businessEmail, company.email);
+
+    snapshot = await service.saveDraft({
+      principal: teamAdmin,
+      expectedDraftRevision: snapshot.currentVersion.draftRevision,
+      draft: {
+        legalName: snapshot.currentVersion.legalName,
+        tradingName: "Team Admin Edited Trading Name",
+        registrationNumber: snapshot.currentVersion.registrationNumber,
+        country: snapshot.currentVersion.country,
+        industry: snapshot.currentVersion.industry,
+        companySize: snapshot.currentVersion.companySize,
+        website: snapshot.currentVersion.website,
+        authorizedRepresentative: snapshot.currentVersion.authorizedRepresentative,
+        businessPhone: snapshot.currentVersion.businessPhone
+      }
+    });
+    assert.equal(snapshot.currentVersion.businessEmail, company.email);
+    assert.notEqual(snapshot.currentVersion.businessEmail, teamAdmin.email);
+
+    const evidenceFile = await reserveAvailableEvidence(database, company.principal, "business-email-v1");
+    await service.bindEvidence({
+      principal: company.principal,
+      secureFileId: evidenceFile,
+      evidenceLabel: "Company registration evidence",
+      expectedActiveBindingId: null
+    });
+    snapshot = await service.submit({
+      principal: company.principal,
+      expectedLockVersion: snapshot.case.lockVersion
+    });
+    await service.beginReview({ principal: platformAdmin, caseId: company.caseId });
+    await service.decide({
+      principal: platformAdmin,
+      caseId: company.caseId,
+      outcome: "changes_requested"
+    });
+
+    snapshot = await service.loadOwn(teamAdmin);
+    snapshot = await service.startCorrection({
+      principal: teamAdmin,
+      expectedLockVersion: snapshot.case.lockVersion
+    });
+    assert.equal(snapshot.currentVersion.businessEmail, company.email);
+    assert.notEqual(snapshot.currentVersion.businessEmail, teamAdmin.email);
+  } finally {
+    await database.close();
+  }
+});
+
+test("M1.08 same-tenant Company admins can submit tenant evidence bound by another authorized manager", async () => {
+  const env = environment("m1-08-shared-tenant-evidence");
+  const database = await openScriptDatabase(env);
+  try {
+    await applyMigrationsThrough(database, env.releaseSha, OWNED_MIGRATION);
+    const company = await registerCompany(database, "shared-tenant-evidence");
+    const teamAdmin = await seedSameTenantCompanyAdmin(database, company, "shared-tenant-evidence");
+    const service = new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+
+    const snapshot = await service.loadOwn(teamAdmin);
+    const ownerEvidence = await reserveAvailableEvidence(
+      database,
+      company.principal,
+      "shared-tenant-evidence"
+    );
+    await service.bindEvidence({
+      principal: company.principal,
+      secureFileId: ownerEvidence,
+      evidenceLabel: "Company registration evidence",
+      expectedActiveBindingId: null
+    });
+
+    const submitted = await service.submit({
+      principal: teamAdmin,
+      expectedLockVersion: snapshot.case.lockVersion
+    });
+    assert.equal(submitted.case.caseStatus, "submitted");
+    assert.equal(submitted.currentVersion.versionStatus, "submitted");
+    assert.equal(submitted.evidence.length, 1);
+    assert.equal(submitted.evidence[0]?.secureFileId, ownerEvidence);
+  } finally {
+    await database.close();
+  }
+});
+
+test("M1.08 live manager guards reject forged cross-tenant authority, foreign evidence and stale membership state", async () => {
+  const env = environment("m1-08-live-manager-guards");
+  const database = await openScriptDatabase(env);
+  try {
+    await applyMigrationsThrough(database, env.releaseSha, OWNED_MIGRATION);
+    const first = await registerCompany(database, "live-manager-first");
+    const second = await registerCompany(database, "live-manager-second");
+    const service = new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+
+    const forgedCrossTenantPrincipal = Object.freeze({
+      ...first.principal,
+      tenantMembership: Object.freeze({
+        ...second.principal.tenantMembership
+      })
+    });
+    await assert.rejects(
+      () => service.loadOwn(forgedCrossTenantPrincipal),
+      CompanyVerificationAccessDeniedError
+    );
+
+    const foreignEvidence = await reserveAvailableEvidence(
+      database,
+      second.principal,
+      "foreign-evidence"
+    );
+    await assert.rejects(
+      () => service.bindEvidence({
+        principal: first.principal,
+        secureFileId: foreignEvidence,
+        evidenceLabel: "Company registration evidence",
+        expectedActiveBindingId: null
+      }),
+      CompanyVerificationAccessDeniedError
+    );
+
+    const staleSnapshot = await service.loadOwn(first.principal);
+    await database.query(
+      `UPDATE auth_tenant_memberships
+       SET membership_status = 'suspended', suspended_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE membership_id = $1`,
+      [first.membershipId]
+    );
+    await assert.rejects(
+      () => service.saveDraft({
+        principal: first.principal,
+        expectedDraftRevision: staleSnapshot.currentVersion.draftRevision,
+        draft: {
+          legalName: staleSnapshot.currentVersion.legalName,
+          tradingName: "Forbidden stale membership rewrite",
+          registrationNumber: staleSnapshot.currentVersion.registrationNumber,
+          country: staleSnapshot.currentVersion.country,
+          industry: staleSnapshot.currentVersion.industry,
+          companySize: staleSnapshot.currentVersion.companySize,
+          website: staleSnapshot.currentVersion.website,
+          authorizedRepresentative: staleSnapshot.currentVersion.authorizedRepresentative,
+          businessPhone: staleSnapshot.currentVersion.businessPhone
+        }
+      }),
+      CompanyVerificationAccessDeniedError
+    );
+  } finally {
+    await database.close();
+  }
+});
+
+test("M1.08 live manager guards reject expired and revoked Company sessions", async () => {
+  const env = environment("m1-08-live-session-guards");
+  const database = await openScriptDatabase(env);
+  try {
+    await applyMigrationsThrough(database, env.releaseSha, OWNED_MIGRATION);
+    const expired = await registerCompany(database, "expired-session");
+    const revoked = await registerCompany(database, "revoked-session");
+    const service = new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+
+    await database.query(
+      `UPDATE auth_sessions
+       SET expires_at = '2026-08-12T00:00:00.000Z'
+       WHERE session_id = $1`,
+      [expired.principal.sessionId]
+    );
+    await assert.rejects(
+      () => service.loadOwn(expired.principal),
+      CompanyVerificationAccessDeniedError
+    );
+
+    await database.query(
+      `UPDATE auth_sessions
+       SET revoked_at = CURRENT_TIMESTAMP,
+           revocation_reason = 'm1_08_live_session_guard_test'
+       WHERE session_id = $1`,
+      [revoked.principal.sessionId]
+    );
+    await assert.rejects(
+      () => service.loadOwn(revoked.principal),
+      CompanyVerificationAccessDeniedError
+    );
+  } finally {
+    await database.close();
+  }
+});
+
+test("M1.08 admin evidence preview cannot cross verification-case boundaries", async () => {
+  const env = environment("m1-08-preview-case-boundary");
+  const database = await openScriptDatabase(env);
+  try {
+    await applyMigrationsThrough(database, env.releaseSha, OWNED_MIGRATION);
+    const first = await registerCompany(database, "preview-first");
+    const second = await registerCompany(database, "preview-second");
+    const admin = await seedAdmin(database, "preview-case-boundary");
+    const service = new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+
+    for (const [company, suffix] of [[first, "preview-first"], [second, "preview-second"]]) {
+      let snapshot = await service.loadOwn(company.principal);
+      const fileId = await reserveAvailableEvidence(database, company.principal, suffix);
+      await service.bindEvidence({
+        principal: company.principal,
+        secureFileId: fileId,
+        evidenceLabel: "Company registration evidence",
+        expectedActiveBindingId: null
+      });
+      snapshot = await service.submit({
+        principal: company.principal,
+        expectedLockVersion: snapshot.case.lockVersion
+      });
+      assert.equal(snapshot.case.caseStatus, "submitted");
+      company.boundEvidenceFileId = fileId;
+    }
+
+    process.env.HSE_APP_ENV = "test";
+    process.env.HSE_DATABASE_DRIVER = "pglite";
+    process.env.HSE_PGLITE_DATA_DIR = "memory://";
+    process.env.HSE_RELEASE_SHA = "m1-08-preview-case-boundary";
+    process.env.HSE_SESSION_SECRET = "m1-08-preview-session-secret-with-more-than-32-chars";
+    process.env.HSE_AUTH_PEPPER = "m1-08-preview-auth-pepper-with-more-than-32-chars";
+
+    const review = new CompanyVerificationReviewService(database);
+    await assert.rejects(
+      () => review.previewEvidence(
+        admin,
+        first.caseId,
+        second.boundEvidenceFileId,
+        NOW_DATE
+      ),
+      CompanyVerificationAccessDeniedError
+    );
+  } finally {
+    await database.close();
+  }
+});
+
+test("M1.08 review transitions reject duplicate begin-review and decision replay", async () => {
+  const env = environment("m1-08-review-replay");
+  const database = await openScriptDatabase(env);
+  try {
+    await applyMigrationsThrough(database, env.releaseSha, OWNED_MIGRATION);
+    const company = await registerCompany(database, "review-replay");
+    const admin = await seedAdmin(database, "review-replay");
+    const service = new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+
+    let snapshot = await service.loadOwn(company.principal);
+    const evidenceFile = await reserveAvailableEvidence(database, company.principal, "review-replay");
+    await service.bindEvidence({
+      principal: company.principal,
+      secureFileId: evidenceFile,
+      evidenceLabel: "Company registration evidence",
+      expectedActiveBindingId: null
+    });
+    snapshot = await service.submit({
+      principal: company.principal,
+      expectedLockVersion: snapshot.case.lockVersion
+    });
+
+    await service.beginReview({ principal: admin, caseId: company.caseId });
+    await assert.rejects(
+      () => service.beginReview({ principal: admin, caseId: company.caseId }),
+      CompanyVerificationConflictError
+    );
+    await service.decide({
+      principal: admin,
+      caseId: company.caseId,
+      outcome: "changes_requested"
+    });
+    await assert.rejects(
+      () => service.decide({
+        principal: admin,
+        caseId: company.caseId,
+        outcome: "verified"
+      }),
+      CompanyVerificationConflictError
+    );
+
+    const afterReplay = await service.loadOwn(company.principal);
+    assert.equal(afterReplay.case.caseStatus, "changes_requested");
+    const tenant = await database.query(
+      `SELECT tenant_status FROM platform_tenants WHERE tenant_id = $1`,
+      [company.tenantId]
+    );
+    assert.equal(tenant.rows[0]?.tenant_status, "pending");
   } finally {
     await database.close();
   }

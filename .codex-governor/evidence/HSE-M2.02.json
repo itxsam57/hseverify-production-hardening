@@ -1,0 +1,38 @@
+{
+  "milestone": "HSE-M2.02",
+  "implementationFiles": [
+    "src/lib/review/evidence-review-domain.ts",
+    "src/lib/review/evidence-review-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/verifier/(portal)/reviews/page.tsx",
+    "src/app/verifier/(portal)/reviews/[taskId]/page.tsx",
+    "src/app/verifier/(portal)/reviews/actions.ts",
+    "src/app/verifier/(portal)/reviews/[taskId]/preview/route.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/evidence-review-queue-contract.test.mjs",
+    "tests/platform/verifier-review-navigation.test.mjs",
+    "tests/platform/evidence-review-queue-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/evidence-review-queue-contract.test.mjs"],
+    ["node", "--test", "tests/platform/verifier-review-navigation.test.mjs"],
+    ["node", "scripts/run-evidence-review-runtime-tests.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m2-02-evidence-review.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m2-02-evidence-review.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/evidence-review-queue-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/evidence-review-queue-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["node", "scripts/check-evidence-review-queues.mjs"]
+  ]
+}

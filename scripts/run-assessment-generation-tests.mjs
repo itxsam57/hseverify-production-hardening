@@ -52,7 +52,8 @@ for (const check of checks) {
   console.log(`\n=== ${check.name} ===`);
   const result = spawnSync(check.command, check.args, {
     stdio: "inherit",
-    shell: process.platform === "win32"
+    shell: process.platform === "win32",
+    env: { ...process.env }
   });
   if (result.status !== 0) {
     console.error(`${check.name} failed.`);

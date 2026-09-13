@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Public verification Report Concern submits through the real UI",
+    "status": "FAIL",
+    "ms": 31551,
+    "error": "page.waitForFunction: Timeout 30000ms exceeded."
+  }
+]

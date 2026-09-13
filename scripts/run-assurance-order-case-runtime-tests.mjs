@@ -12,7 +12,8 @@ const ENTRY_FILES = Object.freeze([
   "assurance/assurance-order-domain.ts",
   "assurance/assurance-order-repository.ts",
   "assurance/assurance-order-service.ts",
-  "assurance/assurance-action-centre-service.ts"
+  "assurance/assurance-action-centre-service.ts",
+  "assurance/company-action-centre-analytics-service.ts"
 ]);
 const RUNTIME_STUBS = new Set(["database/database.ts"]);
 
@@ -102,7 +103,10 @@ writeFileSync(
   "utf8"
 );
 
-const tests = spawnSync(process.execPath, ["--test", resolve("tests", "platform", "assurance-order-case-runtime.test.mjs")], {
+const testFile = process.argv.includes("--m3-04")
+  ? "company-action-centre-analytics.test.mjs"
+  : "assurance-order-case-runtime.test.mjs";
+const tests = spawnSync(process.execPath, ["--test", resolve("tests", "platform", testFile)], {
   stdio: "inherit",
   env: { ...process.env, HSE_ASSURANCE_ORDER_RUNTIME_DIST: outputDirectory }
 });

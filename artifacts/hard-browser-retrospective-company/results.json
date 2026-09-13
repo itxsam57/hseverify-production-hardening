@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Company registration and verification workflow",
+    "status": "FAIL",
+    "ms": 15443,
+    "error": "page.waitForURL: Timeout 15000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "milestone": "HSE-M2.01",
+  "implementationFiles": ["src/lib/assurance/assurance-order-domain.ts", "src/lib/assurance/assurance-order-repository.ts", "src/lib/assurance/assurance-order-service.ts"],
+  "integrationFiles": ["src/app/company/(portal)/assurance-orders/actions.ts", "src/components/company/assurance-order-workspace.tsx", "src/components/company/assurance-action-centre.tsx"],
+  "behaviorTests": ["tests/platform/assurance-order-case-domain.test.mjs", "tests/platform/assurance-order-case-service.test.mjs", "tests/platform/assurance-order-case-runtime-gate.test.mjs", "tests/platform/assurance-order-case-runtime.test.mjs"],
+  "behaviorCommands": [["node", "--test", "tests/platform/assurance-order-case-domain.test.mjs"], ["node", "--test", "tests/platform/assurance-order-case-service.test.mjs"], ["node", "--test", "tests/platform/assurance-order-case-runtime-gate.test.mjs"], ["node", "--test", "tests/platform/assurance-order-case-runtime.test.mjs"]],
+  "browserTests": ["tests/browser/m2-01-assurance-order-case.browser.test.mjs"],
+  "browserCommands": [["node", "--test", "tests/browser/m2-01-assurance-order-case.browser.test.mjs"]],
+  "securityTests": ["tests/platform/assurance-order-case-runtime.test.mjs"],
+  "securityCommands": [["node", "--test", "tests/platform/assurance-order-case-runtime.test.mjs"]],
+  "regressionCommands": [["node", "scripts/check-assurance-order-case-engine.mjs"]]
+}

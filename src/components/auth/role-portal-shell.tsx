@@ -57,6 +57,7 @@ export async function RolePortalShell({
               <Link href="/company/invitations">Worker invitations &amp; codes</Link>
               <Link href="/company/assurance-orders">Assurance Orders</Link>
               <Link href="/company/action-centre">Action Centre</Link>
+              <Link href="/company/billing">Billing</Link>
             </>
           ) : null}
           {session.role === "admin" ? (
@@ -117,6 +118,7 @@ export async function RolePortalShell({
                     <Link href="/company/invitations">Worker invitations &amp; codes</Link>
                     <Link href="/company/assurance-orders">Assurance Orders</Link>
                     <Link href="/company/action-centre">Action Centre</Link>
+                    <Link href="/company/billing">Billing</Link>
                   </>
                 ) : null}
                 {session.role === "admin" ? (

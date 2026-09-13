@@ -1,0 +1,134 @@
+{
+  "milestone": "HSE-M2.10",
+  "implementationFiles": [
+    "src/lib/scoring/written-scoring-domain.ts",
+    "src/lib/scoring/written-scoring-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/verifier/(portal)/reviews/scoring/page.tsx",
+    "src/app/verifier/(portal)/reviews/scoring-actions.ts",
+    "database/migrations/0044_written_scoring_review_engine.up.sql",
+    "database/migrations/0048_written_scoring_rubric_marks.up.sql"
+  ],
+  "behaviorTests": [
+    "tests/platform/written-scoring-live-runtime.test.mjs",
+    "tests/platform/written-scoring-behavior-runtime.test.mjs",
+    "tests/platform/written-scoring-end-to-end-runtime.test.mjs",
+    "tests/platform/written-scoring-production-runtime.test.mjs",
+    "tests/platform/written-scoring-runtime.test.mjs",
+    "tests/platform/written-scoring-integration-runtime.test.mjs",
+    "tests/platform/written-scoring-security-runtime.test.mjs",
+    "tests/platform/written-scoring-security-persistence-runtime.test.mjs",
+    "tests/platform/written-scoring-security-isolation-runtime.test.mjs",
+    "tests/platform/written-scoring-security-production-runtime.test.mjs",
+    "tests/platform/written-scoring-security-live-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-live-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-behavior-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-end-to-end-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-production-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-integration-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-persistence-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-isolation-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-production-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-live-runtime.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m2-10-written-scoring.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m2-10-written-scoring.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/written-scoring-security-runtime.test.mjs",
+    "tests/platform/written-scoring-security-persistence-runtime.test.mjs",
+    "tests/platform/written-scoring-security-isolation-runtime.test.mjs",
+    "tests/platform/written-scoring-security-production-runtime.test.mjs",
+    "tests/platform/written-scoring-security-live-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-persistence-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-isolation-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-production-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/written-scoring-security-live-runtime.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

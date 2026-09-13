@@ -1,0 +1,41 @@
+{
+  "milestone": "HSE-M2.08",
+  "implementationFiles": [
+    "src/lib/assessment-attempt/assessment-attempt-domain.ts",
+    "src/lib/assessment-attempt/assessment-attempt-draft-domain.ts",
+    "src/lib/assessment-attempt/assessment-attempt-repository.ts",
+    "src/lib/assessment-attempt/assessment-attempt-service.ts",
+    "src/components/worker/use-assessment-draft-autosave.ts"
+  ],
+  "integrationFiles": [
+    "src/app/worker/(portal)/assessments/[attemptId]/actions.ts",
+    "src/app/worker/(portal)/available-assessments/page.tsx"
+  ],
+  "behaviorTests": [
+    "tests/platform/assessment-attempt-draft-runtime.test.mjs",
+    "tests/platform/assessment-attempt-resume-runtime.test.mjs",
+    "tests/platform/assessment-attempt-draft-concurrency-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "scripts/run-assessment-attempt-tests.mjs", "--m2-08"],
+    ["node", "--test", "tests/platform/assessment-attempt-resume-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/assessment-attempt-draft-concurrency-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/platform/assessment-attempt-m2-08-browser-workflow-contract.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/platform/assessment-attempt-m2-08-browser-workflow-contract.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/assessment-attempt-draft-action-boundary.test.mjs",
+    "tests/platform/assessment-attempt-draft-service-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/assessment-attempt-draft-action-boundary.test.mjs"],
+    ["node", "--test", "tests/platform/assessment-attempt-draft-service-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "check:m2-08"]
+  ]
+}

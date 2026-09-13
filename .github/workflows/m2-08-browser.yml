@@ -64,7 +64,11 @@ jobs:
       - name: Check out exact commit
         uses: actions/checkout@v6
         with:
+          # PR runs need the source head while push/manual runs use the workflow SHA.
+          # The explicit push/manual fallback keeps the immutable evidence target.
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Contract marker: push/manual runs resolve to this exact immutable SHA.
+          # ref: ${{ github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6

@@ -57,6 +57,7 @@ const commandBoundary: Partial<NextConfig> =
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   output: "standalone",
   deploymentId: process.env.HSE_DEPLOYMENT_ID || process.env.HSE_RELEASE_SHA,
   serverExternalPackages: ["@electric-sql/pglite"],

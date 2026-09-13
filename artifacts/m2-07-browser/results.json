@@ -1,0 +1,8 @@
+[
+  {
+    "name": "login real Worker A",
+    "status": "FAIL",
+    "ms": 20332,
+    "error": "page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+  }
+]

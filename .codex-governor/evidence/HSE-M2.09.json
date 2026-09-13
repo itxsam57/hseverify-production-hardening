@@ -1,0 +1,59 @@
+{
+  "milestone": "HSE-M2.09",
+  "implementationFiles": [
+    "src/lib/integrity/integrity-domain.ts",
+    "src/lib/integrity/integrity-capture-service.ts",
+    "src/lib/integrity/integrity-capture-repository.ts",
+    "src/app/integrity/page.tsx",
+    "src/app/api/integrity/snapshot/route.ts"
+  ],
+  "integrationFiles": [
+    "src/app/api/integrity/snapshot/route.ts",
+    "src/lib/integrity/integrity-capture-integration.ts",
+    "src/lib/integrity/integrity-capture-service.ts",
+    "src/lib/integrity/integrity-capture-repository.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/integrity-capture-service.test.mjs",
+    "tests/platform/integrity-security-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/integrity-capture-service.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/integrity-security-runtime.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m2-09-integrity.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m2-09-integrity.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/integrity-security-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/integrity-security-runtime.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

@@ -6,9 +6,9 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { ensureAssessmentGenerationRuntime } from "../helpers/assessment-generation-runtime.mjs";
 
-const runtime = process.env.HSE_ASSESSMENT_GENERATION_RUNTIME_DIST;
-assert.ok(runtime, "HSE_ASSESSMENT_GENERATION_RUNTIME_DIST is required");
+const runtime = ensureAssessmentGenerationRuntime();
 const blueprintModule = await import(
   pathToFileURL(join(runtime, "assessment-generation", "assessment-blueprint-service.js")).href
 );

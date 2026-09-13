@@ -1,0 +1,41 @@
+{
+  "milestone": "HSE-M1.11",
+  "implementationFiles": [
+    "src/lib/worker-evidence/worker-evidence-domain.ts",
+    "src/lib/worker-evidence/worker-evidence-service.ts",
+    "src/lib/worker-evidence/worker-evidence-attachment-service.ts",
+    "src/lib/secure-files/secure-file-domain.ts"
+  ],
+  "integrationFiles": [
+    "src/app/worker/(portal)/profile/page.tsx",
+    "src/app/worker/profile/actions.ts",
+    "scripts/check-worker-evidence-records.mjs",
+    "scripts/run-worker-evidence-record-tests.mjs",
+    "tests/browser/m1-11-worker-evidence.browser.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/worker-qualification-flow.test.mjs",
+    "tests/platform/worker-evidence-leaving-letter.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/worker-qualification-flow.test.mjs"],
+    ["node", "--test", "tests/platform/worker-evidence-leaving-letter.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m1-11-worker-evidence.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m1-11-worker-evidence.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/worker-evidence-leaving-letter.test.mjs",
+    "tests/platform/worker-qualification-flow.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/worker-evidence-leaving-letter.test.mjs"],
+    ["node", "--test", "tests/platform/worker-qualification-flow.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "check:m1-11"]
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "milestone": "HSE-M1.09",
+  "implementationFiles": [
+    "src/lib/company/company-organization-domain.ts",
+    "src/lib/company/company-organization-repository.ts",
+    "src/lib/company/company-team-service.ts",
+    "src/app/company/(portal)/organization/page.tsx",
+    "src/app/company/(portal)/team/page.tsx",
+    "src/components/company/company-organization-workspace.tsx",
+    "src/components/company/company-team-workspace.tsx"
+  ],
+  "integrationFiles": [
+    "database/migrations/0026_company_organization_team_foundation.up.sql",
+    "database/migrations/0027_company_organization_team_hardening.up.sql",
+    "src/app/company/(portal)/organization/actions.ts",
+    "src/app/company/(portal)/team/actions.ts",
+    "src/lib/company/company-organization-repository.ts",
+    "src/lib/company/company-team-service.ts",
+    "scripts/run-company-organization-team-tests.mjs",
+    "scripts/check-company-organization-team.mjs",
+    "tests/platform/company-organization-team.test.mjs",
+    "tests/platform/company-organization-team-migration-stack.test.mjs",
+    "tests/browser/m1-09-company-organization.browser.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/company-organization-team.test.mjs",
+    "tests/platform/company-organization-team-migration-stack.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "scripts/run-company-organization-team-tests.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/company-organization-team-migration-stack.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m1-09-company-organization.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m1-09-company-organization.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/company-organization-team.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/company-organization-team.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "check:m1-09"
+    ]
+  ]
+}
