@@ -3,13 +3,21 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 import { migrationStatus, rollbackLatestMigration } from "../../scripts/lib/migrations.mjs";
 
 const runtime = process.env.HSE_BILLING_RUNTIME_DIST;
-assert.ok(runtime, "HSE_BILLING_RUNTIME_DIST is required");
+if (!runtime) {
+  const wrapper = spawnSync(process.execPath, ["scripts/run-billing-tests.mjs"], {
+    stdio: "inherit",
+    env: { ...process.env, HSE_BILLING_TEST_WRAPPER: "1" }
+  });
+  assert.equal(wrapper.status, 0, "billing runtime wrapper failed");
+  process.exit(0);
+}
 const domainModule = await import(pathToFileURL(join(runtime, "billing", "billing-domain.js")).href);
 const providerModule = await import(pathToFileURL(join(runtime, "billing", "billing-provider.js")).href);
 const serviceModule = await import(pathToFileURL(join(runtime, "billing", "billing-service.js")).href);

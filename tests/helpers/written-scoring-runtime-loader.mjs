@@ -37,8 +37,8 @@ export async function loadWrittenScoringRuntime() {
   const db = resolve(out, "database/database.js");
   mkdirSync(dirname(db), { recursive: true });
   writeFileSync(db, "module.exports={};", "utf8");
-  const module = await import(`file://${resolve(out, "scoring/written-scoring-service.js")}`);
+  const scoringModule = await import(`file://${resolve(out, "scoring/written-scoring-service.js")}`);
   const domain = await import(`file://${resolve(out, "scoring/written-scoring-domain.js")}`);
   const auth = await import(`file://${resolve(out, "auth/auth-domain.js")}`);
-  return { WrittenScoringService: module.WrittenScoringService, createIdentifier: auth.createIdentifier, ...domain };
+  return { WrittenScoringService: scoringModule.WrittenScoringService, createIdentifier: auth.createIdentifier, ...domain };
 }

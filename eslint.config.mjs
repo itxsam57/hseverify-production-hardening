@@ -13,6 +13,10 @@ export default defineConfig([
     ".hse-next/**",
     ".preview-bundle/**",
     ".auth-test-dist/**",
+    ".worker-evidence-runtime-test-dist/**",
+    ".billing-runtime-test-dist/**",
+    ".company-organization-team-runtime-test-dist/**",
+    ".production-launch-runtime-test-dist/**",
     "out/**",
     "build/**",
     "next-env.d.ts"

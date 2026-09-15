@@ -1,0 +1,40 @@
+{
+  "milestone": "HSE-X04",
+  "implementationFiles": [
+    "src/lib/operations/production-launch-domain.ts",
+    "src/lib/operations/certification-readiness-domain.ts",
+    "release-manifest.json"
+  ],
+  "integrationFiles": [
+    "src/lib/operations/production-launch-service.ts",
+    "src/lib/operations/certification-readiness-domain.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/load-security-recovery-certification-runtime.test.mjs",
+    "tests/platform/production-launch-handover-runtime.test.mjs",
+    "tests/platform/production-launch-operations-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/load-security-recovery-certification-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/production-launch-handover-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/production-launch-operations-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-12-production-launch.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-12-production-launch.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/load-security-recovery-certification-runtime.test.mjs",
+    "tests/platform/production-launch-handover-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/load-security-recovery-certification-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/production-launch-handover-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"],
+    ["npm", "run", "build"]
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "milestone": "HSE-M3.02",
+  "implementationFiles": [
+    "src/lib/living-record/living-record-domain.ts",
+    "src/lib/living-record/living-record-repository.ts",
+    "src/app/worker/(portal)/passport/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/worker-evidence/worker-evidence-service.ts",
+    "src/lib/share-links/scoped-share-link-domain.ts",
+    "database/migrations/0052_living_record_persistence.up.sql"
+  ],
+  "behaviorTests": [
+    "tests/platform/living-record-domain.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/living-record-domain.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-02-digital-passport.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-02-digital-passport.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/living-record-domain.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/living-record-domain.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["node", "scripts/typecheck-project.mjs"]
+  ]
+}

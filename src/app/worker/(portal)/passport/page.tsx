@@ -16,6 +16,7 @@ import type {
   WorkerEvidenceRecord
 } from "@/lib/worker-evidence/worker-evidence-domain";
 import { WorkerEvidenceService } from "@/lib/worker-evidence/worker-evidence-service";
+import { LivingRecordRepository } from "@/lib/living-record/living-record-repository";
 
 export const dynamic = "force-dynamic";
 
@@ -71,13 +72,17 @@ export default async function WorkerPassportPage(): Promise<React.JSX.Element> {
   ]);
   const evidence = new WorkerEvidenceService(getDatabaseClient());
   const records = await evidence.listCurrent(principal);
+  const livingRecords = await new LivingRecordRepository().findByWorker(session.workerId);
   const passport = buildDigitalPassport({
     workerId: session.workerId,
     generatedAt: new Date().toISOString(),
     qualifications: compact(records.map(qualification)),
     skills: compact(records.map(skill)),
     employmentHistory: compact(records.map(employment)),
-    competencies: compact(records.map(livingCompetencyFromWorkerSkill))
+    competencies: [
+      ...compact(records.map(livingCompetencyFromWorkerSkill)),
+      ...livingRecords
+    ]
   });
 
   return (

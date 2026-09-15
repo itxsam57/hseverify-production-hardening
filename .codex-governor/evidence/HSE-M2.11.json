@@ -1,0 +1,61 @@
+{
+  "milestone": "HSE-M2.11",
+  "implementationFiles": [
+    "src/lib/interview/interview-scheduling-domain.ts",
+    "src/lib/interview/interview-scheduling-service.ts",
+    "src/lib/interview/interview-scheduling-repository.ts"
+  ],
+  "integrationFiles": [
+    "src/app/assessor/(portal)/interviews/page.tsx",
+    "database/migrations/0049_interview_scheduling_foundation.up.sql"
+  ],
+  "behaviorTests": [
+    "tests/platform/interview-scheduling-application-runtime.test.mjs",
+    "tests/platform/interview-scheduling-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/interview-scheduling-application-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/interview-scheduling-runtime.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m2-11-interview-scheduling.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m2-11-interview-scheduling.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/interview-scheduling-security-runtime.test.mjs",
+    "tests/platform/interview-scheduling-security-persistence-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/interview-scheduling-security-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/interview-scheduling-security-persistence-runtime.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

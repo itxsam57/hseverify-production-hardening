@@ -1,0 +1,34 @@
+{
+  "milestone": "HSE-M3.04",
+  "implementationFiles": [
+    "src/lib/assurance/company-action-centre-analytics-service.ts",
+    "src/components/company/company-action-centre-analytics.tsx",
+    "src/app/company/(portal)/action-centre/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/assurance/assurance-action-centre-service.ts",
+    "src/lib/assurance/assurance-order-repository.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/company-action-centre-analytics.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "scripts/run-assurance-order-case-runtime-tests.mjs", "--m3-04", "tests/platform/company-action-centre-analytics.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-04-company-action-centre.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-04-company-action-centre.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/company-action-centre-analytics.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "scripts/run-assurance-order-case-runtime-tests.mjs", "--m3-04", "tests/platform/company-action-centre-analytics.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"],
+    ["git", "diff", "--check"]
+  ]
+}

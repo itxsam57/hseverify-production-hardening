@@ -1,0 +1,53 @@
+{
+  "milestone": "HSE-M3.11",
+  "implementationFiles": [
+    "src/lib/operations/certification-readiness-domain.ts",
+    "src/app/admin/(portal)/operations/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/admin/operational-health-service.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/load-security-recovery-certification-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/load-security-recovery-certification-runtime.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/m3-11-certification.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/m3-11-certification.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/load-security-recovery-certification-runtime.test.mjs",
+    "tests/browser/m3-11-certification.browser.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/load-security-recovery-certification-runtime.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/browser/m3-11-certification.browser.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

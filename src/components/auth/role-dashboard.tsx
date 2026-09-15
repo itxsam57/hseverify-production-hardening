@@ -72,6 +72,11 @@ export function RoleDashboard({
             Open evidence review queue
           </Link>
         ) : null}
+        {session.role === "assessor" ? (
+          <Link className="button button-primary" href="/assessor/interviews">
+            Open interview assignments
+          </Link>
+        ) : null}
       </header>
 
       <section className="metric-grid" aria-label={`${label} authentication status`}>

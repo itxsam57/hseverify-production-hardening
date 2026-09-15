@@ -111,7 +111,7 @@ writeFileSync(
 
 const tests = spawnSync(process.execPath, ["--test", resolve("tests", "platform", "billing-subscriptions-runtime.test.mjs")], {
   stdio: "inherit",
-  env: { ...process.env, HSE_BILLING_RUNTIME_DIST: outputDirectory }
+  env: { ...process.env, HSE_BILLING_RUNTIME_DIST: outputDirectory, HSE_BILLING_TEST_WRAPPER: "1" }
 });
 rmSync(outputDirectory, { recursive: true, force: true });
 process.exit(tests.status ?? 1);

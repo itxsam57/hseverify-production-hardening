@@ -1,0 +1,55 @@
+{
+  "milestone": "HSE-X02",
+  "implementationFiles": [
+    "src/app/verify/page.tsx",
+    "src/app/worker/login/page.tsx",
+    "src/app/company/login/page.tsx",
+    "src/app/admin/login/page.tsx",
+    "src/app/verifier/login/page.tsx",
+    "src/app/assessor/login/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/app/verify/page.tsx",
+    "src/app/worker/login/page.tsx",
+    "src/app/company/login/page.tsx",
+    "src/app/admin/login/page.tsx",
+    "src/app/verifier/login/page.tsx"
+  ],
+  "behaviorTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

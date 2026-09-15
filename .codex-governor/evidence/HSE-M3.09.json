@@ -1,0 +1,36 @@
+{
+  "milestone": "HSE-M3.09",
+  "implementationFiles": [
+    "src/lib/privacy/privacy-operations-domain.ts",
+    "src/lib/privacy/privacy-operations-service.ts",
+    "src/lib/privacy/privacy-operations-repository.ts",
+    "src/app/worker/(portal)/privacy/actions.ts",
+    "src/app/worker/(portal)/privacy/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/privacy/privacy-operations-repository.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/privacy-operations-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/privacy-operations-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-09-privacy-operations.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-09-privacy-operations.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/privacy-operations-runtime.test.mjs",
+    "tests/browser/m3-09-privacy-operations.browser.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/privacy-operations-runtime.test.mjs"],
+    ["node", "--test", "tests/browser/m3-09-privacy-operations.browser.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

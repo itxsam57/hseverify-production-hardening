@@ -1,0 +1,34 @@
+{
+  "milestone": "HSE-M3.01",
+  "implementationFiles": [
+    "src/lib/credential/credential-issuance-domain.ts",
+    "src/lib/credential/credential-issuance-repository.ts",
+    "src/lib/credential/credential-issuance-service.ts",
+    "database/migrations/0055_credential_issuance_hardening.up.sql"
+  ],
+  "integrationFiles": [
+    "src/app/api/credentials/route.ts",
+    "src/app/api/credentials/[credentialId]/route.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/credential-issuance-hardening.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/credential-issuance-hardening.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-01-credential-issuance.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-01-credential-issuance.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/credential-issuance-integration.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/credential-issuance-integration.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

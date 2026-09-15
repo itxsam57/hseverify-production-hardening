@@ -236,6 +236,17 @@ export class ScopedShareLinkManager {
     this.nonceFactory = nonceFactory;
   }
 
+  restore(record: ScopedShareLinkRecord): void {
+    if (!SHARE_LINK_ID_PATTERN.test(record.shareLinkId)) {
+      throw new Error("Scoped share identifier is invalid.");
+    }
+    this.links.set(record.shareLinkId, Object.freeze(record));
+  }
+
+  restoreAccessLog(log: ScopedShareAccessLog): void {
+    this.accessLogs.push(Object.freeze(log));
+  }
+
   create(input: {
     ownerWorkerId: string;
     fields: readonly ScopedShareField[];
@@ -285,7 +296,7 @@ export class ScopedShareLinkManager {
     return Object.freeze({
       record,
       token,
-      shareUrl: `/share/${encodeURIComponent(token)}`
+      shareUrl: `/share/${encodeURIComponent(token)}?shareLinkId=${encodeURIComponent(shareLinkId)}`
     });
   }
 

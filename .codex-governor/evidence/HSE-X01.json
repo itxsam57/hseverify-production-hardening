@@ -1,0 +1,41 @@
+{
+  "milestone": "HSE-X01",
+  "implementationFiles": [
+    "package.json",
+    "package-lock.json",
+    "scripts/check-secure-dependencies.mjs"
+  ],
+  "integrationFiles": [
+    "package-lock.json",
+    "src/lib/config/server-environment.ts",
+    "src/lib/integrations/provider-health-domain.ts",
+    "src/lib/security/dependency-floor-service.ts",
+    "tests/platform/secure-dependencies-runtime.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/secure-dependencies-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/secure-dependencies-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-12-production-launch.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-12-production-launch.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "scripts/check-secure-dependencies.mjs",
+    "tests/platform/secure-dependencies-runtime.test.mjs",
+    "tests/platform/secure-dependencies-security-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "scripts/check-secure-dependencies.mjs"],
+    ["node", "--test", "tests/platform/secure-dependencies-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/secure-dependencies-security-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"],
+    ["npm", "audit", "--omit=dev", "--audit-level=high"]
+  ]
+}

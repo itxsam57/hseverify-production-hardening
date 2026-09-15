@@ -1,0 +1,36 @@
+{
+  "milestone": "HSE-M3.05",
+  "implementationFiles": [
+    "src/lib/billing/billing-domain.ts",
+    "src/lib/billing/billing-service.ts",
+    "src/lib/billing/billing-provider.ts",
+    "src/app/company/(portal)/billing/page.tsx",
+    "database/migrations/0045_billing_subscriptions.up.sql"
+  ],
+  "integrationFiles": [
+    "src/app/api/billing/webhook/route.ts",
+    "src/app/company/(portal)/billing/actions.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/billing-subscriptions-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/billing-subscriptions-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-05-billing.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-05-billing.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/billing-subscriptions-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/billing-subscriptions-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"],
+    ["git", "diff", "--check"]
+  ]
+}

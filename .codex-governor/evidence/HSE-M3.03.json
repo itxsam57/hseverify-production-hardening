@@ -1,0 +1,35 @@
+{
+  "milestone": "HSE-M3.03",
+  "implementationFiles": [
+    "src/lib/share-links/scoped-share-link-domain.ts",
+    "src/lib/share-links/scoped-share-link-service.ts",
+    "src/lib/share-links/scoped-share-link-repository.ts",
+    "src/app/api/share-links/route.ts",
+    "src/app/share/[token]/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/share-links/scoped-share-link-repository.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/scoped-share-link-domain.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/scoped-share-link-domain.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-03-scoped-share-links.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-03-scoped-share-links.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/scoped-share-link-domain.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/scoped-share-link-domain.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"],
+    ["node", "--test", "tests/platform/living-record-domain.test.mjs"]
+  ]
+}

@@ -20,6 +20,49 @@ export type CredentialRecord = CredentialIssueRequest & {
   version: number;
   publicStatusUrl: string;
   qrPayload: string;
+  signature: string;
+  pdfUrl: string;
+};
+
+export function credentialQrPayload(credentialId: string, publicStatusUrl: string) {
+  return JSON.stringify({
+    type: "hse_verify_credential",
+    credentialId,
+    url: publicStatusUrl
+  });
+}
+
+export function publicCredentialProjection(credential: CredentialRecord) {
+  return Object.freeze({
+    credentialId: credential.credentialId,
+    qualification: credential.qualification,
+    status: credential.status,
+    issuedAt: credential.issuedAt,
+    expiresAt: credential.expiresAt,
+    version: credential.version
+  });
+}
+
+export function credentialFromRow(row: Record<string, unknown>): CredentialRecord {
+  return {
+    workerId: String(row.worker_id),
+    qualification: String(row.qualification),
+    issuedAt: String(row.issued_at),
+    expiresAt: row.expires_at ? String(row.expires_at) : null,
+    credentialId: String(row.credential_id),
+    status: row.status as CredentialStatus,
+    version: Number(row.version),
+    publicStatusUrl: String(row.public_status_url),
+    qrPayload: String(row.qr_payload),
+    signature: String(row.signature),
+    pdfUrl: String(row.pdf_url)
+  };
+}
+
+export type CredentialLifecycleEvent = {
+  status: CredentialStatus;
+  version: number;
+  changedAt: string;
 };
 
 function requireText(value: string, label: string): string {
@@ -44,6 +87,7 @@ export function issueCredential(
 ): CredentialRecord {
   const credentialId = `credential_id_${sequence}`;
   const publicStatusUrl = `/verify/result/${credentialId}`;
+  const pdfUrl = `/api/credentials/${credentialId}/pdf`;
 
   return {
     workerId: requireText(request.workerId, "Worker ID"),
@@ -56,6 +100,32 @@ export function issueCredential(
     status: "valid",
     version: 1,
     publicStatusUrl,
-    qrPayload: publicStatusUrl
+    qrPayload: credentialQrPayload(credentialId, publicStatusUrl),
+    signature: `signature_${sequence}_${credentialId}`,
+    pdfUrl
   };
+}
+
+export function transitionCredential(
+  credential: CredentialRecord,
+  nextStatus: CredentialStatus,
+  changedAt: string
+): CredentialRecord & { history: readonly CredentialLifecycleEvent[] } {
+  const normalizedChangedAt = requireDate(changedAt, "Change date");
+  if (!CREDENTIAL_STATUSES.includes(nextStatus)) {
+    throw new Error("Credential status is invalid.");
+  }
+  if (credential.status === "revoked" && nextStatus !== "revoked") {
+    throw new Error("Revoked credentials cannot be reactivated.");
+  }
+
+  return Object.freeze({
+    ...credential,
+    status: nextStatus,
+    version: credential.version + 1,
+    history: Object.freeze([
+      { status: credential.status, version: credential.version, changedAt: credential.issuedAt },
+      { status: nextStatus, version: credential.version + 1, changedAt: normalizedChangedAt }
+    ])
+  });
 }

@@ -30,6 +30,26 @@ export type DecisionRecord = Readonly<{
   createdAt: string;
 }>;
 
+export type DecisionAuditEvent = Readonly<{
+  type: "decision.created";
+  decisionId: string;
+  caseId: string;
+  outcome: DecisionState;
+  ruleVersion: string;
+}>;
+
+export type ManualDecisionOverride = Readonly<{
+  overrideId: string;
+  decisionId: string;
+  previousState: DecisionState;
+  newState: DecisionState;
+  reason: string;
+  evidenceReference: string;
+  confirmed: boolean;
+  actorReference: string;
+  createdAt: string;
+}>;
+
 export class DecisionInputError extends Error {}
 
 export function createDecision(input: {
@@ -41,7 +61,7 @@ export function createDecision(input: {
   inputReferences: string[];
   createdAt: string;
 }): DecisionRecord {
-  if (!input.caseId.trim() || !input.reasonCode.trim() || !input.explanation.trim() || !input.ruleVersion.trim()) {
+  if (!input.caseId.trim() || !input.reasonCode.trim() || !input.explanation.trim() || !input.ruleVersion.trim() || input.inputReferences.length === 0) {
     throw new DecisionInputError("Decision requires case, reason, and rule version.");
   }
 
@@ -57,5 +77,39 @@ export function createDecision(input: {
     ruleVersion: input.ruleVersion,
     inputReferences: Object.freeze([...input.inputReferences]),
     createdAt: input.createdAt
+  });
+}
+
+export function toDecisionAuditEvent(decision: DecisionRecord): DecisionAuditEvent {
+  return Object.freeze({
+    type: "decision.created",
+    decisionId: decision.decisionId,
+    caseId: decision.caseId,
+    outcome: decision.state,
+    ruleVersion: decision.ruleVersion
+  });
+}
+
+export function createManualDecisionOverride(input: {
+  decisionId: string;
+  previousState: DecisionState;
+  newState: DecisionState;
+  reason: string;
+  evidenceReference: string;
+  confirmed: boolean;
+  actorReference: string;
+  createdAt: string;
+}): ManualDecisionOverride {
+  if (!input.decisionId.trim() || !input.reason.trim() || !input.evidenceReference.trim() || !input.actorReference.trim() || input.confirmed !== true) {
+    throw new DecisionInputError("Manual override requires decision, reason, and actor. Evidence and confirmation are also required.");
+  }
+
+  if (!DECISION_STATES.includes(input.previousState) || !DECISION_STATES.includes(input.newState)) {
+    throw new DecisionInputError("Manual override contains unknown decision state.");
+  }
+
+  return Object.freeze({
+    overrideId: createIdentifier("decision-override"),
+    ...input
   });
 }

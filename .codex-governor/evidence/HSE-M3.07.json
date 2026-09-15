@@ -1,0 +1,35 @@
+{
+  "milestone": "HSE-M3.07",
+  "implementationFiles": [
+    "src/lib/credential/credential-appeals-domain.ts",
+    "src/lib/credential/credential-appeals-service.ts",
+    "src/lib/credential/credential-appeals-repository.ts",
+    "src/lib/credential/credential-lifecycle-service.ts"
+  ],
+  "integrationFiles": [
+    "database/migrations/0053_credential_appeals.up.sql",
+    "src/app/api/credentials/[credentialId]/appeals/route.ts",
+    "src/app/api/credentials/[credentialId]/lifecycle/route.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/credential-appeals-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/credential-appeals-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-07-credential-appeals.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-07-credential-appeals.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/credential-appeals-security-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/credential-appeals-security-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "milestone": "HSE-M3.08",
+  "implementationFiles": [
+    "src/lib/admin/operational-health-service.ts",
+    "src/app/admin/(portal)/operations/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/admin/operational-health-service.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/admin-operational-health-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/admin-operational-health-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-08-admin-operations.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-08-admin-operations.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/browser/m3-08-admin-operations.browser.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/browser/m3-08-admin-operations.browser.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

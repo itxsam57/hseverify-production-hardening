@@ -1,0 +1,32 @@
+{
+  "milestone": "HSE-X03",
+  "implementationFiles": [
+    "src/lib/integrations/provider-execution-gateway.ts",
+    "src/lib/integrations/provider-adapter-service.ts",
+    "src/lib/integrations/provider-health-domain.ts"
+  ],
+  "integrationFiles": [
+    "src/lib/integrations/provider-adapter-service.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/provider-execution-gateway-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/provider-execution-gateway-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-10-provider-integrations.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-10-provider-integrations.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/provider-execution-gateway-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/provider-execution-gateway-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

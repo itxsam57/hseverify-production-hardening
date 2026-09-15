@@ -1,0 +1,29 @@
+{
+  "milestone": "HSE-M2.13",
+  "implementationFiles": [
+    "src/lib/decision/decision-engine-domain.ts",
+    "src/lib/decision/decision-engine-repository.ts",
+    "src/lib/decision/decision-engine-service.ts",
+    "src/app/admin/(portal)/decisions/page.tsx",
+    "src/app/admin/(portal)/decisions/actions.ts",
+    "database/migrations/0050_decision_engine_workflow.up.sql"
+  ],
+  "integrationFiles": [
+    "src/lib/audit/audit-service.ts",
+    "src/lib/decision/decision-engine-service.ts",
+    "src/app/admin/(portal)/decisions/actions.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/decision-engine-runtime.test.mjs"
+  ],
+  "behaviorCommands": [["node","--test","tests/platform/decision-engine-runtime.test.mjs"]],
+  "browserTests": [
+    "tests/browser/m2-13-decision-engine.browser.test.mjs"
+  ],
+  "browserCommands": [["node","--test","tests/browser/m2-13-decision-engine.browser.test.mjs"]],
+  "securityTests": [
+    "tests/platform/decision-engine-runtime.test.mjs"
+  ],
+  "securityCommands": [["node","--test","tests/platform/decision-engine-runtime.test.mjs"]],
+  "regressionCommands": [["node","--test","tests/platform/decision-engine-domain.test.mjs"],["npm","run","typecheck"]]
+}

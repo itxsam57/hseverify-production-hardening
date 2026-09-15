@@ -1,0 +1,35 @@
+{
+  "milestone": "HSE-M3.06",
+  "implementationFiles": [
+    "src/lib/reports/report-delivery-domain.ts",
+    "src/lib/reports/report-delivery-service.ts",
+    "src/lib/reports/report-delivery-repository.ts"
+  ],
+  "integrationFiles": [
+    "database/migrations/0053_report_delivery.up.sql",
+    "src/app/company/(portal)/reports/actions.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/report-delivery-domain.test.mjs",
+    "tests/platform/report-delivery-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/report-delivery-domain.test.mjs"],
+    ["node", "--test", "tests/platform/report-delivery-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-06-reports.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-06-reports.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/report-delivery-domain.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/report-delivery-domain.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

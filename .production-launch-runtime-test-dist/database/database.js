@@ -1,0 +1,1 @@
+exports.getDatabaseClient=async()=>{throw new Error('runtime injected database');};

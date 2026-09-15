@@ -15,7 +15,13 @@ export const INTERVIEW_SESSION_STATUSES = Object.freeze([
   "CANCELLED"
 ] as const);
 
+export const INTERVIEW_CONSOLE_RECOMMENDATIONS = Object.freeze([
+  "PASS",
+  "FAIL"
+] as const);
+
 export type InterviewSessionStatus = (typeof INTERVIEW_SESSION_STATUSES)[number];
+export type InterviewConsoleRecommendation = (typeof INTERVIEW_CONSOLE_RECOMMENDATIONS)[number];
 
 export type InterviewRequestStatus = (typeof INTERVIEW_REQUEST_STATUSES)[number];
 
@@ -55,6 +61,21 @@ export type InterviewNote = Readonly<{
   interviewSessionId: string;
   authorAccountId: string;
   content: string;
+}>;
+
+export type InterviewConsole = Readonly<{
+  interviewSessionId: string;
+  questionSetId: string;
+  connectionState: "DISCONNECTED" | "CONNECTED";
+  notes: readonly InterviewNote[];
+  recordingPolicy: "VIDEO_AUDIO" | "AUDIO_ONLY" | "NOTES_ONLY" | "PROHIBITED";
+  scorecard: Readonly<{
+    technicalKnowledge: number | null;
+    safetyAwareness: number | null;
+    comments: string | null;
+  }>;
+  recommendation: InterviewConsoleRecommendation | null;
+  submitted: boolean;
 }>;
 
 export class InterviewSchedulingInputError extends Error {
@@ -206,4 +227,66 @@ export function createInterviewNote(input: {
     noteId: createInterviewNoteId(),
     ...input
   });
+}
+
+export function createInterviewConsole(input: { interviewSessionId: string; questionSetId: string }): InterviewConsole {
+  if (!input.interviewSessionId.trim() || !input.questionSetId.trim()) throw new InterviewSchedulingInputError();
+  return Object.freeze({
+    interviewSessionId: input.interviewSessionId.trim(),
+    questionSetId: input.questionSetId.trim(),
+    connectionState: "DISCONNECTED" as const,
+    notes: Object.freeze([]),
+    recordingPolicy: "NOTES_ONLY" as const,
+    scorecard: Object.freeze({ technicalKnowledge: null, safetyAwareness: null, comments: null }),
+    recommendation: null,
+    submitted: false
+  });
+}
+
+export function updateInterviewScorecard(
+  consoleState: InterviewConsole,
+  scorecard: InterviewConsole["scorecard"]
+): InterviewConsole {
+  if (consoleState.submitted) throw new InterviewSchedulingInputError("Submitted interviews cannot be edited.");
+  if (scorecard.technicalKnowledge !== null && (scorecard.technicalKnowledge < 0 || scorecard.technicalKnowledge > 5)) {
+    throw new InterviewSchedulingInputError("Technical knowledge score must be between zero and five.");
+  }
+  if (scorecard.safetyAwareness !== null && (scorecard.safetyAwareness < 0 || scorecard.safetyAwareness > 5)) {
+    throw new InterviewSchedulingInputError("Safety awareness score must be between zero and five.");
+  }
+  return Object.freeze({ ...consoleState, scorecard: Object.freeze({ ...scorecard }) });
+}
+
+export function saveInterviewConsoleNote(consoleState: InterviewConsole, note: InterviewNote): InterviewConsole {
+  if (consoleState.submitted) throw new InterviewSchedulingInputError("Submitted interviews cannot be edited.");
+  if (note.interviewSessionId !== consoleState.interviewSessionId) {
+    throw new InterviewSchedulingInputError("Interview note session mismatch.");
+  }
+  return Object.freeze({ ...consoleState, notes: Object.freeze([...consoleState.notes, note]) });
+}
+
+export function submitInterviewRecommendation(consoleState: InterviewConsole, recommendation: InterviewConsoleRecommendation): InterviewConsole {
+  if (consoleState.submitted) {
+    throw new InterviewSchedulingInputError("Interview recommendation has already been submitted.");
+  }
+  if (!INTERVIEW_CONSOLE_RECOMMENDATIONS.includes(recommendation)) {
+    throw new InterviewSchedulingInputError("Interview recommendation is invalid.");
+  }
+  return Object.freeze({ ...consoleState, recommendation, submitted: true });
+}
+
+export function updateInterviewRecordingPolicy(
+  consoleState: InterviewConsole,
+  recordingPolicy: InterviewConsole["recordingPolicy"]
+): InterviewConsole {
+  if (consoleState.submitted) throw new InterviewSchedulingInputError("Submitted interviews cannot be edited.");
+  if (!["VIDEO_AUDIO", "AUDIO_ONLY", "NOTES_ONLY", "PROHIBITED"].includes(recordingPolicy)) {
+    throw new InterviewSchedulingInputError("Interview recording policy is invalid.");
+  }
+  return Object.freeze({ ...consoleState, recordingPolicy });
+}
+
+export function connectInterviewConsole(consoleState: InterviewConsole): InterviewConsole {
+  if (consoleState.submitted) throw new InterviewSchedulingInputError("Submitted interviews cannot reconnect.");
+  return Object.freeze({ ...consoleState, connectionState: "CONNECTED" as const });
 }

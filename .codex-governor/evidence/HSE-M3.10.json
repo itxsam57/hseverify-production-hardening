@@ -1,0 +1,38 @@
+{
+  "milestone": "HSE-M3.10",
+  "implementationFiles": [
+    "src/lib/integrations/provider-health-domain.ts",
+    "src/lib/integrations/provider-adapter-service.ts",
+    "src/app/admin/(portal)/operations/page.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/admin/operational-health-service.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/provider-health-runtime.test.mjs",
+    "tests/platform/provider-adapter-runtime.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/provider-health-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/provider-adapter-runtime.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m3-10-provider-integrations.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m3-10-provider-integrations.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/provider-health-runtime.test.mjs",
+    "tests/platform/provider-adapter-runtime.test.mjs",
+    "tests/browser/m3-10-provider-integrations.browser.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/provider-health-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/provider-adapter-runtime.test.mjs"],
+    ["node", "--test", "tests/browser/m3-10-provider-integrations.browser.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "typecheck"]
+  ]
+}

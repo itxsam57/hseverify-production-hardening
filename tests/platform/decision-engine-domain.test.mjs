@@ -17,3 +17,9 @@ test("decision engine validates unknown outcomes", () => {
   assert.match(source, /Unknown decision state/);
   assert.match(source, /DECISION_STATES\.includes/);
 });
+
+test("decision engine has audit projection and manual override boundary", () => {
+  assert.match(source, /toDecisionAuditEvent/);
+  assert.match(source, /createManualDecisionOverride/);
+  assert.match(source, /Manual override requires decision, reason, and actor/);
+});

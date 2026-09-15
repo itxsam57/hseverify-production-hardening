@@ -117,6 +117,9 @@ export const AUDIT_ACTIONS = [
   "assessment.catalogue.status.changed",
   "assessment.attempt.started",
   "assessment.attempt.submitted",
+  "decision.created",
+  "decision.override.created",
+  "production_launch.handover.updated",
   "billing.checkout.created",
   "billing.refund.requested",
   "billing.reconciliation.completed",
@@ -142,7 +145,8 @@ export const AUDIT_TARGET_TYPES = [
   "secure_file",
   "worker_identity",
   "company_verification",
-  "platform"
+  "platform",
+  "decision"
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
