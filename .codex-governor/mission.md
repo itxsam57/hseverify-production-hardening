@@ -1,6 +1,6 @@
 # HSE Verify Full Hardening Mission
 
-Authority: docs/Masterplan(HSE Verify).md plus actual code/test evidence. Work only on branch codex/hseverify-full-hardening-20260911. Main is immutable for this mission.
+Authority: docs/Masterplan(HSE Verify).md plus actual code/test evidence. Work only on branch qa/hse-production-hardening. Main is immutable for this mission.
 
 Rules: root-cause fixes only; TDD for defects/features; never weaken accepted security/isolation tests; remove dead/stale code only with proof; do not fake production providers or owner acceptance; push only this isolated branch; continue until zero ACTIONABLE rows remain or a row is truthfully EXTERNAL_UNAVAILABLE/OWNER_REQUIRED with concrete evidence.
 
