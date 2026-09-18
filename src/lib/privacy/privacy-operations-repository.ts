@@ -9,7 +9,7 @@ function changedRows(result: { affectedRows?: number; rowCount?: number }) {
 export class PrivacyOperationsRepository {
   constructor(private readonly clientPromise = getDatabaseClient()) {}
 
-  async createRequest(input: { requestId: string; tenantId: string; workerId: string; type: string; details?: Record<string, unknown> }) {
+  async createRequest(input: { requestId: string; tenantId: string | null; workerId: string; type: string; details?: Record<string, unknown> }) {
     const client = await this.clientPromise;
     await client.query(
       `INSERT INTO privacy_requests(request_id, tenant_id, worker_id, request_type, details) VALUES($1,$2,$3,$4,$5)`,
@@ -17,7 +17,7 @@ export class PrivacyOperationsRepository {
     );
   }
 
-  async addAccommodation(input: { id: string; tenantId: string; workerId: string; type: string; details?: Record<string, unknown> }) {
+  async addAccommodation(input: { id: string; tenantId: string | null; workerId: string; type: string; details?: Record<string, unknown> }) {
     const client = await this.clientPromise;
     await client.query(
       `INSERT INTO accessibility_accommodations(accommodation_id, tenant_id, worker_id, accommodation_type, details) VALUES($1,$2,$3,$4,$5)`,
@@ -25,37 +25,37 @@ export class PrivacyOperationsRepository {
     );
   }
 
-  async completeRequest(input: { requestId:string; workerId:string; tenantId:string; status:string }) {
+  async completeRequest(input: { requestId:string; workerId:string; tenantId:string | null; status:string }) {
     const client = await this.clientPromise;
     const result = await client.query(
-      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id=$3 AND status='OPEN'`,
+      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id IS NOT DISTINCT FROM $3 AND status='OPEN'`,
       [input.requestId, input.workerId, input.tenantId, input.status]
     );
     if (changedRows(result) !== 1) throw new Error("privacy request not found or already closed");
   }
 
-  async transitionRequest(input: { requestId:string; workerId:string; tenantId:string; to:string }) {
+  async transitionRequest(input: { requestId:string; workerId:string; tenantId:string | null; to:string }) {
     const client = await this.clientPromise;
     const result = await client.query(
-      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id=$3 AND status='OPEN'`,
+      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id IS NOT DISTINCT FROM $3 AND status='OPEN'`,
       [input.requestId, input.workerId, input.tenantId, input.to]
     );
     if (changedRows(result) !== 1) throw new Error("privacy request transition failed");
   }
 
-  async listRequests(tenantId: string, workerId: string): Promise<Array<{ request_id: string; request_type: string; status: string }>> {
+  async listRequests(tenantId: string | null, workerId: string): Promise<Array<{ request_id: string; request_type: string; status: string }>> {
     const client = await this.clientPromise;
     const result = await client.query(
-      `SELECT request_id, request_type, status, created_at FROM privacy_requests WHERE tenant_id=$1 AND worker_id=$2 ORDER BY created_at DESC`,
+      `SELECT request_id, request_type, status, created_at FROM privacy_requests WHERE tenant_id IS NOT DISTINCT FROM $1 AND worker_id=$2 ORDER BY created_at DESC`,
       [tenantId, workerId]
     );
     return result.rows as Array<{ request_id: string; request_type: string; status: string }>;
   }
 
-  async listAccommodations(tenantId: string, workerId: string): Promise<Array<{ accommodation_id: string; accommodation_type: string; status: string }>> {
+  async listAccommodations(tenantId: string | null, workerId: string): Promise<Array<{ accommodation_id: string; accommodation_type: string; status: string }>> {
     const client = await this.clientPromise;
     const result = await client.query(
-      `SELECT accommodation_id, accommodation_type, status, created_at FROM accessibility_accommodations WHERE tenant_id=$1 AND worker_id=$2 ORDER BY created_at DESC`,
+      `SELECT accommodation_id, accommodation_type, status, created_at FROM accessibility_accommodations WHERE tenant_id IS NOT DISTINCT FROM $1 AND worker_id=$2 ORDER BY created_at DESC`,
       [tenantId, workerId]
     );
     return result.rows as Array<{ accommodation_id: string; accommodation_type: string; status: string }>;

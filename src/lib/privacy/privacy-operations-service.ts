@@ -17,13 +17,10 @@ export class PrivacyOperationsService {
     return accommodation;
   }
 
-  async listWorkerPrivacy(tenantId: string, workerId: string, ownerWorkerId: string): Promise<{
+  async listWorkerPrivacy(tenantId: string | null, workerId: string, ownerWorkerId: string): Promise<{
     requests: Array<{ request_id: string; request_type: string; status: string }>;
     accommodations: Array<{ accommodation_id: string; accommodation_type: string; status: string }>;
   }> {
-    if (!tenantId) {
-      throw new Error("tenant boundary required");
-    }
     await this.ensureWorkerAccess({ workerId, ownerWorkerId });
     return {
       requests: await this.repository.listRequests(tenantId, workerId),
@@ -31,7 +28,7 @@ export class PrivacyOperationsService {
     };
   }
 
-  async complete(input: { requestId:string; workerId:string; tenantId:string; status:string }) {
+  async complete(input: { requestId:string; workerId:string; tenantId:string | null; status:string }) {
     const request = completePrivacyRequest(input);
     await this.repository.completeRequest(request);
     return request;
@@ -42,7 +39,7 @@ export class PrivacyOperationsService {
     return { authorized: true };
   }
 
-  async transition(input: { requestId: string; workerId: string; tenantId:string; from: string; to: string }) {
+  async transition(input: { requestId: string; workerId: string; tenantId:string | null; from: string; to: string }) {
     assertPrivacyTransition(input);
     await this.repository.transitionRequest(input);
     return input;

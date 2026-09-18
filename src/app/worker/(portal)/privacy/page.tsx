@@ -4,7 +4,7 @@ import { PrivacyOperationsService } from "@/lib/privacy/privacy-operations-servi
 
 export default async function WorkerPrivacyPage() {
   const principal = await requirePortalAuthorization("worker");
-  const privacy = await new PrivacyOperationsService().listWorkerPrivacy(principal.tenantMembership?.tenantId ?? "", principal.accountId, principal.accountId);
+  const privacy = await new PrivacyOperationsService().listWorkerPrivacy(principal.tenantMembership?.tenantId ?? null, principal.accountId, principal.accountId);
   return (
     <div className="dashboard-page">
       <h1>Privacy requests</h1>
