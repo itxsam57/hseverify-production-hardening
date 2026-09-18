@@ -11,6 +11,8 @@ const links = [
   { href: "/worker/passport", label: "Digital passport", icon: "▣" },
   { href: "/worker/available-assessments", label: "Available assessments", icon: "▦" },
   { href: "/worker/company-access", label: "Company access", icon: "↔" },
+  { href: "/worker/share-links", label: "Share links", icon: "⌁" },
+  { href: "/worker/privacy", label: "Privacy", icon: "◉" },
   { href: "/worker/notifications", label: "Notifications", icon: "♢" }
 ] as const;
 
