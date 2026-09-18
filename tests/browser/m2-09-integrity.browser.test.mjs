@@ -42,7 +42,7 @@ test("M2.09 integrity owner acceptance boundary launches Chromium", async () => 
       try {
         const page = await browser.newPage();
         await page.goto(`${baseUrl}/integrity`, { waitUntil: "domcontentloaded" });
-        await page.getByRole("button", { name: "Simulate camera unavailable" }).click();
+        await page.getByRole("button", { name: "Continue with limited monitoring" }).click();
         await page.waitForFunction(() => document.querySelector("[data-testid=integrity-state]")?.textContent === "DEGRADED");
         assert.equal(await page.getByTestId("integrity-state").textContent(), "DEGRADED");
         await page.getByRole("button", { name: "Recover browser" }).click();
