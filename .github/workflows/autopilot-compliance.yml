@@ -1,0 +1,35 @@
+name: Autopilot Compliance
+# UNIVERSAL_AUTOPILOT_V3_WORKFLOW
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify guarded commits
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          base="$BEFORE_SHA"
+          head="$HEAD_SHA"
+          if [ "$EVENT_NAME" = "pull_request" ]; then base="$PR_BASE_SHA"; head="$PR_HEAD_SHA"; fi
+          if [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            candidate="$(git merge-base "origin/$DEFAULT_BRANCH" "$head" 2>/dev/null || true)"
+            if [ -n "$candidate" ] && [ "$candidate" != "$head" ]; then base="$candidate"; fi
+          fi
+          python .autopilot/guard.py ci --root . --base-sha "$base" --head-sha "$head"

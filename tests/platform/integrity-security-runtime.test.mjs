@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ts from "typescript";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { applyPendingMigrations } from "../../scripts/lib/migrations.mjs";
 
 async function loadDomain() {
   const dir = await mkdtemp(join(tmpdir(), "hse-integrity-domain-"));
@@ -48,11 +50,21 @@ async function freePort() {
   });
 }
 
+async function prepareIntegrityDatabase() {
+  const dataDirectory = await mkdtemp(join(tmpdir(), "hse-integrity-security-"));
+  const database = await openScriptDatabase({ databaseDriver: "pglite", pgliteDataDir: dataDirectory });
+  await applyPendingMigrations(database, "m2-09-integrity-security-test");
+  await database.close();
+  return { HSE_DATABASE_DRIVER: "pglite", HSE_PGLITE_DATA_DIR: dataDirectory };
+}
+
 test("integrity security boundary executes the runtime capture API", async () => {
+  const environment = await prepareIntegrityDatabase();
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   await runDevelopmentServer({
     args: ["--port", String(port)],
+    environment: { ...process.env, ...environment },
     probeUrl: `${baseUrl}/api/integrity/snapshot`,
     probe: async () => {
     const response = await fetch(`${baseUrl}/api/integrity/snapshot`, {
@@ -68,7 +80,7 @@ test("integrity security boundary executes the runtime capture API", async () =>
     const body = await response.json();
     assert.equal(body.event.type, "SCREEN_UNAVAILABLE");
     assert.equal(body.event.state, "DEGRADED");
-    assert.equal(body.event.attemptId, "integrity-local-attempt");
+    assert.match(body.event.attemptId, /^local-integrity-/);
     }
   });
 });

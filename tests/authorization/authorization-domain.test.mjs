@@ -22,7 +22,7 @@ import {
   roleHasPlatformPermission,
   tenantPermissionsForRole,
   tenantRoleHasPermission
-} from "../../.authorization-test-dist/authorization/authorization-domain.js";
+} from "./authorization-test-loader.mjs";
 
 const EXPECTED_PLATFORM_GRANTS = {
   worker: ["worker.self.read", "worker.self.manage", "worker.assessments.read"],

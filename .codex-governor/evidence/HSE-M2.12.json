@@ -3,14 +3,16 @@
   "implementationFiles": [
     "src/lib/interview/interview-scheduling-domain.ts",
     "src/lib/interview/interview-scheduling-service.ts",
-    "src/lib/interview/interview-scheduling-repository.ts"
+    "src/lib/interview/interview-scheduling-repository.ts",
+    "database/migrations/0061_interview_console_scorecard.up.sql"
   ],
   "integrationFiles": [
     "src/lib/interview/interview-scheduling-service.ts",
     "src/lib/interview/interview-scheduling-repository.ts",
     "src/app/assessor/(portal)/interviews/[interviewRequestId]/page.tsx",
     "src/app/assessor/(portal)/interviews/actions.ts",
-    "database/migrations/0051_interview_console_state.up.sql"
+    "database/migrations/0051_interview_console_state.up.sql",
+    "database/migrations/0061_interview_console_scorecard.up.sql"
   ],
   "behaviorTests": [
     "tests/platform/interview-scheduling-domain.test.mjs",

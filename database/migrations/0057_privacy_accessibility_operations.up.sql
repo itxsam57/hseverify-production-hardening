@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS privacy_requests (
   request_id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
   worker_id TEXT NOT NULL,
   request_type TEXT NOT NULL CHECK (request_type IN ('access','correction','deletion','export')),
   status TEXT NOT NULL CHECK (status IN ('OPEN','PROCESSING','COMPLETED','REJECTED')) DEFAULT 'OPEN',
@@ -9,9 +10,11 @@ CREATE TABLE IF NOT EXISTS privacy_requests (
 );
 
 CREATE INDEX IF NOT EXISTS privacy_requests_worker_idx ON privacy_requests(worker_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS privacy_requests_tenant_idx ON privacy_requests(tenant_id, worker_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS accessibility_accommodations (
   accommodation_id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
   worker_id TEXT NOT NULL,
   accommodation_type TEXT NOT NULL,
   details JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -21,6 +24,7 @@ CREATE TABLE IF NOT EXISTS accessibility_accommodations (
 
 CREATE TABLE IF NOT EXISTS retention_jobs (
   job_id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL,
   resource_type TEXT NOT NULL,
   retention_before TIMESTAMPTZ NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('PENDING','COMPLETED')) DEFAULT 'PENDING',

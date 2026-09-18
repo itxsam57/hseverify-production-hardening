@@ -8,6 +8,7 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     ".next-development/**",
+    ".next-development-*/**",
     ".next-typecheck/**",
     ".next-runtime-smoke/**",
     ".hse-next/**",
@@ -17,6 +18,10 @@ export default defineConfig([
     ".billing-runtime-test-dist/**",
     ".company-organization-team-runtime-test-dist/**",
     ".production-launch-runtime-test-dist/**",
+    ".profile-test-dist/**",
+    ".secure-file-*/**",
+    ".secure-scan-*/**",
+    ".secure-upload-*/**",
     "out/**",
     "build/**",
     "next-env.d.ts"

@@ -26,6 +26,7 @@
 # next.js generated output
 /.next/
 /.next-development/
+/.next-development-*/
 /.next-typecheck/
 /.next-runtime-smoke/
 /.hse-next/
@@ -58,3 +59,13 @@ pnpm-debug.log*
 # TypeScript generated files
 *.tsbuildinfo
 next-env.d.ts
+
+# UNIVERSAL-AUTOPILOT-V3:BEGIN
+.autopilot/*
+!.autopilot/guard.py
+!.autopilot/autopilot_state.py
+!.autopilot/autopilot_audit.py
+!.autopilot/audit/
+.autopilot/audit/*
+!.autopilot/audit/events.ndjson
+# UNIVERSAL-AUTOPILOT-V3:END

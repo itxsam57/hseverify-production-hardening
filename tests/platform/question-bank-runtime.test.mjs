@@ -289,6 +289,20 @@ test("M2.04 revoked admin cannot mutate and live admin mutations emit dedicated 
   }
 });
 
+test("M2.04 question listing requires a live admin session", async () => {
+  const database = await db();
+  try {
+    const revoked = await seedAdmin(database, "L", { revoked: true });
+    const service = new QuestionBankService(database);
+    await assert.rejects(
+      service.listQuestions(revoked),
+      QuestionBankAccessError
+    );
+  } finally {
+    await database.close();
+  }
+});
+
 test("M2.04 eight-way stale revision race has exactly one winner and preserves every version row", async () => {
   const database = await db();
   try {

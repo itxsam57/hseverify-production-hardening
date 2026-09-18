@@ -9,7 +9,7 @@ import {
   deriveTrustedTenantScope,
   normalizeTenantScopeFixtureKey,
   normalizeTenantScopeFixturePayload
-} from "../../.authorization-test-dist/authorization/tenant-scoped-resource-domain.js";
+} from "./authorization-test-loader.mjs";
 
 function principal(overrides = {}) {
   return {

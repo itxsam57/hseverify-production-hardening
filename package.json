@@ -123,7 +123,8 @@
     "test:m3-02": "node --test tests/platform/living-record-domain.test.mjs",
     "test:m3-03": "node --test tests/platform/scoped-share-link-domain.test.mjs",
     "test:m3-04": "node scripts/run-assurance-order-case-runtime-tests.mjs --m3-04",
-    "test:m3-05": "node scripts/run-billing-tests.mjs"
+    "test:m3-05": "node scripts/run-billing-tests.mjs",
+    "test:m3-08": "node --test tests/platform/admin-operational-health-runtime.test.mjs tests/platform/admin-operational-health-security-runtime.test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

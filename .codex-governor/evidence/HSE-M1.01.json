@@ -1,0 +1,60 @@
+{
+  "milestone": "HSE-M1.01",
+  "implementationFiles": [
+    "src/lib/database/database.ts",
+    "src/lib/auth/auth-domain.ts",
+    "src/lib/authorization/authorization-context-repository.ts",
+    "src/lib/config/environment.ts"
+  ],
+  "integrationFiles": [
+    "database/migrations/0001_platform_foundation.up.sql",
+    "database/migrations/0002_authentication_foundation.up.sql",
+    "scripts/db-migrate.mjs",
+    "scripts/db-status.mjs",
+    "src/lib/auth/auth-login-service.ts",
+    "src/lib/authorization/authorization-service.ts"
+  ],
+  "behaviorTests": [
+    "tests/platform/platform-foundation.test.mjs",
+    "tests/platform/authentication-foundation.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/platform-foundation.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/authentication-foundation.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/authorization-tenant-foundation.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-tenant-foundation.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

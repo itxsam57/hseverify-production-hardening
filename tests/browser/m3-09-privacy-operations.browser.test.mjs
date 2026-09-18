@@ -26,12 +26,15 @@ test("M3.09 privacy operations route crosses browser boundary and requires worke
       const browser = await chromium.launch({ headless: true });
       try {
         const page = await browser.newPage();
+        const errors = [];
+        page.on("pageerror", (error) => errors.push(error.message));
         const response = await page.goto(`${baseUrl}/worker/privacy`, {
           waitUntil: "domcontentloaded"
         });
         assert(response);
         assert(response.status() < 500);
         assert.match(page.url(), /\/worker\/login/);
+        assert.equal(errors.length, 0);
       } finally {
         await browser.close();
       }

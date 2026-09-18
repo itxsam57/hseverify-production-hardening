@@ -37,6 +37,16 @@ async function assertViewport(page, route, width, height) {
   );
 }
 
+async function assertBasicAccessibility(page, route) {
+  const missingMain = await page.locator("main").count();
+  assert(missingMain > 0, `${route} has no main landmark`);
+
+  const invalidImages = await page.evaluate(() =>
+    [...document.querySelectorAll("img")].filter((image) => !image.alt && image.getAttribute("role") !== "presentation").length,
+  );
+  assert.equal(invalidImages, 0, `${route} has images without accessible names`);
+}
+
 test("HSE-X02 public portal matrix renders responsive failure-safe pages", async () => {
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -61,6 +71,7 @@ test("HSE-X02 public portal matrix renders responsive failure-safe pages", async
           await page.getByText(text, { exact: false }).first().waitFor({ timeout: 10000 });
           await assertViewport(page, route, 1440, 1000);
           await assertViewport(page, route, 390, 844);
+          await assertBasicAccessibility(page, route);
           const title = await page.title();
           assert(title.length > 0, `${route} has no document title`);
           const interactiveWithoutName = await page.evaluate(() =>
@@ -74,6 +85,9 @@ test("HSE-X02 public portal matrix renders responsive failure-safe pages", async
             }).length,
           );
           assert.equal(interactiveWithoutName, 0, `${route} has unnamed controls`);
+
+          const failureText = await page.locator("body").innerText();
+          assert(failureText.trim().length > 20, `${route} has no usable page content`);
         }
 
         const failureResponse = await page.goto(`${baseUrl}/verify/result/invalid-token`, { waitUntil: "domcontentloaded" });

@@ -5,7 +5,8 @@
     "src/app/admin/(portal)/operations/page.tsx"
   ],
   "integrationFiles": [
-    "src/lib/admin/operational-health-service.ts"
+    "src/lib/admin/operational-health-service.ts",
+    "tests/platform/admin-operational-health-integration-runtime.test.mjs"
   ],
   "behaviorTests": [
     "tests/platform/admin-operational-health-runtime.test.mjs"
@@ -20,12 +21,13 @@
     ["node", "--test", "tests/browser/m3-08-admin-operations.browser.test.mjs"]
   ],
   "securityTests": [
-    "tests/browser/m3-08-admin-operations.browser.test.mjs"
+    "tests/platform/admin-operational-health-security-runtime.test.mjs"
   ],
   "securityCommands": [
-    ["node", "--test", "tests/browser/m3-08-admin-operations.browser.test.mjs"]
+    ["node", "--test", "tests/platform/admin-operational-health-security-runtime.test.mjs"]
   ],
   "regressionCommands": [
+    ["node", "--test", "tests/platform/admin-operational-health-integration-runtime.test.mjs"],
     ["npm", "run", "typecheck"]
   ]
 }

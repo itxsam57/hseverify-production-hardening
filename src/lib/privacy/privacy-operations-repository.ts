@@ -2,72 +2,79 @@ import "server-only";
 
 import { getDatabaseClient } from "../database/database";
 
+function changedRows(result: { affectedRows?: number; rowCount?: number }) {
+  return result.affectedRows ?? result.rowCount ?? 0;
+}
+
 export class PrivacyOperationsRepository {
   constructor(private readonly clientPromise = getDatabaseClient()) {}
 
-  async createRequest(input: { requestId: string; workerId: string; type: string; details?: Record<string, unknown> }) {
+  async createRequest(input: { requestId: string; tenantId: string; workerId: string; type: string; details?: Record<string, unknown> }) {
     const client = await this.clientPromise;
     await client.query(
-      `INSERT INTO privacy_requests(request_id, worker_id, request_type, details) VALUES($1,$2,$3,$4)`,
-      [input.requestId, input.workerId, input.type, JSON.stringify(input.details ?? {})]
+      `INSERT INTO privacy_requests(request_id, tenant_id, worker_id, request_type, details) VALUES($1,$2,$3,$4,$5)`,
+      [input.requestId, input.tenantId, input.workerId, input.type, JSON.stringify(input.details ?? {})]
     );
   }
 
-  async addAccommodation(input: { id: string; workerId: string; type: string; details?: Record<string, unknown> }) {
+  async addAccommodation(input: { id: string; tenantId: string; workerId: string; type: string; details?: Record<string, unknown> }) {
     const client = await this.clientPromise;
     await client.query(
-      `INSERT INTO accessibility_accommodations(accommodation_id, worker_id, accommodation_type, details) VALUES($1,$2,$3,$4)`,
-      [input.id, input.workerId, input.type, JSON.stringify(input.details ?? {})]
+      `INSERT INTO accessibility_accommodations(accommodation_id, tenant_id, worker_id, accommodation_type, details) VALUES($1,$2,$3,$4,$5)`,
+      [input.id, input.tenantId, input.workerId, input.type, JSON.stringify(input.details ?? {})]
     );
   }
 
-  async completeRequest(input: { requestId:string; workerId:string; status:string }) {
-    const client = await this.clientPromise;
-    await client.query(
-      `UPDATE privacy_requests SET status=$3 WHERE request_id=$1 AND worker_id=$2`,
-      [input.requestId, input.workerId, input.status]
-    );
-  }
-
-  async transitionRequest(input: { requestId:string; workerId:string; to:string }) {
-    const client = await this.clientPromise;
-    await client.query(
-      `UPDATE privacy_requests SET status=$3 WHERE request_id=$1 AND worker_id=$2 AND status='OPEN'`,
-      [input.requestId, input.workerId, input.to]
-    );
-  }
-
-  async listRequests(workerId: string): Promise<Array<{ request_id: string; request_type: string; status: string }>> {
+  async completeRequest(input: { requestId:string; workerId:string; tenantId:string; status:string }) {
     const client = await this.clientPromise;
     const result = await client.query(
-      `SELECT request_id, request_type, status, created_at FROM privacy_requests WHERE worker_id=$1 ORDER BY created_at DESC`,
-      [workerId]
+      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id=$3 AND status='OPEN'`,
+      [input.requestId, input.workerId, input.tenantId, input.status]
+    );
+    if (changedRows(result) !== 1) throw new Error("privacy request not found or already closed");
+  }
+
+  async transitionRequest(input: { requestId:string; workerId:string; tenantId:string; to:string }) {
+    const client = await this.clientPromise;
+    const result = await client.query(
+      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id=$3 AND status='OPEN'`,
+      [input.requestId, input.workerId, input.tenantId, input.to]
+    );
+    if (changedRows(result) !== 1) throw new Error("privacy request transition failed");
+  }
+
+  async listRequests(tenantId: string, workerId: string): Promise<Array<{ request_id: string; request_type: string; status: string }>> {
+    const client = await this.clientPromise;
+    const result = await client.query(
+      `SELECT request_id, request_type, status, created_at FROM privacy_requests WHERE tenant_id=$1 AND worker_id=$2 ORDER BY created_at DESC`,
+      [tenantId, workerId]
     );
     return result.rows as Array<{ request_id: string; request_type: string; status: string }>;
   }
 
-  async listAccommodations(workerId: string): Promise<Array<{ accommodation_id: string; accommodation_type: string; status: string }>> {
+  async listAccommodations(tenantId: string, workerId: string): Promise<Array<{ accommodation_id: string; accommodation_type: string; status: string }>> {
     const client = await this.clientPromise;
     const result = await client.query(
-      `SELECT accommodation_id, accommodation_type, status, created_at FROM accessibility_accommodations WHERE worker_id=$1 ORDER BY created_at DESC`,
-      [workerId]
+      `SELECT accommodation_id, accommodation_type, status, created_at FROM accessibility_accommodations WHERE tenant_id=$1 AND worker_id=$2 ORDER BY created_at DESC`,
+      [tenantId, workerId]
     );
     return result.rows as Array<{ accommodation_id: string; accommodation_type: string; status: string }>;
   }
 
-  async queueRetentionJob(input: { id: string; resourceType: string; before: string }) {
+  async queueRetentionJob(input: { id: string; tenantId: string; resourceType: string; before: string }) {
     const client = await this.clientPromise;
     await client.query(
-      `INSERT INTO retention_jobs(job_id, resource_type, retention_before) VALUES($1,$2,$3)`,
-      [input.id, input.resourceType, input.before]
+      `INSERT INTO retention_jobs(job_id, tenant_id, resource_type, retention_before) VALUES($1,$2,$3,$4)`,
+      [input.id, input.tenantId, input.resourceType, input.before]
     );
   }
 
-  async completeRetentionJob(input: { id: string; status: string }) {
+  async completeRetentionJob(input: { id: string; tenantId: string; status: string }) {
     const client = await this.clientPromise;
-    await client.query(
-      `UPDATE retention_jobs SET status=$2 WHERE job_id=$1 AND status='PENDING'`,
-      [input.id, input.status]
+    const result = await client.query(
+      `UPDATE retention_jobs SET status=$3 WHERE job_id=$1 AND tenant_id=$2 AND status='PENDING'`,
+      [input.id, input.tenantId, input.status]
     );
+    if (changedRows(result) !== 1) throw new Error("retention job not found or already closed");
   }
 }

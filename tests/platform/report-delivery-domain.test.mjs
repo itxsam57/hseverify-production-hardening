@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { assertReportDeliveryAuthorization, createReportCsv, createReportExportRequest } from "../../src/lib/reports/report-delivery-domain.ts";
+import { assertReportDeliveryAuthorization, assertReportTransition, createReportCsv, createReportExportRequest } from "../../src/lib/reports/report-delivery-domain.ts";
 
 test("M3.06 creates an authorized export delivery request contract", () => {
   const result = createReportExportRequest({
@@ -41,6 +41,10 @@ test("M3.06 supports scheduled delivery and deterministic CSV export", () => {
   assert.equal(createReportCsv([{ name: "A,B" }]), '"name"\n"A,B"');
 });
 
+test("M3.06 CSV delivery escapes formula prefixes to prevent spreadsheet execution", () => {
+  assert.equal(createReportCsv([{ name: "=SUM(1,1)" }]), "\"name\"\n\"'=SUM(1,1)\"");
+});
+
 test("M3.06 denies cross tenant report delivery", () => {
   assert.throws(() => assertReportDeliveryAuthorization({
     tenantId: "tenant_a",
@@ -48,4 +52,9 @@ test("M3.06 denies cross tenant report delivery", () => {
     reportId: "report_case001",
     format: "pdf"
   }, { tenantId: "tenant_b", userId: "user_a" }));
+});
+
+test("M3.06 rejects invalid delivery lifecycle jumps", () => {
+  assert.throws(() => assertReportTransition("queued", "delivered"));
+  assert.doesNotThrow(() => assertReportTransition("processing", "delivered"));
 });

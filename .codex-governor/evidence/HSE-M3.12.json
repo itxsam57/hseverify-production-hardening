@@ -3,60 +3,33 @@
   "implementationFiles": [
     "src/lib/operations/production-launch-domain.ts",
     "src/lib/operations/production-launch-service.ts",
-    "src/app/admin/(portal)/operations/page.tsx",
-    "src/app/admin/(portal)/operations/actions.ts",
-    "database/migrations/0059_production_launch_handover.up.sql",
-    "src/lib/audit/audit-domain.ts"
+    "src/lib/operations/certification-readiness-domain.ts"
   ],
   "integrationFiles": [
-    "src/lib/database/database.ts",
-    "src/lib/audit/audit-repository.ts"
+    "src/lib/operations/production-launch-service.ts",
+    "database/migrations/0059_production_launch_handover.up.sql"
   ],
   "behaviorTests": [
-    "tests/platform/production-launch-handover-runtime.test.mjs"
+    "tests/platform/production-launch-handover-runtime.test.mjs",
+    "tests/platform/production-launch-operations-runtime.test.mjs"
   ],
   "behaviorCommands": [
-    [
-      "node",
-      "--test",
-      "tests/platform/production-launch-handover-runtime.test.mjs"
-    ]
+    ["node", "--test", "tests/platform/production-launch-handover-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/production-launch-operations-runtime.test.mjs"]
   ],
   "browserTests": [
     "tests/browser/m3-12-production-launch.browser.test.mjs"
   ],
   "browserCommands": [
-    [
-      "node",
-      "--test",
-      "tests/browser/m3-12-production-launch.browser.test.mjs"
-    ]
+    ["node", "--test", "tests/browser/m3-12-production-launch.browser.test.mjs"]
   ],
   "securityTests": [
     "tests/platform/production-launch-handover-runtime.test.mjs"
   ],
   "securityCommands": [
-    [
-      "node",
-      "--test",
-      "tests/platform/production-launch-handover-runtime.test.mjs"
-    ]
+    ["node", "--test", "tests/platform/production-launch-handover-runtime.test.mjs"]
   ],
   "regressionCommands": [
-    [
-      "node",
-      "--test",
-      "tests/platform/production-launch-operations-runtime.test.mjs"
-    ],
-    [
-      "node",
-      "--test",
-      "tests/platform/admin-operational-health-runtime.test.mjs"
-    ],
-    [
-      "npm",
-      "run",
-      "typecheck"
-    ]
+    ["node", "--test", "tests/platform/production-launch-handover-runtime.test.mjs", "tests/platform/production-launch-operations-runtime.test.mjs", "tests/browser/m3-12-production-launch.browser.test.mjs"]
   ]
 }

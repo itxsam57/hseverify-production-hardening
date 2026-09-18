@@ -37,26 +37,41 @@ export class CredentialIssuanceRepository {
     return result.rows[0] ? credentialFromRow(result.rows[0] as Record<string, unknown>) : null;
   }
 
-  async updateStatus(credentialId: string, status: CredentialRecord["status"], version: number, currentStatus?: CredentialRecord["status"]): Promise<CredentialRecord | null> {
+  async findLifecycle(credentialId: string): Promise<Pick<CredentialRecord, "status" | "version"> | null> {
     const client = await this.clientPromise;
     const result = await client.query(
-      `UPDATE credential_issuances
-       SET status=$2, version=$3
-       WHERE credential_id=$1 AND version=$4 AND ($5::text IS NULL OR status=$5)
-       RETURNING credential_id, worker_id, qualification, issued_at, expires_at, status, version, public_status_url, qr_payload, signature, pdf_url`,
-      [credentialId, status, version + 1, version, currentStatus ?? null]
+      `SELECT status, version FROM credential_issuances WHERE credential_id=$1`,
+      [credentialId]
     );
-    const updated = result.rows[0] ? credentialFromRow(result.rows[0] as Record<string, unknown>) : null;
-    if (updated) {
-      await client.query(
+    const row = result.rows[0] as Record<string, unknown> | undefined;
+    return row ? {
+      status: row.status as CredentialRecord["status"],
+      version: Number(row.version)
+    } : null;
+  }
+
+  async updateStatus(credentialId: string, status: CredentialRecord["status"], version: number, currentStatus?: CredentialRecord["status"]): Promise<CredentialRecord | null> {
+    const client = await this.clientPromise;
+    return client.transaction(async (transaction) => {
+      const result = await transaction.query(
+        `UPDATE credential_issuances
+         SET status=$2, version=$3
+         WHERE credential_id=$1 AND version=$4 AND ($5::text IS NULL OR status=$5)
+         RETURNING credential_id, worker_id, qualification, issued_at, expires_at, status, version, public_status_url, qr_payload, signature, pdf_url`,
+        [credentialId, status, version + 1, version, currentStatus ?? null]
+      );
+      const updated = result.rows[0] ? credentialFromRow(result.rows[0] as Record<string, unknown>) : null;
+      if (updated) {
+        await transaction.query(
         `INSERT INTO credential_lifecycle_events (credential_id, status, version, changed_at) VALUES ($1,$2,$3,now())`,
         [updated.credentialId, updated.status, updated.version]
-      );
-      await client.query(
+        );
+        await transaction.query(
         `INSERT INTO credential_issuance_events (credential_id, version, status, changed_at) VALUES ($1,$2,$3,now()) ON CONFLICT DO NOTHING`,
         [updated.credentialId, updated.version, updated.status]
-      );
-    }
-    return updated;
+        );
+      }
+      return updated;
+    });
   }
 }

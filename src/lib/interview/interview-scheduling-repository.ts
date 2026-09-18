@@ -58,17 +58,16 @@ export class InterviewSchedulingRepository {
   }
 
   async saveConsoleState(input:{tenantId:string; interviewSessionId:string; interviewRequestId:string; notes:readonly unknown[]; scorecard:unknown; recommendation:string|null; submitted:boolean; updatedAt:string}):Promise<void> {
-    await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,recommendation=$5,submitted=$6,updated_at=$7`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify({ notes: input.notes, scorecard: input.scorecard }),input.recommendation,input.submitted,input.updatedAt]);
+    await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,scorecard,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,scorecard=$5::jsonb,recommendation=$6,submitted=$7,updated_at=$8`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),JSON.stringify(input.scorecard),input.recommendation,input.submitted,input.updatedAt]);
   }
 
   async loadConsoleDraft(tenantId:string, interviewSessionId:string):Promise<Partial<InterviewConsole>|null> {
-    const result = await this.database.query<{notes:unknown[]; recommendation:string|null; submitted:boolean}>(
-      `SELECT notes,recommendation,submitted FROM interview_console_drafts WHERE tenant_id=$1 AND interview_session_id=$2`,
+    const result = await this.database.query<{notes:unknown[]; scorecard:unknown; recommendation:string|null; submitted:boolean}>(
+      `SELECT notes,scorecard,recommendation,submitted FROM interview_console_drafts WHERE tenant_id=$1 AND interview_session_id=$2`,
       [tenantId, interviewSessionId]
     );
     const row = result.rows[0];
     if (!row) return null;
-    const stored = Array.isArray(row.notes) ? { notes: row.notes } : row.notes as { notes?: unknown[]; scorecard?: unknown };
-    return { notes: (stored.notes ?? []) as InterviewConsole["notes"], recommendation: row.recommendation as InterviewConsole["recommendation"], submitted: row.submitted, scorecard: stored.scorecard as InterviewConsole["scorecard"] | undefined };
+    return { notes: (row.notes ?? []) as InterviewConsole["notes"], scorecard: row.scorecard as InterviewConsole["scorecard"], recommendation: row.recommendation as InterviewConsole["recommendation"], submitted: row.submitted };
   }
 }

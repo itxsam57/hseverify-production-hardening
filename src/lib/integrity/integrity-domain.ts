@@ -3,7 +3,14 @@ export const INTEGRITY_EVENT_TYPES = Object.freeze([
   "MIC_UNAVAILABLE",
   "SCREEN_UNAVAILABLE",
   "BROWSER_FOCUS_LOST",
-  "BROWSER_RESUMED"
+  "BROWSER_RESUMED",
+  "TAB_SWITCHED",
+  "FULLSCREEN_EXITED",
+  "IDENTITY_RECONFIRMATION_REQUIRED",
+  "ADDITIONAL_VOICE_DETECTED",
+  "COPY_PASTE_DETECTED",
+  "DEVICE_CHANGED",
+  "CONNECTION_INTERRUPTED"
 ] as const);
 
 export type IntegrityEventType = (typeof INTEGRITY_EVENT_TYPES)[number];
@@ -41,15 +48,25 @@ export class IntegrityEventInputError extends Error {
   }
 }
 
+export function normalizeIntegrityAttemptReference(value: string): string {
+  const normalized = value.trim();
+  if (!normalized || normalized.length > 160) {
+    throw new IntegrityEventInputError("Integrity attempt reference is invalid.");
+  }
+  return normalized;
+}
+
 export function classifyIntegrityEvent(type: IntegrityEventType): IntegrityClassification {
   if (type === "BROWSER_RESUMED") return "GREEN";
-  if (type === "BROWSER_FOCUS_LOST") return "YELLOW";
+  if (type === "BROWSER_FOCUS_LOST" || type === "TAB_SWITCHED" || type === "FULLSCREEN_EXITED") return "YELLOW";
+  if (type === "CONNECTION_INTERRUPTED") return "YELLOW";
+  if (type === "COPY_PASTE_DETECTED" || type === "DEVICE_CHANGED" || type === "IDENTITY_RECONFIRMATION_REQUIRED" || type === "ADDITIONAL_VOICE_DETECTED") return "RED";
   return "YELLOW";
 }
 
 export function stateForIntegrityEvent(type: IntegrityEventType): IntegrityState {
   if (type === "BROWSER_RESUMED") return "RECOVERED";
-  if (type === "CAMERA_UNAVAILABLE" || type === "MIC_UNAVAILABLE" || type === "SCREEN_UNAVAILABLE") {
+  if (type === "CAMERA_UNAVAILABLE" || type === "MIC_UNAVAILABLE" || type === "SCREEN_UNAVAILABLE" || type === "CONNECTION_INTERRUPTED") {
     return "DEGRADED";
   }
   return "ACTIVE";
@@ -82,7 +99,7 @@ export function createIntegrityEvidenceEvent(input: {
     throw new IntegrityEventInputError();
   }
 
-  if (!input.attemptId.trim() || !input.eventId.trim()) {
+  if (!normalizeIntegrityAttemptReference(input.attemptId) || !input.eventId.trim()) {
     throw new IntegrityEventInputError();
   }
 

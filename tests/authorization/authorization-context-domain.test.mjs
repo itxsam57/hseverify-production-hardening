@@ -7,7 +7,7 @@ import {
   authorizePlatformPermission,
   authorizePortalEntry,
   resolveSessionAuthorizationContext
-} from "../../.authorization-test-dist/authorization/authorization-context-domain.js";
+} from "./authorization-test-loader.mjs";
 
 const NOW = "2026-08-05T04:00:00.000Z";
 

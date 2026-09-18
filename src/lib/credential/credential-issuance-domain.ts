@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 export const CREDENTIAL_STATUSES = Object.freeze([
   "valid",
   "expired",
@@ -30,6 +32,12 @@ export function credentialQrPayload(credentialId: string, publicStatusUrl: strin
     credentialId,
     url: publicStatusUrl
   });
+}
+
+export function credentialSignature(credentialId: string, qrPayload: string): string {
+  return createHash("sha256")
+    .update(`${credentialId}:${qrPayload}`)
+    .digest("hex");
 }
 
 export function publicCredentialProjection(credential: CredentialRecord) {
@@ -73,6 +81,14 @@ function requireText(value: string, label: string): string {
   return normalized;
 }
 
+function requireIdentifier(value: string, label: string): string {
+  const normalized = requireText(value, label);
+  if (!/^[a-zA-Z0-9_-]+$/.test(normalized)) {
+    throw new Error(`${label} is invalid.`);
+  }
+  return normalized;
+}
+
 function requireDate(value: string, label: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) {
@@ -85,7 +101,7 @@ export function issueCredential(
   request: CredentialIssueRequest,
   sequence: string
 ): CredentialRecord {
-  const credentialId = `credential_id_${sequence}`;
+  const credentialId = `credential_id_${requireIdentifier(sequence, "Credential sequence")}`;
   const publicStatusUrl = `/verify/result/${credentialId}`;
   const pdfUrl = `/api/credentials/${credentialId}/pdf`;
 
@@ -101,7 +117,7 @@ export function issueCredential(
     version: 1,
     publicStatusUrl,
     qrPayload: credentialQrPayload(credentialId, publicStatusUrl),
-    signature: `signature_${sequence}_${credentialId}`,
+    signature: credentialSignature(credentialId, credentialQrPayload(credentialId, publicStatusUrl)),
     pdfUrl
   };
 }

@@ -1,0 +1,115 @@
+{
+  "milestone": "HSE-M1.04",
+  "implementationFiles": [
+    "src/lib/authorization/authorization-domain.ts",
+    "src/lib/authorization/authorization-context-domain.ts",
+    "src/lib/authorization/authorization-context-repository.ts",
+    "src/lib/authorization/authorization-service.ts",
+    "src/lib/authorization/tenant-scoped-command-guard.ts",
+    "src/lib/authorization/tenant-scoped-resource-domain.ts",
+    "src/lib/authorization/tenant-scope-fixture-repository.ts",
+    "src/lib/authorization/tenant-scope-fixture-service.ts"
+  ],
+  "integrationFiles": [
+    "src/app/company/(portal)/tenant-scope/actions.ts",
+    "database/migrations/0005_authorization_tenant_isolation.up.sql",
+    "database/migrations/0006_authorization_tenant_scope_fixture.up.sql",
+    "tests/platform/authorization-m1-04-migration-stack.test.mjs",
+    "tests/platform/authorization-tenant-scope-repository.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/authorization-tenant-foundation.test.mjs",
+    "tests/platform/authorization-membership-context.test.mjs",
+    "tests/platform/authorization-session-context.test.mjs",
+    "tests/authorization/authorization-domain.test.mjs",
+    "tests/authorization/authorization-context-domain.test.mjs",
+    "tests/authorization/authorization-cross-role-matrix.test.mjs",
+    "tests/authorization/tenant-scoped-resource-domain.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-tenant-foundation.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-membership-context.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-session-context.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/authorization/authorization-domain.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/authorization/authorization-context-domain.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/authorization/authorization-cross-role-matrix.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/authorization/tenant-scoped-resource-domain.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/authorization-final-isolation-suite.test.mjs",
+    "tests/platform/authorization-tenant-scope-concurrency.test.mjs",
+    "tests/platform/authorization-company-scope-demonstration.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-final-isolation-suite.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-tenant-scope-concurrency.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-company-scope-demonstration.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "check:authorization"
+    ],
+    [
+      "npm",
+      "run",
+      "check:tenant-scope"
+    ],
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

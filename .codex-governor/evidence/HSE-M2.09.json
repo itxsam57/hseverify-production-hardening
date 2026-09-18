@@ -3,6 +3,7 @@
   "implementationFiles": [
     "src/lib/integrity/integrity-domain.ts",
     "src/lib/integrity/integrity-capture-service.ts",
+    "src/lib/integrity/integrity-media-adapter.ts",
     "src/lib/integrity/integrity-capture-repository.ts",
     "src/app/integrity/page.tsx",
     "src/app/api/integrity/snapshot/route.ts"

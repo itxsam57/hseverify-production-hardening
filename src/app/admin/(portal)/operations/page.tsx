@@ -3,7 +3,8 @@ import { listAuthorizedPlatformAuditEvents } from "@/lib/audit/audit-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getOperationalHealthSnapshot } from "@/lib/admin/operational-health-service";
 import { getProviderHealth } from "@/lib/integrations/provider-health-domain";
-import { runLocalRecoveryCertificationFixture } from "@/lib/operations/certification-readiness-domain";
+import { buildCertificationSnapshot, buildEmptyCertificationSnapshot } from "@/lib/operations/certification-readiness-domain";
+import { CertificationReadinessRepository } from "@/lib/operations/certification-readiness-repository";
 import { getProductionLaunchService } from "@/lib/operations/production-launch-service";
 import { updateProductionLaunchCheckAction } from "./actions";
 
@@ -23,7 +24,10 @@ export default async function AdminOperationsPage({
   });
   const health = await getOperationalHealthSnapshot();
   const providers = getProviderHealth();
-  const certification = runLocalRecoveryCertificationFixture();
+  const certificationRows = await new CertificationReadinessRepository().list();
+  const certification = certificationRows.length > 0
+    ? buildCertificationSnapshot(certificationRows)
+    : buildEmptyCertificationSnapshot();
   const release = await (await getProductionLaunchService()).getReadiness(principal);
 
   return (

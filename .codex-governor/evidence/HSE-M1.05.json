@@ -1,0 +1,52 @@
+{
+  "milestone": "HSE-M1.05",
+  "implementationFiles": [
+    "src/lib/audit/audit-repository.ts",
+    "src/lib/audit/audit-service.ts",
+    "src/lib/outbox/outbox-repository.ts",
+    "src/lib/outbox/outbox-worker.ts",
+    "src/lib/notifications/notification-repository.ts",
+    "src/lib/notifications/notification-service.ts",
+    "src/lib/email-delivery/email-delivery-repository.ts",
+    "src/lib/email-delivery/email-delivery-service.ts"
+  ],
+  "integrationFiles": [
+    "src/lib/audit/audit-service.ts",
+    "src/lib/audit/audit-repository.ts",
+    "src/lib/outbox/outbox-service.ts",
+    "src/lib/outbox/outbox-repository.ts",
+    "database/migrations/0007_platform_audit_foundation.up.sql",
+    "database/migrations/0008_transactional_outbox_jobs.up.sql",
+    "database/migrations/0009_persisted_notifications.up.sql",
+    "database/migrations/0010_email_delivery_foundation.up.sql",
+    "tests/platform/m1-05-final-acceptance.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/m1-05-final-acceptance.test.mjs",
+    "tests/platform/m1-05-final-concurrency.test.mjs",
+    "tests/platform/m1-05-final-role-matrix.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/m1-05-final-acceptance.test.mjs"],
+    ["node", "--test", "tests/platform/m1-05-final-concurrency.test.mjs"],
+    ["node", "--test", "tests/platform/m1-05-final-role-matrix.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/hse-x02-ui-matrix.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/platform/m1-05-final-acceptance.test.mjs",
+    "tests/platform/m1-05-final-role-matrix.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/platform/m1-05-final-acceptance.test.mjs"],
+    ["node", "--test", "tests/platform/m1-05-final-role-matrix.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "check:m1-05-final"],
+    ["npm", "run", "test:m1-05-final"]
+  ]
+}

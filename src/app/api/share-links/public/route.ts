@@ -16,7 +16,9 @@ export async function GET(request: Request) {
     accessedAt: new Date().toISOString()
   });
 
-  return NextResponse.json(result, {
-    status: result.kind === "denied" ? 403 : 200
-  });
+  if (result.kind === "denied") {
+    return NextResponse.json({ error: "share_link_unavailable" }, { status: 403 });
+  }
+
+  return NextResponse.json(result, { status: 200 });
 }

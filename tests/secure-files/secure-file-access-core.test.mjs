@@ -1,6 +1,25 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 import test from "node:test";
+
+if (!existsSync(resolve(".secure-access-test-dist", "secure-files", "secure-file-domain.js"))) {
+  const build = spawnSync(process.execPath, [resolve("node_modules", "typescript", "bin", "tsc"), "-p", "tsconfig.secure-access-tests.json"], {
+    stdio: "inherit"
+  });
+  if (build.status !== 0) process.exit(build.status ?? 1);
+}
+
+for (const filename of [
+  "secure-file-access-domain.js",
+  "secure-file-access-core.js",
+  "secure-file-access-request.js"
+]) {
+  const file = resolve(".secure-access-test-dist", "secure-files", filename);
+  writeFileSync(file, readFileSync(file, "utf8").replace(/require\(["']server-only["']\);\r?\n/g, ""));
+}
 
 const domain = await import(
   "../../.secure-access-test-dist/secure-files/secure-file-domain.js"

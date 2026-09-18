@@ -29,6 +29,10 @@ test("M3.01 credential status route crosses browser boundary", async () => {
         const response = await page.goto(`${baseUrl}/verify/result/unknown`, { waitUntil: "domcontentloaded" });
         assert(response);
         assert(response.status() < 500);
+        const heading = await page.locator("h1").first().textContent();
+        assert.equal(heading?.trim(), "Identifier not verified");
+        const bodyText = await page.locator("main").textContent();
+        assert(bodyText?.includes("Public verification"));
       } finally {
         await browser.close();
       }

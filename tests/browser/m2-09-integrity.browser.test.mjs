@@ -1,8 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createServer } from "node:net";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { applyPendingMigrations } from "../../scripts/lib/migrations.mjs";
+
+async function prepareIntegrityDatabase() {
+  const dataDirectory = await mkdtemp(join(tmpdir(), "hse-m2-09-integrity-browser-"));
+  const database = await openScriptDatabase({ databaseDriver: "pglite", pgliteDataDir: dataDirectory });
+  await applyPendingMigrations(database, "m2-09-integrity-browser-test");
+  await database.close();
+  return { HSE_DATABASE_DRIVER: "pglite", HSE_PGLITE_DATA_DIR: dataDirectory };
+}
 
 async function freePort() {
   return new Promise((resolve, reject) => {
@@ -16,11 +29,13 @@ async function freePort() {
 }
 
 test("M2.09 integrity owner acceptance boundary launches Chromium", async () => {
+  const environment = await prepareIntegrityDatabase();
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
 
   await runDevelopmentServer({
     args: ["--port", String(port)],
+    environment: { ...process.env, ...environment },
     probeUrl: `${baseUrl}/integrity`,
     probe: async () => {
       const browser = await chromium.launch({ headless: true });

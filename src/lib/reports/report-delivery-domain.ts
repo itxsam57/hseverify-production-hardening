@@ -1,7 +1,7 @@
 export const REPORT_FORMATS = ["pdf", "csv", "print"] as const;
 export type ReportFormat = (typeof REPORT_FORMATS)[number];
 
-export const REPORT_STATUSES = ["queued", "scheduled"] as const;
+export const REPORT_STATUSES = ["queued", "scheduled", "processing", "delivered", "failed"] as const;
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
 
 export type AuthorizedReportDelivery = Readonly<{
@@ -58,6 +58,23 @@ export function createReportExportRequest(input: ReportExportRequest): ReportExp
   });
 }
 
+export function assertReportTransition(
+  current: ReportStatus,
+  next: ReportStatus
+): void {
+  const allowed: Record<ReportStatus, readonly ReportStatus[]> = {
+    queued: ["processing", "failed"],
+    scheduled: ["queued", "failed"],
+    processing: ["delivered", "failed"],
+    delivered: [],
+    failed: ["queued", "processing"]
+  };
+
+  if (!allowed[current].includes(next)) {
+    throw new Error("Report delivery transition is invalid.");
+  }
+}
+
 export function assertReportDeliveryAuthorization(
   request: AuthorizedReportDelivery,
   owner: Readonly<{ tenantId: string; userId: string }>
@@ -79,7 +96,34 @@ export function assertReportTenantAccess(
 export function createReportCsv(rows: readonly Record<string, string>[]): string {
   if (rows.length === 0) return "";
   const headers = Object.keys(rows[0]);
+  const safeCell = (value: string): string => {
+    const escaped = value.replaceAll('"', '""');
+    const protectedValue = /^[=+\-@]/.test(escaped) ? `'${escaped}` : escaped;
+    return `"${protectedValue}"`;
+  };
+
   return [headers, ...rows.map((row) => headers.map((key) => row[key] ?? ""))]
-    .map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(","))
+    .map((line) => line.map(safeCell).join(","))
     .join("\n");
+}
+
+export function createPrintDeliveryPayload(reportId: string): Readonly<{ reportId: string; mode: "print" }> {
+  if (!REPORT_ID.test(reportId)) {
+    throw new Error("Report id is invalid.");
+  }
+  return Object.freeze({ reportId, mode: "print" as const });
+}
+
+export function createReportPdf(reportId: string, title: string): string {
+  if (!REPORT_ID.test(reportId)) {
+    throw new Error("Report id is invalid.");
+  }
+  if (!title.trim()) {
+    throw new Error("Report title is required.");
+  }
+
+  // Minimal PDF boundary kept deterministic for the local delivery adapter.
+  // Production object storage/signing can consume this generated artifact later.
+  const body = `HSE Verify Report\n${title}\n${reportId}`;
+  return `%PDF-1.4\n1 0 obj<<>>endobj\n2 0 obj<< /Length ${body.length} >>stream\n${body}\nendstream endobj\n%%EOF`;
 }

@@ -21,6 +21,6 @@ export function loadTs(path) {
   };
   const factory = new Function("exports", "require", "module", "__filename", "__dirname", output);
   factory(moduleRecord.exports, localRequire, moduleRecord, path, ".");
-  compiled.set(path, module.exports);
+  compiled.set(path, moduleRecord.exports);
   return moduleRecord.exports;
 }

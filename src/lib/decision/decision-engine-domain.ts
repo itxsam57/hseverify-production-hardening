@@ -22,6 +22,7 @@ export type DecisionReason = Readonly<{
 
 export type DecisionRecord = Readonly<{
   decisionId: string;
+  tenantId: string;
   caseId: string;
   state: DecisionState;
   reason: DecisionReason;
@@ -35,17 +36,23 @@ export type DecisionAuditEvent = Readonly<{
   decisionId: string;
   caseId: string;
   outcome: DecisionState;
+  reasonCode: string;
+  explanation: string;
   ruleVersion: string;
+  inputReferences: readonly string[];
 }>;
 
 export type ManualDecisionOverride = Readonly<{
   overrideId: string;
   decisionId: string;
+  tenantId: string;
   previousState: DecisionState;
   newState: DecisionState;
   reason: string;
   evidenceReference: string;
   confirmed: boolean;
+  mfaVerifiedAt: string;
+  notificationRequired: boolean;
   actorReference: string;
   createdAt: string;
 }>;
@@ -53,6 +60,7 @@ export type ManualDecisionOverride = Readonly<{
 export class DecisionInputError extends Error {}
 
 export function createDecision(input: {
+  tenantId: string;
   caseId: string;
   state: unknown;
   reasonCode: string;
@@ -61,7 +69,7 @@ export function createDecision(input: {
   inputReferences: string[];
   createdAt: string;
 }): DecisionRecord {
-  if (!input.caseId.trim() || !input.reasonCode.trim() || !input.explanation.trim() || !input.ruleVersion.trim() || input.inputReferences.length === 0) {
+  if (!input.tenantId.trim() || !input.caseId.trim() || !input.reasonCode.trim() || !input.explanation.trim() || !input.ruleVersion.trim() || input.inputReferences.length === 0) {
     throw new DecisionInputError("Decision requires case, reason, and rule version.");
   }
 
@@ -71,6 +79,7 @@ export function createDecision(input: {
 
   return Object.freeze({
     decisionId: createIdentifier("decision"),
+    tenantId: input.tenantId,
     caseId: input.caseId,
     state: input.state as DecisionState,
     reason: Object.freeze({ code: input.reasonCode, explanation: input.explanation }),
@@ -86,21 +95,27 @@ export function toDecisionAuditEvent(decision: DecisionRecord): DecisionAuditEve
     decisionId: decision.decisionId,
     caseId: decision.caseId,
     outcome: decision.state,
-    ruleVersion: decision.ruleVersion
+    reasonCode: decision.reason.code,
+    explanation: decision.reason.explanation,
+    ruleVersion: decision.ruleVersion,
+    inputReferences: decision.inputReferences
   });
 }
 
 export function createManualDecisionOverride(input: {
   decisionId: string;
+  tenantId: string;
   previousState: DecisionState;
   newState: DecisionState;
   reason: string;
   evidenceReference: string;
   confirmed: boolean;
+  mfaVerifiedAt: string;
+  notificationRequired: boolean;
   actorReference: string;
   createdAt: string;
 }): ManualDecisionOverride {
-  if (!input.decisionId.trim() || !input.reason.trim() || !input.evidenceReference.trim() || !input.actorReference.trim() || input.confirmed !== true) {
+  if (!input.decisionId.trim() || !input.tenantId.trim() || !input.reason.trim() || !input.evidenceReference.trim() || !input.actorReference.trim() || !input.mfaVerifiedAt.trim() || input.confirmed !== true) {
     throw new DecisionInputError("Manual override requires decision, reason, and actor. Evidence and confirmation are also required.");
   }
 

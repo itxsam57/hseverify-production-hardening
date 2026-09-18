@@ -10,13 +10,16 @@ export type OperationalHealthSnapshot = {
   auditEvents: number;
   generatedAt: string;
   status: "healthy" | "attention";
+  warnings: string[];
 };
 
 export async function getOperationalHealthSnapshot(
   database?: DatabaseClient
 ): Promise<OperationalHealthSnapshot> {
   const client = database ?? (await (await import("../database/database")).getDatabaseClient());
-  const result = await client.query<{
+  let result;
+  try {
+    result = await client.query<{
     users: string;
     companies: string;
     cases: string;
@@ -34,6 +37,20 @@ export async function getOperationalHealthSnapshot(
       (SELECT count(*) FROM platform_audit_events WHERE source_kind = 'integration') AS integrations,
       (SELECT count(*) FROM platform_audit_events) AS audit_events
   `);
+  } catch (error) {
+    return {
+      users: 0,
+      companies: 0,
+      cases: 0,
+      rules: 0,
+      calibrations: 0,
+      integrations: 0,
+      auditEvents: 0,
+      status: "attention",
+      warnings: ["Operational health database snapshot unavailable"],
+      generatedAt: new Date().toISOString()
+    };
+  }
 
   const row = result.rows[0] ?? {
     users: "0",
@@ -44,15 +61,23 @@ export async function getOperationalHealthSnapshot(
     integrations: "0",
     audit_events: "0"
   };
-  return {
+  const values = {
     users: Number(row.users),
     companies: Number(row.companies),
     cases: Number(row.cases),
     rules: Number(row.rules),
     calibrations: Number(row.calibrations),
     integrations: Number(row.integrations),
-    auditEvents: Number(row.audit_events),
-    status: Number(row.audit_events) >= 0 ? "healthy" : "attention",
+    auditEvents: Number(row.audit_events)
+  };
+  const warnings = Object.entries(values)
+    .filter(([, value]) => !Number.isInteger(value) || value < 0)
+    .map(([name]) => `${name} aggregate is invalid`);
+
+  return {
+    ...values,
+    status: warnings.length > 0 ? "attention" : "healthy",
+    warnings,
     generatedAt: new Date().toISOString()
   };
 }

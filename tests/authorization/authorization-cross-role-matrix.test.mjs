@@ -5,7 +5,7 @@ import {
   PORTAL_ENTRY_PERMISSIONS,
   authorizePortalEntry,
   resolveSessionAuthorizationContext
-} from "../../.authorization-test-dist/authorization/authorization-context-domain.js";
+} from "./authorization-test-loader.mjs";
 
 const NOW = "2026-08-06T03:30:00.000Z";
 const ROLES = ["worker", "company", "assessor", "verifier", "admin", "root"];

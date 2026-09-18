@@ -1,0 +1,50 @@
+{
+  "milestone": "HSE-M1.07",
+  "implementationFiles": [
+    "src/lib/identity/worker-identity-domain.ts",
+    "src/lib/identity/worker-identity-service.ts",
+    "src/lib/identity/worker-identity-repository.ts",
+    "src/app/worker/(portal)/identity/page.tsx",
+    "src/app/worker/(portal)/identity/actions.ts",
+    "src/components/worker/identity-workspace.tsx"
+  ],
+  "integrationFiles": [
+    "src/lib/identity/worker-identity-service.ts",
+    "src/lib/identity/worker-identity-repository.ts",
+    "src/lib/identity/worker-identity-draft-service.ts",
+    "src/lib/identity/worker-identity-draft-repository.ts",
+    "database/migrations/0015_worker_identity_foundation.up.sql",
+    "database/migrations/0016_worker_identity_draft_details.up.sql",
+    "database/migrations/0017_worker_identity_evidence_binding.up.sql",
+    "database/migrations/0019_worker_identity_automated_checks.up.sql",
+    "database/migrations/0020_worker_identity_duplicate_worker_id.up.sql",
+    "database/migrations/0021_worker_identity_corrections.up.sql",
+    "tests/platform/m1-07-final-acceptance.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/m1-07-final-acceptance.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/m1-07-final-acceptance.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/m1-07-worker-identity.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/m1-07-worker-identity.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "scripts/run-worker-identity-tests.mjs",
+    "tests/platform/worker-registration-concurrency.test.mjs",
+    "scripts/run-worker-identity-correction-tests.mjs"
+  ],
+  "securityCommands": [
+    ["node", "scripts/run-worker-identity-tests.mjs"],
+    ["node", "--test", "tests/platform/worker-registration-concurrency.test.mjs"],
+    ["node", "scripts/run-worker-identity-correction-tests.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "check:worker-identity"],
+    ["npm", "run", "test:worker-identity"]
+  ]
+}

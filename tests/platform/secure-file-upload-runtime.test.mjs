@@ -1,15 +1,43 @@
 import assert from "node:assert/strict";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import test from "node:test";
+import ts from "typescript";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyPendingMigrations } from "../../scripts/lib/migrations.mjs";
 
 const require = createRequire(import.meta.url);
-const runtimeDist = process.env.HSE_SECURE_UPLOAD_RUNTIME_DIST;
-assert.ok(runtimeDist, "HSE_SECURE_UPLOAD_RUNTIME_DIST must be configured");
+const runtimeDist = process.env.HSE_SECURE_UPLOAD_RUNTIME_DIST ?? resolve(".secure-upload-runtime-test-dist");
+
+function ensureRuntimeDist() {
+  const modules = [
+    "auth/auth-domain.ts",
+    "authorization/authorization-domain.ts",
+    "authorization/authorization-context-domain.ts",
+    "authorization/tenant-scoped-resource-domain.ts",
+    "authorization/tenant-scoped-command-guard.ts",
+    "audit/audit-domain.ts",
+    "audit/audit-repository.ts",
+    "secure-files/secure-file-domain.ts",
+    "secure-files/secure-file-upload-domain.ts",
+    "secure-files/secure-file-upload-repository.ts"
+  ];
+  for (const modulePath of modules) {
+    const source = readFileSync(resolve("src/lib", modulePath), "utf8").replace(/^import "server-only";\r?\n\r?\n?/, "");
+    const destination = resolve(runtimeDist, modulePath.replace(/\.ts$/, ".js"));
+    mkdirSync(dirname(destination), { recursive: true });
+    writeFileSync(destination, ts.transpileModule(source, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
+    }).outputText);
+  }
+  mkdirSync(resolve(runtimeDist, "database"), { recursive: true });
+  writeFileSync(resolve(runtimeDist, "database", "database.js"), "exports.getDatabaseClient = async () => { throw new Error('test injects database'); };\n");
+}
+
+ensureRuntimeDist();
 
 const auditDomain = require(resolve(runtimeDist, "audit", "audit-domain.js"));
 const secureFiles = require(resolve(runtimeDist, "secure-files", "secure-file-domain.js"));

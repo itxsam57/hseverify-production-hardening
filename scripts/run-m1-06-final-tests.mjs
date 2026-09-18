@@ -150,13 +150,15 @@ const tests = spawnSync(
     "--test",
     resolve("tests", "platform", "m1-06-final-acceptance.test.mjs"),
     resolve("tests", "platform", "m1-06-final-restart-migration.test.mjs"),
-    resolve("tests", "platform", "migration-checksum-repair.test.mjs")
+    resolve("tests", "platform", "migration-checksum-repair.test.mjs"),
+    resolve("tests", "platform", "secure-file-access-audit.test.mjs")
   ],
   {
     stdio: "inherit",
     env: {
       ...process.env,
-      HSE_M1_06_FINAL_RUNTIME_DIST: outputDirectory
+      HSE_M1_06_FINAL_RUNTIME_DIST: outputDirectory,
+      HSE_SECURE_ACCESS_RUNTIME_DIST: outputDirectory
     }
   }
 );

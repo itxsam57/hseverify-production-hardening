@@ -19,7 +19,14 @@ export async function queueReport(formData: FormData): Promise<void> {
     tenantId: identity.tenantId,
     requestedBy: identity.userId,
     format: value(formData, "format") as "pdf" | "csv" | "print",
-    requestedAt: new Date().toISOString()
+    requestedAt: new Date().toISOString(),
+    scheduleAt: value(formData, "scheduleAt") || undefined
   });
   revalidatePath("/company/reports");
+}
+
+export async function listCompanyReports() {
+  const principal = await requireCurrentTenantPermission("company.audit.read");
+  const identity = principal as unknown as { tenantId: string };
+  return new ReportDeliveryRepository().listForTenant(identity.tenantId);
 }

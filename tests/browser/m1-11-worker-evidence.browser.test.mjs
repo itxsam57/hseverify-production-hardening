@@ -32,11 +32,17 @@ test("M1.11 Worker evidence routes render through real Chromium", async () => {
         });
         page.on("pageerror", (error) => consoleErrors.push(error.message));
 
-        for (const path of ["/worker/profile", "/worker/register", "/worker/login"]) {
+        for (const path of ["/worker/profile", "/worker/register", "/worker/login", "/worker/evidence"]) {
           const response = await page.goto(`${baseUrl}${path}`, { waitUntil: "domcontentloaded" });
           assert(response);
           assert(response.status() < 500);
         }
+
+        await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
+        assert.match(page.url(), /\/worker\/login/);
+        const pageText = await page.locator("body").innerText();
+        assert.match(pageText, /Worker sign in/);
+        assert.match(pageText, /Create a Worker account/);
 
         if (consoleErrors.length) console.log(JSON.stringify(consoleErrors));
         const runtimeErrors = consoleErrors.filter((error) =>

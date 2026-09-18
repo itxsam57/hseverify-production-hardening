@@ -1,17 +1,52 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import ts from "typescript";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyPendingMigrations } from "../../scripts/lib/migrations.mjs";
 
 const require = createRequire(import.meta.url);
-const runtimeDist = process.env.HSE_SECURE_SCAN_HANDLER_RUNTIME_DIST;
-assert.ok(runtimeDist, "HSE_SECURE_SCAN_HANDLER_RUNTIME_DIST must be configured");
+const runtimeDist = process.env.HSE_SECURE_SCAN_HANDLER_RUNTIME_DIST ?? resolve(".secure-scan-handler-runtime-test-dist");
+
+const runtimeModules = [
+  "auth/auth-domain.ts",
+  "authorization/authorization-domain.ts",
+  "authorization/authorization-context-domain.ts",
+  "authorization/tenant-scoped-resource-domain.ts",
+  "authorization/tenant-scoped-command-guard.ts",
+  "audit/audit-domain.ts",
+  "audit/audit-repository.ts",
+  "outbox/outbox-domain.ts",
+  "outbox/outbox-repository.ts",
+  "secure-files/secure-file-domain.ts",
+  "secure-files/secure-file-scan-domain.ts",
+  "secure-files/secure-file-scan-repository.ts",
+  "secure-files/secure-file-scan-handler-core.ts",
+  "secure-files/malware-scanner-core.ts",
+  "secure-files/private-object-storage-core.ts"
+];
+
+async function ensureRuntimeDist() {
+  for (const modulePath of runtimeModules) {
+    const source = (await readFile(resolve("src/lib", modulePath), "utf8"))
+      .replace(/^import "server-only";\r?\n\r?\n?/, "");
+    const destination = resolve(runtimeDist, modulePath.replace(/\.ts$/, ".js"));
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, ts.transpileModule(source, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
+    }).outputText);
+  }
+  const databaseDestination = resolve(runtimeDist, "database", "database.js");
+  await mkdir(dirname(databaseDestination), { recursive: true });
+  await writeFile(databaseDestination, "exports.getDatabaseClient = async () => { throw new Error('test injects database'); };\n");
+}
+
+await ensureRuntimeDist();
 
 const scanDomain = require(resolve(runtimeDist, "secure-files", "secure-file-scan-domain.js"));
 const { DatabaseSecureFileScanRepository } = require(

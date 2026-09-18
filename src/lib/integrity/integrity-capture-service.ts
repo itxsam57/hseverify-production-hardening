@@ -1,5 +1,6 @@
 import {
   createIntegrityEvidenceEvent,
+  normalizeIntegrityAttemptReference,
   summarizeIntegrityTimeline,
   type IntegrityEvidenceEvent,
   type IntegrityEventType
@@ -17,14 +18,18 @@ export class IntegrityCaptureService {
 
   constructor(
     repository = new IntegrityCaptureRepository(),
-    private readonly assessmentAttemptId = "integrity-local-attempt",
+    assessmentAttemptId = "integrity-local-attempt",
     initialEvents: readonly IntegrityEvidenceEvent[] = []
   ) {
     this.repository = repository;
-    initialEvents.forEach((event) => this.repository.save(event));
+    this.assessmentAttemptId = normalizeIntegrityAttemptReference(assessmentAttemptId);
+    this.initialEvents = initialEvents;
   }
 
-  record(signal: IntegrityCaptureSignal): IntegrityEvidenceEvent {
+  private readonly assessmentAttemptId: string;
+  private readonly initialEvents: readonly IntegrityEvidenceEvent[];
+
+  async record(signal: IntegrityCaptureSignal): Promise<IntegrityEvidenceEvent> {
     const event = createIntegrityEvidenceEvent({
       eventId: crypto.randomUUID(),
       attemptId: this.attemptId,
@@ -39,11 +44,12 @@ export class IntegrityCaptureService {
     return this.assessmentAttemptId;
   }
 
-  snapshot() {
-    return summarizeIntegrityTimeline(this.repository.list());
+  async snapshot() {
+    return summarizeIntegrityTimeline(await this.allEvents());
   }
 
-  allEvents(): readonly IntegrityEvidenceEvent[] {
-    return this.repository.list();
+  async allEvents(): Promise<readonly IntegrityEvidenceEvent[]> {
+    const stored = await this.repository.list(this.attemptId);
+    return [...this.initialEvents, ...stored];
   }
 }

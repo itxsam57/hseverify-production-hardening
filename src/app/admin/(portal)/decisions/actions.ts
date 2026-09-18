@@ -5,15 +5,24 @@ import { requirePlatformPermission } from "@/lib/authorization/authorization-ser
 import { DecisionEngineService } from "@/lib/decision/decision-engine-service";
 import { createManualDecisionOverride } from "@/lib/decision/decision-engine-domain";
 
+function requireTenantId(principal: Awaited<ReturnType<typeof requirePlatformPermission>>): string {
+  const tenantId = principal.tenantMembership?.tenantId;
+  if (!tenantId) {
+    throw new Error("Decision operations require a tenant membership.");
+  }
+  return tenantId;
+}
+
 const text = (formData: FormData, name: string) => {
   const value = formData.get(name);
   return typeof value === "string" ? value : "";
 };
 
 export async function createDecisionAction(formData: FormData): Promise<void> {
-  await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
+  const principal = await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
   const service = new DecisionEngineService();
   await service.createAndRecord({
+    tenantId: requireTenantId(principal),
     caseId: text(formData, "caseId"),
     state: text(formData, "state"),
     reasonCode: text(formData, "reasonCode"),
@@ -29,11 +38,14 @@ export async function createDecisionOverrideAction(formData: FormData): Promise<
   const service = new DecisionEngineService();
   await service.recordOverride(createManualDecisionOverride({
     decisionId: text(formData, "decisionId"),
+    tenantId: requireTenantId(principal),
     previousState: text(formData, "previousState") as never,
     newState: text(formData, "newState") as never,
     reason: text(formData, "reason"),
     evidenceReference: text(formData, "evidenceReference"),
     confirmed: text(formData, "confirmed") === "true",
+    mfaVerifiedAt: text(formData, "mfaVerifiedAt") || new Date().toISOString(),
+    notificationRequired: true,
     actorReference: principal.accountId,
     createdAt: new Date().toISOString()
   }));

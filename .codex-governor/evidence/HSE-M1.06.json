@@ -1,0 +1,50 @@
+{
+  "milestone": "HSE-M1.06",
+  "implementationFiles": [
+    "src/lib/secure-files/secure-file-upload-service.ts",
+    "src/lib/secure-files/secure-file-access-core.ts",
+    "src/lib/secure-files/secure-file-scan-handler-core.ts",
+    "src/lib/secure-files/private-object-storage-core.ts",
+    "src/lib/worker-evidence/worker-evidence-attachment-service.ts"
+  ],
+  "integrationFiles": [
+    "src/lib/secure-files/secure-file-upload-repository.ts",
+    "src/lib/secure-files/secure-file-repository.ts",
+    "database/migrations/0012_secure_file_upload_quarantine.up.sql",
+    "database/migrations/0013_secure_file_malware_scan.up.sql",
+    "database/migrations/0014_secure_file_signed_access_audit.up.sql",
+    "database/migrations/0041_secure_file_authority_compatibility.up.sql",
+    "tests/platform/secure-file-upload-runtime.test.mjs",
+    "tests/platform/secure-file-access-audit.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/secure-file-upload-runtime.test.mjs",
+    "tests/platform/secure-file-scan-handler-runtime.test.mjs",
+    "tests/platform/secure-file-access-audit.test.mjs"
+  ],
+  "behaviorCommands": [
+    ["node", "--test", "tests/platform/secure-file-upload-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/secure-file-scan-handler-runtime.test.mjs"],
+    ["node", "--test", "tests/platform/secure-file-access-audit.test.mjs"]
+  ],
+  "browserTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "browserCommands": [
+    ["node", "--test", "tests/browser/hse-x02-ui-matrix.browser.test.mjs"]
+  ],
+  "securityTests": [
+    "tests/secure-files/secure-file-access-core.test.mjs",
+    "tests/platform/secure-file-concurrency.test.mjs",
+    "tests/platform/secure-file-upload-runtime.test.mjs"
+  ],
+  "securityCommands": [
+    ["node", "--test", "tests/secure-files/secure-file-access-core.test.mjs"],
+    ["node", "--test", "tests/platform/secure-file-concurrency.test.mjs"],
+    ["node", "--test", "tests/platform/secure-file-upload-runtime.test.mjs"]
+  ],
+  "regressionCommands": [
+    ["npm", "run", "check:m1-06-final"],
+    ["npm", "run", "test:m1-06-final"]
+  ]
+}

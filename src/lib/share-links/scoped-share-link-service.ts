@@ -39,12 +39,15 @@ export class ScopedShareLinkService {
     passport: DigitalPassport;
     accessedAt: string | Date;
   }) {
-    const manager = await this.hydrate(input.shareLinkId);
-    const result = manager.resolve(input);
     const record = await this.repository.find(input.shareLinkId);
-    if (!record) return result;
+    if (!record) {
+      return Object.freeze({ kind: "denied", reason: "invalid" as const });
+    }
+    const manager = await this.hydrate(input.shareLinkId);
+    const previousLogCount = manager.listAccessLogs(record.ownerWorkerId, input.shareLinkId).length;
+    const result = manager.resolve(input);
     const logs = manager.listAccessLogs(record.ownerWorkerId, input.shareLinkId);
-    const latest = logs.at(-1);
+    const latest = logs.at(previousLogCount);
     if (latest) await this.repository.saveAccessLog(latest);
     return result;
   }

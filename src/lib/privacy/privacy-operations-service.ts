@@ -17,18 +17,21 @@ export class PrivacyOperationsService {
     return accommodation;
   }
 
-  async listWorkerPrivacy(workerId: string): Promise<{
+  async listWorkerPrivacy(tenantId: string, workerId: string, ownerWorkerId: string): Promise<{
     requests: Array<{ request_id: string; request_type: string; status: string }>;
     accommodations: Array<{ accommodation_id: string; accommodation_type: string; status: string }>;
   }> {
-    await this.ensureWorkerAccess({ workerId, ownerWorkerId: workerId });
+    if (!tenantId) {
+      throw new Error("tenant boundary required");
+    }
+    await this.ensureWorkerAccess({ workerId, ownerWorkerId });
     return {
-      requests: await this.repository.listRequests(workerId),
-      accommodations: await this.repository.listAccommodations(workerId),
+      requests: await this.repository.listRequests(tenantId, workerId),
+      accommodations: await this.repository.listAccommodations(tenantId, workerId),
     };
   }
 
-  async complete(input: { requestId:string; workerId:string; status:string }) {
+  async complete(input: { requestId:string; workerId:string; tenantId:string; status:string }) {
     const request = completePrivacyRequest(input);
     await this.repository.completeRequest(request);
     return request;
@@ -39,19 +42,19 @@ export class PrivacyOperationsService {
     return { authorized: true };
   }
 
-  async transition(input: { requestId: string; workerId: string; from: string; to: string }) {
+  async transition(input: { requestId: string; workerId: string; tenantId:string; from: string; to: string }) {
     assertPrivacyTransition(input);
     await this.repository.transitionRequest(input);
     return input;
   }
 
-  async scheduleRetention(input: { id:string; resourceType:string; before:string }) {
+  async scheduleRetention(input: { id:string; tenantId:string; resourceType:string; before:string }) {
     const target = assertRetentionTarget(input);
     await this.repository.queueRetentionJob(target);
     return { ...input, status: "PENDING" as const };
   }
 
-  async completeRetention(input: { id:string; status:string }) {
+  async completeRetention(input: { id:string; tenantId:string; status:string }) {
     const job = completeRetentionJob(input);
     await this.repository.completeRetentionJob(job);
     return job;

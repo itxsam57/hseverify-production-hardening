@@ -17,6 +17,24 @@ const MIGRATION_CHECKSUM_REPAIRS = Object.freeze({
       "b20f0a844faee01315562d9673a75df0494908259a7997d4a0d9e421bb0742d2",
       "8156083e26ac2c3ad354eddd44b13af801898db2d1cba35f2441c26ac2a18280"
     ])
+  }),
+  "0045_billing_subscriptions": Object.freeze({
+    currentChecksum: "5c57551a01d20707811c71f688905a286b2411989258fb065cd1e92a22feb2f9",
+    acceptedPreviousChecksums: Object.freeze([
+      "c44dd42e6feb282ae41642adb8cb84ecd9dca16f3d3ac9b891b9cd9095eb951d"
+    ])
+  }),
+  "0050_decision_engine_workflow": Object.freeze({
+    currentChecksum: "2e490e6b5b8e74fee34d5ccd3cd9fb10f55b6618e8d613f1ceb4bed4a88cfb23",
+    acceptedPreviousChecksums: Object.freeze([
+      "e314d486b75d576eb7d6a0d815a30a1faf18a4498ff0fe539a1cd2f89a73e52c"
+    ])
+  }),
+  "0055_credential_issuance_hardening": Object.freeze({
+    currentChecksum: "7dd3f3716dc05fbdcc43bc79086c53add4861c259d0322f91f484504691960a3",
+    acceptedPreviousChecksums: Object.freeze([
+      "1689df962f62ab3424bef6875ef63fdc989a168c159a7747249dde80918f7a87"
+    ])
   })
 });
 

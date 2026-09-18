@@ -431,8 +431,9 @@ export class QuestionBankService {
   async listQuestions(
     principal: AuthorizationPrincipal
   ): Promise<readonly QuestionAdminListItem[]> {
-    if (principal.activeRole !== "admin") throw new QuestionBankAccessError();
-    const rows = await this.database.query<QuestionAdminJoinRow>(
+    const rows = await this.database.transaction(async (database) => {
+      await liveAdmin(database, principal, new Date());
+      return database.query<QuestionAdminJoinRow>(
       `SELECT q.question_id,q.question_reference,q.question_status,q.current_version_id,
               q.current_content_fingerprint,q.created_at,q.updated_at,
               v.question_version_id,v.version_no,v.question_type,v.prompt,v.options_json,
@@ -441,7 +442,8 @@ export class QuestionBankService {
        FROM assessment_questions q
        JOIN assessment_question_versions v ON v.question_version_id=q.current_version_id
        ORDER BY q.updated_at DESC,q.question_id`
-    );
+      );
+    });
     return Object.freeze(
       rows.rows.map((row) =>
         Object.freeze({

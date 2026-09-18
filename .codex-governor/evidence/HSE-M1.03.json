@@ -1,0 +1,79 @@
+{
+  "milestone": "HSE-M1.03",
+  "implementationFiles": [
+    "src/lib/auth/auth-domain.ts",
+    "src/lib/auth/auth-session-service.ts",
+    "src/lib/auth/worker-registration-service.ts",
+    "src/lib/authorization/authorization-service.ts",
+    "src/lib/authorization/tenant-scoped-command-guard.ts",
+    "src/app/auth/actions.ts",
+    "src/app/auth/recover/page.tsx",
+    "src/app/auth/recover/actions.ts"
+  ],
+  "integrationFiles": [
+    "src/lib/auth/auth-repository.ts",
+    "tests/platform/authentication-completion.test.mjs",
+    "tests/platform/worker-registration-flow-sql.test.mjs"
+  ],
+  "behaviorTests": [
+    "tests/platform/authentication-completion.test.mjs",
+    "tests/platform/authentication-invitation-expiry.test.mjs",
+    "tests/platform/authentication-portal-isolation.test.mjs",
+    "tests/platform/authentication-signed-out-proxy.test.mjs",
+    "tests/platform/authentication-failure-state-sql.test.mjs"
+  ],
+  "behaviorCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/authentication-completion.test.mjs",
+      "tests/platform/authentication-invitation-expiry.test.mjs",
+      "tests/platform/authentication-portal-isolation.test.mjs",
+      "tests/platform/authentication-signed-out-proxy.test.mjs",
+      "tests/platform/authentication-failure-state-sql.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
+      "tests/platform/worker-registration-flow-sql.test.mjs"
+    ]
+  ],
+  "browserTests": [
+    "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+  ],
+  "browserCommands": [
+    [
+      "node",
+      "--test",
+      "tests/browser/hse-x02-ui-matrix.browser.test.mjs"
+    ]
+  ],
+  "securityTests": [
+    "tests/platform/authorization-final-isolation-suite.test.mjs",
+    "tests/platform/authentication-portal-isolation.test.mjs"
+  ],
+  "securityCommands": [
+    [
+      "node",
+      "--test",
+      "tests/platform/authorization-final-isolation-suite.test.mjs"
+    ]
+  ],
+  "regressionCommands": [
+    [
+      "npm",
+      "run",
+      "check:routes"
+    ],
+    [
+      "npm",
+      "run",
+      "check:authorization"
+    ],
+    [
+      "npm",
+      "run",
+      "typecheck"
+    ]
+  ]
+}

@@ -11,7 +11,8 @@ function loadDecisionRuntime() {
     "src/lib/decision/decision-engine-domain.ts",
     "src/lib/decision/decision-engine-repository.ts",
     "src/lib/decision/decision-engine-service.ts",
-    "src/lib/auth/auth-domain.ts"
+    "src/lib/auth/auth-domain.ts",
+    "src/lib/audit/audit-repository.ts"
   ];
   for (const sourceFile of files) {
     let source = readFileSync(sourceFile, "utf8").replace(/^import "server-only";\n?/, "");
@@ -20,6 +21,7 @@ function loadDecisionRuntime() {
         'import { bindTrustedSystemAuditActor } from "../audit/audit-domain";'
         , 'const bindTrustedSystemAuditActor = () => ({ actor: "runtime-test" });'
       );
+      source = source.replace('import { getAuditRepository } from "../audit/audit-repository";', 'const getAuditRepository = () => ({ append: async () => {} });');
     }
     const output = ts.transpileModule(source, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
@@ -41,10 +43,12 @@ test("decision engine runtime persists decision and audit through service bounda
   const auditRepository = { append: async (_actor, event) => audits.push(event) };
   const service = new DecisionEngineService(auditRepository, {
     saveDecision: async (decision) => decisions.push(decision),
-    saveOverride: async () => {}
+    saveOverride: async () => {},
+    findDecision: async () => ({ decisionId: "decision-1", tenantId: "tenant-runtime-1" })
   });
 
   const result = await service.createAndRecord({
+    tenantId: "tenant-runtime-1",
     caseId: "case-runtime-1",
     state: "APPROVED",
     reasonCode: "rule_pass",
@@ -56,8 +60,11 @@ test("decision engine runtime persists decision and audit through service bounda
   assert.equal(result.state, "APPROVED");
   assert.equal(decisions.length, 1);
   assert.equal(audits.length, 1);
+  assert.deepEqual(audits[0].metadata.inputReferences, ["evidence-1"]);
+  assert.equal(audits[0].metadata.reasonCode, "rule_pass");
   await assert.rejects(
     () => service.createAndRecord({
+      tenantId: "tenant-runtime-1",
       caseId: "case-runtime-1",
       state: "INVALID",
       reasonCode: "rule_fail",
@@ -67,4 +74,10 @@ test("decision engine runtime persists decision and audit through service bounda
     }),
     /Unknown decision state/
   );
+});
+
+test("decision override reads require the tenant boundary", async () => {
+  const source = readFileSync("src/lib/decision/decision-engine-repository.ts", "utf8");
+  assert.match(source, /listOverrides\(decisionId: string, tenantId: string\)/);
+  assert.match(source, /WHERE decision_id=\$1 AND tenant_id=\$2/);
 });

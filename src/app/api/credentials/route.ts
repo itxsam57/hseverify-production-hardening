@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { CredentialIssuanceService } from "@/lib/credential/credential-issuance-service";
 import { publicCredentialProjection } from "@/lib/credential/credential-issuance-domain";
+import { requireRoleSession } from "@/lib/auth/auth-session-service";
 
 export async function POST(request: Request) {
+  await requireRoleSession("admin");
   const body = await request.json() as {
     workerId?: string;
     qualification?: string;

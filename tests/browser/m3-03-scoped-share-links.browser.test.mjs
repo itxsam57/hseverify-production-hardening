@@ -29,9 +29,14 @@ test("M3.03 share-link API boundary is reachable through real Chromium", async (
       const browser = await chromium.launch({ headless: true });
       try {
         const page = await browser.newPage();
-        const response = await page.goto(`${baseUrl}/api/share-links?ownerWorkerId=HSE-WRK-000321`, { waitUntil: "networkidle" });
+        const response = await page.goto(`${baseUrl}/share/invalid-token?shareLinkId=share_link_missing`, { waitUntil: "networkidle" });
         assert(response);
-        assert(response.status() < 500);
+        assert.equal(response.status(), 200);
+        await page.getByRole("heading", { name: "Share link unavailable" }).waitFor();
+        const heading = await page.getByRole("heading", { name: "Share link unavailable" }).textContent();
+        assert.equal(heading, "Share link unavailable");
+        const body = await page.locator("main").textContent();
+        assert.match(body ?? "", /invalid|unavailable/);
       } finally {
         await browser.close();
       }

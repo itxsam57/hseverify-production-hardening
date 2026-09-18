@@ -15,7 +15,7 @@ async function freePort() {
   });
 }
 
-test("M2.13 decision route crosses real browser boundary and enforces authentication", async () => {
+test("M2.13 decision workflow is behind the authenticated admin boundary", async () => {
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   await runDevelopmentServer({
@@ -25,10 +25,13 @@ test("M2.13 decision route crosses real browser boundary and enforces authentica
       const browser = await chromium.launch({ headless: true });
       try {
         const page = await browser.newPage();
+        const errors = [];
+        page.on("pageerror", (error) => errors.push(error.message));
         const response = await page.goto(`${baseUrl}/admin/decisions`, { waitUntil: "domcontentloaded" });
         assert(response);
         assert(response.status() < 500);
         assert.match(page.url(), /\/admin\/login/);
+        assert.equal(errors.length, 0);
       } finally {
         await browser.close();
       }

@@ -3,19 +3,21 @@
   "implementationFiles": [
     "src/lib/reports/report-delivery-domain.ts",
     "src/lib/reports/report-delivery-service.ts",
-    "src/lib/reports/report-delivery-repository.ts"
+    "src/lib/reports/report-delivery-repository.ts",
+    "src/app/company/(portal)/reports/actions.ts",
+    "src/app/company/(portal)/reports/page.tsx",
+    "src/app/api/company/reports/[reportId]/export/route.ts"
   ],
   "integrationFiles": [
-    "database/migrations/0053_report_delivery.up.sql",
-    "src/app/company/(portal)/reports/actions.ts"
+    "database/migrations/0060_report_delivery_queue.up.sql",
+    "src/lib/reports/report-delivery-repository.ts"
   ],
   "behaviorTests": [
     "tests/platform/report-delivery-domain.test.mjs",
     "tests/platform/report-delivery-runtime.test.mjs"
   ],
   "behaviorCommands": [
-    ["node", "--test", "tests/platform/report-delivery-domain.test.mjs"],
-    ["node", "--test", "tests/platform/report-delivery-runtime.test.mjs"]
+    ["node", "--test", "tests/platform/report-delivery-domain.test.mjs", "tests/platform/report-delivery-runtime.test.mjs"]
   ],
   "browserTests": [
     "tests/browser/m3-06-reports.browser.test.mjs"

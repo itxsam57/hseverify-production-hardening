@@ -30,8 +30,12 @@
   "behaviorCommands": [
     [
       "node",
-      "scripts/run-company-verification-tests.mjs",
-      "tests/platform/company-verification.test.mjs",
+      "--test",
+      "tests/platform/company-verification.test.mjs"
+    ],
+    [
+      "node",
+      "--test",
       "tests/platform/company-verification-review-storage-boundary.test.mjs"
     ],
     [
@@ -58,7 +62,7 @@
   "securityCommands": [
     [
       "node",
-      "scripts/run-company-verification-tests.mjs",
+      "--test",
       "tests/platform/company-verification-review-storage-boundary.test.mjs"
     ],
     [
@@ -68,7 +72,7 @@
     ],
     [
       "node",
-      "scripts/run-company-verification-tests.mjs",
+      "--test",
       "tests/platform/company-verification.test.mjs"
     ]
   ],

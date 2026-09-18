@@ -4,11 +4,12 @@
     "src/lib/privacy/privacy-operations-domain.ts",
     "src/lib/privacy/privacy-operations-service.ts",
     "src/lib/privacy/privacy-operations-repository.ts",
-    "src/app/worker/(portal)/privacy/actions.ts",
-    "src/app/worker/(portal)/privacy/page.tsx"
+    "src/app/worker/(portal)/privacy/page.tsx",
+    "src/app/worker/(portal)/privacy/actions.ts"
   ],
   "integrationFiles": [
-    "src/lib/privacy/privacy-operations-repository.ts"
+    "src/lib/privacy/privacy-operations-repository.ts",
+    "tests/platform/privacy-operations-runtime.test.mjs"
   ],
   "behaviorTests": [
     "tests/platform/privacy-operations-runtime.test.mjs"
@@ -23,12 +24,10 @@
     ["node", "--test", "tests/browser/m3-09-privacy-operations.browser.test.mjs"]
   ],
   "securityTests": [
-    "tests/platform/privacy-operations-runtime.test.mjs",
-    "tests/browser/m3-09-privacy-operations.browser.test.mjs"
+    "tests/platform/privacy-operations-security-runtime.test.mjs"
   ],
   "securityCommands": [
-    ["node", "--test", "tests/platform/privacy-operations-runtime.test.mjs"],
-    ["node", "--test", "tests/browser/m3-09-privacy-operations.browser.test.mjs"]
+    ["node", "--test", "tests/platform/privacy-operations-security-runtime.test.mjs"]
   ],
   "regressionCommands": [
     ["npm", "run", "typecheck"]

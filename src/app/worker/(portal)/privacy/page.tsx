@@ -4,15 +4,15 @@ import { PrivacyOperationsService } from "@/lib/privacy/privacy-operations-servi
 
 export default async function WorkerPrivacyPage() {
   const principal = await requirePortalAuthorization("worker");
-  const privacy = await new PrivacyOperationsService().listWorkerPrivacy(principal.accountId);
+  const privacy = await new PrivacyOperationsService().listWorkerPrivacy(principal.tenantMembership?.tenantId ?? "", principal.accountId, principal.accountId);
   return (
     <div className="dashboard-page">
       <h1>Privacy requests</h1>
       <p>Request access, correction, export or deletion of your personal information.</p>
-      <form action={submitPrivacyRequestAction}>
+      <form action={submitPrivacyRequestAction} aria-label="privacy request form">
         <label>
           Request type
-          <select name="type" defaultValue="access">
+          <select name="type" defaultValue="access" aria-label="Privacy request type">
             <option value="access">Access</option>
             <option value="correction">Correction</option>
             <option value="export">Export</option>
@@ -22,10 +22,10 @@ export default async function WorkerPrivacyPage() {
         <button type="submit">Submit privacy request</button>
       </form>
       <h2>Accessibility accommodation</h2>
-      <form action={submitAccommodationAction}>
+      <form action={submitAccommodationAction} aria-label="accessibility accommodation form">
         <label>
           Accommodation request
-          <input name="type" required />
+          <input name="type" required aria-label="Accommodation request" />
         </label>
         <button type="submit">Submit accommodation</button>
       </form>

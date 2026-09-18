@@ -9,6 +9,7 @@
   "integrationFiles": [
     "database/migrations/0053_credential_appeals.up.sql",
     "src/app/api/credentials/[credentialId]/appeals/route.ts",
+    "src/app/api/credentials/appeals/[appealId]/route.ts",
     "src/app/api/credentials/[credentialId]/lifecycle/route.ts"
   ],
   "behaviorTests": [

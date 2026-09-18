@@ -48,9 +48,17 @@ async function stopProcessTree(child) {
     return;
   }
 
-  child.kill("SIGTERM");
+  if (process.platform !== "win32" && child.pid) {
+    process.kill(-child.pid, "SIGTERM");
+  } else {
+    child.kill("SIGTERM");
+  }
   if (!(await waitForExit(child, 10_000))) {
-    child.kill("SIGKILL");
+    if (process.platform !== "win32" && child.pid) {
+      process.kill(-child.pid, "SIGKILL");
+    } else {
+      child.kill("SIGKILL");
+    }
     if (!(await waitForExit(child, 5_000))) {
       throw new Error("Development process did not stop after SIGKILL.");
     }
@@ -122,7 +130,8 @@ export async function runDevelopmentServer({
         NEXT_TELEMETRY_DISABLED: "1"
       },
       stdio: captureOutput ? ["ignore", "pipe", "pipe"] : "inherit",
-      windowsHide: true
+      windowsHide: true,
+      detached: process.platform !== "win32"
     });
 
     if (captureOutput) {

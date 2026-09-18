@@ -15,6 +15,7 @@ CREATE INDEX IF NOT EXISTS platform_decisions_case_lookup
 CREATE TABLE IF NOT EXISTS platform_decision_overrides (
   override_id text PRIMARY KEY,
   decision_id text NOT NULL REFERENCES platform_decisions(decision_id),
+  tenant_id text NOT NULL,
   previous_state text NOT NULL,
   new_state text NOT NULL,
   reason text NOT NULL,
@@ -26,3 +27,6 @@ CREATE TABLE IF NOT EXISTS platform_decision_overrides (
 
 CREATE INDEX IF NOT EXISTS platform_decision_overrides_decision_lookup
   ON platform_decision_overrides(decision_id);
+
+CREATE INDEX IF NOT EXISTS platform_decision_overrides_tenant_lookup
+  ON platform_decision_overrides(tenant_id, decision_id);

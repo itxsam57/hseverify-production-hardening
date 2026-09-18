@@ -40,7 +40,7 @@
   "browserCommands": [
     [
       "node",
-      "scripts/run-public-verification-single-test.mjs",
+      "--test",
       "tests/browser/m1-12-public-verification.browser.test.mjs"
     ]
   ],
