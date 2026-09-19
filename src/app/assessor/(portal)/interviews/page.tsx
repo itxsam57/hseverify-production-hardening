@@ -7,25 +7,9 @@ import { scheduleInterviewAction } from "./actions";
 
 export default async function AssessorInterviewsPage(): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
-  const tenantId = actor.tenantMembership?.tenantId;
-  if (!tenantId) {
-    return (
-      <div className="dashboard-page">
-        <header className="page-heading-row">
-          <div>
-            <p className="eyebrow">Assessor Portal</p>
-            <h1>Interview assignments</h1>
-            <p className="page-intro">Assigned interview requests are isolated to this assessor account and tenant.</p>
-          </div>
-        </header>
-        <section className="dashboard-section">
-          <h2>No tenant assignment</h2>
-          <p>A tenant-scoped assessor assignment is required before interview cases can be scheduled or opened.</p>
-        </section>
-      </div>
-    );
-  }
-  const assignments = await new InterviewSchedulingService(await getDatabaseClient()).getAssessorAssignments({ tenantId, assessorAccountId: actor.accountId });
+  const assignments = await new InterviewSchedulingService(await getDatabaseClient()).getAssessorAssignments({
+    assessorAccountId: actor.accountId
+  });
 
   return (
     <div className="dashboard-page">

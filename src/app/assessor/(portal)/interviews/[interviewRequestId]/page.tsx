@@ -6,12 +6,27 @@ import { saveInterviewConsoleAction } from "../actions";
 
 export default async function AssessorInterviewConsolePage({ params }: { params: Promise<{ interviewRequestId: string }> }): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
-  const tenantId = actor.tenantMembership?.tenantId;
-  if (!tenantId) throw new Error("Tenant context required.");
   const { interviewRequestId } = await params;
-  const request = await new InterviewSchedulingService(await getDatabaseClient()).getAssignedInterview({ tenantId, assessorAccountId: actor.accountId, interviewRequestId });
-  const session = createInterviewSession({ interviewRequestId: request.interviewRequestId, caseId: request.caseId });
-  const consoleState = createInterviewConsole({ interviewSessionId: session.interviewSessionId, questionSetId: "interview_playbook_" + request.caseId });
+  const service = new InterviewSchedulingService(await getDatabaseClient());
+  const request = await service.getAssignedInterview({
+    assessorAccountId: actor.accountId,
+    interviewRequestId
+  });
+  const saved = await service.loadLatestConsoleDraft({
+    tenantId: request.tenantId,
+    interviewRequestId: request.interviewRequestId
+  });
+  const newSession = createInterviewSession({ interviewRequestId: request.interviewRequestId, caseId: request.caseId });
+  const interviewSessionId = saved?.interviewSessionId ?? newSession.interviewSessionId;
+  const session = { ...newSession, interviewSessionId };
+  const initialConsole = createInterviewConsole({ interviewSessionId, questionSetId: "interview_playbook_" + request.caseId });
+  const consoleState = {
+    ...initialConsole,
+    notes: saved?.notes ?? initialConsole.notes,
+    scorecard: saved?.scorecard ?? initialConsole.scorecard,
+    recommendation: saved?.recommendation ?? initialConsole.recommendation,
+    submitted: saved?.submitted ?? initialConsole.submitted
+  };
 
   return (
     <div className="dashboard-page">
@@ -24,11 +39,11 @@ export default async function AssessorInterviewConsolePage({ params }: { params:
         <form action={saveInterviewConsoleAction}>
           <input type="hidden" name="interviewSessionId" value={session.interviewSessionId} />
           <input type="hidden" name="interviewRequestId" value={request.interviewRequestId} />
-          <label>Notes<textarea name="notes" /></label>
-          <label>Technical knowledge<input name="technicalKnowledge" type="number" min="0" max="5" /></label>
-          <label>Safety awareness<input name="safetyAwareness" type="number" min="0" max="5" /></label>
-          <label>Comments<textarea name="comments" /></label>
-          <label>Recommendation<select name="recommendation"><option value="">Pending</option><option value="PASS">PASS</option><option value="FAIL">FAIL</option></select></label>
+          <label>Notes<textarea name="notes" defaultValue={consoleState.notes.at(-1)?.content ?? ""} /></label>
+          <label>Technical knowledge<input name="technicalKnowledge" type="number" min="0" max="5" defaultValue={consoleState.scorecard.technicalKnowledge ?? ""} /></label>
+          <label>Safety awareness<input name="safetyAwareness" type="number" min="0" max="5" defaultValue={consoleState.scorecard.safetyAwareness ?? ""} /></label>
+          <label>Comments<textarea name="comments" defaultValue={consoleState.scorecard.comments ?? ""} /></label>
+          <label>Recommendation<select name="recommendation" defaultValue={consoleState.recommendation ?? ""}><option value="">Pending</option><option value="PASS">PASS</option><option value="FAIL">FAIL</option></select></label>
           <button type="submit">Save interview record</button>
         </form>
       </section>

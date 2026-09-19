@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { createHmac } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { PGlite } from "@electric-sql/pglite";
+import { chromium } from "playwright";
+import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+
+const PASSWORD="AssignedWork!2026", SANDBOX_KEY="assigned-work-browser-key-2026";
+function base32(v){const a="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";let b="";for(const c of v.toUpperCase().replace(/=+$/g,""))b+=a.indexOf(c).toString(2).padStart(5,"0");const x=[];for(let i=0;i+8<=b.length;i+=8)x.push(parseInt(b.slice(i,i+8),2));return Buffer.from(x)}
+function totp(secret,step=0){const n=Math.floor(Date.now()/30000)+step,m=Buffer.alloc(8);m.writeBigUInt64BE(BigInt(n));const d=createHmac("sha1",base32(secret)).update(m).digest(),o=d.at(-1)&15;return String((d.readUInt32BE(o)&0x7fffffff)%1e6).padStart(6,"0")}
+async function freePort(){return new Promise((ok,no)=>{const s=createServer();s.once("error",no);s.listen(0,"127.0.0.1",()=>{const a=s.address();if(!a||typeof a==="string")return no(new Error("port"));s.close(e=>e?no(e):ok(a.port))})})}
+async function goto(page,url,path,text){const r=await page.goto(url+path,{waitUntil:"domcontentloaded"});assert(r&&r.status()<500,`${path}: ${r?.status()}`);if(text)await page.getByText(text,{exact:false}).first().waitFor({timeout:15000})}
+async function enroll(browser,url,path,role,email){
+ const c=await browser.newContext(),p=await c.newPage();await goto(p,url,path,"Create account credentials");
+ await p.getByLabel("Full name").fill("Assigned "+role);await p.getByLabel("Create password").fill(PASSWORD);await p.getByLabel("Confirm password").fill(PASSWORD);
+ await p.getByRole("button",{name:"Continue to authenticator setup"}).click();const secret=(await p.locator(".security-key-card strong").innerText()).trim();
+ await p.getByLabel("Authenticator code").fill(totp(secret));await p.getByRole("button",{name:"Activate MFA and finish enrollment"}).click();await p.getByText("Enrollment complete",{exact:false}).waitFor();await c.close();return{role,email,secret}
+}
+async function login(browser,url,x){const c=await browser.newContext({viewport:{width:1440,height:1000}}),p=await c.newPage();await goto(p,url,`/${x.role}/login`,"sign in");await p.getByLabel("Email address").fill(x.email);await p.getByLabel("Password").fill(PASSWORD);await p.getByLabel("Authenticator code").fill(totp(x.secret,1));await p.getByRole("button",{name:"Sign in"}).click();await p.waitForURL(`**/${x.role}/dashboard`);return{c,p}}
+async function provision(url){
+ const browser=await chromium.launch({headless:true});try{
+  const p=await browser.newPage();await goto(p,url,"/auth/sandbox/bootstrap-root","Create the one-time invitation");await p.getByLabel("First root email").fill("root.assigned@example.test");await p.getByLabel("Authentication sandbox access key").fill(SANDBOX_KEY);await p.getByRole("button",{name:"Create first root invitation"}).click();const ri=(await p.locator(".security-key-card strong").innerText()).trim();await p.close();
+  const root=await enroll(browser,url,ri,"root","root.assigned@example.test"),rs=await login(browser,url,root);await goto(rs.p,url,"/root/staff","Create invitation");
+  const ids=[];let prior="";
+  for(const role of ["verifier","assessor"]){const email=`${role}.assigned@example.test`;await rs.p.getByLabel("Staff email").fill(email);await rs.p.getByLabel("Portal role").selectOption(role);await rs.p.getByRole("button",{name:"Create one-time invitation"}).click();await rs.p.waitForFunction(pr=>{const v=document.querySelector(".security-key-card strong")?.textContent?.trim()||"";return v.startsWith("/staff/invite/")&&v!==pr},prior);const inv=(await rs.p.locator(".security-key-card strong").first().innerText()).trim();prior=inv;ids.push(await enroll(browser,url,inv,role,email))}
+  await rs.c.close();return ids;
+ }finally{await browser.close()}
+}
+const id=(p,c)=>p+"_"+c.repeat(24);
+async function seed(dir){
+ const db=new PGlite(dir);try{
+  const accounts=await db.query("SELECT account_id,email_normalized FROM auth_accounts WHERE email_normalized IN ('verifier.assigned@example.test','assessor.assigned@example.test')");
+  const by=Object.fromEntries(accounts.rows.map(r=>[r.email_normalized,r.account_id]));assert(by["verifier.assigned@example.test"]);assert(by["assessor.assigned@example.test"]);
+  const now="2026-09-19T12:00:00.000Z",tenant=id("tenant","T"),order=id("assurance_order","O"),target=id("assurance_target","G"),caseId=id("assurance_case","C"),worker="account_worker_assigned",obs=id("supervisor_observation","S"),task=id("evidence_review","R"),review=id("written_score","W"),interview=id("interview_request","I");
+  await db.query("INSERT INTO platform_tenants(tenant_id,tenant_type,display_name,tenant_status,created_at,updated_at,activated_at) VALUES($1,'company','Assigned Tenant','active',$2,$2,$2)",[tenant,now]);
+  await db.query("INSERT INTO assurance_orders(order_id,tenant_id,created_by_membership_id,order_name,order_reference,requested_identity_checks,requested_evidence_checks,assessment_framework_references,interview_required,order_status,submitted_at,created_at,updated_at) VALUES($1,$2,$3,'Assigned Order','ASSIGNED-1','[]','[]','[]',TRUE,'SUBMITTED',$4,$4,$4)",[order,tenant,id("membership","M"),now]);
+  await db.query("INSERT INTO assurance_order_workers(target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,target_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'worker','submitted',$6,$6)",[target,order,tenant,id("company_worker_link","L"),worker,now]);
+  await db.query("INSERT INTO assurance_cases(case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,case_status,owner_kind,next_action,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,'Review pending','reviewer','Review assigned evidence.',$7,$7)",[caseId,order,target,tenant,id("company_worker_link","L"),worker,now]);
+  await db.query("INSERT INTO supervisor_observations(observation_id,tenant_id,case_id,worker_account_id,competency_reference,observer_membership_id,observed_at,observation_text,outcome,created_at) VALUES($1,$2,$3,$4,'COMP-1',$5,$6,'Worker safely demonstrated the assigned competency without prompting.','demonstrated',$6)",[obs,tenant,caseId,worker,id("membership","M"),now]);
+  await db.query("INSERT INTO evidence_review_tasks(task_id,tenant_id,case_id,worker_account_id,evidence_kind,source_record_id,source_version_id,evidence_label,task_status,created_at,updated_at) VALUES($1,$2,$3,$4,'supervisor_observation',$5,$5,'Assigned observation','QUEUED',$6,$6)",[task,tenant,caseId,worker,obs,now]);
+  await db.query("INSERT INTO written_score_reviews(review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at) VALUES($1,$2,$3,$4,$5,'v1',82,'PASS','Initial rubric scoring is ready for independent verification.','DRAFT',$6)",[review,tenant,caseId,id("assessment_attempt","A"),by["verifier.assigned@example.test"],now]);
+  await db.query("INSERT INTO interview_requests(interview_request_id,tenant_id,case_id,worker_account_id,status,requested_at,assessor_account_id,timezone) VALUES($1,$2,$3,$4,'ASSIGNED',$5,$6,'UTC')",[interview,tenant,caseId,worker,now,by["assessor.assigned@example.test"]]);
+  return {task,review,interview,identities:by};
+ }finally{await db.close()}
+}
+async function exercise(url,identities){
+ const browser=await chromium.launch({headless:true});try{
+  const verifier=await login(browser,url,identities.find(x=>x.role==="verifier"));
+  await goto(verifier.p,url,"/verifier/reviews","Evidence review queue");await verifier.p.getByRole("link",{name:"Review"}).click();await verifier.p.getByRole("button",{name:"Claim review"}).click();await verifier.p.getByText("ASSIGNED",{exact:true}).waitFor();await verifier.p.getByLabel("Reason").last().fill("Evidence is attributable, current, relevant and sufficient.");await verifier.p.getByRole("button",{name:"Finalize review"}).click();await verifier.p.getByText("APPROVED",{exact:true}).waitFor();
+  await goto(verifier.p,url,"/verifier/reviews/scoring","Written scoring review");await verifier.p.getByPlaceholder("Criterion").fill("Hazard controls");await verifier.p.locator('input[name="mark"]').fill("84");await verifier.p.getByRole("button",{name:"Save mark"}).click();await verifier.p.getByRole("button",{name:"Finalize review"}).click();await verifier.p.getByText("FINAL",{exact:true}).waitFor();await verifier.c.close();
+  const assessor=await login(browser,url,identities.find(x=>x.role==="assessor"));await goto(assessor.p,url,"/assessor/interviews","Interview assignments");await assessor.p.getByLabel("Interview time").fill("2026-10-01T10:30");await assessor.p.getByRole("button",{name:"Schedule"}).click();await assessor.p.getByText("2026-10-01",{exact:false}).waitFor({timeout:15000});await assessor.p.getByRole("link",{name:"Open interview console"}).click();await assessor.p.getByRole("textbox",{name:"Notes",exact:true}).fill("Worker explained the safe isolation sequence clearly.");await assessor.p.getByLabel("Technical knowledge").fill("5");await assessor.p.getByLabel("Safety awareness").fill("5");await assessor.p.getByLabel("Comments").fill("Strong evidence-based answers.");await assessor.p.locator('select[name="recommendation"]').selectOption("PASS");await Promise.all([assessor.p.waitForResponse(x=>x.request().method()==="POST"&&x.url().includes("/assessor/interviews/")),assessor.p.getByRole("button",{name:"Save interview record"}).click()]);await assessor.p.reload({waitUntil:"domcontentloaded"});assert.equal(await assessor.p.getByRole("textbox",{name:"Notes",exact:true}).inputValue(),"Worker explained the safe isolation sequence clearly.");assert.equal(await assessor.p.locator('select[name="recommendation"]').inputValue(),"PASS");await assessor.c.close();
+ }finally{await browser.close()}
+}
+async function verifyDb(dir,seeded){const db=new PGlite(dir);try{const [d,m,w,i]=await Promise.all([db.query("SELECT outcome FROM evidence_review_decisions WHERE task_id=$1",[seeded.task]),db.query("SELECT criterion,mark FROM written_score_rubric_marks WHERE review_id=$1",[seeded.review]),db.query("SELECT status FROM written_score_reviews WHERE review_id=$1",[seeded.review]),db.query("SELECT status,scheduled_at FROM interview_requests WHERE interview_request_id=$1",[seeded.interview])]);assert.equal(d.rows[0].outcome,"APPROVED");assert.equal(m.rows[0].criterion,"Hazard controls");assert.equal(Number(m.rows[0].mark),84);assert.equal(w.rows[0].status,"FINAL");assert.equal(i.rows[0].status,"ASSIGNED");assert(i.rows[0].scheduled_at);const c=await db.query("SELECT notes,scorecard,recommendation FROM interview_console_drafts WHERE interview_request_id=$1",[seeded.interview]);assert.equal(c.rows.length,1);assert.equal(c.rows[0].recommendation,"PASS")}finally{await db.close()}}
+test("assigned Verifier and Assessor complete persisted cross-tenant work in Chromium",{timeout:300000},async()=>{
+ const root=process.cwd(),dir=await mkdtemp(join(tmpdir(),"hse-assigned-work-")),port=await freePort(),url=`http://127.0.0.1:${port}`,env={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dir,HSE_RELEASE_SHA:"assigned-work-browser",HSE_SESSION_SECRET:"assigned-work-session-secret-2026-000000000000",HSE_AUTH_PEPPER:"assigned-work-auth-pepper-2026-000000000000",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
+ try{const m=spawnSync(process.execPath,["scripts/db-migrate.mjs"],{cwd:root,env,encoding:"utf8"});assert.equal(m.status,0,m.stderr||m.stdout);let identities;let r=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:url+"/root/login",projectRoot:root,environment:env,probe:async()=>{identities=await provision(url)}});assert.equal(r.requestedSignal,"SMOKE_COMPLETE");const seeded=await seed(dir);r=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:url+"/verifier/login",projectRoot:root,environment:env,probe:async()=>exercise(url,identities)});assert.equal(r.requestedSignal,"SMOKE_COMPLETE");await verifyDb(dir,seeded)}finally{await rm(dir,{recursive:true,force:true})}
+});

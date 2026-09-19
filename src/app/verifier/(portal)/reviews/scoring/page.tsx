@@ -8,28 +8,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
     expectedRole: "verifier",
     permission: "verification.assigned.read"
   });
-  const tenantId = actor.tenantMembership?.tenantId;
-
-  if (!tenantId) {
-    return (
-      <section className="page-stack">
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">Verifier</p>
-            <h1>Written scoring review</h1>
-            <p>Rubric decisions remain scoped to the assigned reviewer.</p>
-          </div>
-        </div>
-        <div className="empty-state">
-          <h2>No tenant assignment</h2>
-          <p>A tenant-scoped verifier assignment is required before scoring reviews can be opened.</p>
-        </div>
-      </section>
-    );
-  }
-
   const reviews = await new WrittenScoringService(await getDatabaseClient()).listReviewQueue({
-    tenantId,
     reviewerAccountId: actor.accountId
   });
   const typedReviews = reviews as Array<{

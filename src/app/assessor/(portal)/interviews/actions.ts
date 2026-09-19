@@ -14,11 +14,14 @@ export async function saveInterviewConsoleAction(formData: FormData): Promise<vo
   if (!interviewSessionId || !interviewRequestId) throw new Error("Interview session is required.");
 
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.manage" });
-  const tenantId = actor.tenantMembership?.tenantId;
-  if (!tenantId) throw new Error("Tenant context required.");
+  const service = new InterviewSchedulingService(await getDatabaseClient());
+  const request = await service.getAssignedInterview({
+    assessorAccountId: actor.accountId,
+    interviewRequestId
+  });
 
-  await new InterviewSchedulingService(await getDatabaseClient()).saveConsoleState({
-    tenantId,
+  await service.saveConsoleState({
+    tenantId: request.tenantId,
     interviewSessionId,
     interviewRequestId,
     notes: notes ? [{ content: notes, authorAccountId: actor.accountId }] : [],
@@ -43,16 +46,12 @@ export async function scheduleInterviewAction(formData: FormData): Promise<void>
     expectedRole: "assessor",
     permission: "interview.assigned.manage"
   });
-  const tenantId = actor.tenantMembership?.tenantId;
-  if (!tenantId) throw new Error("Tenant context required.");
-
   const service = new InterviewSchedulingService(await getDatabaseClient());
   const request = await service.getAssignedInterview({
-    tenantId,
     assessorAccountId: actor.accountId,
     interviewRequestId
   });
 
-  await service.scheduleInterview({ tenantId, request, scheduledAt });
+  await service.scheduleInterview({ tenantId: request.tenantId, request, scheduledAt });
   revalidatePath("/assessor/interviews");
 }

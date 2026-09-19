@@ -5,32 +5,33 @@
   "status": "TESTING",
   "repo": "/home/ubuntu/work/hseverify-governed-highlevel-test",
   "branch": "qa/consumer-readiness-repair",
-  "remote_verified_sha": "95135a9182273a53ce1481187dba9a142ec051db",
+  "remote_verified_sha": "4154cc65bfb10251c758a275d5c50376620c3aba",
   "completed": [
     "All 32 pre-existing browser suites passed after confirm-password fix",
-    "Full engineering gate passed before current workflow-expansion changes",
-    "Worker real Chromium journey covers registration, email OTP, phone OTP, activation, login, all profile sections, refresh persistence and submission",
-    "Company/Admin real Chromium journey covers registration, MFA, evidence upload, correction, verification, organization creation, single invitation, resend cooldown, revocation and bulk invitations",
-    "Company invitations mobile overflow at 390px reproduced and fixed",
-    "Root real Chromium journey covers bootstrap, MFA enrollment, login, staff provisioning and mobile containment",
-    "Root-provisioned Admin, Verifier and Assessor each complete one-time invitation enrollment, MFA login, workspace navigation, session review and cross-role denial",
-    "Tenantless staff Decision Engine, written scoring and interview routes now render secure assignment-required states instead of HTTP 500",
-    "Staff-role journey, related M3.12 browser regression, lint and strict typecheck pass"
+    "Full engineering gate passed before workflow-expansion changes",
+    "Worker registration/contact verification/profile submission real Chromium journey passes",
+    "Company verification/organization/invitation lifecycle real Chromium journey passes",
+    "Company invitations mobile overflow fixed",
+    "Root/Admin/Verifier/Assessor invitation, MFA, login, workspace, session and role-isolation journey passes",
+    "Tenantless staff pages no longer throw HTTP 500",
+    "Verifier and Assessor tenant scope is derived securely from assigned records because the schema correctly reserves tenant memberships for Company accounts",
+    "Verifier evidence claim/approval and written rubric/finalization pass in Chromium with persisted database verification",
+    "Assessor scheduling and interview notes/scorecard/recommendation pass in Chromium with persisted database verification",
+    "Interview draft refresh persistence fixed by reusing the latest request-bound session",
+    "Focused staff service/browser tests, lint and strict typecheck pass"
   ],
   "open": [
     "Add authenticated browser workflows for Worker identity/evidence/assessments/privacy/passport/share links",
     "Add Company Team, Assurance Order, Action Centre, billing, reports and policy workflows",
-    "Seed cross-role cases and test Verifier claim/conflict/decision/scoring actions",
-    "Seed cross-role cases and test Assessor scheduling/interview/scorecard actions",
     "Test Admin framework/question bank/blueprint/catalogue/decisions/certifications/provider-health actions",
     "Test Root session revocation controls",
     "Run all browser suites, full engineering gate and live Brave deployment at one final SHA",
     "Publish final feature-by-feature verdict and provider blocker list"
   ],
-  "next_action": "Create seeded cross-role evidence review and interview cases, then exercise Verifier and Assessor action forms in real Chromium.",
+  "next_action": "Build the real Chromium Worker identity, evidence, privacy, passport and scoped share-link journey; diagnose and repair any failed producer-to-consumer connection.",
   "blockers": [
     "Production email, SMS, storage/scanning, identity, video and payment credentials are unavailable; sandbox/local adapters remain required for workflow verification."
   ],
-  "updated_at": "2026-09-19T11:42:07.049Z",
-  "revision": 4
+  "updated_at": "2026-09-19T12:01:00.664Z",
+  "revision": 5
 }
