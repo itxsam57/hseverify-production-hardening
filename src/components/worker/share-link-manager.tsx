@@ -6,12 +6,12 @@ import { useState } from "react";
 type ShareLinkView = {
   shareLinkId: string;
   purpose: string;
-  fields: string[];
+  fields: readonly string[];
   expiresAt: string | null;
   revokedAt: string | null;
 };
 
-export function ShareLinkManager({ links }: { links: ShareLinkView[] }): React.JSX.Element {
+export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] }): React.JSX.Element {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);

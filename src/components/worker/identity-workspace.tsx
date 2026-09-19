@@ -538,7 +538,7 @@ export function IdentityWorkspace(props: Props): React.JSX.Element {
       <EvidenceSection identity={props.identity} evidence={props.evidence} />
       <SubmissionControls identity={props.identity} />
       <AutomatedChecks identity={props.identity} checks={props.checks} />
-      <CorrectionControls identity={props.identity} correction={props.correction} />
+      <CorrectionControls identity={props.identity} />
     </div>
   );
 }
