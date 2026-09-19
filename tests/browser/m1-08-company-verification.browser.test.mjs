@@ -172,7 +172,7 @@ async function bootstrapAdmin(browser, baseUrl) {
   return loginStaff(browser, baseUrl, admin);
 }
 
-async function runBrowserAcceptance(baseUrl) {
+async function runBrowserAcceptance(baseUrl, output) {
   const browser = await chromium.launch({ headless: true });
   const companyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const companyPage = await companyContext.newPage();
@@ -349,6 +349,78 @@ async function runBrowserAcceptance(baseUrl) {
     await bulkResults.getByText("bulk.one.m108@example.test", { exact: true }).waitFor();
     await bulkResults.getByText("bulk.two.m108@example.test", { exact: true }).waitFor();
 
+    await gotoOk(companyPage, baseUrl, "/company/team", "Company Team");
+    await companyPage.getByLabel("Staff email").fill("team.member.m108@example.test");
+    await companyPage.getByLabel("Company Team role").selectOption("viewer");
+    await companyPage.getByRole("button", { name: "Create Company Team invitation" }).click();
+    const teamInvitation = companyPage.locator("article").filter({ hasText: "team.member.m108@example.test" }).first();
+    await teamInvitation.waitFor({ state: "visible", timeout: 15_000 });
+    await teamInvitation.getByRole("button", { name: "Cancel invitation" }).click();
+    await companyPage.getByRole("dialog").getByRole("button", { name: "Cancel invitation", exact: true }).click();
+    await companyPage.reload({ waitUntil: "domcontentloaded" });
+    await companyPage.locator("article").filter({ hasText: "team.member.m108@example.test" }).first().getByText("revoked", { exact: true }).waitFor({ timeout: 15_000 });
+
+    await gotoOk(companyPage, baseUrl, "/company/assurance-orders/new", "Create assurance order");
+    await companyPage.getByLabel("Order name").fill("M1.08 Site Readiness");
+    await companyPage.getByLabel("Order reference", { exact: true }).fill("ORDER-M108-001");
+    await companyPage.getByLabel("Requested identity checks").fill("government_identity");
+    await companyPage.getByLabel("Requested evidence checks").fill("qualification_certificate");
+    await companyPage.getByLabel("Company notes").fill("Browser acceptance assurance draft");
+    await companyPage.getByLabel("Funding method").selectOption("company");
+    const [orderResponse] = await Promise.all([
+      companyPage.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/company/assurance-orders/new")),
+      companyPage.getByRole("button", { name: "Save Draft" }).click()
+    ]);
+    assert(orderResponse.status() < 500, `Assurance order creation failed with HTTP ${orderResponse.status()}: ${await companyPage.locator("body").innerText()}\n${output()}`);
+    await companyPage.getByRole("heading", { name: "Assurance order", exact: true }).waitFor({ timeout: 15_000 });
+    await companyPage.getByText("M1.08 Site Readiness", { exact: true }).waitFor();
+    await companyPage.getByText("DRAFT", { exact: true }).waitFor();
+    await companyPage.getByRole("button", { name: "Validate Order" }).click();
+    await companyPage.getByText("No Assurance Cases exist.", { exact: false }).waitFor({ timeout: 15_000 });
+
+    await gotoOk(companyPage, baseUrl, "/company/billing", "Company billing");
+    await companyPage.getByLabel("Credits").fill("10");
+    await companyPage.getByLabel("Amount (minor units)").first().fill("1000");
+    await companyPage.getByLabel("Currency").fill("USD");
+    await companyPage.getByRole("button", { name: "Create sandbox checkout" }).click();
+    const invoiceRow = companyPage.getByRole("row").filter({ hasText: "OPEN" }).first();
+    await invoiceRow.waitFor({ state: "visible", timeout: 15_000 });
+    await companyPage.getByRole("button", { name: "Run reconciliation" }).click();
+    await companyPage.getByText(/COMPLETED|CLEAN/).first().waitFor({ timeout: 15_000 });
+
+    await gotoOk(companyPage, baseUrl, "/company/reports", "Reports");
+    await companyPage.getByLabel("Report ID").fill("report_m108_workforce");
+    await companyPage.getByLabel("Format").selectOption("csv");
+    const [reportResponse] = await Promise.all([
+      companyPage.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/company/reports")),
+      companyPage.getByRole("button", { name: "Queue report delivery" }).click()
+    ]);
+    assert(reportResponse.status() < 500, `Report queue failed with HTTP ${reportResponse.status()}: ${await companyPage.locator("body").innerText()}\n${output()}`);
+    await companyPage.getByText("report_m108_workforce", { exact: false }).waitFor({ timeout: 15_000 });
+
+    await gotoOk(adminSession.page, baseUrl, "/admin/frameworks", "Frameworks & effective policy");
+    const createFramework = adminSession.page.locator("form").filter({ has: adminSession.page.getByRole("heading", { name: "Create framework" }) });
+    await createFramework.getByLabel("Reference").fill("FRAMEWORK-M108");
+    await createFramework.getByLabel("Title").fill("M1.08 Assurance Framework");
+    await createFramework.getByRole("button", { name: "Create framework" }).click();
+    await adminSession.page.getByText("FRAMEWORK-M108", { exact: false }).first().waitFor({ timeout: 15_000 });
+
+    const publishPolicy = adminSession.page.locator("form").filter({ has: adminSession.page.getByRole("heading", { name: "Publish policy version" }) });
+    await publishPolicy.getByLabel("Framework reference").fill("FRAMEWORK-M108");
+    await publishPolicy.getByLabel("Policy reference").fill("POLICY-M108");
+    await publishPolicy.getByLabel("Title").fill("M1.08 Safety Standard");
+    await publishPolicy.getByLabel("Effective from").fill("2026-01-01T00:00");
+    await publishPolicy.getByRole("button", { name: "Publish immutable version" }).click();
+
+    await gotoOk(companyPage, baseUrl, "/company/settings/policy", "Effective policy");
+    await companyPage.getByLabel("Policy reference").fill("POLICY-M108");
+    await companyPage.getByLabel("Override values JSON").fill('{"pass_mark":85}');
+    await companyPage.getByLabel("Effective from").fill("2026-09-19T00:00");
+    await companyPage.getByRole("button", { name: "Save immutable override version" }).click();
+    await companyPage.getByText("POLICY-M108", { exact: false }).first().waitFor({ timeout: 15_000 });
+    await companyPage.reload({ waitUntil: "domcontentloaded" });
+    await companyPage.getByRole("listitem").filter({ hasText: "POLICY-M108" }).getByText('"pass_mark":85', { exact: false }).waitFor({ timeout: 15_000 });
+
     await companyPage.setViewportSize({ width: 390, height: 844 });
     const companyOverflow = await companyPage.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -417,9 +489,9 @@ test("M1.08 real Chromium acceptance covers Company registration, correction, ev
       probeUrl: `${baseUrl}/company/register`,
       projectRoot,
       environment,
-      probe: async ({ initialResponse }) => {
+      probe: async ({ initialResponse, output }) => {
         assert.equal(initialResponse.status, 200);
-        await runBrowserAcceptance(baseUrl);
+        await runBrowserAcceptance(baseUrl, output);
       }
     });
     assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
