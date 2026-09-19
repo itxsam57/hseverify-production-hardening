@@ -7,9 +7,9 @@ import { scheduleInterviewAction } from "./actions";
 
 export default async function AssessorInterviewsPage(): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
-  const tenantId = actor.tenantMembership?.tenantId;
-  if (!tenantId) throw new Error("Tenant context required.");
-  const assignments = await new InterviewSchedulingService(await getDatabaseClient()).getAssessorAssignments({ tenantId, assessorAccountId: actor.accountId });
+  const assignments = await new InterviewSchedulingService(await getDatabaseClient()).getAssessorAssignments({
+    assessorAccountId: actor.accountId
+  });
 
   return (
     <div className="dashboard-page">

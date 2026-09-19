@@ -31,7 +31,7 @@ test("written scoring runtime completes a real review lifecycle through service 
   };
 
   const service = new WrittenScoringService(database);
-  const published = await service.publish({
+  await service.publish({
     tenantId: "tenant_runtime",
     caseId: "assurance_case_runtime",
     attemptId: "attempt_runtime",
@@ -51,4 +51,31 @@ test("written scoring runtime completes a real review lifecycle through service 
 
   assert.ok(events.some((event) => event.sql.includes("written_score_reviews")));
   assert.ok(events.some((event) => event.sql.includes("UPDATE written_score_reviews")));
+});
+
+
+test("written scoring queue derives tenant scope from reviewer-owned records", async () => {
+  const database = {
+    async query(sql, params) {
+      assert.match(sql, /reviewer_account_id=\$1/);
+      assert.doesNotMatch(sql, /tenant_id=\$1/);
+      assert.deepEqual(params, ["reviewer-platform"]);
+      return { rows: [{
+        review_id: "written_score_assigned",
+        tenant_id: "tenant-assigned",
+        case_id: "assurance_case_assigned",
+        attempt_id: "attempt-assigned",
+        reviewer_account_id: "reviewer-platform",
+        rubric_version: "v1",
+        score: 80,
+        decision: "PASS",
+        status: "DRAFT",
+        created_at: "2026-09-19T00:00:00Z"
+      }] };
+    }
+  };
+  const service = new WrittenScoringService(database);
+  const reviews = await service.listReviewQueue({ reviewerAccountId: "reviewer-platform" });
+  assert.equal(reviews.length, 1);
+  assert.equal(reviews[0].tenant_id, "tenant-assigned");
 });

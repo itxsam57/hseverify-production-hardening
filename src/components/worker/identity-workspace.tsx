@@ -456,9 +456,8 @@ function AutomatedChecks({
 }
 
 function CorrectionControls({
-  identity,
-  correction
-}: Pick<Props, "identity" | "correction">): React.JSX.Element | null {
+  identity
+}: Pick<Props, "identity">): React.JSX.Element | null {
   const [requestState, requestAction] = useActionState(
     requestWorkerIdentityCorrectionAction,
     INITIAL_WORKER_IDENTITY_ACTION_STATE
@@ -539,7 +538,7 @@ export function IdentityWorkspace(props: Props): React.JSX.Element {
       <EvidenceSection identity={props.identity} evidence={props.evidence} />
       <SubmissionControls identity={props.identity} />
       <AutomatedChecks identity={props.identity} checks={props.checks} />
-      <CorrectionControls identity={props.identity} correction={props.correction} />
+      <CorrectionControls identity={props.identity} />
     </div>
   );
 }

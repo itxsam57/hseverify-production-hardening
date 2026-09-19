@@ -1,17 +1,61 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { ScopedShareLinkRepository } from "./scoped-share-link-repository";
 import { ScopedShareLinkManager } from "./scoped-share-link-domain";
-import type { DigitalPassport } from "../living-record/living-record-domain";
-import { buildDigitalPassport } from "../living-record/living-record-domain";
+import type { DigitalPassport, PassportQualification, PassportSkill } from "../living-record/living-record-domain";
+import { buildDigitalPassport, livingCompetencyFromWorkerSkill } from "../living-record/living-record-domain";
 import { getDatabaseClient } from "../database/database";
 import { LivingRecordRepository } from "../living-record/living-record-repository";
+import { getServerEnvironment } from "../config/server-environment";
+import { DatabaseWorkerEvidenceRepository } from "../worker-evidence/worker-evidence-repository";
+import type {
+  QualificationDetails,
+  SkillDetails,
+  WorkerEvidenceRecord
+} from "../worker-evidence/worker-evidence-domain";
+
+function qualification(record: WorkerEvidenceRecord): PassportQualification | null {
+  if (record.kind !== "qualification") return null;
+  const details = record.currentVersion.details as QualificationDetails;
+  if (!details.title) return null;
+  return {
+    recordId: record.recordId,
+    title: details.title,
+    issuingOrganization: details.issuingOrganization,
+    level: details.level,
+    issueDate: details.issueDate,
+    expiryDate: details.expiryDate,
+    recordStatus: record.currentVersion.status
+  };
+}
+
+function skill(record: WorkerEvidenceRecord): PassportSkill | null {
+  if (record.kind !== "skill") return null;
+  const details = record.currentVersion.details as SkillDetails;
+  if (!details.skillName) return null;
+  return {
+    recordId: record.recordId,
+    name: details.skillName,
+    category: details.category,
+    assuranceStatus: details.assuranceStatus
+  };
+}
+
+function compact<T>(values: readonly (T | null)[]): T[] {
+  return values.filter((value): value is T => value !== null);
+}
 
 export class ScopedShareLinkService {
   constructor(private readonly repository = new ScopedShareLinkRepository()) {}
 
   private manager() {
-    return new ScopedShareLinkManager(process.env.SHARE_LINK_SIGNING_SECRET ?? "");
+    const signingKey = createHash("sha256")
+      .update("hseverify:scoped-share-links\0", "utf8")
+      .update(getServerEnvironment().sessionSecret, "utf8")
+      .digest("hex");
+    return new ScopedShareLinkManager(signingKey);
   }
 
   private async hydrate(shareLinkId: string) {
@@ -79,17 +123,31 @@ export class ScopedShareLinkService {
       return Object.freeze({ kind: "denied", reason: "invalid" as const });
     }
 
-    const livingRecords = await new LivingRecordRepository(getDatabaseClient()).findByWorker(record.ownerWorkerId);
+    const database = await getDatabaseClient();
+    const account = await database.query<{ account_id: string }>(
+      "SELECT account_id FROM auth_accounts WHERE worker_reference=$1",
+      [record.ownerWorkerId]
+    );
+    const accountId = account.rows[0]?.account_id;
+    const records = accountId
+      ? await new DatabaseWorkerEvidenceRepository(Promise.resolve(database)).listCurrentForWorker(accountId)
+      : [];
+    const livingRecords = await new LivingRecordRepository(Promise.resolve(database)).findByWorker(record.ownerWorkerId);
 
     const passport = buildDigitalPassport({
       workerId: record.ownerWorkerId,
       generatedAt: new Date().toISOString(),
-      competencies: livingRecords
+      qualifications: compact(records.map(qualification)),
+      skills: compact(records.map(skill)),
+      competencies: [
+        ...compact(records.map(livingCompetencyFromWorkerSkill)),
+        ...livingRecords
+      ]
     });
 
     return this.resolve({
       ...input,
-      passport,
+      passport
     });
   }
 }

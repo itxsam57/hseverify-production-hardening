@@ -1,7 +1,25 @@
 import "server-only";
 
 import { getDatabaseClient } from "../database/database";
-import type { ScopedShareAccessLog, ScopedShareLinkRecord } from "./scoped-share-link-domain";
+import {
+  SCOPED_SHARE_FIELDS,
+  type ScopedShareAccessLog,
+  type ScopedShareField,
+  type ScopedShareLinkRecord
+} from "./scoped-share-link-domain";
+
+function fieldsFromRow(value: unknown): readonly ScopedShareField[] {
+  const parsed: unknown = Array.isArray(value)
+    ? value
+    : JSON.parse(String(value));
+  if (
+    !Array.isArray(parsed) ||
+    parsed.some((field) => typeof field !== "string" || !SCOPED_SHARE_FIELDS.includes(field as ScopedShareField))
+  ) {
+    throw new Error("Stored scoped share fields are invalid.");
+  }
+  return Object.freeze(parsed as ScopedShareField[]);
+}
 
 export class ScopedShareLinkRepository {
   constructor(private readonly clientPromise = getDatabaseClient()) {}
@@ -44,7 +62,7 @@ export class ScopedShareLinkRepository {
     return Object.freeze({
       shareLinkId: String(row.share_link_id),
       ownerWorkerId: String(row.owner_worker_id),
-      fields: Object.freeze(JSON.parse(String(row.fields))),
+      fields: fieldsFromRow(row.fields),
       purpose: String(row.purpose),
       employerDetail: row.employer_detail ? String(row.employer_detail) : null,
       createdAt: new Date(String(row.created_at)).toISOString(),
@@ -66,7 +84,7 @@ export class ScopedShareLinkRepository {
       return Object.freeze({
         shareLinkId: String(row.share_link_id),
         ownerWorkerId: String(row.owner_worker_id),
-        fields: Object.freeze(JSON.parse(String(row.fields))),
+        fields: fieldsFromRow(row.fields),
         purpose: String(row.purpose),
         employerDetail: row.employer_detail ? String(row.employer_detail) : null,
         createdAt: new Date(String(row.created_at)).toISOString(),

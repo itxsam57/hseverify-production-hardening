@@ -41,7 +41,7 @@ export class WrittenScoringService {
     await this.database.query(`INSERT INTO scoring_calibration_events(calibration_id,review_id,reviewer_account_id,calibration_note) VALUES($1,$2,$3,$4)`, [createIdentifier("score_calibration"), input.reviewId, input.reviewerAccountId, note]);
   }
 
-  async addRubricMark(input: {reviewId:string;criterion:string;mark:unknown;reviewerAccountId:string;tenantId:string}) {
+  async addRubricMark(input: {reviewId:string;criterion:string;mark:unknown;reviewerAccountId:string;tenantId?:string}) {
     if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
     if (!input.reviewerAccountId.trim()) throw new Error("Missing reviewer scope.");
     const criterion = input.criterion.trim();
@@ -100,18 +100,29 @@ export class WrittenScoringService {
     return result.rows[0] ?? null;
   }
 
-  async listReviewQueue(input: {tenantId:string; reviewerAccountId?:string}) {
-    if (!input.tenantId.startsWith("tenant_")) throw new Error("Invalid tenant scope.");
+  async listReviewQueue(input: {tenantId?:string; reviewerAccountId?:string}) {
+    if (input.tenantId && !input.tenantId.startsWith("tenant_")) throw new Error("Invalid tenant scope.");
+    if (input.reviewerAccountId && !input.tenantId) {
+      const result = await this.database.query(
+        `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
+         FROM written_score_reviews
+         WHERE reviewer_account_id=$1 AND status IN ('DRAFT','FINAL')
+         ORDER BY created_at DESC`,
+        [input.reviewerAccountId]
+      );
+      return result.rows;
+    }
+    if (!input.tenantId) throw new Error("Tenant or reviewer scope is required.");
     const result = input.reviewerAccountId
       ? await this.database.query(
-          `SELECT review_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
+          `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
            FROM written_score_reviews
            WHERE tenant_id=$1 AND reviewer_account_id=$2 AND status IN ('DRAFT','FINAL')
            ORDER BY created_at DESC`,
           [input.tenantId, input.reviewerAccountId]
         )
       : await this.database.query(
-          `SELECT review_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
+          `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
            FROM written_score_reviews
            WHERE tenant_id=$1 AND status='DRAFT'
            ORDER BY created_at DESC`,

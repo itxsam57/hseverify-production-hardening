@@ -86,6 +86,7 @@ export async function saveWorkerIdentityDraftWithRevisionAction(
   _previousState: WorkerIdentityDraftSaveState = INITIAL_WORKER_IDENTITY_DRAFT_SAVE_STATE,
   formData: FormData
 ): Promise<WorkerIdentityDraftSaveState> {
+  void _previousState;
   const expectedDraftRevision = integer(formData, "expectedDraftRevision");
   const hasDraft = text(formData, "hasDraft") === "true";
   if (hasDraft && expectedDraftRevision === null) {

@@ -29,8 +29,7 @@ const teamModule = await import(
 const { DatabaseCompanyOrganizationRepository } = organizationModule;
 const {
   CompanyTeamService,
-  CompanyTeamAccessError,
-  CompanyTeamConflictError
+  CompanyTeamAccessError
 } = teamModule;
 
 const OWNED_MIGRATION = "0027_company_organization_team_hardening";

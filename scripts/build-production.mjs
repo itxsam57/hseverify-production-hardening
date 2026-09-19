@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { cp, mkdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -42,6 +43,16 @@ try {
   }
 
   await verifyNextGeneratedFiles(projectRoot);
+
+  const standaloneRoot = resolve(projectRoot, ".next", "standalone");
+  await mkdir(resolve(standaloneRoot, ".next", "static"), { recursive: true });
+  await cp(resolve(projectRoot, ".next", "static"), resolve(standaloneRoot, ".next", "static"), { recursive: true });
+  try {
+    await stat(resolve(projectRoot, "public"));
+    await cp(resolve(projectRoot, "public"), resolve(standaloneRoot, "public"), { recursive: true });
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
   await assertProjectConfigurationUnchanged(snapshot, projectRoot);
   await cleanGeneratedConfiguration("production-build", projectRoot);
   console.log("Deterministic Next production build passed without source configuration changes.");

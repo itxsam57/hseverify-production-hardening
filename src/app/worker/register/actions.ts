@@ -120,7 +120,9 @@ export async function startWorkerRegistration(
   if (!email.trim()) fieldErrors.email = "Enter your email address.";
   if (!phone.trim()) fieldErrors.phone = "Enter your phone number.";
   if (!password) fieldErrors.password = "Create a password.";
-  if (password !== confirmPassword) {
+  if (!confirmPassword) {
+    fieldErrors.confirmPassword = "Confirm your password.";
+  } else if (password !== confirmPassword) {
     fieldErrors.confirmPassword = "The passwords do not match.";
   }
 

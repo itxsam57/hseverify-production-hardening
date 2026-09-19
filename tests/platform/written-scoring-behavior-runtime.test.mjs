@@ -33,7 +33,7 @@ test("written scoring behavior runtime creates, finalizes and reads a persisted 
 
   const service = new WrittenScoringService(database);
   let reviewId = "";
-  const published = await service.publish({
+  await service.publish({
     tenantId: "tenant_behavior",
     caseId: "assurance_case_behavior",
     attemptId: "attempt_behavior",

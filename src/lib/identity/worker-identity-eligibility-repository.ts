@@ -33,7 +33,6 @@ import {
   normalizeWorkerIdentityDuplicateReasonCode,
   type TrustedWorkerIdentityEligibilityAuthority,
   type WorkerIdentityDuplicateCheckRecord,
-  type WorkerIdentityDuplicateCheckStatus,
   type WorkerIdentityDuplicateDisposition,
   type WorkerIdentityDuplicateDispositionRecord,
   type WorkerIdentityDuplicateFacts,

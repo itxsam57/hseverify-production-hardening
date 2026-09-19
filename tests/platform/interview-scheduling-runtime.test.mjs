@@ -24,7 +24,10 @@ test("interview service creates and assigns a tenant-scoped assessor workflow", 
   const rows = [];
   const database = { async query(sql, params) {
     if (sql.startsWith("SELECT")) {
-      return { rows: rows.filter((row) => row.tenant_id === params[0] && (row.case_id === params[1] || row.assessor_account_id === params[1])) };
+      if (sql.includes("assessor_account_id=$1")) {
+        return { rows: rows.filter((row) => row.assessor_account_id === params[0]) };
+      }
+      return { rows: rows.filter((row) => row.tenant_id === params[0] && row.case_id === params[1]) };
     }
     if (sql.startsWith("INSERT")) {
       const row = { interview_request_id: params[0], case_id: params[1], worker_account_id: params[2], status: params[3], requested_at: params[4], scheduled_at: params[5], assessor_account_id: params[6], timezone: params[7], reminder_at: params[8], reschedule_reason: params[9], tenant_id: params[10] };
@@ -39,5 +42,40 @@ test("interview service creates and assigns a tenant-scoped assessor workflow", 
   const created = await service.requestInterview({ tenantId: "tenant-a", caseId: "case-a", workerAccountId: "worker-a", requestedAt: "2026-09-14T10:00:00Z" });
   const assigned = await service.assignInterview({ tenantId: "tenant-a", request: created, assessorAccountId: "assessor-a" });
   assert.equal(assigned.status, "ASSIGNED");
-  assert.equal((await service.getAssessorAssignments({ tenantId: "tenant-a", assessorAccountId: "assessor-a" })).length, 1);
+  assert.equal((await service.getAssessorAssignments({ assessorAccountId: "assessor-a" })).length, 1);
+});
+
+
+test("assessor assignment lookup derives tenant scope from the assigned record", async () => {
+  const rows = [{
+    interview_request_id: "interview_request_assigned",
+    case_id: "case-assigned",
+    worker_account_id: "worker-assigned",
+    status: "ASSIGNED",
+    requested_at: "2026-09-14T10:00:00Z",
+    scheduled_at: null,
+    assessor_account_id: "assessor-platform",
+    timezone: "UTC",
+    reminder_at: null,
+    reschedule_reason: null,
+    tenant_id: "tenant-assigned"
+  }];
+  const database = { async query(sql, params) {
+    if (sql.includes("assessor_account_id=$1")) {
+      return { rows: rows.filter((row) => row.assessor_account_id === params[0]) };
+    }
+    if (sql.includes("interview_request_id=$1") && sql.includes("assessor_account_id=$2")) {
+      return { rows: rows.filter((row) => row.interview_request_id === params[0] && row.assessor_account_id === params[1]) };
+    }
+    throw new Error(`Unexpected assignment query: ${sql}`);
+  }};
+  const service = new InterviewSchedulingService(database);
+  const assignments = await service.getAssessorAssignments({ assessorAccountId: "assessor-platform" });
+  assert.equal(assignments.length, 1);
+  assert.equal(assignments[0].tenantId, "tenant-assigned");
+  const assigned = await service.getAssignedInterview({
+    assessorAccountId: "assessor-platform",
+    interviewRequestId: "interview_request_assigned"
+  });
+  assert.equal(assigned.tenantId, "tenant-assigned");
 });

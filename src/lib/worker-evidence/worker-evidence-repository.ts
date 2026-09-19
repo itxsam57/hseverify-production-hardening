@@ -139,6 +139,7 @@ async function appendWorkerEvidenceAudit(
   metadata: unknown,
   _occurredAt: string
 ): Promise<void> {
+  void _occurredAt;
   const audit = new DatabaseAuditRepository(Promise.resolve(database));
   const actor = bindTrustedAuditActor(principal);
   await audit.append(actor, {

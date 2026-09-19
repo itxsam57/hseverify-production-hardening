@@ -840,7 +840,7 @@ test("M1.08 review transitions reject duplicate begin-review and decision replay
       evidenceLabel: "Company registration evidence",
       expectedActiveBindingId: null
     });
-    snapshot = await service.submit({
+    await service.submit({
       principal: company.principal,
       expectedLockVersion: snapshot.case.lockVersion
     });

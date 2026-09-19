@@ -22,14 +22,11 @@ export async function finalizeWrittenScoreAction(form: FormData) {
 
 export async function addWrittenScoreRubricMarkAction(form: FormData) {
   const actor = await requirePlatformPermission({ expectedRole: "verifier", permission: "verification.assigned.decide" });
-  const tenantId = actor.tenantMembership?.tenantId;
-  if (!tenantId) throw new Error("Tenant context required.");
   await new WrittenScoringService(await getDatabaseClient()).addRubricMark({
     reviewId: text(form, "reviewId"),
     criterion: text(form, "criterion"),
     mark: Number(text(form, "mark")),
     reviewerAccountId: actor.accountId,
-    tenantId,
   });
   revalidatePath("/verifier/reviews/scoring");
 }

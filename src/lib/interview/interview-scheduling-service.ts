@@ -14,12 +14,15 @@ import { InterviewSchedulingRepository } from "./interview-scheduling-repository
 export class InterviewSchedulingService {
   constructor(private readonly database: DatabaseClient) {}
 
-  async getAssessorAssignments(input: { tenantId:string; assessorAccountId:string }):Promise<InterviewRequest[]> {
-    return new InterviewSchedulingRepository(this.database).findAssignedToAssessor(input.tenantId, input.assessorAccountId);
+  async getAssessorAssignments(input: { assessorAccountId:string }) {
+    return new InterviewSchedulingRepository(this.database).findAssignedToAssessorAccount(input.assessorAccountId);
   }
 
-  async getAssignedInterview(input: { tenantId:string; assessorAccountId:string; interviewRequestId:string }):Promise<InterviewRequest> {
-    const request = await new InterviewSchedulingRepository(this.database).findByRequestId(input.tenantId, input.interviewRequestId);
+  async getAssignedInterview(input: { assessorAccountId:string; interviewRequestId:string }) {
+    const request = await new InterviewSchedulingRepository(this.database).findByRequestIdForAssessor(
+      input.interviewRequestId,
+      input.assessorAccountId
+    );
     if (!request) throw new Error("Interview assignment was not found.");
     assertInterviewAssessorAccess(request, input.assessorAccountId);
     return request;
@@ -53,6 +56,13 @@ export class InterviewSchedulingService {
 
   async loadConsoleDraft(input:{tenantId:string; interviewSessionId:string}) {
     return new InterviewSchedulingRepository(this.database).loadConsoleDraft(input.tenantId, input.interviewSessionId);
+  }
+
+  async loadLatestConsoleDraft(input:{tenantId:string; interviewRequestId:string}) {
+    return new InterviewSchedulingRepository(this.database).loadLatestConsoleDraft(
+      input.tenantId,
+      input.interviewRequestId
+    );
   }
 
   async saveConsoleState(input:{tenantId:string; interviewSessionId:string; interviewRequestId:string; notes:readonly unknown[]; scorecard:unknown; recommendation:string|null; submitted:boolean; updatedAt:string}):Promise<void> {

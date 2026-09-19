@@ -16,3 +16,12 @@ test("Worker navigation exposes privacy controls and scoped share links", async 
   assert.match(source, /href: "\/worker\/privacy"/);
   assert.match(source, /href: "\/worker\/share-links"/);
 });
+
+
+test("Integrity presents a real device-readiness workflow instead of simulation controls", async () => {
+  const source = await readFile("src/app/integrity/page.tsx", "utf8");
+  assert.match(source, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(source, /Check camera and microphone/);
+  assert.match(source, /Continue with limited monitoring/);
+  assert.doesNotMatch(source, /Simulate camera unavailable/);
+});
