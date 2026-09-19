@@ -163,6 +163,7 @@ export async function createWorkerEvidenceRecordAction(
   _previousState: WorkerEvidenceActionState = INITIAL_WORKER_EVIDENCE_ACTION_STATE,
   formData: FormData
 ): Promise<WorkerEvidenceActionState> {
+  void _previousState;
   const kind = recordKind(text(formData, "kind"));
   if (!kind) return state("error", "Select a valid evidence record type.");
 

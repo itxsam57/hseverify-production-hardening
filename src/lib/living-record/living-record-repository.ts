@@ -4,8 +4,7 @@ import { getDatabaseClient } from "../database/database";
 import type { DatabaseClient } from "../database/database";
 import {
   type LivingCompetencyRecord,
-  type LivingRecordVersion,
-  currentLivingCompetencyVersion
+  type LivingRecordVersion
 } from "./living-record-domain";
 
 type Row = Record<string, unknown>;
@@ -29,7 +28,6 @@ export class LivingRecordRepository {
     record: LivingCompetencyRecord
   ): Promise<void> {
     const client = await this.clientPromise;
-    const current = currentLivingCompetencyVersion(record);
     await client.query("BEGIN", []);
     try {
       await client.query(

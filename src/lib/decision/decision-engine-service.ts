@@ -1,5 +1,4 @@
 import { createDecision, toDecisionAuditEvent, type DecisionRecord, type ManualDecisionOverride } from "./decision-engine-domain";
-import type { AuditRepository } from "../audit/audit-repository";
 import { bindTrustedSystemAuditActor } from "../audit/audit-domain";
 import { getAuditRepository } from "../audit/audit-repository";
 import { DecisionRepository } from "./decision-engine-repository";

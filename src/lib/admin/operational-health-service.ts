@@ -37,7 +37,7 @@ export async function getOperationalHealthSnapshot(
       (SELECT count(*) FROM platform_audit_events WHERE source_kind = 'integration') AS integrations,
       (SELECT count(*) FROM platform_audit_events) AS audit_events
   `);
-  } catch (error) {
+  } catch {
     return {
       users: 0,
       companies: 0,

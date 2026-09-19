@@ -31,7 +31,7 @@ test("written scoring runtime completes a real review lifecycle through service 
   };
 
   const service = new WrittenScoringService(database);
-  const published = await service.publish({
+  await service.publish({
     tenantId: "tenant_runtime",
     caseId: "assurance_case_runtime",
     attemptId: "attempt_runtime",

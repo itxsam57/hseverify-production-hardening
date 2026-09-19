@@ -456,9 +456,8 @@ function AutomatedChecks({
 }
 
 function CorrectionControls({
-  identity,
-  correction
-}: Pick<Props, "identity" | "correction">): React.JSX.Element | null {
+  identity
+}: Pick<Props, "identity">): React.JSX.Element | null {
   const [requestState, requestAction] = useActionState(
     requestWorkerIdentityCorrectionAction,
     INITIAL_WORKER_IDENTITY_ACTION_STATE

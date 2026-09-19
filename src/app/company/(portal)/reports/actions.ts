@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
-import { getDatabaseClient } from "@/lib/database/database";
 import { ReportDeliveryRepository } from "@/lib/reports/report-delivery-repository";
 import { ReportDeliveryService } from "@/lib/reports/report-delivery-service";
 

@@ -36,7 +36,8 @@ export default async function WorkerEvidencePage(): Promise<React.JSX.Element> {
           ? fileEvidence.listLeavingLetters(principal, record.recordId)
           : Promise.resolve([])
       ]);
-      const { workerAccountId: _workerAccountId, ...workerSafeRecord } = record;
+      const { workerAccountId, ...workerSafeRecord } = record;
+      void workerAccountId;
       return Object.freeze({
         ...workerSafeRecord,
         attachments,

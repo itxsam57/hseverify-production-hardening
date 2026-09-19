@@ -1,79 +1,147 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-type ShareLink = {
+type ShareLinkView = {
   shareLinkId: string;
   purpose: string;
-  fields: readonly string[];
-  expiresAt?: string | null;
-  revokedAt?: string | null;
+  fields: string[];
+  expiresAt: string | null;
+  revokedAt: string | null;
 };
 
-const availableFields = [
-  ["worker_id", "Worker ID"],
-  ["qualifications", "Qualifications"],
-  ["competency", "Competency status"],
-  ["identity", "Identity status"]
-] as const;
-
-export function ShareLinkManager({ links }: { links: readonly ShareLink[] }) {
+export function ShareLinkManager({ links }: { links: ShareLinkView[] }): React.JSX.Element {
   const router = useRouter();
-  const [purpose, setPurpose] = useState("Credential review");
-  const [employerDetail, setEmployerDetail] = useState("");
-  const [fields, setFields] = useState<string[]>(["worker_id", "qualifications"]);
-  const [expiryDays, setExpiryDays] = useState("30");
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
-  async function createLink(event: React.FormEvent) {
-    event.preventDefault();
-    if (!fields.length) return setNotice("Select at least one passport field.");
-    setBusy(true);
-    setNotice("");
-    const createdAt = new Date();
-    const expiresAt = expiryDays === "none" ? null : new Date(createdAt.getTime() + Number(expiryDays) * 86400000).toISOString();
+  async function createLink(formData: FormData): Promise<void> {
+    setBusy("create");
+    setFeedback(null);
+    const expiresInDays = Number(formData.get("expiresInDays") ?? 30);
+    const expiresAt = new Date(Date.now() + expiresInDays * 86_400_000).toISOString();
     const response = await fetch("/api/share-links", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ purpose, employerDetail: employerDetail || undefined, fields, createdAt: createdAt.toISOString(), expiresAt })
+      body: JSON.stringify({
+        purpose: formData.get("purpose"),
+        employerDetail: formData.get("employerDetail") || undefined,
+        fields: formData.getAll("fields"),
+        createdAt: new Date().toISOString(),
+        expiresAt
+      })
     });
-    setBusy(false);
-    if (!response.ok) return setNotice("We could not create the link. Please try again.");
-    setNotice("Scoped share link created.");
+    setBusy(null);
+    if (!response.ok) {
+      setFeedback({ kind: "error", text: "The share link could not be created. Check the selected details and try again." });
+      return;
+    }
+    setFeedback({ kind: "success", text: "Share link created. It is now listed below." });
     router.refresh();
   }
 
-  async function revoke(shareLinkId: string) {
-    setBusy(true);
-    setNotice("");
+  async function revokeLink(shareLinkId: string): Promise<void> {
+    setBusy(shareLinkId);
+    setFeedback(null);
     const response = await fetch("/api/share-links", {
       method: "DELETE",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ shareLinkId, revokedAt: new Date().toISOString() })
     });
-    setBusy(false);
-    setNotice(response.ok ? "Share link revoked." : "We could not revoke the link.");
-    if (response.ok) router.refresh();
+    setBusy(null);
+    if (!response.ok) {
+      setFeedback({ kind: "error", text: "The share link could not be revoked. Please try again." });
+      return;
+    }
+    setFeedback({ kind: "success", text: "Share link revoked. Existing access is now blocked." });
+    router.refresh();
   }
 
   return (
     <>
-      <form className="dashboard-section" onSubmit={(event) => void createLink(event)}>
-        <h2>Create a share link</h2>
-        <div className="field-group"><label htmlFor="share-purpose">Purpose</label><input id="share-purpose" value={purpose} onChange={(event) => setPurpose(event.target.value)} required /></div>
-        <div className="field-group"><label htmlFor="share-recipient">Recipient or employer (optional)</label><input id="share-recipient" value={employerDetail} onChange={(event) => setEmployerDetail(event.target.value)} /></div>
-        <fieldset><legend>Information to share</legend>{availableFields.map(([value, label]) => <label key={value}><input type="checkbox" checked={fields.includes(value)} onChange={() => setFields((current) => current.includes(value) ? current.filter((field) => field !== value) : [...current, value])} /> {label}</label>)}</fieldset>
-        <div className="field-group"><label htmlFor="share-expiry">Link expires</label><select id="share-expiry" value={expiryDays} onChange={(event) => setExpiryDays(event.target.value)}><option value="7">In 7 days</option><option value="30">In 30 days</option><option value="90">In 90 days</option><option value="none">No expiry</option></select></div>
-        <button type="submit" disabled={busy}>{busy ? "Creating…" : "Create scoped link"}</button>
-        {notice ? <p role="status">{notice}</p> : null}
+      <form className="dashboard-section auth-form" action={(formData) => void createLink(formData)}>
+        <div>
+          <p className="section-kicker">Controlled disclosure</p>
+          <h2>Create a share link</h2>
+          <p className="muted-copy">Choose exactly what the recipient may see. Every access is recorded.</p>
+        </div>
+        <div className="field-group">
+          <label htmlFor="share-purpose">Purpose</label>
+          <input id="share-purpose" name="purpose" required maxLength={160} placeholder="For example: site onboarding review" />
+        </div>
+        <div className="field-group">
+          <label htmlFor="share-recipient">Recipient or employer (optional)</label>
+          <input id="share-recipient" name="employerDetail" maxLength={160} placeholder="Company or reviewer name" />
+        </div>
+        <fieldset className="field-group">
+          <legend>Information to share</legend>
+          <label><input name="fields" type="checkbox" value="worker_id" defaultChecked /> Worker ID</label>
+          <label><input name="fields" type="checkbox" value="qualifications" defaultChecked /> Qualifications</label>
+          <label><input name="fields" type="checkbox" value="employment" /> Employment record</label>
+        </fieldset>
+        <div className="field-group">
+          <label htmlFor="share-expiry">Link expiry</label>
+          <select id="share-expiry" name="expiresInDays" defaultValue="30">
+            <option value="7">7 days</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+        <button className="button button-primary" disabled={busy !== null} type="submit">
+          {busy === "create" ? "Creating…" : "Create secure link"}
+        </button>
       </form>
+
+      {feedback ? (
+        <p className={`form-alert ${feedback.kind === "error" ? "form-alert-error" : "form-alert-success"}`} role="status">
+          {feedback.text}
+        </p>
+      ) : null}
+
       <section className="dashboard-section" aria-labelledby="active-share-links">
-        <h2 id="active-share-links">Your links</h2>
-        {links.length ? <div className="table-scroll-region" role="region" aria-label="Scoped share links"><table><thead><tr><th>Purpose</th><th>Fields</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead><tbody>
-          {links.map((link) => { const expired = Boolean(link.expiresAt && new Date(link.expiresAt) <= new Date()); const status = link.revokedAt ? "Revoked" : expired ? "Expired" : "Active"; return <tr key={link.shareLinkId}><td>{link.purpose}</td><td>{link.fields.join(", ")}</td><td>{link.expiresAt ? new Date(link.expiresAt).toLocaleDateString() : "No expiry"}</td><td><span className="status-pill">{status}</span></td><td>{status === "Active" ? <button type="button" className="secondary-button" disabled={busy} onClick={() => void revoke(link.shareLinkId)}>Revoke</button> : "—"}</td></tr>; })}
-        </tbody></table></div> : <div className="empty-state"><p>No scoped share links have been created.</p></div>}
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Access control</p>
+            <h2 id="active-share-links">Your share links</h2>
+          </div>
+          <span className="status-badge status-neutral">{links.length} total</span>
+        </div>
+        {links.length ? (
+          <div className="record-list">
+            {links.map((link) => {
+              const active = !link.revokedAt && (!link.expiresAt || new Date(link.expiresAt) > new Date());
+              return (
+                <article className="record-row" key={link.shareLinkId}>
+                  <div>
+                    <h3>{link.purpose}</h3>
+                    <p>{link.fields.join(", ")} · Expires {link.expiresAt ? new Date(link.expiresAt).toLocaleDateString() : "never"}</p>
+                  </div>
+                  <div className="worker-id-actions">
+                    <span className={`status-badge ${active ? "status-positive" : "status-neutral"}`}>
+                      {link.revokedAt ? "Revoked" : active ? "Active" : "Expired"}
+                    </span>
+                    {active ? (
+                      <button
+                        className="button button-secondary button-small"
+                        disabled={busy !== null}
+                        onClick={() => void revokeLink(link.shareLinkId)}
+                        type="button"
+                      >
+                        {busy === link.shareLinkId ? "Revoking…" : "Revoke"}
+                      </button>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <h3>No active sharing</h3>
+            <p>Create a time-limited link when an employer or reviewer needs selected passport information.</p>
+          </div>
+        )}
       </section>
     </>
   );

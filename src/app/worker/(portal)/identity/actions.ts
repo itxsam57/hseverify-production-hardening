@@ -143,6 +143,7 @@ export async function saveWorkerIdentityDraftAction(
   _previousState: WorkerIdentityActionState = INITIAL_WORKER_IDENTITY_ACTION_STATE,
   formData: FormData
 ): Promise<WorkerIdentityActionState> {
+  void _previousState;
   const expectedDraftRevision = integer(formData, "expectedDraftRevision");
   const hasDraft = text(formData, "hasDraft") === "true";
   if (hasDraft && expectedDraftRevision === null) {
@@ -334,6 +335,8 @@ export async function scheduleWorkerIdentityChecksAction(
   _previousState: WorkerIdentityActionState,
   _formData: FormData
 ): Promise<WorkerIdentityActionState> {
+  void _previousState;
+  void _formData;
   try {
     const principal = await workerPrincipal();
     await getWorkerIdentityCheckService().scheduleOwn(principal);
