@@ -311,11 +311,60 @@ async function runBrowserAcceptance(baseUrl) {
     ).waitFor({ timeout: 15_000 });
     assert.equal(await companyPage.getByLabel("Verified business email").inputValue(), COMPANY_EMAIL);
 
+    await gotoOk(companyPage, baseUrl, "/company/organization", "Organization");
+    await companyPage.getByLabel("Unit type").selectOption("site");
+    await companyPage.getByLabel("Name").fill("M1.08 Browser Site");
+    await companyPage.getByLabel("Formatted address").fill("1 Browser Acceptance Road");
+    await companyPage.getByLabel("Phone").fill("+923001112233");
+    await companyPage.getByLabel("Website").fill("https://site.m108-browser.example.test");
+    await companyPage.getByLabel("Email").fill("site.m108.browser@example.test");
+    await companyPage.getByLabel("Registration number (optional)").fill("SITE-M108-001");
+    await companyPage.getByRole("button", { name: "Create unit" }).click();
+    await companyPage.getByRole("heading", { name: "M1.08 Browser Site", exact: true }).waitFor({ timeout: 15_000 });
+    await companyPage.reload({ waitUntil: "domcontentloaded" });
+    await companyPage.getByRole("heading", { name: "M1.08 Browser Site", exact: true }).waitFor({ timeout: 15_000 });
+
+    await gotoOk(companyPage, baseUrl, "/company/invitations", "Invite one Worker");
+    const singleInvitation = companyPage.locator("section").filter({ has: companyPage.getByRole("heading", { name: "Invite one Worker" }) }).first();
+    await singleInvitation.getByLabel("Worker email").fill("invited.worker.m108@example.test");
+    await singleInvitation.getByLabel("Site default").selectOption({ label: "M1.08 Browser Site" });
+    await singleInvitation.getByLabel("Future assessment payment default").selectOption("company");
+    await singleInvitation.getByLabel("Future assessment reference").fill("ASSESS-M108-001");
+    await singleInvitation.getByRole("button", { name: "Create Worker invitation" }).click();
+    const invitationCard = companyPage.locator("article").filter({ hasText: "invited.worker.m108@example.test" }).first();
+    await invitationCard.waitFor({ state: "visible", timeout: 15_000 });
+    await invitationCard.getByRole("button", { name: "Resend with new link" }).click();
+    await companyPage.getByText("Wait before resending this Worker invitation.", { exact: true }).waitFor({ timeout: 15_000 });
+    const refreshedInvitationCard = companyPage.locator("article").filter({ hasText: "invited.worker.m108@example.test" }).first();
+    await refreshedInvitationCard.getByRole("button", { name: "Revoke", exact: true }).click();
+    await companyPage.getByRole("button", { name: "Revoke invitation", exact: true }).click();
+    await companyPage.getByText("revoked", { exact: true }).first().waitFor({ timeout: 15_000 });
+
+    const bulkInvitation = companyPage.locator("section").filter({ has: companyPage.getByRole("heading", { name: "Invite multiple Workers" }) }).first();
+    await bulkInvitation.getByLabel("Worker CSV").fill("email\nbulk.one.m108@example.test\nbulk.two.m108@example.test");
+    await bulkInvitation.getByLabel("Site default").selectOption({ label: "M1.08 Browser Site" });
+    await bulkInvitation.getByRole("button", { name: "Process bulk Worker invitations" }).click();
+    const bulkResults = companyPage.getByLabel("Bulk invitation results");
+    await bulkResults.waitFor({ state: "visible", timeout: 15_000 });
+    await bulkResults.getByText("bulk.one.m108@example.test", { exact: true }).waitFor();
+    await bulkResults.getByText("bulk.two.m108@example.test", { exact: true }).waitFor();
+
     await companyPage.setViewportSize({ width: 390, height: 844 });
-    const companyOverflow = await companyPage.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
-    );
-    assert(companyOverflow <= 1, `Company verification page overflows mobile by ${companyOverflow}px`);
+    const companyOverflow = await companyPage.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      offenders: [...document.querySelectorAll("*")]
+        .filter((element) => element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+        .slice(0, 8)
+        .map((element) => ({
+          tag: element.tagName,
+          className: element.className,
+          text: element.textContent?.trim().slice(0, 100) ?? "",
+          right: Math.round(element.getBoundingClientRect().right),
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth
+        }))
+    }));
+    assert(companyOverflow.overflow <= 1, `Company invitations page overflows mobile: ${JSON.stringify(companyOverflow)}`);
     await adminSession.page.setViewportSize({ width: 390, height: 844 });
     await gotoOk(adminSession.page, baseUrl, "/admin/company-verifications", "Company verification review");
     const adminOverflow = await adminSession.page.evaluate(

@@ -62,3 +62,58 @@ body {
     max-width: none;
   }
 }
+
+.page-stack,
+.content-stack,
+.responsive-card-grid,
+.form-grid {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-stack,
+.content-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.responsive-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.page-stack > *,
+.content-stack > *,
+.responsive-card-grid > *,
+.form-grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-scroll {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 680px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.content-stack a,
+.page-stack a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
