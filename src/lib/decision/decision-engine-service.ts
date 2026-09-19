@@ -26,7 +26,7 @@ export class DecisionEngineService {
     await this.auditRepository.append(bindTrustedSystemAuditActor("outbox-worker"), {
       action: event.type,
       outcome: "succeeded",
-      target: { type: "decision", reference: event.decisionId },
+      target: { type: "resource", reference: event.decisionId },
       metadata: {
         caseId: event.caseId,
         outcome: event.outcome,
@@ -53,7 +53,7 @@ export class DecisionEngineService {
     await this.auditRepository.append(bindTrustedSystemAuditActor("outbox-worker"), {
       action: "decision.override.created",
       outcome: "succeeded",
-      target: { type: "decision", reference: override.decisionId },
+      target: { type: "resource", reference: override.decisionId },
       metadata: {
         overrideId: override.overrideId,
         previousState: override.previousState,

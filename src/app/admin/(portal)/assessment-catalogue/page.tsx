@@ -73,7 +73,7 @@ export default async function AssessmentCataloguePage({
           <input
             name="blueprintVersionId"
             required
-            pattern="blueprint_version_[A-Za-z0-9_-]{24}"
+            pattern="blueprint_version_[A-Za-z0-9_\-]{24}"
           />
         </label>
         <label>
@@ -183,7 +183,7 @@ export default async function AssessmentCataloguePage({
                     <input
                       name="revisionBlueprintVersionId"
                       required
-                      pattern="blueprint_version_[A-Za-z0-9_-]{24}"
+                      pattern="blueprint_version_[A-Za-z0-9_\-]{24}"
                       defaultValue={item.version.blueprintVersionId}
                     />
                   </label>

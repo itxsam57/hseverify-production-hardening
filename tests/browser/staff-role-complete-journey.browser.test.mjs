@@ -98,6 +98,142 @@ async function assertNoMobileOverflow(page, label) {
   await page.setViewportSize({ width: 1440, height: 1000 });
 }
 
+
+async function runAdminForms(page, baseUrl) {
+  const frameworkReference = "HSE-JOURNEY";
+  await gotoOk(page, baseUrl, "/admin/frameworks", "Frameworks & effective policy");
+  const createFrameworkForm = page.locator("form").filter({ hasText: "Create framework" });
+  await createFrameworkForm.getByLabel("Reference", { exact: true }).fill(frameworkReference);
+  await createFrameworkForm.getByLabel("Title", { exact: true }).fill("Journey safety framework");
+  await page.getByRole("button", { name: "Create framework" }).click();
+  await page.getByText(frameworkReference, { exact: true }).waitFor({ timeout: 15_000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText(frameworkReference, { exact: true }).waitFor();
+
+  const publishPolicyForm = page.locator("form").filter({ hasText: "Publish policy version" });
+  await publishPolicyForm.getByLabel("Framework reference", { exact: true }).fill(frameworkReference);
+  await publishPolicyForm.getByLabel("Policy reference", { exact: true }).fill("JOURNEY-POLICY");
+  await publishPolicyForm.getByLabel("Title", { exact: true }).fill("Journey policy v1");
+  await publishPolicyForm.getByLabel("Effective from").fill("2026-01-01T00:00");
+  await page.getByRole("button", { name: "Publish immutable version" }).click();
+
+  await gotoOk(page, baseUrl, "/admin/question-bank", "Question Bank");
+  const questionPayload = {
+    questionType: "MULTIPLE_CHOICE",
+    prompt: "Which control is tested by the full Admin journey?",
+    options: ["Stop work", "Ignore it", "Continue"],
+    answerKey: "Stop work",
+    rubric: null,
+    frameworkReference,
+    domainReference: "Hazard Control",
+    difficulty: "MEDIUM",
+    tags: ["core", "journey"]
+  };
+  await page.getByLabel("Stable reference").fill("JOURNEY-Q-001");
+  await page.getByLabel("Version JSON").fill(JSON.stringify(questionPayload));
+  await page.getByRole("button", { name: "Create active question" }).click();
+  await page.getByText("JOURNEY-Q-001", { exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Deactivate" }).click();
+  await page.getByText(/INACTIVE/).waitFor({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Reactivate" }).click();
+  await page.getByText(/ACTIVE/).waitFor({ timeout: 15_000 });
+  await page.getByText("Create a new immutable revision").click();
+  await page.getByLabel("Replacement version JSON").fill(JSON.stringify({ ...questionPayload, prompt: "Which control is persisted after an Admin revision?" }));
+  await page.getByRole("button", { name: "Publish revision" }).click();
+  await page.getByText("Which control is persisted after an Admin revision?", { exact: true }).waitFor({ timeout: 15_000 });
+
+  await gotoOk(page, baseUrl, "/admin/assessment-blueprints", "Assessment blueprints");
+  const selectors = [{ count: 1, questionType: "MULTIPLE_CHOICE", domainReference: "Hazard Control", difficulty: "MEDIUM", tagsAll: ["core"] }];
+  await page.getByLabel("Blueprint reference").fill("JOURNEY-BP-001");
+  await page.getByLabel("Blueprint title").fill("Journey blueprint");
+  await page.getByLabel("Framework reference").fill(frameworkReference);
+  await page.getByLabel("Selector JSON").fill(JSON.stringify(selectors));
+  await page.getByRole("button", { name: "Create blueprint" }).click();
+  await page.getByRole("status").getByText("Assessment blueprint created.").waitFor({ timeout: 15_000 });
+  const blueprintArticle = page.locator("article").filter({ hasText: "JOURNEY-BP-001" });
+  await blueprintArticle.getByRole("button", { name: "Deactivate" }).click();
+  await page.getByRole("status").getByText("Assessment blueprint status updated.").waitFor();
+  await page.locator("article").filter({ hasText: "JOURNEY-BP-001" }).getByRole("button", { name: "Reactivate" }).click();
+  await page.getByRole("status").getByText("Assessment blueprint status updated.").waitFor();
+  const currentBlueprint = page.locator("article").filter({ hasText: "JOURNEY-BP-001" });
+  const blueprintVersionId = (await currentBlueprint.locator("code").last().innerText()).trim();
+  await currentBlueprint.getByText("Create a new immutable revision").click();
+  await currentBlueprint.getByLabel("Revision framework reference").fill(frameworkReference);
+  await currentBlueprint.getByRole("button", { name: "Publish revision" }).click();
+  await page.getByRole("status").getByText("Immutable blueprint revision published.").waitFor();
+  const revisedBlueprint = page.locator("article").filter({ hasText: "JOURNEY-BP-001" });
+  await revisedBlueprint.getByText(/Version 2/).waitFor();
+  const revisedBlueprintVersionId = (await revisedBlueprint.locator("code").last().innerText()).trim();
+  assert.notEqual(revisedBlueprintVersionId, blueprintVersionId);
+
+  await gotoOk(page, baseUrl, "/admin/assessment-catalogue", "Assessment catalogue");
+  await page.getByLabel("Catalogue reference").fill("JOURNEY-CAT-001");
+  await page.getByLabel("Catalogue title").fill("Journey assessment");
+  await page.getByLabel("Description").fill("End-to-end browser verified catalogue record.");
+  await page.getByLabel("Framework reference").fill(frameworkReference);
+  await page.getByLabel("Blueprint version ID").fill(revisedBlueprintVersionId);
+  await page.getByLabel("Minimum verified qualifications").fill("0");
+  await page.getByRole("button", { name: "Create catalogue entry" }).click();
+  await page.getByRole("status").getByText("Assessment catalogue entry created.").waitFor({ timeout: 15_000 });
+  let catalogueArticle = page.locator("article").filter({ hasText: "JOURNEY-CAT-001" });
+  await catalogueArticle.getByRole("button", { name: "Deactivate" }).click();
+  await page.getByRole("status").getByText("Assessment catalogue status updated.").waitFor();
+  catalogueArticle = page.locator("article").filter({ hasText: "JOURNEY-CAT-001" });
+  await catalogueArticle.getByRole("button", { name: "Reactivate" }).click();
+  await page.getByRole("status").getByText("Assessment catalogue status updated.").waitFor();
+  catalogueArticle = page.locator("article").filter({ hasText: "JOURNEY-CAT-001" });
+  await catalogueArticle.getByText("Create a new immutable catalogue revision").click();
+  await catalogueArticle.getByLabel("Revision title").fill("Journey assessment revised");
+  await catalogueArticle.getByLabel("Revision framework reference").fill(frameworkReference);
+  await catalogueArticle.getByRole("button", { name: "Publish revision" }).click();
+  await page.getByRole("status").getByText("Immutable assessment catalogue revision published.").waitFor();
+  await page.getByText("Journey assessment revised", { exact: true }).waitFor();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Journey assessment revised", { exact: true }).waitFor();
+
+  await gotoOk(page, baseUrl, "/admin/certifications", "Certification records");
+  await page.getByPlaceholder("Credential ID").fill("credential_journey_001");
+  await page.getByPlaceholder("Worker ID").fill("worker_journey_001");
+  await page.getByPlaceholder("Qualification").fill("Journey Safety Certification");
+  await page.getByPlaceholder("Decision reason").fill("Verified by authenticated Admin browser journey");
+  await page.getByRole("button", { name: "Create certification record" }).click();
+  await page.getByText("Journey Safety Certification", { exact: false }).waitFor({ timeout: 15_000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Journey Safety Certification", { exact: false }).waitFor();
+
+  await gotoOk(page, baseUrl, "/admin/operations", "Admin operations health");
+  const firstCheck = page.locator("[data-handover-check]").first();
+  const checkName = await firstCheck.getAttribute("data-handover-check");
+  await firstCheck.getByRole("combobox").selectOption("passed");
+  await firstCheck.getByRole("button").click();
+  await page.getByRole("status").getByText("Handover check saved.").waitFor({ timeout: 15_000 });
+  assert.equal(await page.locator(`[data-handover-check="${checkName}"]`).getByRole("combobox").inputValue(), "passed");
+
+  const tenantId = "tenant_journey_admin_001";
+  const caseId = "case_journey_admin_001";
+  await gotoOk(page, baseUrl, `/admin/decisions?tenantId=${tenantId}&caseId=${caseId}`, "Decision Engine");
+  const createDecisionForm = page.locator("form").filter({ hasText: "Create decision" });
+  await createDecisionForm.getByLabel("State").fill("PENDING_ADDITIONAL_REVIEW");
+  await createDecisionForm.getByLabel("Reason code").fill("journey_review");
+  await createDecisionForm.getByLabel("Explanation").fill("Awaiting final journey review");
+  await createDecisionForm.getByLabel("Rule version").fill("journey-v1");
+  await createDecisionForm.getByLabel("Input references").fill("evidence-journey-1");
+  await createDecisionForm.getByRole("button", { name: "Create decision" }).click();
+  await page.getByText("Awaiting final journey review", { exact: false }).waitFor({ timeout: 15_000 });
+  const decisionItem = page.locator("li").filter({ hasText: "Awaiting final journey review" });
+  const decisionId = (await decisionItem.locator("code").innerText()).trim();
+  const overrideForm = page.locator("form").filter({ hasText: "Record override" });
+  await overrideForm.getByLabel("Decision ID").fill(decisionId);
+  await overrideForm.getByLabel("Previous state").fill("PENDING_ADDITIONAL_REVIEW");
+  await overrideForm.getByLabel("New state").fill("APPROVED");
+  await overrideForm.getByLabel("Reason").fill("Journey evidence accepted");
+  await overrideForm.getByLabel("Evidence reference").fill("evidence-journey-1");
+  await overrideForm.getByRole("button", { name: "Record override" }).click();
+  await page.getByText("Override: APPROVED", { exact: false }).waitFor({ timeout: 15_000 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Override: APPROVED", { exact: false }).waitFor();
+}
+
 async function runJourney(baseUrl) {
   const browser = await chromium.launch({ headless: true });
   const sessions = [];
@@ -154,11 +290,15 @@ async function runJourney(baseUrl) {
         await gotoOk(session.page, baseUrl, path, heading);
         await assertNoMobileOverflow(session.page, path);
       }
+      if (identity.role === "admin") await runAdminForms(session.page, baseUrl);
       await gotoOk(session.page, baseUrl, "/account/sessions", "Active sessions");
       await assertNoMobileOverflow(session.page, identity.role + " sessions");
       const forbiddenRole = identity.role === "admin" ? "root" : "admin";
       await gotoOk(session.page, baseUrl, `/${forbiddenRole}/dashboard`, null);
       assert.match(session.page.url(), /\/access-denied$|\/(root|admin)\/login/, `${identity.role} crossed into ${forbiddenRole}`);
+      await gotoOk(session.page, baseUrl, "/account/sessions", "Active sessions");
+      await session.page.getByRole("button", { name: "Sign out this session" }).click();
+      await session.page.waitForURL((url) => url.pathname === `/${identity.role}/login` && url.searchParams.get("reason") === "signed-out", { timeout: 15_000 });
       assert.deepEqual(session.errors, []);
     }
     assert.deepEqual(root.errors, []);

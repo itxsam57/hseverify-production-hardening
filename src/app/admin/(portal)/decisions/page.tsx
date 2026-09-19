@@ -2,37 +2,27 @@ import { requirePlatformPermission } from "@/lib/authorization/authorization-ser
 import { DecisionRepository } from "@/lib/decision/decision-engine-repository";
 import { createDecisionAction, createDecisionOverrideAction } from "./actions";
 
-export default async function DecisionsPage({ searchParams }: { searchParams: Promise<{ caseId?: string }> }): Promise<React.JSX.Element> {
+export default async function DecisionsPage({ searchParams }: { searchParams: Promise<{ caseId?: string; tenantId?: string }> }): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
-  const tenantId = principal.tenantMembership?.tenantId;
-
-  if (!tenantId) {
-    return (
-      <main>
-        <h1>Decision Engine</h1>
-        <div className="empty-state">
-          <h2>No tenant context is assigned</h2>
-          <p>
-            This platform administrator account is valid, but decision records are tenant-isolated.
-            Assign a tenant-scoped administration membership before creating or reviewing decisions.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  const { caseId } = await searchParams;
+  const { caseId, tenantId } = await searchParams;
   const repository = new DecisionRepository();
-  const decisions = caseId ? await repository.listByCase(caseId, tenantId) : [];
+  const scopedTenantId = tenantId ?? "";
+  const decisions = caseId && scopedTenantId ? await repository.listByCase(caseId, scopedTenantId) : [];
   const overrides = await Promise.all(
-    decisions.map((decision) => repository.listOverrides(decision.decisionId, tenantId))
+    decisions.map((decision) => repository.listOverrides(decision.decisionId, scopedTenantId))
   );
 
   return (
     <main>
       <h1>Decision Engine</h1>
       <p>Actor: {principal.accountId}</p>
+      <form method="get">
+        <label>Tenant ID<input name="tenantId" defaultValue={tenantId ?? ""} required /></label>
+        <label>Case ID<input name="caseId" defaultValue={caseId ?? ""} required /></label>
+        <button type="submit">Load case decisions</button>
+      </form>
       <form action={createDecisionAction}>
+        <label>Tenant ID<input name="tenantId" defaultValue={tenantId ?? ""} required /></label>
         <label>Case ID<input name="caseId" defaultValue={caseId ?? ""} required /></label>
         <label>State<input name="state" required /></label>
         <label>Reason code<input name="reasonCode" required /></label>
@@ -43,6 +33,7 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
       </form>
       <h2>Manual override</h2>
       <form action={createDecisionOverrideAction}>
+        <label>Tenant ID<input name="tenantId" defaultValue={tenantId ?? ""} required /></label>
         <label>Decision ID<input name="decisionId" required /></label>
         <label>Previous state<input name="previousState" required /></label>
         <label>New state<input name="newState" required /></label>
@@ -54,7 +45,7 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
       <ul>
         {decisions.map((decision, index) => (
           <li key={decision.decisionId}>
-            <strong>{decision.state}</strong>: {decision.reason.explanation} ({decision.ruleVersion})
+            <code>{decision.decisionId}</code> — <strong>{decision.state}</strong>: {decision.reason.explanation} ({decision.ruleVersion})
             {overrides[index].length > 0 ? (
               <ul>
                 {overrides[index].map((override) => (
