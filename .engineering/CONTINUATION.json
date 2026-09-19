@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "task_id": "REPAIR-001",
+  "state": "AUTO_CONTINUE",
+  "status": "TESTING",
+  "repo": "/home/ubuntu/work/hseverify-governed-highlevel-test",
+  "branch": "qa/consumer-readiness-repair",
+  "remote_verified_sha": "4154cc65bfb10251c758a275d5c50376620c3aba",
+  "completed": [
+    "All 32 pre-existing browser suites passed after confirm-password fix",
+    "Full engineering gate passed before workflow-expansion changes",
+    "Worker registration/contact verification/profile submission real Chromium journey passes",
+    "Company verification/organization/invitation lifecycle real Chromium journey passes",
+    "Company invitations mobile overflow fixed",
+    "Root/Admin/Verifier/Assessor invitation, MFA, login, workspace, session and role-isolation journey passes",
+    "Tenantless staff pages no longer throw HTTP 500",
+    "Verifier and Assessor tenant scope is derived securely from assigned records because the schema correctly reserves tenant memberships for Company accounts",
+    "Verifier evidence claim/approval and written rubric/finalization pass in Chromium with persisted database verification",
+    "Assessor scheduling and interview notes/scorecard/recommendation pass in Chromium with persisted database verification",
+    "Interview draft refresh persistence fixed by reusing the latest request-bound session",
+    "Focused staff service/browser tests, lint and strict typecheck pass"
+  ],
+  "open": [
+    "Add authenticated browser workflows for Worker identity/evidence/assessments/privacy/passport/share links",
+    "Add Company Team, Assurance Order, Action Centre, billing, reports and policy workflows",
+    "Test Admin framework/question bank/blueprint/catalogue/decisions/certifications/provider-health actions",
+    "Test Root session revocation controls",
+    "Run all browser suites, full engineering gate and live Brave deployment at one final SHA",
+    "Publish final feature-by-feature verdict and provider blocker list"
+  ],
+  "next_action": "Build the real Chromium Worker identity, evidence, privacy, passport and scoped share-link journey; diagnose and repair any failed producer-to-consumer connection.",
+  "blockers": [
+    "Production email, SMS, storage/scanning, identity, video and payment credentials are unavailable; sandbox/local adapters remain required for workflow verification."
+  ],
+  "updated_at": "2026-09-19T12:01:00.664Z",
+  "revision": 5
+}
