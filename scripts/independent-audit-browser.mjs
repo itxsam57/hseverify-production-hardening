@@ -13,6 +13,7 @@ await mkdir(SHOTS, { recursive: true });
 const findings = [];
 const checkpoints = [];
 const browserEvents = [];
+const lastTotpCounterByRole = new Map();
 let screenshotCount = 0;
 
 function add(severity, category, route, message, evidence = null) {
@@ -182,9 +183,18 @@ async function latestCompanySandboxCode(page, destination) {
 }
 
 async function loginRole(browser, role) {
+  const cred = credentials[role];
+  if (cred.totpSecret) {
+    const currentCounter = Math.floor(Date.now() / 1000 / 30);
+    const lastCounter = lastTotpCounterByRole.get(role);
+    if (lastCounter !== undefined && currentCounter <= lastCounter) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, 30_250 - (Date.now() % 30_000))
+      );
+    }
+  }
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage(); attachEvents(page, `${role}-session`);
-  const cred = credentials[role];
   await visit(page, `/${role}/login`, `${role} login`);
   await page.getByLabel("Email address").fill(cred.email);
   await page.getByLabel("Password").fill(cred.password);
@@ -193,6 +203,7 @@ async function loginRole(browser, role) {
   await page.waitForURL((url) => url.pathname !== `/${role}/login`, { timeout: 20_000 });
   const finalPath = new URL(page.url()).pathname;
   assert(finalPath.startsWith(`/${role}/`) || finalPath === `/${role}`, `${role} login escaped role portal to ${finalPath}`);
+  if (cred.totpSecret) lastTotpCounterByRole.set(role, Math.floor(Date.now() / 1000 / 30));
   return { context, page, finalPath };
 }
 

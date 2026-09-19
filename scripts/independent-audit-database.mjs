@@ -34,6 +34,17 @@ async function executeFile(db, filename) {
   await db.exec(sql);
 }
 async function applyAll(db) { for (const name of up) await executeFile(db, name); }
+function asMigrationDatabase(db) {
+  const adapt = (client) => ({
+    execute: (sql) => client.exec(sql),
+    query: (sql, params) => client.query(sql, params)
+  });
+  return {
+    ...adapt(db),
+    transaction: (operation) =>
+      db.transaction((transaction) => operation(adapt(transaction)))
+  };
+}
 async function publicTables(db) {
   const rows = await db.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename`);
   return rows.rows.map((row) => row.tablename);
@@ -145,26 +156,27 @@ try {
     const previousRollbackPermission = process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;
     process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK = "true";
     try {
-      const applied = await applyPendingMigrations(rollbackDb, "independent-audit");
+      const migrationDb = asMigrationDatabase(rollbackDb);
+      const applied = await applyPendingMigrations(migrationDb, "independent-audit");
       if (applied.length !== up.length) {
         throw new Error(`Expected ${up.length} freshly applied migrations, got ${applied.length}.`);
       }
       const beforeRollbackTables = await publicTables(rollbackDb);
-      const beforeStatus = await migrationStatus(rollbackDb);
+      const beforeStatus = await migrationStatus(migrationDb);
       const latestApplied = [...beforeStatus].reverse().find((migration) => migration.applied);
       if (!latestApplied) throw new Error("No latest applied migration was available for rollback.");
 
-      const rolledBackId = await rollbackLatestMigration(rollbackDb, { appEnvironment: "test" });
+      const rolledBackId = await rollbackLatestMigration(migrationDb, { appEnvironment: "test" });
       if (rolledBackId !== latestApplied.id) {
         throw new Error(`Expected rollback of ${latestApplied.id}, got ${rolledBackId ?? "none"}.`);
       }
-      const afterRollbackStatus = await migrationStatus(rollbackDb);
+      const afterRollbackStatus = await migrationStatus(migrationDb);
       const rolledBackStatus = afterRollbackStatus.find((migration) => migration.id === rolledBackId);
       if (!rolledBackStatus || rolledBackStatus.applied) {
         throw new Error(`Migration ${rolledBackId} remained recorded as applied after rollback.`);
       }
 
-      const reappliedIds = await applyPendingMigrations(rollbackDb, "independent-audit-reapply");
+      const reappliedIds = await applyPendingMigrations(migrationDb, "independent-audit-reapply");
       if (reappliedIds.length !== 1 || reappliedIds[0] !== rolledBackId) {
         throw new Error(`Expected only ${rolledBackId} to reapply, got ${reappliedIds.join(", ") || "none"}.`);
       }

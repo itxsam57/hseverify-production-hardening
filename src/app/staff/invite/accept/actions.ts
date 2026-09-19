@@ -7,6 +7,7 @@ import {
   clearStaffEnrollmentToken,
   readStaffEnrollmentToken
 } from "@/lib/auth/staff-enrollment-cookie";
+import { enforceStaffProfileEnrollmentRateLimit } from "@/lib/auth/staff-enrollment-rate-limit";
 import {
   StaffProvisioningError,
   getStaffProvisioningService
@@ -41,6 +42,7 @@ export async function completeStaffEnrollmentProfile(
     return { error: "The passwords do not match." };
   }
   try {
+    await enforceStaffProfileEnrollmentRateLimit(token);
     await (await getStaffProvisioningService()).completeProfile({
       combinedToken: token,
       displayName: formText(formData, "displayName"),

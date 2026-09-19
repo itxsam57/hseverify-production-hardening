@@ -1,9 +1,16 @@
 import "server-only";
 
+function assertOptionalTenantId(tenantId: string | null): void {
+  if (tenantId !== null && tenantId.trim().length === 0) {
+    throw new Error("invalid privacy tenant boundary");
+  }
+}
+
 export const PRIVACY_REQUEST_TYPES = ["access", "correction", "deletion", "export"] as const;
 export type PrivacyRequestType = typeof PRIVACY_REQUEST_TYPES[number];
 
 export function createPrivacyRequest(input: { requestId:string; tenantId:string | null; workerId:string; type:PrivacyRequestType; details?:Record<string,unknown> }) {
+  assertOptionalTenantId(input.tenantId);
   if (!input.workerId) throw new Error("worker boundary required");
   if (!PRIVACY_REQUEST_TYPES.includes(input.type)) throw new Error("invalid privacy request");
   return { ...input, details: input.details ?? {}, status: "OPEN" as const };
@@ -16,12 +23,14 @@ export function assertPrivacyOwner(input: { workerId: string; ownerWorkerId: str
 }
 
 export function completePrivacyRequest(input: { status:string; requestId:string; workerId:string; tenantId:string | null }) {
+  assertOptionalTenantId(input.tenantId);
   if (!input.requestId || !input.workerId) throw new Error("request owner required");
   if (input.status !== "OPEN") throw new Error("invalid privacy transition");
   return { ...input, status: "COMPLETED" as const };
 }
 
 export function assertPrivacyTransition(input: { from: string; to: string; tenantId:string | null; workerId:string; requestId:string }) {
+  assertOptionalTenantId(input.tenantId);
   if (!input.workerId || !input.requestId) throw new Error("request boundary required");
   const allowed = input.from === "OPEN" && ["PROCESSING", "COMPLETED", "REJECTED"].includes(input.to);
   if (!allowed) throw new Error("invalid privacy transition");
@@ -29,6 +38,7 @@ export function assertPrivacyTransition(input: { from: string; to: string; tenan
 }
 
 export function createAccommodation(input: { id:string; tenantId:string | null; workerId:string; type:string; details?:Record<string,unknown> }) {
+  assertOptionalTenantId(input.tenantId);
   if (!input.workerId || !input.type) throw new Error("invalid accommodation");
   return { ...input, details: input.details ?? {}, status: "REQUESTED" as const };
 }

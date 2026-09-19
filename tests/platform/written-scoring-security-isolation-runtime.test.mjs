@@ -13,7 +13,7 @@ test("written scoring runtime enforces tenant isolation through service behavior
       if (sql.includes("SELECT review_id FROM written_score_reviews")) {
         return { rows: reviews.filter((review) => review.id === params[0] && review.reviewer === params[1] && review.tenant === params[2]).map((review) => ({ review_id: review.id })) };
       }
-      if (sql.includes("SELECT review_id,case_id,attempt_id")) {
+      if (sql.includes("SELECT review_id,tenant_id,case_id,attempt_id")) {
         return { rows: reviews.filter((review) => review.tenant === params[0]) };
       }
       throw new Error(`Unexpected runtime query: ${sql}`);

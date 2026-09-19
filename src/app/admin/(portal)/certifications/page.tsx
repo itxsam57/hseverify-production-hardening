@@ -8,10 +8,10 @@ export default async function CertificationsPage(): Promise<React.JSX.Element> {
   return <section className="page-stack">
     <h1>Certification records</h1>
     <form action={createCertificationRecordAction}>
-      <input name="credentialId" placeholder="Credential ID" />
-      <input name="workerId" placeholder="Worker ID" />
-      <input name="qualification" placeholder="Qualification" />
-      <input name="reason" placeholder="Decision reason" />
+      <label>Credential ID<input name="credentialId" /></label>
+      <label>Worker ID<input name="workerId" /></label>
+      <label>Qualification<input name="qualification" /></label>
+      <label>Decision reason<input name="reason" /></label>
       <button type="submit">Create certification record</button>
     </form>
     <ul>{records.map((record) => <li key={record.certificationId}>{record.qualification} — {record.status}</li>)}</ul>
