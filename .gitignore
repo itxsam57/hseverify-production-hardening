@@ -5,15 +5,9 @@
 
 # testing
 /coverage
-/.profile-test-dist
-/.auth-test-dist
-/.authorization-test-dist
+/*-test-dist/
 /playwright-report/
 /test-results/
-/worker-evidence-runtime-test-dist/
-/billing-runtime-test-dist/
-/company-organization-team-runtime-test-dist/
-/production-launch-runtime-test-dist/
 /screenshots/
 /videos/
 /traces/
