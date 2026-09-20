@@ -3,7 +3,7 @@ import { requireCurrentTenantPermission } from "@/lib/authorization/authorizatio
 import { ReportDeliveryRepository } from "@/lib/reports/report-delivery-repository";
 import { createPrintDeliveryPayload, createReportCsv, createReportPdf } from "@/lib/reports/report-delivery-domain";
 
-export async function GET(request: Request, { params }: { params: Promise<{ reportId: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ reportId: string }> }) {
   const principal = await requireCurrentTenantPermission("company.audit.read");
   const identity = principal as unknown as { tenantId: string };
   const { reportId } = await params;
