@@ -220,6 +220,45 @@ test(
             );
             assert(workerTracks.every((track) => track.readyState === "live"));
             assert(assessorTracks.every((track) => track.readyState === "live"));
+
+            await worker.getByRole("button", { name: "Mute microphone" }).click();
+            assert.equal(
+              await worker.locator("video").first().evaluate((video) => {
+                const stream = video.srcObject;
+                return stream instanceof MediaStream ? stream.getAudioTracks()[0]?.enabled : null;
+              }),
+              false
+            );
+            await worker.getByRole("button", { name: "Unmute microphone" }).click();
+            assert.equal(
+              await worker.locator("video").first().evaluate((video) => {
+                const stream = video.srcObject;
+                return stream instanceof MediaStream ? stream.getAudioTracks()[0]?.enabled : null;
+              }),
+              true
+            );
+
+            await worker.getByRole("button", { name: "Turn camera off" }).click();
+            assert.equal(
+              await worker.locator("video").first().evaluate((video) => {
+                const stream = video.srcObject;
+                return stream instanceof MediaStream ? stream.getVideoTracks()[0]?.enabled : null;
+              }),
+              false
+            );
+            await worker.getByRole("button", { name: "Turn camera on" }).click();
+            assert.equal(
+              await worker.locator("video").first().evaluate((video) => {
+                const stream = video.srcObject;
+                return stream instanceof MediaStream ? stream.getVideoTracks()[0]?.enabled : null;
+              }),
+              true
+            );
+
+            await assessor.getByRole("button", { name: "Leave media" }).click();
+            await assessor.getByText("Not connected", { exact: true }).waitFor({ timeout: 15_000 });
+            await worker.getByText("Other participant left the interview", { exact: true }).waitFor({ timeout: 15_000 });
+
             assert.deepEqual(
               errors.filter((message) => !message.includes("favicon")),
               [],
@@ -253,6 +292,7 @@ test(
         assert(signals.rows.some((row) => row.actor_role === "assessor" && row.signal_kind === "offer"));
         assert(signals.rows.some((row) => row.actor_role === "worker" && row.signal_kind === "answer"));
         assert(signals.rows.some((row) => row.signal_kind === "ice"));
+        assert(signals.rows.some((row) => row.actor_role === "assessor" && row.signal_kind === "leave"));
       } finally {
         await database.close();
       }

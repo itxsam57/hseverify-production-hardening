@@ -11,6 +11,12 @@ import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
 const TEAM_PASSWORD = "CompanyJourneyTeam!2026";
+const BILLING_WEBHOOK_SECRET = "company-journey-billing-webhook-secret-2026";
+const ACTION_FIXTURE_ID = `assurance_action_${"Z".repeat(24)}`;
+const ACTION_FIXTURE_ORDER_ID = `assurance_order_${"Y".repeat(24)}`;
+const ACTION_FIXTURE_TARGET_ID = `assurance_target_${"X".repeat(24)}`;
+const ACTION_FIXTURE_CASE_ID = `assurance_case_${"W".repeat(24)}`;
+const ACTION_FIXTURE_LINK_ID = `company_worker_link_${"V".repeat(24)}`;
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function decodeBase32(value) {
@@ -104,6 +110,70 @@ async function seedPolicy(databaseDirectory) {
   }
 }
 
+async function seedActionCentreControlFixture(databaseDirectory, company, worker) {
+  const db = new PGlite(databaseDirectory);
+  try {
+    const now = new Date().toISOString();
+    await db.query(
+      `INSERT INTO assurance_orders(
+         order_id,tenant_id,created_by_membership_id,order_name,order_reference,
+         requested_identity_checks,requested_evidence_checks,assessment_framework_references,
+         interview_required,order_status,submitted_at,created_at,updated_at
+       ) VALUES($1,$2,$3,'Action Centre Control Fixture','ACTION-CONTROL-FIXTURE',
+         '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,FALSE,'SUBMITTED',$4,$4,$4)`,
+      [ACTION_FIXTURE_ORDER_ID, company.tenantId, company.membershipId, now]
+    );
+    await db.query(
+      `INSERT INTO assurance_order_workers(
+         target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,
+         target_status,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,'worker','submitted',$6,$6)`,
+      [
+        ACTION_FIXTURE_TARGET_ID,
+        ACTION_FIXTURE_ORDER_ID,
+        company.tenantId,
+        ACTION_FIXTURE_LINK_ID,
+        worker.accountId,
+        now
+      ]
+    );
+    await db.query(
+      `INSERT INTO assurance_cases(
+         case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,
+         case_status,owner_kind,next_action,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,$6,'Created','company',$7,$8,$8)`,
+      [
+        ACTION_FIXTURE_CASE_ID,
+        ACTION_FIXTURE_ORDER_ID,
+        ACTION_FIXTURE_TARGET_ID,
+        company.tenantId,
+        ACTION_FIXTURE_LINK_ID,
+        worker.accountId,
+        "Company follow-up action for browser acceptance.",
+        now
+      ]
+    );
+    await db.query(
+      `INSERT INTO assurance_action_items(
+         action_id,tenant_id,order_id,case_id,worker_account_id,severity,reason,due_at,
+         owner_kind,allowed_action,deep_link,statutory,action_status,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,'info',$6,NULL,'company','open_case',$7,FALSE,'open',$8,$8)`,
+      [
+        ACTION_FIXTURE_ID,
+        company.tenantId,
+        ACTION_FIXTURE_ORDER_ID,
+        ACTION_FIXTURE_CASE_ID,
+        worker.accountId,
+        "Company follow-up action for browser acceptance.",
+        `/company/assurance-orders/${ACTION_FIXTURE_ORDER_ID}#${ACTION_FIXTURE_CASE_ID}`,
+        now
+      ]
+    );
+  } finally {
+    await db.close();
+  }
+}
+
 test("Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium", { timeout: 300_000 }, async () => {
   const root = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-company-journey-"));
@@ -117,6 +187,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
     HSE_RELEASE_SHA: "company-complete-browser",
     HSE_SESSION_SECRET: "company-complete-session-secret-2026-00000000000",
     HSE_AUTH_PEPPER: "company-complete-auth-pepper-2026-0000000000000",
+    HSE_BILLING_WEBHOOK_SECRET: BILLING_WEBHOOK_SECRET,
     HSE_ENABLE_WORKER_DEMO_AUTH: "false",
     HSE_USE_WORKER_DEMO_DATA: "false"
   };
@@ -132,7 +203,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
     }
     await seedPolicy(databaseDirectory);
     const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
-
+    await seedActionCentreControlFixture(databaseDirectory, credentials.company, credentials.worker);
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],
       probeUrl: `${baseUrl}/company/login`,
@@ -229,6 +300,10 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           await company.getByRole("heading", { name: "Worker links" }).waitFor();
           await company.getByText(credentials.worker.email, { exact: true }).waitFor();
+          const workerLinksSection = company.locator('section[aria-labelledby="worker-links-heading"]');
+          const activeWorkerLinkCard = workerLinksSection.locator("article").filter({ hasText: credentials.worker.email }).first();
+          const activeWorkerLinkId = (await activeWorkerLinkCard.locator("code").innerText()).trim();
+          assert.match(activeWorkerLinkId, /^company_worker_link_[A-Za-z0-9_-]{24}$/);
 
           // Company Team: invite, enroll with MFA, scope/update, suspend/reactivate/revoke.
           await company.goto(`${baseUrl}/company/team`, { waitUntil: "networkidle" });
@@ -289,8 +364,22 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.getByText("SUBMITTED", { exact: true }).waitFor({ timeout: 15_000 });
           await company.getByRole("heading", { name: "Worker cases" }).waitFor();
           await company.goto(`${baseUrl}/company/action-centre`, { waitUntil: "networkidle" });
-          const actionItem = company.locator("article").filter({ hasText: "Worker action is required before assurance can advance." }).first();
+          const actionItem = company.locator("article").filter({ hasText: "Complete or correct the Worker identity requirements for this assurance case." }).first();
           await actionItem.waitFor({ timeout: 15_000 });
+
+          // Action Centre mutations: exercise assignment, safe snooze and acknowledgement.
+          let companyAction = company.locator("article").filter({ hasText: "Company follow-up action for browser acceptance." }).first();
+          await companyAction.getByLabel("Internal Company membership ID").fill(credentials.company.membershipId);
+          await companyAction.getByRole("button", { name: "Assign owner" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          companyAction = company.locator("article").filter({ hasText: "Company follow-up action for browser acceptance." }).first();
+          await companyAction.getByLabel("Until").fill("2026-10-15T10:00");
+          await companyAction.getByLabel("Reason").fill("Deferred until scheduled internal follow-up.");
+          await companyAction.getByRole("button", { name: "Snooze" }).click();
+          await companyAction.getByText(/status: snoozed/i).waitFor({ timeout: 15_000 });
+          await companyAction.getByRole("button", { name: "Mark internally acknowledged" }).click();
+          await companyAction.getByText(/status: acknowledged/i).waitFor({ timeout: 15_000 });
+
           await actionItem.getByRole("link", { name: "Open", exact: true }).click();
           await company.waitForURL(/\/company\/assurance-orders\//, { timeout: 15_000 });
           await company.getByText("JOURNEY-ORDER-001", { exact: false }).first().waitFor();
@@ -306,6 +395,11 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.getByRole("button", { name: "Validate Order" }).click();
           await company.getByText("VALIDATION_FAILED", { exact: true }).waitFor({ timeout: 15_000 });
           await company.getByText(/Add at least one active linked Worker/).waitFor();
+          await company.getByLabel("Active Worker link ID").fill(activeWorkerLinkId);
+          await company.getByRole("button", { name: "Add Workers" }).click();
+          await company.getByText("DRAFT", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.getByRole("button", { name: "Validate Order" }).click();
+          await company.getByText("READY", { exact: true }).waitFor({ timeout: 15_000 });
           await company.getByRole("button", { name: "Cancel Draft" }).click();
           await company.getByText("CANCELLED", { exact: true }).waitFor({ timeout: 15_000 });
 
@@ -318,7 +412,77 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.getByText("COMPANY-JOURNEY-POLICY", { exact: false }).first().waitFor({ timeout: 15_000 });
           await company.getByText(/pass_mark.*85/i).first().waitFor({ timeout: 15_000 });
 
-          // Report queue (no payment path).
+          // Sandbox billing: browser checkout -> signed provider capture -> browser refund
+          // -> signed refund callback -> browser reconciliation.
+          await company.goto(`${baseUrl}/company/billing`, { waitUntil: "networkidle" });
+          await company.getByLabel("Credits").fill("10");
+          await company.getByLabel("Amount (minor units)").first().fill("5000");
+          await company.getByLabel("Currency").fill("USD");
+          await company.getByRole("button", { name: "Create sandbox checkout" }).click();
+
+          const checkoutCard = company.locator(".card").filter({ hasText: "Sandbox checkouts" }).first();
+          const checkoutRow = checkoutCard.locator("tbody tr").first();
+          await checkoutRow.getByText("REQUIRES_PROVIDER", { exact: true }).waitFor({ timeout: 15_000 });
+          const checkoutReference = (await checkoutRow.locator("code").innerText()).trim();
+          assert.match(checkoutReference, /^sandbox_checkout_/);
+
+          const invoiceCard = company.locator(".card").filter({ hasText: "Invoices" }).first();
+          const invoiceId = (await invoiceCard.locator("tbody tr td").first().innerText()).trim();
+          assert.match(invoiceId, /^billing_invoice_/);
+
+          const captureBody = JSON.stringify({
+            id: "provider-event-company-journey-capture",
+            type: "payment.captured",
+            checkoutReference,
+            amountMinor: 5000,
+            currency: "USD"
+          });
+          const captureResponse = await fetch(`${baseUrl}/api/billing/webhook`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-hse-billing-signature": createHmac("sha256", BILLING_WEBHOOK_SECRET).update(captureBody).digest("hex")
+            },
+            body: captureBody
+          });
+          assert.equal(captureResponse.status, 200, await captureResponse.text());
+          await company.reload({ waitUntil: "networkidle" });
+          await invoiceCard.getByText("PAID", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.locator(".metric-card").filter({ hasText: "Company credits" }).getByText("10", { exact: true }).waitFor();
+
+          const refundCard = company.locator(".card").filter({ hasText: "Refunds" }).first();
+          await refundCard.getByLabel("Invoice ID").fill(invoiceId);
+          await refundCard.getByLabel("Amount (minor units)").fill("2000");
+          await refundCard.getByRole("button", { name: "Request sandbox refund" }).click();
+          const refundItem = refundCard.locator("li").filter({ hasText: "REQUIRES_PROVIDER" }).first();
+          await refundItem.waitFor({ timeout: 15_000 });
+          const refundReference = (await refundItem.locator("code").innerText()).trim();
+          assert.match(refundReference, /^sandbox_refund_/);
+
+          const refundBody = JSON.stringify({
+            id: "provider-event-company-journey-refund",
+            type: "refund.succeeded",
+            refundReference,
+            amountMinor: 2000,
+            currency: "USD"
+          });
+          const refundResponse = await fetch(`${baseUrl}/api/billing/webhook`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-hse-billing-signature": createHmac("sha256", BILLING_WEBHOOK_SECRET).update(refundBody).digest("hex")
+            },
+            body: refundBody
+          });
+          assert.equal(refundResponse.status, 200, await refundResponse.text());
+          await company.reload({ waitUntil: "networkidle" });
+          await company.getByText("PARTIALLY_REFUNDED", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.getByText(/SUCCEEDED/).waitFor({ timeout: 15_000 });
+          await company.locator(".metric-card").filter({ hasText: "Company credits" }).getByText("6", { exact: true }).waitFor();
+          await company.getByRole("button", { name: "Run reconciliation" }).click();
+          await company.getByText(/CLEAN — 0 discrepancy item/i).waitFor({ timeout: 15_000 });
+
+          // Report queue.
           await company.goto(`${baseUrl}/company/reports`, { waitUntil: "networkidle" });
           await company.getByLabel("Report ID").fill("report_company_journey_001");
           await company.getByLabel("Format").selectOption("csv");
@@ -348,9 +512,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           const workerMetric = company.locator(".metric-card").filter({ hasText: "Workers" }).first();
           await workerMetric.getByText("1", { exact: true }).waitFor();
           const ordersMetric = company.locator(".metric-card").filter({ hasText: "Assurance Orders" }).first();
-          await ordersMetric.getByText(/2 total/i).waitFor();
-
-          // Payment actions deliberately not exercised.
+          await ordersMetric.getByText(/3 total/i).waitFor();
         } finally {
           await companyContext.close();
           await workerContext.close();
@@ -362,12 +524,22 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
     const db = new PGlite(databaseDirectory);
     try {
-      const [links, orders, team, overrides, reports] = await Promise.all([
+      const [links, orders, team, overrides, reports, billing, actions] = await Promise.all([
         db.query(`SELECT link_status FROM company_worker_links WHERE worker_account_id='audit_worker_account_20260901'`),
         db.query(`SELECT order_reference,order_status FROM assurance_orders WHERE order_reference LIKE 'JOURNEY-ORDER%'`),
         db.query(`SELECT membership_status,membership_role FROM auth_tenant_memberships WHERE account_id IN (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')`),
         db.query(`SELECT override_values FROM tenant_policy_overrides WHERE tenant_id='tenant_independent-audit-compan'`),
-        db.query(`SELECT report_id,status FROM report_deliveries WHERE tenant_id='tenant_independent-audit-compan'`)
+        db.query(`SELECT report_id,status FROM report_deliveries WHERE tenant_id='tenant_independent-audit-compan'`),
+        db.query(`SELECT i.status,i.refunded_amount_minor,
+                         (SELECT COALESCE(SUM(credit_delta),0) FROM billing_credit_ledger WHERE tenant_id=i.tenant_id) AS credit_balance,
+                         (SELECT COUNT(*)::int FROM billing_reconciliation_runs WHERE tenant_id=i.tenant_id AND status='CLEAN') AS clean_runs
+                    FROM billing_invoices AS i
+                   WHERE i.tenant_id='tenant_independent-audit-compan'
+                   ORDER BY i.created_at DESC
+                   LIMIT 1`),
+        db.query(`SELECT action_status,internal_owner_membership_id
+                    FROM assurance_action_items
+                   WHERE action_id=$1`, [ACTION_FIXTURE_ID])
       ]);
       assert.equal(links.rows[0]?.link_status, "active");
       assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-001" && row.order_status === "CANCELLED"));
@@ -376,6 +548,12 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
       assert.equal(team.rows[0]?.membership_role, "manager");
       assert(overrides.rows.length >= 1);
       assert(reports.rows.some((row) => row.report_id === "report_company_journey_001"));
+      assert.equal(billing.rows[0]?.status, "PARTIALLY_REFUNDED");
+      assert.equal(Number(billing.rows[0]?.refunded_amount_minor), 2000);
+      assert.equal(Number(billing.rows[0]?.credit_balance), 6);
+      assert(Number(billing.rows[0]?.clean_runs) >= 1);
+      assert.equal(actions.rows[0]?.action_status, "acknowledged");
+      assert.equal(actions.rows[0]?.internal_owner_membership_id, credentials.company.membershipId);
     } finally {
       await db.close();
     }

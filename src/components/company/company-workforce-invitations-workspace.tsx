@@ -422,6 +422,7 @@ function LinkCard({ link }: { link: CompanyWorkerLinkView }): React.JSX.Element 
         <span className="status-pill">{link.status}</span>
       </div>
       <p>Source: {link.source.replaceAll("_", " ")}</p>
+      <p>Link ID: <code>{link.linkId}</code></p>
       {link.permanentWorkerId ? <p>Permanent Worker-ID: {link.permanentWorkerId}</p> : null}
       {link.assessmentReference ? <p>Future assessment reference: {link.assessmentReference}</p> : null}
       <p className="muted-copy">

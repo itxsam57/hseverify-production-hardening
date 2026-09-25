@@ -193,7 +193,7 @@ test(
         environment,
         probe: async () => {
           const browser = await chromium.launch({ headless: true });
-          const workerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const workerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
           const worker = await workerContext.newPage();
           const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const verifier = await verifierContext.newPage();
@@ -311,6 +311,10 @@ test(
             await worker.getByText("Verified", { exact: true }).first().waitFor({ timeout: 15_000 });
             const permanentWorkerId = (await worker.locator("main").getByText(/^worker_id_[A-Za-z0-9_-]{24}$/).first().innerText()).trim();
             assert.match(permanentWorkerId, /^worker_id_[A-Za-z0-9_-]{24}$/);
+            await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
+            await worker.getByRole("button", { name: "Copy Worker ID" }).click();
+            await worker.locator(".copy-feedback").getByText("Worker ID copied.", { exact: true }).waitFor({ timeout: 15_000 });
+            assert.equal(await worker.evaluate(() => navigator.clipboard.readText()), permanentWorkerId);
 
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
             const mainText = await worker.locator("main").innerText();

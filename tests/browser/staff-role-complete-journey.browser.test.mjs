@@ -6,11 +6,17 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
 const PASSWORD = "StaffJourney!2026";
 const SANDBOX_KEY = "staff-role-browser-sandbox-key-2026";
+const ADMIN_DECISION_TENANT_ID = `tenant_${"D".repeat(24)}`;
+const ADMIN_DECISION_ORDER_ID = `assurance_order_${"O".repeat(24)}`;
+const ADMIN_DECISION_TARGET_ID = `assurance_target_${"T".repeat(24)}`;
+const ADMIN_DECISION_CASE_ID = `assurance_case_${"C".repeat(24)}`;
+const ADMIN_DECISION_LINK_ID = `company_worker_link_${"L".repeat(24)}`;
 
 function decodeBase32(value) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -87,7 +93,7 @@ async function login(browser, baseUrl, identity) {
   await page.getByLabel("Authenticator code").fill(totp(identity.secret, 1));
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL((url) => url.pathname === `/${identity.role}/dashboard`, { timeout: 15_000 });
-  await page.getByText(`Welcome, Journey ${identity.role}`, { exact: false }).waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: `Welcome, Journey ${identity.role}`, exact: true }).waitFor({ timeout: 15_000 });
   return { context, page, errors };
 }
 
@@ -98,6 +104,52 @@ async function assertNoMobileOverflow(page, label) {
   await page.setViewportSize({ width: 1440, height: 1000 });
 }
 
+
+async function seedAdminDecisionCase(databaseDirectory) {
+  const db = new PGlite(databaseDirectory);
+  try {
+    const now = new Date().toISOString();
+    await db.query(
+      `INSERT INTO assurance_orders(
+         order_id,tenant_id,created_by_membership_id,order_name,order_reference,
+         requested_identity_checks,requested_evidence_checks,assessment_framework_references,
+         interview_required,order_status,submitted_at,created_at,updated_at
+       ) VALUES($1,$2,'membership_admin_decision_fixture_001','Admin decision fixture','ADMIN-DECISION-FIXTURE',
+         '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,FALSE,'ACTIVE',$3,$3,$3)`,
+      [ADMIN_DECISION_ORDER_ID, ADMIN_DECISION_TENANT_ID, now]
+    );
+    await db.query(
+      `INSERT INTO assurance_order_workers(
+         target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,
+         target_status,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,'account_admin_decision_worker_001','company','submitted',$5,$5)`,
+      [
+        ADMIN_DECISION_TARGET_ID,
+        ADMIN_DECISION_ORDER_ID,
+        ADMIN_DECISION_TENANT_ID,
+        ADMIN_DECISION_LINK_ID,
+        now
+      ]
+    );
+    await db.query(
+      `INSERT INTO assurance_cases(
+         case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,
+         case_status,owner_kind,next_action,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,'account_admin_decision_worker_001',
+         'Decision pending','admin','Record the final Assurance Case decision.',$6,$6)`,
+      [
+        ADMIN_DECISION_CASE_ID,
+        ADMIN_DECISION_ORDER_ID,
+        ADMIN_DECISION_TARGET_ID,
+        ADMIN_DECISION_TENANT_ID,
+        ADMIN_DECISION_LINK_ID,
+        now
+      ]
+    );
+  } finally {
+    await db.close();
+  }
+}
 
 async function runAdminForms(page, baseUrl) {
   const frameworkReference = "HSE-JOURNEY";
@@ -209,9 +261,16 @@ async function runAdminForms(page, baseUrl) {
   await page.getByRole("status").getByText("Handover check saved.").waitFor({ timeout: 15_000 });
   assert.equal(await page.locator(`[data-handover-check="${checkName}"]`).getByRole("combobox").inputValue(), "passed");
 
-  const tenantId = "tenant_journey_admin_001";
-  const caseId = "case_journey_admin_001";
-  await gotoOk(page, baseUrl, `/admin/decisions?tenantId=${tenantId}&caseId=${caseId}`, "Decision Engine");
+  const tenantId = ADMIN_DECISION_TENANT_ID;
+  const caseId = ADMIN_DECISION_CASE_ID;
+  await gotoOk(page, baseUrl, "/admin/decisions", "Decision Engine");
+  const scopeForm = page.locator('form[method="get"]').first();
+  await scopeForm.getByLabel("Tenant ID").fill(tenantId);
+  await scopeForm.getByLabel("Case ID").fill(caseId);
+  await scopeForm.getByRole("button", { name: "Load case decisions" }).click();
+  await page.waitForURL((url) => url.searchParams.get("tenantId") === tenantId && url.searchParams.get("caseId") === caseId, { timeout: 15_000 });
+  await page.getByText("No decisions recorded", { exact: true }).waitFor({ timeout: 15_000 });
+
   const createDecisionForm = page.locator("form").filter({ hasText: "Create decision" });
   await createDecisionForm.getByLabel("State").selectOption("PENDING_ADDITIONAL_REVIEW");
   await createDecisionForm.getByLabel("Reason code").fill("journey_review");
@@ -220,18 +279,18 @@ async function runAdminForms(page, baseUrl) {
   await createDecisionForm.getByLabel("Input references").fill("evidence-journey-1");
   await createDecisionForm.getByRole("button", { name: "Create decision" }).click();
   await page.getByText("Awaiting final journey review", { exact: false }).waitFor({ timeout: 15_000 });
-  const decisionItem = page.locator("article").filter({ hasText: "Awaiting final journey review" });
-  const decisionId = (await decisionItem.locator("code").innerText()).trim();
+  const decisionItem = page.locator("article").filter({ hasText: "Awaiting final journey review" }).first();
+  const decisionId = (await decisionItem.locator("code").first().innerText()).trim();
+
   const overrideForm = page.locator("form").filter({ hasText: "Record override" });
   await overrideForm.getByLabel("Decision ID").fill(decisionId);
   await overrideForm.getByLabel("Previous state").selectOption("PENDING_ADDITIONAL_REVIEW");
   await overrideForm.getByLabel("New state").selectOption("APPROVED");
-  await overrideForm.getByLabel("Reason").fill("Journey evidence accepted");
-  await overrideForm.getByLabel("Evidence reference").fill("evidence-journey-1");
+  await overrideForm.getByLabel("Reason").fill("Journey evidence accepted after privileged review.");
+  await overrideForm.getByLabel("Evidence reference").fill("evidence-journey-override-1");
   await overrideForm.getByRole("button", { name: "Record override" }).click();
-  await page.getByText("Journey evidence accepted", { exact: false }).waitFor({ timeout: 15_000 });
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByText("Journey evidence accepted", { exact: false }).waitFor();
+  await page.getByText("Journey evidence accepted after privileged review.", { exact: true }).waitFor({ timeout: 15_000 });
+  await page.locator("article").filter({ hasText: "Journey evidence accepted after privileged review." }).getByRole("heading", { name: "APPROVED", exact: true }).waitFor({ timeout: 15_000 });
 }
 
 async function runJourney(baseUrl) {
@@ -329,6 +388,7 @@ test("Root provisions every staff role and each MFA session reaches only its rea
   try {
     const migration = spawnSync(process.execPath, ["scripts/db-migrate.mjs"], { cwd: projectRoot, env: environment, encoding: "utf8" });
     assert.equal(migration.status, 0, `Migration failed.\n${migration.stdout}\n${migration.stderr}`);
+    await seedAdminDecisionCase(databaseDirectory);
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],
       probeUrl: baseUrl + "/root/login",

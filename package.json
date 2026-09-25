@@ -129,7 +129,10 @@
     "test:provider-integrations": "node --test tests/platform/provider-health-runtime.test.mjs tests/platform/provider-execution-gateway-runtime.test.mjs tests/platform/interview-live-media-runtime.test.mjs",
     "test:independent-review-browser": "node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
     "test:interview-live-media-browser": "node --test tests/browser/interview-live-media-e2e.browser.test.mjs",
-    "test:critical-browser": "npm run test:independent-review-browser && npm run test:interview-live-media-browser",
+    "test:company-complete-browser": "node --test tests/browser/company-complete-journey.browser.test.mjs",
+    "test:staff-complete-browser": "node --test --test-concurrency=1 tests/browser/assigned-staff-workflows.browser.test.mjs tests/browser/staff-role-complete-journey.browser.test.mjs",
+    "test:error-recovery-browser": "node --test tests/browser/error-recovery-controls.browser.test.mjs",
+    "test:critical-browser": "npm run test:independent-review-browser && npm run test:interview-live-media-browser && npm run test:company-complete-browser && npm run test:staff-complete-browser && npm run test:error-recovery-browser",
     "test:owner-acceptance-regressions": "node --test tests/platform/owner-acceptance-regressions.test.mjs tests/platform/assurance-case-progression-runtime.test.mjs tests/platform/decision-assurance-progression-runtime.test.mjs"
   },
   "dependencies": {

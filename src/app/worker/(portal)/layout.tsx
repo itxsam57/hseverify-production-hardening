@@ -1,6 +1,6 @@
 import { WorkerShell } from "@/components/worker/worker-shell";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
-import { getWorkerDashboardProjection } from "@/lib/worker/dashboard-repository";
+import { getWorkerProfileView } from "@/lib/worker/profile-service";
 
 export default async function WorkerPortalLayout({
   children
@@ -8,11 +8,7 @@ export default async function WorkerPortalLayout({
   children: React.ReactNode;
 }): Promise<React.JSX.Element> {
   const session = await requireWorkerSession();
-  const projection = await getWorkerDashboardProjection(session);
-  const shellSession = {
-    ...session,
-    displayName: projection.worker.displayName
-  };
-
+  const profile = await getWorkerProfileView(session);
+  const shellSession = { ...session, displayName: profile.displayName };
   return <WorkerShell session={shellSession}>{children}</WorkerShell>;
 }

@@ -3,7 +3,7 @@ import { DECISION_STATES } from "@/lib/decision/decision-engine-domain";
 import { DecisionRepository } from "@/lib/decision/decision-engine-repository";
 import { createDecisionAction, createDecisionOverrideAction } from "./actions";
 
-type SearchParams = Promise<{ caseId?: string; tenantId?: string }>;
+type SearchParams = Promise<{ caseId?: string; tenantId?: string; error?: string }>;
 
 export default async function DecisionsPage({
   searchParams
@@ -14,7 +14,7 @@ export default async function DecisionsPage({
     expectedRole: "admin",
     permission: "platform.operations.manage"
   });
-  const { caseId, tenantId } = await searchParams;
+  const { caseId, tenantId, error } = await searchParams;
   const repository = new DecisionRepository();
   const scopedTenantId = tenantId?.trim() ?? "";
   const scopedCaseId = caseId?.trim() ?? "";
@@ -40,6 +40,12 @@ export default async function DecisionsPage({
           </p>
         </div>
       </div>
+
+      {error ? (
+        <div className="status-banner status-error" role="alert">
+          {error}
+        </div>
+      ) : null}
 
       <section className="dashboard-section" aria-labelledby="decision-scope-heading">
         <p className="section-kicker">Case scope</p>
