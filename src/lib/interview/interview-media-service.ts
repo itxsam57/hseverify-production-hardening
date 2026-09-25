@@ -12,7 +12,7 @@ export type InterviewMediaAccess = Readonly<{
   role: InterviewMediaRole;
   peerAccountId: string;
   scheduledAt: string;
-  status: "ASSIGNED" | "WAITING_ROOM";
+  status: "ASSIGNED" | "WAITING_ROOM" | "COMPLETED";
 }>;
 
 export type InterviewMediaSignal = Readonly<{
@@ -116,7 +116,8 @@ function normalizePayload(
 export async function authorizeInterviewMedia(
   database: DatabaseClient,
   session: AuthenticatedSession,
-  interviewRequestId: string
+  interviewRequestId: string,
+  options: Readonly<{ allowCompleted?: boolean }> = {}
 ): Promise<InterviewMediaAccess> {
   const role = assertMediaRole(session);
   const requestId = interviewRequestId.trim();
@@ -143,7 +144,11 @@ export async function authorizeInterviewMedia(
   if (!row.assessor_account_id) {
     throw new InterviewMediaAccessError("Interview has not been assigned to an Assessor.", 409);
   }
-  if (row.status !== "ASSIGNED" && row.status !== "WAITING_ROOM") {
+  const liveStatus =
+    row.status === "ASSIGNED" ||
+    row.status === "WAITING_ROOM" ||
+    (options.allowCompleted === true && row.status === "COMPLETED");
+  if (!liveStatus) {
     throw new InterviewMediaAccessError("Interview is not open for live media.", 409);
   }
   if (!row.scheduled_at) {
@@ -157,7 +162,7 @@ export async function authorizeInterviewMedia(
     peerAccountId:
       role === "worker" ? row.assessor_account_id : row.worker_account_id,
     scheduledAt: timestamp(row.scheduled_at),
-    status: row.status
+    status: row.status as InterviewMediaAccess["status"]
   });
 }
 
@@ -202,9 +207,10 @@ export async function publishInterviewMediaSignal(
 export async function listInterviewMediaSignals(
   database: DatabaseClient,
   session: AuthenticatedSession,
-  interviewRequestId: string
+  interviewRequestId: string,
+  options: Readonly<{ allowCompleted?: boolean }> = {}
 ): Promise<readonly InterviewMediaSignal[]> {
-  const access = await authorizeInterviewMedia(database, session, interviewRequestId);
+  const access = await authorizeInterviewMedia(database, session, interviewRequestId, options);
   const result = await database.query<SignalRow>(
     `SELECT signal_id,signal_kind,payload,created_at
        FROM interview_media_signals

@@ -135,12 +135,22 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
 
         <article className="metric-card">
           <div className="metric-card-heading">
-            <span>Qualifications</span>
-            <span>{dashboard.evidence.verifiedQualifications} verified</span>
+            <span>Evidence verification</span>
+            <span>
+              {dashboard.evidence.verifiedQualifications +
+                dashboard.evidence.verifiedSkills +
+                dashboard.evidence.verifiedExperienceRecords} approved
+            </span>
           </div>
-          <strong>{dashboard.evidence.pendingQualifications} pending review</strong>
+          <strong>
+            {dashboard.evidence.changesRequested} need changes ·{" "}
+            {dashboard.evidence.rejectedEvidence} rejected
+          </strong>
           <p>
-            {dashboard.evidence.changesRequested} need changes · {dashboard.evidence.rejectedEvidence} rejected.
+            Qualifications: {dashboard.evidence.verifiedQualifications} verified ·{" "}
+            {dashboard.evidence.pendingQualifications} pending. Skills:{" "}
+            {dashboard.evidence.verifiedSkills} verified · Experience/employment:{" "}
+            {dashboard.evidence.verifiedExperienceRecords} verified.
           </p>
           <Link className="button button-secondary button-small" href="/worker/evidence">
             Manage evidence

@@ -4,6 +4,7 @@ import type { AuthorizationPrincipal } from "../authorization/authorization-cont
 import { evaluatePlatformPermission } from "../authorization/authorization-domain";
 import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
+import { hasUnseenAssessmentCapacity } from "../assessment-generation/assessment-form-generation-service";
 
 export class AssessmentCatalogueEligibilityAccessError extends Error {
   constructor(message = "Assessment availability could not be accessed.") {
@@ -166,6 +167,28 @@ function availabilitySql(forCase: boolean): string {
   ORDER BY cases.created_at, cases.case_id, entries.catalogue_reference, entries.catalogue_entry_id`;
 }
 
+async function capacityFilteredAvailability(
+  database: DatabaseClient,
+  workerAccountId: string,
+  rows: readonly AvailabilityRow[]
+): Promise<readonly AssessmentCatalogueAvailability[]> {
+  const checked = await Promise.all(
+    rows.map(async (row) => {
+      const available = await hasUnseenAssessmentCapacity(database, {
+        workerAccountId,
+        blueprintVersionId: row.blueprint_version_id,
+        frameworkId: row.framework_id
+      });
+      return available ? toAvailability(row) : null;
+    })
+  );
+  return Object.freeze(
+    checked.filter(
+      (item): item is AssessmentCatalogueAvailability => item !== null
+    )
+  );
+}
+
 export class AssessmentCatalogueEligibilityService {
   constructor(private readonly database: DatabaseClient) {}
 
@@ -178,7 +201,11 @@ export class AssessmentCatalogueEligibilityService {
       availabilitySql(false),
       [principal.accountId]
     );
-    return Object.freeze(result.rows.map(toAvailability));
+    return capacityFilteredAvailability(
+      this.database,
+      principal.accountId,
+      result.rows
+    );
   }
 
   async findAvailableForCase(
@@ -194,7 +221,11 @@ export class AssessmentCatalogueEligibilityService {
       availabilitySql(true),
       [principal.accountId, caseId]
     );
-    return Object.freeze(result.rows.map(toAvailability));
+    return capacityFilteredAvailability(
+      this.database,
+      principal.accountId,
+      result.rows
+    );
   }
 }
 

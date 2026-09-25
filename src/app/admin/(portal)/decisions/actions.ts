@@ -11,7 +11,7 @@ const text = (formData: FormData, name: string) => {
 };
 
 export async function createDecisionAction(formData: FormData): Promise<void> {
-  await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
+  const principal = await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
   const service = new DecisionEngineService();
   await service.createAndRecord({
     tenantId: text(formData, "tenantId"),
@@ -20,7 +20,8 @@ export async function createDecisionAction(formData: FormData): Promise<void> {
     reasonCode: text(formData, "reasonCode"),
     explanation: text(formData, "explanation"),
     ruleVersion: text(formData, "ruleVersion"),
-    inputReferences: text(formData, "inputReferences").split(",").map((value) => value.trim()).filter(Boolean)
+    inputReferences: text(formData, "inputReferences").split(",").map((value) => value.trim()).filter(Boolean),
+    actorAccountId: principal.accountId
   });
   revalidatePath("/admin/decisions");
 }

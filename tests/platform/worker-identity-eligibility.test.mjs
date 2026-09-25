@@ -307,6 +307,26 @@ test("S5 clear duplicate evaluation permits one opaque idempotent permanent Work
     await advanceThroughAutomatedChecks(prepared);
     await markVerified(database, prepared.submitted.identity.identityId);
 
+    const provisionalWorkerId = "HSE-REG-ELIGIBILITY-CLEAR";
+    await database.query(
+      `INSERT INTO worker_profiles (
+         worker_sub, worker_id, schema_version, version, status,
+         profile_document, created_at, updated_at, submitted_at
+       ) VALUES ($1, $2, 1, 4, 'submitted', $3::jsonb, $4, $4, $4)`,
+      [
+        prepared.worker.accountId,
+        provisionalWorkerId,
+        JSON.stringify({
+          schemaVersion: 1,
+          workerSub: prepared.worker.accountId,
+          workerId: provisionalWorkerId,
+          version: 4,
+          status: "submitted"
+        }),
+        NOW
+      ]
+    );
+
     const check = await prepared.eligibilityService.evaluate(prepared.submitted.identity.identityId);
     assert.equal(check.checkStatus, "clear");
     const first = await prepared.eligibilityService.issuePermanentWorkerId(prepared.submitted.identity.identityId);
@@ -327,6 +347,20 @@ test("S5 clear duplicate evaluation permits one opaque idempotent permanent Work
       [prepared.submitted.identity.identityId]
     );
     assert.equal(rows.rows.length, 1);
+
+    const profile = await database.query(
+      `SELECT worker_id, profile_document ->> 'workerId' AS document_worker_id
+         FROM worker_profiles
+        WHERE worker_sub = $1`,
+      [prepared.worker.accountId]
+    );
+    assert.deepEqual(profile.rows, [
+      {
+        worker_id: first.permanentWorkerId,
+        document_worker_id: first.permanentWorkerId
+      }
+    ]);
+
     const audits = await database.query(
       `SELECT action_key, metadata FROM platform_audit_events
        WHERE target_reference = $1

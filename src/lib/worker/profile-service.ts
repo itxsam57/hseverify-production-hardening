@@ -61,15 +61,27 @@ function ensureOwnedProfile(
   record: WorkerProfileRecord,
   identity: WorkerProfileIdentity
 ): WorkerProfileRecord {
-  if (record.workerSub !== identity.sub || record.workerId !== identity.workerId) {
+  if (record.workerSub !== identity.sub) {
     throw new Error("Worker profile ownership validation failed.");
   }
 
-  if (demoIdentityLockEnabled() && !record.sensitiveFieldsLocked) {
-    return { ...record, sensitiveFieldsLocked: true };
+  const sameWorkerId = record.workerId === identity.workerId;
+  const permanentIdUpgrade =
+    record.workerId.startsWith("HSE-REG-") &&
+    identity.workerId.startsWith("worker_id_");
+
+  if (!sameWorkerId && !permanentIdUpgrade) {
+    throw new Error("Worker profile ownership validation failed.");
   }
 
-  return record;
+  const reconciled =
+    permanentIdUpgrade ? { ...record, workerId: identity.workerId } : record;
+
+  if (demoIdentityLockEnabled() && !reconciled.sensitiveFieldsLocked) {
+    return { ...reconciled, sensitiveFieldsLocked: true };
+  }
+
+  return reconciled;
 }
 
 export async function loadWorkerProfileRecord(

@@ -4,7 +4,9 @@ import { useState } from "react";
 
 export function CopyWorkerId({ workerId }: { workerId: string }): React.JSX.Element {
   const [message, setMessage] = useState("");
-  const permanent = /^HSE-WRK-[A-Z0-9-]+$/.test(workerId);
+  const permanent =
+    /^worker_id_[A-Za-z0-9_-]{24}$/.test(workerId) ||
+    /^HSE-WRK-[A-Z0-9-]+$/.test(workerId);
 
   if (!permanent) {
     return (

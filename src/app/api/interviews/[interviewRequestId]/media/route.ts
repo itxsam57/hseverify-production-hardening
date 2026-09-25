@@ -42,8 +42,8 @@ export async function GET(
     if (!session) return noStore({ error: "Authentication required." }, { status: 401 });
     const { interviewRequestId } = await params;
     const database = await getDatabaseClient();
-    const access = await authorizeInterviewMedia(database, session, interviewRequestId);
-    const signals = await listInterviewMediaSignals(database, session, interviewRequestId);
+    const access = await authorizeInterviewMedia(database, session, interviewRequestId, { allowCompleted: true });
+    const signals = await listInterviewMediaSignals(database, session, interviewRequestId, { allowCompleted: true });
     return noStore({
       role: access.role,
       status: access.status,

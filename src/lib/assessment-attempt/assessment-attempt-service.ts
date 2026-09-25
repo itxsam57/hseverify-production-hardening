@@ -10,6 +10,7 @@ import {
   createAssuranceTimelineEventId,
   type AssuranceCaseStatus
 } from "../assurance/assurance-order-domain";
+import { completeSubmittedAssessment } from "./assessment-submission-progression-service";
 import { AssuranceOrderRepository } from "../assurance/assurance-order-repository";
 import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
@@ -569,6 +570,14 @@ export class AssessmentAttemptService {
           }
         }
       );
+
+      await completeSubmittedAssessment(database, {
+        caseId: submitted.caseId,
+        attemptId: submitted.attemptId,
+        blueprintVersionId: submitted.blueprintVersionId,
+        actor: { accountId: principal.accountId, role: principal.activeRole },
+        now
+      });
 
       return view(repository, submitted);
     });

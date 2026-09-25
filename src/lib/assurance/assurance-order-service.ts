@@ -10,9 +10,10 @@ import {
   ASSURANCE_ORDER_MANAGE_PERMISSION, ASSURANCE_ORDER_READ_PERMISSION,
   AssuranceOrderAccessError, AssuranceOrderConflictError, AssuranceOrderInputError, AssuranceOrderNotFoundError,
   createAssuranceActionId, createAssuranceCaseId, createAssuranceOrderId, createAssuranceTargetId, createAssuranceTimelineEventId,
-  initialCaseState, normalizeAssuranceFundingMethod, normalizeAssuranceOrderDraft, normalizeAssuranceReference,
+  normalizeAssuranceFundingMethod, normalizeAssuranceOrderDraft, normalizeAssuranceReference,
   type AssuranceFundingMethod, type AssuranceOrderDraftInput, type AssuranceOrderManagePrincipal, type AssuranceOrderReadPrincipal,
-  type AssuranceOrderRecord, type AssuranceOrderWorkerRecord, type AssuranceValidationResult
+  type AssuranceOrderRecord, type AssuranceOrderWorkerRecord, type AssuranceValidationResult,
+  type AssuranceCaseStatus, type AssurancePendingOwner
 } from "./assurance-order-domain";
 import { AssuranceOrderRepository } from "./assurance-order-repository";
 
@@ -38,6 +39,68 @@ async function assertActiveUnit(database:DatabaseClient,tenantId:string,siteId:s
 async function activeLink(database:DatabaseClient,tenantId:string,linkId:string,lock=false):Promise<ActiveLinkRow|null>{
   const r=await database.query<ActiveLinkRow>(`SELECT link_id,tenant_id,worker_account_id,permanent_worker_id,link_status,site_id,department_id,payment_responsibility FROM company_worker_links WHERE tenant_id=$1 AND link_id=$2${lock?" FOR UPDATE":""}`,[tenantId,linkId]);
   const row=r.rows[0]; return row && row.link_status==="active" ? row : null;
+}
+
+async function currentPermanentWorkerId(database:DatabaseClient,workerAccountId:string):Promise<string|null>{
+  const result=await database.query<{permanent_worker_id:string}>(
+    `SELECT ids.permanent_worker_id
+       FROM worker_identity_worker_ids AS ids
+       JOIN worker_identities AS identities
+         ON identities.identity_id=ids.identity_id
+        AND identities.worker_account_id=ids.worker_account_id
+      WHERE ids.worker_account_id=$1
+        AND identities.lifecycle_status='verified'
+      ORDER BY ids.issued_at DESC
+      LIMIT 2`,
+    [workerAccountId]
+  );
+  if(result.rows.length>1) throw new AssuranceOrderConflictError("Permanent Worker ID ownership is not unique.");
+  return result.rows[0]?.permanent_worker_id??null;
+}
+async function initialCaseStateForWorker(
+  database:DatabaseClient,
+  order:AssuranceOrderRecord,
+  workerAccountId:string
+):Promise<Readonly<{status:AssuranceCaseStatus;owner:AssurancePendingOwner;nextAction:string;permanentWorkerId:string|null}>>{
+  const permanentWorkerId=await currentPermanentWorkerId(database,workerAccountId);
+  if(!permanentWorkerId){
+    return Object.freeze({
+      status:"Identity pending" as const,
+      owner:"worker" as const,
+      nextAction:"Complete or correct the Worker identity requirements for this assurance case.",
+      permanentWorkerId:null
+    });
+  }
+  if(order.requestedIdentityChecks.length>0||order.requestedEvidenceChecks.length>0){
+    return Object.freeze({
+      status:"Evidence pending" as const,
+      owner:"worker" as const,
+      nextAction:"Submit or complete the evidence requested for this Assurance Case.",
+      permanentWorkerId
+    });
+  }
+  if(order.assessmentFrameworkReferences.length>0){
+    return Object.freeze({
+      status:"Assessment pending" as const,
+      owner:"background_job" as const,
+      nextAction:"Assessment eligibility is ready for the Worker.",
+      permanentWorkerId
+    });
+  }
+  if(order.interviewRequired){
+    return Object.freeze({
+      status:"Interview pending" as const,
+      owner:"background_job" as const,
+      nextAction:"Create and assign the required interview.",
+      permanentWorkerId
+    });
+  }
+  return Object.freeze({
+    status:"Decision pending" as const,
+    owner:"background_job" as const,
+    nextAction:"Evaluate the Assurance Case for a final decision.",
+    permanentWorkerId
+  });
 }
 async function audit(database:DatabaseClient,principal:AssuranceOrderManagePrincipal,action:Parameters<DatabaseAuditRepository["append"]>[1]["action"],reference:string,metadata:Record<string,unknown>={}):Promise<void>{
   await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action,outcome:"succeeded",target:{type:"resource",reference},metadata});
@@ -74,7 +137,8 @@ export class AssuranceOrderService {
       await assertVerifiedCompany(database,scope.tenantId); const repository=new AssuranceOrderRepository(database); const order=await repository.lockOrder(scope.tenantId,id); if(!order) throw new AssuranceOrderNotFoundError();
       if(!["DRAFT","VALIDATION_FAILED","READY"].includes(order.orderStatus)) throw new AssuranceOrderConflictError("Submitted Assurance Order scope cannot be changed.");
       const link=await activeLink(database,scope.tenantId,linkReference,true); if(!link) throw new AssuranceOrderAccessError();
-      const added=await repository.insertTarget({targetId:createAssuranceTargetId(),orderId:id,tenantId:scope.tenantId,workerLinkId:link.link_id,workerAccountId:link.worker_account_id,permanentWorkerId:link.permanent_worker_id,siteId:link.site_id,departmentId:link.department_id,fundingMethod:funding,now:nowIso});
+      const resolvedPermanentWorkerId=await currentPermanentWorkerId(database,link.worker_account_id);
+      const added=await repository.insertTarget({targetId:createAssuranceTargetId(),orderId:id,tenantId:scope.tenantId,workerLinkId:link.link_id,workerAccountId:link.worker_account_id,permanentWorkerId:resolvedPermanentWorkerId??link.permanent_worker_id,siteId:link.site_id,departmentId:link.department_id,fundingMethod:funding,now:nowIso});
       await database.query(`UPDATE assurance_orders SET order_status='DRAFT',validation_errors='[]'::jsonb,scope_version=scope_version+1,updated_at=$3 WHERE tenant_id=$1 AND order_id=$2`,[scope.tenantId,id,nowIso]);
       await audit(database,principal,"assurance_order.updated",id,{change:"worker_target_added"}); return added;
     }});}catch(error){if(uniqueViolation(error)) throw new AssuranceOrderConflictError("That Worker is already included in this Assurance Order."); if(known(error)) throw error; throw new AssuranceOrderAccessError();}
@@ -123,15 +187,27 @@ export class AssuranceOrderService {
       }
       const submitted=await repository.markSubmitted(scope.tenantId,id,nowIso); if(!submitted) throw new AssuranceOrderConflictError("Assurance Order was already submitted or changed.");
       await repository.insertTimeline({eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,caseId:null,eventType:"order_submitted",fromStatus:"READY",toStatus:"SUBMITTED",owner:null,nextAction:null,actorAccountId:scope.accountId,actorRole:"company",now:nowIso});
-      const initial=initialCaseState();
       for(const target of targets){
-        const created=await repository.insertCase({caseId:createAssuranceCaseId(),target,status:initial.status,owner:initial.owner,nextAction:initial.nextAction,now:nowIso});
+        const initial=await initialCaseStateForWorker(database,order,target.workerAccountId);
+        const resolvedTarget=Object.freeze({...target,permanentWorkerId:initial.permanentWorkerId??target.permanentWorkerId});
+        if(resolvedTarget.permanentWorkerId!==target.permanentWorkerId){
+          await database.query(
+            `UPDATE assurance_order_workers
+                SET permanent_worker_id=$3,updated_at=$4
+              WHERE tenant_id=$1 AND target_id=$2`,
+            [scope.tenantId,target.targetId,resolvedTarget.permanentWorkerId,nowIso]
+          );
+        }
+        const created=await repository.insertCase({caseId:createAssuranceCaseId(),target:resolvedTarget,status:initial.status,owner:initial.owner,nextAction:initial.nextAction,now:nowIso});
         if(!created) throw new AssuranceOrderConflictError("Duplicate Assurance Case creation was prevented.");
         await pinAssuranceCasePolicySnapshot(database,{caseId:created.caseId,tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now,actorAccountId:scope.accountId,actorPrincipal:principal});
         await repository.insertTimeline({eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,caseId:created.caseId,eventType:"case_created",fromStatus:null,toStatus:created.caseStatus,owner:created.owner,nextAction:created.nextAction,actorAccountId:scope.accountId,actorRole:"company",now:nowIso});
-        const item=await repository.insertAction({actionId:createAssuranceActionId(),tenantId:scope.tenantId,orderId:id,caseId:created.caseId,workerAccountId:created.workerAccountId,severity:"warning",reason:"Worker action is required before assurance can advance.",dueAt:submitted.deadline,owner:initial.owner,allowedAction:"open_case",deepLink:`/company/assurance-orders/${id}#${created.caseId}`,statutory:false,now:nowIso});
-        if(!item) throw new AssuranceOrderConflictError("Initial Assurance Action could not be created exactly once.");
-        await audit(database,principal,"assurance_case.created",created.caseId,{caseStatus:created.caseStatus}); await audit(database,principal,"assurance_action.created",item.actionId,{owner:item.owner});
+        if(initial.owner!=="background_job"){
+          const item=await repository.insertAction({actionId:createAssuranceActionId(),tenantId:scope.tenantId,orderId:id,caseId:created.caseId,workerAccountId:created.workerAccountId,severity:"warning",reason:initial.nextAction,dueAt:submitted.deadline,owner:initial.owner,allowedAction:"open_case",deepLink:`/company/assurance-orders/${id}#${created.caseId}`,statutory:false,now:nowIso});
+          if(!item) throw new AssuranceOrderConflictError("Initial Assurance Action could not be created exactly once.");
+          await audit(database,principal,"assurance_action.created",item.actionId,{owner:item.owner});
+        }
+        await audit(database,principal,"assurance_case.created",created.caseId,{caseStatus:created.caseStatus,permanentWorkerId:created.permanentWorkerId});
       }
       await audit(database,principal,"assurance_order.submitted",id,{workerCount:targets.length}); return repository.listCases(scope.tenantId,id);
     }});

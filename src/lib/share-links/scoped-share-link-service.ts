@@ -125,9 +125,19 @@ export class ScopedShareLinkService {
 
     const database = await getDatabaseClient();
     const account = await database.query<{ account_id: string }>(
-      "SELECT account_id FROM auth_accounts WHERE worker_reference=$1",
+      `SELECT accounts.account_id
+         FROM auth_accounts AS accounts
+         LEFT JOIN worker_identity_worker_ids AS worker_ids
+           ON worker_ids.worker_account_id=accounts.account_id
+        WHERE accounts.worker_reference=$1
+           OR worker_ids.permanent_worker_id=$1
+        ORDER BY accounts.account_id
+        LIMIT 2`,
       [record.ownerWorkerId]
     );
+    if (account.rows.length > 1) {
+      throw new Error("Scoped share Worker ownership is not unique.");
+    }
     const accountId = account.rows[0]?.account_id;
     const records = accountId
       ? await new DatabaseWorkerEvidenceRepository(Promise.resolve(database)).listCurrentForWorker(accountId)

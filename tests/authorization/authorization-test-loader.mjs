@@ -1,21 +1,47 @@
-import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
-const outputDirectory = resolve(".authorization-test-dist");
+let ownedOutputDirectory = null;
+const configuredOutputDirectory = process.env.HSE_AUTHORIZATION_TEST_DIST?.trim();
+const outputDirectory = configuredOutputDirectory
+  ? resolve(configuredOutputDirectory)
+  : (ownedOutputDirectory = mkdtempSync(join(tmpdir(), "hse-authorization-test-loader-")));
 
-const compiler = spawnSync(
-  process.execPath,
-  [resolve("node_modules", "typescript", "bin", "tsc"), "-p", "tsconfig.authorization-tests.json"],
-  { stdio: "inherit" }
-);
+if (!configuredOutputDirectory) {
+  const compiler = spawnSync(
+    process.execPath,
+    [
+      resolve("node_modules", "typescript", "bin", "tsc"),
+      "-p",
+      "tsconfig.authorization-tests.json",
+      "--outDir",
+      outputDirectory
+    ],
+    { stdio: "inherit" }
+  );
 
-if (compiler.status !== 0) {
-  throw new Error("Authorization test TypeScript compilation failed.");
+  if (compiler.status !== 0) {
+    rmSync(outputDirectory, { recursive: true, force: true });
+    throw new Error("Authorization test TypeScript compilation failed.");
+  }
+
+  process.once("exit", () => {
+    if (ownedOutputDirectory) {
+      rmSync(ownedOutputDirectory, { recursive: true, force: true });
+    }
+  });
 }
 
-const authorizationDomainModule = await import(`${outputDirectory}/authorization/authorization-domain.js`);
-const authorizationContextModule = await import(`${outputDirectory}/authorization/authorization-context-domain.js`);
-const tenantScopedModule = await import(`${outputDirectory}/authorization/tenant-scoped-resource-domain.js`);
+async function loadCompiledModule(relativePath) {
+  return import(pathToFileURL(resolve(outputDirectory, relativePath)).href);
+}
+
+const authorizationDomainModule = await loadCompiledModule("authorization/authorization-domain.js");
+const authorizationContextModule = await loadCompiledModule("authorization/authorization-context-domain.js");
+const tenantScopedModule = await loadCompiledModule("authorization/tenant-scoped-resource-domain.js");
 
 export const {
   PLATFORM_PERMISSIONS,

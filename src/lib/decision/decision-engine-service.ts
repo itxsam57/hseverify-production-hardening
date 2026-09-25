@@ -14,14 +14,28 @@ export class DecisionEngineService {
     explanation: string;
     ruleVersion: string;
     inputReferences: string[];
+    actorAccountId?: string;
   }): Promise<DecisionRecord> {
     const decision = createDecision({ ...input, createdAt: new Date().toISOString() });
+    if (
+      input.actorAccountId &&
+      "saveDecisionAndProgressCase" in this.decisionRepository &&
+      typeof (this.decisionRepository as DecisionRepository & {
+        saveDecisionAndProgressCase?: unknown;
+      }).saveDecisionAndProgressCase === "function"
+    ) {
+      await this.decisionRepository.saveDecisionAndProgressCase(
+        decision,
+        input.actorAccountId
+      );
+      await this.recordAudit(decision);
+      return decision;
+    }
     await this.recordCreated(decision);
     return decision;
   }
 
-  async recordCreated(decision: DecisionRecord): Promise<void> {
-    await this.decisionRepository.saveDecision(decision);
+  private async recordAudit(decision: DecisionRecord): Promise<void> {
     const event = toDecisionAuditEvent(decision);
     await this.auditRepository.append(bindTrustedSystemAuditActor("outbox-worker"), {
       action: event.type,
@@ -36,6 +50,11 @@ export class DecisionEngineService {
         inputReferences: event.inputReferences
       }
     });
+  }
+
+  async recordCreated(decision: DecisionRecord): Promise<void> {
+    await this.decisionRepository.saveDecision(decision);
+    await this.recordAudit(decision);
   }
 
   async recordOverride(override: ManualDecisionOverride): Promise<void> {

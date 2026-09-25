@@ -6,6 +6,7 @@ import {
   createInterviewRequest,
   scheduleInterviewRequest,
   moveInterviewToWaitingRoom,
+  completeInterviewRequest,
   assertInterviewAssessorAccess,
   assertInterviewCaseOwnership,
   type InterviewRequest
@@ -64,6 +65,18 @@ export class InterviewSchedulingService {
 
   async scheduleInterview(input: { tenantId: string; request: InterviewRequest; scheduledAt: string; reminderAt?: string }): Promise<InterviewRequest> {
     return new InterviewSchedulingRepository(this.database).update(input.tenantId, scheduleInterviewRequest(input.request, input.scheduledAt, input.reminderAt));
+  }
+
+  async completeInterview(input: {
+    tenantId: string;
+    request: InterviewRequest;
+    assessorAccountId: string;
+  }): Promise<InterviewRequest> {
+    assertInterviewAssessorAccess(input.request, input.assessorAccountId);
+    return new InterviewSchedulingRepository(this.database).update(
+      input.tenantId,
+      completeInterviewRequest(input.request)
+    );
   }
 
   assertWorkerAccess(request: InterviewRequest, workerAccountId: string): void {

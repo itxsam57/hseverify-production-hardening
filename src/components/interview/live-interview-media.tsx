@@ -14,7 +14,7 @@ type MediaSignal = {
 
 type MediaPollResponse = {
   role: MediaRole;
-  status: "ASSIGNED" | "WAITING_ROOM";
+  status: "ASSIGNED" | "WAITING_ROOM" | "COMPLETED";
   scheduledAt: string;
   iceServers: RTCIceServer[];
   signals: MediaSignal[];

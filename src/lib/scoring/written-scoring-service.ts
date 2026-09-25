@@ -1,6 +1,7 @@
 import "server-only";
 import { createIdentifier } from "../auth/auth-domain";
 import type { DatabaseClient } from "../database/database";
+import { advanceAfterAssessmentReview } from "../assurance/assurance-case-progression-service";
 import { normalizeWrittenScore, normalizeWrittenScoreDecision } from "./written-scoring-domain";
 
 export class WrittenScoringService {
@@ -75,6 +76,75 @@ export class WrittenScoringService {
     return finalReview.rows[0];
   }
 
+
+  async saveDraftDecision(input: {
+    reviewId: string;
+    reviewerAccountId: string;
+    tenantId?: string;
+    score: unknown;
+    decision: unknown;
+    reason: string;
+  }) {
+    if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
+    if (!input.reviewerAccountId.trim()) throw new Error("Missing reviewer scope.");
+    const score = normalizeWrittenScore(input.score);
+    const decision = normalizeWrittenScoreDecision(input.decision);
+    const reason = input.reason.trim();
+    if (reason.length < 5 || reason.length > 4000) throw new Error("Invalid scoring reason.");
+    await this.requireReviewOwner(input.reviewId, input.reviewerAccountId, input.tenantId);
+    const result = await this.database.query<{ review_id:string; tenant_id:string; case_id:string; score:number; decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"; reason:string }>(
+      input.tenantId
+        ? `UPDATE written_score_reviews
+             SET score=$4,decision=$5,reason=$6
+           WHERE review_id=$1 AND reviewer_account_id=$2 AND tenant_id=$3 AND status='DRAFT'
+           RETURNING review_id,tenant_id,case_id,score,decision,reason`
+        : `UPDATE written_score_reviews
+             SET score=$3,decision=$4,reason=$5
+           WHERE review_id=$1 AND reviewer_account_id=$2 AND status='DRAFT'
+           RETURNING review_id,tenant_id,case_id,score,decision,reason`,
+      input.tenantId
+        ? [input.reviewId,input.reviewerAccountId,input.tenantId,score,decision,reason]
+        : [input.reviewId,input.reviewerAccountId,score,decision,reason]
+    );
+    if (!result.rows[0]) throw new Error("Draft scoring decision could not be saved.");
+    return result.rows[0];
+  }
+
+  async finalizeAndAdvance(input: {
+    reviewId: string;
+    reviewerAccountId: string;
+    tenantId?: string;
+    now?: Date;
+  }) {
+    const now = input.now ?? new Date();
+    return this.database.transaction(async (database) => {
+      const service = new WrittenScoringService(database);
+      await service.finalize(input);
+      const result = await database.query<{ tenant_id:string; case_id:string; decision:"PASS"|"FAIL"|"CHANGES_REQUESTED" }>(
+        input.tenantId
+          ? `SELECT tenant_id,case_id,decision
+               FROM written_score_reviews
+              WHERE review_id=$1 AND reviewer_account_id=$2 AND tenant_id=$3 AND status='FINAL'`
+          : `SELECT tenant_id,case_id,decision
+               FROM written_score_reviews
+              WHERE review_id=$1 AND reviewer_account_id=$2 AND status='FINAL'`,
+        input.tenantId
+          ? [input.reviewId,input.reviewerAccountId,input.tenantId]
+          : [input.reviewId,input.reviewerAccountId]
+      );
+      const finalReview = result.rows[0];
+      if (!finalReview?.decision) throw new Error("Final scoring decision is unavailable.");
+      await advanceAfterAssessmentReview(database, {
+        caseId: finalReview.case_id,
+        tenantId: finalReview.tenant_id,
+        decision: finalReview.decision,
+        actor: { accountId: input.reviewerAccountId, role: "verifier" },
+        now
+      });
+      return finalReview;
+    });
+  }
+
   async amendFinal(input: {reviewId:string; reviewerAccountId:string; tenantId?: string; score:unknown; decision:unknown; reason:string}) {
     if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
     if (!input.reviewerAccountId.trim()) throw new Error("Missing reviewer scope.");
@@ -104,7 +174,7 @@ export class WrittenScoringService {
     if (input.tenantId && !input.tenantId.startsWith("tenant_")) throw new Error("Invalid tenant scope.");
     if (input.reviewerAccountId && !input.tenantId) {
       const result = await this.database.query(
-        `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
+        `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at
          FROM written_score_reviews
          WHERE reviewer_account_id=$1 AND status IN ('DRAFT','FINAL')
          ORDER BY created_at DESC`,
@@ -115,14 +185,14 @@ export class WrittenScoringService {
     if (!input.tenantId) throw new Error("Tenant or reviewer scope is required.");
     const result = input.reviewerAccountId
       ? await this.database.query(
-          `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
+          `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at
            FROM written_score_reviews
            WHERE tenant_id=$1 AND reviewer_account_id=$2 AND status IN ('DRAFT','FINAL')
            ORDER BY created_at DESC`,
           [input.tenantId, input.reviewerAccountId]
         )
       : await this.database.query(
-          `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,status,created_at
+          `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at
            FROM written_score_reviews
            WHERE tenant_id=$1 AND status='DRAFT'
            ORDER BY created_at DESC`,

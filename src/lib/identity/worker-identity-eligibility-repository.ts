@@ -313,6 +313,26 @@ async function loadWorkerIdByIdentity(
   return result.rows[0] ? workerIdFromRow(result.rows[0]) : null;
 }
 
+
+async function reconcileWorkerProfilePermanentId(
+  database: DatabaseClient,
+  workerId: WorkerPermanentIdRecord
+): Promise<void> {
+  await database.query(
+    `UPDATE worker_profiles
+        SET worker_id = $2,
+            profile_document = jsonb_set(
+              profile_document,
+              '{workerId}',
+              to_jsonb($2::text),
+              true
+            )
+      WHERE worker_sub = $1
+        AND worker_id <> $2`,
+    [workerId.workerAccountId, workerId.permanentWorkerId]
+  );
+}
+
 export interface WorkerIdentityEligibilityRepository {
   evaluate(
     authority: TrustedWorkerIdentityEligibilityAuthority,
@@ -544,7 +564,10 @@ export class DatabaseWorkerIdentityEligibilityRepository
 
     return database.transaction(async (transaction) => {
       const existing = await loadWorkerIdByIdentity(transaction, identityId);
-      if (existing) return existing;
+      if (existing) {
+        await reconcileWorkerProfilePermanentId(transaction, existing);
+        return existing;
+      }
 
       const targetRow = await loadFacts(transaction, identityId, true);
       if (!targetRow) throw new WorkerIdentityNotFoundError();
@@ -600,6 +623,8 @@ export class DatabaseWorkerIdentityEligibilityRepository
           ]
         );
         if (inserted.rows.length === 1) {
+          const issued = workerIdFromRow(inserted.rows[0]);
+          await reconcileWorkerProfilePermanentId(transaction, issued);
           await appendSystemIdentityAudit(transaction, {
             action: "worker_identity.worker_id.issued",
             identityId,
@@ -608,11 +633,14 @@ export class DatabaseWorkerIdentityEligibilityRepository
               duplicateCheckId: latestCheck.checkId
             }
           });
-          return workerIdFromRow(inserted.rows[0]);
+          return issued;
         }
 
         const concurrent = await loadWorkerIdByIdentity(transaction, identityId);
-        if (concurrent) return concurrent;
+        if (concurrent) {
+          await reconcileWorkerProfilePermanentId(transaction, concurrent);
+          return concurrent;
+        }
       }
 
       throw new WorkerIdentityEligibilityConflictError(

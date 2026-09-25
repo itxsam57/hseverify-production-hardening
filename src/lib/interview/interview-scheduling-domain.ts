@@ -169,6 +169,19 @@ export function moveInterviewToWaitingRoom(request: InterviewRequest): Interview
   return Object.freeze({ ...request, status: "WAITING_ROOM" as const });
 }
 
+export function completeInterviewRequest(request: InterviewRequest): InterviewRequest {
+  if (
+    !request.scheduledAt ||
+    !request.assessorAccountId ||
+    !["ASSIGNED", "WAITING_ROOM"].includes(request.status)
+  ) {
+    throw new InterviewSchedulingInputError(
+      "Only scheduled assigned interviews can be completed."
+    );
+  }
+  return Object.freeze({ ...request, status: "COMPLETED" as const });
+}
+
 export function assertInterviewCaseOwnership(
   request: InterviewRequest,
   workerAccountId: string

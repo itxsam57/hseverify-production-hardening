@@ -170,6 +170,7 @@ test("Worker UI resolves the permanent Worker ID and keeps the registration refe
   assert.match(workerSession, /account\.workerReference/);
   assert.doesNotMatch(workerSession, /workerId: session\.accountId/);
   assert.match(copyControl, /HSE-REG references are provisional/);
+  assert.match(copyControl, /worker_id_\[A-Za-z0-9_-\]\{24\}/);
   assert.match(copyControl, /Worker ID not issued/);
   assert.doesNotMatch(workerShell, /session\.workerId/);
 });

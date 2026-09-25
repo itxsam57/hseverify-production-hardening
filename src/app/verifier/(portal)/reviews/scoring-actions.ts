@@ -12,12 +12,13 @@ function text(form: FormData, key: string) {
 
 export async function finalizeWrittenScoreAction(form: FormData) {
   const actor = await requirePlatformPermission({ expectedRole: "verifier", permission: "verification.assigned.decide" });
-  await new WrittenScoringService(await getDatabaseClient()).finalize({
+  await new WrittenScoringService(await getDatabaseClient()).finalizeAndAdvance({
     reviewId: text(form, "reviewId"),
     reviewerAccountId: actor.accountId,
     tenantId: actor.tenantMembership?.tenantId,
   });
   revalidatePath("/verifier/reviews");
+  revalidatePath("/verifier/reviews/scoring");
 }
 
 export async function addWrittenScoreRubricMarkAction(form: FormData) {
@@ -27,6 +28,23 @@ export async function addWrittenScoreRubricMarkAction(form: FormData) {
     criterion: text(form, "criterion"),
     mark: Number(text(form, "mark")),
     reviewerAccountId: actor.accountId,
+  });
+  revalidatePath("/verifier/reviews/scoring");
+}
+
+
+export async function saveWrittenScoreDecisionAction(form: FormData) {
+  const actor = await requirePlatformPermission({
+    expectedRole: "verifier",
+    permission: "verification.assigned.decide"
+  });
+  await new WrittenScoringService(await getDatabaseClient()).saveDraftDecision({
+    reviewId: text(form, "reviewId"),
+    reviewerAccountId: actor.accountId,
+    tenantId: actor.tenantMembership?.tenantId,
+    score: Number(text(form, "score")),
+    decision: text(form, "decision"),
+    reason: text(form, "reason")
   });
   revalidatePath("/verifier/reviews/scoring");
 }

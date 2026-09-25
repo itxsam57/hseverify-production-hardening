@@ -146,6 +146,107 @@ function parseTags(value: unknown): readonly string[] {
   return parsed as readonly string[];
 }
 
+type AssessmentSelectionInputs = Readonly<{
+  frameworkId: string;
+  selectors: readonly BlueprintSelector[];
+  candidates: readonly AssessmentSelectionCandidate[];
+}>;
+
+async function loadAssessmentSelectionInputs(
+  database: DatabaseClient,
+  input: Readonly<{
+    workerAccountId: string;
+    blueprintVersionId: string;
+    expectedFrameworkId: string;
+  }>
+): Promise<AssessmentSelectionInputs> {
+  const blueprintResult = await database.query<BlueprintVersionRow>(
+    `SELECT v.blueprint_version_id,v.blueprint_id,v.framework_id,v.selectors_json,
+            b.blueprint_status
+       FROM assessment_blueprint_versions v
+       JOIN assessment_blueprints b ON b.blueprint_id=v.blueprint_id
+      WHERE v.blueprint_version_id=$1`,
+    [input.blueprintVersionId]
+  );
+  const blueprint = blueprintResult.rows[0];
+  if (!blueprint || blueprint.blueprint_status !== "ACTIVE") {
+    throw new AssessmentFormGenerationError("Assessment blueprint is unavailable.");
+  }
+  if (blueprint.framework_id !== input.expectedFrameworkId) {
+    throw new AssessmentFormGenerationError(
+      "Assessment blueprint does not match the Assurance Case framework."
+    );
+  }
+  const selectors = parseSelectors(blueprint.selectors_json);
+
+  const priorResult = await database.query<{ question_id: string }>(
+    `SELECT DISTINCT i.question_id
+       FROM generated_assessment_forms f
+       JOIN generated_assessment_form_items i ON i.form_id=f.form_id
+      WHERE f.worker_account_id=$1`,
+    [input.workerAccountId]
+  );
+  const excluded = new Set(priorResult.rows.map((row) => row.question_id));
+
+  const candidatesResult = await database.query<CandidateRow>(
+    `SELECT q.question_id,v.question_version_id,v.question_type,
+            v.domain_reference,v.difficulty,v.tags_json
+       FROM assessment_questions q
+       JOIN assessment_question_versions v
+         ON v.question_version_id=q.current_version_id
+        AND v.question_id=q.question_id
+      WHERE q.question_status='ACTIVE'
+        AND v.framework_id=$1
+      ORDER BY q.question_id,v.question_version_id`,
+    [blueprint.framework_id]
+  );
+  const candidates: AssessmentSelectionCandidate[] = candidatesResult.rows
+    .filter((candidate) => !excluded.has(candidate.question_id))
+    .map((candidate) =>
+      Object.freeze({
+        questionId: candidate.question_id,
+        questionVersionId: candidate.question_version_id,
+        questionType: candidate.question_type,
+        domainReference: candidate.domain_reference,
+        difficulty: candidate.difficulty,
+        tags: Object.freeze([...parseTags(candidate.tags_json)])
+      })
+    );
+
+  return Object.freeze({
+    frameworkId: blueprint.framework_id,
+    selectors,
+    candidates: Object.freeze(candidates)
+  });
+}
+
+export async function hasUnseenAssessmentCapacity(
+  database: DatabaseClient,
+  input: Readonly<{
+    workerAccountId: string;
+    blueprintVersionId: string;
+    frameworkId: string;
+  }>
+): Promise<boolean> {
+  try {
+    const selection = await loadAssessmentSelectionInputs(database, {
+      workerAccountId: input.workerAccountId,
+      blueprintVersionId: input.blueprintVersionId,
+      expectedFrameworkId: input.frameworkId
+    });
+    return (
+      allocateBlueprintCandidates(
+        selection.selectors,
+        selection.candidates,
+        "0".repeat(64)
+      ) !== null
+    );
+  } catch (error) {
+    if (error instanceof AssessmentFormGenerationError) return false;
+    throw error;
+  }
+}
+
 function isUniqueViolation(error: unknown): boolean {
   return Boolean(
     error && typeof error === "object" && (error as { code?: unknown }).code === "23505"
@@ -200,61 +301,17 @@ export class AssessmentFormGenerationService {
           throw new AssessmentFormGenerationError("Assurance Case has no locked effective-policy framework.");
         }
 
-        const blueprintResult = await database.query<BlueprintVersionRow>(
-          `SELECT v.blueprint_version_id,v.blueprint_id,v.framework_id,v.selectors_json,
-                  b.blueprint_status
-           FROM assessment_blueprint_versions v
-           JOIN assessment_blueprints b ON b.blueprint_id=v.blueprint_id
-           WHERE v.blueprint_version_id=$1`,
-          [blueprintVersionId]
-        );
-        const blueprint = blueprintResult.rows[0];
-        if (!blueprint || blueprint.blueprint_status !== "ACTIVE") {
-          throw new AssessmentFormGenerationError("Assessment blueprint is unavailable.");
-        }
-        if (blueprint.framework_id !== caseRow.snapshot_framework_id) {
-          throw new AssessmentFormGenerationError(
-            "Assessment blueprint does not match the Assurance Case framework."
-          );
-        }
-        const selectors = parseSelectors(blueprint.selectors_json);
-
-        const priorResult = await database.query<{ question_id: string }>(
-          `SELECT DISTINCT i.question_id
-           FROM generated_assessment_forms f
-           JOIN generated_assessment_form_items i ON i.form_id=f.form_id
-           WHERE f.worker_account_id=$1`,
-          [caseRow.worker_account_id]
-        );
-        const excluded = new Set(priorResult.rows.map((row) => row.question_id));
-
-        const candidatesResult = await database.query<CandidateRow>(
-          `SELECT q.question_id,v.question_version_id,v.question_type,
-                  v.domain_reference,v.difficulty,v.tags_json
-           FROM assessment_questions q
-           JOIN assessment_question_versions v
-             ON v.question_version_id=q.current_version_id
-            AND v.question_id=q.question_id
-           WHERE q.question_status='ACTIVE'
-             AND v.framework_id=$1
-           ORDER BY q.question_id,v.question_version_id`,
-          [blueprint.framework_id]
-        );
-
+        const selection = await loadAssessmentSelectionInputs(database, {
+          workerAccountId: caseRow.worker_account_id,
+          blueprintVersionId,
+          expectedFrameworkId: caseRow.snapshot_framework_id
+        });
         const nonceHex = randomBytes(32).toString("hex");
-        const candidates: AssessmentSelectionCandidate[] = candidatesResult.rows
-          .filter((candidate) => !excluded.has(candidate.question_id))
-          .map((candidate) =>
-            Object.freeze({
-              questionId: candidate.question_id,
-              questionVersionId: candidate.question_version_id,
-              questionType: candidate.question_type,
-              domainReference: candidate.domain_reference,
-              difficulty: candidate.difficulty,
-              tags: Object.freeze([...parseTags(candidate.tags_json)])
-            })
-          );
-        const allocation = allocateBlueprintCandidates(selectors, candidates, nonceHex);
+        const allocation = allocateBlueprintCandidates(
+          selection.selectors,
+          selection.candidates,
+          nonceHex
+        );
         if (!allocation) {
           throw new AssessmentFormGenerationError(
             "Assessment blueprint has insufficient unseen question capacity for a complete non-repeating form."
@@ -304,7 +361,7 @@ export class AssessmentFormGenerationService {
           metadata: {
             caseId,
             blueprintVersionId,
-            frameworkId: blueprint.framework_id,
+            frameworkId: selection.frameworkId,
             questionCount: selected.length
           }
         });

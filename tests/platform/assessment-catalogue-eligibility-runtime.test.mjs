@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -32,6 +33,8 @@ const ENV = {
 
 const oid = (prefix, c) => `${prefix}_${c.repeat(24)}`;
 const evidenceId = (prefix, c) => `${prefix}_${c.repeat(32)}`;
+const fingerprint = (value) =>
+  createHash("sha256").update(value, "utf8").digest("hex");
 
 async function db() {
   const database = await openScriptDatabase(ENV);
@@ -112,7 +115,7 @@ async function seedFrameworkBlueprintCatalogue(
       `INSERT INTO assessment_blueprint_versions(
          blueprint_version_id,blueprint_id,version_no,framework_id,title,
          selectors_json,created_by_account_id,created_at
-       ) VALUES($1,$2,1,$3,$4,'[{"count":1}]'::jsonb,$5,$6)`,
+       ) VALUES($1,$2,1,$3,$4,'[{"count":1,"tagsAll":[]}]'::jsonb,$5,$6)`,
       [blueprintVersionId, blueprintId, frameworkId, `Eligibility Blueprint ${c}`, `account_seed_${c}`, NOW]
     );
     await transaction.query(
@@ -121,6 +124,46 @@ async function seedFrameworkBlueprintCatalogue(
       [blueprintId, blueprintVersionId, blueprintStatus, NOW]
     );
   });
+  const questionId = oid("assessment_question", c);
+  const questionVersionId = oid("question_version", c);
+  const prompt = `Eligibility capacity question ${c}: choose the safe action.`;
+  await database.transaction(async (transaction) => {
+    await transaction.query(
+      `INSERT INTO assessment_questions(
+         question_id,question_reference,question_status,current_version_id,current_content_fingerprint,
+         created_by_account_id,created_at,updated_at
+       ) VALUES($1,$2,'INACTIVE',NULL,NULL,$3,$4,$4)`,
+      [questionId, `ELIG-Q-${c.toUpperCase()}`, `account_seed_${c}`, NOW]
+    );
+    const hash = fingerprint(prompt);
+    await transaction.query(
+      `INSERT INTO assessment_question_versions(
+         question_version_id,question_id,version_no,question_type,prompt,options_json,
+         answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
+         content_fingerprint,created_by_account_id,created_at
+       ) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
+                'Core','MEDIUM','[]'::jsonb,$7,$8,$9)`,
+      [
+        questionVersionId,
+        questionId,
+        prompt,
+        JSON.stringify(["Stop work", "Continue", "Ignore"]),
+        JSON.stringify("Stop work"),
+        frameworkId,
+        hash,
+        `account_seed_${c}`,
+        NOW
+      ]
+    );
+    await transaction.query(
+      `UPDATE assessment_questions
+          SET current_version_id=$2,current_content_fingerprint=$3,
+              question_status='ACTIVE',updated_at=$4
+        WHERE question_id=$1`,
+      [questionId, questionVersionId, hash, NOW]
+    );
+  });
+
   await database.transaction(async (transaction) => {
     await transaction.query(
       `INSERT INTO assessment_catalogue_entries(
@@ -388,6 +431,70 @@ test("M2.06 rejected, changes-requested and another Worker's qualification never
 
     const service = new AssessmentCatalogueEligibilityService(database);
     assert.deepEqual(await service.listAvailableForWorker(worker, NOW_DATE), []);
+  } finally {
+    await database.close();
+  }
+});
+
+test("M2.06 hides a pending assessment when permanent exposure exhausts unseen blueprint capacity", async () => {
+  const database = await db();
+  try {
+    const worker = await seedAccount(database, "o");
+    const offering = await seedFrameworkBlueprintCatalogue(database, "o", { minimum: 0 });
+    const first = await seedCase(database, "o", worker.accountId, offering.frameworkId);
+    const service = new AssessmentCatalogueEligibilityService(database);
+
+    const beforeExposure = await service.listAvailableForWorker(worker, NOW_DATE);
+    assert.equal(beforeExposure.length, 1);
+    assert.equal(beforeExposure[0].caseId, first.caseId);
+
+    const formId = oid("assessment_form", "o");
+    await database.transaction(async (transaction) => {
+      await transaction.query(
+        `INSERT INTO generated_assessment_forms(
+           form_id,case_id,worker_account_id,blueprint_version_id,
+           generation_nonce_hex,question_count,generated_at
+         ) VALUES($1,$2,$3,$4,$5,1,$6)`,
+        [
+          formId,
+          first.caseId,
+          worker.accountId,
+          offering.blueprintVersionId,
+          "0".repeat(64),
+          NOW
+        ]
+      );
+      await transaction.query(
+        `INSERT INTO generated_assessment_form_items(
+           form_item_id,form_id,position,question_id,question_version_id,created_at
+         ) VALUES($1,$2,1,$3,$4,$5)`,
+        [
+          oid("assessment_form_item", "o"),
+          formId,
+          oid("assessment_question", "o"),
+          oid("question_version", "o"),
+          NOW
+        ]
+      );
+    });
+    await database.query(
+      `UPDATE assurance_cases
+          SET case_status='Assessment in progress',updated_at=$2
+        WHERE case_id=$1`,
+      [first.caseId, NOW]
+    );
+
+    const second = await seedCase(database, "p", worker.accountId, offering.frameworkId);
+    const exhausted = await service.listAvailableForWorker(worker, NOW_DATE);
+    assert.equal(
+      exhausted.some((entry) => entry.caseId === second.caseId),
+      false,
+      "A case with no unseen capacity must not be presented as Eligible."
+    );
+    assert.deepEqual(
+      await service.findAvailableForCase(worker, second.caseId, NOW_DATE),
+      []
+    );
   } finally {
     await database.close();
   }
