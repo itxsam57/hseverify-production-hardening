@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
+import { getEvidenceReviewService } from "@/lib/review/evidence-review-service";
 import { settleLocalWorkerIdentityFileScan } from "@/lib/identity/worker-identity-local-processing-service";
 import {
   SecureFileAccessDeniedError,
@@ -369,8 +370,9 @@ export async function submitWorkerEvidenceAction(
   try {
     const principal = await workerPrincipal();
     await evidenceService().submit(principal, recordId, expectedRevision);
+    await (await getEvidenceReviewService()).queueIndependentWorkerEvidence(principal, recordId);
     revalidateEvidence();
-    return state("success", "Evidence version submitted. Its accepted history is now immutable.");
+    return state("success", "Evidence version submitted for independent verification. Its accepted history is now immutable.");
   } catch (error) {
     return failure(error);
   }
@@ -417,8 +419,12 @@ export async function endWorkerEmploymentAction(
       endDate,
       optionalText(formData, "endReason")
     );
+    await (await getEvidenceReviewService()).queueIndependentWorkerEvidence(principal, recordId);
     revalidateEvidence();
-    return state("success", "Employment ended. The previous submitted employment remains in history.");
+    return state(
+      "success",
+      "Employment ended and the new submitted version was queued for independent verification. The previous submitted employment remains in history."
+    );
   } catch (error) {
     return failure(error);
   }

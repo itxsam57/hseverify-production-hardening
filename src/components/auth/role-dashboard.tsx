@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import type { AuthenticatedSession } from "@/lib/auth/auth-session-service";
 import type { AuthRole } from "@/lib/auth/auth-domain";
+import type { AuthenticatedSession } from "@/lib/auth/auth-session-service";
 
 const ROLE_LABELS: Record<AuthRole, string> = {
   worker: "Worker",
@@ -12,31 +12,123 @@ const ROLE_LABELS: Record<AuthRole, string> = {
   root: "Root administrator"
 };
 
-const ROLE_BOUNDARIES: Record<Exclude<AuthRole, "worker">, string[]> = {
-  company: [
-    "Company assurance and Worker-management features will be added only through Company-scoped authorization.",
-    "This session cannot enter assessor, verifier, administrator or root routes.",
-    "Company staff provisioning remains separate from the Worker list."
+type WorkspaceLink = {
+  readonly href: string;
+  readonly title: string;
+  readonly description: string;
+};
+
+const WORKSPACES: Record<Exclude<AuthRole, "worker" | "company">, readonly WorkspaceLink[]> = {
+  verifier: [
+    {
+      href: "/verifier/reviews",
+      title: "Evidence review queue",
+      description: "Claim assigned evidence, declare conflicts, preview authorized files and finalize verification outcomes."
+    },
+    {
+      href: "/verifier/reviews/scoring",
+      title: "Written scoring",
+      description: "Review written answers against the approved rubric, save criterion marks and finalize the review."
+    },
+    {
+      href: "/verifier/notifications",
+      title: "Notifications",
+      description: "Open persisted workflow notifications and deep links to work that needs attention."
+    }
   ],
   assessor: [
-    "Only assessor assignments and evidence explicitly allocated to this account may be opened.",
-    "Verifier decisions and administrator controls are outside this portal.",
-    "Live assessment and interview work arrives in later accepted bricks."
-  ],
-  verifier: [
-    "Only independent verification tasks allocated to this account may be opened.",
-    "Assessor notes and Company tenancy remain isolated unless a later permission explicitly projects them.",
-    "Administrative controls are outside this portal."
+    {
+      href: "/assessor/interviews",
+      title: "Interview assignments",
+      description: "Review assigned interviews, schedule them and open the structured interview console."
+    },
+    {
+      href: "/assessor/notifications",
+      title: "Notifications",
+      description: "Open persisted interview and workflow notifications."
+    }
   ],
   admin: [
-    "Platform administration is available without root-only authority.",
-    "Root accounts, root-only settings and root sessions cannot be accessed here.",
-    "Staff invitations are limited to Company, assessor and verifier roles."
+    {
+      href: "/admin/company-verifications",
+      title: "Company verifications",
+      description: "Review submitted Company details and evidence and record the platform verification decision."
+    },
+    {
+      href: "/admin/frameworks",
+      title: "Frameworks & policy",
+      description: "Manage frameworks and publish immutable effective-policy versions."
+    },
+    {
+      href: "/admin/question-bank",
+      title: "Question Bank",
+      description: "Create, revise, activate and retire versioned assessment questions."
+    },
+    {
+      href: "/admin/assessment-blueprints",
+      title: "Assessment blueprints",
+      description: "Build and revise versioned assessment selector blueprints."
+    },
+    {
+      href: "/admin/assessment-catalogue",
+      title: "Assessment catalogue",
+      description: "Publish assessment catalogue entries and eligibility settings."
+    },
+    {
+      href: "/admin/decisions",
+      title: "Decision Engine",
+      description: "Inspect decision records, create reasoned decisions and record controlled overrides."
+    },
+    {
+      href: "/admin/certifications",
+      title: "Certifications",
+      description: "Review credential and certification records and their current lifecycle state."
+    },
+    {
+      href: "/admin/operations",
+      title: "Operations & health",
+      description: "Inspect provider health, operational readiness and production handover state."
+    },
+    {
+      href: "/admin/staff",
+      title: "Staff invitations",
+      description: "Provision scoped staff accounts through one-time invitation and MFA enrollment."
+    }
   ],
   root: [
-    "Root authority is isolated from every operational portal.",
-    "Root sessions require password plus enrolled authenticator verification.",
-    "All staff roles can be invited from the root staff-provisioning workspace."
+    {
+      href: "/root/staff",
+      title: "Staff & access",
+      description: "Provision platform staff roles through isolated one-time enrollment flows."
+    },
+    {
+      href: "/root/notifications",
+      title: "Notifications",
+      description: "Review persisted root-level operational notifications."
+    }
+  ]
+};
+
+const ROLE_BOUNDARIES: Record<Exclude<AuthRole, "worker" | "company">, readonly string[]> = {
+  assessor: [
+    "Only interview work assigned to this assessor account is accessible.",
+    "Verifier decisions and platform-administration controls remain outside this portal.",
+    "Interview notes and recommendations are persisted under this assessor identity."
+  ],
+  verifier: [
+    "Only queued work or tasks claimed by this verifier account are accessible.",
+    "Conflicts requeue work and remove decision authority for that task.",
+    "Company tenancy and administrator controls remain isolated from this portal."
+  ],
+  admin: [
+    "Platform operations are available only within the permissions granted to this admin account.",
+    "Root-only access management and recovery remain outside this portal.",
+    "Material changes are server-authorized and auditable."
+  ],
+  root: [
+    "Root authority is isolated from operational reviewer, assessor and Company workspaces.",
+    "Root access is reserved for privileged staff provisioning and recovery controls.",
+    "Routine case decisions should be completed in the dedicated operational portal."
   ]
 };
 
@@ -46,17 +138,33 @@ export function RoleDashboard({
   session: AuthenticatedSession;
 }): React.JSX.Element {
   const label = ROLE_LABELS[session.role];
+
   if (session.role === "worker") {
     return (
       <div className="dashboard-page">
         <h1>Worker account authenticated</h1>
-        <p>Continue to the Worker Dashboard for the accepted Worker experience.</p>
+        <p>Continue to the Worker Dashboard for your profile, evidence and assurance activity.</p>
         <Link className="button button-primary" href="/worker/dashboard">
           Open Worker Dashboard
         </Link>
       </div>
     );
   }
+
+  if (session.role === "company") {
+    return (
+      <div className="dashboard-page">
+        <h1>Company account authenticated</h1>
+        <Link className="button button-primary" href="/company/dashboard">
+          Open Company Dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  const workspaces = WORKSPACES[session.role];
+  const boundaries = ROLE_BOUNDARIES[session.role];
+
   return (
     <div className="dashboard-page">
       <header className="page-heading-row">
@@ -64,47 +172,67 @@ export function RoleDashboard({
           <p className="eyebrow">{label} Portal</p>
           <h1>Welcome, {session.displayName}</h1>
           <p className="page-intro">
-            Authentication, MFA, session revocation and portal isolation are active. Domain workspaces remain behind their accepted brick gates.
+            Your live workspaces are below. Each action stays inside this role-bound session and is re-authorized by the server.
           </p>
         </div>
-        {session.role === "verifier" ? (
-          <Link className="button button-primary" href="/verifier/reviews">
-            Open evidence review queue
-          </Link>
-        ) : null}
-        {session.role === "assessor" ? (
-          <Link className="button button-primary" href="/assessor/interviews">
-            Open interview assignments
-          </Link>
-        ) : null}
       </header>
 
-      <section className="metric-grid" aria-label={`${label} authentication status`}>
+      <section className="metric-grid" aria-label={`${label} session status`}>
         <article className="metric-card">
-          <strong>Role fixed</strong>
-          <p>{session.role}</p>
+          <span className="metric-card-heading">Portal role</span>
+          <strong>{label}</strong>
+          <p>This browser session is fixed to {session.role}.</p>
         </article>
         <article className="metric-card">
-          <strong>Session expires</strong>
-          <p>{new Date(session.expiresAt).toLocaleString()}</p>
+          <span className="metric-card-heading">Session expiry</span>
+          <strong>{new Date(session.expiresAt).toLocaleDateString()}</strong>
+          <p>{new Date(session.expiresAt).toLocaleTimeString()}</p>
         </article>
         <article className="metric-card">
-          <strong>MFA</strong>
-          <p>Required and verified at sign-in.</p>
+          <span className="metric-card-heading">Authentication</span>
+          <strong>MFA verified</strong>
+          <p>Protected actions remain bound to this authenticated account.</p>
         </article>
+      </section>
+
+      <section className="dashboard-section" aria-labelledby="workspace-heading">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Workspaces</p>
+            <h2 id="workspace-heading">Available operations</h2>
+          </div>
+        </div>
+        <div className="workspace-grid">
+          {workspaces.map((workspace) => (
+            <article className="workspace-card" key={workspace.href}>
+              <div>
+                <h3>{workspace.title}</h3>
+                <p>{workspace.description}</p>
+              </div>
+              <Link className="button button-secondary button-small" href={workspace.href}>
+                Open
+              </Link>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="dashboard-section" aria-labelledby="portal-boundary-heading">
         <p className="section-kicker">Security boundary</p>
         <h2 id="portal-boundary-heading">What this portal permits</h2>
-        <ul>
-          {ROLE_BOUNDARIES[session.role].map((boundary) => (
+        <ul className="boundary-list">
+          {boundaries.map((boundary) => (
             <li key={boundary}>{boundary}</li>
           ))}
         </ul>
-        <Link className="button button-secondary" href="/account/sessions">
-          Review active sessions
-        </Link>
+        <div className="button-row">
+          <Link className="button button-secondary" href="/account/sessions">
+            Review active sessions
+          </Link>
+          <Link className="button button-secondary" href={`/${session.role}/notifications`}>
+            Open notifications
+          </Link>
+        </div>
       </section>
     </div>
   );

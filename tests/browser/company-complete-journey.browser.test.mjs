@@ -1,0 +1,385 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { createHmac } from "node:crypto";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { PGlite } from "@electric-sql/pglite";
+import { chromium } from "playwright";
+import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+
+const TEAM_PASSWORD = "CompanyJourneyTeam!2026";
+const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+function decodeBase32(value) {
+  const clean = value.toUpperCase().replace(/=+$/g, "");
+  let bits = "";
+  for (const char of clean) {
+    const index = B32.indexOf(char);
+    if (index < 0) throw new Error("Invalid base32 secret.");
+    bits += index.toString(2).padStart(5, "0");
+  }
+  const bytes = [];
+  for (let index = 0; index + 8 <= bits.length; index += 8) {
+    bytes.push(Number.parseInt(bits.slice(index, index + 8), 2));
+  }
+  return Buffer.from(bytes);
+}
+
+function totp(secret, offset = 0) {
+  const counter = Math.floor(Date.now() / 30_000) + offset;
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigUInt64BE(BigInt(counter));
+  const digest = createHmac("sha1", decodeBase32(secret)).update(buffer).digest();
+  const position = digest.at(-1) & 15;
+  return String((digest.readUInt32BE(position) & 0x7fffffff) % 1_000_000).padStart(6, "0");
+}
+
+async function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      server.close((error) => {
+        if (error) reject(error);
+        else if (!address || typeof address === "string") reject(new Error("No port."));
+        else resolve(address.port);
+      });
+    });
+  });
+}
+
+async function login(page, baseUrl, role, credential, offset = 0) {
+  await page.goto(`${baseUrl}/${role}/login`, { waitUntil: "domcontentloaded" });
+  await page.getByLabel("Email address").fill(credential.email);
+  await page.getByLabel("Password").fill(credential.password);
+  if (credential.totpSecret) {
+    await page.getByLabel("Authenticator code").fill(totp(credential.totpSecret, offset));
+  }
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((url) => url.pathname !== `/${role}/login`, { timeout: 20_000 });
+}
+
+
+async function seedPolicy(databaseDirectory) {
+  const db = new PGlite(databaseDirectory);
+  try {
+    const now = "2026-01-01T00:00:00.000Z";
+    const frameworkId = `framework_${"J".repeat(24)}`;
+    const policyId = `policy_${"J".repeat(24)}`;
+    const versionId = `policy_version_${"J".repeat(24)}`;
+    await db.query(
+      `INSERT INTO assurance_frameworks(
+         framework_id,framework_reference,title,created_by_account_id,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,$5)`,
+      [frameworkId, "COMPANY-JOURNEY-FRAME", "Company Journey Framework", "audit_admin_account_20260901", now]
+    );
+    await db.query(
+      `INSERT INTO assurance_policy_packs(
+         policy_id,framework_id,policy_reference,title,created_by_account_id,created_at,updated_at
+       ) VALUES($1,$2,$3,$4,$5,$6,$6)`,
+      [policyId, frameworkId, "COMPANY-JOURNEY-POLICY", "Company Journey Policy", "audit_admin_account_20260901", now]
+    );
+    await db.query(
+      `INSERT INTO assurance_policy_versions(
+         policy_version_id,policy_id,version_no,effective_from,effective_to,
+         policy_values,override_allowed_fields,override_directions,created_by_account_id,created_at
+       ) VALUES($1,$2,1,$3,NULL,$4::jsonb,$5::jsonb,$6::jsonb,$7,$8)`,
+      [
+        versionId,
+        policyId,
+        now,
+        JSON.stringify({ pass_mark: 80, max_attempts: 2, recording_required: true }),
+        JSON.stringify(["pass_mark", "max_attempts"]),
+        JSON.stringify({ pass_mark: "MINIMUM", max_attempts: "MAXIMUM" }),
+        "audit_admin_account_20260901",
+        now
+      ]
+    );
+  } finally {
+    await db.close();
+  }
+}
+
+test("Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium", { timeout: 300_000 }, async () => {
+  const root = process.cwd();
+  const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-company-journey-"));
+  const port = await freePort();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const environment = {
+    ...process.env,
+    HSE_APP_ENV: "development",
+    HSE_DATABASE_DRIVER: "pglite",
+    HSE_PGLITE_DATA_DIR: databaseDirectory,
+    HSE_RELEASE_SHA: "company-complete-browser",
+    HSE_SESSION_SECRET: "company-complete-session-secret-2026-00000000000",
+    HSE_AUTH_PEPPER: "company-complete-auth-pepper-2026-0000000000000",
+    HSE_ENABLE_WORKER_DEMO_AUTH: "false",
+    HSE_USE_WORKER_DEMO_DATA: "false"
+  };
+
+  try {
+    for (const script of ["scripts/db-migrate.mjs", "scripts/independent-audit-seed.mjs"]) {
+      const result = spawnSync(process.execPath, [script], {
+        cwd: root,
+        env: environment,
+        encoding: "utf8"
+      });
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+    }
+    await seedPolicy(databaseDirectory);
+    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+
+    const result = await runDevelopmentServer({
+      args: ["--hostname", "127.0.0.1", "--port", String(port)],
+      probeUrl: `${baseUrl}/company/login`,
+      projectRoot: root,
+      environment,
+      probe: async () => {
+        const browser = await chromium.launch({ headless: true });
+        const companyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+        const company = await companyContext.newPage();
+        const workerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+        const worker = await workerContext.newPage();
+        try {
+          await login(company, baseUrl, "company", credentials.company);
+
+          // Organization: create both unit types, edit, archive, restore.
+          await company.goto(`${baseUrl}/company/organization`, { waitUntil: "networkidle" });
+          await company.getByLabel("Unit type").selectOption("site");
+          await company.getByLabel("Name").first().fill("Journey Site");
+          await company.getByLabel("Formatted address").first().fill("1 Journey Road, Islamabad");
+          await company.getByLabel("Phone").first().fill("+923001110001");
+          await company.getByLabel("Website").first().fill("https://journey-site.example.test");
+          await company.getByLabel("Email").first().fill("site@journey.example.test");
+          await company.getByRole("button", { name: "Create unit" }).click();
+          await company.getByText("Site created.", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.reload({ waitUntil: "networkidle" });
+          await company.getByRole("heading", { name: "Journey Site", exact: true }).waitFor();
+
+          await company.getByLabel("Unit type").selectOption("department");
+          await company.getByLabel("Name").first().fill("Journey Department");
+          await company.getByLabel("Formatted address").first().fill("1 Journey Road, Islamabad");
+          await company.getByLabel("Phone").first().fill("+923001110002");
+          await company.getByLabel("Website").first().fill("https://journey-dept.example.test");
+          await company.getByLabel("Email").first().fill("department@journey.example.test");
+          await company.getByRole("button", { name: "Create unit" }).click();
+          await company.getByText("Department created.", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.reload({ waitUntil: "networkidle" });
+
+          let siteCard = company.locator("article").filter({ hasText: "Journey Site" }).first();
+          await siteCard.getByLabel("Name").fill("Journey Site Updated");
+          await siteCard.getByRole("button", { name: "Save changes" }).click();
+          await siteCard.getByText("Company unit details saved.", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.reload({ waitUntil: "networkidle" });
+          siteCard = company.locator("article").filter({ hasText: "Journey Site Updated" }).first();
+          await siteCard.getByRole("button", { name: "Archive site" }).click();
+          await company.getByRole("dialog").getByRole("button", { name: "Archive site" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          siteCard = company.locator("article").filter({ hasText: "Journey Site Updated" }).first();
+          await siteCard.getByRole("button", { name: "Restore site" }).waitFor({ timeout: 15_000 });
+          await siteCard.getByRole("button", { name: "Restore site" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          siteCard = company.locator("article").filter({ hasText: "Journey Site Updated" }).first();
+          await siteCard.getByRole("button", { name: "Archive site" }).waitFor({ timeout: 15_000 });
+
+          // Workforce invitations: single, resend, revoke, bulk with mixed validity.
+          await company.goto(`${baseUrl}/company/invitations`, { waitUntil: "networkidle" });
+          const single = company.locator("section").filter({ hasText: "Invite one Worker" }).first();
+          await single.getByLabel("Worker email").fill("pending.journey.worker@example.test");
+          await single.getByRole("button", { name: "Create Worker invitation" }).click();
+          await single.getByText(/Worker invitation created/).waitFor({ timeout: 15_000 });
+          await company.reload({ waitUntil: "networkidle" });
+          let invitationCard = company.locator("article").filter({ hasText: "pending.journey.worker@example.test" }).first();
+          await invitationCard.getByRole("button", { name: "Resend with new link" }).click();
+          await invitationCard.getByText(/Wait before resending this Worker invitation/i).waitFor({ timeout: 15_000 });
+          await company.reload({ waitUntil: "networkidle" });
+          invitationCard = company.locator("article").filter({ hasText: "pending.journey.worker@example.test" }).first();
+          await invitationCard.getByRole("button", { name: "Revoke" }).click();
+          await company.getByRole("dialog").getByRole("button", { name: "Revoke invitation" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          invitationCard = company.locator("article").filter({ hasText: "pending.journey.worker@example.test" }).first();
+          await invitationCard.getByText("revoked", { exact: true }).waitFor({ timeout: 15_000 });
+
+          const bulk = company.locator("section").filter({ hasText: "Invite multiple Workers" }).first();
+          await bulk.getByLabel("Worker CSV").fill("email\nbulk.one@example.test\nnot-an-email");
+          await bulk.getByRole("button", { name: "Process bulk Worker invitations" }).click();
+          await bulk.getByText(/1 Worker invitation created; 1 row need attention/).waitFor({ timeout: 15_000 });
+
+          // Registration code -> real Worker redemption -> active Company link.
+          const codeSection = company.locator("section").filter({ hasText: "Create registration code" }).first();
+          await codeSection.getByLabel("Usage limit").fill("1");
+          await codeSection.getByLabel("Expiry").fill("2026-10-20T12:00");
+          await codeSection.getByRole("button", { name: "Create Company registration code" }).click();
+          await codeSection.getByText(/Company registration code created/).waitFor({ timeout: 15_000 });
+          const registrationCode = (await codeSection.locator("p strong").last().innerText()).trim();
+          assert(registrationCode.length >= 8);
+
+          await login(worker, baseUrl, "worker", credentials.worker);
+          await worker.goto(`${baseUrl}/worker/company-access`, { waitUntil: "networkidle" });
+          await worker.getByLabel("Registration code").fill(registrationCode);
+          await worker.getByRole("button", { name: "Join Company with code" }).click();
+          await worker.getByText(/Company registration code accepted/).waitFor({ timeout: 15_000 });
+          await worker.reload({ waitUntil: "networkidle" });
+          await worker.getByRole("heading", { name: "Independent Audit Company" }).waitFor();
+
+          await company.reload({ waitUntil: "networkidle" });
+          await company.getByRole("heading", { name: "Worker links" }).waitFor();
+          await company.getByText(credentials.worker.email, { exact: true }).waitFor();
+
+          // Company Team: invite, enroll with MFA, scope/update, suspend/reactivate/revoke.
+          await company.goto(`${baseUrl}/company/team`, { waitUntil: "networkidle" });
+          await company.getByLabel("Staff email").fill("journey.team.member@example.test");
+          await company.getByLabel("Company Team role").selectOption("viewer");
+          await company.getByRole("button", { name: "Create Company Team invitation" }).click();
+          await company.getByText(/Company Team invitation created/).waitFor({ timeout: 15_000 });
+          const invitationPath = (await company.locator("strong").filter({ hasText: "/staff/invite/" }).first().innerText()).trim();
+          assert(invitationPath.startsWith("/staff/invite/"));
+
+          const memberContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+          const member = await memberContext.newPage();
+          await member.goto(`${baseUrl}${invitationPath}`, { waitUntil: "domcontentloaded" });
+          await member.getByLabel("Full name").fill("Journey Team Member");
+          await member.getByLabel("Create password").fill(TEAM_PASSWORD);
+          await member.getByLabel("Confirm password").fill(TEAM_PASSWORD);
+          await member.getByRole("button", { name: "Continue to authenticator setup" }).click();
+          const teamSecret = (await member.locator(".security-key-card strong").innerText()).trim();
+          await member.getByLabel("Authenticator code").fill(totp(teamSecret));
+          await member.getByRole("button", { name: "Activate MFA and finish enrollment" }).click();
+          await member.getByText("Enrollment complete", { exact: false }).waitFor({ timeout: 15_000 });
+
+          await company.reload({ waitUntil: "networkidle" });
+          let memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          await memberCard.getByLabel("Company Team role").selectOption("manager");
+          await memberCard.getByRole("button", { name: "Save Team access" }).click();
+          await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor({ timeout: 15_000 });
+          await company.reload({ waitUntil: "networkidle" });
+          memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          await memberCard.getByRole("button", { name: "Suspend" }).click();
+          await company.getByRole("dialog").getByRole("button", { name: "Suspend access" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          await memberCard.getByRole("button", { name: "Reactivate" }).waitFor({ timeout: 15_000 });
+          await memberCard.getByRole("button", { name: "Reactivate" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          await memberCard.getByRole("button", { name: "Suspend" }).waitFor({ timeout: 15_000 });
+          await memberCard.getByRole("button", { name: "Revoke" }).click();
+          await company.getByRole("dialog").getByRole("button", { name: "Revoke access" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          await memberCard.getByText("revoked", { exact: true }).waitFor({ timeout: 15_000 });
+          await memberContext.close();
+
+          // Assurance order: valid submitted case, Action Centre visibility, cancellation.
+          await company.goto(`${baseUrl}/company/assurance-orders/new`, { waitUntil: "networkidle" });
+          await company.getByLabel("Order name").fill("Journey Assurance Order");
+          await company.getByLabel("Order reference", { exact: true }).fill("JOURNEY-ORDER-001");
+          await company.locator('input[name="workerLinkIds"]').first().check();
+          await company.getByLabel("Funding method").selectOption("worker");
+          await company.getByRole("button", { name: "Save Draft" }).click();
+          await company.waitForURL(/\/company\/assurance-orders\//, { timeout: 15_000 });
+          await company.getByText("DRAFT", { exact: true }).waitFor();
+          await company.getByRole("button", { name: "Validate Order" }).click();
+          await company.getByText("READY", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.getByRole("button", { name: "Submit Order" }).click();
+          await company.getByText("SUBMITTED", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.getByRole("heading", { name: "Worker cases" }).waitFor();
+          await company.goto(`${baseUrl}/company/action-centre`, { waitUntil: "networkidle" });
+          const actionItem = company.locator("article").filter({ hasText: "Worker action is required before assurance can advance." }).first();
+          await actionItem.waitFor({ timeout: 15_000 });
+          await actionItem.getByRole("link", { name: "Open", exact: true }).click();
+          await company.waitForURL(/\/company\/assurance-orders\//, { timeout: 15_000 });
+          await company.getByText("JOURNEY-ORDER-001", { exact: false }).first().waitFor();
+          await company.getByRole("button", { name: "Cancel Submitted Order" }).click();
+          await company.getByText("CANCELLED", { exact: true }).waitFor({ timeout: 15_000 });
+
+          // Negative order branch: no Worker target -> validation failure, then cancel draft.
+          await company.goto(`${baseUrl}/company/assurance-orders/new`, { waitUntil: "networkidle" });
+          await company.getByLabel("Order name").fill("Journey Invalid Order");
+          await company.getByLabel("Order reference", { exact: true }).fill("JOURNEY-ORDER-INVALID");
+          await company.getByRole("button", { name: "Save Draft" }).click();
+          await company.waitForURL(/\/company\/assurance-orders\//, { timeout: 15_000 });
+          await company.getByRole("button", { name: "Validate Order" }).click();
+          await company.getByText("VALIDATION_FAILED", { exact: true }).waitFor({ timeout: 15_000 });
+          await company.getByText(/Add at least one active linked Worker/).waitFor();
+          await company.getByRole("button", { name: "Cancel Draft" }).click();
+          await company.getByText("CANCELLED", { exact: true }).waitFor({ timeout: 15_000 });
+
+          // Effective policy: real permitted Company tightening.
+          await company.goto(`${baseUrl}/company/settings/policy`, { waitUntil: "networkidle" });
+          await company.getByLabel("Policy reference").fill("COMPANY-JOURNEY-POLICY");
+          await company.getByLabel("Override values JSON").fill('{"pass_mark":85}');
+          await company.getByLabel("Effective from").fill("2026-09-23T00:00");
+          await company.getByRole("button", { name: "Save immutable override version" }).click();
+          await company.getByText("COMPANY-JOURNEY-POLICY", { exact: false }).first().waitFor({ timeout: 15_000 });
+          await company.getByText(/pass_mark.*85/i).first().waitFor({ timeout: 15_000 });
+
+          // Report queue (no payment path).
+          await company.goto(`${baseUrl}/company/reports`, { waitUntil: "networkidle" });
+          await company.getByLabel("Report ID").fill("report_company_journey_001");
+          await company.getByLabel("Format").selectOption("csv");
+          await company.getByRole("button", { name: "Queue report delivery" }).click();
+          await company.getByText("report_company_journey_001", { exact: false }).waitFor({ timeout: 15_000 });
+
+          // Tenant-scope CRUD demonstration.
+          await company.goto(`${baseUrl}/company/tenant-scope`, { waitUntil: "networkidle" });
+          await company.getByLabel("Demonstration key").fill("journey-record");
+          await company.getByLabel("Title").fill("Journey Tenant Record");
+          await company.getByLabel("Note").fill("Synthetic tenant-scope journey data only.");
+          await company.getByRole("button", { name: "Create demonstration record" }).click();
+          await company.getByRole("heading", { name: "Journey Tenant Record" }).waitFor({ timeout: 15_000 });
+          let demoCard = company.locator("[data-company-scope-record]").filter({ hasText: "Journey Tenant Record" }).first();
+          await demoCard.getByLabel("Title").fill("Journey Tenant Record Updated");
+          await demoCard.getByRole("button", { name: "Save demonstration record" }).click();
+          await company.reload({ waitUntil: "networkidle" });
+          demoCard = company.locator("[data-company-scope-record]").filter({ hasText: "Journey Tenant Record Updated" }).first();
+          await demoCard.waitFor({ timeout: 15_000 });
+          await demoCard.getByRole("button", { name: "Delete" }).click();
+          await company.getByRole("dialog").getByRole("button", { name: "Delete demonstration record" }).click();
+          await company.getByText(/deleted from the current Company tenant/i).waitFor({ timeout: 15_000 });
+
+          // Dashboard reflects live persisted state rather than placeholder session text.
+          await company.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
+          await company.getByRole("heading", { name: "Independent Audit Company" }).waitFor();
+          const workerMetric = company.locator(".metric-card").filter({ hasText: "Workers" }).first();
+          await workerMetric.getByText("1", { exact: true }).waitFor();
+          const ordersMetric = company.locator(".metric-card").filter({ hasText: "Assurance Orders" }).first();
+          await ordersMetric.getByText(/2 total/i).waitFor();
+
+          // Payment actions deliberately not exercised.
+        } finally {
+          await companyContext.close();
+          await workerContext.close();
+          await browser.close();
+        }
+      }
+    });
+    assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
+
+    const db = new PGlite(databaseDirectory);
+    try {
+      const [links, orders, team, overrides, reports] = await Promise.all([
+        db.query(`SELECT link_status FROM company_worker_links WHERE worker_account_id='audit_worker_account_20260901'`),
+        db.query(`SELECT order_reference,order_status FROM assurance_orders WHERE order_reference LIKE 'JOURNEY-ORDER%'`),
+        db.query(`SELECT membership_status,membership_role FROM auth_tenant_memberships WHERE account_id IN (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')`),
+        db.query(`SELECT override_values FROM tenant_policy_overrides WHERE tenant_id='tenant_independent-audit-compan'`),
+        db.query(`SELECT report_id,status FROM report_deliveries WHERE tenant_id='tenant_independent-audit-compan'`)
+      ]);
+      assert.equal(links.rows[0]?.link_status, "active");
+      assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-001" && row.order_status === "CANCELLED"));
+      assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-INVALID" && row.order_status === "CANCELLED"));
+      assert.equal(team.rows[0]?.membership_status, "revoked");
+      assert.equal(team.rows[0]?.membership_role, "manager");
+      assert(overrides.rows.length >= 1);
+      assert(reports.rows.some((row) => row.report_id === "report_company_journey_001"));
+    } finally {
+      await db.close();
+    }
+  } finally {
+    await rm(databaseDirectory, { recursive: true, force: true });
+  }
+});

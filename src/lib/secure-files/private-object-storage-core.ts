@@ -124,23 +124,14 @@ async function readRegularObject(path: string): Promise<Uint8Array | null> {
   }
 }
 
-export class LocalTestPrivateObjectStorage implements PrivateObjectStorage {
+export class FilesystemPrivateObjectStorage implements PrivateObjectStorage {
   private readonly base: string;
   private readonly root: string;
 
   constructor(input: {
-    appEnvironment: "development" | "test";
     trustedBasePath: string;
     rootPath: string;
   }) {
-    if (
-      input.appEnvironment !== "development" &&
-      input.appEnvironment !== "test"
-    ) {
-      throw new PrivateObjectStorageError(
-        "Local/test private object storage is not permitted in this environment."
-      );
-    }
     if (
       typeof input.trustedBasePath !== "string" ||
       input.trustedBasePath.trim().length === 0 ||
@@ -243,5 +234,26 @@ export class LocalTestPrivateObjectStorage implements PrivateObjectStorage {
       if (errnoCode(error) === "ENOENT") return false;
       throw new PrivateObjectStorageError();
     }
+  }
+}
+
+export class LocalTestPrivateObjectStorage extends FilesystemPrivateObjectStorage {
+  constructor(input: {
+    appEnvironment: "development" | "test";
+    trustedBasePath: string;
+    rootPath: string;
+  }) {
+    if (
+      input.appEnvironment !== "development" &&
+      input.appEnvironment !== "test"
+    ) {
+      throw new PrivateObjectStorageError(
+        "Local/test private object storage is not permitted in this environment."
+      );
+    }
+    super({
+      trustedBasePath: input.trustedBasePath,
+      rootPath: input.rootPath
+    });
   }
 }

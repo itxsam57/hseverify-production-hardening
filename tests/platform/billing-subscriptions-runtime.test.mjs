@@ -532,11 +532,12 @@ test("M3.05 monotonic rollback/reapply retains financial history", async () => {
 });
 
 test("M3.05 Company Billing UI and webhook boundary are wired and label sandbox state truthfully", async () => {
-  const [page, actions, route, shell, copy] = await Promise.all([
+  const [page, actions, route, shell, navigation, copy] = await Promise.all([
     readFile(join(process.cwd(),"src/app/company/(portal)/billing/page.tsx"),"utf8"),
     readFile(join(process.cwd(),"src/app/company/(portal)/billing/actions.ts"),"utf8"),
     readFile(join(process.cwd(),"src/app/api/billing/webhook/route.ts"),"utf8"),
     readFile(join(process.cwd(),"src/components/auth/role-portal-shell.tsx"),"utf8"),
+    readFile(join(process.cwd(),"src/components/auth/role-navigation.tsx"),"utf8"),
     readFile(join(process.cwd(),"src/config/product-copy.ts"),"utf8")
   ]);
   for (const marker of ["Company billing","Sandbox billing mode","Company credits","Invoices","Refunds","Reconciliation"]) assert.match(page,new RegExp(marker));
@@ -546,7 +547,7 @@ test("M3.05 Company Billing UI and webhook boundary are wired and label sandbox 
   assert.match(actions,/runReconciliation/);
   assert.match(route,/HSE_BILLING_WEBHOOK_SECRET/);
   assert.match(route,/ingestProviderWebhook/);
-  assert.match(shell,/\/company\/billing/);
+  assert.match(`${shell}\n${navigation}`,/\/company\/billing/);
   assert.match(copy,/src\/lib\/billing\/billing-provider\.ts/);
   assert.match(copy,/sandbox/i);
 });

@@ -36,6 +36,7 @@ import {
 } from "@/lib/identity/worker-identity-local-processing-service";
 import { getWorkerIdentityService } from "@/lib/identity/worker-identity-service";
 import { getWorkerIdentityCheckService } from "@/lib/identity/worker-identity-check-service";
+import { getEvidenceReviewService } from "@/lib/review/evidence-review-service";
 import {
   SecureFileAccessDeniedError,
   SecureFileReservationConflictError
@@ -184,11 +185,32 @@ export async function submitWorkerIdentityAction(
   try {
     const principal = await workerPrincipal();
     await getWorkerIdentityService().submit(principal, expectedLockVersion);
-    revalidateIdentity();
-    return state(
-      "success",
-      "Identity submitted. Automated checks can now be scheduled."
-    );
+
+    // Submission is the Worker intent to begin verification. Queue the automated
+    // checks immediately instead of requiring a second, easy-to-miss button. In
+    // local/test environments the real outbox job is settled synchronously so the
+    // independent Verifier queue can be exercised end to end.
+    try {
+      await getWorkerIdentityCheckService().scheduleOwn(principal);
+      await settleLocalWorkerIdentityAutomatedChecks(principal);
+      const currentIdentity = await getWorkerIdentityService().load(principal);
+      if (currentIdentity?.identity.lifecycleStatus === "manual_review") {
+        await (await getEvidenceReviewService()).queueIndependentIdentity(principal);
+      }
+      revalidateIdentity();
+      return state(
+        "success",
+        currentIdentity?.identity.lifecycleStatus === "manual_review"
+          ? "Identity submitted, automated checks completed, and manual verification is queued."
+          : "Identity submitted and automated verification checks were queued."
+      );
+    } catch {
+      revalidateIdentity();
+      return state(
+        "success",
+        "Identity submitted. Automated checks could not be started immediately; use the verification-check action to retry without resubmitting your identity."
+      );
+    }
   } catch (error) {
     return identityFailure(error);
   }
@@ -341,10 +363,16 @@ export async function scheduleWorkerIdentityChecksAction(
     const principal = await workerPrincipal();
     await getWorkerIdentityCheckService().scheduleOwn(principal);
     await settleLocalWorkerIdentityAutomatedChecks(principal);
+    const currentIdentity = await getWorkerIdentityService().load(principal);
+    if (currentIdentity?.identity.lifecycleStatus === "manual_review") {
+      await (await getEvidenceReviewService()).queueIndependentIdentity(principal);
+    }
     revalidateIdentity();
     return state(
       "success",
-      "Automated identity checks were scheduled. These checks assist review and do not make the final verification decision."
+      currentIdentity?.identity.lifecycleStatus === "manual_review"
+        ? "Automated identity checks completed and the identity is now queued for independent manual verification."
+        : "Automated identity checks were scheduled. These checks assist review and do not make the final verification decision."
     );
   } catch (error) {
     return identityFailure(error);

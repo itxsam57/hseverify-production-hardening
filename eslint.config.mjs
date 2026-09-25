@@ -15,6 +15,7 @@ export default defineConfig([
     ".preview-bundle/**",
     ".auth-test-dist/**",
     ".worker-evidence-runtime-test-dist/**",
+    ".evidence-review-runtime-test-dist/**",
     ".billing-runtime-test-dist/**",
     ".company-organization-team-runtime-test-dist/**",
     ".production-launch-runtime-test-dist/**",

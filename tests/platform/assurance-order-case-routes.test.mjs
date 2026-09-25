@@ -12,7 +12,8 @@ const paths = Object.freeze({
   actionCentreActions: "src/app/company/(portal)/action-centre/actions.ts",
   workspace: "src/components/company/assurance-order-workspace.tsx",
   actionWorkspace: "src/components/company/assurance-action-centre.tsx",
-  shell: "src/components/auth/role-portal-shell.tsx"
+  shell: "src/components/auth/role-portal-shell.tsx",
+  navigation: "src/components/auth/role-navigation.tsx"
 });
 
 function source(path) {
@@ -26,11 +27,12 @@ test("M2.01 exposes refresh-safe Company order and Action Centre routes", () => 
   const detail = source(paths.detail);
   const actionCentre = source(paths.actionCentre);
   const shell = source(paths.shell);
+  const navigation = source(paths.navigation);
 
   assert.match(`${list}\n${create}\n${detail}`, /assurance/i);
   assert.match(actionCentre, /Action Centre/i);
-  assert.match(shell, /\/company\/assurance-orders/);
-  assert.match(shell, /\/company\/action-centre/);
+  assert.match(`${shell}\n${navigation}`, /\/company\/assurance-orders/);
+  assert.match(`${shell}\n${navigation}`, /\/company\/action-centre/);
 });
 
 test("M2.01 Company actions recheck permission and never trust browser tenant or actor authority", () => {

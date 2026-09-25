@@ -152,9 +152,9 @@ async function runAdminForms(page, baseUrl) {
   await page.getByRole("status").getByText("Assessment blueprint created.").waitFor({ timeout: 15_000 });
   const blueprintArticle = page.locator("article").filter({ hasText: "JOURNEY-BP-001" });
   await blueprintArticle.getByRole("button", { name: "Deactivate" }).click();
-  await page.getByRole("status").getByText("Assessment blueprint status updated.").waitFor();
+  await page.locator("article").filter({ hasText: "JOURNEY-BP-001" }).getByRole("button", { name: "Reactivate" }).waitFor({ timeout: 15_000 });
   await page.locator("article").filter({ hasText: "JOURNEY-BP-001" }).getByRole("button", { name: "Reactivate" }).click();
-  await page.getByRole("status").getByText("Assessment blueprint status updated.").waitFor();
+  await page.locator("article").filter({ hasText: "JOURNEY-BP-001" }).getByRole("button", { name: "Deactivate" }).waitFor({ timeout: 15_000 });
   const currentBlueprint = page.locator("article").filter({ hasText: "JOURNEY-BP-001" });
   const blueprintVersionId = (await currentBlueprint.locator("code").last().innerText()).trim();
   await currentBlueprint.getByText("Create a new immutable revision").click();
@@ -177,10 +177,10 @@ async function runAdminForms(page, baseUrl) {
   await page.getByRole("status").getByText("Assessment catalogue entry created.").waitFor({ timeout: 15_000 });
   let catalogueArticle = page.locator("article").filter({ hasText: "JOURNEY-CAT-001" });
   await catalogueArticle.getByRole("button", { name: "Deactivate" }).click();
-  await page.getByRole("status").getByText("Assessment catalogue status updated.").waitFor();
+  await page.locator("article").filter({ hasText: "JOURNEY-CAT-001" }).getByRole("button", { name: "Reactivate" }).waitFor({ timeout: 15_000 });
   catalogueArticle = page.locator("article").filter({ hasText: "JOURNEY-CAT-001" });
   await catalogueArticle.getByRole("button", { name: "Reactivate" }).click();
-  await page.getByRole("status").getByText("Assessment catalogue status updated.").waitFor();
+  await page.locator("article").filter({ hasText: "JOURNEY-CAT-001" }).getByRole("button", { name: "Deactivate" }).waitFor({ timeout: 15_000 });
   catalogueArticle = page.locator("article").filter({ hasText: "JOURNEY-CAT-001" });
   await catalogueArticle.getByText("Create a new immutable catalogue revision").click();
   await catalogueArticle.getByLabel("Revision title").fill("Journey assessment revised");
@@ -213,25 +213,25 @@ async function runAdminForms(page, baseUrl) {
   const caseId = "case_journey_admin_001";
   await gotoOk(page, baseUrl, `/admin/decisions?tenantId=${tenantId}&caseId=${caseId}`, "Decision Engine");
   const createDecisionForm = page.locator("form").filter({ hasText: "Create decision" });
-  await createDecisionForm.getByLabel("State").fill("PENDING_ADDITIONAL_REVIEW");
+  await createDecisionForm.getByLabel("State").selectOption("PENDING_ADDITIONAL_REVIEW");
   await createDecisionForm.getByLabel("Reason code").fill("journey_review");
   await createDecisionForm.getByLabel("Explanation").fill("Awaiting final journey review");
   await createDecisionForm.getByLabel("Rule version").fill("journey-v1");
   await createDecisionForm.getByLabel("Input references").fill("evidence-journey-1");
   await createDecisionForm.getByRole("button", { name: "Create decision" }).click();
   await page.getByText("Awaiting final journey review", { exact: false }).waitFor({ timeout: 15_000 });
-  const decisionItem = page.locator("li").filter({ hasText: "Awaiting final journey review" });
+  const decisionItem = page.locator("article").filter({ hasText: "Awaiting final journey review" });
   const decisionId = (await decisionItem.locator("code").innerText()).trim();
   const overrideForm = page.locator("form").filter({ hasText: "Record override" });
   await overrideForm.getByLabel("Decision ID").fill(decisionId);
-  await overrideForm.getByLabel("Previous state").fill("PENDING_ADDITIONAL_REVIEW");
-  await overrideForm.getByLabel("New state").fill("APPROVED");
+  await overrideForm.getByLabel("Previous state").selectOption("PENDING_ADDITIONAL_REVIEW");
+  await overrideForm.getByLabel("New state").selectOption("APPROVED");
   await overrideForm.getByLabel("Reason").fill("Journey evidence accepted");
   await overrideForm.getByLabel("Evidence reference").fill("evidence-journey-1");
   await overrideForm.getByRole("button", { name: "Record override" }).click();
-  await page.getByText("Override: APPROVED", { exact: false }).waitFor({ timeout: 15_000 });
+  await page.getByText("Journey evidence accepted", { exact: false }).waitFor({ timeout: 15_000 });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByText("Override: APPROVED", { exact: false }).waitFor();
+  await page.getByText("Journey evidence accepted", { exact: false }).waitFor();
 }
 
 async function runJourney(baseUrl) {

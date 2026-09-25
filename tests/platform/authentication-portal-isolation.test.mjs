@@ -159,12 +159,14 @@ test("session management revokes only owned sessions and current-session revocat
   assert.match(sessionService, /repository\.transaction\(async \(transaction\) =>/);
 });
 
-test("Worker UI treats the registration reference as provisional, not a permanent Worker ID", async () => {
+test("Worker UI resolves the permanent Worker ID and keeps the registration reference only as fallback", async () => {
   const [workerSession, copyControl, workerShell] = await Promise.all([
     source("src/lib/auth/worker-session.ts"),
     source("src/components/worker/copy-worker-id.tsx"),
     source("src/components/worker/worker-shell.tsx")
   ]);
+  assert.match(workerSession, /FROM worker_identity_worker_ids/);
+  assert.match(workerSession, /result\.rows\[0\]\?\.permanent_worker_id \?\? registrationReference/);
   assert.match(workerSession, /account\.workerReference/);
   assert.doesNotMatch(workerSession, /workerId: session\.accountId/);
   assert.match(copyControl, /HSE-REG references are provisional/);

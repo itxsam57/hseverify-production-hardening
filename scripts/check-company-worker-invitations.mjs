@@ -31,6 +31,7 @@ const paths = Object.freeze({
   page: "src/app/company/(portal)/invitations/page.tsx",
   workspace: "src/components/company/company-workforce-invitations-workspace.tsx",
   companyPortalShell: "src/components/auth/role-portal-shell.tsx",
+  companyNavigation: "src/components/auth/role-navigation.tsx",
   workerNavigation: "src/components/worker/worker-navigation.tsx",
   workerInvitationPage: "src/app/worker/company-invitations/[token]/page.tsx",
   workerInvitationActions: "src/app/worker/company-invitations/[token]/actions.ts",
@@ -150,6 +151,7 @@ const actions = read(paths.actions);
 const page = read(paths.page);
 const workspace = read(paths.workspace);
 const companyPortalShell = read(paths.companyPortalShell);
+const companyNavigation = read(paths.companyNavigation);
 const workerNavigation = read(paths.workerNavigation);
 forbidPattern(actions, /\b(?:tenantId|actorAccountId|membershipId|authorizedTenantPermission|companyVerified)\s*:/, paths.actions, "browser-provided authorization context");
 requireMarker(actions, "requireCurrentTenantPermission", paths.actions);
@@ -159,7 +161,7 @@ requirePattern(`${page}\n${workspace}`, /invitation/i, "M1.10 Company invitation
 requirePattern(workspace, /(?:CSV|bulk)/i, paths.workspace, "bulk CSV workflow");
 requirePattern(workspace, /(?:registration code|company code)/i, paths.workspace, "Company registration code workflow");
 forbidPattern(`${actions}\n${page}\n${workspace}`, /paste\s+(?:the\s+)?(?:invitation\s+)?token/i, "M1.10 invitation UX", "manual opaque invitation-token paste workflow");
-requireMarker(companyPortalShell, 'href="/company/invitations"', paths.companyPortalShell);
+requireMarker(`${companyPortalShell}\n${companyNavigation}`, '/company/invitations', 'Company portal navigation');
 requireMarker(workerNavigation, 'href: "/worker/company-access"', paths.workerNavigation);
 
 const workerInvitationPage = read(paths.workerInvitationPage);

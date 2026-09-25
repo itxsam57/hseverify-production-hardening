@@ -47,6 +47,7 @@ const paths = Object.freeze({
   actionPage: "src/app/company/(portal)/action-centre/page.tsx",
   actionComponent: "src/components/company/assurance-action-centre.tsx",
   portalShell: "src/components/auth/role-portal-shell.tsx",
+  portalNavigation: "src/components/auth/role-navigation.tsx",
   domainTest: "tests/platform/assurance-order-case-domain.test.mjs",
   migrationTest: "tests/platform/assurance-order-case-migration.test.mjs",
   serviceTest: "tests/platform/assurance-order-case-service.test.mjs",
@@ -111,7 +112,7 @@ for (const permission of ["company.orders.read","company.orders.manage"])
 for (const authorityField of ["tenantId","membershipId","actorAccountId","actorRole","ownerAccountId"])
   forbidPattern(`${source.orderActions}\n${source.actionActions}`, new RegExp(`formData\\.get\\([\"']${authorityField}[\"']\\)`), "M2.01 Server Actions", `browser-selected authority ${authorityField}`);
 for (const marker of ["Assurance Orders","Action Centre"])
-  requireMarker(source.portalShell, marker, paths.portalShell);
+  requireMarker(`${source.portalShell}\n${source.portalNavigation}`, marker, "Company portal navigation");
 
 for (const path of [paths.domainTest,paths.migrationTest,paths.serviceTest,paths.routeTest,paths.runtimeTest,paths.runtimeRunner,paths.runner]) read(path);
 for (const hardCase of [

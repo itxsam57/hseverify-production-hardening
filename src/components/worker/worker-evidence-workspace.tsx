@@ -82,6 +82,9 @@ export type WorkerEvidenceWorkspaceRecord = Omit<
     pendingCandidates: readonly WorkspacePendingCandidate[];
     leavingLetters: readonly WorkspaceLeavingLetter[];
     versions: readonly WorkerEvidenceVersion[];
+    verificationStatus: string | null;
+    verificationReason: string | null;
+    verificationDecidedAt: string | null;
   }>;
 
 function formatUtc(value: string): string {
@@ -581,6 +584,41 @@ function History({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.J
   );
 }
 
+function VerificationResult({
+  record
+}: {
+  record: WorkerEvidenceWorkspaceRecord;
+}): React.JSX.Element | null {
+  if (!record.verificationStatus) {
+    return record.currentVersion.status === "submitted" ? (
+      <Alert tone="neutral">
+        Independent verification has not been queued for this version yet.
+      </Alert>
+    ) : null;
+  }
+
+  const status = record.verificationStatus;
+  const tone =
+    status === "APPROVED"
+      ? "success"
+      : status === "REJECTED"
+        ? "danger"
+        : status === "CHANGES_REQUESTED" || status === "ASSIGNED"
+          ? "warning"
+          : "neutral";
+  const label = status.replaceAll("_", " ").toLowerCase();
+
+  return (
+    <Alert tone={tone}>
+      <strong>Independent verification: {label}.</strong>
+      {record.verificationReason ? <> {record.verificationReason}</> : null}
+      {record.verificationDecidedAt
+        ? <> Decision recorded {formatUtc(record.verificationDecidedAt)}.</>
+        : null}
+    </Alert>
+  );
+}
+
 function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.JSX.Element {
   const editable = record.currentVersion.status === "draft";
   const submitted = record.currentVersion.status === "submitted";
@@ -600,6 +638,8 @@ function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): Reac
           {record.lifecycleStatus} · {record.currentVersion.status}
         </span>
       </div>
+
+      <VerificationResult record={record} />
 
       {editable ? (
         <>

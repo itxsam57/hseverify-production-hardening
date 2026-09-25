@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { signOutCurrentPortal } from "@/app/auth/actions";
+import { RoleNavigation } from "@/components/auth/role-navigation";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { AuthRole } from "@/lib/auth/auth-domain";
@@ -26,12 +27,14 @@ export async function RolePortalShell({
   const label = ROLE_LABELS[session.role];
   const basePath = `/${session.role}`;
   const notificationMenu = await getNotificationMenu(session.role);
+  const navigationRole = session.role as Exclude<AuthRole, "worker">;
 
   return (
     <div className="portal-shell">
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
+
       <aside className="portal-sidebar" aria-label={`${label} Portal navigation`}>
         <Link
           className="brand-mark brand-mark-light portal-brand"
@@ -41,40 +44,13 @@ export async function RolePortalShell({
             HV
           </span>
           <span>
-            HSE Verify<small>{label} Portal</small>
+            HSE Verify
+            <small>{label} Portal</small>
           </span>
         </Link>
-        <nav className="portal-navigation" aria-label={`${label} Portal`}>
-          <Link href={`${basePath}/dashboard`}>Dashboard</Link>
-          {session.role === "worker" ? (
-            <Link href="/worker/available-assessments">Available assessments</Link>
-          ) : null}
-          {session.role === "company" ? (
-            <>
-              <Link href="/company/settings/profile">Company profile</Link>
-              <Link href="/company/organization">Sites &amp; departments</Link>
-              <Link href="/company/team">Company Team</Link>
-              <Link href="/company/invitations">Worker invitations &amp; codes</Link>
-              <Link href="/company/assurance-orders">Assurance Orders</Link>
-              <Link href="/company/action-centre">Action Centre</Link>
-              <Link href="/company/billing">Billing</Link>
-            </>
-          ) : null}
-          {session.role === "admin" ? (
-            <>
-              <Link href="/admin/company-verifications">Company verifications</Link>
-              <Link href="/admin/frameworks">Frameworks &amp; policy</Link>
-              <Link href="/admin/question-bank">Question Bank</Link>
-              <Link href="/admin/assessment-blueprints">Assessment blueprints</Link>
-              <Link href="/admin/assessment-catalogue">Assessment catalogue</Link>
-            </>
-          ) : null}
-          <Link href={`${basePath}/notifications`}>Notifications</Link>
-          <Link href="/account/sessions">Active sessions</Link>
-          {session.role === "admin" || session.role === "root" ? (
-            <Link href={`${basePath}/staff`}>Staff invitations</Link>
-          ) : null}
-        </nav>
+
+        <RoleNavigation role={navigationRole} />
+
         <div className="portal-sidebar-note">
           <strong>Portal isolation</strong>
           <p>This session grants {label} Portal access only.</p>
@@ -83,9 +59,29 @@ export async function RolePortalShell({
 
       <div className="portal-main-column">
         <header className="portal-header">
+          <div className="mobile-brand">
+            <Link className="brand-mark" href={`${basePath}/dashboard`}>
+              <span className="brand-symbol" aria-hidden="true">HV</span>
+              <span>HSE Verify</span>
+            </Link>
+          </div>
+
+          <details className="mobile-nav-menu">
+            <summary
+              className="button button-secondary"
+              aria-label={`Open ${label} Portal navigation`}
+            >
+              Menu
+            </summary>
+            <div className="mobile-nav-panel">
+              <RoleNavigation role={navigationRole} />
+            </div>
+          </details>
+
           <div className="header-context">
             <span className="role-chip">{label} Portal</span>
           </div>
+
           <div className="header-actions">
             <NotificationBell
               role={session.role}
@@ -107,26 +103,8 @@ export async function RolePortalShell({
                   <strong>{session.displayName}</strong>
                   <span>{session.email}</span>
                 </div>
-                {session.role === "worker" ? (
-                  <Link href="/worker/available-assessments">Available assessments</Link>
-                ) : null}
-                {session.role === "company" ? (
-                  <>
-                    <Link href="/company/settings/profile">Company profile</Link>
-                    <Link href="/company/organization">Sites &amp; departments</Link>
-                    <Link href="/company/team">Company Team</Link>
-                    <Link href="/company/invitations">Worker invitations &amp; codes</Link>
-                    <Link href="/company/assurance-orders">Assurance Orders</Link>
-                    <Link href="/company/action-centre">Action Centre</Link>
-                    <Link href="/company/billing">Billing</Link>
-                  </>
-                ) : null}
-                {session.role === "admin" ? (
-                  <>
-                    <Link href="/admin/company-verifications">Company verifications</Link>
-                    <Link href="/admin/assessment-catalogue">Assessment catalogue</Link>
-                  </>
-                ) : null}
+                <Link href={`${basePath}/dashboard`}>Dashboard</Link>
+                <Link href={`${basePath}/notifications`}>Notifications</Link>
                 <Link href="/account/sessions">Active sessions</Link>
                 <Link href="/">Exit portal</Link>
                 <ConfirmDialog

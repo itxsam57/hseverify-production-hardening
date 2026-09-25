@@ -11,6 +11,7 @@ const files = {
   service: "src/lib/authorization/tenant-scope-fixture-service.ts",
   bootstrap: "src/lib/authorization/company-scope-owner-bootstrap.ts",
   dashboard: "src/app/company/(portal)/dashboard/page.tsx",
+  navigation: "src/components/auth/role-navigation.tsx",
   loading: "src/app/company/(portal)/tenant-scope/loading.tsx",
   error: "src/app/company/(portal)/tenant-scope/error.tsx",
   handoff: "scripts/report-manual-handoff.mjs",
@@ -35,7 +36,7 @@ assert.ok(
   "local synthetic membership bootstrap must complete before tenant permission resolution"
 );
 assert.match(sources.page, /\/company\/dashboard/);
-assert.match(sources.dashboard, /\/company\/tenant-scope/);
+assert.match(`${sources.dashboard}\n${sources.navigation}`, /\/company\/tenant-scope/);
 assert.match(sources.actions, /^"use server";/);
 assert.match(sources.actions, /revalidatePath\(DEMONSTRATION_PATH\)/);
 assert.match(sources.actions, /createTenantScopeFixture/);

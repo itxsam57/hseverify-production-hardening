@@ -33,3 +33,540 @@
     width: 100%;
   }
 }
+
+/*
+ * Legacy operational workspaces
+ * -----------------------------
+ * Several M2/M3 administration pages predate the componentized design-system
+ * controls. Keep their server actions unchanged, but give every raw form,
+ * table, details block and action the same usable portal treatment.
+ */
+.portal-content .page-stack > form,
+.portal-content .page-stack > article,
+.portal-content .page-stack > section > article,
+.portal-content .page-stack > section > form {
+  min-width: 0;
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface);
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.portal-content .page-stack form {
+  display: grid;
+  min-width: 0;
+  gap: 0.875rem;
+}
+
+.portal-content .page-stack form > h2,
+.portal-content .page-stack form > h3,
+.portal-content .page-stack form > p {
+  margin-bottom: 0;
+}
+
+.portal-content .page-stack form > label,
+.portal-content .page-stack article label,
+.portal-content .page-stack details label {
+  display: grid;
+  min-width: 0;
+  gap: 0.4375rem;
+  color: var(--slate-800);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.portal-content .page-stack label:has(> input[type="checkbox"]),
+.portal-content .page-stack label:has(> input[type="radio"]) {
+  display: flex;
+  min-height: var(--ds-touch-target);
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.portal-content .page-stack input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+.portal-content .page-stack select,
+.portal-content .page-stack textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--ds-control-height);
+  border: 1px solid #aebdc8;
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text);
+  padding: 0.6875rem 0.8125rem;
+  box-shadow: inset 0 1px 2px rgba(8, 22, 43, 0.05);
+}
+
+.portal-content .page-stack textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+}
+
+.portal-content .page-stack input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):focus,
+.portal-content .page-stack select:focus,
+.portal-content .page-stack textarea:focus {
+  border-color: var(--ds-color-primary);
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+.portal-content .page-stack input[type="checkbox"],
+.portal-content .page-stack input[type="radio"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+  accent-color: var(--ds-color-primary);
+}
+
+.portal-content button:not(.ds-button):not(.button):not(.notification-link-button) {
+  display: inline-flex;
+  width: fit-content;
+  min-height: var(--ds-touch-target);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-color-primary);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-primary);
+  color: var(--white);
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.portal-content button:not(.ds-button):not(.button):not(.notification-link-button):hover:not(:disabled) {
+  background: var(--ds-color-primary-hover);
+}
+
+.portal-content button:not(.ds-button):not(.button):not(.notification-link-button):focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+.portal-content button:not(.ds-button):not(.button):not(.notification-link-button):disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.portal-content .page-stack details {
+  min-width: 0;
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface-subtle);
+}
+
+.portal-content .page-stack details > summary {
+  min-height: var(--ds-touch-target);
+  padding: 0.75rem 0.875rem;
+  cursor: pointer;
+  color: var(--navy-900);
+  font-weight: 800;
+}
+
+.portal-content .page-stack details[open] > summary {
+  border-bottom: 1px solid var(--ds-color-border-soft);
+}
+
+.portal-content .page-stack details > form,
+.portal-content .page-stack details > div {
+  padding: 1rem;
+}
+
+.portal-content .page-stack pre,
+.portal-content .page-stack code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.portal-content .page-stack pre {
+  overflow-x: auto;
+  border-radius: var(--ds-radius-md);
+  background: var(--navy-950);
+  padding: 0.875rem;
+  color: #e8f2fa;
+  font-size: 0.78rem;
+}
+
+.portal-content .table-scroll {
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+}
+
+.portal-content .table-scroll table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+}
+
+.portal-content .table-scroll th,
+.portal-content .table-scroll td {
+  border-bottom: 1px solid var(--ds-color-border-soft);
+  padding: 0.75rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.portal-content .table-scroll th {
+  background: var(--ds-color-surface-subtle);
+  color: var(--slate-700);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portal-content .table-scroll tr:last-child td {
+  border-bottom: 0;
+}
+
+.portal-content .table-scroll a {
+  color: var(--blue-700);
+  font-weight: 750;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.875rem;
+}
+
+.workspace-card {
+  display: flex;
+  min-width: 0;
+  min-height: 10rem;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface-subtle);
+  padding: 1rem;
+}
+
+.workspace-card h3 {
+  margin-bottom: 0.4rem;
+  color: var(--navy-950);
+  font-size: 1rem;
+}
+
+.workspace-card p {
+  margin-bottom: 0;
+  color: var(--ds-color-text-muted);
+  font-size: 0.84rem;
+}
+
+.workspace-card .button {
+  align-self: flex-start;
+}
+
+.boundary-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+  color: var(--slate-700);
+}
+
+.portal-content .page-stack > section {
+  min-width: 0;
+}
+
+.portal-content .page-stack > section > h2 {
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 680px) {
+  .portal-content .page-stack > form,
+  .portal-content .page-stack > article,
+  .portal-content .page-stack > section > article,
+  .portal-content .page-stack > section > form {
+    padding: 1rem;
+  }
+
+  .portal-content button:not(.ds-button):not(.button):not(.notification-link-button) {
+    width: 100%;
+  }
+
+  .workspace-card .button {
+    width: 100%;
+  }
+}
+
+.form-grid-wide { grid-column: 1 / -1; }
+
+@media (max-width: 680px) {
+  .form-grid-wide { grid-column: auto; }
+}
+
+/* Raw controls that still live inside dashboard-section based workspaces. */
+.portal-content .dashboard-section form:not(.auth-form):not(.profile-form) {
+  display: grid;
+  min-width: 0;
+  gap: 0.875rem;
+}
+
+.portal-content .dashboard-section form:not(.auth-form):not(.profile-form) > label {
+  display: grid;
+  min-width: 0;
+  gap: 0.4375rem;
+  color: var(--slate-800);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.portal-content .dashboard-section form:not(.auth-form):not(.profile-form) input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+.portal-content .dashboard-section form:not(.auth-form):not(.profile-form) select,
+.portal-content .dashboard-section form:not(.auth-form):not(.profile-form) textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--ds-control-height);
+  border: 1px solid #aebdc8;
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text);
+  padding: 0.6875rem 0.8125rem;
+}
+
+.portal-content .dashboard-section form:not(.auth-form):not(.profile-form) textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+}
+
+.portal-content input[type="file"] {
+  overflow: hidden;
+  padding: 0.35rem !important;
+  font-size: 0.82rem;
+}
+
+.portal-content input[type="file"]::file-selector-button {
+  min-height: 2.15rem;
+  margin-right: 0.6rem;
+  border: 1px solid var(--ds-color-border);
+  border-radius: 0.5rem;
+  background: var(--ds-color-surface-subtle);
+  padding: 0.35rem 0.65rem;
+  color: var(--navy-900);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .portal-content .dashboard-section form:not(.auth-form):not(.profile-form) > button:not(.ds-button):not(.button) {
+    width: 100%;
+  }
+}
+
+
+/* Shared legacy portal structure. These classes are used across Company,
+ * Verifier, Assessor and Admin pages that predate the componentized cards. */
+.page-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.page-heading > * {
+  min-width: 0;
+}
+
+.page-heading h1 {
+  margin-bottom: 0.625rem;
+  font-size: clamp(2rem, 3vw, 2.7rem);
+}
+
+.page-heading p:last-child {
+  max-width: 48rem;
+  margin-bottom: 0;
+  color: var(--slate-600);
+}
+
+.panel,
+.page-section,
+.card,
+.form-card {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-surface);
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.panel > :last-child,
+.page-section > :last-child,
+.card > :last-child,
+.form-card > :last-child {
+  margin-bottom: 0;
+}
+
+.status-pill {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--slate-100);
+  padding: 0.3rem 0.625rem;
+  color: var(--slate-700);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-transform: capitalize;
+}
+
+.field-span {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.checkbox-row {
+  display: flex !important;
+  min-height: var(--ds-touch-target);
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  accent-color: var(--ds-color-primary);
+}
+
+.portal-sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mobile-nav-panel {
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 680px) {
+  .page-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .field-span {
+    grid-column: auto;
+  }
+
+  .form-actions,
+  .form-actions > *,
+  .form-actions .button,
+  .form-actions .ds-button {
+    width: 100%;
+  }
+}
+
+/* Built-in interview media */
+.interview-media-panel {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.interview-media-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-color-surface-subtle);
+  padding: 0.75rem 0.875rem;
+}
+
+.interview-media-status span {
+  color: var(--ds-color-text-muted);
+  font-size: 0.85rem;
+}
+
+.interview-consent {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: var(--slate-700);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.interview-consent input {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  accent-color: var(--ds-color-primary);
+}
+
+.interview-video-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.interview-video-grid figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--ds-color-border-soft);
+  border-radius: var(--ds-radius-md);
+  background: #0b1220;
+}
+
+.interview-video-grid video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0b1220;
+  object-fit: cover;
+}
+
+.interview-video-grid figcaption {
+  background: var(--ds-color-surface);
+  padding: 0.55rem 0.75rem;
+  color: var(--slate-700);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.interview-media-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+@media (max-width: 680px) {
+  .interview-video-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .interview-media-actions,
+  .interview-media-actions .button {
+    width: 100%;
+  }
+}

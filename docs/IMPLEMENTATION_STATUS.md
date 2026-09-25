@@ -101,7 +101,7 @@ M2.07 was implemented through a strict RED→GREEN sequence and independently Ga
 
 ## Provider boundaries still not production-live
 
-Production activation still requires approved live credentials/services for email/SMS, private object storage, malware scanning, liveness/document/face verification, real video/interview transport and payments. Sandbox/local adapters are not described as live production providers.
+Built-in encrypted WebRTC interview transport is implemented and does not require a third-party video account. Production activation still requires approved live credentials/services for email/SMS, private object storage where external storage is selected, malware scanning, liveness/document/face verification and payments. Sandbox/local adapters are not described as live production delivery.
 
 ## Immediate Governor order
 

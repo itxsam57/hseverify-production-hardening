@@ -184,7 +184,10 @@ test("Worker completes registration, identity, evidence, passport, privacy and s
             page.getByRole("button", { name: "Submit identity" }).click()
           ]);
           await page.reload({ waitUntil: "domcontentloaded" });
-          await page.getByRole("heading", { name: "Submitted", exact: true }).waitFor({ timeout: 15_000 });
+          await page.getByText("Manual review", { exact: true }).first().waitFor({ timeout: 15_000 });
+          await page.getByText("Run status:", { exact: false }).waitFor({ timeout: 15_000 });
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await page.getByText("Manual review", { exact: true }).first().waitFor({ timeout: 15_000 });
 
           await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
           await page.getByLabel("Record type").selectOption("qualification");
@@ -206,8 +209,11 @@ test("Worker completes registration, identity, evidence, passport, privacy and s
             page.getByRole("button", { name: "Upload file" }).click()
           ]);
           await page.reload({ waitUntil: "domcontentloaded" });
-          await page.getByRole("button", { name: "Submit this version" }).click();
-          await page.reload({ waitUntil: "domcontentloaded" });
+          await Promise.all([
+            page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
+            page.getByRole("button", { name: "Submit this version" }).click()
+          ]);
+          await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
           await page.getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
 
           await page.goto(`${baseUrl}/worker/passport`, { waitUntil: "domcontentloaded" });
@@ -217,11 +223,11 @@ test("Worker completes registration, identity, evidence, passport, privacy and s
           await page.goto(`${baseUrl}/worker/privacy`, { waitUntil: "domcontentloaded" });
           await page.getByLabel("Privacy request type").selectOption("export");
           await Promise.all([page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/privacy")), page.getByRole("button", { name: "Submit privacy request" }).click()]);
-          await page.reload({ waitUntil: "domcontentloaded" });
+          await page.goto(`${baseUrl}/worker/privacy`, { waitUntil: "domcontentloaded" });
           await page.getByText("export: OPEN", { exact: true }).waitFor({ timeout: 15_000 });
           await page.getByLabel("Accommodation request").fill("Screen reader compatible assessment");
           await Promise.all([page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/privacy")), page.getByRole("button", { name: "Submit accommodation" }).click()]);
-          await page.reload({ waitUntil: "domcontentloaded" });
+          await page.goto(`${baseUrl}/worker/privacy`, { waitUntil: "domcontentloaded" });
           await page.getByText("Screen reader compatible assessment: REQUESTED", { exact: true }).waitFor({ timeout: 15_000 });
 
           await page.goto(`${baseUrl}/worker/share-links`, { waitUntil: "domcontentloaded" });

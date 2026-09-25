@@ -7,6 +7,7 @@ const paths = {
   adminActions: "src/app/admin/(portal)/assessment-catalogue/actions.ts",
   workerPage: "src/app/worker/(portal)/available-assessments/page.tsx",
   shell: "src/components/auth/role-portal-shell.tsx",
+  roleNavigation: "src/components/auth/role-navigation.tsx",
   workerNavigation: "src/components/worker/worker-navigation.tsx",
   browser: "scripts/hard-browser-m2-06.mjs",
   browserWorkflow: ".github/workflows/m2-06-browser.yml"
@@ -57,9 +58,10 @@ test("M2.06 Worker availability GET remains server-authorized and read-only whil
 
 test("M2.06 role navigation exposes the real Admin and Worker catalogue routes", () => {
   const shell = source(paths.shell);
+  const roleNavigation = source(paths.roleNavigation);
   const workerNavigation = source(paths.workerNavigation);
-  assert.match(shell, /href="\/admin\/assessment-catalogue"/);
-  assert.match(shell, />Assessment catalogue</);
+  assert.match(`${shell}\n${roleNavigation}`, /\/admin\/assessment-catalogue/);
+  assert.match(`${shell}\n${roleNavigation}`, /Assessment catalogue/);
   assert.match(workerNavigation, /href:\s*"\/worker\/available-assessments"/);
   assert.match(workerNavigation, /label:\s*"Available assessments"/);
 });

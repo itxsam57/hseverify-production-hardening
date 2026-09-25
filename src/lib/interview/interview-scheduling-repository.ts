@@ -48,6 +48,15 @@ export class InterviewSchedulingRepository {
     return row ? Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }) : null;
   }
 
+  async findByRequestIdForWorker(interviewRequestId:string, workerAccountId:string):Promise<ScopedInterviewRequest|null> {
+    const result = await this.database.query<InterviewRow>(
+      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND worker_account_id=$2`,
+      [interviewRequestId, workerAccountId]
+    );
+    const row = result.rows[0];
+    return row ? Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }) : null;
+  }
+
   async findByCase(tenantId:string, caseId:string):Promise<InterviewRequest|null> {
     const result = await this.database.query<InterviewRow>(`SELECT ${COLUMNS} FROM interview_requests WHERE tenant_id=$1 AND case_id=$2`, [tenantId,caseId]);
     return result.rows[0] ? mapRequest(result.rows[0]) : null;

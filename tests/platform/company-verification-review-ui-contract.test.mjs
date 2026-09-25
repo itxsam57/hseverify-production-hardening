@@ -55,7 +55,11 @@ test("Admin evidence preview is case-bound, fixed-role and delegated through the
 });
 
 test("Administrator navigation exposes Company verification review", async () => {
-  const shell = await source("src/components/auth/role-portal-shell.tsx");
-  assert.match(shell, /href="\/admin\/company-verifications"/);
-  assert.match(shell, />Company verifications</);
+  const [shell, navigation] = await Promise.all([
+    source("src/components/auth/role-portal-shell.tsx"),
+    source("src/components/auth/role-navigation.tsx")
+  ]);
+  const visibleNavigation = `${shell}\n${navigation}`;
+  assert.match(visibleNavigation, /\/admin\/company-verifications/);
+  assert.match(visibleNavigation, /Company verifications/);
 });

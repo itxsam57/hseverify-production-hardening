@@ -481,6 +481,15 @@ summary {
     display: block;
   }
 
+  .mobile-nav-panel {
+    position: fixed;
+    top: 4.75rem;
+    right: 1rem;
+    left: 1rem;
+    width: auto;
+    max-height: calc(100vh - 5.75rem);
+  }
+
   .mobile-brand {
     margin-right: 0;
   }

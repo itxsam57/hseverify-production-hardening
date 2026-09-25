@@ -86,8 +86,10 @@ mustContain(storageBoundary, /import "server-only"/,
 mustContain(storageBoundary,
   /createLocalTestPrivateObjectStorage\(\s*appEnvironment: "development" \| "test"\s*\)/,
   "The application factory must accept environment only, never a caller-chosen root.");
-mustContain(storageBoundary, /const trustedBasePath = process\.cwd\(\)/,
-  "Application storage roots must be pinned to server authority.");
+mustContain(storageBoundary, /function runtimeProjectRoot\(\): string[\s\S]*HSE_RUNTIME_PROJECT_ROOT[\s\S]*process\.cwd\(\)/,
+  "Application storage roots must be pinned to server runtime authority.");
+mustContain(storageBoundary, /const trustedBasePath = runtimeProjectRoot\(\)/,
+  "Local object storage must derive its root only from the server runtime boundary.");
 mustContain(storageBoundary, /resolve\(trustedBasePath, "\.data", "private-objects"\)/,
   "Subunit 1 must use one fixed local private-object root.");
 mustNotContain(storageBoundary, /export\s*\{[\s\S]*LocalTestPrivateObjectStorage[\s\S]*\}\s*from/,

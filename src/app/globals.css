@@ -27,7 +27,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 body {
   margin: 0;
   min-width: 320px;
@@ -362,7 +362,7 @@ h3 { font-size: 1rem; }
   .public-hero { padding: 80px 18px 110px; }
   .auth-brand-panel { min-height: 360px; padding: 28px 22px; }
   .auth-brand-copy { padding: 48px 0 28px; }
-  .auth-security-note, .notification-menu { display: none; }
+  .auth-security-note { display: none; }
   .auth-card-panel { min-height: 560px; padding: 34px 18px; }
   .portal-content { padding-right: 14px; padding-left: 14px; }
   .page-heading-row, .worker-identity-banner { display: grid; }

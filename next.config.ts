@@ -23,13 +23,18 @@ if (!supportedModes.has(requestedMode as NextCommandMode)) {
 }
 
 const commandMode = requestedMode as NextCommandMode;
+const requestedInstanceId = process.env.HSE_NEXT_INSTANCE_ID?.trim() || "";
+if (requestedInstanceId && !/^[A-Za-z0-9_-]{1,80}$/.test(requestedInstanceId)) {
+  throw new Error("HSE_NEXT_INSTANCE_ID is invalid.");
+}
+const developmentSuffix = requestedInstanceId ? `-${requestedInstanceId}` : "";
 
 const commandBoundary: Partial<NextConfig> =
   commandMode === "development"
     ? {
-        distDir: ".next-development",
+        distDir: `.next-development${developmentSuffix}`,
         typescript: {
-          tsconfigPath: ".hse-next/development/tsconfig.json"
+          tsconfigPath: `.hse-next/development${developmentSuffix}/tsconfig.json`
         }
       }
     : commandMode === "runtime-smoke"

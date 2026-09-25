@@ -13,7 +13,7 @@ test("Verifier dashboard exposes the accepted evidence-review workspace through 
 
   assert.match(
     dashboard,
-    /href="\/verifier\/reviews"[\s\S]*Open evidence review queue/,
+    /href: "\/verifier\/reviews"[\s\S]*title: "Evidence review queue"/,
     "Verifier dashboard must expose a visible action into the review queue."
   );
   assert.match(

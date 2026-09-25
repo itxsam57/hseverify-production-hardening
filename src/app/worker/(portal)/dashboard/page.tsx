@@ -139,7 +139,9 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
             <span>{dashboard.evidence.verifiedQualifications} verified</span>
           </div>
           <strong>{dashboard.evidence.pendingQualifications} pending review</strong>
-          <p>{dashboard.evidence.changesRequested} submission(s) currently need changes.</p>
+          <p>
+            {dashboard.evidence.changesRequested} need changes · {dashboard.evidence.rejectedEvidence} rejected.
+          </p>
           <Link className="button button-secondary button-small" href="/worker/evidence">
             Manage evidence
           </Link>
@@ -315,8 +317,16 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
                 <h3>{dashboard.interview.title}</h3>
                 <p>{formatDateTime(dashboard.interview.startsAt)}</p>
                 <p className="muted-copy">
-                  The waiting-room control will become available only during the permitted schedule window.
+                  {dashboard.interview.joinWindowOpen
+                    ? "The waiting room is open now."
+                    : "The waiting room opens during the permitted schedule window."}
                 </p>
+                <Link
+                  className="button button-secondary button-small"
+                  href={`/worker/interviews/${encodeURIComponent(dashboard.interview.id)}`}
+                >
+                  {dashboard.interview.joinWindowOpen ? "Join interview" : "Interview details"}
+                </Link>
               </article>
             ) : (
               <div className="empty-state compact-empty-state">

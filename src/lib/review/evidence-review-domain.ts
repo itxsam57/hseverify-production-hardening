@@ -10,7 +10,7 @@ export type EvidenceReviewKind=(typeof EVIDENCE_REVIEW_KINDS)[number];
 export type EvidenceReviewOutcome=(typeof EVIDENCE_REVIEW_OUTCOMES)[number];
 export type EvidenceReviewStatus=(typeof EVIDENCE_REVIEW_STATUSES)[number];
 export type EvidenceReviewPrincipal=AuthorizationPrincipal & Readonly<{activeRole:"verifier"}>;
-export type EvidenceReviewTask=Readonly<{taskId:string;tenantId:string;caseId:string;workerAccountId:string;evidenceKind:EvidenceReviewKind;sourceRecordId:string;sourceVersionId:string;secureFileId:string|null;evidenceLabel:string;taskStatus:EvidenceReviewStatus;assignedVerifierAccountId:string|null;claimedAt:string|null;decidedAt:string|null;createdAt:string;updatedAt:string}>;
+export type EvidenceReviewTask=Readonly<{taskId:string;tenantId:string|null;caseId:string|null;workerAccountId:string;evidenceKind:EvidenceReviewKind;sourceRecordId:string;sourceVersionId:string;secureFileId:string|null;evidenceLabel:string;taskStatus:EvidenceReviewStatus;assignedVerifierAccountId:string|null;claimedAt:string|null;decidedAt:string|null;createdAt:string;updatedAt:string}>;
 export class EvidenceReviewAccessError extends Error{constructor(){super("Evidence review task could not be accessed.");this.name="EvidenceReviewAccessError";}}
 export class EvidenceReviewConflictError extends Error{constructor(message="Evidence review task changed or is no longer actionable."){super(message);this.name="EvidenceReviewConflictError";}}
 export class EvidenceReviewInputError extends Error{constructor(message="Evidence review input is invalid."){super(message);this.name="EvidenceReviewInputError";}}

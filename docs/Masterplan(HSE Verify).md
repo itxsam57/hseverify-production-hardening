@@ -819,7 +819,7 @@ Every provider sits behind an internal adapter. Provider IDs and payloads stay i
 
 Health views report configured/not configured, sandbox/production, last success, error rate, queue depth, webhook status, credential expiry, manual retry and circuit-breaker state.
 
-Production credentials required before real activation include email/SMS delivery, real video, payment processing, liveness/identity verification and malware scanning. Until then, capability is explicitly disabled or sandboxed and the UI never labels queued/mock work as delivered production work.
+Production credentials required before real activation include email/SMS delivery, payment processing, liveness/identity verification and external malware-scanning services. Interview media uses the built-in encrypted WebRTC adapter by default and does not require a third-party video account; optional TURN or external media providers may be configured for restrictive networks without changing interview authority. Any capability that still depends on an unavailable external service is explicitly disabled or sandboxed and the UI never labels queued/mock work as delivered production work.
 
 ---
 
@@ -1194,7 +1194,7 @@ Open production dependencies include:
 
 - live email delivery credentials/configuration;
 - SMS/phone OTP provider;
-- real interview/video provider;
+- optional TURN or external interview/video relay/provider when deployment networking requires it; the built-in WebRTC interview path itself is not provider-blocked;
 - liveness/identity verification provider;
 - malware-scanning service;
 - payment merchant/provider credentials and webhook secrets;

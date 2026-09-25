@@ -10,6 +10,13 @@ import {
   verifyNextGeneratedFiles
 } from "./next-build-system.mjs";
 
+let developmentServerSequence = 0;
+
+function createDevelopmentInstanceId() {
+  developmentServerSequence += 1;
+  return `p${process.pid}-r${developmentServerSequence}`;
+}
+
 async function waitForExit(child, timeoutMs) {
   if (child.exitCode !== null || child.signalCode !== null) return true;
 
@@ -32,36 +39,62 @@ async function waitForExit(child, timeoutMs) {
   });
 }
 
-async function stopProcessTree(child) {
-  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+function processGroupExists(pid) {
+  if (!pid || process.platform === "win32") return false;
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (error) {
+    if (error?.code === "ESRCH") return false;
+    throw error;
+  }
+}
 
-  if (process.platform === "win32" && child.pid) {
+async function waitForProcessGroupExit(pid, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!processGroupExists(pid)) return true;
+    await delay(100);
+  }
+  return !processGroupExists(pid);
+}
+
+async function stopProcessTree(child) {
+  if (!child?.pid) return;
+
+  if (process.platform === "win32") {
     const taskkill = spawn(
       "taskkill",
       ["/pid", String(child.pid), "/t", "/f"],
       { stdio: "ignore", windowsHide: true }
     );
     await waitForExit(taskkill, 10_000);
-    if (!(await waitForExit(child, 10_000))) {
+    if (
+      child.exitCode === null &&
+      child.signalCode === null &&
+      !(await waitForExit(child, 10_000))
+    ) {
       throw new Error("Windows development process tree did not stop after taskkill.");
     }
     return;
   }
 
-  if (process.platform !== "win32" && child.pid) {
+  if (!processGroupExists(child.pid)) return;
+
+  try {
     process.kill(-child.pid, "SIGTERM");
-  } else {
-    child.kill("SIGTERM");
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
   }
-  if (!(await waitForExit(child, 10_000))) {
-    if (process.platform !== "win32" && child.pid) {
-      process.kill(-child.pid, "SIGKILL");
-    } else {
-      child.kill("SIGKILL");
-    }
-    if (!(await waitForExit(child, 5_000))) {
-      throw new Error("Development process did not stop after SIGKILL.");
-    }
+  if (await waitForProcessGroupExit(child.pid, 10_000)) return;
+
+  try {
+    process.kill(-child.pid, "SIGKILL");
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
+  }
+  if (!(await waitForProcessGroupExit(child.pid, 5_000))) {
+    throw new Error("Development process tree did not stop after SIGKILL.");
   }
 }
 
@@ -103,7 +136,8 @@ export async function runDevelopmentServer({
   environment = process.env
 } = {}) {
   const snapshot = await snapshotProjectConfiguration(projectRoot);
-  const mode = await prepareNextMode("development", projectRoot);
+  const instanceId = createDevelopmentInstanceId();
+  const mode = await prepareNextMode("development", projectRoot, instanceId);
   const nextBin = resolve(projectRoot, "node_modules", "next", "dist", "bin", "next");
   const output = [];
   const captureOutput = Boolean(probeUrl);
@@ -191,7 +225,7 @@ export async function runDevelopmentServer({
     }
 
     try {
-      await cleanNextMode("development", projectRoot);
+      await cleanNextMode("development", projectRoot, instanceId);
     } catch (error) {
       if (!primaryError) primaryError = error;
     }

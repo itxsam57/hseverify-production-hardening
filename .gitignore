@@ -5,15 +5,9 @@
 
 # testing
 /coverage
-/.profile-test-dist
-/.auth-test-dist
-/.authorization-test-dist
+/*-test-dist/
 /playwright-report/
 /test-results/
-/worker-evidence-runtime-test-dist/
-/billing-runtime-test-dist/
-/company-organization-team-runtime-test-dist/
-/production-launch-runtime-test-dist/
 /screenshots/
 /videos/
 /traces/
@@ -69,3 +63,11 @@ next-env.d.ts
 .autopilot/audit/*
 !.autopilot/audit/events.ndjson
 # UNIVERSAL-AUTOPILOT-V3:END
+# local one-off verification scripts and generated browser evidence
+/.tmp-*.mjs
+/artifacts/all-role-ui-layout/
+/artifacts/deep-ui-audit/
+/artifacts/independent-audit/
+/artifacts/persistent-e2e/
+/artifacts/m2-08-browser/
+/artifacts/m2-07-browser/seed.json

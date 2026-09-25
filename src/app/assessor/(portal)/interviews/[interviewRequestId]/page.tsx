@@ -1,3 +1,4 @@
+import { LiveInterviewMedia } from "@/components/interview/live-interview-media";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { createInterviewConsole, createInterviewSession } from "@/lib/interview/interview-scheduling-domain";
@@ -30,8 +31,17 @@ export default async function AssessorInterviewConsolePage({ params }: { params:
 
   return (
     <div className="dashboard-page">
-      <header className="page-heading-row"><div><p className="eyebrow">Assessor Interview Console</p><h1>Case {request.caseId}</h1><p className="page-intro">The local adapter keeps the production media boundary explicit while provider activation remains external.</p></div></header>
-      <section className="dashboard-section" aria-labelledby="media-heading"><h2 id="media-heading">Live media boundary</h2><p>Provider: {session.mediaProvider}</p><p>Connection: {consoleState.connectionState}</p><p>Recording enabled: {session.recordingAllowed ? "Yes" : "No"}</p></section>
+      <header className="page-heading-row"><div><p className="eyebrow">Assessor Interview Console</p><h1>Case {request.caseId}</h1><p className="page-intro">Run the assigned competency interview with built-in encrypted live media, case evidence, notes and scoring in one workspace.</p></div></header>
+      <section className="dashboard-section" aria-labelledby="media-heading">
+        <h2 id="media-heading">Live interview media</h2>
+        <p>Provider: Built-in WebRTC</p>
+        <p>Recording policy: {consoleState.recordingPolicy.replaceAll("_", " ").toLowerCase()}</p>
+        <LiveInterviewMedia
+          interviewRequestId={request.interviewRequestId}
+          role="assessor"
+          enabled={Boolean(request.scheduledAt) && request.status !== "COMPLETED" && request.status !== "CANCELLED"}
+        />
+      </section>
       <section className="dashboard-section" aria-labelledby="case-heading"><h2 id="case-heading">Case context</h2><p>Worker: {request.workerAccountId}</p><p>Schedule: {request.scheduledAt ?? "Awaiting schedule"}</p><p>Question set: {consoleState.questionSetId}</p></section>
       <section className="dashboard-section" aria-labelledby="notes-heading"><h2 id="notes-heading">Notes and recommendation</h2><p>Draft notes: {consoleState.notes.length}</p><p>Recommendation: {consoleState.recommendation ?? "Not submitted"}</p></section>
       <section className="dashboard-section" aria-labelledby="capture-heading">

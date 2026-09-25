@@ -7,10 +7,10 @@ import {
   type OutboxJobRecord,
   type TrustedOutboxLease
 } from "../outbox/outbox-domain";
-import { createLocalTestPrivateObjectStorage } from "./private-object-storage";
+import { createRuntimePrivateObjectStorage } from "./private-object-storage";
 import {
   MalwareScannerError,
-  createLocalTestMalwareScanner
+  createRuntimeMalwareScanner
 } from "./malware-scanner";
 import {
   SECURE_FILE_SCAN_JOB_TYPE,
@@ -75,13 +75,10 @@ export async function handleSecureFileScanJob(
   }
 
   const environment = getServerEnvironment();
-  if (environment.appEnvironment !== "development" && environment.appEnvironment !== "test") {
-    return terminal("scanner_not_configured");
-  }
 
   let bytes: Uint8Array | null;
   try {
-    const storage = createLocalTestPrivateObjectStorage(environment.appEnvironment);
+    const storage = createRuntimePrivateObjectStorage(environment.appEnvironment);
     bytes = await storage.read(file.objectKey);
   } catch {
     return terminal("storage_not_configured");
@@ -96,7 +93,7 @@ export async function handleSecureFileScanJob(
 
   let result;
   try {
-    const scanner = createLocalTestMalwareScanner(environment.appEnvironment);
+    const scanner = createRuntimeMalwareScanner(environment.appEnvironment);
     result = normalizeMalwareScanResult(await scanner.scan(bytes, {
       fileRef: file.fileRef,
       generation: file.scanGeneration,

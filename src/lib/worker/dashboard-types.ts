@@ -50,6 +50,7 @@ export type WorkerDashboardProjection = {
     verifiedQualifications: number;
     pendingQualifications: number;
     changesRequested: number;
+    rejectedEvidence: number;
     verifiedExperienceRecords: number;
     verifiedSkills: number;
   };
@@ -96,7 +97,7 @@ export type WorkerDashboardProjection = {
   credentials: Array<{
     id: string;
     title: string;
-    status: "active" | "conditional" | "expiring" | "expired" | "suspended";
+    status: "active" | "conditional" | "expiring" | "expired" | "suspended" | "revoked";
     expiresAt: string | null;
   }>;
   reassessments: Array<{

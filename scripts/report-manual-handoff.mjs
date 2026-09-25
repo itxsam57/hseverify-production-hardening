@@ -337,7 +337,7 @@ ${verificationSummary(result)}
 
 - There is no repository-controlled hosted preview URL.
 - Permanent Playwright Chromium browser automation runs in CI for the permanent Hard Browser QA and retrospective completed-workflow gates; owner manual testing remains limited to specifically named handoff checks.
-- Production activation remains blocked for approved live email/SMS/private-object-storage/malware-scanning/liveness/video-interview/payment providers; accepted local/test adapters are not live production providers.
+- Built-in WebRTC interview media is production-capable without a third-party video account. Production activation still requires approved live email/SMS/private-object-storage/malware-scanning/liveness/payment configuration where those external services are selected; accepted local/test adapters are not live production providers and sandbox/test adapters are never reported as live delivery.
 - Generated reports are intentionally concise; complete successful logs remain in CI only.
 
 ## Classification diagnostics

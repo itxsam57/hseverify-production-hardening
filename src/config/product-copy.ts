@@ -36,9 +36,9 @@ export const DEFERRED_INTEGRATIONS = {
   },
   video: {
     owner: "Interview",
-    currentMode: "Deferred until the interview workflow backbone exists",
-    providerEntryPoint: "Future M2.12 video adapter",
+    currentMode: "Built-in encrypted WebRTC interview media",
+    providerEntryPoint: "src/lib/interview/interview-media-service.ts",
     productionTarget:
-      "Keep rooms, recordings and provider health behind one provider interface."
+      "Use the built-in Worker/Assessor WebRTC path by default; optional TURN or external media providers may improve restrictive-network reach without changing interview workflow authority."
   }
 } as const;

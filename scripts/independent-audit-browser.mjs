@@ -207,6 +207,9 @@ async function loginRole(browser, role) {
   return { context, page, finalPath };
 }
 
+const auditRunNonce = Date.now().toString(36);
+const auditPhoneSuffix = String(Date.now()).slice(-7);
+
 const browser = await chromium.launch({ headless: true });
 try {
   await run("Signed-out sweep of every static page route", async () => {
@@ -233,8 +236,8 @@ try {
   });
 
   await run("Fresh Worker registration, email/phone verification, login and profile persistence", async () => {
-    const email = "independent.consumer.worker@example.test";
-    const phone = "+923009876541";
+    const email = `independent.consumer.worker.${auditRunNonce}@example.test`;
+    const phone = `+92300${auditPhoneSuffix}`;
     const password = "IndependentConsumer!Password2026";
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const page = await context.newPage(); attachEvents(page, "consumer-worker");
@@ -279,21 +282,21 @@ try {
   });
 
   await run("Fresh Company registration completes email/authenticator activation and pending-state pages remain workable", async () => {
-    const email = "independent.consumer.company@example.test";
+    const email = `independent.consumer.company.${auditRunNonce}@example.test`;
     const password = "IndependentCompany!Password2026";
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const page = await context.newPage(); attachEvents(page, "consumer-company-register");
     await visit(page, "/company/register", "consumer-company-register");
     await page.getByLabel("Legal Company name").fill("Independent Consumer Company LLC");
     await page.getByLabel("Trading name").fill("Independent Consumer");
-    await page.getByLabel("Registration number").fill("AUDIT-REG-20260901");
+    await page.getByLabel("Registration number").fill(`AUDIT-${auditRunNonce.toUpperCase()}`);
     await page.getByLabel("Registration country").fill("Pakistan");
     await page.getByLabel("Industry").fill("Safety services");
     await page.getByLabel("Company size").selectOption("11-50");
     await page.getByLabel("Company website").fill("https://example.test");
     await page.getByLabel("Authorized representative").fill("Independent Auditor");
     await page.getByLabel("Business email").fill(email);
-    await page.getByLabel("Business phone").fill("+923009876542");
+    await page.getByLabel("Business phone").fill(`+92301${auditPhoneSuffix}`);
     await page.getByLabel("Create password").fill(password);
     await page.getByLabel("Confirm password").fill(password);
     await page.getByLabel(/I accept the HSE Verify terms/).check();
@@ -388,7 +391,7 @@ try {
     await visit(page, "/verify", "public-verify");
     const input = page.getByLabel("Worker ID or Credential ID");
     if (!(await input.count())) throw new Error("Public verification identifier input is missing.");
-    await input.fill("worker_id_AuditUnknown000000000001");
+    await input.pressSequentially("worker_id_AuditUnknown000000000001", { delay: 5 });
     await page.getByRole("button", { name: "Verify", exact: true }).click();
     await page.waitForTimeout(300);
     const text = await page.locator("main").innerText();

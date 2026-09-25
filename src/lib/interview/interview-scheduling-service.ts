@@ -5,6 +5,7 @@ import {
   assignInterviewRequest,
   createInterviewRequest,
   scheduleInterviewRequest,
+  moveInterviewToWaitingRoom,
   assertInterviewAssessorAccess,
   assertInterviewCaseOwnership,
   type InterviewRequest
@@ -26,6 +27,25 @@ export class InterviewSchedulingService {
     if (!request) throw new Error("Interview assignment was not found.");
     assertInterviewAssessorAccess(request, input.assessorAccountId);
     return request;
+  }
+
+  async getWorkerInterview(input: { workerAccountId:string; interviewRequestId:string }) {
+    const request = await new InterviewSchedulingRepository(this.database).findByRequestIdForWorker(
+      input.interviewRequestId,
+      input.workerAccountId
+    );
+    if (!request) throw new Error("Interview request was not found.");
+    assertInterviewCaseOwnership(request, input.workerAccountId);
+    return request;
+  }
+
+  async enterWaitingRoom(input: { tenantId:string; request:InterviewRequest; workerAccountId:string }): Promise<InterviewRequest> {
+    assertInterviewCaseOwnership(input.request, input.workerAccountId);
+    if (input.request.status === "WAITING_ROOM") return input.request;
+    return new InterviewSchedulingRepository(this.database).update(
+      input.tenantId,
+      moveInterviewToWaitingRoom(input.request)
+    );
   }
 
   async requestInterview(input: { tenantId: string; caseId: string; workerAccountId: string; requestedAt: string; timezone?: string }): Promise<InterviewRequest> {

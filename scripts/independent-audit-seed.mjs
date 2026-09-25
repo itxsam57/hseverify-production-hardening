@@ -9,6 +9,13 @@ if (!dataDirectory || !pepper) throw new Error("HSE_PGLITE_DATA_DIR and HSE_AUTH
 const PASSWORD = "IndependentAudit!Password2026";
 const now = new Date().toISOString();
 const roles = ["worker", "company", "assessor", "verifier", "admin", "root"];
+const FIXED_TOTP_SECRETS = Object.freeze({
+  company: "UMNPI6N5JJA72J5HYWRF7DWMQ2NYQ4OO",
+  assessor: "L7GPX7K6WCMLX2CMGW6TT6WMUESXWJKO",
+  verifier: "DKGVIXR3UPPTGMJU7BFUDAY337PA3GLW",
+  admin: "URK7CFHNTEYTTIPMCOEYU7B4UKUOKGSM",
+  root: "YH6SW2VWN65OBSUR5DSDKI3QI3EXSPKE"
+});
 function token24(value) { return value.replace(/[^A-Za-z0-9_-]/g, "x").padEnd(24, "x").slice(0, 24); }
 function scrypt(value, salt, length, options) { return new Promise((resolve, reject) => nodeScrypt(value, salt, length, options, (error, key) => error ? reject(error) : resolve(key))); }
 async function hashPassword(password) {
@@ -25,17 +32,6 @@ function encryptSecret(plaintext) {
   const tag = cipher.getAuthTag();
   return `v1.${iv.toString("base64url")}.${tag.toString("base64url")}.${ciphertext.toString("base64url")}`;
 }
-const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-function base32Encode(value) {
-  let bits = 0, accumulator = 0, output = "";
-  for (const byte of value) {
-    accumulator = (accumulator << 8) | byte; bits += 8;
-    while (bits >= 5) { output += BASE32[(accumulator >>> (bits - 5)) & 31]; bits -= 5; accumulator &= bits === 0 ? 0 : (1 << bits) - 1; }
-  }
-  if (bits > 0) output += BASE32[(accumulator << (5 - bits)) & 31];
-  return output;
-}
-
 const database = await PGlite.create(dataDirectory);
 const credentials = {};
 try {
@@ -56,7 +52,7 @@ try {
     await database.query(`INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,$2,$3)`, [accountId, role, now]);
     let totpSecret = null;
     if (role !== "worker") {
-      totpSecret = base32Encode(randomBytes(20));
+      totpSecret = FIXED_TOTP_SECRETS[role];
       await database.query(
         `INSERT INTO auth_mfa_factors(factor_id,account_id,factor_type,encrypted_secret,factor_status,last_accepted_counter,created_at,activated_at)
          VALUES($1,$2,'totp',$3,'active',NULL,$4,$4)`,

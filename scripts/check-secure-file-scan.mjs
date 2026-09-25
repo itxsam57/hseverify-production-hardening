@@ -100,8 +100,10 @@ mustContain(scanDomain, /normalizeNonCleanCode/,
 
 mustContain(scannerBoundary, /import "server-only"/,
   "Application scanner boundary must remain server-only.");
-mustContain(scannerBoundary, /createLocalTestMalwareScanner/,
-  "Only the deterministic local/test scanner is enabled in this subunit.");
+mustContain(scannerBoundary, /createRuntimeMalwareScanner/,
+  "Scanner boundary must expose the fixed environment-selected runtime scanner.");
+mustContain(scannerBoundary, /ClamAvMalwareScanner/,
+  "Production scanner boundary must provide the fixed ClamAV adapter.");
 mustContain(scannerCore, /EICAR-STANDARD-ANTIVIRUS-TEST-FILE/,
   "Local/test scanner must support a deterministic malicious fixture.");
 mustContain(scannerCore, /HSE_VERIFY_SCAN_RETRY_ONCE/,
@@ -140,8 +142,10 @@ mustContain(scanHandler, /bytes\.byteLength !== file\.byteSize/,
   "Handler must revalidate stored byte size.");
 mustContain(scanHandler, /computeSecureFileContentSha256\(bytes\) !== file\.contentSha256/,
   "Handler must revalidate stored SHA-256 before scanning.");
-mustContain(scanHandler, /createLocalTestMalwareScanner\(environment\.appEnvironment\)/,
-  "Handler must use only fixed local/test scanner in this subunit.");
+mustContain(scanHandler, /createRuntimeMalwareScanner\(environment\.appEnvironment\)/,
+  "Handler must use the fixed environment-selected scanner boundary.");
+mustContain(scanHandler, /createRuntimePrivateObjectStorage\(environment\.appEnvironment\)/,
+  "Handler must use the fixed environment-selected private storage boundary.");
 mustContain(scanHandler, /finalStatus: result\.kind === "clean" \? "available" : "unsafe"/,
   "Only a completed clean/malicious scanner decision may set available/unsafe.");
 mustNotContain(scanHandler, /public_url|signed_url|preview|download/i,

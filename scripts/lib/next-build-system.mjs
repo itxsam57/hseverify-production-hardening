@@ -56,16 +56,30 @@ async function fileDigest(path) {
   return createHash("sha256").update(content).digest("hex");
 }
 
-function modeDefinition(mode) {
+function normalizeInstanceId(instanceId) {
+  if (instanceId === null || instanceId === undefined || instanceId === "") return null;
+  const value = String(instanceId).trim();
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(value)) {
+    throw new Error("Next command instance ID is invalid.");
+  }
+  return value;
+}
+
+function modeDefinition(mode, instanceId = null) {
   assertMode(mode);
+  const normalizedInstanceId = normalizeInstanceId(instanceId);
 
   if (mode === "development") {
+    const suffix = normalizedInstanceId ? `-${normalizedInstanceId}` : "";
+    const distDirName = `${DEVELOPMENT_DIST_DIR_NAME}${suffix}`;
     return {
       commandMode: "development",
-      distDirName: DEVELOPMENT_DIST_DIR_NAME,
+      instanceId: normalizedInstanceId,
+      generatedModeName: `development${suffix}`,
+      distDirName,
       generatedTypeIncludes: [
-        `../../${DEVELOPMENT_DIST_DIR_NAME}/types/**/*.ts`,
-        `../../${DEVELOPMENT_DIST_DIR_NAME}/dev/types/**/*.ts`
+        `../../${distDirName}/types/**/*.ts`,
+        `../../${distDirName}/dev/types/**/*.ts`
       ]
     };
   }
@@ -73,6 +87,8 @@ function modeDefinition(mode) {
   if (mode === "typecheck") {
     return {
       commandMode: "typegen",
+      instanceId: null,
+      generatedModeName: "typecheck",
       distDirName: TYPECHECK_DIST_DIR_NAME,
       generatedTypeIncludes: [
         `../../${TYPECHECK_DIST_DIR_NAME}/types/**/*.ts`,
@@ -84,6 +100,8 @@ function modeDefinition(mode) {
   if (mode === "runtime-smoke") {
     return {
       commandMode: "runtime-smoke",
+      instanceId: null,
+      generatedModeName: "runtime-smoke",
       distDirName: RUNTIME_SMOKE_DIST_DIR_NAME,
       generatedTypeIncludes: [
         `../../${RUNTIME_SMOKE_DIST_DIR_NAME}/types/**/*.ts`,
@@ -94,6 +112,8 @@ function modeDefinition(mode) {
 
   return {
     commandMode: "production-build",
+    instanceId: null,
+    generatedModeName: "production-build",
     distDirName: PRODUCTION_DIST_DIR_NAME,
     generatedTypeIncludes: [`../../${PRODUCTION_DIST_DIR_NAME}/types/**/*.ts`]
   };
@@ -156,10 +176,10 @@ export async function assertProjectConfigurationUnchanged(
   }
 }
 
-export async function prepareNextMode(mode, projectRoot = process.cwd()) {
-  const definition = modeDefinition(mode);
+export async function prepareNextMode(mode, projectRoot = process.cwd(), instanceId = null) {
+  const definition = modeDefinition(mode, instanceId);
   const generatedRoot = resolve(projectRoot, GENERATED_NEXT_ROOT_NAME);
-  const modeRoot = resolve(generatedRoot, mode);
+  const modeRoot = resolve(generatedRoot, definition.generatedModeName);
   const distDir = resolve(projectRoot, definition.distDirName);
 
   await removeDirectory(modeRoot);
@@ -188,7 +208,10 @@ export async function prepareNextMode(mode, projectRoot = process.cwd()) {
     modeRoot,
     tsconfigPath,
     environment: {
-      HSE_NEXT_COMMAND_MODE: definition.commandMode
+      HSE_NEXT_COMMAND_MODE: definition.commandMode,
+      ...(definition.instanceId
+        ? { HSE_NEXT_INSTANCE_ID: definition.instanceId }
+        : {})
     }
   };
 }
@@ -203,10 +226,12 @@ export async function cleanGeneratedConfiguration(
   await removeGeneratedRootWhenEmpty(generatedRoot);
 }
 
-export async function cleanNextMode(mode, projectRoot = process.cwd()) {
-  const definition = modeDefinition(mode);
+export async function cleanNextMode(mode, projectRoot = process.cwd(), instanceId = null) {
+  const definition = modeDefinition(mode, instanceId);
   await removeDirectory(resolve(projectRoot, definition.distDirName));
-  await cleanGeneratedConfiguration(mode, projectRoot);
+  const generatedRoot = resolve(projectRoot, GENERATED_NEXT_ROOT_NAME);
+  await removeDirectory(resolve(generatedRoot, definition.generatedModeName));
+  await removeGeneratedRootWhenEmpty(generatedRoot);
 }
 
 export async function cleanAllNextGeneratedOutput(projectRoot = process.cwd()) {

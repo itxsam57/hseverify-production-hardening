@@ -10,6 +10,7 @@ import {
   revokeCurrentAuthenticationSession,
   type AuthenticatedSession
 } from "@/lib/auth/auth-session-service";
+import { getDatabaseClient } from "@/lib/database/database";
 
 export type WorkerSession = {
   sub: string;
@@ -21,6 +22,25 @@ export type WorkerSession = {
   expiresAt: number;
 };
 
+async function resolveWorkerId(
+  accountId: string,
+  registrationReference: string
+): Promise<string> {
+  const database = await getDatabaseClient();
+  const result = await database.query<{ permanent_worker_id: string }>(
+    `SELECT permanent_worker_id
+       FROM worker_identity_worker_ids
+      WHERE worker_account_id=$1
+      ORDER BY issued_at DESC
+      LIMIT 2`,
+    [accountId]
+  );
+  if (result.rows.length > 1) {
+    throw new Error("Permanent Worker ID ownership uniqueness is corrupted.");
+  }
+  return result.rows[0]?.permanent_worker_id ?? registrationReference;
+}
+
 async function toWorkerSession(
   session: AuthenticatedSession & { role: "worker" }
 ): Promise<WorkerSession> {
@@ -30,12 +50,16 @@ async function toWorkerSession(
   if (!account || !account.workerReference) {
     throw new Error("Verified Worker account is missing its registration reference.");
   }
+  const workerId = await resolveWorkerId(
+    session.accountId,
+    account.workerReference
+  );
   return {
     sub: session.accountId,
     role: "worker",
     email: session.email,
     displayName: session.displayName,
-    workerId: account.workerReference,
+    workerId,
     issuedAt: Math.floor(Date.parse(session.createdAt) / 1000),
     expiresAt: Math.floor(Date.parse(session.expiresAt) / 1000)
   };
