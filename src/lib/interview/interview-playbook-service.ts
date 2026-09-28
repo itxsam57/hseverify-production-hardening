@@ -116,6 +116,25 @@ async function latestSet(
 export class InterviewPlaybookService {
   constructor(private readonly databasePromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
+  async getAssigned(
+    principal: AuthorizationPrincipal,
+    interviewRequestId: string
+  ): Promise<InterviewQuestionSetView | null> {
+    if (principal.activeRole !== "assessor" || principal.accountStatus !== "active") {
+      throw new InterviewPlaybookAccessError();
+    }
+    const database = await this.databasePromise;
+    const request = await database.query<{ tenant_id: string; assessor_account_id: string | null }>(
+      "SELECT tenant_id,assessor_account_id FROM interview_requests WHERE interview_request_id=$1 LIMIT 1",
+      [interviewRequestId]
+    );
+    const row = request.rows[0];
+    if (!row || row.assessor_account_id !== principal.accountId) {
+      throw new InterviewPlaybookAccessError();
+    }
+    return latestSet(database, row.tenant_id, interviewRequestId);
+  }
+
   async ensure(
     principal: AuthorizationPrincipal,
     interviewRequestId: string,

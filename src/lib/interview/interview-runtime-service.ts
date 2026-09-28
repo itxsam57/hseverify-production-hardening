@@ -183,7 +183,18 @@ async function ensureWaitingRoomSession(
   if (!request.assessor_account_id) {
     throw new InterviewRuntimeConflictError("An Assessor must be assigned before the waiting room can open.");
   }
-  const sessionId = createIdentifier("interview_session");
+  const draft = await database.query<{ interview_session_id: string }>(
+    `SELECT interview_session_id
+       FROM interview_console_drafts
+      WHERE tenant_id=$1 AND interview_request_id=$2
+      ORDER BY updated_at DESC
+      LIMIT 1`,
+    [request.tenant_id, request.interview_request_id]
+  );
+  const candidateSessionId = draft.rows[0]?.interview_session_id?.trim() ?? "";
+  const sessionId = /^interview_session_[A-Za-z0-9_-]{24}$/.test(candidateSessionId)
+    ? candidateSessionId
+    : createIdentifier("interview_session");
   await database.query(
     `INSERT INTO interview_runtime_sessions(
        interview_session_id,tenant_id,interview_request_id,worker_account_id,

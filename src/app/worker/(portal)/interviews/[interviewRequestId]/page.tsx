@@ -122,6 +122,9 @@ export default async function WorkerInterviewPage({
           interviewRequestId={request.interviewRequestId}
           role="worker"
           enabled={mediaEnabled}
+          recordingPolicy={runtime.recordingPolicy}
+          recordingEnabled={runtime.status === "ACTIVE"}
+          recordingRetentionDays={runtime.recordingRetentionDays}
         />
         {!mediaEnabled && ready ? (
           <p className="muted-copy">You are Ready. The Assessor must admit you before live media opens.</p>

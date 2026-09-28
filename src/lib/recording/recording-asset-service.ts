@@ -241,6 +241,189 @@ export class RecordingAssetService {
       throw error;
     }
   }
+
+  async storeInterviewSegment(
+    principal: AuthorizationPrincipal,
+    interviewRequestIdInput: string,
+    input: {
+      ingestKey: string;
+      source: string;
+      mimeType: string;
+      bytes: Uint8Array;
+      startedAt: string;
+      endedAt: string;
+    }
+  ): Promise<StoredRecordingAsset> {
+    const interviewRequestId = interviewRequestIdInput.trim();
+    if (!/^interview_request_[A-Za-z0-9_-]{24}$/.test(interviewRequestId)) {
+      throw new RecordingAssetInputError("Interview request reference is invalid.");
+    }
+    if (
+      principal.accountStatus !== "active" ||
+      !["worker", "assessor"].includes(principal.activeRole)
+    ) {
+      throw new RecordingAssetAccessError();
+    }
+
+    const ingestKey = normalizeIngestKey(input.ingestKey);
+    const source = normalizeSource(input.source);
+    const mimeType = normalizeMime(input.mimeType);
+    if (!(input.bytes instanceof Uint8Array) || input.bytes.byteLength < 1 || input.bytes.byteLength > 64 * 1024 * 1024) {
+      throw new RecordingAssetInputError("Recording segment must be between 1 byte and 64 MB.");
+    }
+    const startedAt = normalizeTime(input.startedAt, "Recording start time");
+    const endedAt = normalizeTime(input.endedAt, "Recording end time");
+    if (endedAt < startedAt || endedAt.getTime() - startedAt.getTime() > 10 * 60 * 1000) {
+      throw new RecordingAssetInputError("Recording segment duration is invalid.");
+    }
+
+    const database = await this.databasePromise;
+    const requestResult = await database.query<{
+      tenant_id: string;
+      case_id: string;
+      worker_account_id: string;
+      assessor_account_id: string | null;
+      status: string;
+      recording_policy: "VIDEO_AUDIO" | "AUDIO_ONLY" | "NOTES_ONLY" | "PROHIBITED";
+      recording_retention_days: number | string;
+      recording_consent_required: boolean;
+      recording_consented_at: string | Date | null;
+      runtime_status: string | null;
+    }>(
+      `SELECT requests.tenant_id,requests.case_id,requests.worker_account_id,
+              requests.assessor_account_id,requests.status,requests.recording_policy,
+              requests.recording_retention_days,requests.recording_consent_required,
+              requests.recording_consented_at,sessions.status AS runtime_status
+         FROM interview_requests AS requests
+         LEFT JOIN interview_runtime_sessions AS sessions
+           ON sessions.interview_request_id=requests.interview_request_id
+        WHERE requests.interview_request_id=$1
+        LIMIT 1`,
+      [interviewRequestId]
+    );
+    const request = requestResult.rows[0];
+    if (!request) throw new RecordingAssetAccessError();
+
+    const isWorker =
+      principal.activeRole === "worker" &&
+      principal.accountId === request.worker_account_id;
+    const isAssessor =
+      principal.activeRole === "assessor" &&
+      principal.accountId === request.assessor_account_id;
+    if (!isWorker && !isAssessor) {
+      throw new RecordingAssetAccessError("Interview recording is limited to the assigned Worker and Assessor.");
+    }
+    if (request.recording_policy === "NOTES_ONLY" || request.recording_policy === "PROHIBITED") {
+      throw new RecordingAssetAccessError("This interview policy does not permit recording.");
+    }
+    if (
+      request.recording_consent_required &&
+      !request.recording_consented_at
+    ) {
+      throw new RecordingAssetAccessError("Required interview recording consent has not been recorded.");
+    }
+    if (!["ACTIVE","PAUSED","TECHNICAL_HOLD","ENDED"].includes(request.runtime_status ?? "")) {
+      throw new RecordingAssetAccessError("Interview recording is not open in the current runtime state.");
+    }
+    if (
+      (request.recording_policy === "AUDIO_ONLY" && source !== "AUDIO_ONLY") ||
+      (request.recording_policy === "VIDEO_AUDIO" && !["VIDEO_AUDIO","AUDIO_ONLY"].includes(source))
+    ) {
+      throw new RecordingAssetAccessError("Recording source does not match the interview policy.");
+    }
+
+    const ingestKeyHash = sha256(
+      `interview-recording-ingest-v1\0${principal.accountId}\0${interviewRequestId}\0${ingestKey}`
+    );
+    const contentSha256 = sha256(input.bytes);
+    const existing = await database.query<{
+      recording_asset_id: string;
+      status: "PROCESSING" | "AVAILABLE" | "FAILED";
+      byte_size: number | string;
+      content_sha256: string;
+      source: string;
+    }>(
+      `SELECT recording_asset_id,status,byte_size,content_sha256,source
+         FROM recording_assets
+        WHERE ingest_key_hash=$1
+        LIMIT 1`,
+      [ingestKeyHash]
+    );
+    if (existing.rows[0]) {
+      const row = existing.rows[0];
+      if (
+        row.content_sha256 !== contentSha256 ||
+        Number(row.byte_size) !== input.bytes.byteLength ||
+        row.source !== source
+      ) {
+        throw new RecordingAssetInputError("Recording ingest key was reused with different content.");
+      }
+      return Object.freeze({
+        recordingAssetId: row.recording_asset_id,
+        status: row.status,
+        byteSize: Number(row.byte_size),
+        contentSha256: row.content_sha256
+      });
+    }
+
+    const recordingAssetId = createIdentifier("recording_asset");
+    const objectKey = `secure-files/${sha256(
+      `interview-recording-object-v1\0${recordingAssetId}\0${contentSha256}`
+    )}`;
+    const now = new Date();
+    const retentionDays = Number(request.recording_retention_days);
+    const retentionUntil = new Date(now.getTime() + retentionDays * 24 * 60 * 60 * 1000);
+
+    await database.query(
+      `INSERT INTO recording_assets(
+         recording_asset_id,purpose,attempt_id,interview_request_id,case_id,tenant_id,
+         worker_account_id,captured_by_account_id,source,mime_type,object_key,ingest_key_hash,
+         byte_size,content_sha256,status,started_at,ended_at,retention_until,created_at
+       ) VALUES($1,'INTERVIEW',NULL,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'PROCESSING',$13,$14,$15,$16)`,
+      [
+        recordingAssetId,
+        interviewRequestId,
+        request.case_id,
+        request.tenant_id,
+        request.worker_account_id,
+        principal.accountId,
+        source,
+        mimeType,
+        objectKey,
+        ingestKeyHash,
+        input.bytes.byteLength,
+        contentSha256,
+        startedAt.toISOString(),
+        endedAt.toISOString(),
+        retentionUntil.toISOString(),
+        now.toISOString()
+      ]
+    );
+
+    try {
+      const stored = await this.storage.put(objectKey, input.bytes);
+      if (stored.byteSize !== input.bytes.byteLength || stored.sha256 !== contentSha256) {
+        throw new RecordingAssetInputError("Stored recording verification failed.");
+      }
+      await database.query(
+        "UPDATE recording_assets SET status='AVAILABLE' WHERE recording_asset_id=$1 AND status='PROCESSING'",
+        [recordingAssetId]
+      );
+      return Object.freeze({
+        recordingAssetId,
+        status: "AVAILABLE" as const,
+        byteSize: input.bytes.byteLength,
+        contentSha256
+      });
+    } catch (error) {
+      await database.query(
+        "UPDATE recording_assets SET status='FAILED' WHERE recording_asset_id=$1 AND status='PROCESSING'",
+        [recordingAssetId]
+      ).catch(() => undefined);
+      throw error;
+    }
+  }
+
 }
 
 let service: RecordingAssetService | null = null;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type MediaRole = "worker" | "assessor";
 type SignalKind = "offer" | "answer" | "ice" | "leave";
+type RecordingPolicy = "VIDEO_AUDIO" | "AUDIO_ONLY" | "NOTES_ONLY" | "PROHIBITED";
 
 type MediaSignal = {
   signalId: string;
@@ -27,11 +28,17 @@ function connectionIdFrom(payload: Record<string, unknown>): string | null {
 export function LiveInterviewMedia({
   interviewRequestId,
   role,
-  enabled = true
+  enabled = true,
+  recordingPolicy = "NOTES_ONLY",
+  recordingEnabled = false,
+  recordingRetentionDays = 30
 }: {
   interviewRequestId: string;
   role: MediaRole;
   enabled?: boolean;
+  recordingPolicy?: RecordingPolicy;
+  recordingEnabled?: boolean;
+  recordingRetentionDays?: number;
 }): React.JSX.Element {
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -42,6 +49,9 @@ export function LiveInterviewMedia({
   const connectionIdRef = useRef<string | null>(null);
   const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
   const processingRef = useRef(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingSegmentStartedAtRef = useRef<string | null>(null);
 
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState("Not connected");
@@ -49,6 +59,7 @@ export function LiveInterviewMedia({
   const [started, setStarted] = useState(false);
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [recordingStatus, setRecordingStatus] = useState("Not recording");
 
   const sendSignal = useCallback(
     async (kind: SignalKind, payload: Record<string, unknown>): Promise<void> => {
@@ -68,6 +79,119 @@ export function LiveInterviewMedia({
     },
     [interviewRequestId]
   );
+
+
+  const uploadRecordingSegment = useCallback(
+    async (blob: Blob, startedAt: string, endedAt: string): Promise<void> => {
+      if (blob.size < 1 || recordingPolicy === "NOTES_ONLY" || recordingPolicy === "PROHIBITED") {
+        return;
+      }
+      const source = recordingPolicy === "AUDIO_ONLY" ? "AUDIO_ONLY" : "VIDEO_AUDIO";
+      const response = await fetch(
+        `/api/interviews/${encodeURIComponent(interviewRequestId)}/recording`,
+        {
+          method: "POST",
+          headers: {
+            "content-type":
+              blob.type ||
+              (recordingPolicy === "AUDIO_ONLY" ? "audio/webm" : "video/webm"),
+            "x-recording-source": source,
+            "x-recording-segment-key": crypto.randomUUID().replaceAll("-", ""),
+            "x-recording-started-at": startedAt,
+            "x-recording-ended-at": endedAt
+          },
+          body: blob,
+          cache: "no-store"
+        }
+      );
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Interview recording segment could not be stored.");
+      }
+    },
+    [interviewRequestId, recordingPolicy]
+  );
+
+  const stopRecording = useCallback((): void => {
+    const recorder = recorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      try {
+        recorder.stop();
+      } catch {
+        // Browser may already be closing the recorder.
+      }
+    }
+    recorderRef.current = null;
+    recordingStreamRef.current = null;
+    recordingSegmentStartedAtRef.current = null;
+    setRecordingStatus("Not recording");
+  }, []);
+
+  const startRecording = useCallback((): void => {
+    if (
+      !recordingEnabled ||
+      recordingPolicy === "NOTES_ONLY" ||
+      recordingPolicy === "PROHIBITED" ||
+      recorderRef.current ||
+      !localStreamRef.current
+    ) {
+      return;
+    }
+    if (typeof MediaRecorder === "undefined") {
+      setError("This browser cannot record the interview required by the case policy.");
+      setRecordingStatus("Recording unavailable");
+      return;
+    }
+
+    const sourceStream =
+      recordingPolicy === "AUDIO_ONLY"
+        ? new MediaStream(localStreamRef.current.getAudioTracks())
+        : localStreamRef.current;
+    if (
+      (recordingPolicy === "AUDIO_ONLY" && sourceStream.getAudioTracks().length === 0) ||
+      (recordingPolicy === "VIDEO_AUDIO" && sourceStream.getTracks().length === 0)
+    ) {
+      setError("Required interview recording source is unavailable.");
+      setRecordingStatus("Recording unavailable");
+      return;
+    }
+
+    try {
+      const preferred = recordingPolicy === "AUDIO_ONLY" ? "audio/webm" : "video/webm";
+      const recorder = MediaRecorder.isTypeSupported(preferred)
+        ? new MediaRecorder(sourceStream, { mimeType: preferred })
+        : new MediaRecorder(sourceStream);
+      recorderRef.current = recorder;
+      recordingStreamRef.current = sourceStream;
+      recordingSegmentStartedAtRef.current = new Date().toISOString();
+      recorder.addEventListener("dataavailable", (event) => {
+        const endedAt = new Date().toISOString();
+        const startedAt = recordingSegmentStartedAtRef.current ?? endedAt;
+        recordingSegmentStartedAtRef.current = endedAt;
+        void uploadRecordingSegment(event.data, startedAt, endedAt)
+          .then(() => setRecordingStatus("Recording active — latest segment stored"))
+          .catch((uploadError) => {
+            setRecordingStatus("Recording storage failed");
+            setError(
+              uploadError instanceof Error
+                ? uploadError.message
+                : "Interview recording storage failed. Pause the interview and record a technical issue."
+            );
+          });
+      });
+      recorder.addEventListener("error", () => {
+        setRecordingStatus("Recording failed");
+        setError("Interview recording failed. Pause the interview and record a technical issue.");
+      });
+      recorder.start(60_000);
+      setRecordingStatus(
+        `${recordingPolicy === "AUDIO_ONLY" ? "Audio" : "Video/audio"} recording active`
+      );
+    } catch {
+      setRecordingStatus("Recording failed");
+      setError("Interview recording could not start. Pause the interview and record a technical issue.");
+    }
+  }, [recordingEnabled, recordingPolicy, uploadRecordingSegment]);
 
   const flushPendingIce = useCallback(async (): Promise<void> => {
     const peer = peerRef.current;
@@ -193,6 +317,7 @@ export function LiveInterviewMedia({
       if (notifyPeer && connectionId) {
         await sendSignal("leave", { connectionId }).catch(() => undefined);
       }
+      stopRecording();
       peerRef.current?.close();
       peerRef.current = null;
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -204,7 +329,7 @@ export function LiveInterviewMedia({
       setStarted(false);
       setStatus("Not connected");
     },
-    [sendSignal]
+    [sendSignal, stopRecording]
   );
 
   const startMedia = useCallback(async (): Promise<void> => {
@@ -301,12 +426,21 @@ export function LiveInterviewMedia({
   ]);
 
   useEffect(() => {
+    if (started && recordingEnabled) {
+      startRecording();
+      return;
+    }
+    stopRecording();
+  }, [recordingEnabled, startRecording, started, stopRecording]);
+
+  useEffect(() => {
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      stopRecording();
       peerRef.current?.close();
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
-  }, []);
+  }, [stopRecording]);
 
   function toggleMicrophone(): void {
     const tracks = localStreamRef.current?.getAudioTracks() ?? [];
@@ -337,9 +471,10 @@ export function LiveInterviewMedia({
           disabled={started}
         />
         <span>
-          I consent to camera and microphone use for this interview. This built-in
-          connection does not start a recording; recording follows the case policy
-          and requires separate authorization.
+          I allow this browser to use my camera and microphone for the assigned interview.
+          {recordingPolicy === "NOTES_ONLY" || recordingPolicy === "PROHIBITED"
+            ? " This interview is not recorded by HSE Verify."
+            : ` Recording is controlled by the case policy and stored privately for ${recordingRetentionDays} days unless a legal hold applies.`}
         </span>
       </label>
 
@@ -355,6 +490,9 @@ export function LiveInterviewMedia({
       </div>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {recordingPolicy !== "NOTES_ONLY" && recordingPolicy !== "PROHIBITED" ? (
+        <p className="muted-copy" role="status">Recording: {recordingStatus}</p>
+      ) : null}
 
       <div className="interview-media-actions">
         {!started ? (

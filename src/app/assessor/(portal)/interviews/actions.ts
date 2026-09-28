@@ -7,6 +7,7 @@ import { advanceAfterInterviewRecommendation } from "@/lib/assurance/assurance-c
 import { getDatabaseClient } from "@/lib/database/database";
 import { InterviewAssignmentService } from "@/lib/interview/interview-assignment-service";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
+import { getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
 import {
   INTERVIEW_CONSOLE_RECOMMENDATIONS,
   type InterviewConsoleRecommendation
@@ -204,6 +205,7 @@ export async function claimInterviewAction(formData: FormData): Promise<void> {
   const interviewRequestId = text(formData, "interviewRequestId");
   const actor = await assessorActor();
   await new InterviewRuntimeService().claim(actor, interviewRequestId);
+  await getInterviewPlaybookService().ensure(actor, interviewRequestId);
   revalidateInterview(interviewRequestId);
 }
 
@@ -255,5 +257,14 @@ export async function endInterviewAction(formData: FormData): Promise<void> {
   const interviewRequestId = text(formData, "interviewRequestId");
   const actor = await assessorActor();
   await new InterviewRuntimeService().end(actor, interviewRequestId);
+  revalidateInterview(interviewRequestId);
+}
+
+
+export async function addInterviewFollowUpAction(formData: FormData): Promise<void> {
+  const interviewRequestId = text(formData, "interviewRequestId");
+  const prompt = text(formData, "prompt");
+  const actor = await assessorActor();
+  await getInterviewPlaybookService().addFollowUp(actor, interviewRequestId, prompt);
   revalidateInterview(interviewRequestId);
 }
