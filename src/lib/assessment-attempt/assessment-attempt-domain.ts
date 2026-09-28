@@ -6,6 +6,10 @@ import type {
 
 export const ASSESSMENT_ATTEMPT_STATUSES = Object.freeze([
   "IN_PROGRESS",
+  "INTERRUPTED",
+  "REVIEW_REQUIRED",
+  "INVALIDATED",
+  "REPLACED",
   "SUBMITTED"
 ] as const);
 export type AssessmentAttemptStatus = (typeof ASSESSMENT_ATTEMPT_STATUSES)[number];
@@ -47,9 +51,32 @@ export type AssessmentAttemptClientDraft = Readonly<{
 }>;
 
 export type AssessmentAttemptClientView = Readonly<{
+  attemptId: string;
   currentQuestion: AssessmentAttemptClientQuestion | null;
   currentDraft: AssessmentAttemptClientDraft | null;
   submitted: boolean;
+  progressionMode: "STRICT" | "CONTROLLED_REVIEW" | "SECTION_REVIEW";
+  reviewablePositions: readonly number[];
+  flaggedPositions: readonly number[];
+  awaitingSectionAdvance: boolean;
+  awaitingFinalSubmit: boolean;
+  sectionTitle: string | null;
+}>;
+
+export type AssessmentReviewQuestionView = Readonly<{
+  attemptId: string;
+  position: number;
+  questionCount: number;
+  questionType: QuestionType;
+  prompt: string;
+  options: readonly string[] | null;
+  domainReference: string;
+  difficulty: QuestionDifficulty;
+  value: string | boolean | number;
+  flagged: boolean;
+  revisionCount: number;
+  progressionMode: "CONTROLLED_REVIEW" | "SECTION_REVIEW";
+  sectionTitle: string | null;
 }>;
 
 export type AssessmentAnswerInput = string | boolean | number;

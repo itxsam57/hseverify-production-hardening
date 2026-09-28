@@ -254,8 +254,8 @@ export class AuthLoginService {
         const factor = await repository.findActiveMfaFactorForUpdate(
           account.accountId
         );
-        const verificationCode = input.verificationCode?.trim() ?? "";
-        if (!factor || !/^\d{6}$/.test(verificationCode)) {
+        const verificationCode = input.verificationCode?.trim().toUpperCase() ?? "";
+        if (!factor || !verificationCode) {
           await this.recordFailure({
             repository,
             accountId: account.accountId,
@@ -269,42 +269,57 @@ export class AuthLoginService {
             eventType: "mfa_failed",
             activeRole: input.role,
             requestFingerprintHash,
-            metadata: { reason: factor ? "invalid_format" : "not_enrolled" },
+            metadata: { reason: factor ? "missing_code" : "not_enrolled" },
             occurredAt: nowIso
           });
           return null;
         }
 
-        let secret: string;
-        try {
-          secret = decryptSecret(factor.encryptedSecret, this.pepper);
-        } catch {
-          await repository.authentication.insertSecurityEvent({
-            eventId: createIdentifier("event"),
+        let accepted = false;
+        let method: "totp" | "recovery_code" = "totp";
+        if (/^\d{6}$/.test(verificationCode)) {
+          let secret: string;
+          try {
+            secret = decryptSecret(factor.encryptedSecret, this.pepper);
+          } catch {
+            await repository.authentication.insertSecurityEvent({
+              eventId: createIdentifier("event"),
+              accountId: account.accountId,
+              eventType: "mfa_failed",
+              activeRole: input.role,
+              requestFingerprintHash,
+              metadata: { reason: "secret_unavailable" },
+              occurredAt: nowIso
+            });
+            return null;
+          }
+          const verified = verifyTotp({
+            secret,
+            code: verificationCode,
+            now,
+            lastAcceptedCounter: factor.lastAcceptedCounter
+          });
+          accepted =
+            verified.valid &&
+            verified.counter !== null &&
+            (await repository.acceptMfaCounter({
+              factorId: factor.factorId,
+              acceptedCounter: verified.counter
+            }));
+        } else if (/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(verificationCode)) {
+          method = "recovery_code";
+          accepted = await repository.consumeMfaRecoveryCode({
             accountId: account.accountId,
-            eventType: "mfa_failed",
-            activeRole: input.role,
-            requestFingerprintHash,
-            metadata: { reason: "secret_unavailable" },
-            occurredAt: nowIso
+            codeHash: hashOpaqueValue(
+              verificationCode,
+              this.pepper,
+              "mfa-recovery"
+            ),
+            usedAt: nowIso
           });
-          return null;
         }
 
-        const verified = verifyTotp({
-          secret,
-          code: verificationCode,
-          now,
-          lastAcceptedCounter: factor.lastAcceptedCounter
-        });
-        if (
-          !verified.valid ||
-          verified.counter === null ||
-          !(await repository.acceptMfaCounter({
-            factorId: factor.factorId,
-            acceptedCounter: verified.counter
-          }))
-        ) {
+        if (!accepted) {
           await this.recordFailure({
             repository,
             accountId: account.accountId,
@@ -329,6 +344,7 @@ export class AuthLoginService {
           eventType: "mfa_succeeded",
           activeRole: input.role,
           requestFingerprintHash,
+          metadata: { method },
           occurredAt: nowIso
         });
       }

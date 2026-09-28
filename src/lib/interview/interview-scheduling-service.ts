@@ -56,6 +56,13 @@ export class InterviewSchedulingService {
     return repository.insert(input.tenantId, createInterviewRequest(input));
   }
 
+  async requestAdditionalInterview(input: { tenantId: string; caseId: string; workerAccountId: string; requestedAt: string; timezone?: string }): Promise<InterviewRequest> {
+    return new InterviewSchedulingRepository(this.database).insert(
+      input.tenantId,
+      createInterviewRequest(input)
+    );
+  }
+
   async assignInterview(input: { tenantId: string; request: InterviewRequest; assessorAccountId: string }): Promise<InterviewRequest> {
     if (input.request.assessorAccountId && input.request.assessorAccountId !== input.assessorAccountId.trim()) {
       throw new Error("Interview assessor assignment mismatch.");

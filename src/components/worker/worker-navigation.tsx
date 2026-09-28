@@ -8,11 +8,14 @@ const links = [
   { href: "/worker/profile", label: "My profile", icon: "◎" },
   { href: "/worker/identity", label: "Identity", icon: "◇" },
   { href: "/worker/evidence", label: "Evidence", icon: "▤" },
+  { href: "/worker/observations", label: "Supervisor observations", icon: "✎" },
   { href: "/worker/passport", label: "Digital passport", icon: "▣" },
   { href: "/worker/available-assessments", label: "Available assessments", icon: "▦" },
   { href: "/worker/company-access", label: "Company access", icon: "↔" },
   { href: "/worker/share-links", label: "Share links", icon: "⌁" },
   { href: "/worker/privacy", label: "Privacy", icon: "◉" },
+  { href: "/worker/accessibility", label: "Accessibility", icon: "◐" },
+  { href: "/worker/security", label: "Security", icon: "◆" },
   { href: "/worker/notifications", label: "Notifications", icon: "♢" }
 ] as const;
 

@@ -42,17 +42,31 @@ async function loadDraftDomain() {
   }
 }
 
-test("M2.08 draft migration is narrow and preserves M2.07 attempt lifecycle", async () => {
+test("M2.08 draft migration remains narrow while controlled-delivery migration owns interruption and replacement lifecycle", async () => {
   const migration = await source("database/migrations/0043_assessment_attempt_drafts.up.sql");
   const down = await source("database/migrations/0043_assessment_attempt_drafts.down.sql");
+  const controlled = await source("database/migrations/0069_assessment_controlled_delivery.up.sql");
   const attemptDomain = await source("src/lib/assessment-attempt/assessment-attempt-domain.ts");
 
   assert.ok(migration.trim(), "0043_assessment_attempt_drafts.up.sql is missing");
   assert.ok(down.trim(), "0043_assessment_attempt_drafts.down.sql is missing");
-  assert.match(attemptDomain, /ASSESSMENT_ATTEMPT_STATUSES[\s\S]*"IN_PROGRESS"[\s\S]*"SUBMITTED"/);
-  assert.doesNotMatch(attemptDomain, /INTERRUPTED|RECOVERABLE|REPLACED|SUPERSEDED/);
+  assert.ok(controlled.trim(), "0069_assessment_controlled_delivery.up.sql is missing");
+
+  assert.match(
+    attemptDomain,
+    /ASSESSMENT_ATTEMPT_STATUSES[\s\S]*"IN_PROGRESS"[\s\S]*"INTERRUPTED"[\s\S]*"REVIEW_REQUIRED"[\s\S]*"REPLACED"[\s\S]*"SUBMITTED"/
+  );
   assert.doesNotMatch(migration, /INTERRUPTED|RECOVERABLE|recovery_lineage|technical_issue|successor/i);
   assert.doesNotMatch(migration, /ALTER TABLE\s+assessment_attempts[\s\S]{0,200}status/i);
+
+  assert.match(controlled, /assessment_interruption_events/i);
+  assert.match(controlled, /assessment_recovery_reviews/i);
+  assert.match(controlled, /assessment_replacement_authorizations/i);
+  assert.match(controlled, /assessment_attempt_replacements/i);
+  assert.match(
+    controlled,
+    /status IN \('IN_PROGRESS','INTERRUPTED','REVIEW_REQUIRED','INVALIDATED','REPLACED','SUBMITTED'\)/i
+  );
 
   assert.match(migration, /CREATE TABLE IF NOT EXISTS assessment_attempt_drafts/i);
   assert.match(migration, /attempt_id TEXT PRIMARY KEY/i);

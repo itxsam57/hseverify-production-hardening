@@ -26,13 +26,19 @@ function forbiddenBrowserAuthority(sourceText, label) {
   }
 }
 
-test("M2.07 begin server action accepts only case/catalogue authority and redirects to the created owned attempt", () => {
+test("M2.07 start action routes through precheck and only the completed precheck may create a bound owned attempt", () => {
   const action = source(beginActionPath, "begin action");
   assert.match(action, /^[\s\S]*["']use server["']/);
   assert.match(action, /export\s+async\s+function\s+beginAssessmentAction/);
-  requireWorkerPermission(action, "begin action");
-  assert.match(action, /formData\.get\(["']caseId["']\)/);
-  assert.match(action, /formData\.get\(["']catalogueVersionId["']\)/);
+  assert.match(action, /text\(formData,\s*["']caseId["']\)/);
+  assert.match(action, /text\(formData,\s*["']catalogueVersionId["']\)/);
+  assert.match(action, /redirect\s*\(\s*precheckUrl\s*\(/);
+  assert.match(action, /export\s+async\s+function\s+completeAssessmentPrecheckAction/);
+  requireWorkerPermission(action, "completed precheck action");
+  assert.match(action, /ensureAssessmentAccessContext\s*\(/);
+  assert.match(action, /getAssessmentPrecheckService\(\)\.recordPassed\s*\(/);
+  assert.match(action, /precheckId:\s*recorded\.precheckId/);
+  assert.match(action, /accessContext/);
   assert.match(action, /\.begin\s*\(/);
   assert.match(action, /redirect\s*\(\s*`\/worker\/assessments\/\$\{/);
   forbiddenBrowserAuthority(action, "begin action");

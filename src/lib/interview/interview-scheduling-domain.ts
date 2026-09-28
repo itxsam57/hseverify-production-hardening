@@ -17,6 +17,10 @@ export const INTERVIEW_SESSION_STATUSES = Object.freeze([
 
 export const INTERVIEW_CONSOLE_RECOMMENDATIONS = Object.freeze([
   "PASS",
+  "CONDITIONAL_PASS",
+  "ADDITIONAL_EVIDENCE_REQUIRED",
+  "REASSESSMENT_REQUIRED",
+  "SECOND_INTERVIEW_REQUIRED",
   "FAIL"
 ] as const);
 
@@ -71,7 +75,12 @@ export type InterviewConsole = Readonly<{
   recordingPolicy: "VIDEO_AUDIO" | "AUDIO_ONLY" | "NOTES_ONLY" | "PROHIBITED";
   scorecard: Readonly<{
     technicalKnowledge: number | null;
+    practicalReasoning: number | null;
     safetyAwareness: number | null;
+    communication: number | null;
+    consistencyWithWrittenAnswers: number | null;
+    confidenceClarity: number | null;
+    tradeJudgment: number | null;
     comments: string | null;
   }>;
   recommendation: InterviewConsoleRecommendation | null;
@@ -250,7 +259,16 @@ export function createInterviewConsole(input: { interviewSessionId: string; ques
     connectionState: "DISCONNECTED" as const,
     notes: Object.freeze([]),
     recordingPolicy: "NOTES_ONLY" as const,
-    scorecard: Object.freeze({ technicalKnowledge: null, safetyAwareness: null, comments: null }),
+    scorecard: Object.freeze({
+      technicalKnowledge: null,
+      practicalReasoning: null,
+      safetyAwareness: null,
+      communication: null,
+      consistencyWithWrittenAnswers: null,
+      confidenceClarity: null,
+      tradeJudgment: null,
+      comments: null
+    }),
     recommendation: null,
     submitted: false
   });
@@ -261,11 +279,19 @@ export function updateInterviewScorecard(
   scorecard: InterviewConsole["scorecard"]
 ): InterviewConsole {
   if (consoleState.submitted) throw new InterviewSchedulingInputError("Submitted interviews cannot be edited.");
-  if (scorecard.technicalKnowledge !== null && (scorecard.technicalKnowledge < 0 || scorecard.technicalKnowledge > 5)) {
-    throw new InterviewSchedulingInputError("Technical knowledge score must be between zero and five.");
-  }
-  if (scorecard.safetyAwareness !== null && (scorecard.safetyAwareness < 0 || scorecard.safetyAwareness > 5)) {
-    throw new InterviewSchedulingInputError("Safety awareness score must be between zero and five.");
+  const dimensions: Array<[string, number | null]> = [
+    ["Technical knowledge", scorecard.technicalKnowledge],
+    ["Practical reasoning", scorecard.practicalReasoning],
+    ["Safety awareness", scorecard.safetyAwareness],
+    ["Communication", scorecard.communication],
+    ["Consistency with written answers", scorecard.consistencyWithWrittenAnswers],
+    ["Confidence / clarity", scorecard.confidenceClarity],
+    ["Trade judgment", scorecard.tradeJudgment]
+  ];
+  for (const [label, value] of dimensions) {
+    if (value !== null && (!Number.isInteger(value) || value < 0 || value > 5)) {
+      throw new InterviewSchedulingInputError(`${label} score must be a whole number between zero and five.`);
+    }
   }
   return Object.freeze({ ...consoleState, scorecard: Object.freeze({ ...scorecard }) });
 }

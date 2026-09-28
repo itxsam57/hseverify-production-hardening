@@ -5,9 +5,16 @@ import type {
 } from "./assessment-attempt-domain";
 
 type AssessmentAttemptClientSource = Readonly<{
+  attempt: Readonly<{ attemptId: string }>;
   currentQuestion: AssessmentAttemptClientQuestion | null;
   currentDraft: AssessmentAttemptClientDraft | null;
   submitted: boolean;
+  progressionMode: "STRICT" | "CONTROLLED_REVIEW" | "SECTION_REVIEW";
+  reviewablePositions: readonly number[];
+  flaggedPositions: readonly number[];
+  awaitingSectionAdvance: boolean;
+  awaitingFinalSubmit: boolean;
+  sectionTitle: string | null;
 }>;
 
 function projectDraft(
@@ -42,9 +49,16 @@ export function toAssessmentAttemptClientView(
   view: AssessmentAttemptClientSource
 ): AssessmentAttemptClientView {
   return Object.freeze({
+    attemptId: view.attempt.attemptId,
     currentQuestion:
       view.currentQuestion === null ? null : projectQuestion(view.currentQuestion),
     currentDraft: view.currentDraft === null ? null : projectDraft(view.currentDraft),
-    submitted: view.submitted
+    submitted: view.submitted,
+    progressionMode: view.progressionMode,
+    reviewablePositions: Object.freeze([...view.reviewablePositions]),
+    flaggedPositions: Object.freeze([...view.flaggedPositions]),
+    awaitingSectionAdvance: view.awaitingSectionAdvance,
+    awaitingFinalSubmit: view.awaitingFinalSubmit,
+    sectionTitle: view.sectionTitle
   });
 }

@@ -57,17 +57,16 @@ export function RoleLoginForm({
 
       {requiresMfa ? (
         <Field
-          hint="Enter the current six-digit code from the authenticator enrolled for this account."
+          hint="Enter the current six-digit authenticator code or one unused recovery code."
           htmlFor={`${role}-verification-code`}
           label="Authenticator code"
         >
           <Input
             autoComplete="one-time-code"
             id={`${role}-verification-code`}
-            inputMode="numeric"
-            maxLength={6}
+            inputMode="text"
+            maxLength={14}
             name="verificationCode"
-            pattern="[0-9]{6}"
             required
           />
         </Field>

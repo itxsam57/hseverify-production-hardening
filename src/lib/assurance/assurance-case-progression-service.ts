@@ -2,6 +2,7 @@ import "server-only";
 
 import type { DatabaseClient } from "../database/database";
 import { InterviewSchedulingService } from "../interview/interview-scheduling-service";
+import { InterviewAssignmentService } from "../interview/interview-assignment-service";
 import {
   createAssuranceActionId,
   createAssuranceTimelineEventId,
@@ -130,24 +131,6 @@ async function transitionCase(
   await replaceCaseAction(database, row, input.owner, input.nextAction, input.now);
 }
 
-async function activeAssessor(database: DatabaseClient): Promise<string | null> {
-  const result = await database.query<{ account_id: string }>(
-    `SELECT accounts.account_id
-       FROM auth_accounts AS accounts
-       JOIN auth_account_roles AS roles
-         ON roles.account_id=accounts.account_id
-        AND roles.role='assessor'
-       LEFT JOIN interview_requests AS requests
-         ON requests.assessor_account_id=accounts.account_id
-        AND requests.status IN ('ASSIGNED','WAITING_ROOM')
-      WHERE accounts.account_status='active'
-      GROUP BY accounts.account_id
-      ORDER BY COUNT(requests.interview_request_id) ASC,accounts.account_id ASC
-      LIMIT 1`
-  );
-  return result.rows[0]?.account_id ?? null;
-}
-
 async function postPassProgression(
   database: DatabaseClient,
   row: CaseRow,
@@ -171,12 +154,13 @@ async function postPassProgression(
       timezone: "UTC"
     });
     if (!request.assessorAccountId) {
-      const assessorAccountId = await activeAssessor(database);
-      if (assessorAccountId) {
+      const assignment = await new InterviewAssignmentService(database)
+        .evaluateAndPersist(request.interviewRequestId, now);
+      if (assignment.selectedAssessorAccountId) {
         request = await interviews.assignInterview({
           tenantId: row.tenant_id,
           request,
-          assessorAccountId
+          assessorAccountId: assignment.selectedAssessorAccountId
         });
       }
     }
@@ -320,7 +304,13 @@ export async function advanceAfterInterviewRecommendation(
   input: Readonly<{
     caseId: string;
     tenantId: string;
-    recommendation: "PASS" | "FAIL";
+    recommendation:
+      | "PASS"
+      | "CONDITIONAL_PASS"
+      | "ADDITIONAL_EVIDENCE_REQUIRED"
+      | "REASSESSMENT_REQUIRED"
+      | "SECOND_INTERVIEW_REQUIRED"
+      | "FAIL";
     actor: ProgressionActor;
     now: Date;
   }>
@@ -329,15 +319,74 @@ export async function advanceAfterInterviewRecommendation(
   if (row.case_status !== "Interview pending") {
     throw new Error("Interview recommendation no longer matches the Assurance Case state.");
   }
+
+  if (input.recommendation === "SECOND_INTERVIEW_REQUIRED") {
+    const interviews = new InterviewSchedulingService(database);
+    let request = await interviews.requestAdditionalInterview({
+      tenantId: row.tenant_id,
+      caseId: row.case_id,
+      workerAccountId: row.worker_account_id,
+      requestedAt: input.now.toISOString(),
+      timezone: "UTC"
+    });
+    const assignment = await new InterviewAssignmentService(database)
+      .evaluateAndPersist(request.interviewRequestId, input.now);
+    if (assignment.selectedAssessorAccountId) {
+      request = await interviews.assignInterview({
+        tenantId: row.tenant_id,
+        request,
+        assessorAccountId: assignment.selectedAssessorAccountId
+      });
+    }
+    await database.query(
+      `UPDATE assurance_cases
+          SET interview_reference=$3
+        WHERE case_id=$1 AND tenant_id=$2`,
+      [row.case_id, row.tenant_id, request.interviewRequestId]
+    );
+    await transitionCase(database, {
+      caseId: row.case_id,
+      tenantId: row.tenant_id,
+      status: "Interview pending",
+      owner: request.assessorAccountId ? "assessor" : "admin",
+      nextAction: request.assessorAccountId
+        ? "Assigned Assessor must schedule and complete the required second interview."
+        : "Assign an eligible Assessor to the required second interview.",
+      eventType: "interview_second_interview_required",
+      actor: input.actor,
+      now: input.now
+    });
+    return;
+  }
+
+  const transition =
+    input.recommendation === "PASS" || input.recommendation === "CONDITIONAL_PASS"
+      ? {
+          status: "Decision pending" as const,
+          owner: "admin" as const,
+          nextAction:
+            input.recommendation === "CONDITIONAL_PASS"
+              ? "Record the final Assurance Case decision and any permitted approval conditions."
+              : "Record the final Assurance Case decision."
+        }
+      : input.recommendation === "ADDITIONAL_EVIDENCE_REQUIRED"
+        ? {
+            status: "Evidence pending" as const,
+            owner: "worker" as const,
+            nextAction: "Submit the additional evidence required by the interview recommendation."
+          }
+        : {
+            status: "Reassessment required" as const,
+            owner: "worker" as const,
+            nextAction: "Complete the required reassessment before this Assurance Case can advance."
+          };
+
   await transitionCase(database, {
     caseId: row.case_id,
     tenantId: row.tenant_id,
-    status: input.recommendation === "PASS" ? "Decision pending" : "Reassessment required",
-    owner: input.recommendation === "PASS" ? "admin" : "worker",
-    nextAction:
-      input.recommendation === "PASS"
-        ? "Record the final Assurance Case decision."
-        : "Complete the required reassessment before this Assurance Case can advance.",
+    status: transition.status,
+    owner: transition.owner,
+    nextAction: transition.nextAction,
     eventType: "interview_recommendation_submitted",
     actor: input.actor,
     now: input.now

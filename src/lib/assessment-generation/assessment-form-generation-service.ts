@@ -386,6 +386,141 @@ export class AssessmentFormGenerationService {
     }
   }
 
+  async generateReplacementForCase(
+    principal: AuthorizationPrincipal,
+    input: {
+      caseId: string;
+      blueprintVersionId: string;
+      replacesFormId: string;
+    },
+    now = new Date()
+  ): Promise<GeneratedAssessmentForm> {
+    const caseId = input.caseId.trim();
+    const blueprintVersionId = input.blueprintVersionId.trim();
+    const replacesFormId = input.replacesFormId.trim();
+    if (
+      !validCaseId(caseId) ||
+      !validBlueprintVersionId(blueprintVersionId) ||
+      !/^assessment_form_[A-Za-z0-9_-]{24}$/.test(replacesFormId)
+    ) {
+      throw new AssessmentFormGenerationError("Replacement assessment form reference is invalid.");
+    }
+    const actor = bindTrustedAuditActor(principal);
+    try {
+      return await this.database.transaction(async (database) => {
+        const previous = await database.query<{
+          form_id: string;
+          worker_account_id: string;
+          blueprint_version_id: string;
+        }>(
+          `SELECT form_id,worker_account_id,blueprint_version_id
+             FROM generated_assessment_forms
+            WHERE form_id=$1 AND case_id=$2
+            FOR UPDATE`,
+          [replacesFormId, caseId]
+        );
+        const prior = previous.rows[0];
+        if (!prior || prior.blueprint_version_id !== blueprintVersionId) {
+          throw new AssessmentFormGenerationError("Original assessment form is unavailable.");
+        }
+
+        const caseResult = await database.query<CaseRow>(
+          `SELECT c.case_id,c.worker_account_id,c.tenant_id,c.case_status,
+                  s.framework_id AS snapshot_framework_id
+             FROM assurance_cases c
+             LEFT JOIN assurance_case_policy_snapshots s ON s.case_id=c.case_id
+            WHERE c.case_id=$1
+            FOR UPDATE OF c`,
+          [caseId]
+        );
+        const caseRow = caseResult.rows[0];
+        if (
+          !caseRow ||
+          caseRow.worker_account_id !== prior.worker_account_id ||
+          !["Assessment pending", "Assessment in progress", "Review pending"].includes(caseRow.case_status)
+        ) {
+          throw new AssessmentFormGenerationError("Assurance Case is not eligible for replacement.");
+        }
+        if (!caseRow.snapshot_framework_id) {
+          throw new AssessmentFormGenerationError("Assurance Case has no locked effective-policy framework.");
+        }
+
+        const selection = await loadAssessmentSelectionInputs(database, {
+          workerAccountId: caseRow.worker_account_id,
+          blueprintVersionId,
+          expectedFrameworkId: caseRow.snapshot_framework_id
+        });
+        const nonceHex = randomBytes(32).toString("hex");
+        const allocation = allocateBlueprintCandidates(
+          selection.selectors,
+          selection.candidates,
+          nonceHex
+        );
+        if (!allocation) {
+          throw new AssessmentFormGenerationError(
+            "Replacement cannot be generated because unseen approved question capacity is insufficient."
+          );
+        }
+        const selected = allocation.map((entry) => entry.candidate);
+        const nextSequence = await database.query<{ next_sequence: number | string }>(
+          `SELECT COALESCE(MAX(generation_sequence),0)+1 AS next_sequence
+             FROM generated_assessment_forms
+            WHERE case_id=$1 AND blueprint_version_id=$2`,
+          [caseId, blueprintVersionId]
+        );
+        const generationSequence = Number(nextSequence.rows[0]?.next_sequence ?? 2);
+        const formId = createAssessmentFormId();
+        await database.query(
+          `INSERT INTO generated_assessment_forms(
+             form_id,case_id,worker_account_id,blueprint_version_id,
+             generation_nonce_hex,question_count,generated_at,
+             generation_sequence,generation_kind,replaces_form_id
+           ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'REPLACEMENT',$9)`,
+          [
+            formId,caseId,caseRow.worker_account_id,blueprintVersionId,nonceHex,
+            selected.length,now.toISOString(),generationSequence,replacesFormId
+          ]
+        );
+        for (const [index, candidate] of selected.entries()) {
+          await database.query(
+            `INSERT INTO generated_assessment_form_items(
+               form_item_id,form_id,position,question_id,question_version_id,created_at
+             ) VALUES($1,$2,$3,$4,$5,$6)`,
+            [
+              createAssessmentFormItemId(),formId,index+1,candidate.questionId,
+              candidate.questionVersionId,now.toISOString()
+            ]
+          );
+        }
+        await new DatabaseAuditRepository(Promise.resolve(database)).append(actor, {
+          action: "assessment.form.generated",
+          outcome: "succeeded",
+          target: { type: "resource", reference: formId },
+          metadata: {
+            caseId,
+            blueprintVersionId,
+            frameworkId: selection.frameworkId,
+            questionCount: selected.length,
+            generationKind: "REPLACEMENT",
+            generationSequence,
+            replacesFormId
+          }
+        });
+        const generated = await this.loadForm(database, formId);
+        if (!generated) throw new AssessmentFormGenerationError();
+        return generated;
+      });
+    } catch (error) {
+      if (error instanceof AssessmentFormGenerationError) throw error;
+      if (isUniqueViolation(error)) {
+        throw new AssessmentFormGenerationError(
+          "Replacement generation raced with another request. Reload the recovery case."
+        );
+      }
+      throw error;
+    }
+  }
+
   private async loadFormByCaseBlueprint(
     database: DatabaseClient,
     caseId: string,

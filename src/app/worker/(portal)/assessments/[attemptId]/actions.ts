@@ -11,6 +11,7 @@ import {
   getAssessmentAttemptService
 } from "@/lib/assessment-attempt/assessment-attempt-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
+import { readAssessmentAccessContext } from "@/lib/assessment-attempt/assessment-device-cookie";
 
 export type AssessmentAnswerActionState = Readonly<{
   status: "idle" | "error" | "conflict";
@@ -114,16 +115,22 @@ export async function saveAssessmentDraftAction(
       permission: "worker.assessments.read"
     });
     const service = await getAssessmentAttemptService();
+    const accessContext = await readAssessmentAccessContext();
 
     try {
-      const saved = await service.saveCurrentDraft(principal, {
-        attemptId,
-        position,
-        questionVersionId,
-        value: draftValue,
-        expectedRevision,
-        mutationKey: clientGeneratedMutationKey
-      });
+      const saved = await service.saveCurrentDraft(
+        principal,
+        {
+          attemptId,
+          position,
+          questionVersionId,
+          value: draftValue,
+          expectedRevision,
+          mutationKey: clientGeneratedMutationKey
+        },
+        new Date(),
+        accessContext
+      );
       return Object.freeze({
         status: "saved" as const,
         revision: saved.revision,
@@ -134,7 +141,7 @@ export async function saveAssessmentDraftAction(
 
       let serverDraft: AssessmentDraftConflictSnapshot | null = null;
       try {
-        const current = await service.getOwnedView(principal, attemptId);
+        const current = await service.getOwnedView(principal, attemptId, new Date(), accessContext);
         if (
           current.currentQuestion !== null &&
           current.currentDraft !== null &&
@@ -213,11 +220,14 @@ export async function submitAssessmentAnswerAction(
       expectedRole: "worker",
       permission: "worker.assessments.read"
     });
+    const accessContext = await readAssessmentAccessContext();
     await (
       await getAssessmentAttemptService()
     ).submitCurrentAnswer(
       principal,
-      { attemptId, position, questionVersionId, answer }
+      { attemptId, position, questionVersionId, answer },
+      new Date(),
+      accessContext
     );
   } catch (error) {
     if (error instanceof AssessmentAttemptConflictError) {
@@ -239,4 +249,180 @@ export async function submitAssessmentAnswerAction(
   }
 
   redirect(`/worker/assessments/${attemptId}`);
+}
+
+export async function interruptAssessmentAction(
+  attemptIdInput: string,
+  reasonInput: "emergency_exit" | "technical_issue" | "connection_lost" = "emergency_exit",
+  detailInput = ""
+): Promise<Readonly<{ ok: true }> | Readonly<{ ok: false; message: string }>> {
+  try {
+    const principal = await requirePlatformPermission({
+      expectedRole: "worker",
+      permission: "worker.assessments.read"
+    });
+    const accessContext = await readAssessmentAccessContext();
+    await (await getAssessmentAttemptService()).interrupt(
+      principal,
+      attemptIdInput,
+      accessContext,
+      {
+        reason: reasonInput,
+        detail: detailInput.trim().slice(0, 1000) || null
+      }
+    );
+    return Object.freeze({ ok: true as const });
+  } catch (error) {
+    if (
+      error instanceof AssessmentAttemptAccessError ||
+      error instanceof AssessmentAttemptConflictError ||
+      error instanceof AssessmentAttemptInputError
+    ) {
+      return Object.freeze({ ok: false as const, message: error.message });
+    }
+    throw error;
+  }
+}
+
+
+export type AssessmentProgressionActionState = Readonly<{
+  status: "idle" | "error";
+  message: string;
+}>;
+
+export type AssessmentReviewActionState = Readonly<{
+  status: "idle" | "success" | "error";
+  message: string;
+}>;
+
+function progressionError(error: unknown): AssessmentProgressionActionState {
+  if (
+    error instanceof AssessmentAttemptAccessError ||
+    error instanceof AssessmentAttemptConflictError ||
+    error instanceof AssessmentAttemptInputError
+  ) {
+    return Object.freeze({ status: "error" as const, message: error.message });
+  }
+  throw error;
+}
+
+export async function advanceAssessmentSectionAction(
+  _previousState: AssessmentProgressionActionState,
+  formData: FormData
+): Promise<AssessmentProgressionActionState> {
+  const attemptId = String(formData.get("attemptId") ?? "").trim();
+  try {
+    const principal = await requirePlatformPermission({
+      expectedRole: "worker",
+      permission: "worker.assessments.read"
+    });
+    const accessContext = await readAssessmentAccessContext();
+    await (await getAssessmentAttemptService()).advanceSection(
+      principal,
+      attemptId,
+      accessContext
+    );
+  } catch (error) {
+    return progressionError(error);
+  }
+  redirect(`/worker/assessments/${attemptId}`);
+}
+
+export async function finalizeAssessmentAction(
+  _previousState: AssessmentProgressionActionState,
+  formData: FormData
+): Promise<AssessmentProgressionActionState> {
+  const attemptId = String(formData.get("attemptId") ?? "").trim();
+  try {
+    const principal = await requirePlatformPermission({
+      expectedRole: "worker",
+      permission: "worker.assessments.read"
+    });
+    const accessContext = await readAssessmentAccessContext();
+    await (await getAssessmentAttemptService()).finalizeAssessment(
+      principal,
+      attemptId,
+      accessContext
+    );
+  } catch (error) {
+    return progressionError(error);
+  }
+  redirect(`/worker/assessments/${attemptId}`);
+}
+
+export async function reviseAssessmentAnswerAction(
+  _previousState: AssessmentReviewActionState,
+  formData: FormData
+): Promise<AssessmentReviewActionState> {
+  const attemptId = String(formData.get("attemptId") ?? "").trim();
+  const position = positiveInteger(String(formData.get("position") ?? ""));
+  const encodedAnswer = String(formData.get("answer") ?? "");
+  if (!attemptId || position === null || !encodedAnswer) {
+    return Object.freeze({ status: "error" as const, message: "Review answer is stale. Reload and try again." });
+  }
+  let answer: unknown;
+  try {
+    answer = JSON.parse(encodedAnswer) as unknown;
+  } catch {
+    return Object.freeze({ status: "error" as const, message: "Enter a valid answer." });
+  }
+  try {
+    const principal = await requirePlatformPermission({
+      expectedRole: "worker",
+      permission: "worker.assessments.read"
+    });
+    const accessContext = await readAssessmentAccessContext();
+    await (await getAssessmentAttemptService()).reviseCommittedAnswer(
+      principal,
+      { attemptId, position, answer },
+      accessContext
+    );
+    return Object.freeze({
+      status: "success" as const,
+      message: "Answer revision saved. The original committed answer remains in history."
+    });
+  } catch (error) {
+    if (
+      error instanceof AssessmentAttemptAnswerInputError ||
+      error instanceof AssessmentAttemptAccessError ||
+      error instanceof AssessmentAttemptConflictError ||
+      error instanceof AssessmentAttemptInputError
+    ) {
+      return Object.freeze({ status: "error" as const, message: error.message });
+    }
+    throw error;
+  }
+}
+
+export async function setAssessmentReviewFlagAction(formData: FormData): Promise<never> {
+  const attemptId = String(formData.get("attemptId") ?? "").trim();
+  const position = positiveInteger(String(formData.get("position") ?? ""));
+  const flagged = String(formData.get("flagged") ?? "") === "yes";
+  if (!attemptId || position === null) {
+    redirect("/worker/available-assessments");
+  }
+  try {
+    const principal = await requirePlatformPermission({
+      expectedRole: "worker",
+      permission: "worker.assessments.read"
+    });
+    const accessContext = await readAssessmentAccessContext();
+    await (await getAssessmentAttemptService()).setReviewFlag(
+      principal,
+      { attemptId, position, flagged },
+      accessContext
+    );
+  } catch (error) {
+    if (
+      error instanceof AssessmentAttemptAccessError ||
+      error instanceof AssessmentAttemptConflictError ||
+      error instanceof AssessmentAttemptInputError
+    ) {
+      redirect(
+        `/worker/assessments/${attemptId}/review/${position}?error=${encodeURIComponent(error.message)}`
+      );
+    }
+    throw error;
+  }
+  redirect(`/worker/assessments/${attemptId}/review/${position}`);
 }

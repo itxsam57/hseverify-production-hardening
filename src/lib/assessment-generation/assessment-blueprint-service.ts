@@ -19,6 +19,10 @@ import {
   type BlueprintVersionInput,
   type NormalizedBlueprintVersion
 } from "./assessment-blueprint-domain";
+import {
+  normalizeAssessmentDeliverySettings,
+  type AssessmentDeliverySettingsInput
+} from "./assessment-delivery-settings";
 
 type BlueprintRow = {
   blueprint_id: string;
@@ -183,7 +187,8 @@ async function insertVersion(
   normalized: NormalizedBlueprintVersion,
   frameworkId: string,
   principal: AuthorizationPrincipal,
-  now: Date
+  now: Date,
+  deliveryInput?: AssessmentDeliverySettingsInput
 ): Promise<string> {
   const blueprintVersionId = createBlueprintVersionId();
   await database.query(
@@ -199,6 +204,32 @@ async function insertVersion(
       normalized.title,
       JSON.stringify(normalized.selectors),
       principal.accountId,
+      now.toISOString()
+    ]
+  );
+  const delivery = normalizeAssessmentDeliverySettings(deliveryInput, normalized.totalCount);
+  await database.query(
+    `INSERT INTO assessment_blueprint_delivery_settings(
+       blueprint_version_id,progression_mode,section_config_json,
+       require_camera,require_microphone,require_screen_share,
+       record_camera,record_microphone,record_screen,recording_retention_days,integrity_failure_mode,
+       require_fullscreen,require_environment_declaration,require_monitoring_consent,created_at
+     ) VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+    [
+      blueprintVersionId,
+      delivery.progressionMode,
+      JSON.stringify(delivery.sections),
+      delivery.requireCamera,
+      delivery.requireMicrophone,
+      delivery.requireScreenShare,
+      delivery.recordCamera,
+      delivery.recordMicrophone,
+      delivery.recordScreen,
+      delivery.recordingRetentionDays,
+      delivery.integrityFailureMode,
+      delivery.requireFullscreen,
+      delivery.requireEnvironmentDeclaration,
+      delivery.requireMonitoringConsent,
       now.toISOString()
     ]
   );
@@ -234,7 +265,7 @@ export class AssessmentBlueprintService {
 
   async createBlueprint(
     principal: AuthorizationPrincipal,
-    input: { blueprintReference: string; version: BlueprintVersionInput },
+    input: { blueprintReference: string; version: BlueprintVersionInput; delivery?: AssessmentDeliverySettingsInput },
     now = new Date()
   ): Promise<AssessmentBlueprintAdminListItem> {
     const reference = normalizeBlueprintReference(input.blueprintReference);
@@ -258,7 +289,8 @@ export class AssessmentBlueprintService {
           normalized,
           frameworkId,
           principal,
-          now
+          now,
+          input.delivery
         );
         const updated = await database.query<BlueprintRow>(
           `UPDATE assessment_blueprints
@@ -288,6 +320,7 @@ export class AssessmentBlueprintService {
       blueprintId: string;
       expectedCurrentVersionId: string;
       version: BlueprintVersionInput;
+      delivery?: AssessmentDeliverySettingsInput;
     },
     now = new Date()
   ): Promise<AssessmentBlueprintAdminListItem> {
@@ -330,7 +363,8 @@ export class AssessmentBlueprintService {
           normalized,
           frameworkId,
           principal,
-          now
+          now,
+          input.delivery
         );
         const updated = await database.query<BlueprintRow>(
           `UPDATE assessment_blueprints

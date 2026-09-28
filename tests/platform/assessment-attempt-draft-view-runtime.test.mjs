@@ -39,7 +39,7 @@ const ENV = {
 
 async function database() {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0043_assessment_attempt_drafts");
+  await applyMigrationsThrough(db, ENV.releaseSha, "0069_assessment_controlled_delivery");
   return db;
 }
 
@@ -65,7 +65,25 @@ function assertSafeClientDraft(clientView, expectedValue) {
     revision: 1,
     updatedAt: ATTEMPT_NOW_DATE.toISOString()
   });
-  assert.deepEqual(Object.keys(clientView).sort(), ["currentDraft", "currentQuestion", "submitted"]);
+  assert.deepEqual(Object.keys(clientView).sort(), [
+    "attemptId",
+    "awaitingFinalSubmit",
+    "awaitingSectionAdvance",
+    "currentDraft",
+    "currentQuestion",
+    "flaggedPositions",
+    "progressionMode",
+    "reviewablePositions",
+    "sectionTitle",
+    "submitted"
+  ]);
+  assert.match(clientView.attemptId, /^assessment_attempt_[A-Za-z0-9_-]{24}$/);
+  assert.equal(clientView.progressionMode, "STRICT");
+  assert.deepEqual(clientView.reviewablePositions, []);
+  assert.deepEqual(clientView.flaggedPositions, []);
+  assert.equal(clientView.awaitingSectionAdvance, false);
+  assert.equal(clientView.awaitingFinalSubmit, false);
+  assert.equal(clientView.sectionTitle, null);
   assert.deepEqual(Object.keys(clientView.currentDraft).sort(), ["revision", "updatedAt", "value"]);
   const serialized = JSON.stringify(clientView.currentDraft).toLowerCase();
   for (const forbidden of [

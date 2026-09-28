@@ -103,7 +103,9 @@ async function committedAnswerRows(
 ): Promise<readonly ObjectiveAnswerRow[]> {
   const result = await database.query<ObjectiveAnswerRow>(
     `SELECT items.position,versions.question_type,versions.answer_key_json,
-            answers.text_value,answers.boolean_value,answers.numeric_value
+            COALESCE(latest.text_value,answers.text_value) AS text_value,
+            COALESCE(latest.boolean_value,answers.boolean_value) AS boolean_value,
+            COALESCE(latest.numeric_value,answers.numeric_value) AS numeric_value
        FROM assessment_attempts AS attempts
        JOIN generated_assessment_form_items AS items
          ON items.form_id=attempts.form_id
@@ -114,6 +116,15 @@ async function committedAnswerRows(
          ON answers.attempt_id=attempts.attempt_id
         AND answers.position=items.position
         AND answers.question_version_id=items.question_version_id
+       LEFT JOIN LATERAL (
+         SELECT revisions.text_value,revisions.boolean_value,revisions.numeric_value
+           FROM assessment_answer_revisions AS revisions
+          WHERE revisions.attempt_id=answers.attempt_id
+            AND revisions.answer_id=answers.answer_id
+            AND revisions.position=answers.position
+          ORDER BY revisions.revision_no DESC
+          LIMIT 1
+       ) AS latest ON TRUE
       WHERE attempts.attempt_id=$1
       ORDER BY items.position`,
     [attemptId]

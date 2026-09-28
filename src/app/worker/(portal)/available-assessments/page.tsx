@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-import { beginAssessmentAction } from "@/app/worker/(portal)/available-assessments/actions";
+import {
+  beginAssessmentAction,
+  requestAssessmentRecoveryAction,
+  resumeAssessmentAction
+} from "@/app/worker/(portal)/available-assessments/actions";
 import { Button } from "@/components/ui/button";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getAssessmentCatalogueEligibilityService } from "@/lib/assessment-catalogue/assessment-catalogue-eligibility-service";
@@ -8,14 +12,21 @@ import { getAssessmentAttemptService } from "@/lib/assessment-attempt/assessment
 
 export const dynamic = "force-dynamic";
 
-export default async function AvailableAssessmentsPage(): Promise<React.JSX.Element> {
+export default async function AvailableAssessmentsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ recoveryError?: string; recoveryRequested?: string }>;
+}): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "worker",
     permission: "worker.assessments.read"
   });
-  const [available, inProgress] = await Promise.all([
+  const attemptService = await getAssessmentAttemptService();
+  const [available, inProgress, interrupted, params] = await Promise.all([
     (await getAssessmentCatalogueEligibilityService()).listAvailableForWorker(principal),
-    (await getAssessmentAttemptService()).listOwnedInProgress(principal)
+    attemptService.listOwnedInProgress(principal),
+    attemptService.listOwnedInterrupted(principal),
+    searchParams
   ]);
 
   return (
@@ -31,6 +42,59 @@ export default async function AvailableAssessmentsPage(): Promise<React.JSX.Elem
           </p>
         </div>
       </div>
+
+      {params.recoveryError ? <p className="status-banner status-error" role="alert">{params.recoveryError}</p> : null}
+      {params.recoveryRequested === "yes" ? (
+        <p className="status-banner status-success" role="status">
+          Recovery review requested. A Verifier must decide whether the original bound attempt can resume or a replacement is required.
+        </p>
+      ) : null}
+
+      <section className="content-stack" aria-labelledby="interrupted-assessments-heading">
+        <div className="section-heading-row">
+          <div>
+            <p className="eyebrow">Controlled recovery</p>
+            <h2 id="interrupted-assessments-heading">Interrupted assessments</h2>
+          </div>
+        </div>
+        {interrupted.length === 0 ? (
+          <p className="muted-copy">You have no interrupted assessments awaiting recovery.</p>
+        ) : interrupted.map((attempt) => (
+          <article className="panel page-section" key={attempt.attemptId}>
+            <div className="section-heading-row">
+              <div><h3>{attempt.catalogueTitle}</h3><p>Question {attempt.currentPosition} of {attempt.questionCount}</p></div>
+              <span className="status-pill">Interrupted</span>
+            </div>
+            <p>Reason: {attempt.reason?.replaceAll("_", " ") ?? "Recorded interruption"}</p>
+            <p className="muted-copy">
+              Resume is allowed only from the browser/device context bound when this attempt began.
+              If that context is unavailable, a replacement must be approved rather than silently creating a new form.
+            </p>
+            <form action={resumeAssessmentAction}>
+              <input type="hidden" name="attemptId" value={attempt.attemptId} />
+              <Button type="submit">Resume bound assessment</Button>
+            </form>
+            <details>
+              <summary>I cannot use the bound device</summary>
+              <form action={requestAssessmentRecoveryAction} className="content-stack">
+                <input type="hidden" name="attemptId" value={attempt.attemptId} />
+                <label>
+                  Why is recovery review required?
+                  <textarea
+                    name="requestReason"
+                    rows={4}
+                    minLength={10}
+                    maxLength={2000}
+                    required
+                    placeholder="Explain why the original bound device/session cannot be used."
+                  />
+                </label>
+                <Button type="submit" variant="secondary">Request recovery review</Button>
+              </form>
+            </details>
+          </article>
+        ))}
+      </section>
 
       <section className="content-stack" aria-labelledby="in-progress-assessments-heading">
         <div className="section-heading-row">
@@ -121,8 +185,9 @@ export default async function AvailableAssessmentsPage(): Promise<React.JSX.Elem
                   value={assessment.catalogueVersionId}
                 />
                 <p className="muted-copy">
-                  Starting creates or reuses your protected attempt and opens only the first current
-                  question. Later questions are not delivered until the current answer is saved.
+                  Starting opens the required pre-assessment checks first. The attempt is created only after
+                  those checks pass, then it is bound to this authorized browser/device context.
+                  Later questions are not delivered until the current answer is saved.
                 </p>
                 <Button type="submit">Start assessment</Button>
               </form>

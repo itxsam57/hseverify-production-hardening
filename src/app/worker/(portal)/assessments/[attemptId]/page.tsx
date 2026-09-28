@@ -9,6 +9,7 @@ import {
   type AssessmentAttemptView
 } from "@/lib/assessment-attempt/assessment-attempt-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
+import { readAssessmentAccessContext } from "@/lib/assessment-attempt/assessment-device-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,12 @@ export default async function AssessmentPage({
   });
   const { attemptId } = await params;
 
+  const accessContext = await readAssessmentAccessContext();
   let view: AssessmentAttemptView;
   try {
     view = await (
       await getAssessmentAttemptService()
-    ).getOwnedView(principal, attemptId);
+    ).getOwnedView(principal, attemptId, new Date(), accessContext);
   } catch (error) {
     if (
       error instanceof AssessmentAttemptAccessError ||

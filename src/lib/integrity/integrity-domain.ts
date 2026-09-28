@@ -10,7 +10,14 @@ export const INTEGRITY_EVENT_TYPES = Object.freeze([
   "ADDITIONAL_VOICE_DETECTED",
   "COPY_PASTE_DETECTED",
   "DEVICE_CHANGED",
-  "CONNECTION_INTERRUPTED"
+  "CONNECTION_INTERRUPTED",
+  "NO_FACE_DETECTED",
+  "MULTIPLE_FACE_DETECTED",
+  "RECORDING_STARTED",
+  "RECORDING_STOPPED",
+  "RECORDING_FAILED",
+  "MONITORING_PROVIDER_DEGRADED",
+  "SESSION_TIMING_ANOMALY"
 ] as const);
 
 export type IntegrityEventType = (typeof INTEGRITY_EVENT_TYPES)[number];
@@ -57,16 +64,37 @@ export function normalizeIntegrityAttemptReference(value: string): string {
 }
 
 export function classifyIntegrityEvent(type: IntegrityEventType): IntegrityClassification {
-  if (type === "BROWSER_RESUMED") return "GREEN";
-  if (type === "BROWSER_FOCUS_LOST" || type === "TAB_SWITCHED" || type === "FULLSCREEN_EXITED") return "YELLOW";
+  if (type === "BROWSER_RESUMED" || type === "RECORDING_STARTED" || type === "RECORDING_STOPPED") return "GREEN";
+  if (
+    type === "BROWSER_FOCUS_LOST" ||
+    type === "TAB_SWITCHED" ||
+    type === "FULLSCREEN_EXITED" ||
+    type === "NO_FACE_DETECTED" ||
+    type === "RECORDING_FAILED" ||
+    type === "MONITORING_PROVIDER_DEGRADED" ||
+    type === "SESSION_TIMING_ANOMALY"
+  ) return "YELLOW";
   if (type === "CONNECTION_INTERRUPTED") return "YELLOW";
-  if (type === "COPY_PASTE_DETECTED" || type === "DEVICE_CHANGED" || type === "IDENTITY_RECONFIRMATION_REQUIRED" || type === "ADDITIONAL_VOICE_DETECTED") return "RED";
+  if (
+    type === "COPY_PASTE_DETECTED" ||
+    type === "DEVICE_CHANGED" ||
+    type === "IDENTITY_RECONFIRMATION_REQUIRED" ||
+    type === "ADDITIONAL_VOICE_DETECTED" ||
+    type === "MULTIPLE_FACE_DETECTED"
+  ) return "RED";
   return "YELLOW";
 }
 
 export function stateForIntegrityEvent(type: IntegrityEventType): IntegrityState {
   if (type === "BROWSER_RESUMED") return "RECOVERED";
-  if (type === "CAMERA_UNAVAILABLE" || type === "MIC_UNAVAILABLE" || type === "SCREEN_UNAVAILABLE" || type === "CONNECTION_INTERRUPTED") {
+  if (
+    type === "CAMERA_UNAVAILABLE" ||
+    type === "MIC_UNAVAILABLE" ||
+    type === "SCREEN_UNAVAILABLE" ||
+    type === "CONNECTION_INTERRUPTED" ||
+    type === "RECORDING_FAILED" ||
+    type === "MONITORING_PROVIDER_DEGRADED"
+  ) {
     return "DEGRADED";
   }
   return "ACTIVE";

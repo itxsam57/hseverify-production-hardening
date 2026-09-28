@@ -1,5 +1,6 @@
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getAssessmentBlueprintService } from "@/lib/assessment-generation/assessment-blueprint-service";
+import { getAssessmentDeliverySettingsService } from "@/lib/assessment-generation/assessment-delivery-settings-service";
 import {
   createAssessmentBlueprintAction,
   reviseAssessmentBlueprintAction,
@@ -20,6 +21,64 @@ const EXAMPLE_SELECTORS = JSON.stringify(
   2
 );
 
+function DeliverySettingsFields({
+  prefix = "",
+  defaults
+}: {
+  prefix?: string;
+  defaults?: {
+    progressionMode: "STRICT" | "CONTROLLED_REVIEW" | "SECTION_REVIEW";
+    sections: readonly { title: string; endPosition: number }[];
+    requireCamera: boolean;
+    requireMicrophone: boolean;
+    requireScreenShare: boolean;
+    recordCamera: boolean;
+    recordMicrophone: boolean;
+    recordScreen: boolean;
+    recordingRetentionDays: number;
+    integrityFailureMode: "REVIEW" | "BLOCK";
+    requireFullscreen: boolean;
+    requireEnvironmentDeclaration: boolean;
+    requireMonitoringConsent: boolean;
+  };
+}): React.JSX.Element {
+  const name = (field: string) => `${prefix}${field}`;
+  return (
+    <fieldset className="content-stack">
+      <legend>Candidate delivery settings</legend>
+      <label>
+        Progression mode
+        <select name={name("progressionMode")} defaultValue={defaults?.progressionMode ?? "STRICT"}>
+          <option value="STRICT">Strict Progression — no return to committed questions</option>
+          <option value="CONTROLLED_REVIEW">Controlled Review — revisit one committed question at a time</option>
+          <option value="SECTION_REVIEW">Section Review — revisit inside an unlocked section</option>
+        </select>
+      </label>
+      <label>
+        Section JSON
+        <textarea
+          name={name("sectionsJson")}
+          rows={4}
+          defaultValue={defaults?.sections.length ? JSON.stringify(defaults.sections, null, 2) : ""}
+          placeholder={'[{"title":"Section 1","endPosition":5},{"title":"Section 2","endPosition":10}]'}
+        />
+      </label>
+      <p className="muted-copy">Section JSON is required only for Section Review and the final boundary must equal the blueprint question count.</p>
+      <label><input type="checkbox" name={name("requireCamera")} value="yes" defaultChecked={defaults?.requireCamera ?? false} /> Require camera check</label>
+      <label><input type="checkbox" name={name("requireMicrophone")} value="yes" defaultChecked={defaults?.requireMicrophone ?? false} /> Require microphone check</label>
+      <label><input type="checkbox" name={name("requireScreenShare")} value="yes" defaultChecked={defaults?.requireScreenShare ?? false} /> Require screen-share check</label>
+      <label><input type="checkbox" name={name("recordCamera")} value="yes" defaultChecked={defaults?.recordCamera ?? false} /> Record camera during the assessment</label>
+      <label><input type="checkbox" name={name("recordMicrophone")} value="yes" defaultChecked={defaults?.recordMicrophone ?? false} /> Record microphone during the assessment</label>
+      <label><input type="checkbox" name={name("recordScreen")} value="yes" defaultChecked={defaults?.recordScreen ?? false} /> Record shared screen during the assessment</label>
+      <label>Recording retention days<input type="number" min={1} max={3650} name={name("recordingRetentionDays")} defaultValue={defaults?.recordingRetentionDays ?? 30} /></label>
+      <label>Monitoring failure response<select name={name("integrityFailureMode")} defaultValue={defaults?.integrityFailureMode ?? "REVIEW"}><option value="REVIEW">Continue but force human review</option><option value="BLOCK">Block until required monitoring recovers</option></select></label>
+      <label><input type="checkbox" name={name("requireFullscreen")} value="yes" defaultChecked={defaults?.requireFullscreen ?? true} /> Require fullscreen capability</label>
+      <label><input type="checkbox" name={name("requireEnvironmentDeclaration")} value="yes" defaultChecked={defaults?.requireEnvironmentDeclaration ?? true} /> Require environment declaration</label>
+      <label><input type="checkbox" name={name("requireMonitoringConsent")} value="yes" defaultChecked={defaults?.requireMonitoringConsent ?? true} /> Require monitoring consent</label>
+    </fieldset>
+  );
+}
+
 type SearchParams = Promise<{ success?: string; error?: string }>;
 
 export default async function AssessmentBlueprintsPage({
@@ -32,6 +91,15 @@ export default async function AssessmentBlueprintsPage({
     permission: "platform.operations.manage"
   });
   const blueprints = await (await getAssessmentBlueprintService()).listBlueprints(principal);
+  const deliveryService = getAssessmentDeliverySettingsService();
+  const deliverySettings = new Map(
+    await Promise.all(
+      blueprints.map(async (item) => [
+        item.version.blueprintVersionId,
+        await deliveryService.get(item.version.blueprintVersionId)
+      ] as const)
+    )
+  );
   const params = await searchParams;
 
   return (
@@ -83,6 +151,7 @@ export default async function AssessmentBlueprintsPage({
         <p className="muted-copy">
           Each selector requires a count. Optional filters are questionType, domainReference, difficulty and tagsAll. The complete blueprint may request at most 500 questions.
         </p>
+        <DeliverySettingsFields />
         <button type="submit">Create blueprint</button>
       </form>
 
@@ -105,6 +174,22 @@ export default async function AssessmentBlueprintsPage({
                 Current version: <code>{item.blueprint.currentVersionId}</code>
               </p>
               <pre>{JSON.stringify(item.version.selectors, null, 2)}</pre>
+              {(() => {
+                const delivery = deliverySettings.get(item.version.blueprintVersionId);
+                return delivery ? (
+                  <dl>
+                    <div><dt>Progression</dt><dd>{delivery.progressionMode.replaceAll("_", " ")}</dd></div>
+                    <div><dt>Camera</dt><dd>{delivery.requireCamera ? "Required" : "Not required"}</dd></div>
+                    <div><dt>Microphone</dt><dd>{delivery.requireMicrophone ? "Required" : "Not required"}</dd></div>
+                    <div><dt>Screen share</dt><dd>{delivery.requireScreenShare ? "Required" : "Not required"}</dd></div>
+                    <div><dt>Camera recording</dt><dd>{delivery.recordCamera ? "Recorded" : "Not recorded"}</dd></div>
+                    <div><dt>Microphone recording</dt><dd>{delivery.recordMicrophone ? "Recorded" : "Not recorded"}</dd></div>
+                    <div><dt>Screen recording</dt><dd>{delivery.recordScreen ? "Recorded" : "Not recorded"}</dd></div>
+                    <div><dt>Recording retention</dt><dd>{delivery.recordingRetentionDays} days</dd></div>
+                    <div><dt>Monitoring failure</dt><dd>{delivery.integrityFailureMode === "BLOCK" ? "Block until recovered" : "Continue with human review"}</dd></div>
+                  </dl>
+                ) : null;
+              })()}
 
               <form action={setAssessmentBlueprintStatusAction}>
                 <input type="hidden" name="blueprintId" value={item.blueprint.blueprintId} />
@@ -155,6 +240,10 @@ export default async function AssessmentBlueprintsPage({
                       defaultValue={JSON.stringify(item.version.selectors, null, 2)}
                     />
                   </label>
+                  <DeliverySettingsFields
+                    prefix="revision"
+                    defaults={deliverySettings.get(item.version.blueprintVersionId)}
+                  />
                   <button type="submit">Publish revision</button>
                 </form>
               </details>

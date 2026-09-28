@@ -769,6 +769,22 @@ export class AuthAccessRepository {
     return result.affectedRows === 1;
   }
 
+  async consumeMfaRecoveryCode(input: {
+    accountId: string;
+    codeHash: string;
+    usedAt: string;
+  }): Promise<boolean> {
+    const result = await this.database.query(
+      `UPDATE auth_mfa_recovery_codes
+       SET used_at = $3
+       WHERE account_id = $1
+         AND code_hash = $2
+         AND used_at IS NULL`,
+      [input.accountId, input.codeHash, input.usedAt]
+    );
+    return result.affectedRows === 1;
+  }
+
   async markInvitationAccepted(input: {
     invitationId: string;
     accountId: string;

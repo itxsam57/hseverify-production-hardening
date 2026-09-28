@@ -105,6 +105,7 @@ export async function RolePortalShell({
                 </div>
                 <Link href={`${basePath}/dashboard`}>Dashboard</Link>
                 <Link href={`${basePath}/notifications`}>Notifications</Link>
+                <Link href="/account/security">Security</Link>
                 <Link href="/account/sessions">Active sessions</Link>
                 <Link href="/">Exit portal</Link>
                 <ConfirmDialog

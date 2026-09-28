@@ -3,7 +3,10 @@ import Link from "next/link";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
-import { scheduleInterviewAction } from "./actions";
+import {
+  declareInterviewConflictAction,
+  scheduleInterviewAction
+} from "./actions";
 
 export default async function AssessorInterviewsPage(): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
@@ -26,7 +29,7 @@ export default async function AssessorInterviewsPage(): Promise<React.JSX.Elemen
         {assignments.length === 0 ? <p>No interview assignments are currently available.</p> : (
           <div className="table-scroll">
             <table>
-              <thead><tr><th>Case</th><th>Worker</th><th>Status</th><th>Schedule</th><th>Console</th></tr></thead>
+              <thead><tr><th>Case</th><th>Worker</th><th>Status</th><th>Schedule</th><th>Console</th><th>Conflict</th></tr></thead>
               <tbody>{assignments.map((assignment) => (
                 <tr key={assignment.interviewRequestId}>
                   <td>{assignment.caseId}</td>
@@ -40,6 +43,16 @@ export default async function AssessorInterviewsPage(): Promise<React.JSX.Elemen
                     </form>
                   )}</td>
                   <td><Link href={"/assessor/interviews/" + assignment.interviewRequestId}>Open interview console</Link></td>
+                  <td>
+                    <details>
+                      <summary>Declare conflict</summary>
+                      <form action={declareInterviewConflictAction}>
+                        <input type="hidden" name="interviewRequestId" value={assignment.interviewRequestId} />
+                        <textarea name="reason" minLength={5} maxLength={2000} required aria-label="Conflict reason" />
+                        <button className="button button-secondary button-small" type="submit">Release and re-match</button>
+                      </form>
+                    </details>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>

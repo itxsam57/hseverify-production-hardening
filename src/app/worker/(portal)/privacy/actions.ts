@@ -14,6 +14,7 @@ export async function submitPrivacyRequestAction(formData: FormData) {
   }
   await service.request({ requestId: randomUUID(), tenantId: principal.tenantMembership?.tenantId ?? null, workerId: principal.accountId, type: type as "access" | "correction" | "export" | "deletion" });
   revalidatePath("/worker/privacy");
+  revalidatePath("/worker/accessibility");
 }
 
 export async function submitAccommodationAction(formData: FormData) {
@@ -22,4 +23,5 @@ export async function submitAccommodationAction(formData: FormData) {
   if (!type) throw new Error("invalid accommodation");
   await new PrivacyOperationsService().accommodation({ id: randomUUID(), tenantId: principal.tenantMembership?.tenantId ?? null, workerId: principal.accountId, type });
   revalidatePath("/worker/privacy");
+  revalidatePath("/worker/accessibility");
 }

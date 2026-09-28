@@ -37,6 +37,11 @@ type InProgressAttemptRow = {
   updated_at: string | Date;
 };
 
+type InterruptedAttemptRow = InProgressAttemptRow & {
+  reason: string | null;
+  interrupted_at: string | Date | null;
+};
+
 type CurrentItemRow = {
   form_item_id: string;
   position: number | string;
@@ -99,6 +104,23 @@ export type OwnedInProgressAssessmentAttempt = Readonly<{
   questionCount: number;
   startedAt: string;
   updatedAt: string;
+}>;
+
+export type OwnedInterruptedAssessmentAttempt = OwnedInProgressAssessmentAttempt & Readonly<{
+  status: "INTERRUPTED";
+  reason: string | null;
+  interruptedAt: string | null;
+}>;
+
+export type AssessmentAttemptBinding = Readonly<{
+  attemptId: string;
+  workerAccountId: string;
+  deviceTokenHash: string;
+  initialAuthSessionId: string;
+  currentAuthSessionId: string;
+  securityContextHash: string;
+  boundAt: string;
+  lastVerifiedAt: string;
 }>;
 
 export type CommittedAssessmentAnswer = Readonly<{
@@ -172,7 +194,7 @@ function attempt(row: AttemptRow): AssessmentAttemptRecord {
     throw new Error("Stored assessment attempt position is inconsistent.");
   }
   if (
-    (row.status === "IN_PROGRESS" && row.submitted_at !== null) ||
+    (row.status !== "SUBMITTED" && row.submitted_at !== null) ||
     (row.status === "SUBMITTED" &&
       (row.submitted_at === null || currentPosition !== questionCount))
   ) {
@@ -210,6 +232,37 @@ function inProgressAttempt(row: InProgressAttemptRow): OwnedInProgressAssessment
     questionCount,
     startedAt: iso(row.started_at),
     updatedAt: iso(row.updated_at)
+  });
+}
+
+function interruptedAttempt(row: InterruptedAttemptRow): OwnedInterruptedAssessmentAttempt {
+  return Object.freeze({
+    ...inProgressAttempt(row),
+    status: "INTERRUPTED" as const,
+    reason: row.reason,
+    interruptedAt: row.interrupted_at === null ? null : iso(row.interrupted_at)
+  });
+}
+
+function binding(row: {
+  attempt_id: string;
+  worker_account_id: string;
+  device_token_hash: string;
+  initial_auth_session_id: string;
+  current_auth_session_id: string;
+  security_context_hash: string;
+  bound_at: string | Date;
+  last_verified_at: string | Date;
+}): AssessmentAttemptBinding {
+  return Object.freeze({
+    attemptId: row.attempt_id,
+    workerAccountId: row.worker_account_id,
+    deviceTokenHash: row.device_token_hash,
+    initialAuthSessionId: row.initial_auth_session_id,
+    currentAuthSessionId: row.current_auth_session_id,
+    securityContextHash: row.security_context_hash,
+    boundAt: iso(row.bound_at),
+    lastVerifiedAt: iso(row.last_verified_at)
   });
 }
 
@@ -295,6 +348,11 @@ function validExpectedRevision(value: number | null): boolean {
   return value === null || (Number.isSafeInteger(value) && value >= 1);
 }
 
+const createAssessmentInterruptionId = (): string => {
+  const bytes = globalThis.crypto.randomUUID().replaceAll("-", "");
+  return `assessment_interrupt_${bytes.slice(0, 24)}`;
+};
+
 export class AssessmentAttemptRepository {
   constructor(readonly database: DatabaseClient) {}
 
@@ -307,7 +365,7 @@ export class AssessmentAttemptRepository {
       `SELECT ${ATTEMPT_COLUMNS}
        FROM assessment_attempts
        WHERE worker_account_id=$1 AND case_id=$2 AND catalogue_version_id=$3
-       ORDER BY created_at,attempt_id
+       ORDER BY created_at DESC,attempt_id DESC
        LIMIT 1`,
       [workerAccountId, caseId, catalogueVersionId]
     );
@@ -368,6 +426,176 @@ export class AssessmentAttemptRepository {
       [workerAccountId]
     );
     return Object.freeze(result.rows.map(inProgressAttempt));
+  }
+
+  async listOwnedInterrupted(
+    workerAccountId: string
+  ): Promise<readonly OwnedInterruptedAssessmentAttempt[]> {
+    const result = await this.database.query<InterruptedAttemptRow>(
+      `SELECT a.attempt_id,a.case_id,a.catalogue_version_id,
+              v.title AS catalogue_title,a.current_position,a.question_count,
+              a.started_at,a.updated_at,
+              interruption.reason,interruption.occurred_at AS interrupted_at
+         FROM assessment_attempts AS a
+         JOIN assurance_cases AS c
+           ON c.case_id=a.case_id AND c.worker_account_id=a.worker_account_id
+         JOIN assessment_catalogue_versions AS v
+           ON v.catalogue_version_id=a.catalogue_version_id
+         LEFT JOIN LATERAL (
+           SELECT reason,occurred_at
+             FROM assessment_interruption_events
+            WHERE attempt_id=a.attempt_id AND resolution IS NULL
+            ORDER BY occurred_at DESC,interruption_id DESC
+            LIMIT 1
+         ) AS interruption ON TRUE
+        WHERE a.worker_account_id=$1
+          AND a.status='INTERRUPTED'
+          AND a.submitted_at IS NULL
+        ORDER BY a.updated_at DESC,a.attempt_id`,
+      [workerAccountId]
+    );
+    return Object.freeze(result.rows.map(interruptedAttempt));
+  }
+
+  async findBinding(attemptId: string): Promise<AssessmentAttemptBinding | null> {
+    const result = await this.database.query<{
+      attempt_id: string; worker_account_id: string; device_token_hash: string;
+      initial_auth_session_id: string; current_auth_session_id: string;
+      security_context_hash: string; bound_at: string | Date; last_verified_at: string | Date;
+    }>(
+      `SELECT attempt_id,worker_account_id,device_token_hash,initial_auth_session_id,
+              current_auth_session_id,security_context_hash,bound_at,last_verified_at
+         FROM assessment_attempt_bindings WHERE attempt_id=$1`,
+      [attemptId]
+    );
+    return result.rows[0] ? binding(result.rows[0]) : null;
+  }
+
+  async insertBinding(input: {
+    attemptId: string;
+    workerAccountId: string;
+    deviceTokenHash: string;
+    authSessionId: string;
+    securityContextHash: string;
+    now: string;
+  }): Promise<void> {
+    await this.database.query(
+      `INSERT INTO assessment_attempt_bindings(
+         attempt_id,worker_account_id,device_token_hash,initial_auth_session_id,
+         current_auth_session_id,security_context_hash,bound_at,last_verified_at
+       ) VALUES($1,$2,$3,$4,$4,$5,$6,$6)`,
+      [
+        input.attemptId,input.workerAccountId,input.deviceTokenHash,input.authSessionId,
+        input.securityContextHash,input.now
+      ]
+    );
+  }
+
+  async refreshBindingSession(input: {
+    attemptId: string;
+    workerAccountId: string;
+    authSessionId: string;
+    now: string;
+  }): Promise<void> {
+    const result = await this.database.query(
+      `UPDATE assessment_attempt_bindings
+          SET current_auth_session_id=$3,last_verified_at=$4
+        WHERE attempt_id=$1 AND worker_account_id=$2`,
+      [input.attemptId,input.workerAccountId,input.authSessionId,input.now]
+    );
+    if (result.affectedRows !== 1) throw new Error("Assessment binding could not be refreshed.");
+  }
+
+  async markInterrupted(input: {
+    workerAccountId: string;
+    attemptId: string;
+    reason: string;
+    detail?: string | null;
+    now: string;
+  }): Promise<AssessmentAttemptRecord | null> {
+    const result = await this.database.query<AttemptRow>(
+      `UPDATE assessment_attempts
+          SET status='INTERRUPTED',updated_at=$3
+        WHERE worker_account_id=$1 AND attempt_id=$2 AND status='IN_PROGRESS'
+        RETURNING ${ATTEMPT_COLUMNS}`,
+      [input.workerAccountId,input.attemptId,input.now]
+    );
+    if (!result.rows[0]) return null;
+    await this.database.query(
+      `INSERT INTO assessment_interruption_events(
+         interruption_id,attempt_id,worker_account_id,reason,detail,occurred_at
+       ) VALUES($1,$2,$3,$4,$5,$6)`,
+      [
+        createAssessmentInterruptionId(),input.attemptId,input.workerAccountId,
+        input.reason,input.detail ?? null,input.now
+      ]
+    );
+    return attempt(result.rows[0]);
+  }
+
+  async resumeInterrupted(input: {
+    workerAccountId: string;
+    attemptId: string;
+    now: string;
+  }): Promise<AssessmentAttemptRecord | null> {
+    const result = await this.database.query<AttemptRow>(
+      `UPDATE assessment_attempts SET status='IN_PROGRESS',updated_at=$3
+        WHERE worker_account_id=$1 AND attempt_id=$2 AND status='INTERRUPTED'
+        RETURNING ${ATTEMPT_COLUMNS}`,
+      [input.workerAccountId,input.attemptId,input.now]
+    );
+    if (!result.rows[0]) return null;
+    await this.database.query(
+      `UPDATE assessment_interruption_events
+          SET resolution='RESUMED',resolved_at=$3
+        WHERE interruption_id=(
+          SELECT interruption_id FROM assessment_interruption_events
+           WHERE attempt_id=$1 AND worker_account_id=$2 AND resolution IS NULL
+           ORDER BY occurred_at DESC,interruption_id DESC LIMIT 1
+        )`,
+      [input.attemptId,input.workerAccountId,input.now]
+    );
+    return attempt(result.rows[0]);
+  }
+
+  async markReviewRequired(
+    workerAccountId: string,
+    attemptId: string,
+    now: string
+  ): Promise<AssessmentAttemptRecord | null> {
+    const result = await this.database.query<AttemptRow>(
+      `UPDATE assessment_attempts SET status='REVIEW_REQUIRED',updated_at=$3
+        WHERE worker_account_id=$1 AND attempt_id=$2 AND status='INTERRUPTED'
+        RETURNING ${ATTEMPT_COLUMNS}`,
+      [workerAccountId,attemptId,now]
+    );
+    if (!result.rows[0]) return null;
+    await this.database.query(
+      `UPDATE assessment_interruption_events
+          SET resolution='REVIEW_REQUIRED',resolved_at=$3
+        WHERE interruption_id=(
+          SELECT interruption_id FROM assessment_interruption_events
+           WHERE attempt_id=$1 AND worker_account_id=$2 AND resolution IS NULL
+           ORDER BY occurred_at DESC,interruption_id DESC LIMIT 1
+        )`,
+      [attemptId,workerAccountId,now]
+    );
+    return attempt(result.rows[0]);
+  }
+
+  async markReplaced(
+    workerAccountId: string,
+    attemptId: string,
+    now: string
+  ): Promise<AssessmentAttemptRecord | null> {
+    const result = await this.database.query<AttemptRow>(
+      `UPDATE assessment_attempts SET status='REPLACED',updated_at=$3
+        WHERE worker_account_id=$1 AND attempt_id=$2
+          AND status IN ('INTERRUPTED','REVIEW_REQUIRED')
+        RETURNING ${ATTEMPT_COLUMNS}`,
+      [workerAccountId,attemptId,now]
+    );
+    return result.rows[0] ? attempt(result.rows[0]) : null;
   }
 
   async lockOwned(

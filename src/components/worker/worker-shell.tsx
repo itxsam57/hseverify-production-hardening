@@ -83,6 +83,7 @@ export async function WorkerShell({
                 </div>
                 <Link href="/worker/profile">My profile</Link>
                 <Link href="/worker/notifications">Notifications</Link>
+                <Link href="/worker/security">Security</Link>
                 <Link href="/account/sessions">Active sessions</Link>
                 <Link href="/">Exit portal</Link>
                 <ConfirmDialog
