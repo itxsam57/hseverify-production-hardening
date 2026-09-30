@@ -18,6 +18,8 @@ on:
       - "tests/platform/worker-registration-concurrency.test.mjs"
       - "scripts/run-phase1-retrospective-performance.mjs"
       - ".github/workflows/phase1-retrospective-audit.yml"
+      - "package.json"
+      - "package-lock.json"
       - "src/**"
       - "database/**"
   pull_request:

@@ -54,6 +54,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Worker ID presentation regression
         run: node --test tests/platform/worker-id-presentation.test.mjs
 
