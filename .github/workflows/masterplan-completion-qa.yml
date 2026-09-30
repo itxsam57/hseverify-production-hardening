@@ -54,6 +54,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Case Replay and scoring-assistance runtime
+        run: node --test tests/platform/case-replay-scoring-assistance-runtime.test.mjs
+
       - name: M2.05 randomized assessment regression
         run: node scripts/run-assessment-generation-tests.mjs
 
@@ -71,9 +74,6 @@ jobs:
 
       - name: Consent and accommodation runtime
         run: node --test tests/platform/privacy-consent-accommodation-runtime.test.mjs
-
-      - name: Case Replay and scoring-assistance runtime
-        run: node --test tests/platform/case-replay-scoring-assistance-runtime.test.mjs
 
   connected-browser:
     runs-on: ubuntu-latest
