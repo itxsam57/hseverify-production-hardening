@@ -40,7 +40,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function database() {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0069_assessment_controlled_delivery");
+  await applyMigrationsThrough(db, ENV.releaseSha, "0073_assessment_option_order_snapshot");
   return db;
 }
 

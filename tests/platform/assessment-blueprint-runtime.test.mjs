@@ -42,7 +42,7 @@ const oid = (prefix, c) => `${prefix}_${c.repeat(24)}`;
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0069_assessment_controlled_delivery");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0073_assessment_option_order_snapshot");
   return database;
 }
 
