@@ -160,20 +160,50 @@ test(
               { waitUntil: "domcontentloaded" }
             );
             await worker
-              .getByRole("button", { name: "I'm ready — enter waiting room" })
+              .getByRole("button", { name: "Enter waiting room" })
               .click();
             await worker.reload({ waitUntil: "domcontentloaded" });
             await worker
-              .getByText("Camera, microphone and live interview", { exact: true })
-              .waitFor();
+              .getByRole("button", { name: "Check camera, microphone & connection" })
+              .click();
+            await worker
+              .getByText("Camera, microphone and connection checks passed.", { exact: true })
+              .waitFor({ timeout: 20_000 });
+            await worker
+              .getByLabel(/I confirm I am the Worker assigned to this interview/i)
+              .check();
+            await worker
+              .getByRole("button", { name: "Ready for Interview" })
+              .click();
+            await worker
+              .getByText(/Ready checks and required consent are recorded/i)
+              .waitFor({ timeout: 20_000 });
 
             await assessor.goto(
               `${baseUrl}/assessor/interviews/${interviewRequestId}`,
               { waitUntil: "domcontentloaded" }
             );
-            await assessor.getByText("Provider: Built-in WebRTC", { exact: true }).waitFor();
             await assessor
-              .getByLabel(/I consent to camera and microphone use/i)
+              .getByRole("button", { name: "Claim interview" })
+              .click();
+            await assessor.reload({ waitUntil: "domcontentloaded" });
+            await assessor
+              .getByRole("button", { name: "Admit ready Worker" })
+              .click();
+            await assessor.reload({ waitUntil: "domcontentloaded" });
+            await assessor
+              .getByRole("button", { name: "Start interview" })
+              .click();
+            await assessor.reload({ waitUntil: "domcontentloaded" });
+            await assessor.getByText("Provider: Built-in WebRTC", { exact: true }).waitFor();
+
+            await worker.reload({ waitUntil: "domcontentloaded" });
+            await worker
+              .getByText("Camera, microphone and live interview", { exact: true })
+              .waitFor();
+
+            await assessor
+              .getByLabel(/I allow this browser to use my camera and microphone/i)
               .check();
             await assessor
               .getByRole("button", { name: "Enable camera & microphone" })
@@ -183,7 +213,7 @@ test(
               .waitFor({ timeout: 20_000 });
 
             await worker
-              .getByLabel(/I consent to camera and microphone use/i)
+              .getByLabel(/I allow this browser to use my camera and microphone/i)
               .check();
             await worker
               .getByRole("button", { name: "Enable camera & microphone" })
@@ -281,6 +311,18 @@ test(
           [interviewRequestId]
         );
         assert.equal(request.rows[0]?.status, "WAITING_ROOM");
+
+        const runtime = await database.query(
+          `SELECT status,claimed_at,worker_ready_at,admitted_at,started_at
+             FROM interview_runtime_sessions
+            WHERE interview_request_id=$1`,
+          [interviewRequestId]
+        );
+        assert.equal(runtime.rows[0]?.status, "ACTIVE");
+        assert(runtime.rows[0]?.claimed_at);
+        assert(runtime.rows[0]?.worker_ready_at);
+        assert(runtime.rows[0]?.admitted_at);
+        assert(runtime.rows[0]?.started_at);
 
         const signals = await database.query(
           `SELECT actor_role,signal_kind

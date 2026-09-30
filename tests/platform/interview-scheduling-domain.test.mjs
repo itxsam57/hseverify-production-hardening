@@ -61,9 +61,27 @@ test("interview console scorecard keeps bounded assessor scoring before recommen
   const consoleState = createInterviewConsole({ interviewSessionId: "session-1", questionSetId: "questions-1" });
   const updated = updateInterviewScorecard(consoleState, {
     technicalKnowledge: 4,
+    practicalReasoning: 4,
     safetyAwareness: 5,
+    communication: 4,
+    consistencyWithWrittenAnswers: 4,
+    confidenceClarity: 4,
+    tradeJudgment: 5,
     comments: "Safety reasoning captured."
   });
   assert.equal(updated.scorecard.technicalKnowledge, 4);
-  assert.throws(() => updateInterviewScorecard(consoleState, { technicalKnowledge: 9, safetyAwareness: 1, comments: null }), InterviewSchedulingInputError);
+  assert.throws(
+    () =>
+      updateInterviewScorecard(consoleState, {
+        technicalKnowledge: 9,
+        practicalReasoning: 1,
+        safetyAwareness: 1,
+        communication: 1,
+        consistencyWithWrittenAnswers: 1,
+        confidenceClarity: 1,
+        tradeJudgment: 1,
+        comments: null
+      }),
+    InterviewSchedulingInputError
+  );
 });
