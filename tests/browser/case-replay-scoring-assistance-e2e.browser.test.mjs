@@ -240,7 +240,15 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
             "Audit exact written assessment and scoring history before release."
           );
           await admin.getByRole("button", { name: "Open Case Replay" }).click();
-          await admin.getByRole("heading", { name: fixture.caseId }).waitFor({ timeout: 15_000 });
+          try {
+            await admin.getByRole("heading", { name: fixture.caseId }).waitFor({ timeout: 15_000 });
+          } catch (error) {
+            const body = (await admin.locator("body").innerText().catch(() => "")).slice(0, 4000);
+            throw new Error(
+              "Case Replay page did not render. URL=" + admin.url() + "\nBODY:\n" + body,
+              { cause: error }
+            );
+          }
           await admin.getByText("assessmentAnswers — 1 record(s)", { exact: true }).waitFor();
           await admin.getByText("scoringReviews — 1 record(s)", { exact: true }).waitFor();
           await admin.getByText("scoringAssistance — 1 record(s)", { exact: true }).waitFor();
