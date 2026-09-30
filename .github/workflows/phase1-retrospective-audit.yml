@@ -2,7 +2,7 @@ name: Phase 1 retrospective audit
 
 on:
   push:
-    branches: [feat/m2-06-assessment-catalogue-eligibility]
+    branches: [feat/m2-06-assessment-catalogue-eligibility, qa/masterplan-completion-20260926]
     paths:
       - "scripts/hard-browser-retrospective.mjs"
       - "scripts/hard-browser-retrospective-worker-evidence.mjs"
