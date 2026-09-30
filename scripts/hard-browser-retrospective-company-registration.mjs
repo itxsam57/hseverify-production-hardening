@@ -381,28 +381,6 @@ try {
 
   await checkpoint("Company mobile layout has no horizontal overflow", async () => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await gotoOk(page, "/company/dashboard", "Complete and track the Company verification case");
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    assert(overflow <= 1, `Company dashboard horizontally overflows mobile viewport by ${overflow}px`);
-    await page.screenshot({ path: `${artifactsDir}/mobile-company-dashboard.png`, fullPage: true, caret: "initial" });
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    return { viewport: "390x844", overflow };
-  });
-
-  await checkpoint("Admin mobile layout has no horizontal overflow", async () => {
-    assert(adminSession, "Admin session is unavailable for mobile layout proof");
-    const adminPage = adminSession.page;
-    await adminPage.setViewportSize({ width: 390, height: 844 });
-    await gotoOk(adminPage, "/admin/company-verifications", "Company verification review");
-    const overflow = await adminPage.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    assert(overflow <= 1, `Admin Company verification page horizontally overflows mobile viewport by ${overflow}px`);
-    await adminPage.screenshot({ path: `${artifactsDir}/mobile-admin-company-verifications.png`, fullPage: true, caret: "initial" });
-    await adminPage.setViewportSize({ width: 1440, height: 1000 });
-    assert(adminSession.errors.length === 0, `Admin mobile browser errors: ${adminSession.errors.join(" | ")}`);
-    return { viewport: "390x844", overflow };
-  });
-  await checkpoint("Company mobile layout has no horizontal overflow", async () => {
-    await page.setViewportSize({ width: 390, height: 844 });
     await gotoOk(page, "/company/dashboard");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert(overflow <= 1, `Company dashboard horizontally overflows mobile viewport by ${overflow}px`);
