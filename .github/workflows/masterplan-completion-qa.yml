@@ -113,7 +113,7 @@ jobs:
     env:
       HSE_APP_ENV: test
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/m3-release-db
+      HSE_PGLITE_DATA_DIR: .data/m3-release-db
       HSE_RELEASE_SHA: ${{ github.sha }}
       HSE_SESSION_SECRET: m3-release-session-secret-2026-more-than-thirty-two
       HSE_AUTH_PEPPER: m3-release-auth-pepper-2026-more-than-thirty-two
