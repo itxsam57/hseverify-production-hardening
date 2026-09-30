@@ -313,7 +313,12 @@ try {
     const dashboardText = await page.locator("main").innerText();
     assert(!dashboardText.includes("remain blocked until their canonical bricks"), "Company dashboard still contains obsolete blocked-feature copy");
     assert(dashboardText.includes("Company verification"), "Company dashboard does not explain verification gating");
-    await page.getByRole("link", { name: "Open tenant-scope demonstration" }).waitFor({ timeout: 15_000 });
+    const verificationLink = page.getByRole("link", { name: "Open Company verification" });
+    await verificationLink.waitFor({ timeout: 15_000 });
+    assert(
+      (await verificationLink.getAttribute("href")) === "/company/settings/profile",
+      "Company dashboard verification CTA is not bound to the canonical Company verification workflow."
+    );
 
     await gotoOk(page, "/company/settings/profile", "Company profile and verification");
     await page.getByRole("heading", { name: "Draft", exact: true }).waitFor({ timeout: 15_000 });
