@@ -34,7 +34,7 @@ const hash = (value) => createHash("sha256").update(value).digest("hex");
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0039_randomized_assessment_forms");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0073_assessment_option_order_snapshot");
   return database;
 }
 
@@ -169,15 +169,16 @@ async function seedForm(database) {
     );
     await transaction.query(
       `INSERT INTO generated_assessment_form_items(
-         form_item_id,form_id,position,question_id,question_version_id,created_at
+         form_item_id,form_id,position,question_id,question_version_id,option_order_json,created_at
        ) VALUES
-         ($1,$2,1,$3,$4,$5),
-         ($6,$2,2,$7,$8,$5)`,
+         ($1,$2,1,$3,$4,$5::jsonb,$6),
+         ($7,$2,2,$8,$9,NULL,$6)`,
       [
         oid("assessment_form_item", "m"),
         formId,
         mcqQuestionId,
         mcqV1,
+        JSON.stringify(["Stop work", "Ignore it", "Continue normally"]),
         NOW,
         oid("assessment_form_item", "w"),
         writtenQuestionId,
