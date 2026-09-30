@@ -57,6 +57,8 @@ test("M2.02 Reviewer routes show Worker, evidence version and secure preview wit
   assert.match(pages, /evidence/i);
   assert.match(pages, /version/i);
   assert.match(pages, /preview/i);
+  assert.match(pages, /File attached/);
+  assert.match(pages, /Independent Worker review/);
   for (const field of ["tenantId","workerAccountId","secureFileId","storageKey","objectKey"])
     assert.doesNotMatch(pages, new RegExp(`formData\\.get\\([\"']${field}[\"']\\)`));
 });
