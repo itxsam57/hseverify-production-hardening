@@ -105,3 +105,56 @@ jobs:
 
       - name: Worker -> Admin -> Worker privacy/accommodation journey
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+
+
+  release-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/m3-release-db
+      HSE_RELEASE_SHA: ${{ github.sha }}
+      HSE_SESSION_SECRET: m3-release-session-secret-2026-more-than-thirty-two
+      HSE_AUTH_PEPPER: m3-release-auth-pepper-2026-more-than-thirty-two
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: m3-release-sandbox-access-key-2026
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - name: M3.11 execute load security and recovery certification
+        run: node scripts/run-m3-11-certification.mjs
+
+      - name: M3.11 domain certification contracts
+        run: node --test tests/platform/load-security-recovery-certification-runtime.test.mjs
+
+      - name: M3.12 release handover runtime
+        run: node --test tests/platform/production-launch-operations-runtime.test.mjs tests/platform/production-launch-handover-runtime.test.mjs
+
+      - name: Seed Admin browser identity
+        run: node scripts/independent-audit-seed.mjs
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: M3.11 persisted certification Admin browser
+        run: node --test tests/browser/m3-11-certification.browser.test.mjs
+
+      - name: M3.12 production launch Admin browser
+        run: node --test tests/browser/m3-12-production-launch.browser.test.mjs
+
+      - name: Retain M3.11 certification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m3-11-certification-${{ github.sha }}
+          path: artifacts/m3-11/certification.json
+          if-no-files-found: error
