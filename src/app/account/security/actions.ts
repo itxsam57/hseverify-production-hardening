@@ -39,6 +39,7 @@ export async function changePasswordAction(
   _previous: SecurityActionState = EMPTY,
   formData: FormData
 ): Promise<SecurityActionState> {
+  void _previous;
   const session = await requireAuthenticatedSession();
   try {
     const newPassword = value(formData, "newPassword");
@@ -63,6 +64,7 @@ export async function rotateRecoveryCodesAction(
   _previous: SecurityActionState = EMPTY,
   formData: FormData
 ): Promise<SecurityActionState> {
+  void _previous;
   const session = await requireAuthenticatedSession();
   try {
     const recoveryCodes = await getAccountSecurityService().rotateRecoveryCodes({
@@ -86,6 +88,7 @@ export async function startMfaReplacementAction(
   _previous: SecurityActionState = EMPTY,
   formData: FormData
 ): Promise<SecurityActionState> {
+  void _previous;
   const session = await requireAuthenticatedSession();
   try {
     const rotation = await getAccountSecurityService().startMfaReplacement({
@@ -107,6 +110,7 @@ export async function confirmMfaReplacementAction(
   _previous: SecurityActionState = EMPTY,
   formData: FormData
 ): Promise<SecurityActionState> {
+  void _previous;
   const session = await requireAuthenticatedSession();
   try {
     await getAccountSecurityService().confirmMfaReplacement({

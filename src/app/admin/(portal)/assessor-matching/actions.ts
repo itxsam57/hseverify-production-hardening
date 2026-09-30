@@ -34,7 +34,7 @@ async function admin() {
 export async function saveAssessorMatchingProfileAction(formData: FormData): Promise<never> {
   try {
     const principal = await admin();
-    let availability: Record<string, unknown> = {};
+    const availability: Record<string, unknown> = {};
     const unavailableUntil = text(formData, "unavailableUntil");
     const weekdays = list(formData, "availableWeekdays")
       .map(Number)

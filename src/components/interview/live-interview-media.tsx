@@ -426,11 +426,14 @@ export function LiveInterviewMedia({
   ]);
 
   useEffect(() => {
-    if (started && recordingEnabled) {
-      startRecording();
-      return;
-    }
-    stopRecording();
+    const timer = window.setTimeout(() => {
+      if (started && recordingEnabled) {
+        startRecording();
+        return;
+      }
+      stopRecording();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [recordingEnabled, startRecording, started, stopRecording]);
 
   useEffect(() => {

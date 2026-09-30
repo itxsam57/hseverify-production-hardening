@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { AssessmentReviewWorkspace } from "@/components/worker/assessment-review-workspace";
 import { readAssessmentAccessContext } from "@/lib/assessment-attempt/assessment-device-cookie";
+import type { AssessmentReviewQuestionView } from "@/lib/assessment-attempt/assessment-attempt-domain";
 import {
   AssessmentAttemptAccessError,
   AssessmentAttemptConflictError,
@@ -30,14 +31,14 @@ export default async function AssessmentReviewQuestionPage({
   });
   const accessContext = await readAssessmentAccessContext();
 
+  let review: AssessmentReviewQuestionView;
   try {
-    const review = await (await getAssessmentAttemptService()).getReviewQuestion(
+    review = await (await getAssessmentAttemptService()).getReviewQuestion(
       principal,
       attemptId,
       position,
       accessContext
     );
-    return <AssessmentReviewWorkspace review={review} routeError={error ?? null} />;
   } catch (caught) {
     if (
       caught instanceof AssessmentAttemptAccessError ||
@@ -48,4 +49,6 @@ export default async function AssessmentReviewQuestionPage({
     }
     throw caught;
   }
+
+  return <AssessmentReviewWorkspace review={review} routeError={error ?? null} />;
 }
