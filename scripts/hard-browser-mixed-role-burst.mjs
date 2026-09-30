@@ -258,7 +258,7 @@ async function registerCompany(browser, errors) {
 
 async function runBurst(sessions) {
   const targets = [
-    { role: "worker", session: sessions.worker, path: "/worker/dashboard", marker: "Permanent Worker ID" },
+    { role: "worker", session: sessions.worker, path: "/worker/dashboard", marker: "Worker Dashboard" },
     { role: "company", session: sessions.company, path: "/company/dashboard", marker: "Company Portal" },
     { role: "verifier", session: sessions.verifier, path: "/verifier/dashboard", marker: "Verifier Portal" },
     { role: "admin", session: sessions.admin, path: "/admin/dashboard", marker: "Administrator Portal" },
