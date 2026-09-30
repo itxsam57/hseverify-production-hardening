@@ -54,6 +54,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Worker ID presentation regression
+        run: node --test tests/platform/worker-id-presentation.test.mjs
+
       - name: Case Replay and scoring-assistance runtime
         run: node --test tests/platform/case-replay-scoring-assistance-runtime.test.mjs
 

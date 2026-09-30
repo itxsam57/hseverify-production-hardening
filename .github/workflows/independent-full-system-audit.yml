@@ -107,6 +107,12 @@ jobs:
           run_check lint npm run lint
           run_check dependency_audit npm audit --omit=dev --audit-level=moderate
           run_check production_build npm run build
+          dependency_code=$(awk -F '\t' '$1=="dependency_audit" {print $2}' artifacts/independent-audit/commands.tsv | tail -1)
+          if [ "$dependency_code" != "0" ]; then
+            echo "::group::Dependency audit failure details"
+            cat artifacts/independent-audit/dependency_audit.log
+            echo "::endgroup::"
+          fi
 
       - name: Create clean persistent browser database
         run: |
@@ -184,6 +190,11 @@ jobs:
           set -e
           printf '%s\t%s\n' existing_full_regression_crosscheck "$code" >> artifacts/independent-audit/commands.tsv
           echo "existing_full_regression_crosscheck: exit ${code}"
+          if [ "$code" != "0" ]; then
+            echo "::group::Full regression failure tail"
+            tail -n 350 artifacts/independent-audit/existing_full_regression_crosscheck.log
+            echo "::endgroup::"
+          fi
           node scripts/independent-audit-finalize.mjs
           exit 0
 
