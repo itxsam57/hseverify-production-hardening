@@ -1,0 +1,104 @@
+name: Masterplan completion QA
+
+on:
+  push:
+    branches:
+      - qa/masterplan-completion-20260926
+    paths:
+      - "src/**"
+      - "database/**"
+      - "tests/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/masterplan-completion-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: masterplan-completion-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_RELEASE_SHA: masterplan-completion-qa
+      HSE_SESSION_SECRET: masterplan-completion-session-secret-2026-more-than-thirty-two
+      HSE_AUTH_PEPPER: masterplan-completion-auth-pepper-2026-more-than-thirty-two
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: masterplan-completion-sandbox-key
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - name: Strict TypeScript
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: M2.05 randomized assessment regression
+        run: node scripts/run-assessment-generation-tests.mjs
+
+      - name: M2.07 candidate assessment regression
+        run: npm run test:m2-07
+
+      - name: M2.08 persistence and recovery regression
+        run: npm run test:m2-08
+
+      - name: M1.10 workforce regression
+        run: npm run test:m1-10
+
+      - name: Existing privacy regression
+        run: node --test tests/platform/privacy-operations-runtime.test.mjs
+
+      - name: Consent and accommodation runtime
+        run: node --test tests/platform/privacy-consent-accommodation-runtime.test.mjs
+
+      - name: Case Replay and scoring-assistance runtime
+        run: node --test tests/platform/case-replay-scoring-assistance-runtime.test.mjs
+
+  connected-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_RELEASE_SHA: masterplan-completion-browser
+      HSE_SESSION_SECRET: masterplan-browser-session-secret-2026-more-than-thirty-two
+      HSE_AUTH_PEPPER: masterplan-browser-auth-pepper-2026-more-than-thirty-two
+      HSE_ENABLE_AUTH_SANDBOX: "true"
+      HSE_AUTH_SANDBOX_ACCESS_KEY: masterplan-browser-sandbox-key
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Worker -> Admin -> Worker privacy/accommodation journey
+        run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+
+      - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
+        run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
