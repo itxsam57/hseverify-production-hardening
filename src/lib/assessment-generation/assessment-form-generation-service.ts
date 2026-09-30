@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { bindTrustedAuditActor } from "../audit/audit-domain";
@@ -45,6 +45,7 @@ type CandidateRow = {
   question_id: string;
   question_version_id: string;
   question_type: QuestionType;
+  options_json: unknown;
   domain_reference: string;
   difficulty: QuestionDifficulty;
   tags_json: unknown;
@@ -150,6 +151,7 @@ type AssessmentSelectionInputs = Readonly<{
   frameworkId: string;
   selectors: readonly BlueprintSelector[];
   candidates: readonly AssessmentSelectionCandidate[];
+  optionsByQuestionVersion: ReadonlyMap<string, readonly string[] | null>;
 }>;
 
 async function loadAssessmentSelectionInputs(
@@ -189,7 +191,7 @@ async function loadAssessmentSelectionInputs(
   const excluded = new Set(priorResult.rows.map((row) => row.question_id));
 
   const candidatesResult = await database.query<CandidateRow>(
-    `SELECT q.question_id,v.question_version_id,v.question_type,
+    `SELECT q.question_id,v.question_version_id,v.question_type,v.options_json,
             v.domain_reference,v.difficulty,v.tags_json
        FROM assessment_questions q
        JOIN assessment_question_versions v
@@ -200,23 +202,44 @@ async function loadAssessmentSelectionInputs(
       ORDER BY q.question_id,v.question_version_id`,
     [blueprint.framework_id]
   );
-  const candidates: AssessmentSelectionCandidate[] = candidatesResult.rows
-    .filter((candidate) => !excluded.has(candidate.question_id))
-    .map((candidate) =>
-      Object.freeze({
-        questionId: candidate.question_id,
-        questionVersionId: candidate.question_version_id,
-        questionType: candidate.question_type,
-        domainReference: candidate.domain_reference,
-        difficulty: candidate.difficulty,
-        tags: Object.freeze([...parseTags(candidate.tags_json)])
-      })
+  const eligibleRows = candidatesResult.rows.filter(
+    (candidate) => !excluded.has(candidate.question_id)
+  );
+  const candidates: AssessmentSelectionCandidate[] = eligibleRows.map((candidate) =>
+    Object.freeze({
+      questionId: candidate.question_id,
+      questionVersionId: candidate.question_version_id,
+      questionType: candidate.question_type,
+      domainReference: candidate.domain_reference,
+      difficulty: candidate.difficulty,
+      tags: Object.freeze([...parseTags(candidate.tags_json)])
+    })
+  );
+  const optionsByQuestionVersion = new Map<string, readonly string[] | null>();
+  for (const candidate of eligibleRows) {
+    if (candidate.question_type !== "MULTIPLE_CHOICE") {
+      optionsByQuestionVersion.set(candidate.question_version_id, null);
+      continue;
+    }
+    const options = parseJsonArray(candidate.options_json, "question options");
+    if (
+      options.length < 2 ||
+      options.length > 12 ||
+      options.some((option) => typeof option !== "string")
+    ) {
+      throw new AssessmentFormGenerationError("Stored multiple-choice options are invalid.");
+    }
+    optionsByQuestionVersion.set(
+      candidate.question_version_id,
+      Object.freeze(options as string[])
     );
+  }
 
   return Object.freeze({
     frameworkId: blueprint.framework_id,
     selectors,
-    candidates: Object.freeze(candidates)
+    candidates: Object.freeze(candidates),
+    optionsByQuestionVersion
   });
 }
 
@@ -245,6 +268,48 @@ export async function hasUnseenAssessmentCapacity(
     if (error instanceof AssessmentFormGenerationError) return false;
     throw error;
   }
+}
+
+export function randomizeAssessmentOptionOrder(
+  options: readonly string[],
+  nonceHex: string,
+  questionVersionId: string
+): readonly string[] {
+  if (!/^[a-f0-9]{64}$/.test(nonceHex)) {
+    throw new AssessmentFormGenerationError("Assessment option-order nonce is invalid.");
+  }
+  if (options.length < 2 || options.length > 12) {
+    throw new AssessmentFormGenerationError("Assessment option count is invalid.");
+  }
+  return Object.freeze(
+    options
+      .map((option, index) => ({
+        option,
+        index,
+        rank: createHash("sha256")
+          .update(nonceHex + ":" + questionVersionId + ":" + index + ":" + option, "utf8")
+          .digest("hex")
+      }))
+      .sort((left, right) =>
+        left.rank === right.rank ? left.index - right.index : left.rank.localeCompare(right.rank)
+      )
+      .map((entry) => entry.option)
+  );
+}
+
+function optionOrderForCandidate(
+  selection: AssessmentSelectionInputs,
+  candidate: AssessmentSelectionCandidate,
+  nonceHex: string
+): readonly string[] | null {
+  if (candidate.questionType !== "MULTIPLE_CHOICE") return null;
+  const options = selection.optionsByQuestionVersion.get(candidate.questionVersionId);
+  if (!options) {
+    throw new AssessmentFormGenerationError(
+      "Generated multiple-choice question has no stored option set."
+    );
+  }
+  return randomizeAssessmentOptionOrder(options, nonceHex, candidate.questionVersionId);
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -339,16 +404,18 @@ export class AssessmentFormGenerationService {
           ]
         );
         for (const [index, candidate] of selected.entries()) {
+          const optionOrder = optionOrderForCandidate(selection, candidate, nonceHex);
           await database.query(
             `INSERT INTO generated_assessment_form_items(
-               form_item_id,form_id,position,question_id,question_version_id,created_at
-             ) VALUES($1,$2,$3,$4,$5,$6)`,
+               form_item_id,form_id,position,question_id,question_version_id,option_order_json,created_at
+             ) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7)`,
             [
               createAssessmentFormItemId(),
               formId,
               index + 1,
               candidate.questionId,
               candidate.questionVersionId,
+              optionOrder === null ? null : JSON.stringify(optionOrder),
               now.toISOString()
             ]
           );
@@ -482,13 +549,16 @@ export class AssessmentFormGenerationService {
           ]
         );
         for (const [index, candidate] of selected.entries()) {
+          const optionOrder = optionOrderForCandidate(selection, candidate, nonceHex);
           await database.query(
             `INSERT INTO generated_assessment_form_items(
-               form_item_id,form_id,position,question_id,question_version_id,created_at
-             ) VALUES($1,$2,$3,$4,$5,$6)`,
+               form_item_id,form_id,position,question_id,question_version_id,option_order_json,created_at
+             ) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7)`,
             [
               createAssessmentFormItemId(),formId,index+1,candidate.questionId,
-              candidate.questionVersionId,now.toISOString()
+              candidate.questionVersionId,
+              optionOrder === null ? null : JSON.stringify(optionOrder),
+              now.toISOString()
             ]
           );
         }

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { ScopedShareLinkService } from "@/lib/share-links/scoped-share-link-service";
+import { ScopedShareLinkRepository } from "@/lib/share-links/scoped-share-link-repository";
+import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
+import { getDatabaseClient } from "@/lib/database/database";
+import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
 
 export async function POST(request: Request) {
+  const principal = await requirePortalAuthorization("worker");
   const session = await requireWorkerSession();
   const contentType = request.headers.get("content-type") ?? "";
   const body = contentType.includes("application/json")
@@ -28,17 +33,37 @@ export async function POST(request: Request) {
       ? rawFields.split(",").map((field: string) => field.trim())
       : undefined;
 
-  if (!fields || !body.purpose || !body.createdAt) {
+  const purpose = body.purpose;
+  const createdAt = body.createdAt;
+  if (!fields || !purpose || !createdAt) {
     return NextResponse.json({ error: "invalid_share_link_request" }, { status: 400 });
   }
 
-  const result = await new ScopedShareLinkService().create({
-    ownerWorkerId: session.workerId,
-    fields: fields as never,
-    purpose: body.purpose,
-    employerDetail: body.employerDetail,
-    createdAt: body.createdAt,
-    expiresAt: body.expiresAt
+  const database = await getDatabaseClient();
+  const result = await database.transaction(async (tx) => {
+    const created = await new ScopedShareLinkService(
+      new ScopedShareLinkRepository(Promise.resolve(tx))
+    ).create({
+      ownerWorkerId: session.workerId,
+      fields: fields as never,
+      purpose,
+      employerDetail: body.employerDetail,
+      createdAt,
+      expiresAt: body.expiresAt
+    });
+    await new ConsentRecordService(Promise.resolve(tx)).grant({
+      workerId: principal.accountId,
+      actorAccountId: principal.accountId,
+      consentType: "scoped_share_links",
+      purpose: "Create the requested scoped share link containing only the Worker-selected passport fields.",
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: {
+        shareLinkId: created.record.shareLinkId,
+        fields: fields.join(","),
+        sharePurpose: purpose
+      }
+    });
+    return created;
   });
 
   return NextResponse.json(result, { status: 201 });

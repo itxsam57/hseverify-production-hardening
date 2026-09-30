@@ -5,6 +5,7 @@ import { getInterviewPlaybookService } from "@/lib/interview/interview-playbook-
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
 import { createInterviewConsole, createInterviewSession } from "@/lib/interview/interview-scheduling-domain";
 import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { CaseAccommodationService } from "@/lib/privacy/case-accommodation-service";
 import {
   addInterviewFollowUpAction,
   admitInterviewAction,
@@ -64,13 +65,17 @@ export default async function AssessorInterviewConsolePage({
     interviewRequestId
   });
   const runtimeService = new InterviewRuntimeService(Promise.resolve(database));
-  const [runtime, saved, playbook] = await Promise.all([
+  const [runtime, saved, playbook, accommodation] = await Promise.all([
     runtimeService.view(actor, interviewRequestId),
     scheduling.loadLatestConsoleDraft({
       tenantId: request.tenantId,
       interviewRequestId: request.interviewRequestId
     }),
-    getInterviewPlaybookService().getAssigned(actor, interviewRequestId)
+    getInterviewPlaybookService().getAssigned(actor, interviewRequestId),
+    new CaseAccommodationService(Promise.resolve(database)).resolveForWorker(
+      request.caseId,
+      request.workerAccountId
+    )
   ]);
 
   const newSession = createInterviewSession({
@@ -145,6 +150,10 @@ export default async function AssessorInterviewConsolePage({
           <div><dt>Worker ready</dt><dd>{runtime.workerReadyAt ?? "Not ready"}</dd></div>
           <div><dt>Recording policy</dt><dd>{runtime.recordingPolicy.replaceAll("_", " ")}</dd></div>
           <div><dt>Recording consent</dt><dd>{runtime.recordingConsentRequired ? runtime.recordingConsentedAt ?? "Required — not recorded" : "Not required"}</dd></div>
+          <div><dt>Approved time allowance</dt><dd>{accommodation.adjustment.timeMultiplier}×</dd></div>
+          <div><dt>Extra break allowance</dt><dd>{accommodation.adjustment.extraBreakMinutes} minutes</dd></div>
+          <div><dt>Captions</dt><dd>{accommodation.adjustment.captions ? "Approved" : "Standard delivery"}</dd></div>
+          <div><dt>Interpreter</dt><dd>{accommodation.adjustment.interpreter ? "Approved" : "Standard delivery"}</dd></div>
           <div><dt>Session</dt><dd><code>{interviewSessionId}</code></dd></div>
         </dl>
 

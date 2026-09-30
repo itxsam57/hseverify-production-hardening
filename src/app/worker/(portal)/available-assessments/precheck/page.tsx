@@ -49,6 +49,7 @@ export default async function AssessmentPrecheckPage({
         catalogueVersionId={requirements.catalogueVersionId}
         title={requirements.title}
         delivery={requirements.delivery}
+        accommodation={requirements.accommodation.adjustment}
       />
     </section>
   );

@@ -1,13 +1,28 @@
 import "server-only";
 
-import { getDatabaseClient } from "../database/database";
+import { getDatabaseClient, type DatabaseClient } from "../database/database";
 
 function changedRows(result: { affectedRows?: number; rowCount?: number }) {
   return result.affectedRows ?? result.rowCount ?? 0;
 }
 
+export type AccommodationReviewRow = {
+  accommodation_id: string;
+  tenant_id: string | null;
+  worker_id: string;
+  accommodation_type: string;
+  details: unknown;
+  status: "REQUESTED" | "APPROVED" | "DECLINED";
+  case_id: string | null;
+  review_reason: string | null;
+  reviewed_by_account_id: string | null;
+  reviewed_at: string | Date | null;
+  approved_adjustment: unknown;
+  created_at: string | Date;
+};
+
 export class PrivacyOperationsRepository {
-  constructor(private readonly clientPromise = getDatabaseClient()) {}
+  constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
   async createRequest(input: { requestId: string; tenantId: string | null; workerId: string; type: string; details?: Record<string, unknown> }) {
     const client = await this.clientPromise;
@@ -52,13 +67,164 @@ export class PrivacyOperationsRepository {
     return result.rows as Array<{ request_id: string; request_type: string; status: string }>;
   }
 
-  async listAccommodations(tenantId: string | null, workerId: string): Promise<Array<{ accommodation_id: string; accommodation_type: string; status: string }>> {
+  async listAccommodations(tenantId: string | null, workerId: string): Promise<AccommodationReviewRow[]> {
     const client = await this.clientPromise;
     const result = await client.query(
-      `SELECT accommodation_id, accommodation_type, status, created_at FROM accessibility_accommodations WHERE tenant_id IS NOT DISTINCT FROM $1 AND worker_id=$2 ORDER BY created_at DESC`,
+      `SELECT accommodation_id,tenant_id,worker_id,accommodation_type,details,status,case_id,
+              review_reason,reviewed_by_account_id,reviewed_at,approved_adjustment,created_at
+         FROM accessibility_accommodations
+        WHERE tenant_id IS NOT DISTINCT FROM $1 AND worker_id=$2
+        ORDER BY created_at DESC`,
       [tenantId, workerId]
     );
-    return result.rows as Array<{ accommodation_id: string; accommodation_type: string; status: string }>;
+    return result.rows as AccommodationReviewRow[];
+  }
+
+  async listAccommodationReviewQueue(): Promise<AccommodationReviewRow[]> {
+    const client = await this.clientPromise;
+    const result = await client.query(
+      `SELECT accommodation_id,tenant_id,worker_id,accommodation_type,details,status,case_id,
+              review_reason,reviewed_by_account_id,reviewed_at,approved_adjustment,created_at
+         FROM accessibility_accommodations
+        ORDER BY CASE status WHEN 'REQUESTED' THEN 0 ELSE 1 END, created_at, accommodation_id`
+    );
+    return result.rows as AccommodationReviewRow[];
+  }
+
+  async listWorkerCases(workerId: string): Promise<Array<{
+    case_id: string;
+    tenant_id: string;
+    case_status: string;
+    order_reference: string | null;
+    order_name: string | null;
+  }>> {
+    const client = await this.clientPromise;
+    const result = await client.query(
+      `SELECT cases.case_id,cases.tenant_id,cases.case_status,orders.order_reference,orders.order_name
+         FROM assurance_cases cases
+         JOIN assurance_orders orders ON orders.order_id=cases.order_id AND orders.tenant_id=cases.tenant_id
+        WHERE cases.worker_account_id=$1
+        ORDER BY cases.created_at DESC`,
+      [workerId]
+    );
+    return result.rows as Array<{
+      case_id: string;
+      tenant_id: string;
+      case_status: string;
+      order_reference: string | null;
+      order_name: string | null;
+    }>;
+  }
+
+  async reviewAccommodation(input: {
+    accommodationId: string;
+    reviewerAccountId: string;
+    decision: "APPROVED" | "DECLINED";
+    reason: string;
+    caseId?: string | null;
+    adjustment?: Record<string, unknown> | null;
+    overlayId?: string | null;
+    now: string;
+  }): Promise<AccommodationReviewRow> {
+    const client = await this.clientPromise;
+    return client.transaction(async (tx) => {
+      const found = await tx.query<AccommodationReviewRow>(
+        `SELECT accommodation_id,tenant_id,worker_id,accommodation_type,details,status,case_id,
+                review_reason,reviewed_by_account_id,reviewed_at,approved_adjustment,created_at
+           FROM accessibility_accommodations
+          WHERE accommodation_id=$1
+          FOR UPDATE`,
+        [input.accommodationId]
+      );
+      const accommodation = found.rows[0];
+      if (!accommodation || accommodation.status !== "REQUESTED") {
+        throw new Error("Accommodation is unavailable for review.");
+      }
+
+      if (input.decision === "APPROVED") {
+        if (!input.caseId || !input.adjustment || !input.overlayId) {
+          throw new Error("Approved accommodations require a case and delivery adjustment.");
+        }
+        const caseResult = await tx.query<{ case_id:string; tenant_id:string; worker_account_id:string }>(
+          `SELECT case_id,tenant_id,worker_account_id FROM assurance_cases WHERE case_id=$1 FOR UPDATE`,
+          [input.caseId]
+        );
+        const assuranceCase = caseResult.rows[0];
+        if (!assuranceCase || assuranceCase.worker_account_id !== accommodation.worker_id) {
+          throw new Error("Accommodation case does not belong to this Worker.");
+        }
+        if (accommodation.tenant_id && assuranceCase.tenant_id !== accommodation.tenant_id) {
+          throw new Error("Accommodation case tenant does not match the request.");
+        }
+        const updated = await tx.query<AccommodationReviewRow>(
+          `UPDATE accessibility_accommodations
+              SET status='APPROVED',case_id=$2,review_reason=$3,reviewed_by_account_id=$4,
+                  reviewed_at=$5,approved_adjustment=$6::jsonb
+            WHERE accommodation_id=$1 AND status='REQUESTED'
+            RETURNING *`,
+          [
+            input.accommodationId,
+            input.caseId,
+            input.reason,
+            input.reviewerAccountId,
+            input.now,
+            JSON.stringify(input.adjustment)
+          ]
+        );
+        if (!updated.rows[0]) throw new Error("Accommodation approval conflicted with another review.");
+        await tx.query(
+          `INSERT INTO assurance_case_accommodation_overlays(
+             overlay_id,accommodation_id,case_id,worker_id,adjustment,approved_by_account_id,approved_at
+           ) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7)`,
+          [
+            input.overlayId,
+            input.accommodationId,
+            input.caseId,
+            accommodation.worker_id,
+            JSON.stringify(input.adjustment),
+            input.reviewerAccountId,
+            input.now
+          ]
+        );
+        return updated.rows[0];
+      }
+
+      const updated = await tx.query<AccommodationReviewRow>(
+        `UPDATE accessibility_accommodations
+            SET status='DECLINED',review_reason=$2,reviewed_by_account_id=$3,reviewed_at=$4
+          WHERE accommodation_id=$1 AND status='REQUESTED'
+          RETURNING *`,
+        [input.accommodationId, input.reason, input.reviewerAccountId, input.now]
+      );
+      if (!updated.rows[0]) throw new Error("Accommodation decline conflicted with another review.");
+      return updated.rows[0];
+    });
+  }
+
+  async listCaseAccommodationOverlays(caseId: string): Promise<Array<{
+    overlay_id:string;
+    accommodation_id:string;
+    worker_id:string;
+    adjustment:unknown;
+    approved_by_account_id:string;
+    approved_at:string | Date;
+  }>> {
+    const client = await this.clientPromise;
+    const result = await client.query(
+      `SELECT overlay_id,accommodation_id,worker_id,adjustment,approved_by_account_id,approved_at
+         FROM assurance_case_accommodation_overlays
+        WHERE case_id=$1
+        ORDER BY approved_at,overlay_id`,
+      [caseId]
+    );
+    return result.rows as Array<{
+      overlay_id:string;
+      accommodation_id:string;
+      worker_id:string;
+      adjustment:unknown;
+      approved_by_account_id:string;
+      approved_at:string | Date;
+    }>;
   }
 
   async queueRetentionJob(input: { id: string; tenantId: string; resourceType: string; before: string }) {

@@ -21,6 +21,7 @@ type DeliveryItemRow = {
   question_type: QuestionType;
   prompt: string;
   options_json: unknown;
+  option_order_json: unknown;
   domain_reference: string;
   difficulty: QuestionDifficulty;
   tags_json: unknown;
@@ -82,7 +83,7 @@ export class AssessmentFormDeliveryService {
 
     const itemResult = await this.database.query<DeliveryItemRow>(
       `SELECT i.position,i.question_id,i.question_version_id,
-              v.question_type,v.prompt,v.options_json,
+              v.question_type,v.prompt,v.options_json,i.option_order_json,
               v.domain_reference,v.difficulty,v.tags_json
        FROM generated_assessment_form_items i
        JOIN assessment_question_versions v
@@ -114,9 +115,11 @@ export class AssessmentFormDeliveryService {
           questionType: row.question_type,
           prompt: row.prompt,
           options:
-            row.options_json === null
-              ? null
-              : strings(row.options_json, "question options"),
+            row.question_type === "MULTIPLE_CHOICE"
+              ? strings(row.option_order_json, "persisted option order")
+              : row.options_json === null
+                ? null
+                : strings(row.options_json, "question options"),
           domainReference: row.domain_reference,
           difficulty: row.difficulty,
           tags: strings(row.tags_json, "question tags")

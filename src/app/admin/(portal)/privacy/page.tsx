@@ -1,0 +1,113 @@
+import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
+import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
+import { PrivacyOperationsService } from "@/lib/privacy/privacy-operations-service";
+import { reviewAccommodationAction } from "./actions";
+
+export const dynamic = "force-dynamic";
+
+function iso(value: string | Date | null): string {
+  if (!value) return "—";
+  return new Date(value).toISOString();
+}
+
+export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
+  await requirePlatformPermission({
+    expectedRole: "admin",
+    permission: "platform.operations.manage"
+  });
+  const privacy = new PrivacyOperationsService();
+  const [accommodations, consents] = await Promise.all([
+    privacy.listAccommodationReviewQueue(),
+    new ConsentRecordService().listRecent(100)
+  ]);
+
+  return (
+    <section className="page-stack">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">Admin privacy operations</p>
+          <h1>Consent & accommodation review</h1>
+          <p>Need-to-know operational review. Competency standards are never reduced by an accommodation.</p>
+        </div>
+      </div>
+
+      <section className="page-section content-stack">
+        <h2>Accommodation queue</h2>
+        {accommodations.length === 0 ? <p>No accommodation requests.</p> : accommodations.map((item) => (
+          <article className="panel content-stack" key={item.accommodation_id}>
+            <div>
+              <strong>{item.accommodation_type}</strong>
+              <p>Worker: {item.worker_id}</p>
+              <p>Status: {item.status}</p>
+              <p>Requested: {iso(item.created_at)}</p>
+              {item.review_reason ? <p>Review reason: {item.review_reason}</p> : null}
+            </div>
+            {item.status === "REQUESTED" ? (
+              <form action={reviewAccommodationAction} className="form-grid">
+                <input type="hidden" name="accommodationId" value={item.accommodation_id} />
+                <label>
+                  Decision
+                  <select name="decision" defaultValue="APPROVED" required>
+                    <option value="APPROVED">Approve</option>
+                    <option value="DECLINED">Decline</option>
+                  </select>
+                </label>
+                <label>
+                  Assurance Case
+                  <select name="caseId" defaultValue="">
+                    <option value="">Select case for approval</option>
+                    {item.cases.map((entry) => (
+                      <option value={entry.case_id} key={entry.case_id}>
+                        {entry.order_name ?? entry.order_reference ?? entry.case_id} — {entry.case_status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Time multiplier
+                  <input name="timeMultiplier" type="number" min="1" max="2" step="0.05" defaultValue="1" />
+                </label>
+                <label>
+                  Extra break minutes
+                  <input name="extraBreakMinutes" type="number" min="0" max="60" step="1" defaultValue="0" />
+                </label>
+                <label><input type="checkbox" name="screenReader" value="yes" /> Screen reader</label>
+                <label><input type="checkbox" name="captions" value="yes" /> Captions</label>
+                <label><input type="checkbox" name="interpreter" value="yes" /> Interpreter</label>
+                <label><input type="checkbox" name="reducedMotion" value="yes" /> Reduced motion</label>
+                <label>
+                  Review reason
+                  <textarea name="reason" minLength={10} maxLength={2000} required />
+                </label>
+                <button type="submit">Save accommodation decision</button>
+              </form>
+            ) : null}
+          </article>
+        ))}
+      </section>
+
+      <section className="page-section content-stack">
+        <h2>Recent consent history</h2>
+        {consents.length === 0 ? <p>No consent records.</p> : (
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Worker</th><th>Type</th><th>Action</th><th>Case</th><th>Version</th><th>Recorded</th></tr></thead>
+              <tbody>
+                {consents.map((consent) => (
+                  <tr key={consent.consentId + ":" + consent.version}>
+                    <td>{consent.workerId}</td>
+                    <td>{consent.consentType.replaceAll("_", " ")}</td>
+                    <td>{consent.action}</td>
+                    <td>{consent.caseId ?? "—"}</td>
+                    <td>{consent.version}</td>
+                    <td>{consent.recordedAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </section>
+  );
+}

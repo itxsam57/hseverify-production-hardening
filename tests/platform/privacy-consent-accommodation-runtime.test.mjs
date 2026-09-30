@@ -1,0 +1,273 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
+
+const { ConsentRecordService } = loadTs("src/lib/privacy/consent-record-service.ts");
+const { PrivacyOperationsService } = loadTs("src/lib/privacy/privacy-operations-service.ts");
+const { PrivacyOperationsRepository } = loadTs("src/lib/privacy/privacy-operations-repository.ts");
+const { CaseAccommodationService } = loadTs("src/lib/privacy/case-accommodation-service.ts");
+
+const ENV = {
+  appEnvironment: "test",
+  databaseDriver: "pglite",
+  databaseUrl: null,
+  pgliteDataDir: "memory://",
+  releaseSha: "privacy-consent-accommodation-runtime",
+  sessionSecret: "privacy-consent-accommodation-session-secret-more-than-32-characters",
+  authPepper: "privacy-consent-accommodation-auth-pepper-more-than-32-characters",
+  authSandboxEnabled: false,
+  authSandboxAccessKey: null,
+  demoAuthEnabled: false,
+  demoDataEnabled: false
+};
+const NOW = "2026-10-01T00:00:00.000Z";
+const oid = (prefix, c) => prefix + "_" + c.repeat(24);
+
+async function database() {
+  const db = await openScriptDatabase(ENV);
+  await applyMigrationsThrough(
+    db,
+    ENV.releaseSha,
+    "0071_privacy_consent_accommodation_policy"
+  );
+  return db;
+}
+
+async function seedAccount(db, accountId, email, role) {
+  await db.query(
+    `INSERT INTO auth_accounts(
+       account_id,email_normalized,display_name,account_status,password_hash,
+       email_verified_at,password_set_at,created_at,updated_at
+     ) VALUES($1,$2,$3,'active',$4,$5,$5,$5,$5)`,
+    [accountId, email, role + " privacy fixture", "scrypt$16384$8$1$salt$hash", NOW]
+  );
+  await db.query(
+    "INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,$2,$3)",
+    [accountId, role, NOW]
+  );
+}
+
+async function seedCase(db, suffix, workerId) {
+  const tenantId = oid("tenant", suffix);
+  const orderId = oid("assurance_order", suffix);
+  const targetId = oid("assurance_target", suffix);
+  const caseId = oid("assurance_case", suffix);
+  const linkId = "worker_link_privacy_" + suffix.repeat(4);
+  await db.query(
+    `INSERT INTO assurance_orders(
+       order_id,tenant_id,created_by_membership_id,order_name,order_reference,order_status
+     ) VALUES($1,$2,$3,$4,$5,'DRAFT')`,
+    [orderId, tenantId, "membership_privacy_" + suffix.repeat(5), "Privacy order " + suffix, "PRIV-" + suffix]
+  );
+  await db.query(
+    `INSERT INTO assurance_order_workers(
+       target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,target_status
+     ) VALUES($1,$2,$3,$4,$5,'company','eligible')`,
+    [targetId, orderId, tenantId, linkId, workerId]
+  );
+  await db.query(
+    `INSERT INTO assurance_cases(
+       case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,
+       case_status,owner_kind,next_action
+     ) VALUES($1,$2,$3,$4,$5,$6,'Assessment pending','worker','Complete the assigned assessment.')`,
+    [caseId, orderId, targetId, tenantId, linkId, workerId]
+  );
+  return { tenantId, orderId, targetId, caseId };
+}
+
+test("consent history is versioned, withdrawable only prospectively and append-only", async () => {
+  const db = await database();
+  try {
+    const worker = "account_privacy_worker_01";
+    await seedAccount(db, worker, "privacy-worker-01@example.test", "worker");
+    const caseOne = await seedCase(db, "a", worker);
+    const service = new ConsentRecordService(Promise.resolve(db));
+
+    const granted = await service.grant({
+      workerId: worker,
+      actorAccountId: worker,
+      consentType: "scoped_share_links",
+      purpose: "Share only the Worker-selected fields through one scoped link.",
+      caseId: caseOne.caseId,
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: { shareLinkId: "share_test_01" },
+      now: new Date(NOW)
+    });
+    const withdrawn = await service.withdraw({
+      workerId: worker,
+      actorAccountId: worker,
+      consentId: granted.consentId,
+      reason: "Stop future sharing through this consent.",
+      now: new Date("2026-10-01T00:10:00.000Z")
+    });
+    assert.equal(granted.version, 1);
+    assert.equal(withdrawn.version, 2);
+    assert.equal(withdrawn.action, "WITHDRAWN");
+
+    const history = await service.listWorkerHistory(worker);
+    assert.equal(history.length, 2);
+    assert.deepEqual(history.map((row) => row.action), ["WITHDRAWN", "GRANTED"]);
+
+    await assert.rejects(
+      db.query(
+        "UPDATE privacy_consent_records SET purpose='tampered' WHERE consent_id=$1 AND version=1",
+        [granted.consentId]
+      ),
+      /append-only/i
+    );
+
+    const required = await service.grant({
+      workerId: worker,
+      actorAccountId: worker,
+      consentType: "interview_recording",
+      purpose: "Required interview recording consent for the active assigned case.",
+      caseId: caseOne.caseId,
+      withdrawalRule: "NOT_WITHDRAWABLE_WHILE_REQUIRED",
+      now: new Date(NOW)
+    });
+    await assert.rejects(
+      service.withdraw({
+        workerId: worker,
+        actorAccountId: worker,
+        consentId: required.consentId,
+        reason: "Try to withdraw active required consent."
+      }),
+      /cannot be withdrawn/i
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("canonical privacy request types persist through the real repository", async () => {
+  const db = await database();
+  try {
+    const worker = "account_privacy_worker_02";
+    await seedAccount(db, worker, "privacy-worker-02@example.test", "worker");
+    const service = new PrivacyOperationsService(
+      new PrivacyOperationsRepository(Promise.resolve(db))
+    );
+    for (const type of [
+      "access",
+      "correction",
+      "restriction",
+      "consent_withdrawal",
+      "share_link_revocation",
+      "retention_inquiry",
+      "deletion",
+      "export"
+    ]) {
+      await service.request({
+        requestId: "request_" + type + "_02",
+        tenantId: null,
+        workerId: worker,
+        type
+      });
+    }
+    const listed = await service.listWorkerPrivacy(null, worker, worker);
+    assert.deepEqual(
+      new Set(listed.requests.map((row) => row.request_type)),
+      new Set([
+        "access",
+        "correction",
+        "restriction",
+        "consent_withdrawal",
+        "share_link_revocation",
+        "retention_inquiry",
+        "deletion",
+        "export"
+      ])
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("approved accommodation binds only to the same Worker case and resolves as a delivery overlay", async () => {
+  const db = await database();
+  try {
+    const worker = "account_privacy_worker_03";
+    const otherWorker = "account_privacy_worker_04";
+    const admin = "account_privacy_admin_01";
+    await seedAccount(db, worker, "privacy-worker-03@example.test", "worker");
+    await seedAccount(db, otherWorker, "privacy-worker-04@example.test", "worker");
+    await seedAccount(db, admin, "privacy-admin-01@example.test", "admin");
+    const workerCase = await seedCase(db, "b", worker);
+    const otherCase = await seedCase(db, "c", otherWorker);
+
+    const repository = new PrivacyOperationsRepository(Promise.resolve(db));
+    const service = new PrivacyOperationsService(repository);
+    await service.accommodation({
+      id: "accommodation_worker_03",
+      tenantId: null,
+      workerId: worker,
+      type: "extra time and captions"
+    });
+
+    await assert.rejects(
+      service.reviewAccommodation({
+        accommodationId: "accommodation_worker_03",
+        reviewerAccountId: admin,
+        decision: "APPROVED",
+        reason: "This approval deliberately targets the wrong Worker case.",
+        caseId: otherCase.caseId,
+        adjustment: { timeMultiplier: 1.5, captions: true }
+      }),
+      /does not belong/i
+    );
+
+    const approved = await service.reviewAccommodation({
+      accommodationId: "accommodation_worker_03",
+      reviewerAccountId: admin,
+      decision: "APPROVED",
+      reason: "Approved delivery adjustment without changing competency standards.",
+      caseId: workerCase.caseId,
+      adjustment: {
+        timeMultiplier: 1.5,
+        extraBreakMinutes: 15,
+        captions: true,
+        screenReader: true
+      },
+      now: new Date("2026-10-01T01:00:00.000Z")
+    });
+    assert.equal(approved.status, "APPROVED");
+    assert.equal(approved.case_id, workerCase.caseId);
+
+    const resolved = await new CaseAccommodationService(Promise.resolve(db))
+      .resolveForWorker(workerCase.caseId, worker);
+    assert.equal(resolved.adjustment.timeMultiplier, 1.5);
+    assert.equal(resolved.adjustment.extraBreakMinutes, 15);
+    assert.equal(resolved.adjustment.captions, true);
+    assert.equal(resolved.adjustment.screenReader, true);
+    assert.deepEqual(resolved.accommodationIds, ["accommodation_worker_03"]);
+
+    await assert.rejects(
+      db.query(
+        "UPDATE assurance_case_accommodation_overlays SET adjustment='{}'::jsonb WHERE case_id=$1",
+        [workerCase.caseId]
+      ),
+      /append-only/i
+    );
+
+    await service.accommodation({
+      id: "accommodation_worker_03_declined",
+      tenantId: null,
+      workerId: worker,
+      type: "unrelated request"
+    });
+    const declined = await service.reviewAccommodation({
+      accommodationId: "accommodation_worker_03_declined",
+      reviewerAccountId: admin,
+      decision: "DECLINED",
+      reason: "Requested change is not required for accessible delivery."
+    });
+    assert.equal(declined.status, "DECLINED");
+    const overlays = await repository.listCaseAccommodationOverlays(workerCase.caseId);
+    assert.equal(overlays.length, 1);
+  } finally {
+    await db.close();
+  }
+});

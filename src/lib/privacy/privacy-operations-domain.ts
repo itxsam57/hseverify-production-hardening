@@ -6,7 +6,7 @@ function assertOptionalTenantId(tenantId: string | null): void {
   }
 }
 
-export const PRIVACY_REQUEST_TYPES = ["access", "correction", "deletion", "export"] as const;
+export const PRIVACY_REQUEST_TYPES = ["access", "correction", "restriction", "consent_withdrawal", "share_link_revocation", "retention_inquiry", "deletion", "export"] as const;
 export type PrivacyRequestType = typeof PRIVACY_REQUEST_TYPES[number];
 
 export function createPrivacyRequest(input: { requestId:string; tenantId:string | null; workerId:string; type:PrivacyRequestType; details?:Record<string,unknown> }) {

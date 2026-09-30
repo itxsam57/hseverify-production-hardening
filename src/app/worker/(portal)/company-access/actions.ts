@@ -18,6 +18,7 @@ import {
 } from "@/lib/company/company-workforce-registration-binding";
 import { CompanyWorkforceRegistrationService } from "@/lib/company/company-workforce-registration-service";
 import { CompanyWorkforceService } from "@/lib/company/company-workforce-service";
+import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
 
 function text(formData: FormData, name: string): string {
   const value = formData.get(name);
@@ -68,7 +69,15 @@ export async function redeemCompanyRegistrationCodeAction(
   try {
     const principal = await requirePortalAuthorization("worker");
     const { workforce } = await services();
-    await workforce.redeemRegistrationCode(principal, text(formData, "registrationCode"));
+    const link = await workforce.redeemRegistrationCode(principal, text(formData, "registrationCode"));
+    await new ConsentRecordService().grant({
+      workerId: principal.accountId,
+      actorAccountId: principal.accountId,
+      consentType: "company_data_sharing",
+      purpose: "Share Worker assurance data with the verified Company joined through a registration code.",
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: { tenantId: link.tenantId, linkId: link.linkId, source: "code" }
+    });
     refresh();
     return state("success", "Company registration code accepted. Your Worker identity remains independent and the Company link is active.");
   } catch (error) {
@@ -83,7 +92,15 @@ export async function acceptCompanyWorkerLinkAction(
   try {
     const principal = await requirePortalAuthorization("worker");
     const { workforce } = await services();
-    await workforce.acceptWorkerLink(principal, text(formData, "linkId"));
+    const link = await workforce.acceptWorkerLink(principal, text(formData, "linkId"));
+    await new ConsentRecordService().grant({
+      workerId: principal.accountId,
+      actorAccountId: principal.accountId,
+      consentType: "company_data_sharing",
+      purpose: "Share Worker assurance data with the verified Company after explicit Worker approval.",
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: { tenantId: link.tenantId, linkId: link.linkId, source: "permanent_worker_id" }
+    });
     refresh();
     return state("success", "Company link accepted.");
   } catch (error) {
@@ -99,7 +116,15 @@ export async function completePreparedCompanyInvitationAction(): Promise<void> {
   }
   try {
     const { registration } = await services();
-    await registration.completePreparedInvitation(principal, binding.resourceId);
+    const link = await registration.completePreparedInvitation(principal, binding.resourceId);
+    await new ConsentRecordService().grant({
+      workerId: principal.accountId,
+      actorAccountId: principal.accountId,
+      consentType: "company_data_sharing",
+      purpose: "Share Worker assurance data with the verified Company linked through the accepted invitation.",
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: { tenantId: link.tenantId, linkId: link.linkId, source: "invitation" }
+    });
     await clearCompanyWorkforceRegistrationBinding();
   } catch {
     redirect("/worker/company-access?status=handoff-unavailable");
@@ -115,10 +140,18 @@ export async function completeCompanyWorkforceRegistrationAction(): Promise<void
   }
   try {
     const { registration } = await services();
-    await registration.completeBinding(principal, {
+    const link = await registration.completeBinding(principal, {
       kind: binding.kind,
       resourceId: binding.resourceId,
       registrationTokenHash: binding.registrationTokenHash
+    });
+    await new ConsentRecordService().grant({
+      workerId: principal.accountId,
+      actorAccountId: principal.accountId,
+      consentType: "company_data_sharing",
+      purpose: "Share Worker assurance data with the verified Company completed through the registration flow.",
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: { tenantId: link.tenantId, linkId: link.linkId, source: binding.kind }
     });
     await clearCompanyWorkforceRegistrationBinding();
   } catch {

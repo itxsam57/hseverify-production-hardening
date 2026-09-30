@@ -39,12 +39,21 @@ export function AssessmentPrecheckWorkspace({
   caseId,
   catalogueVersionId,
   title,
-  delivery
+  delivery,
+  accommodation
 }: {
   caseId: string;
   catalogueVersionId: string;
   title: string;
   delivery: AssessmentDeliverySettings;
+  accommodation: Readonly<{
+    timeMultiplier: number;
+    extraBreakMinutes: number;
+    screenReader: boolean;
+    captions: boolean;
+    interpreter: boolean;
+    reducedMotion: boolean;
+  }>;
 }): React.JSX.Element {
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState<CheckState>(INITIAL);
@@ -146,6 +155,18 @@ export function AssessmentPrecheckWorkspace({
           <div><dt>Screen share</dt><dd>{delivery.requireScreenShare ? "Required" : "Not required"}</dd></div>
           <div><dt>Fullscreen capability</dt><dd>{delivery.requireFullscreen ? "Required" : "Not required"}</dd></div>
         </dl>
+        <section className="content-stack" aria-label="Approved delivery accommodations">
+          <h2>Approved delivery adjustments</h2>
+          <dl>
+            <div><dt>Time allowance</dt><dd>{accommodation.timeMultiplier}×</dd></div>
+            <div><dt>Extra break allowance</dt><dd>{accommodation.extraBreakMinutes} minutes</dd></div>
+            <div><dt>Screen reader</dt><dd>{accommodation.screenReader ? "Approved" : "Standard delivery"}</dd></div>
+            <div><dt>Captions</dt><dd>{accommodation.captions ? "Approved" : "Standard delivery"}</dd></div>
+            <div><dt>Interpreter</dt><dd>{accommodation.interpreter ? "Approved" : "Standard delivery"}</dd></div>
+            <div><dt>Reduced motion</dt><dd>{accommodation.reducedMotion ? "Approved" : "Standard delivery"}</dd></div>
+          </dl>
+          <p className="muted-copy">These adjustments change delivery conditions only. They do not change competency standards or pass requirements.</p>
+        </section>
         <button className="button button-secondary" type="button" disabled={checking} onClick={() => void runChecks()}>
           {checking ? "Checking…" : "Run device checks"}
         </button>

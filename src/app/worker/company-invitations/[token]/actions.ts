@@ -16,6 +16,7 @@ import {
 } from "@/lib/company/company-workforce-registration-binding";
 import { CompanyWorkforceRegistrationService } from "@/lib/company/company-workforce-registration-service";
 import { CompanyWorkforceService } from "@/lib/company/company-workforce-service";
+import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
 
 function text(formData: FormData, name: string): string {
   const value = formData.get(name);
@@ -83,7 +84,15 @@ export async function acceptWorkerCompanyInvitationAction(
     const principal = await requirePortalAuthorization("worker");
     const token = text(formData, "token");
     const { workforce } = await services();
-    await workforce.acceptInvitation(principal, token);
+    const link = await workforce.acceptInvitation(principal, token);
+    await new ConsentRecordService().grant({
+      workerId: principal.accountId,
+      actorAccountId: principal.accountId,
+      consentType: "company_data_sharing",
+      purpose: "Share Worker assurance data with the verified Company linked through the accepted invitation.",
+      withdrawalRule: "FUTURE_PROCESSING_ONLY",
+      metadata: { tenantId: link.tenantId, linkId: link.linkId, source: "invitation" }
+    });
   } catch (error) {
     return failure(error);
   }

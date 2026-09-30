@@ -8,6 +8,7 @@ import { getDatabaseClient } from "@/lib/database/database";
 import { formatDateTime } from "@/lib/format";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
 import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { CaseAccommodationService } from "@/lib/privacy/case-accommodation-service";
 import {
   enterInterviewWaitingRoomAction,
   reportWorkerInterviewTechnicalIssueAction
@@ -33,10 +34,13 @@ export default async function WorkerInterviewPage({
     workerAccountId: principal.accountId,
     interviewRequestId
   });
-  const runtime = await new InterviewRuntimeService(Promise.resolve(database)).view(
-    principal,
-    interviewRequestId
-  );
+  const [runtime, accommodation] = await Promise.all([
+    new InterviewRuntimeService(Promise.resolve(database)).view(principal, interviewRequestId),
+    new CaseAccommodationService(Promise.resolve(database)).resolveForWorker(
+      request.caseId,
+      principal.accountId
+    )
+  ]);
 
   const clock = await database.query<{ now: string | Date }>("SELECT NOW() AS now");
   const scheduledAt = request.scheduledAt ? Date.parse(request.scheduledAt) : Number.NaN;
@@ -85,6 +89,10 @@ export default async function WorkerInterviewPage({
           <div><dt>Timezone</dt><dd>{request.timezone}</dd></div>
           <div><dt>Recording policy</dt><dd>{runtime.recordingPolicy.replaceAll("_", " ").toLowerCase()}</dd></div>
           <div><dt>Runtime state</dt><dd>{runtime.status?.replaceAll("_", " ").toLowerCase() ?? "Not opened"}</dd></div>
+          <div><dt>Approved time allowance</dt><dd>{accommodation.adjustment.timeMultiplier}×</dd></div>
+          <div><dt>Extra break allowance</dt><dd>{accommodation.adjustment.extraBreakMinutes} minutes</dd></div>
+          <div><dt>Captions</dt><dd>{accommodation.adjustment.captions ? "Approved" : "Standard delivery"}</dd></div>
+          <div><dt>Interpreter</dt><dd>{accommodation.adjustment.interpreter ? "Approved" : "Standard delivery"}</dd></div>
         </dl>
 
         {request.status === "ASSIGNED" && joinWindowOpen ? (

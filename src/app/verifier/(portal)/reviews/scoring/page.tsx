@@ -2,8 +2,14 @@ import { requirePlatformPermission } from "@/lib/authorization/authorization-ser
 import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import {
+  getScoringAiProviderStatus,
+  WrittenScoringAssistanceService
+} from "@/lib/scoring/written-scoring-assistance-service";
+import {
   addWrittenScoreRubricMarkAction,
   finalizeWrittenScoreAction,
+  generateWrittenScoringAssistanceAction,
+  reviewWrittenScoringAssistanceAction,
   saveWrittenScoreDecisionAction
 } from "../scoring-actions";
 
@@ -15,6 +21,10 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
   const reviews = await new WrittenScoringService(await getDatabaseClient()).listReviewQueue({
     reviewerAccountId: actor.accountId
   });
+  const [assistance, aiProvider] = await Promise.all([
+    new WrittenScoringAssistanceService().listForReviewer(actor.accountId),
+    Promise.resolve(getScoringAiProviderStatus())
+  ]);
   const typedReviews = reviews as Array<{
     review_id: string;
     case_id: string;
@@ -55,6 +65,8 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                   review.status === "DRAFT" &&
                   review.score !== null &&
                   review.decision !== null;
+                const reviewAssistance = assistance.filter((item) => item.reviewId === review.review_id);
+                const latestAssistance = reviewAssistance[0] ?? null;
                 return (
                   <tr key={review.review_id}>
                     <td>
@@ -63,6 +75,53 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       <strong>{review.status}</strong>
                     </td>
                     <td>
+                      <section className="content-stack" aria-label={"AI scoring guidance " + review.review_id}>
+                        <strong>AI guidance</strong>
+                        <p className="muted-copy">{aiProvider.reason}</p>
+                        {review.status === "DRAFT" && aiProvider.available ? (
+                          <form action={generateWrittenScoringAssistanceAction}>
+                            <input type="hidden" name="reviewId" value={review.review_id} />
+                            <button type="submit">Generate sandbox AI suggestion</button>
+                          </form>
+                        ) : null}
+                        {latestAssistance ? (
+                          <div className="content-stack">
+                            <p>
+                              {latestAssistance.providerKey.toUpperCase()} · {latestAssistance.status.replaceAll("_", " ")}
+                            </p>
+                            <p>
+                              Suggested overall: {latestAssistance.suggestion.overallScoreSuggestion}% — guidance only
+                            </p>
+                            {latestAssistance.suggestion.criteria.length > 0 ? (
+                              <ul>
+                                {latestAssistance.suggestion.criteria.slice(0, 8).map((criterion, index) => (
+                                  <li key={criterion.questionPosition + ":" + criterion.criterion + ":" + index}>
+                                    Q{criterion.questionPosition}: {criterion.criterion} — {criterion.suggestedPercent}%
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
+                            {latestAssistance.status === "GENERATED" ? (
+                              <form action={reviewWrittenScoringAssistanceAction} className="content-stack">
+                                <input type="hidden" name="assistanceId" value={latestAssistance.assistanceId} />
+                                <label>
+                                  Guidance decision
+                                  <select name="guidanceDecision" defaultValue="ACCEPTED_AS_GUIDANCE">
+                                    <option value="ACCEPTED_AS_GUIDANCE">Accept as guidance</option>
+                                    <option value="REJECTED">Reject guidance</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Guidance review reason
+                                  <input name="guidanceReason" minLength={5} maxLength={2000} required />
+                                </label>
+                                <button type="submit">Record AI guidance review</button>
+                              </form>
+                            ) : null}
+                            <p className="muted-copy">AI guidance never writes or finalizes the human score.</p>
+                          </div>
+                        ) : null}
+                      </section>
                       {review.status === "DRAFT" ? (
                         <form action={saveWrittenScoreDecisionAction} className="content-stack">
                           <input type="hidden" name="reviewId" value={review.review_id} />

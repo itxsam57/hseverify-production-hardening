@@ -433,7 +433,8 @@ async function reviewAnswerRow(
 ): Promise<ReviewAnswerRow | null> {
   const result = await database.query<ReviewAnswerRow>(
     `SELECT answers.answer_id,answers.position,versions.question_type,versions.prompt,
-            versions.options_json,versions.domain_reference,versions.difficulty,versions.tags_json,
+            COALESCE(items.option_order_json,versions.options_json) AS options_json,
+            versions.domain_reference,versions.difficulty,versions.tags_json,
             COALESCE(latest.text_value,answers.text_value) AS text_value,
             COALESCE(latest.boolean_value,answers.boolean_value) AS boolean_value,
             COALESCE(latest.numeric_value,answers.numeric_value) AS numeric_value,

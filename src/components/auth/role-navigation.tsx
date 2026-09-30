@@ -55,6 +55,8 @@ const ROLE_LINKS: Record<Exclude<AuthRole, "worker">, readonly NavigationItem[]>
     { href: "/admin/assessor-matching", label: "Assessor matching", icon: "↔" },
     { href: "/admin/certifications", label: "Certifications", icon: "◆" },
     { href: "/admin/operations", label: "Operations & health", icon: "⚙" },
+    { href: "/admin/privacy", label: "Privacy & accommodations", icon: "◉" },
+    { href: "/admin/case-replay", label: "Case Replay", icon: "↺" },
     { href: "/admin/staff", label: "Staff invitations", icon: "♟" },
     { href: "/admin/notifications", label: "Notifications", icon: "♢" }
   ],

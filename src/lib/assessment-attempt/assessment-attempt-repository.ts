@@ -649,7 +649,9 @@ export class AssessmentAttemptRepository {
   ): Promise<PinnedAssessmentAttemptItem | null> {
     const result = await this.database.query<CurrentItemRow>(
       `SELECT i.form_item_id,i.position,i.question_id,i.question_version_id,
-              v.question_type,v.prompt,v.options_json,v.domain_reference,v.difficulty,v.tags_json
+              v.question_type,v.prompt,
+              COALESCE(i.option_order_json,v.options_json) AS options_json,
+              v.domain_reference,v.difficulty,v.tags_json
        FROM assessment_attempts a
        JOIN generated_assessment_form_items i
          ON i.form_id=a.form_id
@@ -837,11 +839,17 @@ export class AssessmentAttemptRepository {
   ): Promise<CommittedAssessmentAnswer | null> {
     const result = await this.database.query<CommittedAnswerRow>(
       `SELECT ans.position,ans.question_version_id,ans.question_type,
-              v.options_json,ans.text_value,ans.boolean_value,ans.numeric_value
+              COALESCE(i.option_order_json,v.options_json) AS options_json,
+              ans.text_value,ans.boolean_value,ans.numeric_value
        FROM assessment_attempt_answers ans
        JOIN assessment_attempts a
          ON a.attempt_id=ans.attempt_id
         AND a.form_id=ans.form_id
+       JOIN generated_assessment_form_items i
+         ON i.form_id=ans.form_id
+        AND i.position=ans.position
+        AND i.question_id=ans.question_id
+        AND i.question_version_id=ans.question_version_id
        JOIN assessment_question_versions v
          ON v.question_version_id=ans.question_version_id
          AND v.question_id=ans.question_id

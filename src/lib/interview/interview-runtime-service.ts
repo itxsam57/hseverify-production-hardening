@@ -3,6 +3,7 @@ import "server-only";
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
+import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
 
 export type InterviewRuntimeStatus =
   | "CLAIMED"
@@ -344,6 +345,22 @@ export class InterviewRuntimeService {
           WHERE interview_request_id=$1`,
         [interviewRequestId, now.toISOString()]
       );
+      if (request.recording_consent_required && input.recordingConsent) {
+        await new ConsentRecordService(Promise.resolve(tx)).grant({
+          workerId: principal.accountId,
+          actorAccountId: principal.accountId,
+          consentType: "interview_recording",
+          purpose: "Interview recording consent for the assigned Assurance Case under the locked interview policy.",
+          caseId: request.case_id,
+          withdrawalRule: "NOT_WITHDRAWABLE_WHILE_REQUIRED",
+          metadata: {
+            interviewRequestId,
+            recordingPolicy: request.recording_policy,
+            retentionDays: Number(request.recording_retention_days)
+          },
+          now
+        });
+      }
       await insertEvent(tx, session.interview_session_id, principal.accountId, "WORKER_READY", now, null, {
         cameraReady: true,
         microphoneReady: true,
