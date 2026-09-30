@@ -62,7 +62,7 @@ async function loadRepositoryModule() {
 
 async function fixture(seed = "draft-repository") {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0069_assessment_controlled_delivery");
+  await applyMigrationsThrough(db, ENV.releaseSha, "0073_assessment_option_order_snapshot");
   const principal = await seedWorkerPrincipal(db, seed);
   const seeded = await seedInProgressAttempt(db, principal, seed, [
     { questionType: "SHORT_TEXT" }
