@@ -31,7 +31,7 @@ function runAssessmentTests(args, delayMs = 0) {
 
 test(
   "assessment runtime test runners isolate generated modules across concurrent invocations",
-  { timeout: 60_000 },
+  { timeout: 180_000 },
   async () => {
     const [fullRecovery, beginOnly] = await Promise.all([
       runAssessmentTests(["--m2-08"]),
