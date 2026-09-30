@@ -22,6 +22,7 @@ import {
   type ProfileSection
 } from "@/lib/worker/profile-domain";
 import { getWorkerProfileView } from "@/lib/worker/profile-service";
+import { workerIdPresentation } from "@/lib/worker/worker-id-presentation";
 
 export const metadata = {
   title: "My Profile"
@@ -76,6 +77,7 @@ export default async function WorkerProfilePage({
     ? requestedSection
     : view.firstIncompleteSection ?? "personal";
   const recentAudit = [...view.record.audit].reverse().slice(0, 5);
+  const idPresentation = workerIdPresentation(view.record.workerId);
 
   return (
     <div className="profile-page">
@@ -123,8 +125,13 @@ export default async function WorkerProfilePage({
         </div>
         <dl className="profile-summary-facts">
           <div>
-            <dt>Worker ID</dt>
-            <dd>{view.record.workerId}</dd>
+            <dt>{idPresentation.label}</dt>
+            <dd>
+              {view.record.workerId}
+              {!idPresentation.permanent ? (
+                <span className="muted-copy"> — provisional</span>
+              ) : null}
+            </dd>
           </div>
           <div>
             <dt>Account email</dt>

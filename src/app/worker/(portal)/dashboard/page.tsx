@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CopyWorkerId } from "@/components/worker/copy-worker-id";
+import { workerIdPresentation } from "@/lib/worker/worker-id-presentation";
 import { StatusBadge } from "@/components/worker/status-badge";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
@@ -49,6 +50,8 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
   const expiringCredentials = countExpiringCredentials(dashboard);
   const primaryCase = dashboard.assuranceCases[0] ?? null;
 
+  const idPresentation = workerIdPresentation(dashboard.worker.id);
+
   return (
     <div className="dashboard-page">
       <header className="page-heading-row">
@@ -66,9 +69,9 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
 
       <section className="worker-identity-banner" aria-labelledby="worker-id-heading">
         <div>
-          <p className="section-kicker" id="worker-id-heading">Permanent Worker ID</p>
+          <p className="section-kicker" id="worker-id-heading">{idPresentation.label}</p>
           <p className="worker-id-value">{dashboard.worker.id}</p>
-          <p className="muted-copy">Use this identifier when linking with an employer or verifying an approved public record.</p>
+          <p className="muted-copy">{idPresentation.helper}</p>
         </div>
         <div className="worker-id-actions">
           <CopyWorkerId workerId={dashboard.worker.id} />
