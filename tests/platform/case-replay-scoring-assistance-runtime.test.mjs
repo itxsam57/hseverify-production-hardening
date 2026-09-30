@@ -35,7 +35,7 @@ async function database() {
   await applyMigrationsThrough(
     db,
     ENV.releaseSha,
-    "0072_case_replay_scoring_assistance_history"
+    "0073_assessment_option_order_snapshot"
   );
   return db;
 }
