@@ -624,7 +624,7 @@ try {
     const verifierSession = verifierASession;
     const verifierPage = verifierSession.page;
     await gotoOk(verifierPage, "/verifier/reviews", "Evidence review queue");
-    const employmentRow = verifierPage.locator("tbody tr").filter({ hasText: "employment" }).first();
+    const employmentRow = verifierPage.locator("tbody tr").filter({ hasText: "employment" }).filter({ hasText: "File attached" }).first();
     await employmentRow.waitFor({ state: "visible", timeout: 15_000 });
     await employmentRow.getByRole("link", { name: "Review" }).click();
     await verifierPage.waitForURL(/\/verifier\/reviews\/evidence_review_[A-Za-z0-9_-]{24}$/, { timeout: 15_000 });
