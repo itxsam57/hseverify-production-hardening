@@ -103,7 +103,7 @@ export class CaseReplayService {
         rows(tx, "SELECT * FROM assurance_case_policy_snapshots WHERE case_id=$1 ORDER BY resolved_at,snapshot_id", caseId),
         rows(tx, "SELECT * FROM assurance_case_accommodation_overlays WHERE case_id=$1 ORDER BY approved_at,overlay_id", caseId),
         rows(tx, "SELECT * FROM evidence_review_tasks WHERE case_id=$1 ORDER BY created_at,task_id", caseId),
-        rows(tx, `SELECT decisions.* FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id=$1 ORDER BY decisions.created_at,decisions.decision_id`, caseId),
+        rows(tx, `SELECT decisions.* FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id=$1 ORDER BY decisions.decided_at,decisions.decision_id`, caseId),
         rows(tx, "SELECT * FROM assessment_precheck_records WHERE case_id=$1 ORDER BY created_at,precheck_id", caseId),
         rows(tx, "SELECT * FROM assessment_attempts WHERE case_id=$1 ORDER BY created_at,attempt_id", caseId),
         rows(tx, `SELECT items.form_id,items.form_item_id,items.position,items.question_id,
