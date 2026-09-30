@@ -26,7 +26,7 @@ function atLeast(actual, minimum) {
 const requirements = [
   {
     path: "node_modules/next",
-    minimum: "16.3.3",
+    minimum: "16.3.6",
     advisory: "GHSA-p293-qw3h-jr36 and GHSA-2xp9-vwfh-vxw4 remote-code-execution advisories"
   },
   {
