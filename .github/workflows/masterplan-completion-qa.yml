@@ -12,6 +12,9 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/masterplan-completion-qa.yml"
+  pull_request:
+    branches:
+      - qa/hse-production-hardening
   workflow_dispatch:
 
 permissions:
