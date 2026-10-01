@@ -347,6 +347,8 @@ test(
             await worker.getByText(/Leaving letter: .* · active/).waitFor({ timeout: 15_000 });
 
             await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
+            await worker.getByRole("heading", { level: 1, name: /Welcome,/ }).waitFor({ timeout: 20_000 });
+            await worker.getByText(permanentWorkerId, { exact: true }).waitFor({ timeout: 20_000 });
             const dashboardText = await worker.locator("main").innerText();
             assert.match(dashboardText, /Verified/i);
             assert.ok(dashboardText.includes(permanentWorkerId), "Permanent Worker ID was missing from the Worker dashboard.");
