@@ -97,10 +97,51 @@ test(
         await readFile("/tmp/independent-audit-credentials.json", "utf8")
       );
       const interviewRequestId = "interview_request_live_browser_20260925";
+      const orderId = "assurance_order_" + "i".repeat(24);
+      const targetId = "assurance_target_" + "j".repeat(24);
+      const caseId = "assurance_case_" + "k".repeat(24);
+      const workerLinkId = "worker_link_live_browser_20260925";
       const scheduledAt = new Date(Date.now() + 5 * 60_000).toISOString();
+      const requestedAt = new Date().toISOString();
 
       const seedDatabase = new PGlite(databaseDirectory);
       try {
+        await seedDatabase.query(
+          `INSERT INTO assurance_orders(
+             order_id,tenant_id,created_by_membership_id,order_name,order_reference,order_status
+           ) VALUES($1,$2,$3,'Live interview browser order','LIVE-INTERVIEW-BROWSER','DRAFT')`,
+          [
+            orderId,
+            credentials.company.tenantId,
+            "membership_live_interview_browser"
+          ]
+        );
+        await seedDatabase.query(
+          `INSERT INTO assurance_order_workers(
+             target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,target_status
+           ) VALUES($1,$2,$3,$4,$5,'company','eligible')`,
+          [
+            targetId,
+            orderId,
+            credentials.company.tenantId,
+            workerLinkId,
+            credentials.worker.accountId
+          ]
+        );
+        await seedDatabase.query(
+          `INSERT INTO assurance_cases(
+             case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,
+             case_status,owner_kind,next_action
+           ) VALUES($1,$2,$3,$4,$5,$6,'Interview pending','assessor','Conduct the assigned structured interview.')`,
+          [
+            caseId,
+            orderId,
+            targetId,
+            credentials.company.tenantId,
+            workerLinkId,
+            credentials.worker.accountId
+          ]
+        );
         await seedDatabase.query(
           `INSERT INTO interview_requests(
              interview_request_id,tenant_id,case_id,worker_account_id,status,
@@ -109,9 +150,9 @@ test(
           [
             interviewRequestId,
             credentials.company.tenantId,
-            "assurance_case_live_browser_20260925",
+            caseId,
             credentials.worker.accountId,
-            new Date().toISOString(),
+            requestedAt,
             scheduledAt,
             credentials.assessor.accountId
           ]
