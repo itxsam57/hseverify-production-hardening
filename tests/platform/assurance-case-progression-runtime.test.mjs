@@ -42,6 +42,19 @@ async function loadProgressionRuntime() {
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, output);
   }
+  const assignmentShim = resolve(out, "lib/interview/interview-assignment-service.js");
+  mkdirSync(dirname(assignmentShim), { recursive: true });
+  writeFileSync(
+    assignmentShim,
+    `class InterviewAssignmentService {
+  constructor(database) { this.database = database; }
+  async evaluateAndPersist() {
+    throw new Error("Interview assignment must not run in PASS/FAIL recommendation progression tests.");
+  }
+}
+module.exports = { InterviewAssignmentService };
+`
+  );
   return import(
     `file://${resolve(out, "lib/assurance/assurance-case-progression-service.js")}`
   );
