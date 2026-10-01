@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AssessmentPrecheckWorkspace } from "@/components/worker/assessment-precheck-workspace";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
@@ -17,6 +17,9 @@ export default async function AssessmentPrecheckPage({
   const params = await searchParams;
   const caseId = params.caseId?.trim() ?? "";
   const catalogueVersionId = params.catalogueVersionId?.trim() ?? "";
+  if (!caseId || !catalogueVersionId) {
+    redirect("/worker/available-assessments");
+  }
   const principal = await requirePlatformPermission({
     expectedRole: "worker",
     permission: "worker.assessments.read"
