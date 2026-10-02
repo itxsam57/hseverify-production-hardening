@@ -9,14 +9,32 @@ import {
 
 type Row = Record<string, unknown>;
 
+function jsonValue<T>(value: unknown, fallback: T): T {
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+  if (value !== null && value !== undefined) return value as T;
+  return fallback;
+}
+
+function dateValue(value: unknown): string {
+  const parsed = value instanceof Date ? value : new Date(String(value));
+  if (!Number.isFinite(parsed.getTime())) throw new Error("Stored Living Record date is invalid.");
+  return parsed.toISOString();
+}
+
 function versionFromRow(row: Row): Omit<LivingRecordVersion, "version"> {
   return {
     status: String(row.status) as LivingRecordVersion["status"],
-    effectiveAt: String(row.effective_at),
-    expiresAt: row.expires_at ? String(row.expires_at) : null,
-    restrictions: JSON.parse(String(row.restrictions)) as string[],
-    conditions: JSON.parse(String(row.conditions)) as string[],
-    reassessment: JSON.parse(String(row.reassessment)) as LivingRecordVersion["reassessment"]
+    effectiveAt: dateValue(row.effective_at),
+    expiresAt: row.expires_at ? dateValue(row.expires_at) : null,
+    restrictions: jsonValue<string[]>(row.restrictions, []),
+    conditions: jsonValue<string[]>(row.conditions, []),
+    reassessment: jsonValue<LivingRecordVersion["reassessment"]>(row.reassessment, { required: false, dueAt: null, reason: null })
   };
 }
 
@@ -28,9 +46,8 @@ export class LivingRecordRepository {
     record: LivingCompetencyRecord
   ): Promise<void> {
     const client = await this.clientPromise;
-    await client.query("BEGIN", []);
-    try {
-      await client.query(
+    await client.transaction(async (transaction) => {
+      await transaction.query(
         `INSERT INTO living_record_competencies
           (competency_id, worker_id, title, source_credential_id, created_at)
          VALUES ($1, $2, $3, $4, NOW())
@@ -41,7 +58,7 @@ export class LivingRecordRepository {
       );
 
       for (const version of record.versions) {
-        await client.query(
+        await transaction.query(
           `INSERT INTO living_record_versions
             (competency_id, version, status, effective_at, expires_at, restrictions, conditions, reassessment)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -58,11 +75,47 @@ export class LivingRecordRepository {
           ]
         );
       }
-      await client.query("COMMIT", []);
-    } catch (error) {
-      await client.query("ROLLBACK", []);
-      throw error;
+    });
+  }
+
+  async findByCredential(credentialId: string): Promise<LivingCompetencyRecord[]> {
+    const client = await this.clientPromise;
+    const result = await client.query<Row>(
+      `SELECT c.competency_id, c.title, c.source_credential_id,
+              v.version, v.status, v.effective_at, v.expires_at,
+              v.restrictions, v.conditions, v.reassessment
+       FROM living_record_competencies c
+       JOIN living_record_versions v ON v.competency_id = c.competency_id
+       WHERE c.source_credential_id = $1
+       ORDER BY c.competency_id, v.version`,
+      [credentialId]
+    );
+
+    const grouped = new Map<string, LivingCompetencyRecord>();
+    for (const row of result.rows) {
+      const current = grouped.get(String(row.competency_id));
+      const nextVersion = Number(row.version);
+      const version = { version: nextVersion, ...versionFromRow(row) };
+      if (!current) {
+        grouped.set(String(row.competency_id), {
+          competencyId: String(row.competency_id),
+          title: String(row.title),
+          sourceCredentialId: row.source_credential_id ? String(row.source_credential_id) : null,
+          versions: [version]
+        });
+        continue;
+      }
+      if (nextVersion > current.versions.at(-1)!.version) {
+        grouped.set(String(row.competency_id), {
+          ...current,
+          versions: [...current.versions, version]
+        });
+      }
     }
+    return [...grouped.values()].map((record) => ({
+      ...record,
+      versions: Object.freeze([...record.versions])
+    }));
   }
 
   async findByWorker(workerId: string): Promise<LivingCompetencyRecord[]> {

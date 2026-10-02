@@ -37,6 +37,18 @@ export class CredentialIssuanceRepository {
     return result.rows[0] ? credentialFromRow(result.rows[0] as Record<string, unknown>) : null;
   }
 
+  async listByWorker(workerId: string): Promise<CredentialRecord[]> {
+    const client = await this.clientPromise;
+    const result = await client.query(
+      `SELECT credential_id, worker_id, qualification, issued_at, expires_at, status, version, public_status_url, qr_payload, signature, pdf_url
+       FROM credential_issuances
+       WHERE worker_id=$1
+       ORDER BY issued_at DESC, credential_id DESC`,
+      [workerId]
+    );
+    return result.rows.map((row) => credentialFromRow(row as Record<string, unknown>));
+  }
+
   async findLifecycle(credentialId: string): Promise<Pick<CredentialRecord, "status" | "version"> | null> {
     const client = await this.clientPromise;
     const result = await client.query(
