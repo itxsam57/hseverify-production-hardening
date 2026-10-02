@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const beginActionPath = "src/app/worker/(portal)/available-assessments/actions.ts";
+const precheckPagePath = "src/app/worker/(portal)/available-assessments/precheck/page.tsx";
 const submitActionPath = "src/app/worker/(portal)/assessments/[attemptId]/actions.ts";
 
 function source(path, label) {
@@ -42,6 +43,14 @@ test("M2.07 start action routes through precheck and only the completed precheck
   assert.match(action, /\.begin\s*\(/);
   assert.match(action, /redirect\s*\(\s*`\/worker\/assessments\/\$\{/);
   forbiddenBrowserAuthority(action, "begin action");
+});
+
+test("M2.07 precheck GET redirects missing context without weakening invalid-context fail-closed behavior", () => {
+  const page = source(precheckPagePath, "precheck page");
+  requireWorkerPermission(page, "precheck page");
+  assert.match(page, /if\s*\(\s*!caseId\s*\|\|\s*!catalogueVersionId\s*\)\s*\{[\s\S]*redirect\s*\(\s*["']\/worker\/available-assessments["']\s*\)/);
+  assert.match(page, /AssessmentPrecheckError/);
+  assert.match(page, /notFound\s*\(\s*\)/);
 });
 
 test("M2.07 submit server action parses only stale guards/current answer and maps expected errors to coarse UI state", () => {
