@@ -1,0 +1,413 @@
+{
+  "canonical_repository": "itxsam57/hseverify-production-hardening",
+  "canonical_branch": "qa/masterplan-completion-20260926",
+  "base_sha": "388fb489c7bacf7af6c8b72cdafe8e95e97d0425",
+  "date": "2026-10-02",
+  "scope": "Audit of evolving VPS working tree with repaired final affected checks; no production readiness claim. Browser fixture/camera/payment/provider limits are documented in the report.",
+  "browser_suites": [
+    {
+      "suite": "tests/browser/all-role-notification-workflow.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/all-role-notification-workflow.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/all-role-ui-layout.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/all-role-ui-layout.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/assigned-staff-workflows.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-assigned-staff-workflows.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/case-replay-scoring-assistance-e2e.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/company-complete-journey.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/company-complete-journey.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/company-workforce-assurance-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/company-workforce-journey.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/consumer-validation.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-consumer-validation.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/credential-appeal-operational-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/credential-appeal-operational-e2e.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/error-recovery-controls.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-error-recovery-controls.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/hse-x02-ui-matrix.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-hse-x02-ui-matrix.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/independent-worker-review-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-independent-worker-review-e2e.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/interview-live-media-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/interview-live-media-e2e.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m1-07-worker-identity.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m1-07-worker-identity.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m1-08-company-verification.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m1-08-company-verification.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m1-09-company-organization.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m1-09-company-organization.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m1-10-company-worker-invitations.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m1-10-company-worker-invitations.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m1-11-worker-evidence.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m1-11-worker-evidence.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m1-12-public-verification.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m1-12-public-verification.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-01-assurance-order-case.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-01-assurance-order-case.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-02-evidence-review.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-02-evidence-review.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-03-effective-policy.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-03-effective-policy.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-04-question-bank.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-04-question-bank.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-05-assessment-generation.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-05-assessment-generation.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-06-assessment-catalogue.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-06-assessment-catalogue.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-07-assessment-attempt.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-07-assessment-attempt.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-09-integrity.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/integrity-browser.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-10-written-scoring.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-10-written-scoring.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-11-interview-scheduling.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-11-interview-scheduling.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-12-interview-console.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-12-interview-console.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m2-13-decision-engine.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m2-13-decision-engine.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-01-credential-issuance.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-01-credential-issuance.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-02-digital-passport.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-02-digital-passport.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-03-scoped-share-links.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-03-scoped-share-links.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-04-company-action-centre.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-04-company-action-centre.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-05-billing.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-05-billing.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-06-reports.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-06-reports.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-07-credential-appeals.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-07-credential-appeals.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-08-admin-operations.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-08-admin-operations.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-09-privacy-operations.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-09-privacy-operations.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-10-provider-integrations.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-10-provider-integrations.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-11-certification.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/certification-standalone.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/m3-12-production-launch.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/browser-m3-12-production-launch.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/masterplan-admin-authoring-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/admin-authoring-journey-green.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/final-company-credit-recovery.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/privacy-consent-accommodation-e2e.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/staff-role-complete-journey.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/staff-role-complete-journey.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "suite": "tests/browser/worker-complete-journey.browser.test.mjs",
+      "artifact": ".autopilot/artifacts/worker-complete-copy-regression.txt",
+      "passed": 1,
+      "failed": 0
+    }
+  ],
+  "additional_journey_variants": [
+    {
+      "mode": "worker sandbox self-payment",
+      "artifact": ".autopilot/artifacts/final-worker-journey.txt",
+      "passed": true
+    },
+    {
+      "mode": "Company sandbox credit plus insufficient-credit recovery",
+      "artifact": ".autopilot/artifacts/final-company-credit-recovery.txt",
+      "passed": true
+    }
+  ],
+  "summaries": {
+    "release-verification-summary.json": [
+      {
+        "name": "final-company-credit-recovery",
+        "code": 0
+      },
+      {
+        "name": "typecheck-release",
+        "code": 0
+      },
+      {
+        "name": "lint-release",
+        "code": 0
+      },
+      {
+        "name": "decision-release",
+        "code": 0
+      },
+      {
+        "name": "privacy-replay-release",
+        "code": 0
+      },
+      {
+        "name": "authorization-release",
+        "code": 0
+      }
+    ],
+    "runtime-followup-summary.json": [
+      {
+        "name": "runtime-loaders",
+        "code": 0
+      },
+      {
+        "name": "attempt-wrapper",
+        "code": 0
+      },
+      {
+        "name": "draft-wrapper",
+        "code": 0
+      },
+      {
+        "name": "blueprint-wrapper",
+        "code": 1
+      },
+      {
+        "name": "catalogue-wrapper",
+        "code": 1
+      },
+      {
+        "name": "email-wrapper",
+        "code": 0
+      },
+      {
+        "name": "secure-access-wrapper",
+        "code": 0
+      },
+      {
+        "name": "secure-scan-wrapper",
+        "code": 0
+      }
+    ],
+    "quality-followup-summary.json": [
+      {
+        "name": "blueprint-runtime",
+        "code": 0
+      },
+      {
+        "name": "catalogue-runtime",
+        "code": 0
+      },
+      {
+        "name": "integrity-runtime",
+        "code": 0
+      },
+      {
+        "name": "integrity-browser",
+        "code": 0
+      },
+      {
+        "name": "final-types",
+        "code": 0
+      },
+      {
+        "name": "final-lint",
+        "code": 1
+      },
+      {
+        "name": "build-test-env",
+        "code": 0
+      }
+    ],
+    "last-checks-summary.json": [
+      {
+        "name": "public-last",
+        "code": 0
+      },
+      {
+        "name": "types-last",
+        "code": 0
+      },
+      {
+        "name": "lint-last",
+        "code": 0
+      },
+      {
+        "name": "build-last",
+        "code": 0
+      }
+    ]
+  }
+}

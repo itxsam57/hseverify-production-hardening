@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { getServerEnvironment } from "@/lib/config/server-environment";
 import { getDatabaseClient } from "@/lib/database/database";
+import { normalizePublicVerificationIdentifier } from "@/lib/public-verification/public-verification-domain";
 import { PublicVerificationRepository } from "@/lib/public-verification/public-verification-repository";
 import { publicVerificationRequestFingerprint } from "@/lib/public-verification/public-verification-request";
 import { PublicVerificationService } from "@/lib/public-verification/public-verification-service";
@@ -44,4 +45,14 @@ export async function getPublicVerificationRequestRuntime(): Promise<{
     ),
     requestFingerprint
   };
+}
+export async function resolvePublicCredentialRequest(credentialId: string) {
+  if (normalizePublicVerificationIdentifier(credentialId)?.kind !== "credential") return {kind:"status" as const,status:"not_found_or_invalid" as const};
+  try {
+  const { service, requestFingerprint } = await getPublicVerificationRequestRuntime();
+  const lookup = await service.lookupPublicVerification({ rawIdentifier: credentialId, requestFingerprint });
+  return lookup.kind === "redirect"
+    ? service.resolvePublicVerificationCapability({ publicToken: lookup.publicToken, requestFingerprint })
+    : lookup;
+  } catch { return { kind: "status" as const, status: "temporarily_unavailable" as const }; }
 }

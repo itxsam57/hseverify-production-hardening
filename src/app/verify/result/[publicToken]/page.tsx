@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { normalizePublicVerificationIdentifier } from "@/lib/public-verification/public-verification-domain";
 
 import { formatDateTime } from "@/lib/format";
 import { getPublicVerificationRequestRuntime } from "@/lib/public-verification/public-verification-runtime";
@@ -35,16 +37,20 @@ export default async function PublicVerificationResultPage({
 }): Promise<React.JSX.Element> {
   const { publicToken } = await params;
   let result: PublicVerificationResolvedResult;
+  let redirectToken: string | null = null;
   try {
-    const { service, requestFingerprint } =
-      await getPublicVerificationRequestRuntime();
-    result = await service.resolvePublicVerificationCapability({
-      publicToken,
-      requestFingerprint
-    });
+    const { service, requestFingerprint } = await getPublicVerificationRequestRuntime();
+    if (normalizePublicVerificationIdentifier(publicToken)) {
+      const lookup = await service.lookupPublicVerification({ rawIdentifier: publicToken, requestFingerprint });
+      if (lookup.kind === "redirect") redirectToken = lookup.publicToken;
+      result = lookup.kind === "status" ? lookup : unavailableResult();
+    } else {
+      result = await service.resolvePublicVerificationCapability({ publicToken, requestFingerprint });
+    }
   } catch {
     result = unavailableResult();
   }
+  if (redirectToken) redirect(`/verify/result/${redirectToken}`);
 
   return (
     <main className="public-verification-page">

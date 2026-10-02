@@ -278,7 +278,7 @@ export default async function AssessorInterviewConsolePage({
           Scores are 0–5. Every dimension must be saved before End. The final recommendation
           can be submitted only after the runtime is formally Ended.
         </p>
-        <form action={saveInterviewConsoleAction} className="form-grid">
+        <form key={JSON.stringify(saved ?? { interviewSessionId })} action={saveInterviewConsoleAction} className="form-grid">
           <input type="hidden" name="interviewSessionId" value={interviewSessionId} />
           <input type="hidden" name="interviewRequestId" value={request.interviewRequestId} />
           <label>
@@ -328,7 +328,14 @@ export default async function AssessorInterviewConsolePage({
 
           {!locked ? (
             <div className="button-row">
-              <button className="button button-secondary" type="submit">Save draft</button>
+              <button
+                className="button button-secondary"
+                type="submit"
+                name="intent"
+                value="save"
+              >
+                Save draft
+              </button>
               <button
                 className="button button-primary"
                 type="submit"

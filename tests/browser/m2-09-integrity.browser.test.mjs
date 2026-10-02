@@ -35,7 +35,7 @@ test("M2.09 integrity owner acceptance boundary launches Chromium", async () => 
 
   await runDevelopmentServer({
     args: ["--port", String(port)],
-    environment: { ...process.env, ...environment },
+    environment: { ...process.env, ...environment, HSE_APP_ENV: "development", HSE_SESSION_SECRET: "integrity-browser-test-session-secret-2026-32", HSE_AUTH_PEPPER: "integrity-browser-test-auth-pepper-2026-32" },
     probeUrl: `${baseUrl}/integrity`,
     probe: async () => {
       const browser = await chromium.launch({ headless: true });

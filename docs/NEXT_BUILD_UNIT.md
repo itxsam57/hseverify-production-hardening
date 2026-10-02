@@ -1,3 +1,5 @@
+> Current authority (2026-10-02): use `itxsam57/hseverify-production-hardening` / `qa/masterplan-completion-20260926`. See [workflow audit](qa/2026-10-02-workflow-audit.md). Earlier gate/branch entries below are historical; they are not current production acceptance.
+
 # Next Build Unit
 
 ## Current hardening mission — 11 September 2026

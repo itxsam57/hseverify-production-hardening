@@ -26,7 +26,7 @@ export type PublicWorkerVerificationSource = {
 };
 
 export type PublicWorkerVerificationProjection = {
-  kind: "worker";
+  kind: "worker" | "credential";
   publicIdentifier: string;
   displayName: string;
   status: PublicVerificationStatus;
@@ -38,7 +38,7 @@ export type PublicWorkerVerificationProjection = {
 };
 
 const WORKER_ID_PATTERN = /^worker_id_[A-Za-z0-9_-]{24}$/;
-const CREDENTIAL_ID_PATTERN = /^credential_id_[A-Za-z0-9_-]{24}$/;
+const CREDENTIAL_ID_PATTERN = /^credential_id_[A-Za-z0-9_-]{1,96}$/;
 const MAX_PUBLIC_IDENTIFIER_LENGTH = 180;
 const MAX_PUBLIC_NAME_PART_LENGTH = 120;
 
@@ -121,6 +121,28 @@ export function projectPublicWorkerVerification(
     expiresAt: null,
     competencyTitle: null,
     restrictions: Object.freeze([]) as readonly string[],
+    verifiedAt: normalizeIsoTimestamp(verifiedAt, "Verification timestamp")
+  };
+}
+export type PublicCredentialVerificationSource = {
+  credentialId: string;
+  qualification: string;
+  status: "valid" | "expired" | "suspended" | "revoked";
+  issuedAt: string;
+  expiresAt: string | null;
+  conditional: boolean;
+};
+
+export function projectPublicCredentialVerification(source: PublicCredentialVerificationSource, verifiedAt: string): PublicWorkerVerificationProjection {
+  const identifier = normalizePublicVerificationIdentifier(source.credentialId);
+  if (!identifier || identifier.kind !== "credential") throw new Error("Public credential identifier is invalid.");
+  const expiresAt = source.expiresAt ? normalizeIsoTimestamp(source.expiresAt, "Credential expiry") : null;
+  return {
+    kind: "credential", publicIdentifier: identifier.normalizedIdentifier,
+    displayName: "HSE Verify credential", competencyTitle: source.qualification,
+    status: source.status === "valid" && expiresAt && expiresAt <= verifiedAt ? "expired" : source.status,
+    issuedAt: normalizeIsoTimestamp(source.issuedAt, "Credential issue timestamp"), expiresAt,
+    restrictions: source.conditional ? ["Conditional approval: conditions apply. Request the Worker’s scoped Passport before relying on this credential."] : [],
     verifiedAt: normalizeIsoTimestamp(verifiedAt, "Verification timestamp")
   };
 }

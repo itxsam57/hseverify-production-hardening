@@ -9,6 +9,7 @@ import {
 } from "@/lib/outbox/outbox-domain";
 import {
   normalizePublicVerificationIdentifier,
+  type PublicCredentialVerificationSource,
   type PublicWorkerVerificationSource
 } from "@/lib/public-verification/public-verification-domain";
 import {
@@ -376,6 +377,27 @@ export class PublicVerificationRepository {
       legalLastName: row.legal_last_name,
       issuedAt: timestamp(row.issued_at)
     });
+  }
+
+  async findPublicCredentialById(credentialId: string): Promise<PublicCredentialVerificationSource | null> {
+    const identifier = normalizePublicVerificationIdentifier(credentialId);
+    if (!identifier || identifier.kind !== "credential") return null;
+    const result = await this.database.query<{
+      credential_id: string; qualification: string; status: PublicCredentialVerificationSource["status"];
+      issued_at: string | Date; expires_at: string | Date | null; conditional: boolean;
+    }>(`SELECT credential_id,qualification,status,issued_at,expires_at,
+               COALESCE((SELECT decisions.state='CONDITIONALLY_APPROVED'
+                  FROM assurance_cases cases JOIN platform_decisions decisions
+                    ON decisions.decision_id=cases.decision_reference AND decisions.tenant_id=cases.tenant_id
+                 WHERE cases.credential_reference=credentials.credential_id LIMIT 1),
+               EXISTS(SELECT 1 FROM certification_records records
+                       WHERE records.credential_id=credentials.credential_id
+                         AND records.status='conditionally_approved')) AS conditional
+          FROM credential_issuances credentials WHERE credential_id=$1 LIMIT 1`, [identifier.normalizedIdentifier]);
+    const row = result.rows[0];
+    return row ? Object.freeze({ credentialId: row.credential_id, qualification: row.qualification,
+      status: row.status, issuedAt: timestamp(row.issued_at), expiresAt: row.expires_at ? timestamp(row.expires_at) : null,
+      conditional: row.conditional }) : null;
   }
 
   async findReceivedConcern(concernReference: string): Promise<Readonly<{

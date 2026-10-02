@@ -31,11 +31,21 @@ export default async function SharedPassportPage({
       <h1>Shared digital passport</h1>
       <p>Purpose: {result.projection.purpose}</p>
       {result.projection.workerId && <p>Worker ID: {result.projection.workerId}</p>}
+      {result.projection.employerDetail && <p>Recipient or employer: {result.projection.employerDetail}</p>}
       {result.projection.qualifications && (
         <ul aria-label="Shared qualifications">
           {result.projection.qualifications.map((item) => <li key={item.recordId}>{item.title}</li>)}
         </ul>
       )}
+      {result.projection.skills && <ul aria-label="Shared skills">
+        {result.projection.skills.map((item) => <li key={item.recordId}>{item.name} · {item.assuranceStatus.replaceAll("_", " ")}</li>)}
+      </ul>}
+      {result.projection.competencies && <ul aria-label="Shared competencies">
+        {result.projection.competencies.map((item) => <li key={item.competencyId}><strong>{item.title}</strong><p>{item.status.replaceAll("_", " ")} · {item.expiresAt ? `expires ${item.expiresAt}` : "no expiry recorded"}</p></li>)}
+      </ul>}
+      {result.projection.restrictions && <p>Restrictions: {result.projection.restrictions.join(", ") || "None recorded"}</p>}
+      {result.projection.conditions && <p>Conditions: {result.projection.conditions.join(", ") || "None recorded"}</p>}
+      {result.projection.nextExpiryAt !== undefined && <p>Next expiry: {result.projection.nextExpiryAt ?? "None recorded"}</p>}
     </main>
   );
 }

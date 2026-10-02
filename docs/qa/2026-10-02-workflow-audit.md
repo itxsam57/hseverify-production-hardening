@@ -1,0 +1,80 @@
+# HSE Verify workflow audit — 2026-10-02
+
+Canonical repository: `itxsam57/hseverify-production-hardening`, branch `qa/masterplan-completion-20260926`. Base: `388fb489c7bacf7af6c8b72cdafe8e95e97d0425`.
+
+## What passed
+
+Two preserved, multi-role browser journeys: Worker registration/contact verification -> complete profile -> identity and qualification submissions -> Verifier approval -> assessment application -> worker sandbox payment **or** Company checkout/credit approval -> pinned MCQ/written assessment -> save/exit/resume -> human scoring -> matched/scheduled interview -> Assessor save/final recommendation -> Admin decision -> issued credential/PDF/public verification -> selected Passport sharing -> independent appeal review -> Living Record reassessment -> fresh application using fresh question capacity. Company funding also exercises insufficient-credit recovery before approval.
+
+Other connected browser suites cover Company organization/invite/link/orders/review, company Team/policy/reports, Root staff/MFA isolation, notifications, privacy/accommodation/consent, advisory scoring/Case Replay, credential appeal, and built-in WebRTC media. Configuration authoring is checked separately via the Admin UI.
+
+The visible device browser was also used to sign in as the disposable journey Worker and inspect the Passport: identity verified, profile 100%, qualification present, issued competency changed to reassessment required, retained history. These observations supplement automated Chromium; they do not prove every button manually.
+
+## Fixed during this audit
+
+- Interview draft save reset the required recommendation before final submission: remount from the saved draft.
+- Issued credential QR URL could not resolve through the Worker-only verifier: add credential lookup behind existing opaque capabilities/rate limits.
+- Recipient sharing page omitted selected skills/competencies/restrictions/conditions/expiry/recipient: render only the allowed projection.
+- New Worker assessment page crashed before identity verification: show no eligible applications while retaining mutation eligibility checks.
+- Company funding could overreserve credits or accept revoked links: fresh guarded tenant transaction and active-link/identity checks; controlled insufficient-credit feedback.
+- Decision overrides left credentials/living records and the certification dashboard stale: synchronize lifecycle and derive current certification display; disclose conditional approval consistently in public page/API/PDF.
+- Completed applications blocked reassessment forever: retain original records, release completed/reassessment applications, require fresh capacity, serialize Worker application changes.
+- Test loaders failed to rewrite aliases/compile new dependencies; integrity test lacked safe runtime configuration; certification browser test depended on external fixture state. Repair harnesses and execute real disposable drills.
+- Preserve older VPS Case Replay fields missing from the newer query (Worker/title/creation context).
+- Framework/policy publication had no visible acknowledgement: add explicit saved/published confirmation.
+
+## Read the status correctly
+
+“Journey passed” applies to the named exercised journey and disposable data. It does **not** certify every variant or production integration. Route-render tests are supplementary only. The table records every Masterplan brick and its remaining limits.
+
+| Brick | Planned feature | Result | Exercised evidence | Missing / not verified |
+|---|---|---|---|---|
+| M1.01 | Repository, environments and CI/CD | Partial | Types, lint, deterministic build in test configuration; migration runtime suites | GitHub CI and production rollback need release evidence |
+| M1.02 | Design system and global UX | Browser checked | Desktop/mobile all-role layout, consumer validation, retry controls | Visual checks cover routes, not every component/state |
+| M1.03 | Authentication and portal isolation | Journey passed | Worker registration/contact verification; company registration; Root staff provisioning/MFA and isolated sessions | Live OTP delivery unverified |
+| M1.04 | Authorization and tenant isolation | Runtime/browser passed | Tenant scope/concurrency and role isolation; protected actions | No independent penetration test |
+| M1.05 | Audit and notification foundations | Partial | All-role bell, deep link/read persistence; queue/email runtime | New assessment application/funding events do not yet produce all planned notifications; live delivery unverified |
+| M1.06 | Secure storage and upload pipeline | Partial | Uploads, quarantine/scan/access runtime; actual identity/evidence UI submissions | Documents/camera use synthetic fixtures; live scanner unverified |
+| M1.07 | Worker onboarding and Identity Engine | Journey passed | Profile 100%, identity evidence, Verifier approval, permanent Worker ID; independent approve/reject/corrections | Production liveness unverified |
+| M1.08 | Company registration and verification | Journey passed | Company register/correction/review/activation browser suite | Live delivery unverified |
+| M1.09 | Sites, departments and team | Journey passed | Company site/department create/edit/archive/restore and Team workflows | Not every permission/archival variant exercised through UI |
+| M1.10 | Worker invitations and company codes | Journey passed | Company invite -> Worker accepts -> active link -> scoped Order | Bulk CSV and every code-expiry/default combination not fully journey-tested |
+| M1.11 | Employment, experience, skill and leaving-letter records | Partial | Worker qualification/evidence submit -> review -> passport; evidence runtime | Every employment/leaving-letter/supervisor variant not fully journey-tested |
+| M1.12 | Public verification foundation | Journey/runtime passed | Credential QR route -> opaque safe projection; 29 public tests; neutral misses/rate limits/concern validation | Actual concern upload -> staff resolution journey not fully exercised |
+| M2.01 | Assurance Order and Case Engine | Journey passed | Draft -> validate -> submit -> per-Worker case -> scoped review; funded Worker case -> final completed order | Not every mixed-funding/multi-worker variant through UI |
+| M2.02 | Evidence verification queues | Journey passed | Independent and company-scoped review -> Worker outcome -> next assessment/interview | Every evidence kind and escalation combination not through UI |
+| M2.03 | Frameworks and Effective Policy | Partial | Effective policy runtime and company override workflow; Admin authoring suite | Risk/expiry rule propagation not comprehensively journey-proven |
+| M2.04 | Question Bank | Partial | Question runtime; Admin create/revise/deactivate/reactivate authoring suite | Bulk import, retirement/capacity and approval variants need full UI coverage |
+| M2.05 | Randomized assessment form generation | Runtime/journey passed | Unseen generation/exposure/runtime; real Worker starts pinned MCQ/written form | Every selector distribution/replacement variant not through full journey |
+| M2.06 | Assessment catalogue and eligibility | Journey passed | Verified qualification -> apply -> self-payment OR Company credit approval -> available assessment; insufficient credit recovery | Payment remains sandbox; reapplication uses fresh capacity |
+| M2.07 | Candidate assessment window | Journey passed | Prechecks -> MCQ -> written answer -> submit via actual browser controls | Fullscreen/camera use browser permissions/fake media; all progression modes not journey-tested |
+| M2.08 | Answer persistence and interruption recovery | Journey/runtime passed | Written save/exit/resume preserves answer; 56 draft/recovery tests and 17 attempt tests | Offline device replacement through a complete second credential not fully exercised |
+| M2.09 | Integrity Engine | Partial | Integrity runtime and limited-monitoring browser check; case evidence retained | Not a human multi-camera/screen enforcement certification |
+| M2.10 | Written scoring and Review Engine | Journey passed | Worker written submission -> human rubric -> interview; advisory AI -> human decision -> Case Replay | Live AI provider and all appeal/calibration combinations unverified |
+| M2.11 | Interview scheduling and assignment | Journey passed | Scoring -> matched Assessor -> candidate selects slot -> readiness/waiting -> admission | Live reminders/edge timezone and availability variants unverified |
+| M2.12 | Interview console and playbook | Journey passed | Assessor starts/pauses/questions/saves/ends/finalizes; Worker/Assessor WebRTC media suite | Media simulated locally; WAN/TURN/recording lifecycle not certified |
+| M2.13 | Decision Engine | Journey/runtime passed | Admin decision -> Case/Order -> credential/living; override status synchronization | All state-pair UI transitions not exercised; revoked credential cannot silently reactivate |
+| M3.01 | Credential and QR issuance | Partial | Issued credential -> passport -> public route/API/PDF; privacy-safe current status | Issuance signature is an unkeyed SHA-256 digest, not an authenticated signature; issuance expiry remains null |
+| M3.02 | Digital Passport and Living Record | Journey passed | Competency -> sharing -> appeal -> versioned reassessment state, visibly checked on device | Automatic expiry and full renewal lifecycle unverified |
+| M3.03 | Scoped share links | Journey passed | Selected fields -> secure recipient page; revocation/access-log domain/runtime | Every expiry/permission combination not through UI |
+| M3.04 | Company Action Centre and analytics | Journey passed | Company order/action-centre/dashboard and reports workflow | Every analytics filter/readiness scenario not independently checked |
+| M3.05 | Billing and subscriptions | Sandbox journey passed | Checkout -> captured credit -> Worker funding approval; billing runtime/refunds/reconciliation | No live payment/subscription webhook/refund journey |
+| M3.06 | Reports and delivery | Partial | Company report/export workflow and authorized runtime | Scheduled external delivery and every PDF/CSV layout not visually verified |
+| M3.07 | Appeals, renewal, suspension and revocation | Partial | Worker appeal -> independent Admin review -> accepted reassessment -> retained Living Record; fresh application after appeal | Second complete reassessment-to-replacement-credential/renewal journey not yet proven |
+| M3.08 | Admin operational completeness | Partial | Root provisioning, Admin decisions/privacy/replay/health/configuration workflows | Every Admin CRUD/governance operation not journey-tested |
+| M3.09 | Privacy and accessibility operations | Journey passed | Worker privacy/accommodation -> Admin review -> Worker; consent versions retained | Real screen-reader use and retention-provider jobs unverified |
+| M3.10 | Production integrations | Blocked live | Provider gateway/health runtime; built-in WebRTC browser handshake | Real email/SMS/payment/liveness/malware credentials and production execution evidence missing |
+| M3.11 | Load, security and recovery certification | Local drills passed | Executed concurrency/tenant/physical PGlite restore/incident drills -> protected Admin readiness UI | This is disposable local test evidence, not production load/penetration/backup certification |
+| M3.12 | Production launch and operational handover | Partial | Production handover browser/runtime on disposable fixture | Production deployment/monitoring/alerts/support acceptance not performed |
+
+## Consolidation and safety
+
+The current VPS audit worktree started detached at the canonical remote SHA with inherited application/billing/interview/decision edits. Those edits are retained in this change. The older local QA worktree was compared without resetting or overwriting it: most differences were formatting or superseded fixes/tests; its useful Case Replay context was restored. Its dirty worktree remains on `qa/preserved-local-completion-20261002`. No older/main codebase was substituted.
+
+Only source, tests, migrations and review documentation are consolidated. Runtime databases, real credentials, generated build output and test logs are not source deliverables. Local test logs remain available on the device under `.autopilot/artifacts/`. The evidence index records final repaired checks; earlier failed attempts are retained there rather than hidden.
+
+Migration 0076 preserves original applications/cases and adds COMPLETED. Its downgrade fails closed if multiple historical applications would violate the old unique-open rule; do not force that downgrade or delete history.
+
+## Production acceptance still open
+
+Live provider credentials/execution, authenticated credential signing, configured issuance expiry, complete application/funding notification fan-out, a second complete reassessment/replacement-credential journey, and production rollout/load/penetration/WAN-media/backup acceptance remain open. This QA consolidation is not a production-ready declaration.

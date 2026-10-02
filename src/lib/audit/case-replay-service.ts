@@ -141,7 +141,7 @@ export class CaseReplayService {
         rows(tx, `SELECT history.* FROM credential_appeal_events history JOIN credential_appeals appeals ON appeals.appeal_id=history.appeal_id JOIN assurance_cases cases ON cases.credential_reference=appeals.credential_id WHERE cases.case_id=$1 ORDER BY history.version`, caseId),
         rows(tx, `SELECT records.* FROM certification_records records JOIN assurance_cases cases ON cases.credential_reference=records.credential_id WHERE cases.case_id=$1 ORDER BY records.created_at,records.certification_id`, caseId),
         rows(tx, `SELECT events.* FROM certification_record_events events JOIN certification_records records ON records.certification_id=events.certification_id JOIN assurance_cases cases ON cases.credential_reference=records.credential_id WHERE cases.case_id=$1 ORDER BY events.created_at,events.event_id`, caseId),
-        rows(tx, `SELECT living.*,competencies.source_credential_id FROM living_record_versions living JOIN living_record_competencies competencies ON competencies.competency_id=living.competency_id JOIN assurance_cases cases ON cases.credential_reference=competencies.source_credential_id WHERE cases.case_id=$1 ORDER BY living.competency_id,living.version`, caseId)
+        rows(tx, `SELECT living.*,competencies.worker_id,competencies.title,competencies.created_at,competencies.source_credential_id FROM living_record_versions living JOIN living_record_competencies competencies ON competencies.competency_id=living.competency_id JOIN assurance_cases cases ON cases.credential_reference=competencies.source_credential_id WHERE cases.case_id=$1 ORDER BY living.competency_id,living.version`, caseId)
       ]);
 
       await tx.query(

@@ -8,6 +8,11 @@ import ts from "typescript";
 function loadDecisionRuntime() {
   const out = mkdtempSync(resolve(tmpdir(), "hse-decision-runtime-"));
   const files = [
+    "src/lib/credential/certification-record-repository.ts",
+    "src/lib/credential/credential-issuance-domain.ts",
+    "src/lib/credential/credential-issuance-repository.ts",
+    "src/lib/living-record/living-record-domain.ts",
+    "src/lib/living-record/living-record-repository.ts",
     "src/lib/decision/decision-engine-domain.ts",
     "src/lib/decision/decision-engine-repository.ts",
     "src/lib/decision/decision-engine-service.ts",

@@ -294,3 +294,27 @@ test("M1.12 tampered and expired result capabilities fail neutrally before Worke
   assert.equal(repository.workerLookupCalls.length, 0);
   assert.equal(repository.rateLimitCalls.length, 1);
 });
+
+test("Credential lookup reuses opaque capabilities, expiry, live status and conditional disclosure without private fields", async () => {
+  const repository = new SpyRepository();
+  let status = "valid";
+  repository.findPublicCredentialById = async id => id === CREDENTIAL_ID ? {
+    credentialId: id, qualification: "Safety competence", status,
+    issuedAt: "2026-01-01T00:00:00.000Z", expiresAt: "2027-01-01T00:00:00.000Z", conditional: true,
+    privateReviewerNotes: "NEVER_PUBLIC", workerAccountId: "NEVER_PUBLIC"
+  } : null;
+  const service = new PublicVerificationService(repository, SECRET);
+  const lookup = await service.lookupPublicVerification({ rawIdentifier: CREDENTIAL_ID, requestFingerprint: REQUEST_FINGERPRINT, now: NOW });
+  assert.equal(lookup.kind, "redirect");
+  assert.ok(!lookup.publicToken.includes(CREDENTIAL_ID));
+  const resolve = () => service.resolvePublicVerificationCapability({ publicToken: lookup.publicToken, requestFingerprint: REQUEST_FINGERPRINT, now: NOW });
+  const valid = await resolve();
+  assert.equal(valid.kind, "projection");
+  assert.equal(valid.projection.kind, "credential");
+  assert.equal(valid.projection.status, "valid");
+  assert.match(valid.projection.restrictions.join(" "), /Conditional approval/);
+  assert.ok(!JSON.stringify(valid).includes("NEVER_PUBLIC"));
+  status = "revoked";
+  assert.equal((await resolve()).projection.status, "revoked");
+  assert.deepEqual(await service.resolvePublicVerificationCapability({ publicToken: tamper(lookup.publicToken), requestFingerprint: REQUEST_FINGERPRINT, now: NOW }), { kind: "status", status: "not_found_or_invalid" });
+});

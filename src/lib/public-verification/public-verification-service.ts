@@ -8,6 +8,8 @@ import {
 } from "@/lib/public-verification/public-verification-capability";
 import {
   mapWorkerIdentityStatusToPublicStatus,
+  projectPublicCredentialVerification,
+  type PublicCredentialVerificationSource,
   normalizePublicVerificationIdentifier,
   projectPublicWorkerVerification,
   type PublicWorkerVerificationProjection,
@@ -49,6 +51,7 @@ export interface PublicVerificationRepositoryPort {
   findPublicWorkerByPermanentId(
     workerId: string
   ): Promise<PublicWorkerVerificationSource | null>;
+  findPublicCredentialById?(credentialId: string): Promise<PublicCredentialVerificationSource | null>;
   createConcernWithAudit(
     input: CreatePublicVerificationConcernInput
   ): Promise<CreatePublicVerificationConcernResult>;
@@ -208,7 +211,16 @@ export class PublicVerificationService {
       return TEMPORARILY_UNAVAILABLE;
     }
 
-    if (identifier.kind !== "worker") return SAFE_MISS;
+    if (identifier.kind === "credential") {
+      try {
+        const source = await this.repository.findPublicCredentialById?.(identifier.normalizedIdentifier);
+        if (!source) return SAFE_MISS;
+        return { kind: "redirect", publicToken: mintPublicVerificationCapability({
+          identifierKind: "credential", normalizedIdentifier: identifier.normalizedIdentifier
+        }, this.secret, now) };
+      } catch { return TEMPORARILY_UNAVAILABLE; }
+    }
+
 
     let source: PublicWorkerVerificationSource | null;
     try {
@@ -260,8 +272,12 @@ export class PublicVerificationService {
       this.secret,
       now
     );
-    if (!capability || capability.identifierKind !== "worker") {
-      return SAFE_MISS;
+    if (!capability) return SAFE_MISS;
+    if (capability.identifierKind === "credential") {
+      try {
+        const source = await this.repository.findPublicCredentialById?.(capability.normalizedIdentifier);
+        return source ? { kind: "projection", projection: projectPublicCredentialVerification(source, now.toISOString()) } : SAFE_MISS;
+      } catch { return TEMPORARILY_UNAVAILABLE; }
     }
 
     let source: PublicWorkerVerificationSource | null;
@@ -338,7 +354,7 @@ export class PublicVerificationService {
       this.secret,
       now
     );
-    if (!capability || capability.identifierKind !== "worker") {
+    if (!capability) {
       return SAFE_MISS;
     }
 
@@ -347,21 +363,14 @@ export class PublicVerificationService {
       return TEMPORARILY_UNAVAILABLE;
     }
 
-    let source: PublicWorkerVerificationSource | null;
     try {
-      source = await this.repository.findPublicWorkerByPermanentId(
-        capability.normalizedIdentifier
-      );
-    } catch {
-      return TEMPORARILY_UNAVAILABLE;
-    }
-    if (
-      !source ||
-      mapWorkerIdentityStatusToPublicStatus(source.lifecycleStatus) ===
-        "not_found_or_invalid"
-    ) {
-      return SAFE_MISS;
-    }
+      if (capability.identifierKind === "credential") {
+        if (!await this.repository.findPublicCredentialById?.(capability.normalizedIdentifier)) return SAFE_MISS;
+      } else {
+        const source = await this.repository.findPublicWorkerByPermanentId(capability.normalizedIdentifier);
+        if (!source || mapWorkerIdentityStatusToPublicStatus(source.lifecycleStatus) === "not_found_or_invalid") return SAFE_MISS;
+      }
+    } catch { return TEMPORARILY_UNAVAILABLE; }
 
     const subjectReferenceHash = digestConcernValue(
       this.secret,

@@ -88,6 +88,9 @@ function revalidateInterview(interviewRequestId: string): void {
 }
 
 export async function saveInterviewConsoleAction(formData: FormData): Promise<void> {
+  if (text(formData, "intent") === "submit") {
+    return submitInterviewConsoleAction(formData);
+  }
   const input = consoleInput(formData);
   const actor = await assessorActor();
   const service = new InterviewSchedulingService(await getDatabaseClient());

@@ -223,11 +223,11 @@ export class InterviewAssignmentService {
                  WHERE calibrations.account_id=accounts.account_id
                    AND calibrations.role='assessor'
                    AND calibrations.status='CURRENT'
-                   AND calibrations.valid_from<=$3
-                   AND calibrations.valid_until>$3
+                   AND calibrations.valid_from<=$2
+                   AND calibrations.valid_until>$2
                    AND (
-                     $4::text IS NULL OR
-                     calibrations.framework_reference=$4 OR
+                     $3::text IS NULL OR
+                     calibrations.framework_reference=$3 OR
                      calibrations.framework_reference='*'
                    )
               ) AS calibrated,
@@ -235,7 +235,7 @@ export class InterviewAssignmentService {
                 SELECT 1
                   FROM interview_assignment_conflicts AS conflicts
                  WHERE conflicts.assessor_account_id=accounts.account_id
-                   AND conflicts.worker_account_id=$2
+                   AND conflicts.worker_account_id=$1
                    AND conflicts.active=TRUE
               ) AS conflicted
          FROM auth_accounts AS accounts
@@ -252,7 +252,7 @@ export class InterviewAssignmentService {
                  profiles.trade_scopes,profiles.qualification_scopes,profiles.languages,
                  profiles.jurisdictions,profiles.risk_levels,profiles.availability_json,
                  profiles.max_active_interviews`,
-      [request.tenant_id, request.worker_account_id, now.toISOString(), request.framework_reference]
+      [request.worker_account_id, now.toISOString(), request.framework_reference]
     );
 
     const evaluated = candidates.rows.map((row): InterviewAssignmentCandidate => {

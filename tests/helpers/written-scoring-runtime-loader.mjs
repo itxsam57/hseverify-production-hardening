@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import ts from "typescript";
 
 export async function loadWrittenScoringRuntime() {
@@ -27,10 +27,18 @@ export async function loadWrittenScoringRuntime() {
     }
   };
   files.forEach(collect);
-  for (const relative of seen) {
-    const source = readFileSync(resolve(root, relative), "utf8").replace(/^import "server-only";\n?/, "");
+  for (const relativePath of seen) {
+    const sourcePath = resolve(root, relativePath);
+    let source = readFileSync(sourcePath, "utf8").replace(/^import "server-only";\n?/, "");
+    for (const imported of ts.preProcessFile(source, true, true).importedFiles) {
+      const dependency = resolveImport(sourcePath, imported.fileName);
+      if (!dependency) continue;
+      let replacement = relative(dirname(sourcePath), dependency).replaceAll("\\", "/").replace(/\.ts$/, "");
+      if (!replacement.startsWith(".")) replacement = `./${replacement}`;
+      source = source.replaceAll(`"${imported.fileName}"`, `"${replacement}"`).replaceAll(`'${imported.fileName}'`, `'${replacement}'`);
+    }
     const output = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
-    const target = resolve(out, relative.replace(/\.ts$/, ".js"));
+    const target = resolve(out, relativePath.replace(/\.ts$/, ".js"));
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, output, "utf8");
   }

@@ -1,15 +1,31 @@
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
+import { resolveTenantPermissions } from "@/lib/authorization/authorization-domain";
+import { deriveTrustedTenantScope } from "@/lib/authorization/tenant-scoped-resource-domain";
+import { getWorkerAssessmentApplicationService } from "@/lib/assessment-catalogue/worker-assessment-application-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { BillingService } from "@/lib/billing/billing-service";
 import {
+  approveWorkerAssessmentFunding,
+  completeSandboxCreditCheckout,
   createCreditCheckout,
+  rejectWorkerAssessmentFunding,
   requestRefund,
   runReconciliation
 } from "./actions";
 
-export default async function CompanyBillingPage(): Promise<React.JSX.Element> {
+export default async function CompanyBillingPage({searchParams}: {searchParams: Promise<{fundingError?: string}>}): Promise<React.JSX.Element> {
+  const { fundingError } = await searchParams;
   const principal = await requireCurrentTenantPermission("company.billing.read");
-  const snapshot = await new BillingService(await getDatabaseClient()).snapshot(principal);
+  const scope = deriveTrustedTenantScope(principal);
+  const permissions = resolveTenantPermissions(
+    principal.tenantMembership.role,
+    principal.tenantMembership.overrides
+  );
+  const canManage = permissions.has("company.billing.manage");
+  const [snapshot, workerFundingRequests] = await Promise.all([
+    new BillingService(await getDatabaseClient()).snapshot(principal),
+    (await getWorkerAssessmentApplicationService()).listCompanyFundingRequests(scope.tenantId)
+  ]);
 
   return (
     <section className="page-stack">
@@ -25,12 +41,65 @@ export default async function CompanyBillingPage(): Promise<React.JSX.Element> {
         </div>
       </div>
 
+      {fundingError && <p className="status-banner status-error" role="alert">{fundingError}</p>}
       <div className="metric-grid">
         <article className="metric-card">
           <span>Company credits</span>
           <strong>{snapshot.creditBalance}</strong>
           <small>Sandbox credit ledger balance</small>
         </article>
+      </div>
+
+      <div className="card">
+        <h2>Worker assessment funding requests</h2>
+        <p>
+          Linked Workers can request one assessment credit. Approval reserves a real Company
+          credit and creates the Worker&apos;s assessment case; rejection leaves the application
+          closed without creating a case.
+        </p>
+        {workerFundingRequests.length === 0 ? (
+          <p>No Worker funding requests yet.</p>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Worker</th>
+                  <th>Assessment</th>
+                  <th>Credits</th>
+                  <th>Status</th>
+                  <th>Requested</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workerFundingRequests.map((request) => (
+                  <tr key={request.fundingRequestId}>
+                    <td><code>{request.workerAccountId}</code></td>
+                    <td>{request.catalogueTitle}</td>
+                    <td>{request.creditUnits}</td>
+                    <td>{request.status}</td>
+                    <td>{request.createdAt}</td>
+                    <td>
+                      {request.status === "REQUESTED" && canManage ? (
+                        <div className="button-row">
+                          <form action={approveWorkerAssessmentFunding}>
+                            <input type="hidden" name="fundingRequestId" value={request.fundingRequestId} />
+                            <button className="button button-primary button-small" type="submit">Approve</button>
+                          </form>
+                          <form action={rejectWorkerAssessmentFunding}>
+                            <input type="hidden" name="fundingRequestId" value={request.fundingRequestId} />
+                            <button className="button button-secondary button-small" type="submit">Reject</button>
+                          </form>
+                        </div>
+                      ) : request.status === "REQUESTED" ? "Manager approval required" : "Completed"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -69,6 +138,7 @@ export default async function CompanyBillingPage(): Promise<React.JSX.Element> {
                   <th>Provider reference</th>
                   <th>Credits</th>
                   <th>Amount</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -79,6 +149,16 @@ export default async function CompanyBillingPage(): Promise<React.JSX.Element> {
                     <td><code>{item.providerCheckoutReference}</code></td>
                     <td>{item.creditUnits}</td>
                     <td>{item.amountMinor} {item.currency}</td>
+                    <td>
+                      {item.status === "REQUIRES_PROVIDER" && canManage ? (
+                        <form action={completeSandboxCreditCheckout}>
+                          <input type="hidden" name="checkoutId" value={item.checkoutId} />
+                          <button className="button button-primary button-small" type="submit">
+                            Complete sandbox checkout
+                          </button>
+                        </form>
+                      ) : item.status === "PAID" ? "Captured" : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

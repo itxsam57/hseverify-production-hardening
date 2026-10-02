@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
 
-export function loadAssessmentAttemptRuntime() {
+export function loadAssessmentAttemptRuntime(additionalEntries = []) {
   const out = mkdtempSync(join(tmpdir(), "hse-assessment-attempt-runtime-direct-"));
   const root = resolve("src", "lib");
   const seen = new Set();
@@ -12,7 +12,8 @@ export function loadAssessmentAttemptRuntime() {
     "assessment-attempt/assessment-attempt-draft-domain.ts",
     "assessment-attempt/assessment-attempt-repository.ts",
     "assessment-attempt/assessment-attempt-service.ts",
-    "assessment-attempt/assessment-attempt-client-view.ts"
+    "assessment-attempt/assessment-attempt-client-view.ts",
+    ...additionalEntries
   ];
   const stubs = new Set(["database/database.ts"]);
 
@@ -40,7 +41,14 @@ export function loadAssessmentAttemptRuntime() {
 
   for (const relativePath of seen) {
     const sourcePath = resolve(root, relativePath);
-    const source = readFileSync(sourcePath, "utf8").replace(/^import "server-only";\r?\n\r?\n?/, "");
+    let source = readFileSync(sourcePath, "utf8").replace(/^import "server-only";\r?\n\r?\n?/, "");
+    for (const imported of ts.preProcessFile(source, true, true).importedFiles) {
+      const dependency = resolveImport(sourcePath, imported.fileName);
+      if (!dependency) continue;
+      let replacement = relative(dirname(sourcePath), dependency).replaceAll("\\", "/").replace(/\.ts$/, "");
+      if (!replacement.startsWith(".")) replacement = `./${replacement}`;
+      source = source.replaceAll(`"${imported.fileName}"`, `"${replacement}"`).replaceAll(`'${imported.fileName}'`, `'${replacement}'`);
+    }
     const transformed = ts.transpileModule(source, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true }
     }).outputText;

@@ -26,6 +26,11 @@ async function loadRepository() {
   const out = mkdtempSync(resolve(tmpdir(), "hse-decision-assurance-"));
   for (const sourceFile of [
     "src/lib/auth/auth-domain.ts",
+    "src/lib/credential/certification-record-repository.ts",
+    "src/lib/credential/credential-issuance-domain.ts",
+    "src/lib/credential/credential-issuance-repository.ts",
+    "src/lib/living-record/living-record-domain.ts",
+    "src/lib/living-record/living-record-repository.ts",
     "src/lib/decision/decision-engine-domain.ts",
     "src/lib/decision/decision-engine-repository.ts"
   ]) {
@@ -49,7 +54,7 @@ async function loadRepository() {
   };
 }
 
-async function seedDecisionPendingCase(database) {
+async function seedDecisionPendingCase(database, options = {}) {
   const tenantId = "tenant_aaaaaaaaaaaaaaaaaaaaaaaa";
   const orderId = "assurance_order_bbbbbbbbbbbbbbbbbbbbbbbb";
   const targetId = "assurance_target_cccccccccccccccccccccccc";
@@ -59,10 +64,10 @@ async function seedDecisionPendingCase(database) {
   await database.query(
     `INSERT INTO assurance_orders(
        order_id,tenant_id,created_by_membership_id,order_name,order_reference,
-       order_status,submitted_at,created_at,updated_at
+       credential_target,order_status,submitted_at,created_at,updated_at
      ) VALUES($1,$2,'membership_acceptance_owner','Decision progression order','DECISION-RUNTIME-1',
-       'SUBMITTED',$3,$3,$3)`,
-    [orderId, tenantId, now]
+       $3,'SUBMITTED',$4,$4,$4)`,
+    [orderId, tenantId, options.credentialTarget ?? null, now]
   );
   await database.query(
     `INSERT INTO assurance_order_workers(
@@ -167,6 +172,89 @@ test("Admin final decision atomically progresses Assurance Case and parent order
   }
 });
 
+test("APPROVED credential-target decision atomically issues credential, certification and Living Record", async () => {
+  const database = await openScriptDatabase({ ...ENV, releaseSha: "decision-credential-progression-runtime" });
+  try {
+    await applyMigrationsThrough(
+      database,
+      "decision-credential-progression-runtime",
+      "0067_assessment_review_orchestration"
+    );
+    const { tenantId, caseId } = await seedDecisionPendingCase(database, {
+      credentialTarget: "Operational Safety Credential"
+    });
+
+    const { repository, domain } = await loadRepository();
+    const { DecisionRepository } = repository;
+    const { createDecision } = domain;
+    const decision = createDecision({
+      tenantId,
+      caseId,
+      state: "APPROVED",
+      reasonCode: "credential_ready",
+      explanation: "All evidence, assessment and interview stages passed.",
+      ruleVersion: "runtime-v2",
+      inputReferences: ["assessment-final", "interview-final"],
+      createdAt: "2026-09-25T11:00:00.000Z"
+    });
+
+    await new DecisionRepository(Promise.resolve(database)).saveDecisionAndProgressCase(
+      decision,
+      "admin_account_acceptance_01"
+    );
+
+    const caseRow = (
+      await database.query(
+        "SELECT case_status,credential_reference,permanent_worker_id FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2",
+        [caseId, tenantId]
+      )
+    ).rows[0];
+    assert.equal(caseRow.case_status, "Approved");
+    assert.match(caseRow.credential_reference, /^credential_id_/);
+    assert.equal(caseRow.permanent_worker_id, "worker_id_acceptance_000001");
+
+    const credential = (
+      await database.query(
+        "SELECT worker_id,qualification,status,version FROM credential_issuances WHERE credential_id=$1",
+        [caseRow.credential_reference]
+      )
+    ).rows[0];
+    assert.equal(credential.worker_id, "worker_id_acceptance_000001");
+    assert.equal(credential.qualification, "Operational Safety Credential");
+    assert.equal(credential.status, "valid");
+    assert.equal(Number(credential.version), 1);
+
+    const certification = (
+      await database.query(
+        "SELECT worker_id,qualification,status,decision_reason,created_by FROM certification_records WHERE credential_id=$1",
+        [caseRow.credential_reference]
+      )
+    ).rows[0];
+    assert.equal(certification.worker_id, "worker_id_acceptance_000001");
+    assert.equal(certification.qualification, "Operational Safety Credential");
+    assert.equal(certification.status, "approved");
+    assert.match(certification.decision_reason, /assessment and interview/i);
+    assert.equal(certification.created_by, "admin_account_acceptance_01");
+
+    const living = await database.query(
+      `SELECT competencies.worker_id,competencies.title,
+              versions.version,versions.status
+         FROM living_record_competencies AS competencies
+         JOIN living_record_versions AS versions
+           ON versions.competency_id=competencies.competency_id
+        WHERE competencies.source_credential_id=$1`,
+      [caseRow.credential_reference]
+    );
+    assert.equal(living.rows.length, 1);
+    assert.equal(living.rows[0].worker_id, "worker_id_acceptance_000001");
+    assert.equal(living.rows[0].title, "Operational Safety Credential");
+    assert.equal(Number(living.rows[0].version), 1);
+    assert.equal(living.rows[0].status, "valid");
+  } finally {
+    await database.close();
+  }
+});
+
 test("Decision override keeps platform decision and Assurance Case lifecycle aligned", async () => {
   const database = await openScriptDatabase({ ...ENV, releaseSha: "decision-override-progression-runtime" });
   try {
@@ -175,7 +263,7 @@ test("Decision override keeps platform decision and Assurance Case lifecycle ali
       "decision-override-progression-runtime",
       "0067_assessment_review_orchestration"
     );
-    const { tenantId, caseId } = await seedDecisionPendingCase(database);
+    const { tenantId, caseId } = await seedDecisionPendingCase(database, { credentialTarget: "Override Safety Credential" });
     const { repository, domain } = await loadRepository();
     const { DecisionRepository } = repository;
     const { createDecision, createManualDecisionOverride } = domain;
@@ -227,6 +315,9 @@ test("Decision override keeps platform decision and Assurance Case lifecycle ali
     assert.equal(caseRow.owner_kind, "admin");
     assert.match(caseRow.next_action, /suspended Assurance Case/i);
     assert.equal(caseRow.closed_at, null);
+    const linked = (await database.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1", [caseId])).rows[0];
+    const credential = (await database.query("SELECT status FROM credential_issuances WHERE credential_id=$1", [linked.credential_reference])).rows[0];
+    assert.equal(credential.status, "suspended", "A suspended decision must not retain a publicly valid credential.");
   } finally {
     await database.close();
   }

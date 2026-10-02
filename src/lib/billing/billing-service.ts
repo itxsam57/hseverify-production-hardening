@@ -78,6 +78,111 @@ export class BillingService {
     }});}catch(error){if(error instanceof BillingInputError||error instanceof BillingConflictError)throw error; if((error as Error)?.name?.includes("TenantScope"))throw new BillingAccessError(); throw error;}
   }
 
+  async completeSandboxCheckout(
+    principal: ManagePrincipal,
+    checkoutIdInput: string,
+    now = new Date()
+  ): Promise<BillingCheckout> {
+    const checkoutId = checkoutIdInput.trim();
+    if (!checkoutId) throw new BillingInputError("Checkout is required.");
+    try {
+      return await runTenantScopedCommand({
+        database: this.database,
+        principal,
+        permission: BILLING_MANAGE_PERMISSION,
+        now,
+        operation: async ({ database, scope }) => {
+          const result = await database.query<CheckoutRow & { invoice_id: string }>(
+            `SELECT checkouts.checkout_id,checkouts.status,checkouts.provider_mode,
+                    checkouts.provider_checkout_reference,checkouts.credit_units,
+                    checkouts.amount_minor,checkouts.currency,checkouts.created_at,
+                    invoices.invoice_id
+               FROM billing_checkouts AS checkouts
+               JOIN billing_invoices AS invoices
+                 ON invoices.checkout_id=checkouts.checkout_id
+                AND invoices.tenant_id=checkouts.tenant_id
+              WHERE checkouts.tenant_id=$1 AND checkouts.checkout_id=$2
+              FOR UPDATE OF checkouts,invoices`,
+            [scope.tenantId, checkoutId]
+          );
+          const row = result.rows[0];
+          if (!row) throw new BillingAccessError();
+          if (row.provider_mode !== "sandbox") {
+            throw new BillingConflictError("Only sandbox checkouts can be completed here.");
+          }
+          if (row.status === "PAID") return checkout(row);
+          if (row.status !== "REQUIRES_PROVIDER") {
+            throw new BillingConflictError("Checkout cannot be captured from its current state.");
+          }
+
+          const eventId = `sandbox_capture_${billingId("billing").slice(-24)}`;
+          const rawBody = JSON.stringify({
+            id: eventId,
+            type: "payment.captured",
+            checkoutReference: row.provider_checkout_reference,
+            amountMinor: Number(row.amount_minor),
+            currency: row.currency
+          });
+          const timestamp = now.toISOString();
+          await database.query(
+            `INSERT INTO billing_provider_events(
+               provider_event_id,tenant_id,event_type,provider_reference,amount_minor,
+               currency,payload_sha256,received_at
+             ) VALUES($1,$2,'payment.captured',$3,$4,$5,$6,$7)`,
+            [
+              eventId,
+              scope.tenantId,
+              row.provider_checkout_reference,
+              Number(row.amount_minor),
+              row.currency,
+              billingPayloadHash(rawBody),
+              timestamp
+            ]
+          );
+          await database.query(
+            `UPDATE billing_checkouts
+                SET status='PAID',captured_at=$3
+              WHERE tenant_id=$1 AND checkout_id=$2`,
+            [scope.tenantId, checkoutId, timestamp]
+          );
+          await database.query(
+            `UPDATE billing_invoices
+                SET status='PAID',paid_at=$3,updated_at=$3
+              WHERE tenant_id=$1 AND invoice_id=$2`,
+            [scope.tenantId, row.invoice_id, timestamp]
+          );
+          await database.query(
+            `INSERT INTO billing_credit_ledger(
+               ledger_entry_id,tenant_id,invoice_id,refund_id,provider_event_id,
+               entry_type,credit_delta,amount_minor,currency,occurred_at
+             ) VALUES($1,$2,$3,NULL,$4,'PURCHASE',$5,$6,$7,$8)`,
+            [
+              billingId("billing_ledger"),
+              scope.tenantId,
+              row.invoice_id,
+              eventId,
+              Number(row.credit_units),
+              Number(row.amount_minor),
+              row.currency,
+              timestamp
+            ]
+          );
+          return checkout({ ...row, status: "PAID" });
+        }
+      });
+    } catch (error) {
+      if (
+        error instanceof BillingInputError ||
+        error instanceof BillingConflictError ||
+        error instanceof BillingAccessError
+      ) {
+        throw error;
+      }
+      if ((error as Error)?.name?.includes("TenantScope")) throw new BillingAccessError();
+      throw error;
+    }
+  }
+
   async requestRefund(principal:ManagePrincipal,input:{invoiceId:string;idempotencyKey:string;amountMinor:number},now=new Date()):Promise<BillingRefund>{
     const invoiceId=input.invoiceId.trim(), key=normalizeIdempotencyKey(input.idempotencyKey), amount=positiveInteger(input.amountMinor,"Refund amount"); if(!invoiceId)throw new BillingInputError("Invoice is required.");
     try{return await runTenantScopedCommand({database:this.database,principal,permission:BILLING_MANAGE_PERMISSION,now,operation:async({database,scope})=>{

@@ -228,7 +228,8 @@ test("Worker completes registration, identity, evidence, passport, privacy and s
           await page.getByLabel("Accommodation request").fill("Screen reader compatible assessment");
           await Promise.all([page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/privacy")), page.getByRole("button", { name: "Submit accommodation" }).click()]);
           await page.goto(`${baseUrl}/worker/privacy`, { waitUntil: "domcontentloaded" });
-          await page.getByText("Screen reader compatible assessment: REQUESTED", { exact: true }).waitFor({ timeout: 15_000 });
+          const accommodation = page.locator("article.record-row").filter({ hasText: "Screen reader compatible assessment" });
+          await accommodation.getByText("Status: REQUESTED", { exact: true }).waitFor({ timeout: 15_000 });
 
           await page.goto(`${baseUrl}/worker/share-links`, { waitUntil: "domcontentloaded" });
           await page.getByLabel("Purpose").fill("Site onboarding review");

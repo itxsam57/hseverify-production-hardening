@@ -32,7 +32,15 @@ export class CertificationRecordRepository {
 
   async list(): Promise<CertificationRecord[]> {
     const client = await this.clientPromise;
-    const result = await client.query<Record<string, unknown>>(`SELECT * FROM certification_records ORDER BY created_at DESC`);
+    const result = await client.query<Record<string, unknown>>(`SELECT records.*,
+        COALESCE(lower(decisions.state),records.status) AS status,
+        COALESCE((SELECT overrides.reason FROM platform_decision_overrides overrides
+                   WHERE overrides.decision_id=decisions.decision_id AND overrides.tenant_id=decisions.tenant_id
+                   ORDER BY overrides.created_at DESC LIMIT 1),records.decision_reason) AS decision_reason
+       FROM certification_records records
+       LEFT JOIN assurance_cases cases ON cases.credential_reference=records.credential_id
+       LEFT JOIN platform_decisions decisions ON decisions.decision_id=cases.decision_reference AND decisions.tenant_id=cases.tenant_id
+       ORDER BY records.created_at DESC`);
     return result.rows.map((row) => ({
       certificationId: String(row.certification_id),
       credentialId: String(row.credential_id),

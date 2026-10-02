@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import { chromium } from "playwright";
@@ -59,7 +62,17 @@ async function login(page, baseUrl, identity) {
   await page.waitForURL("**/admin/dashboard", { timeout: 20_000 });
 }
 
-test("M3.11 executed certification persists into the protected Admin operations surface", { timeout: 180_000 }, async () => {
+test("M3.11 executed certification persists into the protected Admin operations surface", { timeout: 420_000 }, async () => {
+  const dbDir = await mkdtemp(join(tmpdir(), "hse-certification-browser-"));
+  const environment = { ...process.env, HSE_APP_ENV: "test", HSE_DATABASE_DRIVER: "pglite", HSE_PGLITE_DATA_DIR: dbDir,
+    HSE_RELEASE_SHA: "certification-browser-disposable-test", HSE_SESSION_SECRET: "certification-browser-session-secret-2026-32",
+    HSE_AUTH_PEPPER: "certification-browser-auth-pepper-2026-32", HSE_ENABLE_AUTH_SANDBOX: "false",
+    HSE_ENABLE_WORKER_DEMO_AUTH: "false", HSE_USE_WORKER_DEMO_DATA: "false" };
+  try {
+  for (const script of ["scripts/db-migrate.mjs", "scripts/independent-audit-seed.mjs", "scripts/run-m3-11-certification.mjs"]) {
+    const result = spawnSync(process.execPath, [script], { env: environment, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  }
   const credentials = JSON.parse(
     await readFile("/tmp/independent-audit-credentials.json", "utf8")
   );
@@ -70,7 +83,7 @@ test("M3.11 executed certification persists into the protected Admin operations 
     args: ["--hostname", "127.0.0.1", "--port", String(port)],
     probeUrl: baseUrl + "/admin/login",
     projectRoot: process.cwd(),
-    environment: process.env,
+    environment,
     probe: async () => {
       const browser = await chromium.launch({ headless: true });
       try {
@@ -112,4 +125,5 @@ test("M3.11 executed certification persists into the protected Admin operations 
   });
 
   assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
+  } finally { await rm(dbDir, { recursive: true, force: true }); }
 });
