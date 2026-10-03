@@ -216,6 +216,19 @@ export async function submitWorkerIdentityAction(
   }
 }
 
+export async function reviseWorkerIdentityAction(
+  _previousState: WorkerIdentityActionState,
+  formData: FormData
+): Promise<WorkerIdentityActionState> {
+  const expectedLockVersion = integer(formData, "expectedLockVersion");
+  if (expectedLockVersion === null) return state("error", "The identity state is stale. Reload and try again.");
+  try {
+    await getWorkerIdentityService().revise(await workerPrincipal(), expectedLockVersion);
+    revalidateIdentity();
+    return state("success", "Identity revision created. Correct the requested information and resubmit for independent review.");
+  } catch (error) { return identityFailure(error); }
+}
+
 export async function withdrawWorkerIdentityAction(
   _previousState: WorkerIdentityActionState,
   formData: FormData

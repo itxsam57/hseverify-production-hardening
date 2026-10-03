@@ -60,6 +60,10 @@ export class WorkerIdentityService {
     return this.repository.submitOwn(worker, expectedLockVersion);
   }
 
+  async revise(principal: AuthorizationPrincipal, expectedLockVersion: number): Promise<WorkerIdentitySnapshot> {
+    return this.repository.reviseOwn(assertWorkerIdentityManagePermission(principal), expectedLockVersion);
+  }
+
   async withdraw(
     principal: AuthorizationPrincipal,
     expectedLockVersion: number

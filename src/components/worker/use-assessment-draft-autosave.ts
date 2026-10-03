@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { clearPendingAssessmentEdit, loadPendingAssessmentEdit, pendingAssessmentTabReference, savePendingAssessmentEdit } from "./assessment-offline-buffer";
 
 import {
   saveAssessmentDraftAction,
@@ -27,6 +28,7 @@ export type AssessmentDraftAutosaveConflict = Readonly<{
 
 export type AssessmentDraftAutosaveState = Readonly<{
   value: string;
+  recoveryReady: boolean;
   setValue: (value: string) => void;
   saveStatus: string;
   conflict: AssessmentDraftAutosaveConflict | null;
@@ -70,6 +72,8 @@ export function useAssessmentDraftAutosave(input: {
   initialDraft: AssessmentAttemptClientDraft | null;
 }): AssessmentDraftAutosaveState {
   const { question, initialDraft } = input;
+  const [recoveryReady, setRecoveryReady] = useState(false);
+  const bufferLoadedRef = useRef<Promise<void>>(Promise.resolve());
   const [value, setValueState] = useState(() => initialEditValue(initialDraft));
   const [saveStatus, setSaveStatus] = useState(initialDraft === null ? "Ready" : "Saved");
   const [conflict, setConflict] = useState<AssessmentDraftAutosaveConflict | null>(null);
@@ -87,6 +91,20 @@ export function useAssessmentDraftAutosave(input: {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
   const sendRequestRef = useRef<(request: SaveRequest) => void>(() => undefined);
+
+  const bufferReference = `edit:${question.attemptId}:${question.position}:${question.questionVersionId}`;
+  const bufferQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const bufferAvailableRef = useRef(false);
+  const updateBuffer = useCallback((clear = false) => {
+    const currentValue = currentValueRef.current;
+    const revision = revisionRef.current;
+    bufferQueueRef.current = bufferQueueRef.current.catch(() => undefined).then(async () => {
+      if (clear) await clearPendingAssessmentEdit(await pendingAssessmentTabReference(bufferReference));
+      else await savePendingAssessmentEdit(await pendingAssessmentTabReference(bufferReference), currentValue, revision);
+      bufferAvailableRef.current = !clear;
+    }).catch(() => { bufferAvailableRef.current = false; });
+    return bufferQueueRef.current;
+  }, [bufferReference]);
 
   const clearDebounce = useCallback(() => {
     if (debounceTimerRef.current !== null) {
@@ -172,8 +190,10 @@ export function useAssessmentDraftAutosave(input: {
           revisionRef.current = result.revision;
           if (editVersionRef.current === request.editVersion) {
             acknowledgedEditVersionRef.current = request.editVersion;
+            void updateBuffer(true);
             setSaveStatus("Saved");
           } else {
+            void updateBuffer();
             setSaveStatus("Saving…");
           }
           return "saved";
@@ -200,7 +220,8 @@ export function useAssessmentDraftAutosave(input: {
         if (!mountedRef.current) return "transport";
         retryPendingRef.current = true;
         retryRequestRef.current = request;
-        setSaveStatus("Not saved — reconnecting");
+        await bufferQueueRef.current;
+        setSaveStatus(bufferAvailableRef.current ? "Offline buffered — reconnecting" : "Not saved — reconnecting");
         retryTimerRef.current = setTimeout(() => {
           retryTimerRef.current = null;
           if (!mountedRef.current) return;
@@ -222,7 +243,7 @@ export function useAssessmentDraftAutosave(input: {
         }
       }
     },
-    [clearRetry, queueLatest, question]
+    [clearRetry, queueLatest, question, updateBuffer]
   );
 
   useEffect(() => {
@@ -238,10 +259,11 @@ export function useAssessmentDraftAutosave(input: {
       conflictRef.current = null;
       setConflict(null);
       setValueState(nextValue);
+      void updateBuffer();
       setSaveStatus("Saving…");
       queueLatest();
     },
-    [queueLatest]
+    [queueLatest, updateBuffer]
   );
 
   const useSavedVersion = useCallback(() => {
@@ -266,8 +288,9 @@ export function useAssessmentDraftAutosave(input: {
     conflictRef.current = null;
     setConflict(null);
     setValueState(savedValue);
+    void updateBuffer(true);
     setSaveStatus("Saved");
-  }, [clearDebounce, clearRetry]);
+  }, [clearDebounce, clearRetry, updateBuffer]);
 
   const replaceSavedVersion = useCallback(() => {
     const serverDraft = conflictRef.current?.serverDraft;
@@ -289,6 +312,7 @@ export function useAssessmentDraftAutosave(input: {
   }, [clearDebounce, clearRetry, makeRequest]);
 
   const flushExactCurrentEdit = useCallback(async (): Promise<boolean> => {
+    await bufferLoadedRef.current;
     clearDebounce();
 
     if (!(await waitUntilIdle()) || conflictRef.current !== null) return false;
@@ -325,6 +349,31 @@ export function useAssessmentDraftAutosave(input: {
   }, [flushExactCurrentEdit]);
 
   useEffect(() => {
+    let active = true;
+    bufferLoadedRef.current = Promise.resolve().then(async () => loadPendingAssessmentEdit(await pendingAssessmentTabReference(bufferReference))).then(edit => {
+      if (!active || !edit || editVersionRef.current !== 0) return;
+      if (edit.value === initialEditValue(initialDraft)) {
+        void updateBuffer(true);
+        return;
+      }
+      currentValueRef.current = edit.value;
+      editVersionRef.current += 1;
+      setValueState(edit.value);
+      bufferAvailableRef.current = true;
+      if (edit.revision !== (initialDraft?.revision ?? null)) {
+        const nextConflict = { message: "The saved answer changed while this browser was disconnected. Choose which version to keep.", serverDraft: initialDraft };
+        conflictRef.current = nextConflict;
+        setConflict(nextConflict);
+        setSaveStatus("Conflict");
+      } else {
+        setSaveStatus("Reconnecting");
+        queueLatest(0);
+      }
+    }).catch(() => undefined).finally(() => { if (active) setRecoveryReady(true); });
+    return () => { active = false; };
+  }, [bufferReference, initialDraft, queueLatest, updateBuffer]);
+
+  useEffect(() => {
     mountedRef.current = true;
     const idleWaiters = idleWaitersRef.current;
     return () => {
@@ -337,6 +386,7 @@ export function useAssessmentDraftAutosave(input: {
 
   return {
     value,
+    recoveryReady,
     setValue,
     saveStatus,
     conflict,

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { EvidenceReviewService } from "../review/evidence-review-service";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
@@ -51,9 +52,11 @@ export class WorkerIdentitySubmissionCoordinator {
         expectedLockVersion,
         expectedVersionKind: "correction"
       });
-      return new DatabaseWorkerIdentityCorrectionRepository(
+      const correction = await new DatabaseWorkerIdentityCorrectionRepository(
         transactionClient
       ).submitOwn(principal, expectedLockVersion);
+      await new EvidenceReviewService(transaction).queueIndependentIdentity(principal);
+      return correction;
     });
   }
 }

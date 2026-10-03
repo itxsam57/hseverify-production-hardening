@@ -252,6 +252,7 @@ function ActiveAssessmentWorkspace({
   );
   const {
     value: answer,
+    recoveryReady,
     setValue: setAnswer,
     saveStatus,
     conflict,
@@ -375,7 +376,7 @@ function ActiveAssessmentWorkspace({
             onChange={setAnswer}
           />
 
-          <Button type="submit" disabled={pending || exitPending}>
+          <Button type="submit" disabled={pending || exitPending || !recoveryReady || conflict !== null}>
             {pending
               ? "Saving…"
               : question.position === question.questionCount
@@ -395,7 +396,7 @@ function ActiveAssessmentWorkspace({
             <Button
               type="button"
               variant="secondary"
-              disabled={exitPending}
+              disabled={exitPending || !recoveryReady}
               onClick={() => void handleSaveAndExit()}
             >
               {exitPending ? "Saving before exit…" : "Save and exit"}

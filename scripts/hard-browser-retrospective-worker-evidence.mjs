@@ -4,7 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 const BASE_URL = process.env.HSE_BROWSER_BASE_URL || "http://127.0.0.1:3000";
 const PASSWORD = "RetrospectiveQA!StrongPassword2026";
 const WORKER_EMAIL = "worker.retrospective.qa@example.test";
-const artifactsDir = "artifacts/hard-browser-retrospective-evidence";
+const artifactsDir = process.env.HSE_BROWSER_ARTIFACT_ROOT ? process.env.HSE_BROWSER_ARTIFACT_ROOT + "/" + "artifacts/hard-browser-retrospective-evidence".split("/").at(-1) : "artifacts/hard-browser-retrospective-evidence";
 const results = [];
 const PDF_FIXTURE = Buffer.from(
   "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n",

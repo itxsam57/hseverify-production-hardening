@@ -36,7 +36,7 @@ const TRANSITIONS: Readonly<Record<WorkerIdentityStatus, readonly WorkerIdentity
   submitted: ["automated_checks", "withdrawn"],
   automated_checks: ["manual_review", "more_info", "rejected"],
   manual_review: ["verified", "more_info", "rejected", "escalated"],
-  more_info: ["manual_review"],
+  more_info: ["manual_review", "draft"],
   rejected: [],
   escalated: [],
   verified: ["correction_pending", "expired_document", "suspended"],

@@ -17,7 +17,7 @@ const CODE_WORKER_EMAIL = "worker.company.code.retrospective@example.test";
 const CODE_WORKER_PHONE = "+923001119977";
 const SITE_NAME = "Retrospective Riyadh Site";
 const DEPARTMENT_NAME = "Retrospective Safety Department";
-const artifactsDir = "artifacts/hard-browser-retrospective-company";
+const artifactsDir = process.env.HSE_BROWSER_ARTIFACT_ROOT ? process.env.HSE_BROWSER_ARTIFACT_ROOT + "/" + "artifacts/hard-browser-retrospective-company".split("/").at(-1) : "artifacts/hard-browser-retrospective-company";
 const results = [];
 const PDF_FIXTURE = Buffer.from(
   "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n",
@@ -368,6 +368,27 @@ try {
     await adminPage.waitForURL(/result=review-started/, { timeout: 15_000 });
     card = adminPage.locator("article[data-case-id]").filter({ hasText: COMPANY_LEGAL_NAME }).first();
     await card.getByText("under_review", { exact: true }).waitFor({ timeout: 15_000 });
+    await card.getByRole("button", { name: "Request changes" }).click();
+    await adminPage.waitForURL(/result=decision-recorded/, { timeout: 15_000 });
+    await gotoOk(page, "/company/settings/profile", "Company profile and verification");
+    await page.getByRole("heading", { name: "Changes requested", exact: true }).waitFor();
+    assert(!(await page.getByRole("button", { name: "Save Company details" }).count()), "Returned submitted version remained editable");
+    await page.getByRole("button", { name: "Create correction version" }).click();
+    await page.getByRole("heading", { name: "Draft", exact: true }).waitFor();
+    await page.getByText("Version 2", { exact: true }).waitFor();
+    await page.getByLabel("Trading name", { exact: true }).fill("Retrospective Corrected Trading Name");
+    await page.getByRole("button", { name: "Save Company details" }).click();
+    await page.getByLabel("Choose evidence file", { exact: true }).setInputFiles({ name: "corrected-company-registration.pdf", mimeType: "application/pdf", buffer: PDF_FIXTURE });
+    await page.getByRole("button", { name: "Upload evidence", exact: true }).click();
+    await page.getByText("Company evidence uploaded, security-scanned and attached to this verification version.", { exact: true }).waitFor({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Submit Company verification" }).click();
+    await page.getByRole("heading", { name: "Submitted", exact: true }).waitFor();
+    await gotoOk(adminPage, "/admin/company-verifications", "Company verification review");
+    card = adminPage.locator("article[data-case-id]").filter({ hasText: COMPANY_LEGAL_NAME }).first();
+    await card.getByRole("button", { name: "Begin review" }).click();
+    await adminPage.waitForURL(/result=review-started/, { timeout: 15_000 });
+    card = adminPage.locator("article[data-case-id]").filter({ hasText: COMPANY_LEGAL_NAME }).first();
+    await card.getByText("under_review", { exact: true }).waitFor();
     await card.getByRole("button", { name: "Verify Company" }).click();
     await adminPage.waitForURL(/result=decision-recorded/, { timeout: 15_000 });
     await adminPage.getByText("No submitted or in-review Company verification cases are waiting.", { exact: false }).waitFor({ timeout: 15_000 });

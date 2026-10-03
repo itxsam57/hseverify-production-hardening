@@ -13,6 +13,8 @@ import { DatabaseAuditRepository } from "../audit/audit-repository";
 import { getServerEnvironment } from "../config/server-environment";
 import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
+import { createTrustedWorkerIdentityCorrectionAuthority } from "../identity/worker-identity-correction-domain";
+import { DatabaseWorkerIdentityCorrectionRepository } from "../identity/worker-identity-correction-repository";
 import { WorkerIdentityEligibilityService } from "../identity/worker-identity-eligibility-service";
 import { DatabaseWorkerIdentityEligibilityRepository } from "../identity/worker-identity-eligibility-repository";
 import { InterviewSchedulingService } from "../interview/interview-scheduling-service";
@@ -388,6 +390,13 @@ export class EvidenceReviewService {
     });
 
     if (approvedIndependentIdentityId) {
+      const issued = await this.database.query(
+        "SELECT 1 FROM worker_identity_worker_ids WHERE identity_id=$1",
+        [approvedIndependentIdentityId]
+      );
+      // A correction reviews a new version of the same permanent identity.
+      // Issuance eligibility is immutable once that Worker ID exists.
+      if (issued.rows[0]) return;
       const eligibility = new WorkerIdentityEligibilityService(
         new DatabaseWorkerIdentityEligibilityRepository(Promise.resolve(this.database))
       );
@@ -500,7 +509,7 @@ export class EvidenceReviewService {
               LIMIT 1
            ) AS bindings ON TRUE
           WHERE identities.worker_account_id=$1
-            AND identities.lifecycle_status='manual_review'
+            AND (identities.lifecycle_status='manual_review' OR (identities.lifecycle_status='correction_pending' AND versions.version_kind='correction'))
             AND versions.version_status='submitted'
           LIMIT 1`,
         [principal.accountId]
@@ -589,6 +598,27 @@ export class EvidenceReviewService {
     now: Date
   ): Promise<void> {
     if (row.evidence_kind !== "identity") return;
+
+    const correction = await database.query<{ correction_request_id: string }>(
+      `SELECT requests.correction_request_id
+         FROM worker_identity_correction_requests AS requests
+         JOIN worker_identities AS identities ON identities.identity_id=requests.identity_id
+        WHERE requests.correction_version_id=$1
+          AND requests.worker_account_id=$2
+          AND identities.lifecycle_status='correction_pending'`,
+      [row.source_version_id, row.worker_account_id]
+    );
+    if (correction.rows[0]) {
+      await new DatabaseWorkerIdentityCorrectionRepository(Promise.resolve(database)).decide(
+        createTrustedWorkerIdentityCorrectionAuthority(),
+        {
+          correctionRequestId: correction.rows[0].correction_request_id,
+          decision: outcome === "APPROVED" ? "accepted" : "rejected",
+          reasonCode: `manual_review_${outcome.toLowerCase()}`
+        }
+      );
+      return;
+    }
 
     const lifecycleStatus =
       outcome === "APPROVED"

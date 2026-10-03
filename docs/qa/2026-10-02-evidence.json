@@ -409,5 +409,3004 @@
         "code": 0
       }
     ]
+  },
+  "expanded_scenario_verification": {
+    "requested_at": "2026-10-02",
+    "base_sha": "89baa04b8cd62090a5e8406d9e2569462abe78c8",
+    "policy": "Each listed scenario needs actual browser controls and downstream record assertions. Previous route-load passes do not satisfy this expanded matrix. Live provider/production evidence remains distinct.",
+    "scenarios": [
+      {
+        "id": "M1.01.01",
+        "brick": "M1.01",
+        "family": "Environment and release foundation",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Runtime environments/secrets/demo isolation and startup",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.01.02",
+        "brick": "M1.01",
+        "family": "Environment and release foundation",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "All migrations apply, preserve history and rollback safely",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.01.03",
+        "brick": "M1.01",
+        "family": "Environment and release foundation",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "GitHub CI verifies exact canonical candidate",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.01.04",
+        "brick": "M1.01",
+        "family": "Environment and release foundation",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Production configuration/health/rollback evidence corresponds to candidate",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.02.01",
+        "brick": "M1.02",
+        "family": "Global UI",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Public navigation, contact/demo/sign-in and role destinations",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.02.02",
+        "brick": "M1.02",
+        "family": "Global UI",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Every role header/search/bell/help/account/language/Exit/Sign Out",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.02.03",
+        "brick": "M1.02",
+        "family": "Global UI",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Empty/loading/validation/denial/error/retry/success states across scenario pages",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.02.04",
+        "brick": "M1.02",
+        "family": "Global UI",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Responsive desktop/mobile forms/tables/dialogs and route transitions",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.02.05",
+        "brick": "M1.02",
+        "family": "Global UI",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Keyboard focus/navigation/labels and unsaved-input protection",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.01",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Worker registration: invalid fields, terms and password confirmation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.02",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Email and phone OTP: wrong, expired, resend and verified",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.03",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Duplicate Worker registration: recovery without identity merge",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.04",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Company registration: pending account, email OTP and MFA activation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.05",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Staff invitation: role-bound activation, used/expired/revoked token",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.06",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Every portal: wrong role, wrong password/MFA and signed-out redirect",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.07",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Exit Portal preserves session; Sign Out revokes it",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.03.08",
+        "brick": "M1.03",
+        "family": "Authentication",
+        "roles": [
+          "Worker",
+          "Company",
+          "Root",
+          "Admin",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Password change, other-session revocation and privileged recovery",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.04.01",
+        "brick": "M1.04",
+        "family": "Authorization",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Role-bound session rejects every cross-portal combination",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.04.02",
+        "brick": "M1.04",
+        "family": "Authorization",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Tenant-scoped resources, filters, files and exports do not disclose other tenant",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.04.03",
+        "brick": "M1.04",
+        "family": "Authorization",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Cross-worker IDs, copied capabilities and direct actions denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.04.04",
+        "brick": "M1.04",
+        "family": "Authorization",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Role elevation, stale permissions, revoked session and membership fail closed",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.05.01",
+        "brick": "M1.05",
+        "family": "Audit and notifications",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Every material transition retains actor, resource, reason and immutable history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.05.02",
+        "brick": "M1.05",
+        "family": "Audit and notifications",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "New submission/decision/assignment sends next actor correct authorized deep link",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.05.03",
+        "brick": "M1.05",
+        "family": "Audit and notifications",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Read/unread/mark-all and unread badge synchronize across roles",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.05.04",
+        "brick": "M1.05",
+        "family": "Audit and notifications",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Outbox retry/idempotency/outage does not roll back underlying business state",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.06.01",
+        "brick": "M1.06",
+        "family": "Uploads",
+        "roles": [
+          "Worker",
+          "Company",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "PDF/PNG/JPEG accepted through scan and exact record binding",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.06.02",
+        "brick": "M1.06",
+        "family": "Uploads",
+        "roles": [
+          "Worker",
+          "Company",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Missing, oversize, mismatched MIME and unsafe file denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.06.03",
+        "brick": "M1.06",
+        "family": "Uploads",
+        "roles": [
+          "Worker",
+          "Company",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Scanner unavailable remains quarantined; retry cannot replace safe file",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.06.04",
+        "brick": "M1.06",
+        "family": "Uploads",
+        "roles": [
+          "Worker",
+          "Company",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Replace attachment: prior version retained, correct preview context",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.06.05",
+        "brick": "M1.06",
+        "family": "Uploads",
+        "roles": [
+          "Worker",
+          "Company",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Preview denied before claim and across worker/tenant; expired token",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.07.01",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Incomplete profile and identity submission blocked with input retained",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.07.02",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Profile drafts persist through navigation, validation and retry",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.07.03",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Initial identity approved, rejected and changes requested",
+        "status": "passed",
+        "evidence": "Identity initial APPROVED, REJECTED and CHANGES_REQUESTED exercised; responsible decision reason visible to Worker."
+      },
+      {
+        "id": "M1.07.04",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Initial rejection/changes requested corrected and resubmitted",
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "notes": "Additional-information revision/resubmission now passes. Initial rejection remains terminal by the existing policy and its browser branch still needs separate verification. Reviewer reason projection under investigation."
+      },
+      {
+        "id": "M1.07.05",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Verified correction accepted, rejected and changes requested",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+      },
+      {
+        "id": "M1.07.06",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Permanent Worker ID and original evidence retained across corrections",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+      },
+      {
+        "id": "M1.07.07",
+        "brick": "M1.07",
+        "family": "Identity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Duplicate document/contact signals require independent resolution",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.08.01",
+        "brick": "M1.08",
+        "family": "Company verification",
+        "roles": [
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Registration to pending dashboard and submitted scanned evidence",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.08.02",
+        "brick": "M1.08",
+        "family": "Company verification",
+        "roles": [
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Pending tenant high-risk actions denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.08.03",
+        "brick": "M1.08",
+        "family": "Company verification",
+        "roles": [
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Admin changes requested to corrected version to verification",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.08.04",
+        "brick": "M1.08",
+        "family": "Company verification",
+        "roles": [
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Admin rejection remains pending and preserves original history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.08.05",
+        "brick": "M1.08",
+        "family": "Company verification",
+        "roles": [
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Approval activates tenant; stale/double decision denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.09.01",
+        "brick": "M1.09",
+        "family": "Organization and Team",
+        "roles": [
+          "Company",
+          "Company staff",
+          "Worker"
+        ],
+        "scenario": "Site and department create, edit, archive and restore",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.09.02",
+        "brick": "M1.09",
+        "family": "Organization and Team",
+        "roles": [
+          "Company",
+          "Company staff",
+          "Worker"
+        ],
+        "scenario": "Archive assigned units unassigns placements and retains history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.09.03",
+        "brick": "M1.09",
+        "family": "Organization and Team",
+        "roles": [
+          "Company",
+          "Company staff",
+          "Worker"
+        ],
+        "scenario": "Archived units cannot receive new placements",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.09.04",
+        "brick": "M1.09",
+        "family": "Organization and Team",
+        "roles": [
+          "Company",
+          "Company staff",
+          "Worker"
+        ],
+        "scenario": "Team invitation, MFA enrollment, role permission update",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.09.05",
+        "brick": "M1.09",
+        "family": "Organization and Team",
+        "roles": [
+          "Company",
+          "Company staff",
+          "Worker"
+        ],
+        "scenario": "Suspension/revocation removes existing-session access",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.09.06",
+        "brick": "M1.09",
+        "family": "Organization and Team",
+        "roles": [
+          "Company",
+          "Company staff",
+          "Worker"
+        ],
+        "scenario": "Company staff cannot grant permissions above own ceiling",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.10.01",
+        "brick": "M1.10",
+        "family": "Invitations and employment links",
+        "roles": [
+          "Company",
+          "Worker"
+        ],
+        "scenario": "Single invitation accepted, resent, revoked, expired and replayed",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.10.02",
+        "brick": "M1.10",
+        "family": "Invitations and employment links",
+        "roles": [
+          "Company",
+          "Worker"
+        ],
+        "scenario": "Bulk CSV mixed valid/invalid rows and duplicate recovery",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.10.03",
+        "brick": "M1.10",
+        "family": "Invitations and employment links",
+        "roles": [
+          "Company",
+          "Worker"
+        ],
+        "scenario": "Company code expiry/usage limit/default site and department",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.10.04",
+        "brick": "M1.10",
+        "family": "Invitations and employment links",
+        "roles": [
+          "Company",
+          "Worker"
+        ],
+        "scenario": "Unlinked/wrong Worker cannot accept another person's invitation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.10.05",
+        "brick": "M1.10",
+        "family": "Invitations and employment links",
+        "roles": [
+          "Company",
+          "Worker"
+        ],
+        "scenario": "Worker joins, moves placement, ends relationship and retains identity",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.10.06",
+        "brick": "M1.10",
+        "family": "Invitations and employment links",
+        "roles": [
+          "Company",
+          "Worker"
+        ],
+        "scenario": "Second company link preserves first employer's history and isolation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.11.01",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Qualification approval/rejection/changes requested to correction and re-review",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+      },
+      {
+        "id": "M1.11.02",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Experience approval/rejection/changes requested to correction and re-review",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+      },
+      {
+        "id": "M1.11.03",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Skill approval/rejection/changes requested to correction and re-review",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+      },
+      {
+        "id": "M1.11.04",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Employment approval/rejection/changes requested to correction and re-review",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+      },
+      {
+        "id": "M1.11.05",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Multiple employment records; end exact employment without deleting history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.11.06",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Leaving-letter replacement and preview bound to exact employment",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.11.07",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Supervisor assignment, signed observation, Worker acknowledgement and independent review",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.11.08",
+        "brick": "M1.11",
+        "family": "Evidence and supervisor observation",
+        "roles": [
+          "Worker",
+          "Company supervisor",
+          "Verifier"
+        ],
+        "scenario": "Inactive skill/history never falsely counted as current competency",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.12.01",
+        "brick": "M1.12",
+        "family": "Public verification and concerns",
+        "roles": [
+          "Public visitor",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Worker and credential lookup through safe opaque capabilities",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.12.02",
+        "brick": "M1.12",
+        "family": "Public verification and concerns",
+        "roles": [
+          "Public visitor",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Missing, malformed, tampered and expired identifiers fail neutrally",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.12.03",
+        "brick": "M1.12",
+        "family": "Public verification and concerns",
+        "roles": [
+          "Public visitor",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Private identity/answers/reviewer notes absent from public response",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.12.04",
+        "brick": "M1.12",
+        "family": "Public verification and concerns",
+        "roles": [
+          "Public visitor",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Concern form validation, evidence upload, staff intake and reasoned resolution",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M1.12.05",
+        "brick": "M1.12",
+        "family": "Public verification and concerns",
+        "roles": [
+          "Public visitor",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Abuse/rate limit and expired signed preview deny safely",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.01",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Draft save/edit, add linked Workers, validate and submit",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.02",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Invalid/unlinked/ineligible Worker and missing funding explained",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.03",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Multi-worker cases created once with correct scope/site/deadline",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.04",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Duplicate submission and competing credit reservations stay idempotent",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.05",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Worker/company/mixed funding reaches assessment and final credential",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.06",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Changes requested and rejection propagate to Company and Worker",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.07",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Draft/submitted cancellation preserves cases, payments and decisions",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.01.08",
+        "brick": "M2.01",
+        "family": "Assurance Orders and Cases",
+        "roles": [
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Completed order readiness and reports derive from actual case outcomes",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.02.01",
+        "brick": "M2.02",
+        "family": "Evidence review handoffs",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "All submitted evidence kinds queue with correct identity/source file context",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.02.02",
+        "brick": "M2.02",
+        "family": "Evidence review handoffs",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Claim/conflict/reassignment/finalization preserve source and history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.02.03",
+        "brick": "M2.02",
+        "family": "Evidence review handoffs",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Approve/reject/changes/unable/escalate return exact next action to Worker/Company",
+        "status": "partially-verified",
+        "evidence": "Company case CHANGES_REQUESTED returns Evidence pending; Worker revised certificate; Company requeues exact case; Verifier approves and Worker reaches Assessment pending. Other outcomes pending."
+      },
+      {
+        "id": "M2.02.04",
+        "brick": "M2.02",
+        "family": "Evidence review handoffs",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Correction resubmission supersedes stale open task but keeps terminal decisions",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.02.05",
+        "brick": "M2.02",
+        "family": "Evidence review handoffs",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Second review/calibration/scope/workload govern sensitive task access",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.03.01",
+        "brick": "M2.03",
+        "family": "Frameworks and Effective Policy",
+        "roles": [
+          "Admin",
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Create versioned framework and publish policy",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.03.02",
+        "brick": "M2.03",
+        "family": "Frameworks and Effective Policy",
+        "roles": [
+          "Admin",
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Weaker company override denied; valid override snapshotted",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.03.03",
+        "brick": "M2.03",
+        "family": "Frameworks and Effective Policy",
+        "roles": [
+          "Admin",
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Case policy remains pinned after later publication",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.03.04",
+        "brick": "M2.03",
+        "family": "Frameworks and Effective Policy",
+        "roles": [
+          "Admin",
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Waiting period, attempt limits, jurisdiction and risk eligibility",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.03.05",
+        "brick": "M2.03",
+        "family": "Frameworks and Effective Policy",
+        "roles": [
+          "Admin",
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Accommodation changes delivery without lowering score standards",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.03.06",
+        "brick": "M2.03",
+        "family": "Frameworks and Effective Policy",
+        "roles": [
+          "Admin",
+          "Company",
+          "Worker",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Credential validity and renewal derive from pinned rule",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.04.01",
+        "brick": "M2.04",
+        "family": "Question Bank",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "MCQ and written authoring validate answers/rubrics",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.04.02",
+        "brick": "M2.04",
+        "family": "Question Bank",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Draft/review/changes/approval/publication workflow",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.04.03",
+        "brick": "M2.04",
+        "family": "Question Bank",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Published revision preserves exact old question and rubric",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.04.04",
+        "brick": "M2.04",
+        "family": "Question Bank",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Pause/retire/archive excludes future forms, preserves prior attempts",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.04.05",
+        "brick": "M2.04",
+        "family": "Question Bank",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Bulk import reports invalid rows without partial corruption",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.04.06",
+        "brick": "M2.04",
+        "family": "Question Bank",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Capacity metrics update after publication/exposure",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.05.01",
+        "brick": "M2.05",
+        "family": "Randomized forms and exposure",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Unseen randomized blueprint-equivalent MCQ-only, written-only and combined forms",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.05.02",
+        "brick": "M2.05",
+        "family": "Randomized forms and exposure",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Permanent non-repetition across exit, device change, retake and company change",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.05.03",
+        "brick": "M2.05",
+        "family": "Randomized forms and exposure",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Exposure families and displayed unanswered questions excluded",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.05.04",
+        "brick": "M2.05",
+        "family": "Randomized forms and exposure",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Insufficient unseen capacity blocks cleanly without entitlement corruption",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.05.05",
+        "brick": "M2.05",
+        "family": "Randomized forms and exposure",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Option order and question versions pinned across refresh",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.05.06",
+        "brick": "M2.05",
+        "family": "Randomized forms and exposure",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Future questions, answer keys and rubrics absent from candidate payload",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.01",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Verified/unverified qualification eligibility and unavailable reasons",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.02",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Self sandbox payment to funded case, safe duplicate confirmation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.03",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Company request approved, rejected and retried/self-funded",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.04",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Insufficient credits to checkout/capture to approved assessment",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.05",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Link revoked before approval prevents funding and case creation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.06",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Waiting/attempt limits/current credential/reassessment affect availability",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.06.07",
+        "brick": "M2.06",
+        "family": "Eligibility, applications and funding",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Fresh reapplication after terminal case preserves earlier records",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.07.01",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Browser/device/media/consent prechecks deny or allow truthfully",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.07.02",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Strict progression: required answer, confirmed save, no backtracking",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.07.03",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Controlled Review: prior answer revisit, flag and versioned change",
+        "status": "passed",
+        "evidence": "Controlled Review revises and flags both answer types, then submits, scores, interviews and issues credential; post-submit review denied."
+      },
+      {
+        "id": "M2.07.04",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Section Review: within-section navigation and final section lock",
+        "status": "passed",
+        "evidence": "Section Review revises/flags before each lock; locked prior section review denied; completed through credential and appeal."
+      },
+      {
+        "id": "M2.07.05",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Timer expiry/auto-submit and no duplicate final outcomes",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.07.06",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Technical issue and Emergency Exit never trap candidate",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.07.07",
+        "brick": "M2.07",
+        "family": "Assessment delivery",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Admin"
+        ],
+        "scenario": "Successful MCQ/written completion reaches human review",
+        "status": "passed",
+        "evidence": "Combined, MCQ-only and written-only assessments complete through required scoring, structured interview, Admin approval, credential, sharing and appeal; no seeded outcomes."
+      },
+      {
+        "id": "M2.08.01",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Ordinary save/exit/resume preserves committed answer",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.08.02",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Offline MCQ and written buffer/reconnect persist latest permitted answer",
+        "status": "partially-verified",
+        "evidence": "Written encrypted offline draft survives delayed reload; independent and opener-created tabs cannot erase it; server revision conflict requires explicit resolution; completed credential/appeal. MCQ offline still pending."
+      },
+      {
+        "id": "M2.08.03",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Refresh/navigation/crash preserve answer and authoritative timer",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.08.04",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Second device/session cannot mutate active bound attempt",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.08.05",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Emergency Exit to recovery request to Verifier allow-resume",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-emergency-recovery.txt"
+      },
+      {
+        "id": "M2.08.06",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Emergency Exit to approved replacement to unseen form and completed case",
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261003-replacement-journey.txt"
+      },
+      {
+        "id": "M2.08.07",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Exposure and original attempt/answers retained after replacement",
+        "status": "passed",
+        "evidence": "Replacement preserves original form, exposed questions, committed answer, uncommitted written draft and authorization lineage; new form excludes all exposed questions.",
+        "notes": "Original form, committed answer, replacement lineage and nonrepeating questions asserted. Original uncommitted draft assertion still pending."
+      },
+      {
+        "id": "M2.08.08",
+        "brick": "M2.08",
+        "family": "Interruption and recovery",
+        "roles": [
+          "Worker",
+          "Verifier"
+        ],
+        "scenario": "Lost/repeated submit response returns same receipt",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.09.01",
+        "brick": "M2.09",
+        "family": "Integrity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Green/Yellow/Red signals reach correct human queue without automatic guilt",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.09.02",
+        "brick": "M2.09",
+        "family": "Integrity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Fullscreen/tab/paste/network/device events preserve authoritative timeline",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.09.03",
+        "brick": "M2.09",
+        "family": "Integrity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Media/liveness failure is degraded evidence, never clean integrity",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.09.04",
+        "brick": "M2.09",
+        "family": "Integrity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Human review pass/additional evidence/fail reaches case decision",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.09.05",
+        "brick": "M2.09",
+        "family": "Integrity",
+        "roles": [
+          "Worker",
+          "Verifier",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Accommodation privacy and controls survive monitoring",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.01",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "Candidate answer/version/rubric displayed only to authorized reviewer",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.02",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "Criterion marks save, finalize and amendment preserve originals",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.03",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "PASS/FAIL/ADDITIONAL_REVIEW flows reach correct next owner",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.04",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "Claim race, stale source, conflict declaration and reassignment",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.05",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "Expired/failed calibration blocks live tasks",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.06",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "AI available/unavailable advisory never overrides human outcome",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.10.07",
+        "brick": "M2.10",
+        "family": "Written scoring and review",
+        "roles": [
+          "Verifier",
+          "Admin",
+          "Worker",
+          "Assessor"
+        ],
+        "scenario": "Unable-to-verify, escalation and draft notes remain reasoned and auditable",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.11.01",
+        "brick": "M2.11",
+        "family": "Interview scheduling",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Scope/calibration/language/workload match and assignment",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.11.02",
+        "brick": "M2.11",
+        "family": "Interview scheduling",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Worker availability selection and timezone-safe scheduling",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.11.03",
+        "brick": "M2.11",
+        "family": "Interview scheduling",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Reschedule with reason and downstream notification/deep link",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.11.04",
+        "brick": "M2.11",
+        "family": "Interview scheduling",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Assessor conflict to reassignment without disclosure",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.11.05",
+        "brick": "M2.11",
+        "family": "Interview scheduling",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "No-show/late/technical failure to review/reschedule",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.11.06",
+        "brick": "M2.11",
+        "family": "Interview scheduling",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Outside-window/unready/unassigned Worker cannot join",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.01",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Consent/readiness to claim/admit/start with live case context",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.02",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Mandatory/playbook/follow-up questions retained with versions",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.03",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Draft scores/notes survive tabs, refresh and media reconnect",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.04",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Pause/resume/technical issue/reconnect/reschedule preserve evidence",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.05",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Missing scorecard/recommendation cannot finalize",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.06",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Each recommendation: Pass, Conditional, Evidence, Reassessment, Second Interview, Fail",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.07",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Final recommendation locks, stops media and advances actual case",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.12.08",
+        "brick": "M2.12",
+        "family": "Interview console",
+        "roles": [
+          "Worker",
+          "Assessor",
+          "Admin"
+        ],
+        "scenario": "Recording policy/jurisdiction/withdrawal stays truthful and scoped",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.01",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Approved and Conditional issuance require completed inputs",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.02",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Pending Review, Additional Evidence and Interview Pending route next responsible actor",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.03",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Rejected and Reassessment Required route permitted correction/appeal",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.04",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Suspended, Revoked and Expired synchronize current downstream status",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.05",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Privileged override: recent MFA, reason, evidence and preserved original",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.06",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Repeated/unauthorized/stale decision or issuance denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M2.13.07",
+        "brick": "M2.13",
+        "family": "Decisions",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Company, Worker, public, share and certification display agree",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.01.01",
+        "brick": "M3.01",
+        "family": "Credentials",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Public visitor"
+        ],
+        "scenario": "Signed credential/QR/PDF issuance derives policy issue/expiry",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.01.02",
+        "brick": "M3.01",
+        "family": "Credentials",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Public visitor"
+        ],
+        "scenario": "Download/copy/view credential and live public status",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.01.03",
+        "brick": "M3.01",
+        "family": "Credentials",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Public visitor"
+        ],
+        "scenario": "Conditional/expired/suspended/revoked display across page/API/PDF",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.01.04",
+        "brick": "M3.01",
+        "family": "Credentials",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Public visitor"
+        ],
+        "scenario": "Duplicate issuance returns original; replacement retains old credential",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.01.05",
+        "brick": "M3.01",
+        "family": "Credentials",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Public visitor"
+        ],
+        "scenario": "Public credential contains permitted display facts and disclaimer",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.02.01",
+        "brick": "M3.02",
+        "family": "Passport and Living Record",
+        "roles": [
+          "Worker",
+          "Company",
+          "Public visitor"
+        ],
+        "scenario": "Verified qualification vs competency assessment clearly distinct",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.02.02",
+        "brick": "M3.02",
+        "family": "Passport and Living Record",
+        "roles": [
+          "Worker",
+          "Company",
+          "Public visitor"
+        ],
+        "scenario": "Restrictions/conditions/status/expiry and previous versions displayed",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.02.03",
+        "brick": "M3.02",
+        "family": "Passport and Living Record",
+        "roles": [
+          "Worker",
+          "Company",
+          "Public visitor"
+        ],
+        "scenario": "Suspension/revocation/reassessment retain original history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.02.04",
+        "brick": "M3.02",
+        "family": "Passport and Living Record",
+        "roles": [
+          "Worker",
+          "Company",
+          "Public visitor"
+        ],
+        "scenario": "Renewal/replacement updates current credential without erasing former",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.02.05",
+        "brick": "M3.02",
+        "family": "Passport and Living Record",
+        "roles": [
+          "Worker",
+          "Company",
+          "Public visitor"
+        ],
+        "scenario": "Company changes never remove permanent identity/exposure",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.03.01",
+        "brick": "M3.03",
+        "family": "Scoped sharing",
+        "roles": [
+          "Worker",
+          "Public recipient",
+          "Company"
+        ],
+        "scenario": "Each approved field selection matches actual recipient output",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.03.02",
+        "brick": "M3.03",
+        "family": "Scoped sharing",
+        "roles": [
+          "Worker",
+          "Public recipient",
+          "Company"
+        ],
+        "scenario": "Scope never reveals unselected/private fields or other employers",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.03.03",
+        "brick": "M3.03",
+        "family": "Scoped sharing",
+        "roles": [
+          "Worker",
+          "Public recipient",
+          "Company"
+        ],
+        "scenario": "Purpose/recipient/expiry preserved; access logged",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.03.04",
+        "brick": "M3.03",
+        "family": "Scoped sharing",
+        "roles": [
+          "Worker",
+          "Public recipient",
+          "Company"
+        ],
+        "scenario": "Revoke or expire link denies previously working recipient access",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.03.05",
+        "brick": "M3.03",
+        "family": "Scoped sharing",
+        "roles": [
+          "Worker",
+          "Public recipient",
+          "Company"
+        ],
+        "scenario": "Tampered token and enumeration attempt fail neutrally",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.04.01",
+        "brick": "M3.04",
+        "family": "Company Action Centre and directory",
+        "roles": [
+          "Company",
+          "Worker",
+          "Admin"
+        ],
+        "scenario": "Search/filter/pagination show only authorized workforce",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.04.02",
+        "brick": "M3.04",
+        "family": "Company Action Centre and directory",
+        "roles": [
+          "Company",
+          "Worker",
+          "Admin"
+        ],
+        "scenario": "Placement/update/end relationship actions synchronize Worker and Company",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.04.03",
+        "brick": "M3.04",
+        "family": "Company Action Centre and directory",
+        "roles": [
+          "Company",
+          "Worker",
+          "Admin"
+        ],
+        "scenario": "Case funding/evidence/assessment/interview/decision feeds next exact action",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.04.04",
+        "brick": "M3.04",
+        "family": "Company Action Centre and directory",
+        "roles": [
+          "Company",
+          "Worker",
+          "Admin"
+        ],
+        "scenario": "Assign owner/snooze/acknowledge source deep links without false completion",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.04.05",
+        "brick": "M3.04",
+        "family": "Company Action Centre and directory",
+        "roles": [
+          "Company",
+          "Worker",
+          "Admin"
+        ],
+        "scenario": "Readiness/gaps/expiry totals reflect real live credential state",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.05.01",
+        "brick": "M3.05",
+        "family": "Billing",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Sandbox checkout, capture, credit allocation and duplicate capture",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.05.02",
+        "brick": "M3.05",
+        "family": "Billing",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Funding approval/rejection and concurrent overspend prevention",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.05.03",
+        "brick": "M3.05",
+        "family": "Billing",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Invoice/receipt/usage scoped to right Company",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.05.04",
+        "brick": "M3.05",
+        "family": "Billing",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Partial/full refund and reconciliation preserve immutable money history",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.05.05",
+        "brick": "M3.05",
+        "family": "Billing",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Subscription/enterprise invoice/payment unavailable states truthful",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.05.06",
+        "brick": "M3.05",
+        "family": "Billing",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Signed webhook/replay/forgery cannot grant duplicate or unpaid entitlement",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.06.01",
+        "brick": "M3.06",
+        "family": "Reports",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Worker identity/qualification/assessment/interview/credential/history reports",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.06.02",
+        "brick": "M3.06",
+        "family": "Reports",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Company workforce/readiness/gaps/expiry/completion/failed/billing reports",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.06.03",
+        "brick": "M3.06",
+        "family": "Reports",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Preview/PDF/CSV/print/download respect filters and permissions",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.06.04",
+        "brick": "M3.06",
+        "family": "Reports",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Queue/process/complete/fail/retry produces genuine report file",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.06.05",
+        "brick": "M3.06",
+        "family": "Reports",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Email/saved definition/schedule triggers authorized delivery",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.06.06",
+        "brick": "M3.06",
+        "family": "Reports",
+        "roles": [
+          "Worker",
+          "Company",
+          "Admin"
+        ],
+        "scenario": "Cross-tenant/report/path/CSV-formula manipulation denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.07.01",
+        "brick": "M3.07",
+        "family": "Appeals and continuing assurance",
+        "roles": [
+          "Worker",
+          "Independent reviewer",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Eligible/ineligible/duplicate appeal and evidence validation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.07.02",
+        "brick": "M3.07",
+        "family": "Appeals and continuing assurance",
+        "roles": [
+          "Worker",
+          "Independent reviewer",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Independent claim/review cannot be original conflicted decision maker",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.07.03",
+        "brick": "M3.07",
+        "family": "Appeals and continuing assurance",
+        "roles": [
+          "Worker",
+          "Independent reviewer",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Accepted/rejected/further-evidence/further-interview reasoned outcomes",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.07.04",
+        "brick": "M3.07",
+        "family": "Appeals and continuing assurance",
+        "roles": [
+          "Worker",
+          "Independent reviewer",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Appeal changes synchronize credential/Living Record and Company/public",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.07.05",
+        "brick": "M3.07",
+        "family": "Appeals and continuing assurance",
+        "roles": [
+          "Worker",
+          "Independent reviewer",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Complete reassessment through new assessment/interview/replacement credential",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.07.06",
+        "brick": "M3.07",
+        "family": "Appeals and continuing assurance",
+        "roles": [
+          "Worker",
+          "Independent reviewer",
+          "Admin",
+          "Company"
+        ],
+        "scenario": "Renewal/reverification respects rules, waiting and permanent exposure",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.08.01",
+        "brick": "M3.08",
+        "family": "Operational administration",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Worker/company/staff search and scoped management",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.08.02",
+        "brick": "M3.08",
+        "family": "Operational administration",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Question/policy/catalogue/calibration administration persists",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.08.03",
+        "brick": "M3.08",
+        "family": "Operational administration",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Assignments/decisions/appeals/billing/notifications operations",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.08.04",
+        "brick": "M3.08",
+        "family": "Operational administration",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Case Replay reconstructs exact versions without changing source",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.08.05",
+        "brick": "M3.08",
+        "family": "Operational administration",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Integrations/health/queue retry cannot falsely mark live delivery",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.08.06",
+        "brick": "M3.08",
+        "family": "Operational administration",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Root invitation/permissions/MFA/recovery remain separate from routine case work",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.01",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Each privacy request kind reaches staff intake and reasoned completion",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.02",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.03",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Accommodation approved/rejected with reason and Worker outcome",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.04",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Approved adjustment reaches actual assessment/interview delivery",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.05",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Consent grant/withdraw history remains versioned and need-to-know",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.06",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Keyboard, responsive layouts, inline errors and screen-reader labels",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.09.07",
+        "brick": "M3.09",
+        "family": "Privacy and accessibility",
+        "roles": [
+          "Worker",
+          "Admin",
+          "Company",
+          "Verifier",
+          "Assessor"
+        ],
+        "scenario": "Retention/holds preserve lawful history and appeals",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.10.01",
+        "brick": "M3.10",
+        "family": "Production adapters",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company"
+        ],
+        "scenario": "Email/SMS sandbox/outage/retry and live delivery accurately distinguished",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.10.02",
+        "brick": "M3.10",
+        "family": "Production adapters",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company"
+        ],
+        "scenario": "Payment forgery/failure never creates paid entitlement",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.10.03",
+        "brick": "M3.10",
+        "family": "Production adapters",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company"
+        ],
+        "scenario": "Built-in media handshake/reconnect and optional TURN/provider failure",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.10.04",
+        "brick": "M3.10",
+        "family": "Production adapters",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company"
+        ],
+        "scenario": "Liveness/scan/storage failure remains safely pending",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.10.05",
+        "brick": "M3.10",
+        "family": "Production adapters",
+        "roles": [
+          "Admin",
+          "Worker",
+          "Company"
+        ],
+        "scenario": "Provider health/credentials/webhook/circuit-breaker state accurate",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.11.01",
+        "brick": "M3.11",
+        "family": "Certification",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Concurrent registration/save/claim/submit/payment/issuance isolation",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.11.02",
+        "brick": "M3.11",
+        "family": "Certification",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Cross-worker/tenant/role/direct-endpoint adversarial journeys",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.11.03",
+        "brick": "M3.11",
+        "family": "Certification",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Malicious file/input/XSS/CSRF/signed-token abuse denied",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.11.04",
+        "brick": "M3.11",
+        "family": "Certification",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Authorized physical database/object restore and incident recovery",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.11.05",
+        "brick": "M3.11",
+        "family": "Certification",
+        "roles": [
+          "All roles"
+        ],
+        "scenario": "Baseline latency/load does not lose active answers or handoffs",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.12.01",
+        "brick": "M3.12",
+        "family": "Launch and operations",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Candidate build/start/migrations/health correspond to exact SHA",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.12.02",
+        "brick": "M3.12",
+        "family": "Launch and operations",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Monitoring/alerts/support/rollback runbooks match executable operations",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.12.03",
+        "brick": "M3.12",
+        "family": "Launch and operations",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Production provider disabled/sandbox or genuinely activated",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      },
+      {
+        "id": "M3.12.04",
+        "brick": "M3.12",
+        "family": "Launch and operations",
+        "roles": [
+          "Admin",
+          "Root"
+        ],
+        "scenario": "Backup/incident/rollback preserves active consumer cases",
+        "status": "not-yet-verified-in-expanded-run",
+        "evidence": null
+      }
+    ],
+    "continued_at": "2026-10-03",
+    "runs": [
+      {
+        "command": "node --test tests/browser/complete-registration-retrospective.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-company-correction.txt",
+        "result": "passed",
+        "scope": "Fresh Worker/Company registration, evidence, Company changes-requested revision and activation, workforce linking, order review conflict/reassignment, policy and question revisions."
+      },
+      {
+        "command": "HSE_MASTERPLAN_RECOVERY_MODE=resume node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-emergency-recovery.txt",
+        "result": "passed",
+        "scope": "Emergency recovery allow-resume through scoring, interview, credential, share and accepted reassessment appeal."
+      },
+      {
+        "command": "HSE_MASTERPLAN_RECOVERY_MODE=replacement node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-replacement-journey.txt",
+        "result": "passed",
+        "scope": "Replacement recovery through credential; original form/committed answer retained, no repeated form question and authorization consumed."
+      },
+      {
+        "command": "HSE_INITIAL_IDENTITY_MORE_INFO=true node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "result": "passed",
+        "scope": "Initial more-info revision, all four evidence outcome/correction variants, verified identity three outcomes and Worker dashboard."
+      },
+      {
+        "command": "node scripts/run-evidence-review-runtime-tests.mjs",
+        "artifact": ".autopilot/artifacts/20261003-identity-review-runtime-2.txt",
+        "result": "passed",
+        "scope": "12 tests; additional-information lineage, unauthorized/stale writes, immutable original, safe rollback and single ID issuance."
+      },
+      {
+        "command": "HSE_INITIAL_IDENTITY_MORE_INFO=true node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-identity-reason-green.txt",
+        "result": "passed",
+        "scope": "Reviewer reason and corrected identity/evidence journey"
+      },
+      {
+        "command": "HSE_INITIAL_IDENTITY_REJECTION=true node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-identity-rejection.txt",
+        "result": "passed",
+        "scope": "Initial rejection visible and editing denied"
+      },
+      {
+        "command": "HSE_MASTERPLAN_DELIVERY_MODE=CONTROLLED_REVIEW node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-controlled_review-journey-3.txt",
+        "result": "passed",
+        "scope": "Controlled Review full credential journey"
+      },
+      {
+        "command": "HSE_MASTERPLAN_DELIVERY_MODE=SECTION_REVIEW node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-section_review-journey.txt",
+        "result": "passed",
+        "scope": "Section Review full credential journey"
+      },
+      {
+        "command": "node --test tests/browser/company-workforce-assurance-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-company-correction-handoff.txt",
+        "result": "passed",
+        "scope": "Company correction loop and case progress"
+      },
+      {
+        "command": "HSE_MASTERPLAN_OFFLINE_RECOVERY=true node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-offline-submit-race-green-2.txt",
+        "result": "passed",
+        "scope": "Encrypted written offline reload with delayed storage, reconnect and complete credential/appeal"
+      },
+      {
+        "command": "HSE_IDENTITY_QUEUE_FAILURE=true node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-identity-queue-failure-green.txt",
+        "result": "passed",
+        "scope": "Real database review queue failure rolls back correction submission; original draft remains retryable"
+      },
+      {
+        "command": "HSE_MASTERPLAN_RECOVERY_MODE=replacement node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-replacement-draft-preservation.txt",
+        "result": "passed",
+        "scope": "Emergency replacement completes credential/appeal while preserving original committed and draft responses."
+      },
+      {
+        "command": "HSE_MASTERPLAN_OFFLINE_RECOVERY=true HSE_MASTERPLAN_OFFLINE_TABS=true node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-offline-two-tabs-green.txt",
+        "result": "passed",
+        "scope": "Two-tab offline retention, encrypted storage, delayed hydration gate, authoritative server conflict, explicit replacement, full credential/appeal."
+      },
+      {
+        "command": "HSE_IDENTITY_QUEUE_FAILURE=true node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-identity-queue-retry-2.txt",
+        "result": "passed",
+        "scope": "Real queue failure -> retained draft -> recovered database queue -> actual Worker retry -> independent approval -> one permanent Worker ID."
+      },
+      {
+        "command": "HSE_MASTERPLAN_CONTENT_MODE=MCQ_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-mcq-only.txt",
+        "result": "passed",
+        "scope": "MCQ-only assessment -> objective scoring -> interview -> Admin decision -> credential/share/appeal."
+      },
+      {
+        "command": "HSE_MASTERPLAN_CONTENT_MODE=WRITTEN_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-written-only.txt",
+        "result": "passed",
+        "scope": "Written-only assessment -> human scoring -> interview -> Admin decision -> credential/share/appeal."
+      },
+      {
+        "command": "HSE_MASTERPLAN_OFFLINE_RECOVERY=true HSE_MASTERPLAN_OFFLINE_TABS=true HSE_MASTERPLAN_OFFLINE_OPENER=true node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+        "artifact": ".autopilot/artifacts/20261003-offline-opener-green.txt",
+        "result": "passed",
+        "scope": "Opener-created tab inherits storage ID; native ownership collision gives separate buffer; original reload retains offline edit; explicit server conflict choice; full credential/appeal."
+      }
+    ]
   }
 }

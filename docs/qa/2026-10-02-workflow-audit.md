@@ -2,6 +2,33 @@
 
 Canonical repository: `itxsam57/hseverify-production-hardening`, branch `qa/masterplan-completion-20260926`. Base: `388fb489c7bacf7af6c8b72cdafe8e95e97d0425`.
 
+## Expanded verification — 2026-10-03
+
+Continued from canonical commit `89baa04b8cd62090a5e8406d9e2569462abe78c8` in an isolated worktree. These are scoped working-tree results, not a whole-product or production release certificate. The 218-scenario matrix in `2026-10-02-evidence.json` records passed, partial and unverified cases separately.
+
+Fresh browser journeys passed:
+
+- Company registration changes requested → new draft/documents → Admin review → activation.
+- Initial identity changes requested → immutable revision → resubmission → Verifier approval; initial rejection and reason shown to Worker.
+- All four evidence types through rejection, changes requested, correction and approval; verified identity correction through all three outcomes without changing permanent Worker ID.
+- Company case changes requested → Worker certificate revision → Company requeue → Verifier approval → Assessment pending.
+- Emergency exit → independent recovery review → same-attempt resume or unseen replacement → scoring/interview/credential/appeal.
+- Replacement preserves original form, exposed questions, committed MCQ and uncommitted written draft.
+- MCQ-only and written-only assessments through their applicable scoring, interview, Admin decision, credential issuance and appeal.
+- Controlled Review and Section Review through versioned edits, flagging, locking, credential issuance and appeal.
+- Written offline edit → encrypted persistence → delayed reload restoration → reconnect → credential/appeal. Early final submission is blocked until restoration finishes. Independent and opener-created tabs retain separate pending edits; an authoritative server conflict requires an explicit version choice.
+
+Fixed during this continuation:
+
+- Verified corrections were not queued and attempted duplicate permanent-ID issuance on approval.
+- Initial more-info identity had no revision path; new migration preserves submitted parents and immutable lineage.
+- Worker identity page omitted the responsible review outcome/reason.
+- Offline answers existed only in memory and disappeared on reload; encrypted temporary browser storage now retains them with server revision checks.
+- One tab could erase another tab’s pending offline answer; native tab ownership separates independently opened and copied/opener-created tab IDs while retaining reload recovery.
+- Correction submission and review queueing were separate transactions. A real injected queue failure now rolls back submission, leaving a retryable draft; recovery through actual retry and Verifier approval passes.
+
+Still being exercised: MCQ offline buffering, timing, complete replacement credentials, operative accommodations/privacy, remaining outcome and role combinations. Credential signing/expiry, full notification fan-out and live integrations remain open. Nothing here certifies every scenario.
+
 ## What passed
 
 Two preserved, multi-role browser journeys: Worker registration/contact verification -> complete profile -> identity and qualification submissions -> Verifier approval -> assessment application -> worker sandbox payment **or** Company checkout/credit approval -> pinned MCQ/written assessment -> save/exit/resume -> human scoring -> matched/scheduled interview -> Assessor save/final recommendation -> Admin decision -> issued credential/PDF/public verification -> selected Passport sharing -> independent appeal review -> Living Record reassessment -> fresh application using fresh question capacity. Company funding also exercises insufficient-credit recovery before approval.

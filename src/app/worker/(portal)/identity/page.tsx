@@ -1,3 +1,5 @@
+import { getDatabaseClient } from "@/lib/database/database";
+
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { getWorkerIdentityCorrectionService } from "@/lib/identity/worker-identity-correction-service";
 import { getWorkerIdentityDraftService } from "@/lib/identity/worker-identity-draft-service";
@@ -22,6 +24,12 @@ export default async function WorkerIdentityPage(): Promise<React.JSX.Element> {
     getWorkerIdentityEligibilityService().loadOwnStatus(principal),
     getWorkerIdentityCorrectionService().loadOwn(principal)
   ]);
+
+  const review = await (await getDatabaseClient()).query<{ outcome: string; reason: string }>(
+    `SELECT decisions.outcome,decisions.reason
+       FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id
+      WHERE tasks.worker_account_id=$1 AND tasks.evidence_kind='identity'
+      ORDER BY decisions.decided_at DESC,decisions.decision_id DESC LIMIT 1`, [principal.accountId]);
 
   const workspaceRevision = [
     identity.currentVersion.identityVersionId,
@@ -54,6 +62,7 @@ export default async function WorkerIdentityPage(): Promise<React.JSX.Element> {
         checks={checks}
         eligibility={eligibility}
         correction={correction}
+        review={review.rows[0] ?? null}
       />
     </section>
   );

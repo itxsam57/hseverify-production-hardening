@@ -252,6 +252,7 @@ test(
             await company.getByText("READY", { exact: true }).waitFor({ timeout: 15_000 });
             await company.getByRole("button", { name: "Submit Order" }).click();
             await company.getByText("SUBMITTED", { exact: true }).waitFor({ timeout: 15_000 });
+            const orderUrl = company.url();
             await company.getByRole("button", { name: "Queue evidence review" }).click();
             await company.getByText("Queued for verification", { exact: true }).waitFor({ timeout: 15_000 });
 
@@ -262,6 +263,36 @@ test(
               .filter({ has: verifier.locator("td", { hasText: "qualification" }) })
               .last();
             await caseReviewRow.getByRole("link", { name: "Review", exact: true }).click();
+            await verifier.getByRole("button", { name: "Claim review" }).click();
+            await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
+            await verifier.getByLabel("Decision").selectOption("CHANGES_REQUESTED");
+            await verifier.getByLabel("Reason").last().fill("Correct the certificate number before this Company case can proceed.");
+            await verifier.getByRole("button", { name: "Finalize review" }).click();
+            await verifier.getByText("CHANGES_REQUESTED", { exact: true }).waitFor({ timeout: 15_000 });
+
+            await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
+            await worker.getByText("Evidence pending", { exact: true }).first().waitFor({ timeout: 15_000 });
+            await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
+            const qualification = worker.locator("article").filter({ hasText: "Qualification record" }).first();
+            await qualification.getByRole("button", { name: "Start a new revision" }).click();
+            await qualification.getByText("active · draft", { exact: true }).waitFor({ timeout: 15_000 });
+            await qualification.getByLabel("Certificate / candidate number").fill("IOSH-LINK-002");
+            await qualification.getByRole("button", { name: "Save metadata" }).click();
+            await qualification.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
+            await qualification.getByLabel("Primary certificate file").setInputFiles(PNG_FILE);
+            await qualification.getByRole("button", { name: "Upload file" }).click();
+            await qualification.getByText(/uploaded, security-scanned and bound/).waitFor({ timeout: 15_000 });
+            await qualification.getByRole("button", { name: "Submit this version" }).click();
+            await qualification.getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
+
+            await company.goto(orderUrl, { waitUntil: "domcontentloaded" });
+            await company.getByRole("button", { name: "Queue evidence review" }).click();
+            await company.getByText("Queued for verification", { exact: true }).waitFor({ timeout: 15_000 });
+            await verifier.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
+            const correctedReview = verifier.locator("tbody tr")
+              .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
+              .filter({ has: verifier.locator("td", { hasText: "qualification" }) }).last();
+            await correctedReview.getByRole("link", { name: "Review", exact: true }).click();
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("APPROVED");

@@ -74,10 +74,10 @@ async function uploadIdentityEvidence(page, heading, fileName, document = false)
     await card.getByLabel("Issue date").fill("2025-01-01");
     await card.getByLabel("Expiry date").fill("2035-01-01");
   }
-  await card.getByLabel("Choose file").setInputFiles({ ...PNG_FILE, name: fileName });
+  await card.getByLabel(/^(Choose|Replace) file/).setInputFiles({ ...PNG_FILE, name: fileName });
   await Promise.all([
     page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/identity")),
-    card.getByRole("button", { name: "Upload evidence" }).click()
+    card.getByRole("button", { name: /^(Upload|Replace) evidence$/ }).click()
   ]);
 }
 
@@ -133,11 +133,27 @@ async function createEvidence(page, baseUrl, kind, fields) {
     .getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
 }
 
+
+async function reviseEvidence(page, baseUrl, kind, label, value) {
+  await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
+  const card = page.locator("article").filter({ hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record` }).first();
+  await card.getByRole("button", { name: "Start a new revision" }).click();
+  await card.getByText("active · draft", { exact: true }).waitFor({ timeout: 15000 });
+  await card.getByLabel(label, { exact: false }).first().fill(value);
+  await card.getByRole("button", { name: "Save metadata" }).click();
+  await card.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor();
+  await card.getByLabel(kind === "qualification" ? "Primary certificate file" : "Evidence file", { exact: true }).setInputFiles({ ...PNG_FILE, name: `${kind}-corrected.png` });
+  await card.getByRole("button", { name: "Upload file", exact: true }).click();
+  await card.getByText(/uploaded, security-scanned and bound/).waitFor();
+  await card.getByRole("button", { name: "Submit this version" }).click();
+  await card.getByText("active · submitted", { exact: true }).waitFor();
+}
+
 async function decideQueueItem(page, baseUrl, kind, outcome, reason) {
   await page.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
   const row = page.locator("tbody tr").filter({
     has: page.locator("td", { hasText: kind })
-  }).first();
+  }).filter({ hasText: "QUEUED" }).first();
   await row.getByRole("link", { name: "Review" }).click();
   await page.getByRole("heading", { name: "Evidence review" }).waitFor();
   await page.getByRole("button", { name: "Claim review" }).click();
@@ -186,12 +202,30 @@ test(
         await readFile("/tmp/independent-audit-credentials.json", "utf8")
       );
 
+      if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
+        const faultDatabase = new PGlite(databaseDirectory);
+        try {
+          await faultDatabase.exec(`
+            CREATE FUNCTION qa_fail_correction_queue() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+              IF NEW.evidence_kind='identity' AND EXISTS (
+                SELECT 1 FROM worker_identity_versions WHERE identity_version_id=NEW.source_version_id AND version_kind='correction'
+              ) THEN RAISE EXCEPTION 'QA injected review queue failure'; END IF;
+              RETURN NEW;
+            END $$;
+            CREATE TRIGGER qa_correction_queue_failure BEFORE INSERT ON evidence_review_tasks
+              FOR EACH ROW EXECUTE FUNCTION qa_fail_correction_queue();
+          `);
+        } finally { await faultDatabase.close(); }
+      }
+
+      let recoveryVerifierState;
       const result = await runDevelopmentServer({
         args: ["--hostname", "127.0.0.1", "--port", String(port)],
         probeUrl: `${baseUrl}/worker/login`,
         projectRoot: root,
         environment,
-        probe: async () => {
+        probe: async ({ output }) => {
           const browser = await chromium.launch({ headless: true });
           const workerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
           const worker = await workerContext.newPage();
@@ -271,6 +305,32 @@ test(
               assert.match(queueText, new RegExp(`\\b${kind}\\b`, "i"), `${kind} was missing from Verifier queue.`);
             }
 
+            if(process.env.HSE_INITIAL_IDENTITY_REJECTION === "true") {
+              console.log("SCENARIO: initial identity rejection remains terminal and issues no Worker ID");
+              await decideQueueItem(verifier,baseUrl,"identity","REJECTED","The supplied identity evidence cannot establish the claimed legal identity.");
+              await worker.goto(`${baseUrl}/worker/identity`);
+              await worker.getByText("Rejected",{exact:true}).first().waitFor();
+              await worker.getByText("The supplied identity evidence cannot establish the claimed legal identity.",{exact:true}).waitFor();
+              for(const name of ["Save identity details","Submit identity","Start identity revision","Start correction version"]) assert.equal(await worker.getByRole("button",{name,exact:true}).count(),0,"Rejected identity exposed "+name);
+              await worker.goto(`${baseUrl}/worker/dashboard`);
+              assert.doesNotMatch(await worker.locator("main").innerText(),/worker_id_[A-Za-z0-9_-]{24}/,"Rejected identity acquired a permanent Worker ID");
+              return;
+            }
+            if(process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true") {
+              console.log("SCENARIO: initial identity changes requested -> revised submission -> approval");
+              await decideQueueItem(verifier,baseUrl,"identity","CHANGES_REQUESTED","The document photograph needs correction before the initial identity can be verified.");
+              await worker.goto(`${baseUrl}/worker/identity`);
+              await worker.getByText("More information required",{exact:true}).first().waitFor({timeout:15000});
+              await worker.getByText("The document photograph needs correction before the initial identity can be verified.",{exact:true}).waitFor({timeout:10000});
+              await worker.getByRole("button",{name:"Start identity revision",exact:true}).click({timeout:15000});
+              await worker.getByRole("button",{name:"Save identity details",exact:true}).waitFor();
+              await worker.getByLabel("Legal first name",{exact:true}).fill("Independent");
+              await worker.getByRole("button",{name:"Save identity details",exact:true}).click();
+              await worker.getByText("Identity details saved.",{exact:true}).waitFor();
+              await uploadIdentityEvidence(worker,"Identity document","corrected-passport.png",true);
+              await worker.getByRole("button",{name:"Submit identity",exact:true}).click();
+              await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:20000});
+            }
             await decideQueueItem(
               verifier,
               baseUrl,
@@ -324,6 +384,77 @@ test(
             assert.match(mainText, /Experience evidence does not sufficiently substantiate/i);
             assert.match(mainText, /Provide additional evidence showing practical use/i);
 
+
+            if (process.env.HSE_IDENTITY_QUEUE_FAILURE !== "true") {
+            for (const [kind,label,value] of [["experience","Duties / experience detail","Corrected experience supported by attributable site records."],["skill","Proficiency claim","Evidence verified practical proficiency"]]) {
+              console.log("SCENARIO: correct and resubmit " + kind);
+              await reviseEvidence(worker, baseUrl, kind, label, value);
+              await decideQueueItem(verifier, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
+              await worker.goto(`${baseUrl}/worker/evidence`);
+              await worker.locator("article").filter({hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record`}).first().getByText(/Independent verification: approved/).waitFor();
+            }
+
+
+            for (const [kind,label] of [["qualification","Qualification title"],["experience","Duties / experience detail"],["skill","Proficiency claim"],["employment","Duties"]]) {
+              for (const outcome of ["REJECTED","CHANGES_REQUESTED","APPROVED"]) {
+                console.log("SCENARIO: " + kind + " revision -> " + outcome);
+                await reviseEvidence(worker, baseUrl, kind, label, kind === "qualification" ? "NEBOSH International General Certificate" : "Versioned evidence supports the claimed work and requires independent review.");
+                await decideQueueItem(verifier, baseUrl, kind, outcome, "Reasoned " + outcome.toLowerCase() + " decision against the exact revised source and retained prior evidence.");
+                await worker.goto(`${baseUrl}/worker/evidence`);
+                const card = worker.locator("article").filter({hasText:`${kind[0].toUpperCase()}${kind.slice(1)} record`}).first();
+                await card.getByText("Independent verification: " + outcome.toLowerCase().replaceAll("_"," ") + ".",{exact:true}).waitFor();
+                await card.getByRole("heading",{name:"Version and file history"}).waitFor();
+              }
+            }
+
+            await worker.goto(`${baseUrl}/worker/identity`);
+            }
+            await worker.goto(`${baseUrl}/worker/identity`);
+            console.log("SCENARIO: verified identity correction");
+            await worker.getByLabel("Reason for correction").fill("Correct legal name spelling while preserving permanent Worker identity.");
+            await worker.getByRole("button", {name:"Start correction version"}).click();
+            await worker.getByLabel("Legal first name").fill("Independent Corrected");
+            await worker.getByRole("button", {name:"Save identity details"}).click();
+            await worker.getByText("Identity details saved.", {exact:false}).waitFor();
+            await uploadIdentityEvidence(worker, "Identity document", "corrected-passport.png", true);
+            await uploadIdentityEvidence(worker, "Profile photo", "corrected-profile.png");
+            await uploadIdentityEvidence(worker, "Selfie evidence", "corrected-selfie.png");
+            if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
+              await Promise.all([worker.waitForResponse(response => response.request().method() === "POST" && response.url().includes("/worker/identity")), worker.getByRole("button", {name:"Submit correction"}).click()]);
+              await worker.getByRole("button", {name:"Submit correction"}).waitFor({timeout:15000});
+              await worker.goto(`${baseUrl}/worker/identity`);
+              assert.equal(await worker.getByRole("button", {name:"Submit correction",exact:true}).count(),1,
+                "Queue failure froze the correction without a safe submission retry.");
+              recoveryVerifierState = await verifierContext.storageState();
+              return;
+            }
+            await worker.getByRole("button", {name:"Submit correction"}).click();
+            await worker.getByText("Awaiting authorized decision", {exact:true}).waitFor();
+            await verifier.goto(`${baseUrl}/verifier/reviews`);
+            await verifier.locator("tbody tr").filter({hasText:"identity"}).filter({hasText:"QUEUED"}).first().waitFor({timeout:15000});
+            await decideQueueItem(verifier, baseUrl, "identity", "APPROVED", "Corrected legal spelling verified against new document and original identity history.");
+            await worker.goto(`${baseUrl}/worker/identity`);
+            await worker.getByText("Verified", {exact:true}).first().waitFor();
+            assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
+            await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
+
+
+            for (const outcome of ["REJECTED", "CHANGES_REQUESTED"]) {
+              console.log("SCENARIO: identity correction -> " + outcome + " preserves verified parent");
+              await worker.getByLabel("Reason for correction").fill("Request another correction for independent review while retaining the approved identity.");
+              await worker.getByRole("button", {name:"Start correction version"}).click();
+              await worker.getByRole("button", {name:"Submit correction"}).waitFor();
+              await worker.getByRole("button", {name:"Submit correction"}).click();
+              await worker.getByText("Awaiting authorized decision", {exact:true}).waitFor();
+              await decideQueueItem(verifier, baseUrl, "identity", outcome, "Proposed correction cannot be accepted; original verified identity and permanent identifier remain valid.");
+              await worker.goto(`${baseUrl}/worker/identity`);
+              await worker.getByText("Verified", {exact:true}).first().waitFor();
+              assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
+              await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
+              await worker.getByText("Latest correction: rejected", {exact:true}).waitFor();
+            }
+            await worker.goto(`${baseUrl}/worker/evidence`);
+
             const employment = worker.locator("article").filter({ hasText: "Employment record" }).first();
             await employment.getByLabel("Employment end date").fill("2026-09-01");
             await employment.getByLabel("End reason").fill("Employment ended after project completion.");
@@ -355,8 +486,10 @@ test(
             assert.ok(dashboardText.includes(permanentWorkerId), "Permanent Worker ID was missing from the Worker dashboard.");
             assert.doesNotMatch(dashboardText, /HSE-REG-/);
             assert.match(dashboardText, /Qualifications[\s\S]*1 verified/i);
-            assert.match(dashboardText, /1 need changes/i);
-            assert.match(dashboardText, /1 rejected/i);
+            assert.match(dashboardText, /0 need changes/i);
+            assert.match(dashboardText, /0 rejected/i);
+          } catch (error) {
+            throw new Error(error.message + "\nSERVER:\n" + output().slice(-16000), {cause:error});
           } finally {
             await workerContext.close();
             await verifierContext.close();
@@ -367,8 +500,54 @@ test(
 
       assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
 
+      if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
+        const recoveredDatabase = new PGlite(databaseDirectory);
+        try {
+          const current = (await recoveredDatabase.query("SELECT versions.version_status FROM worker_identities identities JOIN worker_identity_versions versions ON versions.identity_id=identities.identity_id AND versions.version_number=identities.current_version_number WHERE worker_account_id='audit_worker_account_20260901'")).rows[0];
+          assert.equal(current.version_status,"draft","Failed queue must roll back correction submission");
+          await recoveredDatabase.exec("DROP TRIGGER qa_correction_queue_failure ON evidence_review_tasks; DROP FUNCTION qa_fail_correction_queue();");
+        } finally { await recoveredDatabase.close(); }
+        const recovery = await runDevelopmentServer({
+          args: ["--hostname", "127.0.0.1", "--port", String(port)], probeUrl: `${baseUrl}/worker/login`,
+          projectRoot: root, environment,
+          probe: async () => {
+            const browser = await chromium.launch({headless:true});
+            try {
+              const worker = await browser.newPage();
+              const verifierContext = await browser.newContext({storageState:recoveryVerifierState});
+              const verifier = await verifierContext.newPage();
+              await login(worker,baseUrl,credentials.worker,"worker");
+              await worker.goto(`${baseUrl}/worker/identity`);
+              await worker.getByRole("button",{name:"Submit correction",exact:true}).click();
+              await worker.getByText("Awaiting authorized decision",{exact:true}).waitFor();
+              await verifier.goto(`${baseUrl}/verifier/reviews`);
+              await decideQueueItem(verifier,baseUrl,"identity","APPROVED","Recovered queue successfully delivered the original corrected identity for independent review.");
+              await worker.goto(`${baseUrl}/worker/identity`);
+              await worker.getByText("Verified",{exact:true}).first().waitFor();
+              assert.equal(await worker.getByLabel("Legal first name").inputValue(),"Independent Corrected");
+              console.log("SCENARIO: queue failure -> preserved draft -> retry -> Verifier approval");
+            } finally { await browser.close(); }
+          }
+        });
+        assert.equal(recovery.requestedSignal,"SMOKE_COMPLETE");
+      }
+
       const database = new PGlite(databaseDirectory);
       try {
+        if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
+          assert.equal((await database.query("SELECT lifecycle_status FROM worker_identities WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].lifecycle_status,"verified");
+          const reviews = (await database.query("SELECT task_status FROM evidence_review_tasks tasks JOIN worker_identity_versions versions ON versions.identity_version_id=tasks.source_version_id WHERE versions.version_kind='correction'")).rows;
+          assert.deepEqual(reviews.map(row=>row.task_status),["APPROVED"]);
+          assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,1);
+          return;
+        }
+        if(process.env.HSE_INITIAL_IDENTITY_REJECTION === "true") {
+          const identity=(await database.query("SELECT lifecycle_status FROM worker_identities WHERE worker_account_id='audit_worker_account_20260901'")).rows[0];
+          assert.equal(identity.lifecycle_status,"rejected");
+          assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,0);
+          assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
+          return;
+        }
         const taskResult = await database.query(
           `SELECT evidence_kind,task_status
              FROM evidence_review_tasks
@@ -381,13 +560,14 @@ test(
           accumulator.set(row.evidence_kind, current);
           return accumulator;
         }, new Map());
-        assert.deepEqual(statusesByKind.get("identity"), ["APPROVED"]);
-        assert.deepEqual(statusesByKind.get("qualification"), ["APPROVED"]);
-        assert.deepEqual(statusesByKind.get("experience"), ["REJECTED"]);
-        assert.deepEqual(statusesByKind.get("skill"), ["CHANGES_REQUESTED"]);
+        assert.deepEqual([...statusesByKind.get("identity")].sort(), (process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true" ? ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "CHANGES_REQUESTED", "REJECTED"] : ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "REJECTED"]));
+        for (const kind of ["qualification", "experience", "skill", "employment"]) {
+          const statuses = statusesByKind.get(kind);
+          for (const outcome of ["APPROVED", "REJECTED", "CHANGES_REQUESTED"]) assert.ok(statuses.includes(outcome), kind + " missing " + outcome);
+        }
         assert.deepEqual(
           [...(statusesByKind.get("employment") ?? [])].sort(),
-          ["APPROVED", "QUEUED"]
+          ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "QUEUED", "REJECTED"]
         );
 
         const identity = await database.query(
