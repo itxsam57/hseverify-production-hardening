@@ -80,7 +80,7 @@ export function AssessmentReviewWorkspace({
 
       <section className="panel page-section content-stack">
         <div>
-          <p className="eyebrow">{review.domainReference} · {review.difficulty}</p>
+          <p className="eyebrow">{review.domainReference}</p>
           <h2>Question {review.position}</h2>
           <p>{review.prompt}</p>
         </div>

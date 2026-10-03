@@ -322,7 +322,7 @@ function ActiveAssessmentWorkspace({
 
       <section className="panel page-section content-stack" aria-labelledby="current-question-heading">
         <div>
-          <p className="eyebrow">{question.domainReference} · {question.difficulty}</p>
+          <p className="eyebrow">{question.domainReference}</p>
           <h2 id="current-question-heading">Question {question.position}</h2>
           <p>{question.prompt}</p>
         </div>
@@ -366,7 +366,6 @@ function ActiveAssessmentWorkspace({
         <form action={action} className="content-stack">
           <input type="hidden" name="attemptId" value={question.attemptId} />
           <input type="hidden" name="position" value={String(question.position)} />
-          <input type="hidden" name="questionVersionId" value={question.questionVersionId} />
           <input type="hidden" name="answer" value={encodeAnswer(question.questionType, answer)} />
 
           <AnswerControl
@@ -479,7 +478,7 @@ export function AssessmentWorkspace({
 
   return (
     <ActiveAssessmentWorkspace
-      key={`${question.attemptId}:${question.position}:${question.questionVersionId}`}
+      key={`${question.attemptId}:${question.position}`}
       view={view}
       question={question}
     />

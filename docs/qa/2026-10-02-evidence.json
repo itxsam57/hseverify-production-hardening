@@ -3406,6 +3406,17 @@
         "artifact": ".autopilot/artifacts/20261003-offline-opener-green.txt",
         "result": "passed",
         "scope": "Opener-created tab inherits storage ID; native ownership collision gives separate buffer; original reload retains offline edit; explicit server conflict choice; full credential/appeal."
+      },
+      {
+        "date": "2026-10-03",
+        "scope": "Candidate metadata privacy and MCQ offline full journey",
+        "browser": "20261003-candidate-boundary-browser-green.txt; 20261003-mcq-offline-journey-2.txt",
+        "runtime": "M2.07 17/17; M2.08 56/56",
+        "status": "passed-scoped-working-tree",
+        "limitations": [
+          "Written offline recovery needs revalidation after attempt/position buffer key change",
+          "Full engineering gate and remaining Masterplan scenarios incomplete"
+        ]
       }
     ]
   }

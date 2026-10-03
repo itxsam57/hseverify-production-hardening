@@ -66,15 +66,12 @@ export async function saveAssessmentDraftAction(
 ): Promise<AssessmentDraftActionResult> {
   const rawAttemptId = formData.get("attemptId");
   const rawPosition = formData.get("position");
-  const rawQuestionVersionId = formData.get("questionVersionId");
   const rawDraftPayload = formData.get("draftPayload");
   const rawExpectedRevision = formData.get("expectedRevision");
   const rawClientGeneratedMutationKey = formData.get("clientGeneratedMutationKey");
 
   const attemptId = typeof rawAttemptId === "string" ? rawAttemptId.trim() : "";
   const position = positiveInteger(typeof rawPosition === "string" ? rawPosition : "");
-  const questionVersionId =
-    typeof rawQuestionVersionId === "string" ? rawQuestionVersionId.trim() : "";
   const draftPayload = typeof rawDraftPayload === "string" ? rawDraftPayload : "";
   const expectedRevision =
     typeof rawExpectedRevision === "string"
@@ -88,7 +85,6 @@ export async function saveAssessmentDraftAction(
   if (
     !attemptId ||
     position === null ||
-    !questionVersionId ||
     !draftPayload ||
     expectedRevision === undefined ||
     !clientGeneratedMutationKey
@@ -123,7 +119,6 @@ export async function saveAssessmentDraftAction(
         {
           attemptId,
           position,
-          questionVersionId,
           value: draftValue,
           expectedRevision,
           mutationKey: clientGeneratedMutationKey
@@ -145,8 +140,7 @@ export async function saveAssessmentDraftAction(
         if (
           current.currentQuestion !== null &&
           current.currentDraft !== null &&
-          current.currentQuestion.position === position &&
-          current.currentQuestion.questionVersionId === questionVersionId
+          current.currentQuestion.position === position
         ) {
           serverDraft = Object.freeze({
             value: current.currentDraft.value,
@@ -196,15 +190,12 @@ export async function submitAssessmentAnswerAction(
 ): Promise<AssessmentAnswerActionState> {
   const rawAttemptId = formData.get("attemptId");
   const rawPosition = formData.get("position");
-  const rawQuestionVersionId = formData.get("questionVersionId");
   const rawAnswer = formData.get("answer");
   const attemptId = typeof rawAttemptId === "string" ? rawAttemptId.trim() : "";
   const position = positiveInteger(typeof rawPosition === "string" ? rawPosition : "");
-  const questionVersionId =
-    typeof rawQuestionVersionId === "string" ? rawQuestionVersionId.trim() : "";
   const encodedAnswer = typeof rawAnswer === "string" ? rawAnswer : "";
 
-  if (!attemptId || position === null || !questionVersionId || !encodedAnswer) {
+  if (!attemptId || position === null || !encodedAnswer) {
     return state("error", "This assessment question is stale. Reload it and try again.");
   }
 
@@ -225,7 +216,7 @@ export async function submitAssessmentAnswerAction(
       await getAssessmentAttemptService()
     ).submitCurrentAnswer(
       principal,
-      { attemptId, position, questionVersionId, answer },
+      { attemptId, position, answer },
       new Date(),
       accessContext
     );

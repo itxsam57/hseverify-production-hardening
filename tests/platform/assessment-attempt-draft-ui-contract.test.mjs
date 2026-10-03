@@ -62,7 +62,6 @@ test("M2.08 autosave preserves draft-form strings, serializes requests, retries 
   for (const field of [
     "attemptId",
     "position",
-    "questionVersionId",
     "draftPayload",
     "expectedRevision",
     "clientGeneratedMutationKey"

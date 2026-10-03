@@ -9,7 +9,7 @@ import {
 } from "@/app/worker/(portal)/assessments/[attemptId]/actions";
 import type {
   AssessmentAttemptClientDraft,
-  AssessmentAttemptClientQuestion
+  AssessmentCandidateQuestion
 } from "@/lib/assessment-attempt/assessment-attempt-domain";
 
 type SaveRequest = Readonly<{
@@ -49,7 +49,7 @@ function initialEditValue(draft: AssessmentAttemptClientDraft | null): string {
 }
 
 function draftPayload(
-  questionType: AssessmentAttemptClientQuestion["questionType"],
+  questionType: AssessmentCandidateQuestion["questionType"],
   value: string
 ): unknown {
   if (questionType === "TRUE_FALSE") {
@@ -68,7 +68,7 @@ function mutationKey(editVersion: number): string {
 }
 
 export function useAssessmentDraftAutosave(input: {
-  question: AssessmentAttemptClientQuestion;
+  question: AssessmentCandidateQuestion;
   initialDraft: AssessmentAttemptClientDraft | null;
 }): AssessmentDraftAutosaveState {
   const { question, initialDraft } = input;
@@ -92,7 +92,7 @@ export function useAssessmentDraftAutosave(input: {
   const mountedRef = useRef(true);
   const sendRequestRef = useRef<(request: SaveRequest) => void>(() => undefined);
 
-  const bufferReference = `edit:${question.attemptId}:${question.position}:${question.questionVersionId}`;
+  const bufferReference = `edit:${question.attemptId}:${question.position}`;
   const bufferQueueRef = useRef<Promise<void>>(Promise.resolve());
   const bufferAvailableRef = useRef(false);
   const updateBuffer = useCallback((clear = false) => {
@@ -172,7 +172,6 @@ export function useAssessmentDraftAutosave(input: {
       const formData = new FormData();
       formData.set("attemptId", question.attemptId);
       formData.set("position", String(question.position));
-      formData.set("questionVersionId", question.questionVersionId);
       formData.set("draftPayload", JSON.stringify(draftPayload(question.questionType, request.value)));
       formData.set(
         "expectedRevision",

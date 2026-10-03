@@ -27,6 +27,12 @@ function decodeBase32(value){const clean=value.toUpperCase().replace(/=+$/g,"");
 const lastTotpCounter=new Map();
 function totpAt(secret,counter){const buf=Buffer.alloc(8);buf.writeBigUInt64BE(BigInt(counter));const digest=createHmac("sha1",decodeBase32(secret)).update(buf).digest(),offset=digest.at(-1)&15;return String((digest.readUInt32BE(offset)&0x7fffffff)%1_000_000).padStart(6,"0");}
 async function freshTotp(key,secret){let counter=Math.floor(Date.now()/30000);const last=lastTotpCounter.get(key);if(last!==undefined&&counter<=last){await new Promise(resolve=>setTimeout(resolve,Math.max(100,(last+1)*30000-Date.now()+150)));counter=Math.floor(Date.now()/30000);}lastTotpCounter.set(key,counter);return totpAt(secret,counter);}
+async function assertCandidateQuestionBoundary(page) {
+  assert.equal(await page.locator('input[name="questionVersionId"]').count(), 0, "Candidate form exposed a bank version ID.");
+  assert.equal(/\bMEDIUM\b/.test(await page.locator("main").innerText()), false, "Candidate screen exposed internal difficulty.");
+  const html = await page.content();
+  assert.equal(/question_version_[A-Za-z0-9_-]{24}|question_[A-Za-z0-9_-]{24}/.test(html), false, "Candidate HTML/RSC exposed bank identifiers.");
+}
 async function freePort(){return new Promise((resolve,reject)=>{const s=createServer();s.once("error",reject);s.listen(0,"127.0.0.1",()=>{const a=s.address();s.close(e=>e?reject(e):!a||typeof a==="string"?reject(new Error("No port")):resolve(a.port));});});}
 async function login(page,baseUrl,credential,role){await page.goto(`${baseUrl}/${role}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("Email address").fill(credential.email);await page.getByLabel("Password").fill(credential.password);if(credential.totpSecret)await page.getByLabel("Authenticator code").fill(await freshTotp(credential.email,credential.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL(`**/${role}/dashboard`,{timeout:30000});}
 async function sandboxCode(page,baseUrl,channel,destination){await page.goto(`${baseUrl}/worker/register/sandbox`,{waitUntil:"domcontentloaded"});await page.getByLabel("Delivery channel").selectOption(channel);await page.getByLabel("Delivery destination").fill(destination);await page.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await page.getByRole("button",{name:"Open latest sandbox delivery"}).click();const status=page.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor({timeout:15000});return (await status.locator("strong").innerText()).trim();}
@@ -97,6 +103,7 @@ async function reviseCommittedAnswer(page,baseUrl,attemptId,position) {
   console.log(`JOURNEY: ${DELIVERY_MODE} question ${position} revision and flagging`);
   await page.getByRole("link",{name:`Question ${position}`,exact:true}).click();
   await page.getByRole("heading",{name:`Review question ${position}`,exact:true}).waitFor();
+  await assertCandidateQuestionBoundary(page);
   if(position===1) await page.getByLabel(MCQ_ANSWER).check();
   else await page.getByLabel("Your answer").fill("Stop work, verify the isolated hazard is controlled, document controls, and only restart after confirming the area is safe.");
   await page.getByRole("button",{name:"Save revised answer",exact:true}).click();
@@ -218,7 +225,21 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await worker.getByRole("button",{name:"Start assessment"}).click();await worker.waitForURL(/\/precheck\?/,{timeout:15000});
           await worker.getByRole("button",{name:"Run device checks"}).click();await worker.getByText("Device checks completed.",{exact:true}).waitFor({timeout:15000});await worker.getByLabel("I confirm I am the Worker assigned to this assessment.").check();await worker.getByLabel(/I confirm my environment is suitable/).check();await worker.getByLabel(/I consent to the monitoring signals/).check();await worker.getByRole("button",{name:"Begin assessment"}).click();await worker.waitForURL(/\/worker\/assessments\/assessment_attempt_/,{timeout:20000});
           let attemptId=worker.url().split("/").pop();const originalAttemptId=attemptId;
-          if(CONTENT_MODE!=="WRITTEN_ONLY") { await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();await worker.getByLabel(MCQ_ANSWER).check();await worker.getByRole("button",{name:CONTENT_MODE==="MCQ_ONLY" ? "Submit assessment" : /^(Next|Save answer)$/}).click();
+          if(CONTENT_MODE!=="WRITTEN_ONLY") { await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();await assertCandidateQuestionBoundary(worker);
+          let mcqOffline = process.env.HSE_MASTERPLAN_MCQ_OFFLINE === "true";
+          if (mcqOffline) await workerContext.route("**/worker/assessments/**", route => route.request().method() === "POST" && mcqOffline ? route.abort("internetdisconnected") : route.continue());
+          await worker.getByLabel(MCQ_ANSWER).check();
+          if (mcqOffline) {
+            await worker.getByText("Offline buffered — reconnecting", {exact:true}).waitFor({timeout:15000});
+            await worker.reload({waitUntil:"domcontentloaded"});
+            await worker.getByLabel(MCQ_ANSWER).waitFor();
+            await worker.waitForFunction(answer => [...document.querySelectorAll("label")].some(label => label.textContent.trim() === answer && label.querySelector('input[type="radio"]')?.checked), MCQ_ANSWER);
+            assert.equal(await worker.getByLabel(MCQ_ANSWER).isChecked(), true, "Offline MCQ selection was lost after reload.");
+            mcqOffline = false;
+            await worker.getByText("Saved", {exact:true}).waitFor({timeout:15000});
+            console.log("JOURNEY: offline MCQ reload and acknowledged reconnect");
+          }
+          await worker.getByRole("button",{name:CONTENT_MODE==="MCQ_ONLY" ? "Submit assessment" : /^(Next|Save answer)$/}).click();
           if(CONTENT_MODE!=="MCQ_ONLY") {
           if(DELIVERY_MODE==="SECTION_REVIEW") {
             await worker.getByRole("button",{name:"Lock section and continue",exact:true}).waitFor();
@@ -397,7 +418,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await admin.goto(`${baseUrl}/admin/appeals`);let appeal=admin.locator("article").filter({hasText:credentialId}).first();await appeal.getByLabel("Review status").selectOption("under_review");await appeal.getByLabel("Accepted-outcome action").selectOption("none");await appeal.getByLabel("Reasoned review outcome").fill("Independent review opened against the original issued credential and retained qualification evidence.");await appeal.getByRole("button",{name:"Record appeal review"}).click();await appeal.getByText(/^Status: under review · Version/).waitFor({timeout:15000});await admin.reload();appeal=admin.locator("article").filter({hasText:credentialId}).first();await appeal.getByLabel("Review status").selectOption("accepted");await appeal.getByLabel("Accepted-outcome action").selectOption("reassessment");await appeal.getByLabel("Reasoned review outcome").fill("Appeal accepted; competency reassessment is required before returning the Living Record to valid.");await appeal.getByRole("button",{name:"Record appeal review"}).click();await appeal.getByText(/^Status: accepted · Version/).waitFor({timeout:15000});
           await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText(/reassessment required · no expiry recorded/i).waitFor({timeout:20000});await worker.getByText(/Version 2 · reassessment required/i).waitFor();
 
-          assert.deepEqual(errors.filter(e=>!e.includes("favicon") && !(process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" && e === "Failed to load resource: net::ERR_INTERNET_DISCONNECTED")),[],`Browser errors:\n${errors.join("\n")}\n${output()}`);
+          assert.deepEqual(errors.filter(e=>!e.includes("favicon") && !((process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" || process.env.HSE_MASTERPLAN_MCQ_OFFLINE === "true") && e === "Failed to load resource: net::ERR_INTERNET_DISCONNECTED")),[],`Browser errors:\n${errors.join("\n")}\n${output()}`);
           return {credentialId,interviewId,attemptId,originalAttemptId};
         } finally {await companyContext.close();await workerContext.close();await verifierContext.close();await assessorContext.close();await adminContext.close();await browser.close();}
       }

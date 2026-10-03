@@ -29,7 +29,6 @@ test("M2.08 draft server action accepts only stale guards, draft payload, CAS re
   for (const field of [
     "attemptId",
     "position",
-    "questionVersionId",
     "draftPayload",
     "expectedRevision",
     "clientGeneratedMutationKey"
@@ -88,7 +87,7 @@ test("M2.08 same-question conflict returns only the latest safe server draft nee
   assert.match(save, /currentQuestion/);
   assert.match(save, /currentDraft/);
   assert.match(save, /currentQuestion\.position\s*===\s*position/);
-  assert.match(save, /currentQuestion\.questionVersionId\s*===\s*questionVersionId/);
+  assert.doesNotMatch(save, /formData\.get\(["']questionVersionId["']\)/);
   assert.match(save, /status:\s*["']conflict["']/);
   assert.match(save, /serverDraft/);
   assert.match(save, /value/);

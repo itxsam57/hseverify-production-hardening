@@ -58,7 +58,7 @@ test("M2.07 submit server action parses only stale guards/current answer and map
   assert.match(action, /^[\s\S]*["']use server["']/);
   assert.match(action, /export\s+async\s+function\s+submitAssessmentAnswerAction/);
   requireWorkerPermission(action, "submit action");
-  for (const field of ["attemptId", "position", "questionVersionId", "answer"]) {
+  for (const field of ["attemptId", "position", "answer"]) {
     assert.match(action, new RegExp(`formData\\.get\\(["']${field}["']\\)`));
   }
   assert.match(action, /submitCurrentAnswer\s*\(/);
