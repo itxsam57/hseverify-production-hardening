@@ -39,6 +39,7 @@ test("canonical Worker identity lifecycle permits only frozen transitions", () =
     "manual_review->rejected",
     "manual_review->escalated",
     "more_info->manual_review",
+    "more_info->draft", // Requires a new immutable revision through the guarded repository.
     "verified->correction_pending",
     "verified->expired_document",
     "verified->suspended",
@@ -64,6 +65,10 @@ test("Worker self authority is narrower than the complete lifecycle graph", () =
   assert.doesNotThrow(() => domain.assertWorkerSelfTransition("submitted", "withdrawn"));
   assert.throws(
     () => domain.assertWorkerSelfTransition("submitted", "automated_checks"),
+    (error) => error?.name === "WorkerIdentityTransitionError"
+  );
+  assert.throws(
+    () => domain.assertWorkerSelfTransition("more_info", "draft"),
     (error) => error?.name === "WorkerIdentityTransitionError"
   );
   assert.throws(
