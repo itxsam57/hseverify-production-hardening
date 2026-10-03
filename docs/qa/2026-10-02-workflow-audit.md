@@ -105,3 +105,7 @@ Migration 0076 preserves original applications/cases and adds COMPLETED. Its dow
 ## Production acceptance still open
 
 Live provider credentials/execution, authenticated credential signing, configured issuance expiry, complete application/funding notification fan-out, a second complete reassessment/replacement-credential journey, and production rollout/load/penetration/WAN-media/backup acceptance remain open. This QA consolidation is not a production-ready declaration.
+
+### Continued gate repair — 2026-10-03
+
+The full engineering gate at a819df3 stopped at M1.12: a lexical authority check misclassified SELECT of credential_issuances/issued_at as issuance. The guard now distinguishes reads from workflow commands and credential-table writes. Six adversarial source-guard cases are included in the public-verification runner. Focused public-verification suite passed 35/35; the full gate must be rerun at the new checkpoint. No whole-product readiness claim follows from this scoped result.
