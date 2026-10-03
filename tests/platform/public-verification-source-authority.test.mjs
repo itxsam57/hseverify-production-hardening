@@ -25,6 +25,9 @@ for (const authority of [
   'INSERT INTO credential_issuances (credential_id) VALUES ($1)',
   'UPDATE credential_issuances SET status=$1',
   'DELETE FROM credential_issuances WHERE credential_id=$1',
+  'INSERT INTO public.credential_issuances (credential_id) VALUES ($1)',
+  'UPDATE "credential_issuances" SET status=$1',
+  'DELETE FROM public.credential_issuances WHERE credential_id=$1',
   'issueCredential(principal)',
   'repository.issue(principal)',
 ]) test(`public boundary rejects workflow mutation: ${authority}`, () => {

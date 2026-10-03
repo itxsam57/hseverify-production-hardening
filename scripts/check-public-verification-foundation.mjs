@@ -236,7 +236,7 @@ forbidPattern(
 );
 forbidPattern(
   `${sources.service}\n${sources.repository}\n${sources.contactActions}\n${sources.resultPage}`,
-  /reviewer[^\n]{0,120}(?:approve|reject|decision)|assessment[^\n]{0,100}(?:deliver|answer|score)|credential[^\n]{0,100}(?:\bissue\b|\bissuance\b)|\bissueCredential\s*\(|\.issue\s*\(|\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+credential_issuances\b|living.?record|scoped.?share/i,
+  /reviewer[^\n]{0,120}(?:approve|reject|decision)|assessment[^\n]{0,100}(?:deliver|answer|score)|credential[^\n]{0,100}(?:\bissue\b|\bissuance\b)|\bissueCredential\s*\(|\.issue\s*\(|\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+")\s*\.\s*)?"?credential_issuances\b"?|living.?record|scoped.?share/i,
   "M1.12 production boundary",
   "later M2/M3 workflow authority"
 );
