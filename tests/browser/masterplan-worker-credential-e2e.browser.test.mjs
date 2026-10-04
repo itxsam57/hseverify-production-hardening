@@ -56,7 +56,13 @@ async function phaseOne(baseUrl,environment,credentials){
         await worker.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true }).check();
         await worker.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true }).check();
         await worker.getByRole("button",{name:"Create Worker account"}).click();
-        await worker.waitForURL(/\/worker\/register\/verify/,{timeout:15000});
+        try {
+          await worker.waitForURL(/\/worker\/register\/verify/,{timeout:15000});
+        } catch (error) {
+          console.error("Worker signup returned", worker.url(), await worker.locator("body").innerText());
+          console.error("Worker signup field state", await worker.locator("form").first().evaluate(form => Array.from(form.elements).filter(field => field.name && !/password/i.test(field.name)).map(field => ({ name: field.name, value: field.value, checked: field.checked }))));
+          throw error;
+        }
         const emailCode=await sandboxCode(worker,baseUrl,"email",EMAIL);
         await worker.goto(`${baseUrl}/worker/register/verify`,{waitUntil:"domcontentloaded"});
         await worker.getByLabel("Verification code").fill(emailCode);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useSyncExternalStore } from "react";
 
 import {
   cancelWorkerRegistration,
@@ -26,6 +26,10 @@ function describedBy(...ids: Array<string | false | null | undefined>): string |
   return value || undefined;
 }
 
+function subscribeToRegistrationReadiness(): () => void {
+  return () => {};
+}
+
 export function WorkerRegistrationForm({
   cancelled = false,
   companyInvitation = false
@@ -37,6 +41,7 @@ export function WorkerRegistrationForm({
     startWorkerRegistration,
     INITIAL_STATE
   );
+  const ready = useSyncExternalStore(subscribeToRegistrationReadiness, () => true, () => false);
   const [draft, setDraft] = useState({
     displayName: "", email: "", phone: "", country: "",
     password: "", confirmPassword: "", companyCode: "",
@@ -68,6 +73,7 @@ export function WorkerRegistrationForm({
       <form action={action} className={styles.formGrid} noValidate>
         <Field error={errors.displayName} htmlFor="displayName" label="Full name">
           <Input
+            disabled={!ready}
             aria-describedby={describedBy(errors.displayName && "displayName-error")}
             aria-invalid={Boolean(errors.displayName)}
             autoComplete="name"
@@ -82,6 +88,7 @@ export function WorkerRegistrationForm({
 
         <Field error={errors.email} htmlFor="email" label="Email address">
           <Input
+            disabled={!ready}
             aria-describedby={describedBy(errors.email && "email-error")}
             aria-invalid={Boolean(errors.email)}
             autoComplete="email"
@@ -103,6 +110,7 @@ export function WorkerRegistrationForm({
           label="Mobile phone"
         >
           <Input
+            disabled={!ready}
             aria-describedby={describedBy("phone-hint", errors.phone && "phone-error")}
             aria-invalid={Boolean(errors.phone)}
             autoComplete="tel"
@@ -120,6 +128,7 @@ export function WorkerRegistrationForm({
 
         <Field error={errors.country} htmlFor="country" label="Country">
           <Input
+            disabled={!ready}
             aria-describedby={describedBy(errors.country && "country-error")}
             aria-invalid={Boolean(errors.country)}
             autoComplete="country-name"
@@ -134,6 +143,7 @@ export function WorkerRegistrationForm({
 
         <Field error={errors.password} htmlFor="password" label="Create password">
           <Input
+            disabled={!ready}
             aria-describedby={describedBy(
               "password-guidance",
               errors.password && "password-error"
@@ -157,6 +167,7 @@ export function WorkerRegistrationForm({
           label="Confirm password"
         >
           <Input
+            disabled={!ready}
             aria-describedby={describedBy(
               "password-guidance",
               errors.confirmPassword && "confirmPassword-error"
@@ -187,7 +198,7 @@ export function WorkerRegistrationForm({
             aria-describedby={describedBy("companyCode-hint", errors.companyCode && "companyCode-error")}
             aria-invalid={Boolean(errors.companyCode)}
             autoComplete="off"
-            disabled={companyInvitation}
+            disabled={!ready || companyInvitation}
             id="companyCode"
             value={draft.companyCode}
             onChange={updateText}
@@ -203,6 +214,7 @@ export function WorkerRegistrationForm({
 
         <div>
           <CheckboxField
+            disabled={!ready}
             aria-describedby={describedBy(errors.termsAccepted && "termsAccepted-error")}
             aria-invalid={Boolean(errors.termsAccepted)}
             name="termsAccepted"
@@ -215,6 +227,7 @@ export function WorkerRegistrationForm({
         </div>
         <div>
           <CheckboxField
+            disabled={!ready}
             aria-describedby={describedBy(errors.privacyAccepted && "privacyAccepted-error")}
             aria-invalid={Boolean(errors.privacyAccepted)}
             name="privacyAccepted"
@@ -226,7 +239,7 @@ export function WorkerRegistrationForm({
           {errors.privacyAccepted ? <p className="ds-field-error" id="privacyAccepted-error" role="alert">{errors.privacyAccepted}</p> : null}
         </div>
 
-        <Button disabled={pending} fullWidth type="submit">
+        <Button disabled={pending || !ready} fullWidth type="submit">
           {pending ? "Creating account…" : "Create Worker account"}
         </Button>
       </form>

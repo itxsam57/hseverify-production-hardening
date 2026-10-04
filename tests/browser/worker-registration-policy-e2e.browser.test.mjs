@@ -70,7 +70,30 @@ test("Worker registration denies missing policies/country and password mismatch,
             await page.getByRole("button", { name: "Create Worker account", exact: true }).click();
             assert.equal((await response).status(), 200);
           };
-          await page.goto(baseUrl + "/worker/register");
+          let releaseScripts;
+          const scriptsReady = new Promise(resolve => { releaseScripts = resolve; });
+          await page.route("**/_next/static/**/*.js", async route => {
+            await scriptsReady;
+            await route.continue();
+          });
+          try {
+            await page.goto(baseUrl + "/worker/register", { waitUntil: "commit" });
+            await page.getByLabel("Full name").waitFor();
+            for (const label of ["Full name", "Email address", "Mobile phone", "Country", "Create password", "Confirm password"]) {
+              assert.equal(await page.getByLabel(label, { exact: true }).isDisabled(), true, label + " was editable before readiness");
+            }
+            assert.equal(await page.locator('input[name="companyCode"]').isDisabled(), true);
+            assert.equal(await terms.isDisabled(), true);
+            assert.equal(await privacy.isDisabled(), true);
+            assert.equal(await page.getByRole("button", { name: "Create Worker account", exact: true }).isDisabled(), true);
+          } finally { releaseScripts(); }
+          await page.waitForLoadState("load");
+          await page.unroute("**/_next/static/**/*.js");
+          await page.getByLabel("Full name").fill("Ready Worker");
+          await terms.check();
+          assert.equal(await page.getByLabel("Full name").inputValue(), "Ready Worker");
+          await page.getByLabel("Full name").fill("");
+          await terms.uncheck();
           await submit();
           await page.getByText("Check the highlighted registration details.", { exact: true }).waitFor();
           await page.getByText("Confirm your password.", { exact: true }).waitFor();

@@ -11,12 +11,12 @@
   "requirements": [
     "M1.03.01"
   ],
-  "last_verified_action": "Working-tree runtime and browser acceptance checks, Worker journey, full reassessment to second credential, Company retrospective retry, typecheck and lint passed. First Company code signup timeout preserved; diagnostic retry passed without product change.",
+  "last_verified_action": "Corrected readiness held-script browser and strict type/lint passed working tree; independent source review REVIEW_PASS. Prior exact9fe2701 and private CI failure retained.",
   "evidence": [
     ".autopilot/artifacts/20261004-worker-registration-consent-red-a795bfb.txt",
     ".autopilot/artifacts/20261004-worker-registration-policy-review-working.txt"
   ],
-  "next_action": "Finish configured build/preview and proper Company invitation runtime runner, then exact committed candidate checks, independent review and required CI",
+  "next_action": "Verify corrected committed revision across affected positive journeys/build/preview and actual PR8 CI, obtain final scoped Gatekeeper acceptance before merge",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -28,5 +28,6 @@
   ],
   "awaiting_owner": false,
   "auto_resume": true,
-  "status": "ACTIVE"
+  "status": "ACTIVE",
+  "updated_at": "2026-10-04T15:18:04.890421+00:00"
 }

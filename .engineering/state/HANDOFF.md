@@ -5,3 +5,5 @@ Do not count recursive company-binding node:test wrapper as executed assertions;
 Next: complete those gates, commit normal candidate with Autopilot trailers, verify exact candidate, independent Gatekeeper review and actual required CI before merge. M1.03.01 remains partial. No owner decision pending; whole project ACTIVE.
 
 Company retrospective diagnostic retry passed all checkpoints; first timeout preserved under 20261004-registration-company-failure-v1. Type/lint passed. Build/preview and proper Company runtime runner in managed session 8a1e1f3d-7aa0-4049-ab52-73cd208c5b94; log 20261004-worker-registration-build-preview-working-v2.txt.
+
+PR8 initial candidate 9fe2701 exact and private CI failed at signup navigation. Delayed-JS probe reproduced pre-hydration input loss; guard now disables all controls until readiness and permanent browser tests delayed scripts. Readonly review passes source; mandatory exact/build/CI gates pending corrected candidate. Initial exact log and failed CI run37212157394 preserved.
