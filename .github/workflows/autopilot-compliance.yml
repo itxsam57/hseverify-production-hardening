@@ -23,13 +23,13 @@ jobs:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_SHA: ${{ github.sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          CANONICAL_BRANCH: qa/masterplan-completion-20260926
         run: |
           base="$BEFORE_SHA"
           head="$HEAD_SHA"
           if [ "$EVENT_NAME" = "pull_request" ]; then base="$PR_BASE_SHA"; head="$PR_HEAD_SHA"; fi
           if [ "$base" = "0000000000000000000000000000000000000000" ]; then
-            candidate="$(git merge-base "origin/$DEFAULT_BRANCH" "$head" 2>/dev/null || true)"
+            candidate="$(git merge-base "origin/$CANONICAL_BRANCH" "$head" 2>/dev/null || true)"
             if [ -n "$candidate" ] && [ "$candidate" != "$head" ]; then base="$candidate"; fi
           fi
           python .autopilot/guard.py ci --root . --base-sha "$base" --head-sha "$head"
