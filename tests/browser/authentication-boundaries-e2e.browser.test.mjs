@@ -167,7 +167,7 @@ test("All six role sessions reject invalid credentials and cross-portal access a
     });
     const db=new PGlite(databaseDirectory);
     try {
-      const sessions=await db.query("SELECT account_id,active_role,revoked_at FROM auth_sessions");
+      const sessions=await db.query("SELECT session_id,account_id,active_role,revoked_at,revocation_reason FROM auth_sessions");
       const denials = await db.query("SELECT account_id,active_role FROM auth_security_events WHERE event_type='access_denied' AND metadata->>'area'='sign_in' AND metadata->>'reason'='role_not_assigned'");
       assert.equal(denials.rows.length, 30);
       const failures = await db.query("SELECT account_id,event_type FROM auth_security_events WHERE event_type IN ('login_failed','mfa_failed')");
@@ -183,12 +183,29 @@ test("All six role sessions reject invalid credentials and cross-portal access a
         const deniedRoles = denials.rows.filter(row => row.account_id === credentials[role].accountId).map(row => row.active_role).sort();
         assert.deepEqual(deniedRoles, roles.filter(target => target !== role).sort());
       }
+      const portalDenials = await db.query("SELECT account_id,active_role,metadata FROM auth_security_events WHERE event_type='access_denied' AND metadata->>'reason'='role_mismatch'");
+      for (const role of roles) {
+        const ownSession = sessions.rows.find(row => row.account_id === credentials[role].accountId);
+        assert.ok(ownSession);
+        const ownDenials = portalDenials.rows.filter(row => row.account_id === credentials[role].accountId);
+        assert.deepEqual([...new Set(ownDenials.map(row => row.metadata.expectedRole))].sort(), roles.filter(target => target !== role).sort());
+        assert.ok(ownDenials.every(row => row.active_role === role && row.metadata.sessionId === ownSession.session_id));
+      }
+      const logouts = await db.query("SELECT account_id,active_role,metadata FROM auth_security_events WHERE event_type='logout'");
+      assert.equal(logouts.rows.length, roles.length);
+      for (const role of roles) {
+        const logout = logouts.rows.filter(row => row.account_id === credentials[role].accountId);
+        assert.equal(logout.length, 1);
+        assert.equal(logout[0].active_role, role);
+        assert.equal(logout[0].metadata.reason, "user_logout");
+      }
       assert.equal(sessions.rows.length,roles.length,"Rejected credentials created a session.");
       for(const role of roles) {
         const rows=sessions.rows.filter(row=>row.account_id===credentials[role].accountId);
         assert.equal(rows.length,1);
         assert.equal(rows[0].active_role,role);
         assert.ok(rows[0].revoked_at,"Sign-out did not revoke "+role+" session.");
+        assert.equal(rows[0].revocation_reason, "user_logout");
       }
     } finally {await db.close();}
   } finally {await rm(databaseDirectory,{recursive:true,force:true});}
