@@ -104,6 +104,9 @@ try {
     await workerPage.getByLabel("Mobile phone").fill(workerPhone);
     await workerPage.getByLabel("Create password").fill(PASSWORD);
     await workerPage.getByLabel("Confirm password").fill(PASSWORD);
+    await workerPage.getByLabel("Country", { exact: true }).fill("Pakistan");
+    await workerPage.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true }).check();
+    await workerPage.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true }).check();
     await workerPage.getByRole("button", { name: "Create Worker account" }).click();
     await workerPage.waitForURL(/\/worker\/register\/verify/, { timeout: 15_000 });
     await workerPage.getByText("Step 1 of 2", { exact: false }).waitFor({ timeout: 15_000 });

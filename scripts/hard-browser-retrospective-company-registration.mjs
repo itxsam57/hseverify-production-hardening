@@ -550,8 +550,16 @@ try {
     await codePage.getByLabel("Create password").fill(CODE_WORKER_PASSWORD);
     await codePage.getByLabel("Confirm password").fill(CODE_WORKER_PASSWORD);
     await codePage.getByLabel("Company registration code").fill(registrationCode);
+    await codePage.getByLabel("Country", { exact: true }).fill("Pakistan");
+    await codePage.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true }).check();
+    await codePage.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true }).check();
     await codePage.getByRole("button", { name: "Create Worker account" }).click();
-    await codePage.waitForURL(/\/worker\/register\/verify/, { timeout: 15_000 });
+    try {
+      await codePage.waitForURL(/\/worker\/register\/verify/, { timeout: 15_000 });
+    } catch (error) {
+      console.error("Company-code Worker signup returned", codePage.url(), await codePage.locator("body").innerText());
+      throw error;
+    }
 
     const codeEmailOtp = await latestWorkerCode(codePage, "email", CODE_WORKER_EMAIL);
     await gotoOk(codePage, "/worker/register/verify", "Step 1 of 2");

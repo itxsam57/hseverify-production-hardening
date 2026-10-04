@@ -531,8 +531,9 @@
           "Assessor"
         ],
         "scenario": "Worker registration: invalid fields, terms and password confirmation",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-worker-registration-policy-review-working.txt",
+        "notes": "Working-tree real Chromium rejects missing country, each acceptance, password mismatch and invalid name/email/phone/password length/strength while preserving draft. Accepted signup persists actual pending account/flow/OTP and immutable server-dated versioned policy history. Runtime proves direct-service strict acceptance/country guards, history through resume/cancellation and transactional rollback when immutable audit destination fails. Exact candidate build/preview/review/CI remain pending; remaining registration boundary combinations and live delivery are not certified. Additional delayed-script probe reproduced pre-hydration draft loss; corrected readiness guard and permanent held-script test pending exact revision gates."
       },
       {
         "id": "M1.03.02",

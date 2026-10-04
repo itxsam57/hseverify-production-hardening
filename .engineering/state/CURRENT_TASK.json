@@ -1,24 +1,22 @@
 {
   "schema_version": 1,
   "task_id": "WORKFLOW-001",
-  "stage": "BUILDING",
+  "stage": "VERIFYING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "e6dfcf9e5562b3dfe24214db4f06741a36e665ff",
-  "canonical_sha": "d7ef69ec5ed90ea28b04b2117f6651878c34221a",
+  "last_verified_sha": "45b5df98483f638b382bb083971cff9b2188da24",
+  "canonical_sha": "a795bfbc002dfc97ddddb3212f856654888a96d2",
   "requirements": [
-    "M1.03.06",
-    "M1.03.07",
-    "M1.04.01"
+    "M1.03.01"
   ],
-  "last_verified_action": "PR6 all-eight privacy intake/rejection merged after exact local checks, six CI checks and scoped Gatekeeper ACCEPT",
+  "last_verified_action": "Corrected readiness held-script browser and strict type/lint passed working tree; independent source review REVIEW_PASS. Prior exact9fe2701 and private CI failure retained.",
   "evidence": [
-    ".autopilot/artifacts/20261004-factory-revision-exact-efd2abe.json",
-    "GitHub Actions37196508328 artifact11301397435"
+    ".autopilot/artifacts/20261004-worker-registration-consent-red-a795bfb.txt",
+    ".autopilot/artifacts/20261004-worker-registration-policy-review-working.txt"
   ],
-  "next_action": "Validate permanent six-role authentication boundaries including all wrong-role sign-ins and downstream session/security-event assertions; independently review and run candidate CI",
+  "next_action": "Verify corrected committed revision across affected positive journeys/build/preview and actual PR8 CI, obtain final scoped Gatekeeper acceptance before merge",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -30,5 +28,6 @@
   ],
   "awaiting_owner": false,
   "auto_resume": true,
-  "status": "ACTIVE"
+  "status": "ACTIVE",
+  "updated_at": "2026-10-04T15:18:04.890421+00:00"
 }

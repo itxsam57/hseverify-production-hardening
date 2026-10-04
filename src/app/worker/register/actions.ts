@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import type { OtpChannel } from "@/lib/auth/auth-domain";
+import { normalizeWorkerRegistrationCountry } from "@/lib/auth/worker-registration-policy";
 import {
   AuthenticationSandboxError,
   readLatestAuthenticationSandboxCode
@@ -40,7 +41,7 @@ export type RegistrationActionState = {
   retryAt: string | null;
   fieldErrors?: Partial<
     Record<
-      "displayName" | "email" | "phone" | "password" | "confirmPassword" | "companyCode",
+      "displayName" | "email" | "phone" | "password" | "confirmPassword" | "companyCode" | "country" | "termsAccepted" | "privacyAccepted",
       string
     >
   >;
@@ -114,8 +115,18 @@ export async function startWorkerRegistration(
   const password = formText(formData, "password");
   const confirmPassword = formText(formData, "confirmPassword");
   const companyCode = formText(formData, "companyCode").trim();
+  const termsAccepted = ["on", "true", "1"].includes(formText(formData, "termsAccepted"));
+  const privacyAccepted = ["on", "true", "1"].includes(formText(formData, "privacyAccepted"));
+  let country = "";
   const fieldErrors: RegistrationActionState["fieldErrors"] = {};
 
+  try {
+    country = normalizeWorkerRegistrationCountry(formText(formData, "country"));
+  } catch {
+    fieldErrors.country = "Enter a valid country.";
+  }
+  if (!termsAccepted) fieldErrors.termsAccepted = "Accept the terms to continue.";
+  if (!privacyAccepted) fieldErrors.privacyAccepted = "Accept the privacy notice to continue.";
   if (!displayName.trim()) fieldErrors.displayName = "Enter your full name.";
   if (!email.trim()) fieldErrors.email = "Enter your email address.";
   if (!phone.trim()) fieldErrors.phone = "Enter your phone number.";
@@ -160,6 +171,9 @@ export async function startWorkerRegistration(
       email,
       phone,
       password,
+      country,
+      termsAccepted,
+      privacyAccepted,
       requestFingerprint: await registrationRequestFingerprint()
     });
     await writeWorkerRegistrationToken(result.token);
