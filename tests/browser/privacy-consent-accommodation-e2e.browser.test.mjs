@@ -269,6 +269,21 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
         "SELECT adjustment FROM assurance_case_accommodation_overlays WHERE case_id=$1",
         [caseId]
       );
+      const declined = await db.query(
+        "SELECT accommodation_id,status,review_reason,case_id,approved_adjustment FROM accessibility_accommodations WHERE worker_id=$1 AND accommodation_type='Alternative delivery decline verification'",
+        [credentials.worker.accountId]
+      );
+      assert.equal(declined.rows.length,1);
+      assert.equal(declined.rows[0].status,"DECLINED");
+      assert.match(declined.rows[0].review_reason,/declined because/);
+      assert.equal(declined.rows[0].case_id,null);
+      assert.equal(declined.rows[0].approved_adjustment,null);
+      const declinedOverlays = await db.query(
+        "SELECT overlay_id FROM assurance_case_accommodation_overlays WHERE accommodation_id=$1",
+        [declined.rows[0].accommodation_id]
+      );
+      assert.equal(declinedOverlays.rows.length,0,"Declined accommodation created a delivery overlay.");
+      assert.equal(overlay.rows.length,1,"The approved case gained an unexpected accommodation overlay.");
       assert.equal(Number(overlay.rows[0]?.adjustment?.timeMultiplier), 1.5);
       assert.equal(Boolean(overlay.rows[0]?.adjustment?.captions), true);
       const consent = await db.query(

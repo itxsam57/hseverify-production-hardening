@@ -12,14 +12,16 @@
     "M3.09.03",
     "M1.01.03"
   ],
-  "last_verified_action": "PR4 merged after exact5fa3361 checks and independent review; decline probe passes in current source tree",
+  "last_verified_action": "0931aa3 local privacy/type/lint passed but review found missing downstream decline assertions; acceptance not satisfied",
   "evidence": [
     ".autopilot/artifacts/20261004-enforced-exact-5fa3361.json",
     ".autopilot/artifacts/20261004-accommodation-decline-probe-v2.txt"
   ],
-  "next_action": "Promote accommodation decline probe; correct canonical PR CI; run exact candidate checks and independent review before merge",
-  "revision_attempt": 0,
-  "blockers": [],
+  "next_action": "Resolve review gap with explicit declined accommodation/overlay database assertions; rerun exact candidate browser and CI evidence before PR5 merge",
+  "revision_attempt": 1,
+  "blockers": [
+    "Gatekeeper REJECT at0931aa3: missing intended decline downstream assertions; candidate CI pending"
+  ],
   "unknowns": [
     "195 ledger scenarios unverified",
     "actual adjusted delivery",
