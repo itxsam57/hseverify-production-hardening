@@ -21,6 +21,16 @@ export type AccommodationReviewRow = {
   created_at: string | Date;
 };
 
+export type PrivacyRequestReviewRow = {
+  request_id: string;
+  tenant_id: string | null;
+  worker_id: string;
+  request_type: string;
+  status: string;
+  created_at: string | Date;
+  review_reason: string | null;
+};
+
 export class PrivacyOperationsRepository {
   constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
@@ -30,6 +40,50 @@ export class PrivacyOperationsRepository {
       `INSERT INTO privacy_requests(request_id, tenant_id, worker_id, request_type, details) VALUES($1,$2,$3,$4,$5)`,
       [input.requestId, input.tenantId, input.workerId, input.type, JSON.stringify(input.details ?? {})]
     );
+  }
+
+  async listRequestReviewQueue(): Promise<PrivacyRequestReviewRow[]> {
+    const client = await this.clientPromise;
+    const result = await client.query<PrivacyRequestReviewRow>(
+      `SELECT requests.*, latest.reason AS review_reason
+       FROM privacy_requests requests
+       LEFT JOIN LATERAL (
+         SELECT reason FROM privacy_request_reviews
+         WHERE request_id=requests.request_id ORDER BY review_sequence DESC LIMIT 1
+       ) latest ON true
+       ORDER BY CASE requests.status WHEN 'OPEN' THEN 0 WHEN 'PROCESSING' THEN 1 ELSE 2 END,
+                requests.created_at,requests.request_id`
+    );
+    return result.rows;
+  }
+
+  async reviewRequest(input: {
+    requestId: string; reviewerAccountId: string; reviewId: string;
+    expectedStatus: string; decision: "PROCESSING" | "REJECTED"; reason: string; now: string;
+  }) {
+    const client = await this.clientPromise;
+    return client.transaction(async (tx) => {
+      const found = await tx.query<PrivacyRequestReviewRow>(
+        `SELECT * FROM privacy_requests WHERE request_id=$1 FOR UPDATE`, [input.requestId]
+      );
+      const request = found.rows[0];
+      if (!request || request.status !== input.expectedStatus ||
+          !["OPEN", "PROCESSING"].includes(request.status) || request.status === input.decision) {
+        throw new Error("Privacy request changed or is unavailable for this decision.");
+      }
+      const updated = await tx.query<PrivacyRequestReviewRow>(
+        `UPDATE privacy_requests SET status=$2,completed_at=CASE WHEN $2='REJECTED' THEN $3::timestamptz ELSE NULL END
+         WHERE request_id=$1 AND status=$4 RETURNING *`,
+        [input.requestId,input.decision,input.now,input.expectedStatus]
+      );
+      if (!updated.rows[0]) throw new Error("Privacy request review conflicted with another decision.");
+      await tx.query(
+        `INSERT INTO privacy_request_reviews(review_id,request_id,reviewer_account_id,from_status,to_status,reason,reviewed_at)
+         VALUES($1,$2,$3,$4,$5,$6,$7)`,
+        [input.reviewId,input.requestId,input.reviewerAccountId,request.status,input.decision,input.reason,input.now]
+      );
+      return updated.rows[0];
+    });
   }
 
   async addAccommodation(input: { id: string; tenantId: string | null; workerId: string; type: string; details?: Record<string, unknown> }) {
@@ -58,13 +112,16 @@ export class PrivacyOperationsRepository {
     if (changedRows(result) !== 1) throw new Error("privacy request transition failed");
   }
 
-  async listRequests(tenantId: string | null, workerId: string): Promise<Array<{ request_id: string; request_type: string; status: string }>> {
+  async listRequests(tenantId: string | null, workerId: string): Promise<PrivacyRequestReviewRow[]> {
     const client = await this.clientPromise;
     const result = await client.query(
-      `SELECT request_id, request_type, status, created_at FROM privacy_requests WHERE tenant_id IS NOT DISTINCT FROM $1 AND worker_id=$2 ORDER BY created_at DESC`,
+      `SELECT requests.*, latest.reason AS review_reason FROM privacy_requests requests
+       LEFT JOIN LATERAL (SELECT reason FROM privacy_request_reviews
+         WHERE request_id=requests.request_id ORDER BY review_sequence DESC LIMIT 1) latest ON true
+       WHERE tenant_id IS NOT DISTINCT FROM $1 AND worker_id=$2 ORDER BY created_at DESC`,
       [tenantId, workerId]
     );
-    return result.rows as Array<{ request_id: string; request_type: string; status: string }>;
+    return result.rows as PrivacyRequestReviewRow[];
   }
 
   async listAccommodations(tenantId: string | null, workerId: string): Promise<AccommodationReviewRow[]> {

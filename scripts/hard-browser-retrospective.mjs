@@ -4,7 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 const BASE_URL = process.env.HSE_BROWSER_BASE_URL || "http://127.0.0.1:3000";
 const SANDBOX_KEY = process.env.HSE_AUTH_SANDBOX_ACCESS_KEY;
 const PASSWORD = "RetrospectiveQA!StrongPassword2026";
-const artifactsDir = "artifacts/hard-browser-retrospective";
+const artifactsDir = process.env.HSE_BROWSER_ARTIFACT_ROOT ? process.env.HSE_BROWSER_ARTIFACT_ROOT + "/" + "artifacts/hard-browser-retrospective".split("/").at(-1) : "artifacts/hard-browser-retrospective";
 const results = [];
 
 if (!SANDBOX_KEY) throw new Error("HSE_AUTH_SANDBOX_ACCESS_KEY is required.");

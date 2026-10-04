@@ -85,6 +85,9 @@ function assertSafeClientDraft(clientView, expectedValue) {
   assert.equal(clientView.awaitingFinalSubmit, false);
   assert.equal(clientView.sectionTitle, null);
   assert.deepEqual(Object.keys(clientView.currentDraft).sort(), ["revision", "updatedAt", "value"]);
+  for (const field of ["questionId", "questionVersionId", "difficulty", "tags"]) {
+    assert.equal(Object.hasOwn(clientView.currentQuestion, field), false, `candidate question leaked ${field}`);
+  }
   const serialized = JSON.stringify(clientView.currentDraft).toLowerCase();
   for (const forbidden of [
     "formid",

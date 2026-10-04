@@ -44,6 +44,8 @@ export type AssessmentAttemptClientQuestion = Readonly<{
   tags: readonly string[];
 }>;
 
+export type AssessmentCandidateQuestion = Omit<AssessmentAttemptClientQuestion, "questionId" | "questionVersionId" | "difficulty" | "tags">;
+
 export type AssessmentAttemptClientDraft = Readonly<{
   value: string | boolean | null;
   revision: number;
@@ -52,7 +54,7 @@ export type AssessmentAttemptClientDraft = Readonly<{
 
 export type AssessmentAttemptClientView = Readonly<{
   attemptId: string;
-  currentQuestion: AssessmentAttemptClientQuestion | null;
+  currentQuestion: AssessmentCandidateQuestion | null;
   currentDraft: AssessmentAttemptClientDraft | null;
   submitted: boolean;
   progressionMode: "STRICT" | "CONTROLLED_REVIEW" | "SECTION_REVIEW";
@@ -71,7 +73,6 @@ export type AssessmentReviewQuestionView = Readonly<{
   prompt: string;
   options: readonly string[] | null;
   domainReference: string;
-  difficulty: QuestionDifficulty;
   value: string | boolean | number;
   flagged: boolean;
   revisionCount: number;

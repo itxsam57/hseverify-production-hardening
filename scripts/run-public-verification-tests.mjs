@@ -140,6 +140,7 @@ try {
     process.execPath,
     [
       "--test",
+      resolve("tests", "platform", "public-verification-source-authority.test.mjs"),
       resolve("tests", "platform", "public-verification-domain.test.mjs"),
       resolve("tests", "platform", "public-verification-migration.test.mjs"),
       resolve("tests", "platform", "public-verification-rate-limit.test.mjs"),

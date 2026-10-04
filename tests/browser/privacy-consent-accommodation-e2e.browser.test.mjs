@@ -154,8 +154,28 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
           await worker.getByRole("button", { name: "Create secure link" }).click();
           await worker.getByText("Share link created.", { exact: false }).waitFor({ timeout: 15_000 });
 
+          await worker.goto(baseUrl + "/admin/privacy", { waitUntil: "domcontentloaded" });
+          await worker.waitForURL("**/access-denied", { timeout: 15_000 });
+          assert.equal(await worker.getByRole("heading", { name: "Privacy requests", exact: true }).count(), 0);
           await login(admin, baseUrl, credentials.admin, "admin");
           await admin.goto(baseUrl + "/admin/privacy", { waitUntil: "domcontentloaded" });
+          await admin.getByRole("heading", { name: "Privacy requests", exact: true }).waitFor();
+          const privacyCard = admin.locator("article").filter({ hasText: "Request type: restriction" }).first();
+          await privacyCard.getByLabel("Request decision").selectOption("PROCESSING");
+          await privacyCard.getByLabel("Request review reason").fill("Reviewing the processing purpose and required retained evidence.");
+          await privacyCard.getByRole("button", { name: "Save privacy request decision" }).click();
+          await privacyCard.getByText("Status: PROCESSING", { exact: true }).waitFor();
+          await worker.goto(baseUrl + "/worker/privacy", { waitUntil: "domcontentloaded" });
+          await worker.getByText("restriction: PROCESSING", { exact: true }).waitFor();
+          await worker.getByText("Reviewing the processing purpose and required retained evidence.", { exact: false }).waitFor();
+          await privacyCard.getByLabel("Request decision").selectOption("REJECTED");
+          await privacyCard.getByLabel("Request review reason").fill("Required assessment evidence remains retained; optional sharing can be revoked separately.");
+          await privacyCard.getByRole("button", { name: "Save privacy request decision" }).click();
+          await privacyCard.getByText("Status: REJECTED", { exact: true }).waitFor();
+          await worker.goto(baseUrl + "/worker/privacy", { waitUntil: "domcontentloaded" });
+          await worker.getByText("restriction: REJECTED", { exact: true }).waitFor();
+          await worker.getByText("Required assessment evidence remains retained; optional sharing can be revoked separately.", { exact: false }).waitFor();
+          await privacyCard.getByRole("button", { name: "Save privacy request decision" }).count().then(count => assert.equal(count, 0));
           const card = admin.locator("article").filter({ hasText: "Extra reading time and captions" }).first();
           await card.getByLabel("Assurance Case").selectOption(caseId);
           await card.getByLabel("Time multiplier").fill("1.5");
@@ -188,7 +208,10 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
         "SELECT request_type,status FROM privacy_requests WHERE worker_id=$1 AND request_type='restriction'",
         [credentials.worker.accountId]
       );
-      assert.equal(request.rows[0]?.status, "OPEN");
+      assert.equal(request.rows[0]?.status, "REJECTED");
+      const history = await db.query("SELECT from_status,to_status,reviewer_account_id,reason FROM privacy_request_reviews WHERE request_id=(SELECT request_id FROM privacy_requests WHERE worker_id=$1 AND request_type='restriction') ORDER BY review_sequence", [credentials.worker.accountId]);
+      assert.deepEqual(history.rows.map(row => [row.from_status, row.to_status]), [["OPEN", "PROCESSING"], ["PROCESSING", "REJECTED"]]);
+      assert.ok(history.rows.every(row => row.reviewer_account_id === credentials.admin.accountId && row.reason.length >= 10));
       const accommodation = await db.query(
         "SELECT status,case_id,approved_adjustment FROM accessibility_accommodations WHERE worker_id=$1",
         [credentials.worker.accountId]

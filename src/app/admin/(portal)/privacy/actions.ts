@@ -42,3 +42,15 @@ export async function reviewAccommodationAction(formData: FormData): Promise<voi
   revalidatePath("/worker/privacy");
   revalidatePath("/worker/accessibility");
 }
+
+export async function reviewPrivacyRequestAction(formData: FormData): Promise<void> {
+  const principal = await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
+  const decision = text(formData, "decision");
+  if (decision !== "PROCESSING" && decision !== "REJECTED") throw new Error("Privacy request decision is invalid.");
+  await new PrivacyOperationsService().reviewRequest({
+    requestId: text(formData, "requestId"), expectedStatus: text(formData, "expectedStatus"),
+    reviewerAccountId: principal.accountId, decision, reason: text(formData, "reason")
+  });
+  revalidatePath("/admin/privacy");
+  revalidatePath("/worker/privacy");
+}

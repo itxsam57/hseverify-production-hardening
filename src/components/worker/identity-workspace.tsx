@@ -10,6 +10,7 @@ import {
   submitWorkerIdentityAction,
   submitWorkerIdentityCorrectionAction,
   uploadWorkerIdentityEvidenceAction,
+  reviseWorkerIdentityAction,
   withdrawWorkerIdentityAction
 } from "@/app/worker/(portal)/identity/actions";
 import { saveWorkerIdentityDraftWithRevisionAction } from "@/app/worker/(portal)/identity/save-draft-action";
@@ -32,6 +33,7 @@ import type {
 } from "@/lib/identity/worker-identity-domain";
 
 type Props = Readonly<{
+  review?: Readonly<{ outcome: string; reason: string }> | null;
   identity: WorkerIdentitySnapshot;
   draft: WorkerIdentityDraftRecord | null;
   evidence: readonly WorkerIdentityEvidenceBindingRecord[];
@@ -370,8 +372,18 @@ function SubmissionControls({ identity }: Pick<Props, "identity">): React.JSX.El
     withdrawWorkerIdentityAction,
     INITIAL_WORKER_IDENTITY_ACTION_STATE
   );
+  const [revisionState, revisionAction] = useActionState(reviseWorkerIdentityAction, INITIAL_WORKER_IDENTITY_ACTION_STATE);
+  useRefreshOnResult(revisionState);
   useRefreshOnResult(submitState);
   useRefreshOnResult(withdrawState);
+
+  if (identity.identity.lifecycleStatus === "more_info" && identity.currentVersion.versionKind === "initial") {
+    return <form action={revisionAction} className="profile-submit-card">
+      <input type="hidden" name="expectedLockVersion" value={identity.identity.lockVersion} />
+      <div><strong>Provide the requested identity information</strong><p>Create a revision to correct your details or evidence. The submitted version remains preserved.</p><Feedback state={revisionState} /></div>
+      <SubmitButton pendingLabel="Creating revision…">Start identity revision</SubmitButton>
+    </form>;
+  }
 
   if (identity.identity.lifecycleStatus === "draft") {
     return (
@@ -521,7 +533,7 @@ function CorrectionControls({
         <p className="section-kicker">Correction submitted</p>
         <h2 id="correction-waiting-heading">Awaiting authorized decision</h2>
         <p>
-          The submitted correction is immutable. Reviewer-facing decision controls are intentionally not exposed here; that queue is built in M2.02.
+          The submitted correction is immutable. An authorized Verifier reviews the submitted correction. You can follow the outcome here without changing the locked evidence.
         </p>
       </section>
     );
@@ -533,6 +545,9 @@ export function IdentityWorkspace(props: Props): React.JSX.Element {
   return (
     <div className="profile-sections-stack">
       <SummaryCard identity={props.identity} eligibility={props.eligibility} correction={props.correction} />
+      {props.review ? <section className="profile-correction-card" aria-label="Latest identity review">
+        <h2>Latest identity review</h2><p>{props.review.outcome.replaceAll("_", " ")}</p><p>{props.review.reason}</p>
+      </section> : null}
       <VerifiedContacts draft={props.draft} />
       <IdentityDetailsForm identity={props.identity} draft={props.draft} />
       <EvidenceSection identity={props.identity} evidence={props.evidence} />

@@ -41,6 +41,7 @@ const tests = spawnSync(
   process.execPath,
   [
     "--test",
+    "--test-concurrency=1",
     resolve("tests", "secure-files", "secure-file-access-domain.test.mjs"),
     resolve("tests", "secure-files", "secure-file-access-core.test.mjs"),
     resolve("tests", "secure-files", "secure-file-access-request.test.mjs")

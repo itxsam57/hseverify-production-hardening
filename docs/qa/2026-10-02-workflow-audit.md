@@ -2,6 +2,33 @@
 
 Canonical repository: `itxsam57/hseverify-production-hardening`, branch `qa/masterplan-completion-20260926`. Base: `388fb489c7bacf7af6c8b72cdafe8e95e97d0425`.
 
+## Expanded verification — 2026-10-03
+
+Continued from canonical commit `89baa04b8cd62090a5e8406d9e2569462abe78c8` in an isolated worktree. These are scoped working-tree results, not a whole-product or production release certificate. The 218-scenario matrix in `2026-10-02-evidence.json` records passed, partial and unverified cases separately.
+
+Fresh browser journeys passed:
+
+- Company registration changes requested → new draft/documents → Admin review → activation.
+- Initial identity changes requested → immutable revision → resubmission → Verifier approval; initial rejection and reason shown to Worker.
+- All four evidence types through rejection, changes requested, correction and approval; verified identity correction through all three outcomes without changing permanent Worker ID.
+- Company case changes requested → Worker certificate revision → Company requeue → Verifier approval → Assessment pending.
+- Emergency exit → independent recovery review → same-attempt resume or unseen replacement → scoring/interview/credential/appeal.
+- Replacement preserves original form, exposed questions, committed MCQ and uncommitted written draft.
+- MCQ-only and written-only assessments through their applicable scoring, interview, Admin decision, credential issuance and appeal.
+- Controlled Review and Section Review through versioned edits, flagging, locking, credential issuance and appeal.
+- Written offline edit → encrypted persistence → delayed reload restoration → reconnect → credential/appeal. Early final submission is blocked until restoration finishes. Independent and opener-created tabs retain separate pending edits; an authoritative server conflict requires an explicit version choice.
+
+Fixed during this continuation:
+
+- Verified corrections were not queued and attempted duplicate permanent-ID issuance on approval.
+- Initial more-info identity had no revision path; new migration preserves submitted parents and immutable lineage.
+- Worker identity page omitted the responsible review outcome/reason.
+- Offline answers existed only in memory and disappeared on reload; encrypted temporary browser storage now retains them with server revision checks.
+- One tab could erase another tab’s pending offline answer; native tab ownership separates independently opened and copied/opener-created tab IDs while retaining reload recovery.
+- Correction submission and review queueing were separate transactions. A real injected queue failure now rolls back submission, leaving a retryable draft; recovery through actual retry and Verifier approval passes.
+
+Still being exercised: MCQ offline buffering, timing, complete replacement credentials, operative accommodations/privacy, remaining outcome and role combinations. Credential signing/expiry, full notification fan-out and live integrations remain open. Nothing here certifies every scenario.
+
 ## What passed
 
 Two preserved, multi-role browser journeys: Worker registration/contact verification -> complete profile -> identity and qualification submissions -> Verifier approval -> assessment application -> worker sandbox payment **or** Company checkout/credit approval -> pinned MCQ/written assessment -> save/exit/resume -> human scoring -> matched/scheduled interview -> Assessor save/final recommendation -> Admin decision -> issued credential/PDF/public verification -> selected Passport sharing -> independent appeal review -> Living Record reassessment -> fresh application using fresh question capacity. Company funding also exercises insufficient-credit recovery before approval.
@@ -78,3 +105,39 @@ Migration 0076 preserves original applications/cases and adds COMPLETED. Its dow
 ## Production acceptance still open
 
 Live provider credentials/execution, authenticated credential signing, configured issuance expiry, complete application/funding notification fan-out, a second complete reassessment/replacement-credential journey, and production rollout/load/penetration/WAN-media/backup acceptance remain open. This QA consolidation is not a production-ready declaration.
+
+### Continued gate repair — 2026-10-03
+
+The full engineering gate at a819df3 stopped at M1.12: a lexical authority check misclassified SELECT of credential_issuances/issued_at as issuance. The guard now distinguishes reads from workflow commands and credential-table writes. Six adversarial source-guard cases are included in the public-verification runner. Focused public-verification suite passed 35/35; the full gate must be rerun at the new checkpoint. No whole-product readiness claim follows from this scoped result.
+
+The next full gate at 6c333fe passed the M2 source/runtime stages but stopped in secure-access tests (five incorrect TypeErrors). Root cause: the core test rewrote shared emitted modules while other test processes imported them. The secure-access runner now serializes its three files; all 20 cases pass, including oversized/malformed/invalid-UTF8 body rejection. Production request validation remains unchanged. Schema-qualified/quoted credential-write guard variants also passed nine focused cases. Broader application checks remain in progress.
+
+### Candidate boundary and MCQ recovery continuation — 2026-10-03
+
+A real registration/profile/Verifier-to-assessment journey reproduced forbidden Question Bank version IDs in candidate HTML. The current-question allowlist now excludes bank IDs, difficulty and tags; current and review screens omit difficulty. Browser mutation forms send attempt/position; the existing authenticated owner/device transaction resolves the pinned question. Optional internal expected-version checks remain for server callers. Draft CAS, current-position checks, immutable question/answer history and same-answer replay remain protected.
+
+The full Controlled Review journey passed through question revisions/flags, human scoring, interview, Admin decision, credential, scoped sharing and independent appeal. M2.07 runtime suite passed 17/17; M2.08 passed 56/56, including requests without browser bank IDs. Typecheck and scoped lint passed. The MCQ-only offline journey passed selection, offline buffering, reload, acknowledged reconnect, final submission, interview, credential/share/appeal. Written offline recovery must be revalidated after the buffer key now uses attempt/position.
+
+The broader application check also exposed an outdated identity transition expectation; it now allows the guarded more-info revision path while denying direct Worker self-transition. Focused identity suite passed 9/9. The broader gate is still incomplete; these results do not establish consumer readiness.
+
+### Reconnected verification — 2026-10-04
+
+Recovered checkpoint `196bbe9` after workstation restart. The prior written-opener and full-gate logs were interrupted and are not passes. Fresh written-opener recovery correctly retained the encrypted answer and reported a server-version conflict after the duplicated tab saved. The browser test omitted the explicit conflict choice in its opener variant; both concurrent-tab variants now require the same choice. The repaired registration-to-credential/share/appeal journey passed with final database assertions. Product conflict protection is unchanged.
+
+The fresh full engineering run passed its M2 source/runtime stages, then environment validation rejected absent test session-secret and auth-pepper configuration. The validator remains intact. A new exact-checkpoint run uses isolated disposable test configuration. The privacy workflow still requires complete staff intake/outcome verification; its existing test only proves request creation, accommodation approval and consent history.
+
+### 2026-10-04 resumed verification and privacy intake repair
+
+The full configured engineering gate passed after resuming the interrupted run. It started at `852e961` and ended after `024a42b`, which only changed first-branch compliance and its regression tests. This is execution evidence with mixed HEAD provenance, not exact-SHA project certification. Opener recovery, SECTION_REVIEW, MCQ offline recovery, independent evidence revisions, Company workforce handoffs, and accommodation approval passed in browser runs at `852e961`.
+
+First-branch compliance now uses the owner's canonical QA branch instead of the older repository default. The actual guard accepts introduced valid commits and rejects a newly introduced commit without cycle attribution. Both GitHub compliance runs and both targeted TDD workflows passed at `024a42b`.
+
+A fresh browser reproduction showed that a Worker privacy request had no Admin intake queue. The additive repair exposes existing requests to authorized Admin operations, records processing and reasoned rejection atomically with immutable reviewer history, rejects stale decisions, and returns the review reason to the Worker. The permanent browser journey now verifies OPEN -> PROCESSING -> REJECTED and both Worker-visible reasons; real database tests verify failed-review rollback and immutable history.
+
+This repair does not certify completion of access/export/deletion/restriction operations or operative consent withdrawal. It deliberately exposes no completion control for an operation that has not been fulfilled. Those downstream privacy effects remain unverified work in the expanded Masterplan.
+
+### Independent review: delayed offline restoration
+
+At `7ae2908`, the full configured engineering gate passed with identical start/end SHA. Independent read-only review then blocked merge on an additional race: the answer field remained editable while IndexedDB recovery was pending. A separate browser reproduction delayed the read and typed before restoration; the retained offline answer was replaced without a conflict choice (`20261004-slow-recovery-lost-answer-red.txt`).
+
+Answer controls now use native disabled state until recovery completes, across text, numeric and radio question types. The status announces restoration while controls are locked. The permanent delayed-read browser test asserts that editing is disabled and that recovered text survives final submission into the permanent assessment answer. The original timing reproduction and the opener-conflict journey both pass through credential, public/PDF verification, sharing and appeal, with strict types and focused lint passing. These are scoped repair checks; the whole expanded Masterplan remains incomplete.

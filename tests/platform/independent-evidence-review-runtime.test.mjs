@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -427,6 +427,26 @@ test("independent identity manual review reaches Verifier and approved outcome v
       [task.taskId]
     );
     assert.equal(review.rows[0].task_status, "APPROVED");
+    const { DatabaseWorkerIdentityCorrectionRepository } = await import(pathToFileURL(join(runtime, "identity", "worker-identity-correction-repository.js")).href);
+    const corrections = new DatabaseWorkerIdentityCorrectionRepository(Promise.resolve(db));
+    const originalId = permanentId.rows[0].permanent_worker_id;
+    for (const outcome of ["APPROVED", "REJECTED", "CHANGES_REQUESTED"]) {
+      const before = (await db.query("SELECT lock_version,current_version_number FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
+      await corrections.requestOwn(worker, { reason: "Correct the legal spelling against preserved signed identity evidence.", expectedLockVersion: Number(before.lock_version) });
+      const pending = (await db.query("SELECT lock_version FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
+      await corrections.submitOwn(worker, Number(pending.lock_version));
+      const correctionTask = await service.queueIndependentIdentity(worker, NOW_DATE);
+      await service.claim(verifier, correctionTask.taskId, NOW_DATE);
+      await service.decide(verifier, correctionTask.taskId, outcome, "Independent correction decision with preserved prior verified identity.", NOW_DATE);
+      const after = (await db.query("SELECT lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
+      assert.equal(after.lifecycle_status, "verified");
+      if (outcome !== "APPROVED") assert.equal(after.current_version_number, before.current_version_number);
+      const history = await corrections.loadOwn(worker);
+      assert.equal(history.decision, outcome === "APPROVED" ? "accepted" : "rejected");
+      assert.equal((await db.query("SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1", [worker.accountId])).rows[0].permanent_worker_id, originalId);
+      await assert.rejects(service.decide(verifier, correctionTask.taskId, outcome, "Repeated finalized decision must be rejected.", NOW_DATE));
+    }
+
   } finally {
     await db.close();
   }
@@ -542,4 +562,45 @@ test("approved case review automatically creates and assigns a required intervie
   } finally {
     await db.close();
   }
+});
+
+test("returned initial identity creates a locked lineage revision; invalid authority, stale writes and history rollback are denied", async () => {
+  const db=await database();
+  try {
+    const up=readFileSync("database/migrations/0077_worker_identity_more_info_revision.up.sql","utf8");
+    const down=readFileSync("database/migrations/0077_worker_identity_more_info_revision.down.sql","utf8");
+    await db.execute(up);await db.execute(down);await db.execute(up);
+    const worker=await seedAccount(db,{accountId:"account_more_info_worker_01",email:"more-info-worker@example.test",role:"worker",sessionId:"session_more_info_worker_01"});
+    const verifier=await seedAccount(db,{accountId:"account_more_info_verifier_01",email:"more-info-verifier@example.test",role:"verifier",sessionId:"session_more_info_verifier_01"});
+    await seedManualReviewIdentity(db,worker.accountId);
+    const service=new EvidenceReviewService(db);
+    const task=await service.queueIndependentIdentity(worker,NOW_DATE);
+    await service.claim(verifier,task.taskId,NOW_DATE);
+    await service.decide(verifier,task.taskId,"CHANGES_REQUESTED","The document photograph must be corrected before initial identity verification.",NOW_DATE);
+    const { DatabaseWorkerIdentityRepository }=await import(pathToFileURL(join(runtime,"identity","worker-identity-repository.js")).href);
+    const repository=new DatabaseWorkerIdentityRepository(Promise.resolve(db));
+    const before=await repository.loadOwn(worker);
+    const original=(await db.query("SELECT * FROM worker_identity_version_drafts WHERE identity_version_id=$1",[before.currentVersion.identityVersionId])).rows[0];
+    await assert.rejects(repository.reviseOwn(verifier,before.identity.lockVersion));
+    await assert.rejects(repository.reviseOwn(worker,before.identity.lockVersion-1));
+    await assert.rejects(db.query("UPDATE worker_identities SET lifecycle_status='draft',lock_version=lock_version+1 WHERE identity_id=$1",[before.identity.identityId]));
+    await assert.rejects(db.query("UPDATE worker_identity_version_drafts SET legal_first_name='Tampered',draft_revision=draft_revision+1 WHERE identity_version_id=$1",[before.currentVersion.identityVersionId]));
+    const revision=await repository.reviseOwn(worker,before.identity.lockVersion);
+    assert.equal(revision.identity.lifecycleStatus,"draft");assert.equal(revision.currentVersion.versionNumber,2);
+    assert.equal(revision.currentVersion.parentVersionId,before.currentVersion.identityVersionId);
+    assert.deepEqual((await db.query("SELECT * FROM worker_identity_version_drafts WHERE identity_version_id=$1",[before.currentVersion.identityVersionId])).rows[0],original);
+    assert.equal((await db.query("SELECT COUNT(*)::int AS count FROM worker_identity_evidence_bindings WHERE identity_version_id=$1 AND binding_status='active'",[revision.currentVersion.identityVersionId])).rows[0].count,3);
+    await assert.rejects(repository.reviseOwn(worker,before.identity.lockVersion));
+    await assert.rejects(db.execute(down),/history exists/);
+    await repository.submitOwn(worker,revision.identity.lockVersion);
+    await db.query("UPDATE worker_identities SET lifecycle_status='automated_checks',lock_version=lock_version+1 WHERE identity_id=$1",[revision.identity.identityId]);
+    await db.query("UPDATE worker_identities SET lifecycle_status='manual_review',lock_version=lock_version+1 WHERE identity_id=$1",[revision.identity.identityId]);
+    const revisedTask=await service.queueIndependentIdentity(worker,NOW_DATE);
+    assert.notEqual(revisedTask.taskId,task.taskId);
+    await service.claim(verifier,revisedTask.taskId,NOW_DATE);
+    await service.decide(verifier,revisedTask.taskId,"APPROVED","Corrected initial identity evidence was independently verified.",NOW_DATE);
+    assert.equal((await repository.loadOwn(worker)).identity.lifecycleStatus,"verified");
+    assert.equal((await db.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].count,1);
+    await assert.rejects(repository.reviseOwn(worker,(await repository.loadOwn(worker)).identity.lockVersion));
+  } finally { await db.close(); }
 });

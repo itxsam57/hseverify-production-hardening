@@ -52,7 +52,6 @@ function request(fixture, item, answer) {
   return {
     attemptId: fixture.attemptId,
     position: item.position,
-    questionVersionId: item.questionVersionId,
     answer
   };
 }

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createWorkerIdentityEvidenceBindingId } from "./worker-identity-evidence-domain";
+
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import {
   AUDIT_APPEND_SQL
@@ -217,6 +219,7 @@ export interface WorkerIdentityRepository {
     principal: AuthorizationPrincipal,
     expectedLockVersion: number
   ): Promise<WorkerIdentitySnapshot>;
+  reviseOwn(principal: AuthorizationPrincipal, expectedLockVersion: number): Promise<WorkerIdentitySnapshot>;
   withdrawOwn(
     principal: AuthorizationPrincipal,
     expectedLockVersion: number
@@ -301,6 +304,49 @@ export class DatabaseWorkerIdentityRepository implements WorkerIdentityRepositor
     expectedLockVersion: number
   ): Promise<WorkerIdentitySnapshot> {
     return this.transitionOwn(principal, expectedLockVersion, "withdrawn");
+  }
+
+  async reviseOwn(principal: AuthorizationPrincipal, expectedLockVersionInput: number): Promise<WorkerIdentitySnapshot> {
+    const worker = assertWorkerIdentityPrincipal(principal);
+    const expectedLockVersion = normalizeWorkerIdentityLockVersion(expectedLockVersionInput);
+    const database = await this.client();
+    return database.transaction(async (tx) => {
+      await assertLiveWorkerAuthority(tx, worker);
+      const before = await loadSnapshot(tx, worker.accountId, true);
+      if (!before) throw new WorkerIdentityNotFoundError();
+      if (before.identity.lockVersion !== expectedLockVersion || before.identity.lifecycleStatus !== "more_info" ||
+          before.currentVersion.versionKind !== "initial" || before.currentVersion.versionStatus !== "submitted") {
+        throw new WorkerIdentityConflictError("Only an initial identity returned for more information can be revised.");
+      }
+      const next = await tx.query<{ next_number: number | string }>(
+        "SELECT MAX(version_number)+1 AS next_number FROM worker_identity_versions WHERE identity_id=$1", [before.identity.identityId]);
+      const versionNumber = normalizeWorkerIdentityVersionNumber(Number(next.rows[0].next_number));
+      const versionId = createWorkerIdentityVersionId();
+      await tx.query(`INSERT INTO worker_identity_versions(identity_version_id,identity_id,version_number,parent_version_id,version_kind,version_status,created_by_account_id)
+        VALUES($1,$2,$3,$4,'initial','draft',$5)`, [versionId,before.identity.identityId,versionNumber,before.currentVersion.identityVersionId,worker.accountId]);
+      await tx.query(`UPDATE worker_identities SET lifecycle_status='draft',current_version_number=$2,lock_version=lock_version+1
+        WHERE identity_id=$1 AND lock_version=$3`, [before.identity.identityId,versionNumber,expectedLockVersion]);
+      await tx.query(`INSERT INTO worker_identity_version_drafts(identity_version_id,draft_revision,legal_first_name,legal_last_name,previous_legal_name,date_of_birth,nationality,country_of_residence,
+        verified_email_normalized,email_verified_at,verified_phone_e164,phone_verified_at)
+        SELECT $1,1,legal_first_name,legal_last_name,previous_legal_name,date_of_birth,nationality,country_of_residence,
+        verified_email_normalized,email_verified_at,verified_phone_e164,phone_verified_at FROM worker_identity_version_drafts WHERE identity_version_id=$2`,
+        [versionId,before.currentVersion.identityVersionId]);
+      const evidence = await tx.query<{ purpose: string; secure_file_id: string; document_type: string | null; document_number: string | null; issue_date: string | null; expiry_date: string | null }>(
+        `SELECT b.purpose,b.secure_file_id,b.document_type,b.document_number,b.issue_date,b.expiry_date
+         FROM worker_identity_evidence_bindings b JOIN platform_secure_files f ON f.file_id=b.secure_file_id
+         WHERE b.identity_version_id=$1 AND b.binding_status='active' AND b.worker_account_id=$2
+           AND f.owner_account_id=$2 AND f.owner_role='worker' AND f.tenant_id IS NULL AND f.membership_id IS NULL AND f.lifecycle_status='available'
+           AND (b.expiry_date IS NULL OR b.expiry_date>=CURRENT_DATE)`, [before.currentVersion.identityVersionId,worker.accountId]);
+      for (const item of evidence.rows) {
+        await tx.query(`INSERT INTO worker_identity_evidence_bindings(binding_id,identity_version_id,worker_account_id,purpose,secure_file_id,document_type,document_number,issue_date,expiry_date,created_by_account_id)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$3)`, [createWorkerIdentityEvidenceBindingId(),versionId,worker.accountId,item.purpose,item.secure_file_id,item.document_type,item.document_number,item.issue_date,item.expiry_date]);
+      }
+      await appendIdentityAudit(tx, worker, {action:"worker_identity.status.changed",identityId:before.identity.identityId,
+        metadata:{fromStatus:"more_info",toStatus:"draft",versionNumber,parentVersionNumber:before.identity.currentVersionNumber}});
+      const after = await loadSnapshot(tx, worker.accountId, false);
+      if (!after) throw new WorkerIdentityNotFoundError();
+      return after;
+    });
   }
 
   private async transitionOwn(

@@ -910,7 +910,7 @@ export class AssessmentAttemptService {
     input: {
       attemptId: string;
       position: number;
-      questionVersionId: string;
+      questionVersionId?: string;
       value: unknown;
       expectedRevision: number | null;
       mutationKey: string;
@@ -922,8 +922,8 @@ export class AssessmentAttemptService {
     if (!Number.isSafeInteger(input.position) || input.position < 1) {
       throw new AssessmentAttemptInputError("Assessment position is invalid.");
     }
-    const questionVersionId = input.questionVersionId.trim();
-    if (!QUESTION_VERSION_ID_PATTERN.test(questionVersionId)) {
+    const questionVersionId = input.questionVersionId?.trim();
+    if (questionVersionId !== undefined && !QUESTION_VERSION_ID_PATTERN.test(questionVersionId)) {
       throw new AssessmentAttemptInputError("Assessment question reference is invalid.");
     }
     const expectedRevision = normalizeDraftExpectedRevision(input.expectedRevision);
@@ -946,7 +946,7 @@ export class AssessmentAttemptService {
       if (
         input.position !== locked.currentPosition ||
         item.position !== locked.currentPosition ||
-        questionVersionId !== item.questionVersionId
+        (questionVersionId !== undefined && questionVersionId !== item.questionVersionId)
       ) {
         throw new AssessmentAttemptConflictError();
       }
@@ -985,7 +985,7 @@ export class AssessmentAttemptService {
     input: {
       attemptId: string;
       position: number;
-      questionVersionId: string;
+      questionVersionId?: string;
       answer: unknown;
     },
     now = new Date(),
@@ -995,8 +995,8 @@ export class AssessmentAttemptService {
     if (!Number.isSafeInteger(input.position) || input.position < 1) {
       throw new AssessmentAttemptInputError("Assessment position is invalid.");
     }
-    const questionVersionId = input.questionVersionId.trim();
-    if (!QUESTION_VERSION_ID_PATTERN.test(questionVersionId)) {
+    const questionVersionId = input.questionVersionId?.trim();
+    if (questionVersionId !== undefined && !QUESTION_VERSION_ID_PATTERN.test(questionVersionId)) {
       throw new AssessmentAttemptInputError("Assessment question reference is invalid.");
     }
 
@@ -1013,7 +1013,7 @@ export class AssessmentAttemptService {
         input.position
       );
       if (committed) {
-        if (committed.questionVersionId !== questionVersionId) {
+        if (questionVersionId !== undefined && committed.questionVersionId !== questionVersionId) {
           throw new AssessmentAttemptConflictError();
         }
         const replay = normalizeAssessmentAnswer(
@@ -1038,7 +1038,7 @@ export class AssessmentAttemptService {
       if (
         input.position !== locked.currentPosition ||
         item.position !== locked.currentPosition ||
-        questionVersionId !== item.questionVersionId
+        (questionVersionId !== undefined && questionVersionId !== item.questionVersionId)
       ) {
         throw new AssessmentAttemptConflictError();
       }
@@ -1122,7 +1122,6 @@ export class AssessmentAttemptService {
         prompt: row.prompt,
         options: row.options_json === null ? null : stringArray(row.options_json),
         domainReference: row.domain_reference,
-        difficulty: row.difficulty,
         value: effectiveReviewValue(row),
         flagged: Boolean(row.flagged),
         revisionCount: Number(row.revision_count),

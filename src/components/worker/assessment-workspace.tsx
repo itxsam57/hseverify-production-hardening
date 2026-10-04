@@ -47,16 +47,18 @@ export function AnswerControl({
   questionType,
   options,
   value,
-  onChange
+  onChange,
+  disabled = false
 }: {
   questionType: NonNullable<AssessmentAttemptClientView["currentQuestion"]>["questionType"];
   options: readonly string[] | null;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }): React.JSX.Element {
   if (questionType === "MULTIPLE_CHOICE") {
     return (
-      <fieldset className="content-stack">
+      <fieldset className="content-stack" disabled={disabled}>
         <legend>Choose one answer</legend>
         {(options ?? []).map((option) => (
           <label className="ds-checkbox-field" key={option}>
@@ -74,7 +76,7 @@ export function AnswerControl({
 
   if (questionType === "TRUE_FALSE") {
     return (
-      <fieldset className="content-stack">
+      <fieldset className="content-stack" disabled={disabled}>
         <legend>Choose true or false</legend>
         {[
           ["true", "True"],
@@ -100,6 +102,7 @@ export function AnswerControl({
           id="assessment-short-answer"
           type="text"
           value={value}
+          disabled={disabled}
           maxLength={2000}
           onChange={(event) => onChange(event.currentTarget.value)}
           autoComplete="off"
@@ -114,6 +117,7 @@ export function AnswerControl({
         <Textarea
           id="assessment-long-answer"
           value={value}
+          disabled={disabled}
           maxLength={20000}
           rows={10}
           onChange={(event) => onChange(event.currentTarget.value)}
@@ -129,6 +133,7 @@ export function AnswerControl({
           id="assessment-integer-answer"
           type="text"
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.value)}
           inputMode="numeric"
           autoComplete="off"
@@ -144,6 +149,7 @@ export function AnswerControl({
           id="assessment-decimal-answer"
           type="text"
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.value)}
           inputMode="decimal"
           autoComplete="off"
@@ -252,6 +258,7 @@ function ActiveAssessmentWorkspace({
   );
   const {
     value: answer,
+    recoveryReady,
     setValue: setAnswer,
     saveStatus,
     conflict,
@@ -321,13 +328,13 @@ function ActiveAssessmentWorkspace({
 
       <section className="panel page-section content-stack" aria-labelledby="current-question-heading">
         <div>
-          <p className="eyebrow">{question.domainReference} · {question.difficulty}</p>
+          <p className="eyebrow">{question.domainReference}</p>
           <h2 id="current-question-heading">Question {question.position}</h2>
           <p>{question.prompt}</p>
         </div>
 
         <div role="status" aria-live="polite">
-          {saveStatus}
+          {recoveryReady ? saveStatus : "Restoring saved answer…"}
         </div>
 
         {conflict ? (
@@ -365,7 +372,6 @@ function ActiveAssessmentWorkspace({
         <form action={action} className="content-stack">
           <input type="hidden" name="attemptId" value={question.attemptId} />
           <input type="hidden" name="position" value={String(question.position)} />
-          <input type="hidden" name="questionVersionId" value={question.questionVersionId} />
           <input type="hidden" name="answer" value={encodeAnswer(question.questionType, answer)} />
 
           <AnswerControl
@@ -373,9 +379,10 @@ function ActiveAssessmentWorkspace({
             options={question.options}
             value={answer}
             onChange={setAnswer}
+            disabled={!recoveryReady}
           />
 
-          <Button type="submit" disabled={pending || exitPending}>
+          <Button type="submit" disabled={pending || exitPending || !recoveryReady || conflict !== null}>
             {pending
               ? "Saving…"
               : question.position === question.questionCount
@@ -395,7 +402,7 @@ function ActiveAssessmentWorkspace({
             <Button
               type="button"
               variant="secondary"
-              disabled={exitPending}
+              disabled={exitPending || !recoveryReady}
               onClick={() => void handleSaveAndExit()}
             >
               {exitPending ? "Saving before exit…" : "Save and exit"}
@@ -478,7 +485,7 @@ export function AssessmentWorkspace({
 
   return (
     <ActiveAssessmentWorkspace
-      key={`${question.attemptId}:${question.position}:${question.questionVersionId}`}
+      key={`${question.attemptId}:${question.position}`}
       view={view}
       question={question}
     />

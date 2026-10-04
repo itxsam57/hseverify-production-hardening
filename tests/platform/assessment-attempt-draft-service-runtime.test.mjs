@@ -53,7 +53,6 @@ function request(fixture, item, overrides = {}) {
   return {
     attemptId: fixture.attemptId,
     position: item.position,
-    questionVersionId: item.questionVersionId,
     value: "  server-authoritative unsaved answer  ",
     expectedRevision: null,
     mutationKey: "m208-draft-service-save-0001",
