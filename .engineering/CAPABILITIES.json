@@ -5,9 +5,12 @@
   "github_actions_visibility": "VERIFIED",
   "vps_processes": "VERIFIED",
   "local_chromium": "VERIFIED",
-  "private_ci_browser": "CONFIGURED",
+  "private_ci_browser": "VERIFIED",
   "production_deployment": "UNKNOWN",
   "live_provider_credentials": "UNAVAILABLE_IN_CURRENT_EVIDENCE",
   "owner_verification": "UNKNOWN",
-  "evidence_sha": "5fa33614608e3e735f1724639ff23c38b77dcb38"
+  "evidence_sha": "efd2abef412d93cc2912e19967a933e43c2be430",
+  "tested_pr_merge_sha": "c8f00ace13a6fc4b38be2cd564c9f686846a2247",
+  "run_id": 37196508328,
+  "artifact_id": 11301397435
 }

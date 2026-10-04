@@ -6,26 +6,23 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "5fa33614608e3e735f1724639ff23c38b77dcb38",
-  "canonical_sha": "953b5b87b4e914304ed9ea344f7889229139ad0c",
+  "last_verified_sha": "efd2abef412d93cc2912e19967a933e43c2be430",
+  "canonical_sha": "1e1ba56895c9e3c7495fa89488d4f61164d30c37",
   "requirements": [
-    "M3.09.03",
-    "M1.01.03"
+    "M3.09.01"
   ],
-  "last_verified_action": "0931aa3 local privacy/type/lint passed but review found missing downstream decline assertions; acceptance not satisfied",
+  "last_verified_action": "PR5 scoped Gatekeeper ACCEPT and merged; exact localefd privacy/type/lint and6CIchecks pass; uploaded privateCIartifact tested syntheticPRmergec8f",
   "evidence": [
-    ".autopilot/artifacts/20261004-enforced-exact-5fa3361.json",
-    ".autopilot/artifacts/20261004-accommodation-decline-probe-v2.txt"
+    ".autopilot/artifacts/20261004-factory-revision-exact-efd2abe.json",
+    "GitHub Actions37196508328 artifact11301397435"
   ],
-  "next_action": "Resolve review gap with explicit declined accommodation/overlay database assertions; rerun exact candidate browser and CI evidence before PR5 merge",
-  "revision_attempt": 1,
-  "blockers": [
-    "Gatekeeper REJECT at0931aa3: missing intended decline downstream assertions; candidate CI pending"
-  ],
+  "next_action": "Promote all-eight privacy request kinds browser intake/reasoned-rejection probe; exact checks and independent inspection; fulfilment remains partial",
+  "revision_attempt": 0,
+  "blockers": [],
   "unknowns": [
     "195 ledger scenarios unverified",
+    "privacy request fulfilment/export/deletion",
     "actual adjusted delivery",
-    "other privacy fulfilment/consent categories",
     "renewal/replacement association",
     "live adapters/production/owner verification"
   ],
