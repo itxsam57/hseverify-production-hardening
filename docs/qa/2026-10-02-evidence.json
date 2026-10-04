@@ -1914,8 +1914,9 @@
           "Verifier"
         ],
         "scenario": "Offline MCQ and written buffer/reconnect persist latest permitted answer",
-        "status": "partially-verified",
-        "evidence": "Written encrypted offline draft survives delayed reload; independent and opener-created tabs cannot erase it; server revision conflict requires explicit resolution; completed credential/appeal. MCQ offline still pending."
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261004-fixed-head-resume-results-1ee9b04.json",
+        "notes": "MCQ and written offline reload/reconnect, delayed recovery input lock, retained submitted answer, independent/opener tabs and explicit conflict resolution verified in complete credential/appeal journeys at1ee9b04. Local browser/PGlite evidence; live production persistence remains separate."
       },
       {
         "id": "M2.08.03",
@@ -2552,8 +2553,9 @@
           "Public visitor"
         ],
         "scenario": "Suspension/revocation/reassessment retain original history",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-reassessment-permanent-working.txt",
+        "notes": "Reassessment preserves original valid/reassessment-required Living Record versions through a distinct new credential. Suspension/revocation variants remain unverified."
       },
       {
         "id": "M3.02.04",
@@ -2565,8 +2567,9 @@
           "Public visitor"
         ],
         "scenario": "Renewal/replacement updates current credential without erasing former",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-reassessment-permanent-working.txt",
+        "notes": "Distinct new credential after complete reassessment, anonymous public status/PDF, original history and unseen-question separation pass. Renewal rules/current replacement association remain unverified."
       },
       {
         "id": "M3.02.05",
@@ -2630,8 +2633,9 @@
           "Company"
         ],
         "scenario": "Revoke or expire link denies previously working recipient access",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
+        "notes": "Operative scoped-consent withdrawal denies previously working anonymous recipient; unrelated link remains accessible. Expiry branch remains unverified."
       },
       {
         "id": "M3.03.05",
@@ -3035,8 +3039,9 @@
           "Assessor"
         ],
         "scenario": "Each privacy request kind reaches staff intake and reasoned completion",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
+        "notes": "Restriction Worker \u2192 Admin PROCESSING \u2192 reasoned REJECTED \u2192 Worker passed. Other request fulfilment/export/deletion remains unverified."
       },
       {
         "id": "M3.09.02",
@@ -3050,8 +3055,9 @@
           "Assessor"
         ],
         "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
+        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified."
       },
       {
         "id": "M3.09.03",
@@ -3065,8 +3071,9 @@
           "Assessor"
         ],
         "scenario": "Accommodation approved/rejected with reason and Worker outcome",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
+        "notes": "Accommodation approval with reason returns to Worker and immutable case overlay. Decline has database evidence but its browser journey remains unverified."
       },
       {
         "id": "M3.09.04",
@@ -3095,8 +3102,9 @@
           "Assessor"
         ],
         "scenario": "Consent grant/withdraw history remains versioned and need-to-know",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
+        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified."
       },
       {
         "id": "M3.09.06",
@@ -3418,6 +3426,7 @@
           "Full engineering gate and remaining Masterplan scenarios incomplete"
         ]
       }
-    ]
+    ],
+    "updated_at": "2026-10-04"
   }
 }

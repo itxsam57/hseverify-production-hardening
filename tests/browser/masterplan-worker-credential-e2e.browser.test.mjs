@@ -438,13 +438,116 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         await reassessmentDb.query("UPDATE assessment_questions SET question_status='ACTIVE',current_version_id=$2,current_content_fingerprint=$3 WHERE question_id=$1",[qid,vid,fp]);
       }
     } finally {await reassessmentDb.close();}
+    let originalCredentialId,reassessmentCaseId=null;
+    if(process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true") {
+    assert.equal(CONTENT_MODE,"COMBINED");
+    assert.equal(DELIVERY_MODE,"STRICT");
+    const oldDb=new PGlite(dbDir);
+
+    try { originalCredentialId=(await oldDb.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0].credential_reference; }
+    finally { await oldDb.close(); }
+
+    const reassessment=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/worker/login`,projectRoot:root,environment:env,
+      probe:async({output})=>{
+        const browser=await chromium.launch({headless:true,args:["--use-fake-device-for-media-stream","--use-fake-ui-for-media-stream"]});
+        const workerContext=await browser.newContext({viewport:{width:1440,height:1000},permissions:["camera","microphone"]});
+        const verifierContext=await browser.newContext({viewport:{width:1440,height:1000}});
+        const assessorContext=await browser.newContext({viewport:{width:1440,height:1000},permissions:["camera","microphone"]});
+        const adminContext=await browser.newContext({viewport:{width:1440,height:1000}});
+        const worker=await workerContext.newPage(),verifier=await verifierContext.newPage(),assessor=await assessorContext.newPage(),admin=await adminContext.newPage();
+        const errors=[];for(const p of [worker,verifier,assessor,admin]){p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>{if(m.type()==="error")errors.push(m.text());});}
+        try{
+          await login(worker,baseUrl,{email:EMAIL,password:PASSWORD},"worker");
+          await worker.goto(`${baseUrl}/worker/assessment-applications`);
+          await worker.getByRole("button",{name:"Apply — worker pays"}).click();
+          await worker.getByText("Application created. Complete the sandbox self-payment confirmation to fund the assessment.",{exact:true}).waitFor({timeout:20000});
+          await worker.getByText("Status: COMPLETED",{exact:true}).waitFor();
+          await worker.getByRole("button",{name:"Confirm sandbox payment"}).click();
+          await worker.getByText("Funding confirmed. The assessment case is ready.",{exact:true}).waitFor({timeout:20000});
+          reassessmentCaseId=(await worker.locator("article").filter({hasText:"Status: CASE CREATED"}).getByText(/^assurance_case_[A-Za-z0-9_-]{24}$/).innerText()).trim();
+          assert.match(reassessmentCaseId,/^assurance_case_[A-Za-z0-9_-]{24}$/);
+          await worker.getByRole("link",{name:"Continue to available assessments"}).click();
+          await worker.waitForURL("**/worker/available-assessments",{timeout:20000});
+          const eligibleHeading=worker.getByRole("region",{name:"Eligible assessment offerings"}).getByRole("heading",{name:"End-to-End Worker Assessment"});
+          try {
+            await eligibleHeading.waitFor({timeout:20000});
+          } catch (error) {
+            throw new Error("Available-assessments page did not expose the funded case. URL="+worker.url()+"\nBODY:\n"+await worker.locator("body").innerText(),{cause:error});
+          }
+          await worker.getByRole("button",{name:"Start assessment"}).click();await worker.waitForURL(/\/precheck\?/,{timeout:15000});
+          await worker.getByRole("button",{name:"Run device checks"}).click();await worker.getByText("Device checks completed.",{exact:true}).waitFor({timeout:15000});await worker.getByLabel("I confirm I am the Worker assigned to this assessment.").check();await worker.getByLabel(/I confirm my environment is suitable/).check();await worker.getByLabel(/I consent to the monitoring signals/).check();await worker.getByRole("button",{name:"Begin assessment"}).click();await worker.waitForURL(/\/worker\/assessments\/assessment_attempt_/,{timeout:20000});
+          const attemptId=worker.url().split("/").pop();
+          await worker.getByText("Fresh reassessment MULTIPLE_CHOICE question: identify and control the hazard.",{exact:false}).waitFor();
+          await assertCandidateQuestionBoundary(worker);
+          await worker.getByLabel(MCQ_ANSWER).check();
+          await worker.getByRole("button",{name:"Next",exact:true}).click();
+          await worker.getByText("Fresh reassessment SHORT_TEXT question: identify and control the hazard.",{exact:false}).waitFor();
+          await worker.getByLabel("Your answer").fill("Stop work, isolate the hazard, verify controls, and restart only after authorization.");
+          await worker.getByRole("button",{name:"Submit assessment",exact:true}).click();
+          await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:20000});
+          if(CONTENT_MODE!=="MCQ_ONLY") {
+          await login(verifier,baseUrl,credentials.verifier,"verifier");await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);let scoreRow=verifier.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await scoreRow.waitFor({timeout:20000});await scoreRow.locator('input[name="score"]').fill("92");await scoreRow.locator('select[name="decision"]').selectOption("PASS");await scoreRow.locator('textarea[name="reason"]').fill("Written response demonstrates correct hazard isolation and verification sequence.");await scoreRow.getByRole("button",{name:"Save scoring decision"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await scoreRow.getByPlaceholder("Criterion").fill("Hazard control reasoning");await scoreRow.locator('input[name="mark"]').fill("92");await scoreRow.getByRole("button",{name:"Save mark"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await scoreRow.getByRole("button",{name:"Finalize review"}).click();
+
+          }
+          await login(admin,baseUrl,credentials.admin,"admin");
+          await admin.goto(`${baseUrl}/admin/assessor-matching`,{waitUntil:"domcontentloaded"});
+          const unassignedCard=admin.locator("article").filter({hasText:"Masterplan Worker"}).first();
+          if(await unassignedCard.count()){
+            await unassignedCard.getByRole("button",{name:"Run automatic match"}).click();
+            await admin.waitForURL(/\/admin\/assessor-matching\?result=/,{timeout:20000});
+            const matchingStatus=await admin.getByRole("status").innerText();
+            assert.match(matchingStatus,/assigned to the highest-ranked eligible Assessor/i,matchingStatus);
+          }
+
+          await login(assessor,baseUrl,credentials.assessor,"assessor");await assessor.goto(`${baseUrl}/assessor/interviews`);let interviewRow=assessor.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();try{await interviewRow.waitFor({timeout:20000});}catch(error){throw new Error("Interview handoff missing after finalized review.\nVERIFIER:\n"+await verifier.locator("body").innerText()+"\nADMIN MATCHING:\n"+await admin.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}const href=await interviewRow.getByRole("link",{name:"Open interview console"}).getAttribute("href");assert.ok(href);const interviewId=href.split("/").pop();const schedule=new Date(Date.now()+5*60_000).toISOString().slice(0,16);await interviewRow.getByLabel("Interview time").fill(schedule);await interviewRow.getByRole("button",{name:"Schedule"}).click();await assessor.reload();interviewRow=assessor.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await interviewRow.getByText(/ASSIGNED/).waitFor();
+
+          await worker.goto(`${baseUrl}/worker/interviews/${interviewId}`);await worker.getByRole("button",{name:"Enter waiting room"}).click();await worker.getByRole("button",{name:"Check camera, microphone & connection"}).click();await worker.getByText("Camera, microphone and connection checks passed.",{exact:true}).waitFor({timeout:20000});await worker.getByLabel("I confirm I am the Worker assigned to this interview.").check();await worker.getByRole("button",{name:"Ready for Interview"}).click();await worker.getByText(/Ready checks and required consent are recorded/).waitFor({timeout:20000});
+
+          await assessor.goto(`${baseUrl}${href}`);await assessor.getByRole("button",{name:"Claim interview"}).click();await assessor.getByRole("button",{name:"Admit ready Worker"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Admit ready Worker"}).click();await assessor.getByRole("button",{name:"Start interview"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Start interview"}).click();await assessor.getByLabel(/I allow this browser to use my camera and microphone/).check();await assessor.getByRole("button",{name:"Enable camera & microphone"}).click();await assessor.getByText("Waiting for worker to join",{exact:true}).waitFor({timeout:20000});
+          await assessor.getByLabel("Assessor follow-up question").fill("Describe how you would verify the area remains controlled before restart.");await assessor.getByRole("button",{name:"Add versioned follow-up"}).click();await assessor.getByLabel("Pause reason").fill("Controlled pause to verify the candidate connection.");await assessor.getByRole("button",{name:"Pause interview"}).click();await assessor.getByRole("button",{name:"Resume interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"Resume interview"}).click();
+          for(const label of ["Technical knowledge","Practical reasoning","Safety awareness","Communication","Consistency with written answers","Confidence / clarity","Trade judgment"])await assessor.getByLabel(label).fill("5");
+          await assessor.getByLabel("Notes",{exact:true}).fill("Candidate consistently explained controlled isolation and verification.");await assessor.getByLabel("Scorecard comments").fill("Strong evidence-based interview.");await assessor.locator('select[name="recommendation"]').selectOption("PASS");await assessor.getByRole("button",{name:"Save draft"}).click();await assessor.waitForFunction(()=>document.querySelector('select[name="recommendation"]')?.value==="PASS");await assessor.getByRole("button",{name:"End interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"End interview"}).click();await assessor.getByRole("button",{name:"Submit final recommendation"}).waitFor({timeout:15000});const finalForm=assessor.getByRole("button",{name:"Submit final recommendation"}).locator("xpath=ancestor::form");const validity=await finalForm.evaluate((form)=>({valid:form.checkValidity(),invalid:[...form.querySelectorAll(":invalid")].map((el)=>({name:el.getAttribute("name"),value:(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||el instanceof HTMLSelectElement)?el.value:null}))}));assert.equal(validity.valid,true,"Final interview form invalid: "+JSON.stringify(validity.invalid));await assessor.getByRole("button",{name:"Submit final recommendation"}).click();try{await assessor.getByText(/Final interview record submitted and locked/).waitFor({timeout:20000});}catch(error){throw new Error("Final recommendation transaction failed.\nASSESSOR:\n"+await assessor.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
+
+          await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${reassessmentCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});
+
+          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText("End-to-End Worker Assessment",{exact:true}).first().waitFor({timeout:20000});await worker.getByText(/valid · no expiry recorded/i).waitFor();
+          await worker.goto(`${baseUrl}/worker/appeals`);const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:"End-to-End Worker Assessment"});const credentialId=(await credentialOption.evaluateAll(options=>options.map(option=>option.value))).find(id=>id!==originalCredentialId);assert.ok(credentialId?.startsWith("credential_id_"));
+          const publicContext=await browser.newContext();const publicPage=await publicContext.newPage();const publicResponse=await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});assert.equal(publicResponse?.status(),200);await publicPage.getByText("End-to-End Worker Assessment",{exact:true}).waitFor();const publicApi=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}`);assert.equal(publicApi.status(),200);assert.equal((await publicApi.json()).status,"valid");
+          const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);assert.ok((await pdf.body()).subarray(0,8).toString().startsWith("%PDF-1.4"));await publicContext.close();
+
+
+          assert.deepEqual(errors,[],`Reassessment browser errors:\n${errors.join("\n")}\n${output()}`);
+          console.log("JOURNEY: completed reassessment and second credential", reassessmentCaseId, credentialId);
+        } finally {await workerContext.close();await verifierContext.close();await assessorContext.close();await adminContext.close();await browser.close();}
+      }
+    });assert.equal(reassessment.requestedSignal,"SMOKE_COMPLETE");
+
+    } else {
     const reassessment=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/worker/login`,projectRoot:root,environment:env,
       probe:async()=>{const browser=await chromium.launch({headless:true});try{const page=await browser.newPage();await login(page,baseUrl,{email:EMAIL,password:PASSWORD},"worker");await page.goto(`${baseUrl}/worker/assessment-applications`);
         await page.getByRole("button",{name:"Apply — worker pays"}).click();await page.getByText("Application created. Complete the sandbox self-payment confirmation to fund the assessment.",{exact:true}).waitFor({timeout:20000});
         await page.getByText("Status: COMPLETED",{exact:true}).waitFor();await page.getByText("Status: PAYMENT REQUIRED",{exact:true}).waitFor();
       } finally {await browser.close();}}});assert.equal(reassessment.requestedSignal,"SMOKE_COMPLETE");
 
+    }
+
     const verify=new PGlite(dbDir);try{
+      if(process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true") {
+        assert.ok(reassessmentCaseId,"Reassessment never reached its own case.");
+        const replacementCase=(await verify.query("SELECT case_status,credential_reference FROM assurance_cases WHERE case_id=$1",[reassessmentCaseId])).rows[0];
+        assert.equal(replacementCase.case_status,"Approved");
+        assert.ok(replacementCase.credential_reference);
+        assert.notEqual(replacementCase.credential_reference,originalCredentialId);
+        const replacementLiving=(await verify.query("SELECT v.status FROM living_record_competencies c JOIN living_record_versions v ON v.competency_id=c.competency_id WHERE c.source_credential_id=$1 ORDER BY v.version",[replacementCase.credential_reference])).rows;
+        assert.equal(replacementLiving.at(-1)?.status,"valid");
+        const forms=(await verify.query("SELECT attempts.case_id,items.question_id FROM assessment_attempts attempts JOIN generated_assessment_form_items items ON items.form_id=attempts.form_id WHERE attempts.case_id=ANY($1::text[])",[[journeyCaseId,reassessmentCaseId]])).rows;
+        const priorQuestions=new Set(forms.filter(row=>row.case_id===journeyCaseId).map(row=>row.question_id));
+        const freshQuestions=forms.filter(row=>row.case_id===reassessmentCaseId);
+        assert.equal(freshQuestions.length,2);
+        assert.ok(freshQuestions.every(row=>!priorQuestions.has(row.question_id)),"Reassessment repeated an exposed question.");
+        const replacementOrder=(await verify.query("SELECT order_status FROM assurance_orders WHERE order_id=(SELECT order_id FROM assurance_cases WHERE case_id=$1)",[reassessmentCaseId])).rows[0];
+        assert.equal(replacementOrder.order_status,"COMPLETED");
+      }
       assert.ok(journeyCaseId,"Preserved Worker journey did not expose its Assurance Case ID.");
       const c=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0];assert.equal(c.case_status,"Approved");assert.ok(c.decision_reference);assert.ok(c.credential_reference);
       if(process.env.HSE_MASTERPLAN_RECOVERY_MODE === "replacement") {
