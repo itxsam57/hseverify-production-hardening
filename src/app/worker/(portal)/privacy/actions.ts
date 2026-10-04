@@ -45,4 +45,5 @@ export async function withdrawConsentAction(formData: FormData) {
     reason
   });
   revalidatePath("/worker/privacy");
+  revalidatePath("/worker/share-links");
 }
