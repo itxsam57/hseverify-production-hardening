@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
@@ -84,6 +85,12 @@ test("consent history is versioned, withdrawable only prospectively and append-o
     const worker = "account_privacy_worker_01";
     await seedAccount(db, worker, "privacy-worker-01@example.test", "worker");
     const caseOne = await seedCase(db, "a", worker);
+    const workerRef = oid("worker_id", "u");
+    await db.query("UPDATE auth_accounts SET worker_reference=$2 WHERE account_id=$1", [worker,workerRef]);
+    await db.query(
+      "INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES($1,$2,$3::jsonb,$4,$5,$6)",
+      ["share_test_01",workerRef,JSON.stringify(["workerId"]),"Optional selected passport sharing",NOW,"n".repeat(64)]
+    );
     const service = new ConsentRecordService(Promise.resolve(db));
 
     const granted = await service.grant({
@@ -295,5 +302,95 @@ test("privacy review rejects stale decisions, rolls back missing reviewers, and 
     await assert.rejects(() => db.query("DELETE FROM privacy_request_reviews WHERE request_id=$1", [input.requestId]), /append-only/);
     const owned = await service.listWorkerPrivacy(null, worker, worker);
     assert.equal(owned.requests[0].review_reason, "Required evidence is retained for the active assessment.");
+  } finally { await db.close(); }
+});
+
+test("scoped sharing withdrawal revokes only its owned link atomically and preserves other grants", async () => {
+  const db = await database();
+  try {
+    const worker = "account_withdrawal_owner";
+    const other = "account_withdrawal_other";
+    const workerRef = oid("worker_id", "v");
+    const otherRef = oid("worker_id", "w");
+    await seedAccount(db, worker, "withdrawal-owner@example.test", "worker");
+    await seedAccount(db, other, "withdrawal-other@example.test", "worker");
+    await db.query("UPDATE auth_accounts SET worker_reference=$2 WHERE account_id=$1", [worker,workerRef]);
+    await db.query("UPDATE auth_accounts SET worker_reference=$2 WHERE account_id=$1", [other,otherRef]);
+    for (const [linkId,owner] of [["withdrawal-link-one",workerRef],["withdrawal-link-two",workerRef],["withdrawal-link-other",otherRef]]) {
+      await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES($1,$2,'[\"workerId\"]'::jsonb,'Optional employer sharing',$3,$4)", [linkId,owner,NOW,"n".repeat(64)]);
+    }
+    const service = new ConsentRecordService(Promise.resolve(db));
+    const grant = await service.grant({ workerId:worker,actorAccountId:worker,consentType:"scoped_share_links",purpose:"Optional sharing for onboarding.",metadata:{shareLinkId:"withdrawal-link-one"},now:new Date(NOW) });
+    await assert.rejects(() => service.withdraw({workerId:worker,actorAccountId:worker,consentId:grant.consentId,reason:"Withdraw this optional employer link.",now:new Date("2026-09-30T00:00:00Z")}), /predate|unavailable/);
+    const withdrawn = await service.withdraw({workerId:worker,actorAccountId:worker,consentId:grant.consentId,reason:"Withdraw this optional employer link.",now:new Date("2026-10-02T00:00:00Z")});
+    assert.equal(withdrawn.action,"WITHDRAWN");
+    const links = await db.query("SELECT share_link_id,revoked_at FROM scoped_share_links ORDER BY share_link_id");
+    assert.ok(links.rows.find(row => row.share_link_id === "withdrawal-link-one").revoked_at);
+    assert.equal(links.rows.find(row => row.share_link_id === "withdrawal-link-two").revoked_at,null);
+    assert.equal(links.rows.find(row => row.share_link_id === "withdrawal-link-other").revoked_at,null);
+    await service.withdraw({workerId:worker,actorAccountId:worker,consentId:grant.consentId,reason:"Repeat the same withdrawal safely."});
+    assert.equal((await service.listWorkerHistory(worker)).filter(row => row.consentId === grant.consentId).length,2);
+    const secondGrant = await service.grant({workerId:worker,actorAccountId:worker,consentType:"scoped_share_links",purpose:"Keep this independent sharing grant.",metadata:{shareLinkId:"withdrawal-link-two"}});
+    await assert.rejects(() => service.withdraw({workerId:worker,actorAccountId:"missing-withdrawal-actor",consentId:secondGrant.consentId,reason:"Force a failed history append after link update."}));
+    assert.equal((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='withdrawal-link-two'")).rows[0].revoked_at,null);
+    assert.equal((await service.listWorkerHistory(worker)).filter(row => row.consentId === secondGrant.consentId).length,1);
+    for (const metadata of [{shareLinkId:"withdrawal-link-other"},{shareLinkId:"missing-link"},{}]) {
+      const invalid = await service.grant({ workerId:worker,actorAccountId:worker,consentType:"scoped_share_links",purpose:"Invalid linked sharing request.",metadata });
+      await assert.rejects(() => service.withdraw({workerId:worker,actorAccountId:worker,consentId:invalid.consentId,reason:"Reject an unowned or missing shared link."}), /link|sharing/);
+      assert.equal((await service.listWorkerHistory(worker)).filter(row => row.consentId === invalid.consentId).length,1);
+    }
+  } finally { await db.close(); }
+});
+
+test("historical withdrawn scoped consent reconciles owned access despite future link creation", async () => {
+  const db = await database();
+  try {
+    const worker = "account_historical_withdrawal";
+    const workerRef = oid("worker_id", "z");
+    await seedAccount(db, worker, "historical-withdrawal@example.test", "worker");
+    await db.query("UPDATE auth_accounts SET worker_reference=$2 WHERE account_id=$1", [worker,workerRef]);
+    await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('historical-link',$1,'[\"workerId\"]'::jsonb,'Historical sharing','2099-01-01',$2)", [workerRef,"n".repeat(64)]);
+    const service = new ConsentRecordService(Promise.resolve(db));
+    const granted = await service.grant({workerId:worker,actorAccountId:worker,consentType:"scoped_share_links",purpose:"Historical scoped sharing consent.",metadata:{shareLinkId:"historical-link"},now:new Date(NOW)});
+    const input = {workerId:worker,actorAccountId:worker,consentId:granted.consentId,reason:"Immediately stop optional sharing.",now:new Date("2026-10-02T00:00:00Z")};
+    const withdrawn = await service.withdraw(input);
+    assert.equal(withdrawn.action,"WITHDRAWN");
+    await db.query("UPDATE scoped_share_links SET revoked_at=NULL WHERE share_link_id='historical-link'");
+    await service.withdraw(input);
+    assert.ok((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='historical-link'")).rows[0].revoked_at);
+    assert.equal((await service.listWorkerHistory(worker)).length,2);
+  } finally { await db.close(); }
+});
+test("previously withdrawn scoped consent repairs still-active access", async () => {
+  const db = await database();
+  try {
+    const worker = "account_historical_withdrawal";
+    const workerRef = oid("worker_id", "z");
+    await seedAccount(db, worker, "historical-withdrawal@example.test", "worker");
+    await db.query("UPDATE auth_accounts SET worker_reference=$2 WHERE account_id=$1", [worker,workerRef]);
+    await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('historical-link',$1,'[\"workerId\"]'::jsonb,'Historical sharing','2026-10-01',$2)", [workerRef,"n".repeat(64)]);
+    await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('unowned-historical-link',$1,'[\"workerId\"]'::jsonb,'Unowned sharing','2026-10-01',$2),('unrelated-active-link',$3,'[\"workerId\"]'::jsonb,'Other active sharing','2026-10-01',$2)", [oid("worker_id","y"),"n".repeat(64),workerRef]);
+    const service = new ConsentRecordService(Promise.resolve(db));
+    const granted = await service.grant({workerId:worker,actorAccountId:worker,consentType:"scoped_share_links",purpose:"Historical scoped sharing consent.",metadata:{shareLinkId:"historical-link"},now:new Date(NOW)});
+    const input = {workerId:worker,actorAccountId:worker,consentId:granted.consentId,reason:"Immediately stop optional sharing.",now:new Date("2026-10-02T00:00:00Z")};
+    await db.query(`INSERT INTO privacy_consent_records(consent_id,version,worker_id,consent_type,purpose,actor_account_id,action,withdrawal_rule,metadata,recorded_at)
+      SELECT consent_id,2,worker_id,consent_type,purpose,actor_account_id,'WITHDRAWN',withdrawal_rule,metadata,'2026-10-02'
+      FROM privacy_consent_records WHERE consent_id=$1 AND version=1`, [granted.consentId]);
+    const unowned = await service.grant({workerId:worker,actorAccountId:worker,consentType:"scoped_share_links",purpose:"Do not revoke another Worker link.",metadata:{shareLinkId:"unowned-historical-link"},now:new Date(NOW)});
+    await db.query(`INSERT INTO privacy_consent_records(consent_id,version,worker_id,consent_type,purpose,actor_account_id,action,withdrawal_rule,metadata,recorded_at)
+      SELECT consent_id,2,worker_id,consent_type,purpose,actor_account_id,'WITHDRAWN',withdrawal_rule,metadata,'2026-10-02'
+      FROM privacy_consent_records WHERE consent_id=$1 AND version=1`, [unowned.consentId]);
+    await db.execute(await readFile("database/migrations/0079_scoped_consent_withdrawal_reconciliation.up.sql", "utf8"));
+    assert.ok((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='historical-link'")).rows[0].revoked_at);
+    await db.execute(await readFile("database/migrations/0079_scoped_consent_withdrawal_reconciliation.up.sql", "utf8"));
+    assert.equal((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='unowned-historical-link'")).rows[0].revoked_at,null);
+    assert.equal((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='unrelated-active-link'")).rows[0].revoked_at,null);
+    const withdrawn = await service.withdraw(input);
+    assert.ok((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='historical-link'")).rows[0].revoked_at);
+    assert.equal(withdrawn.action,"WITHDRAWN");
+    await db.query("UPDATE scoped_share_links SET revoked_at=NULL WHERE share_link_id='historical-link'");
+    await service.withdraw(input);
+    assert.ok((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='historical-link'")).rows[0].revoked_at);
+    assert.equal((await service.listWorkerHistory(worker)).filter(row => row.consentId === granted.consentId).length,2);
   } finally { await db.close(); }
 });

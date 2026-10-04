@@ -138,6 +138,12 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
         const admin = await adminContext.newPage();
         try {
           await login(worker, baseUrl, credentials.worker, "worker");
+          await worker.route("**/api/share-links", async (route) => {
+            if (route.request().method() !== "POST") return route.continue();
+            const body = route.request().postDataJSON();
+            await route.continue({ postData: JSON.stringify({ ...body, createdAt: "2099-01-01T00:00:00.000Z" }) });
+          });
+
 
           await worker.goto(baseUrl + "/worker/privacy", { waitUntil: "domcontentloaded" });
           await worker.getByLabel("Privacy request type").selectOption("restriction");
@@ -154,6 +160,32 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
           await worker.getByRole("button", { name: "Create secure link" }).click();
           await worker.getByText("Share link created.", { exact: false }).waitFor({ timeout: 15_000 });
 
+          const shareUrl = await worker.getByRole("link", { name: "Open secure share link" }).getAttribute("href");
+          assert.ok(shareUrl);
+          await worker.getByLabel("Purpose").fill("Separate optional sharing remains active");
+          await worker.getByRole("button", { name: "Create secure link" }).click();
+          await worker.waitForFunction(previous => {
+            const href = document.querySelector('section[aria-label="New secure share link"] a')?.getAttribute("href");
+            return typeof href === "string" && href !== previous;
+          }, shareUrl);
+          const otherShareUrl = await worker.getByRole("link", { name: "Open secure share link" }).getAttribute("href");
+          assert.ok(otherShareUrl);
+          assert.notEqual(otherShareUrl, shareUrl);
+          const publicContext = await browser.newContext();
+          try {
+            const recipient = await publicContext.newPage();
+            await recipient.goto(baseUrl + shareUrl);
+            await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor({ timeout: 10_000 });
+            await worker.goto(baseUrl + "/worker/privacy");
+            const consentCard = worker.locator("article").filter({ hasText: "Employer onboarding evidence" }).first();
+            await consentCard.getByLabel("Withdrawal reason").fill("Withdraw optional employer onboarding sharing.");
+            await consentCard.getByRole("button", { name: "Withdraw future processing consent" }).click();
+            await consentCard.getByText(/Status: WITHDRAWN/).waitFor({ timeout: 10_000 });
+            await recipient.goto(baseUrl + shareUrl);
+            await recipient.getByRole("heading", { name: "Share link unavailable", exact: true }).waitFor({ timeout: 5_000 });
+            await recipient.goto(baseUrl + otherShareUrl);
+            await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor({ timeout: 5_000 });
+          } finally { await publicContext.close(); }
           await worker.goto(baseUrl + "/admin/privacy", { waitUntil: "domcontentloaded" });
           await worker.waitForURL("**/access-denied", { timeout: 15_000 });
           assert.equal(await worker.getByRole("heading", { name: "Privacy requests", exact: true }).count(), 0);
@@ -225,10 +257,18 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
       assert.equal(Number(overlay.rows[0]?.adjustment?.timeMultiplier), 1.5);
       assert.equal(Boolean(overlay.rows[0]?.adjustment?.captions), true);
       const consent = await db.query(
-        "SELECT consent_type,action FROM privacy_consent_records WHERE worker_id=$1 AND consent_type='scoped_share_links'",
+        "SELECT consent_type,action FROM privacy_consent_records WHERE worker_id=$1 AND consent_type='scoped_share_links' AND metadata->>'sharePurpose'='Employer onboarding evidence' ORDER BY version",
         [credentials.worker.accountId]
       );
-      assert.equal(consent.rows[0]?.action, "GRANTED");
+      assert.deepEqual(consent.rows.map(row => row.action), ["GRANTED", "WITHDRAWN"]);
+      const links = await db.query("SELECT revoked_at,created_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
+      assert.ok(new Date(links.rows[0].created_at).getTime() < new Date("2099-01-01").getTime(), "Creation retained a future client timestamp.");
+      assert.ok(links.rows[0]?.revoked_at, "Withdrawal did not revoke the linked shared passport.");
+      const otherLink = await db.query("SELECT revoked_at FROM scoped_share_links WHERE purpose='Separate optional sharing remains active'");
+      assert.equal(otherLink.rows[0]?.revoked_at, null, "Withdrawal also revoked unrelated sharing consent.");
+      const accesses = await db.query("SELECT outcome,reason FROM scoped_share_access_logs WHERE share_link_id=(SELECT share_link_id FROM scoped_share_links WHERE purpose='Employer onboarding evidence') ORDER BY accessed_at");
+      assert.equal(accesses.rows.at(-1)?.outcome, "denied");
+      assert.equal(accesses.rows.at(-1)?.reason, "revoked");
     } finally {
       await db.close();
     }

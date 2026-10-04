@@ -70,6 +70,9 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
             <div>
               <strong>{consent.consentType.replaceAll("_", " ")}</strong>
               <p>{consent.purpose}</p>
+              {typeof consent.metadata.sharePurpose === "string" ? (
+                <p>Share link purpose: {consent.metadata.sharePurpose}</p>
+              ) : null}
               <p>Status: {consent.action} · Version {consent.version}</p>
               {consent.caseId ? <p>Case: {consent.caseId}</p> : null}
             </div>

@@ -34,8 +34,8 @@ export async function POST(request: Request) {
       : undefined;
 
   const purpose = body.purpose;
-  const createdAt = body.createdAt;
-  if (!fields || !purpose || !createdAt) {
+  const createdAt = new Date().toISOString();
+  if (!fields || !purpose) {
     return NextResponse.json({ error: "invalid_share_link_request" }, { status: 400 });
   }
 
