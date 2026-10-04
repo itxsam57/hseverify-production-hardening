@@ -223,6 +223,21 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
           const approved = worker.locator("article").filter({ hasText: "Extra reading time and captions" }).first();
           await approved.getByText("Status: APPROVED", { exact: true }).waitFor({ timeout: 15_000 });
           await approved.getByText(caseId, { exact: false }).waitFor();
+          await worker.getByLabel("Accommodation request").fill("Alternative delivery decline verification");
+          await worker.getByRole("button",{name:"Submit accommodation",exact:true}).click();
+          await worker.locator("article").filter({hasText:"Alternative delivery decline verification"}).getByText("Status: REQUESTED",{exact:true}).waitFor();
+          await admin.reload();
+          const declineCard=admin.locator("article").filter({hasText:"Alternative delivery decline verification"});
+          assert.equal(await declineCard.count(),1,"Decline request did not reach staff intake: "+await admin.locator("body").innerText());
+          await declineCard.locator('select[name="decision"]').selectOption("DECLINED");
+          await declineCard.getByLabel("Review reason",{exact:true}).fill("This request is declined because the requested format does not meet the assessment accessibility need.");
+          await declineCard.getByRole("button",{name:"Save accommodation decision",exact:true}).click();
+          await declineCard.getByText("Status: DECLINED",{exact:true}).waitFor();
+          await worker.reload();
+          const declinedWorkerCard=worker.locator("article").filter({hasText:"Alternative delivery decline verification"});
+          await declinedWorkerCard.getByText("Status: DECLINED",{exact:true}).waitFor();
+          await declinedWorkerCard.getByText("Review outcome: This request is declined because the requested format does not meet the assessment accessibility need.",{exact:true}).waitFor();
+
           await worker.getByText("scoped share links", { exact: true }).first().waitFor({ timeout: 15_000 });
           await worker.getByText("GRANTED", { exact: false }).first().waitFor();
         } finally {
@@ -245,7 +260,7 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
       assert.deepEqual(history.rows.map(row => [row.from_status, row.to_status]), [["OPEN", "PROCESSING"], ["PROCESSING", "REJECTED"]]);
       assert.ok(history.rows.every(row => row.reviewer_account_id === credentials.admin.accountId && row.reason.length >= 10));
       const accommodation = await db.query(
-        "SELECT status,case_id,approved_adjustment FROM accessibility_accommodations WHERE worker_id=$1",
+        "SELECT status,case_id,approved_adjustment FROM accessibility_accommodations WHERE worker_id=$1 AND accommodation_type='Extra reading time and captions'",
         [credentials.worker.accountId]
       );
       assert.equal(accommodation.rows[0]?.status, "APPROVED");
@@ -254,6 +269,21 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
         "SELECT adjustment FROM assurance_case_accommodation_overlays WHERE case_id=$1",
         [caseId]
       );
+      const declined = await db.query(
+        "SELECT accommodation_id,status,review_reason,case_id,approved_adjustment FROM accessibility_accommodations WHERE worker_id=$1 AND accommodation_type='Alternative delivery decline verification'",
+        [credentials.worker.accountId]
+      );
+      assert.equal(declined.rows.length,1);
+      assert.equal(declined.rows[0].status,"DECLINED");
+      assert.match(declined.rows[0].review_reason,/declined because/);
+      assert.equal(declined.rows[0].case_id,null);
+      assert.equal(declined.rows[0].approved_adjustment,null);
+      const declinedOverlays = await db.query(
+        "SELECT overlay_id FROM assurance_case_accommodation_overlays WHERE accommodation_id=$1",
+        [declined.rows[0].accommodation_id]
+      );
+      assert.equal(declinedOverlays.rows.length,0,"Declined accommodation created a delivery overlay.");
+      assert.equal(overlay.rows.length,1,"The approved case gained an unexpected accommodation overlay.");
       assert.equal(Number(overlay.rows[0]?.adjustment?.timeMultiplier), 1.5);
       assert.equal(Boolean(overlay.rows[0]?.adjustment?.captions), true);
       const consent = await db.query(

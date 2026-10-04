@@ -155,3 +155,9 @@ Independent review found that historical WITHDRAWN records left active links and
 
 ### Reassessment continuation and enforced journeys
 The expanded browser probe completes the accepted-appeal reassessment through sandbox funding, unseen assessment, human scoring, candidate interview, approved decision, distinct credential, anonymous public status and PDF. The permanent continuation additionally asserts question separation, completed order, new valid Living Record and retained original valid/reassessment-required history. It is invoked by `npm run test:masterplan-reassessment-browser`; this and the operative privacy journey now join the critical browser gate. This is evidence for a distinct credential after reassessment, not an assertion that renewal policy, replacement association or all lifecycle variants are complete.
+
+### Accommodation decline and canonical CI continuity
+The real browser decline branch passes after correcting an over-exact label selector in the probe. The Worker receives the reason; the declined request has no approved adjustment or case, and the existing approved overlay remains the only overlay. No product repair was needed.
+The Masterplan workflow's PR filter incorrectly pointed to the older default QA branch. It now points to canonical QA and calls reusable exact-SHA private browser reassessment evidence. Durable factory state records requirements, capabilities, explicit limits and next action, preserving existing guarded Autopilot state. Actual adjusted delivery and whole Masterplan acceptance remain open.
+
+Review correction: the first decline probe/permanent test had UI proof but the intended downstream decline assertion insertion did not apply. Review rejected0931aa3; revision adds explicit declined accommodation ID/status/reason/null case/null adjustment/zero overlay plus one approved overlay assertion. The earlier no-adjustment claim was premature pending this corrected run.

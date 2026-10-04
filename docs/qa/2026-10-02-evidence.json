@@ -3071,9 +3071,9 @@
           "Assessor"
         ],
         "scenario": "Accommodation approved/rejected with reason and Worker outcome",
-        "status": "partially-verified",
-        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Accommodation approval with reason returns to Worker and immutable case overlay. Decline has database evidence but its browser journey remains unverified."
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261004-decline-review-revision-working.txt",
+        "notes": "Actual approval and decline browser reasons return to Worker; corrected downstream assertions prove declined ID has null case/adjustment and zero overlays, approved case retains exactly one overlay. Actual adjusted delivery remains separately unverified in M3.09.04."
       },
       {
         "id": "M3.09.04",

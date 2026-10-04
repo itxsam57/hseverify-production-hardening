@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "canonical_branch": "qa/masterplan-completion-20260926",
+  "workflow": ".github/workflows/masterplan-completion-qa.yml",
+  "reusable_workflow": ".github/workflows/engineering-factory.yml",
+  "commands": [
+    {
+      "command": "npm ci --no-audit --no-fund",
+      "provenance": "VERIFIED_METADATA"
+    },
+    {
+      "command": "npm run typecheck",
+      "provenance": "VERIFIED_METADATA"
+    },
+    {
+      "command": "npm run lint",
+      "provenance": "VERIFIED_METADATA"
+    },
+    {
+      "command": "npm run test:masterplan-reassessment-browser",
+      "provenance": "VERIFIED_METADATA"
+    },
+    {
+      "command": "npm run test:privacy-operations-browser",
+      "provenance": "VERIFIED_METADATA"
+    }
+  ],
+  "stage_advancement": "Manager only; workflow evidence never certifies whole acceptance"
+}

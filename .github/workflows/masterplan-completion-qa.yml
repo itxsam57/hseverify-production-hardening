@@ -12,9 +12,10 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/masterplan-completion-qa.yml"
+      - ".github/workflows/engineering-factory.yml"
   pull_request:
     branches:
-      - qa/hse-production-hardening
+      - qa/masterplan-completion-20260926
   workflow_dispatch:
 
 permissions:
@@ -25,6 +26,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  reassessment-continuation:
+    uses: ./.github/workflows/engineering-factory.yml
+
   targeted:
     runs-on: ubuntu-latest
     timeout-minutes: 40
