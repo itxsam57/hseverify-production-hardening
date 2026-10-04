@@ -89,6 +89,9 @@ test("Worker completes registration, identity, evidence, passport, privacy and s
           await page.getByLabel("Mobile phone").fill(PHONE);
           await page.getByLabel("Create password").fill(PASSWORD);
           await page.getByLabel("Confirm password").fill(PASSWORD);
+          await page.getByLabel("Country", { exact: true }).fill("Pakistan");
+          await page.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true }).check();
+          await page.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true }).check();
           await page.getByRole("button", { name: "Create Worker account" }).click();
           await page.waitForURL(/\/worker\/register\/verify/, { timeout: 15_000 });
 

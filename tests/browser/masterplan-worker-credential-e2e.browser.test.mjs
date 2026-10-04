@@ -52,6 +52,9 @@ async function phaseOne(baseUrl,environment,credentials){
         await worker.getByLabel("Full name").fill("Masterplan Worker");
         await worker.getByLabel("Email address").fill(EMAIL);await worker.getByLabel("Mobile phone").fill(PHONE);
         await worker.getByLabel("Create password").fill(PASSWORD);await worker.getByLabel("Confirm password").fill(PASSWORD);
+        await worker.getByLabel("Country", { exact: true }).fill("Pakistan");
+        await worker.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true }).check();
+        await worker.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true }).check();
         await worker.getByRole("button",{name:"Create Worker account"}).click();
         await worker.waitForURL(/\/worker\/register\/verify/,{timeout:15000});
         const emailCode=await sandboxCode(worker,baseUrl,"email",EMAIL);

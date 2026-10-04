@@ -11,8 +11,9 @@ import {
 import styles from "@/app/worker/register/registration.module.css";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/feedback";
-import { Field, Input } from "@/components/ui/field";
+import { CheckboxField, Field, Input } from "@/components/ui/field";
 import { PRODUCT_COPY } from "@/config/product-copy";
+import { WORKER_REGISTRATION_POLICY } from "@/lib/auth/worker-registration-policy";
 
 const INITIAL_STATE: RegistrationActionState = {
   error: null,
@@ -36,6 +37,19 @@ export function WorkerRegistrationForm({
     startWorkerRegistration,
     INITIAL_STATE
   );
+  const [draft, setDraft] = useState({
+    displayName: "", email: "", phone: "", country: "",
+    password: "", confirmPassword: "", companyCode: "",
+    termsAccepted: false, privacyAccepted: false
+  });
+  function updateText(event: React.ChangeEvent<HTMLInputElement>): void {
+    const { name, value } = event.currentTarget;
+    setDraft(current => ({ ...current, [name]: value }));
+  }
+  function updateAcceptance(event: React.ChangeEvent<HTMLInputElement>): void {
+    const { name, checked } = event.currentTarget;
+    setDraft(current => ({ ...current, [name]: checked }));
+  }
   const errors = state.fieldErrors ?? {};
   const copy = PRODUCT_COPY.workerRegistration;
 
@@ -58,6 +72,8 @@ export function WorkerRegistrationForm({
             aria-invalid={Boolean(errors.displayName)}
             autoComplete="name"
             id="displayName"
+            value={draft.displayName}
+            onChange={updateText}
             maxLength={120}
             name="displayName"
             required
@@ -70,6 +86,8 @@ export function WorkerRegistrationForm({
             aria-invalid={Boolean(errors.email)}
             autoComplete="email"
             id="email"
+            value={draft.email}
+            onChange={updateText}
             inputMode="email"
             maxLength={254}
             name="email"
@@ -89,12 +107,28 @@ export function WorkerRegistrationForm({
             aria-invalid={Boolean(errors.phone)}
             autoComplete="tel"
             id="phone"
+            value={draft.phone}
+            onChange={updateText}
             inputMode="tel"
             maxLength={20}
             name="phone"
             placeholder="+923001234567"
             required
             type="tel"
+          />
+        </Field>
+
+        <Field error={errors.country} htmlFor="country" label="Country">
+          <Input
+            aria-describedby={describedBy(errors.country && "country-error")}
+            aria-invalid={Boolean(errors.country)}
+            autoComplete="country-name"
+            id="country"
+            value={draft.country}
+            onChange={updateText}
+            maxLength={100}
+            name="country"
+            required
           />
         </Field>
 
@@ -107,6 +141,8 @@ export function WorkerRegistrationForm({
             aria-invalid={Boolean(errors.password)}
             autoComplete="new-password"
             id="password"
+            value={draft.password}
+            onChange={updateText}
             maxLength={128}
             minLength={12}
             name="password"
@@ -128,6 +164,8 @@ export function WorkerRegistrationForm({
             aria-invalid={Boolean(errors.confirmPassword)}
             autoComplete="new-password"
             id="confirmPassword"
+            value={draft.confirmPassword}
+            onChange={updateText}
             maxLength={128}
             minLength={12}
             name="confirmPassword"
@@ -151,6 +189,8 @@ export function WorkerRegistrationForm({
             autoComplete="off"
             disabled={companyInvitation}
             id="companyCode"
+            value={draft.companyCode}
+            onChange={updateText}
             maxLength={160}
             name="companyCode"
           />
@@ -160,6 +200,31 @@ export function WorkerRegistrationForm({
           {copy.passwordHint}
         </p>
         <p className={styles.passwordNote}>{copy.verificationOrder}</p>
+
+        <div>
+          <CheckboxField
+            aria-describedby={describedBy(errors.termsAccepted && "termsAccepted-error")}
+            aria-invalid={Boolean(errors.termsAccepted)}
+            name="termsAccepted"
+            checked={draft.termsAccepted}
+            onChange={updateAcceptance}
+            required
+            label={WORKER_REGISTRATION_POLICY.termsLabel}
+          />
+          {errors.termsAccepted ? <p className="ds-field-error" id="termsAccepted-error" role="alert">{errors.termsAccepted}</p> : null}
+        </div>
+        <div>
+          <CheckboxField
+            aria-describedby={describedBy(errors.privacyAccepted && "privacyAccepted-error")}
+            aria-invalid={Boolean(errors.privacyAccepted)}
+            name="privacyAccepted"
+            checked={draft.privacyAccepted}
+            onChange={updateAcceptance}
+            required
+            label={WORKER_REGISTRATION_POLICY.privacyLabel}
+          />
+          {errors.privacyAccepted ? <p className="ds-field-error" id="privacyAccepted-error" role="alert">{errors.privacyAccepted}</p> : null}
+        </div>
 
         <Button disabled={pending} fullWidth type="submit">
           {pending ? "Creating account…" : "Create Worker account"}

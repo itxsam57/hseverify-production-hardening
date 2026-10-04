@@ -85,6 +85,9 @@ jobs:
       - name: Consent and accommodation runtime
         run: node --test tests/platform/privacy-consent-accommodation-runtime.test.mjs
 
+      - name: Worker registration policy runtime
+        run: npm run test:worker-registration-policy
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -118,6 +121,9 @@ jobs:
 
       - name: Six-role authentication and session boundaries
         run: npm run test:authentication-boundaries-browser
+
+      - name: Worker registration country and policy acceptance
+        run: npm run test:worker-registration-policy-browser
 
 
   release-readiness:

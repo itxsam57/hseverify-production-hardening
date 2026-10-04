@@ -30,6 +30,7 @@ import {
   type WorkerRegistrationRepository
 } from "@/lib/auth/worker-registration-repository";
 import { getServerEnvironment } from "@/lib/config/server-environment";
+import { WORKER_REGISTRATION_POLICY, normalizeWorkerRegistrationCountry } from "@/lib/auth/worker-registration-policy";
 
 const FLOW_TTL_MS = 60 * 60 * 1000;
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -368,18 +369,29 @@ export class WorkerRegistrationService {
     email: string;
     phone: string;
     password: string;
+    country: string;
+    termsAccepted: boolean;
+    privacyAccepted: boolean;
     requestFingerprint: string;
   }): Promise<RegistrationStartResult> {
+    if (input.termsAccepted !== true || input.privacyAccepted !== true) {
+      throw new RegistrationServiceError({
+        code: "invalid_input",
+        userMessage: "Accept the terms and privacy notice to continue."
+      });
+    }
     this.ensureDeliveryAvailable();
 
     let displayName: string;
     let email: string;
     let phone: string;
+    let country: string;
     try {
       displayName = normalizeDisplayName(input.displayName);
       email = normalizeEmail(input.email);
       phone = normalizePhone(input.phone);
       validatePassword(input.password);
+      country = normalizeWorkerRegistrationCountry(input.country);
     } catch (error) {
       throw new RegistrationServiceError({
         code: "invalid_input",
@@ -489,6 +501,22 @@ export class WorkerRegistrationService {
           currentStep: step,
           expiresAt: addMilliseconds(now, FLOW_TTL_MS),
           now: nowIso
+        });
+        await repository.authentication.insertSecurityEvent({
+          eventId: createIdentifier("event"),
+          accountId: account.accountId,
+          eventType: "registration_started",
+          activeRole: "worker",
+          requestFingerprintHash,
+          metadata: {
+            stage: "policy_acceptance",
+            actorAccountId: account.accountId,
+            flowId: flow.flowId,
+            country,
+            terms: { accepted: true, version: WORKER_REGISTRATION_POLICY.termsVersion },
+            privacy: { accepted: true, version: WORKER_REGISTRATION_POLICY.privacyVersion }
+          },
+          occurredAt: nowIso
         });
         const issued = await this.issueChallenge({
           repository,
