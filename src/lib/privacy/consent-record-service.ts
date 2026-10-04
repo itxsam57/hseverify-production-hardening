@@ -138,12 +138,12 @@ export class ConsentRecordService {
       const row = current.rows[0];
       if (!row) throw new Error("Consent record was not found for this Worker.");
       const record = rowToRecord(row);
-      if (record.action === "WITHDRAWN") return record;
-      if (record.withdrawalRule === "NOT_WITHDRAWABLE_WHILE_REQUIRED") {
+
+      if (record.action !== "WITHDRAWN" && record.withdrawalRule === "NOT_WITHDRAWABLE_WHILE_REQUIRED") {
         throw new Error("This consent is required for the active workflow and cannot be withdrawn here.");
       }
       const withdrawnAt = (input.now ?? new Date()).toISOString();
-      if (new Date(withdrawnAt).getTime() < new Date(record.recordedAt).getTime()) {
+      if (record.action !== "WITHDRAWN" && new Date(withdrawnAt).getTime() < new Date(record.recordedAt).getTime()) {
         throw new Error("Consent withdrawal cannot predate its grant.");
       }
       if (record.consentType === "scoped_share_links") {
@@ -166,14 +166,12 @@ export class ConsentRecordService {
         );
         const link = ownedLink.rows[0];
         if (!link) throw new Error("Linked sharing access is unavailable for this Worker.");
-        if (new Date(withdrawnAt).getTime() < new Date(link.created_at).getTime()) {
-          throw new Error("Sharing withdrawal cannot predate link creation.");
-        }
         await tx.query(
           "UPDATE scoped_share_links SET revoked_at=COALESCE(revoked_at,$2::timestamptz) WHERE share_link_id=$1",
           [shareLinkId,withdrawnAt]
         );
       }
+      if (record.action === "WITHDRAWN") return record;
       const inserted = await tx.query<Record<string, unknown>>(
         `INSERT INTO privacy_consent_records(
            consent_id,version,worker_id,consent_type,purpose,case_id,actor_account_id,

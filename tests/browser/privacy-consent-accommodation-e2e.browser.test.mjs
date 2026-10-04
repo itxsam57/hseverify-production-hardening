@@ -138,6 +138,12 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
         const admin = await adminContext.newPage();
         try {
           await login(worker, baseUrl, credentials.worker, "worker");
+          await worker.route("**/api/share-links", async (route) => {
+            if (route.request().method() !== "POST") return route.continue();
+            const body = route.request().postDataJSON();
+            await route.continue({ postData: JSON.stringify({ ...body, createdAt: "2099-01-01T00:00:00.000Z" }) });
+          });
+
 
           await worker.goto(baseUrl + "/worker/privacy", { waitUntil: "domcontentloaded" });
           await worker.getByLabel("Privacy request type").selectOption("restriction");
@@ -255,7 +261,8 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
         [credentials.worker.accountId]
       );
       assert.deepEqual(consent.rows.map(row => row.action), ["GRANTED", "WITHDRAWN"]);
-      const links = await db.query("SELECT revoked_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
+      const links = await db.query("SELECT revoked_at,created_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
+      assert.ok(new Date(links.rows[0].created_at).getTime() < new Date("2099-01-01").getTime(), "Creation retained a future client timestamp.");
       assert.ok(links.rows[0]?.revoked_at, "Withdrawal did not revoke the linked shared passport.");
       const otherLink = await db.query("SELECT revoked_at FROM scoped_share_links WHERE purpose='Separate optional sharing remains active'");
       assert.equal(otherLink.rows[0]?.revoked_at, null, "Withdrawal also revoked unrelated sharing consent.");
