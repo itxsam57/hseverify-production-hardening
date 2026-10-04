@@ -1,7 +1,7 @@
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
 import { PrivacyOperationsService } from "@/lib/privacy/privacy-operations-service";
-import { reviewAccommodationAction } from "./actions";
+import { reviewAccommodationAction, reviewPrivacyRequestAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,8 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
     permission: "platform.operations.manage"
   });
   const privacy = new PrivacyOperationsService();
-  const [accommodations, consents] = await Promise.all([
+  const [requests, accommodations, consents] = await Promise.all([
+    privacy.listRequestReviewQueue(),
     privacy.listAccommodationReviewQueue(),
     new ConsentRecordService().listRecent(100)
   ]);
@@ -30,6 +31,34 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
           <p>Need-to-know operational review. Competency standards are never reduced by an accommodation.</p>
         </div>
       </div>
+
+      <section className="page-section content-stack">
+        <h2>Privacy requests</h2>
+        <p>Record intake and reasoned review. Fulfilment remains open until the requested operation is performed.</p>
+        {requests.length === 0 ? <p>No privacy requests.</p> : requests.map((request) => (
+          <article className="panel content-stack" key={request.request_id}>
+            <p>Request type: {request.request_type.replaceAll("_", " ")}</p>
+            <p>Worker: {request.worker_id}</p>
+            <p>Status: {request.status}</p>
+            <p>Requested: {iso(request.created_at)}</p>
+            {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
+            {["OPEN", "PROCESSING"].includes(request.status) ? (
+              <form action={reviewPrivacyRequestAction} className="form-grid">
+                <input type="hidden" name="requestId" value={request.request_id} />
+                <input type="hidden" name="expectedStatus" value={request.status} />
+                <label>Request decision
+                  <select name="decision" defaultValue={request.status === "OPEN" ? "PROCESSING" : "REJECTED"} required>
+                    {request.status === "OPEN" ? <option value="PROCESSING">Start processing</option> : null}
+                    <option value="REJECTED">Reject request</option>
+                  </select>
+                </label>
+                <label>Request review reason<textarea name="reason" minLength={10} maxLength={2000} required /></label>
+                <button type="submit">Save privacy request decision</button>
+              </form>
+            ) : null}
+          </article>
+        ))}
+      </section>
 
       <section className="page-section content-stack">
         <h2>Accommodation queue</h2>

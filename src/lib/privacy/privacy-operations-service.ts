@@ -64,6 +64,22 @@ export class PrivacyOperationsService {
     return request;
   }
 
+  async listRequestReviewQueue() {
+    return this.repository.listRequestReviewQueue();
+  }
+
+  async reviewRequest(input: {
+    requestId: string; reviewerAccountId: string; expectedStatus: string;
+    decision: "PROCESSING" | "REJECTED"; reason: string;
+  }) {
+    const reason = input.reason.trim();
+    if (!input.requestId || !input.reviewerAccountId || reason.length < 10 || reason.length > 2000 ||
+        !["PROCESSING", "REJECTED"].includes(input.decision)) {
+      throw new Error("Privacy request review requires a valid decision and a reason between 10 and 2000 characters.");
+    }
+    return this.repository.reviewRequest({ ...input, reason, reviewId: createIdentifier("privacy_review"), now: new Date().toISOString() });
+  }
+
   async accommodation(input: Parameters<typeof createAccommodation>[0]) {
     const accommodation = createAccommodation(input);
     await this.repository.addAccommodation(accommodation);

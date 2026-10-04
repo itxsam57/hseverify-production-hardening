@@ -125,3 +125,13 @@ The broader application check also exposed an outdated identity transition expec
 Recovered checkpoint `196bbe9` after workstation restart. The prior written-opener and full-gate logs were interrupted and are not passes. Fresh written-opener recovery correctly retained the encrypted answer and reported a server-version conflict after the duplicated tab saved. The browser test omitted the explicit conflict choice in its opener variant; both concurrent-tab variants now require the same choice. The repaired registration-to-credential/share/appeal journey passed with final database assertions. Product conflict protection is unchanged.
 
 The fresh full engineering run passed its M2 source/runtime stages, then environment validation rejected absent test session-secret and auth-pepper configuration. The validator remains intact. A new exact-checkpoint run uses isolated disposable test configuration. The privacy workflow still requires complete staff intake/outcome verification; its existing test only proves request creation, accommodation approval and consent history.
+
+### 2026-10-04 resumed verification and privacy intake repair
+
+The full configured engineering gate passed after resuming the interrupted run. It started at `852e961` and ended after `024a42b`, which only changed first-branch compliance and its regression tests. This is execution evidence with mixed HEAD provenance, not exact-SHA project certification. Opener recovery, SECTION_REVIEW, MCQ offline recovery, independent evidence revisions, Company workforce handoffs, and accommodation approval passed in browser runs at `852e961`.
+
+First-branch compliance now uses the owner's canonical QA branch instead of the older repository default. The actual guard accepts introduced valid commits and rejects a newly introduced commit without cycle attribution. Both GitHub compliance runs and both targeted TDD workflows passed at `024a42b`.
+
+A fresh browser reproduction showed that a Worker privacy request had no Admin intake queue. The additive repair exposes existing requests to authorized Admin operations, records processing and reasoned rejection atomically with immutable reviewer history, rejects stale decisions, and returns the review reason to the Worker. The permanent browser journey now verifies OPEN -> PROCESSING -> REJECTED and both Worker-visible reasons; real database tests verify failed-review rollback and immutable history.
+
+This repair does not certify completion of access/export/deletion/restriction operations or operative consent withdrawal. It deliberately exposes no completion control for an operation that has not been fulfilled. Those downstream privacy effects remain unverified work in the expanded Masterplan.

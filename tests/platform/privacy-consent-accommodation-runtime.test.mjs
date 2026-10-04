@@ -31,7 +31,7 @@ async function database() {
   await applyMigrationsThrough(
     db,
     ENV.releaseSha,
-    "0071_privacy_consent_accommodation_policy"
+    "0078_privacy_request_review_history"
   );
   return db;
 }
@@ -270,4 +270,30 @@ test("approved accommodation binds only to the same Worker case and resolves as 
   } finally {
     await db.close();
   }
+});
+
+test("privacy review rejects stale decisions, rolls back missing reviewers, and preserves immutable history", async () => {
+  const db = await database();
+  try {
+    const worker = "account_privacy_review_worker";
+    const admin = "account_privacy_review_admin";
+    await seedAccount(db, worker, "privacy-review-worker@example.test", "worker");
+    await seedAccount(db, admin, "privacy-review-admin@example.test", "admin");
+    const service = new PrivacyOperationsService(new PrivacyOperationsRepository(Promise.resolve(db)));
+    await service.request({ requestId: "privacy_request_review", workerId: worker, tenantId: null, type: "restriction" });
+    const input = { requestId: "privacy_request_review", reviewerAccountId: admin, expectedStatus: "OPEN", decision: "PROCESSING", reason: "Reviewing the required processing purpose." };
+    await assert.rejects(() => service.reviewRequest({ ...input, reason: "short" }), /reason/);
+    await assert.rejects(() => service.reviewRequest({ ...input, reviewerAccountId: "missing-reviewer" }));
+    assert.equal((await db.query("SELECT status FROM privacy_requests WHERE request_id=$1", [input.requestId])).rows[0].status, "OPEN");
+    await service.reviewRequest(input);
+    await assert.rejects(() => service.reviewRequest({ ...input, decision: "REJECTED" }), /changed|unavailable/);
+    await service.reviewRequest({ ...input, expectedStatus: "PROCESSING", decision: "REJECTED", reason: "Required evidence is retained for the active assessment." });
+    await assert.rejects(() => service.reviewRequest({ ...input, expectedStatus: "REJECTED" }), /changed|unavailable/);
+    const history = await db.query("SELECT * FROM privacy_request_reviews WHERE request_id=$1 ORDER BY review_sequence", [input.requestId]);
+    assert.deepEqual(history.rows.map(row => [row.from_status,row.to_status]), [["OPEN","PROCESSING"],["PROCESSING","REJECTED"]]);
+    await assert.rejects(() => db.query("UPDATE privacy_request_reviews SET reason='Erase the prior review' WHERE request_id=$1", [input.requestId]), /append-only/);
+    await assert.rejects(() => db.query("DELETE FROM privacy_request_reviews WHERE request_id=$1", [input.requestId]), /append-only/);
+    const owned = await service.listWorkerPrivacy(null, worker, worker);
+    assert.equal(owned.requests[0].review_reason, "Required evidence is retained for the active assessment.");
+  } finally { await db.close(); }
 });

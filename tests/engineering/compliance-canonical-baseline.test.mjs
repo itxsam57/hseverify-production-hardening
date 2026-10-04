@@ -40,3 +40,19 @@ test("canonical baseline does not admit an unguarded new commit", () => {
     rmSync(fixture, { recursive: true, force: true });
   }
 });
+
+test("branch created at canonical HEAD validates that commit without scanning old history", () => {
+  const fixture = mkdtempSync(join(tmpdir(), "hse-compliance-canonical-head-"));
+  try {
+    assert.equal(spawnSync("git", ["clone", "--shared", "--quiet", process.cwd(), fixture]).status, 0);
+    const head = spawnSync("git", ["rev-parse", "HEAD"], { cwd: fixture, encoding: "utf8" }).stdout.trim();
+    assert.equal(spawnSync("git", ["update-ref", "refs/remotes/origin/qa/masterplan-completion-20260926", head], { cwd: fixture }).status, 0);
+    symlinkSync(spawnSync("which", ["python3"], { encoding: "utf8" }).stdout.trim(), join(fixture, "python"));
+    const script = readFileSync(".github/workflows/autopilot-compliance.yml", "utf8").split("        run: |\n")[1].split("\n").map(line => line.slice(10)).join("\n");
+    const result = spawnSync("bash", ["-e", "-c", script], { cwd: fixture, encoding: "utf8", env: {
+      ...process.env, PATH: `${fixture}:${process.env.PATH}`, EVENT_NAME: "push", BEFORE_SHA: "0".repeat(40),
+      HEAD_SHA: head, CANONICAL_BRANCH: "qa/masterplan-completion-20260926"
+    }});
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
+});

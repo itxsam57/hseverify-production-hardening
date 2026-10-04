@@ -93,7 +93,10 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
       <section className="page-section content-stack">
         <h2>Your privacy requests</h2>
         {privacy.requests.length === 0 ? <p>No privacy requests yet.</p> : privacy.requests.map((request) => (
-          <p key={request.request_id}>{request.request_type.replaceAll("_", " ")}: {request.status}</p>
+          <article className="record-row" key={request.request_id}>
+            <p>{request.request_type.replaceAll("_", " ")}: {request.status}</p>
+            {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
+          </article>
         ))}
       </section>
 
