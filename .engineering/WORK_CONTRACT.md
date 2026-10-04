@@ -1,11 +1,10 @@
-# Frozen continuation contract EF-CONT-20261004
-Status: UNLOCKED for verification/CI/state only; new product behavior remains LOCKED pending reproduced root cause.
-Requirement IDs:M3.09.03,M1.01.03; preserve all frozen scenario acceptance.
-Objective: persist current truthful continuation, correct Masterplan PR branch routing, enforce named reassessment in private CI, and permanently verify accommodation decline without an adjustment.
-Current verified state: exact5fa3361 browser/type/lint/coverage checks and independent review; canonical953b5b8 merge. Decline probe passes after correcting its selector.
-Allowed: .engineering configuration/state, targeted .gitignore exceptions, .github/workflows/masterplan-completion-qa.yml and engineering-factory.yml, privacy browser tests, QA ledger/report, audit events.
-Forbidden: production product behavior changes, replacement/renewal claims, owner approval invention, weakened tests/guards, real provider operations.
-Mandatory acceptance: canonical PR targets this QA workflow; reusable CI runs actual named browser command and uploads exact-SHA evidence; decline reason reaches Worker; declined request has no adjustment/overlay; approved overlay remains; existing privacy journey remains green; independent review and actual candidate CI gates pass before merge.
-Proof: real Chromium/server/database test, lint/typecheck, parsed workflow wiring and GitHub run outcomes. Synthetic fixtures are not live provider certification.
-Recovery: revert verification/wiring changes through normal reviewed Git commits; never reactivate withdrawn links.
-Definition of done: scoped reviewed changes merged only after mandatory checks; broader Masterplan task remains ACTIVE.
+# Frozen verification contract EF-PRIV-KINDS-20261004
+Status: UNLOCKED for tests/evidence/state only; new product behavior LOCKED pending reproduced root cause.
+Requirement:M3.09.01 from frozen Masterplan expanded ledger.
+Objective: exercise all eight supported privacy request types through Worker controls, Admin intake/reasoned terminal review, Worker returned status/reason and persistent reviewer history.
+Current verified boundary: previous scoped contract accepted/merged atcanonical1e1ba56; all-kind probe passes in local Chromium/PGlite.
+Allowed: privacy browser test, QA ledger/report, factory contract/state/capability/debt/decisions, Autopilot audit.
+Forbidden: product implementation changes, unsupported fulfilment or whole-project claims, real customer data operations, weakened prior assertions, guard/CI bypass.
+Mandatory: each type reaches staff; each reasoned rejection returns to Worker; records show exact type/status/reviewer/from/to/reason; existing consent/approval/decline assertions remain; exact candidate privacy/type/lint pass; independent test-quality/security/stale/regression inspection; candidate required CI succeeds before merge.
+Proof: real browser/server actions and downstream database. Rejected request is not fulfilled request; scenario remains partial until operative fulfilment branches exist.
+Recovery: normal reviewed Git revert of test/evidence changes. Definition of done: scoped verified test/evidence merged; broad Masterplan remains ACTIVE.

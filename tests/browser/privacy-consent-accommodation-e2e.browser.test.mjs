@@ -11,6 +11,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
+const EXTRA_PRIVACY_TYPES = ["access","correction","consent_withdrawal","share_link_revocation","retention_inquiry","export","deletion"];
+
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function decode32(value) {
@@ -149,6 +151,12 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
           await worker.getByLabel("Privacy request type").selectOption("restriction");
           await worker.getByRole("button", { name: "Submit privacy request" }).click();
           await worker.getByText("restriction: OPEN", { exact: true }).waitFor({ timeout: 15_000 });
+          for(const type of EXTRA_PRIVACY_TYPES) {
+            await worker.getByLabel("Privacy request type").selectOption(type);
+            await worker.getByRole("button",{name:"Submit privacy request",exact:true}).click();
+            await worker.getByText(type.replaceAll("_"," ")+": OPEN",{exact:true}).waitFor({timeout:15000});
+          }
+
 
           await worker.getByLabel("Accommodation request").fill("Extra reading time and captions");
           await worker.getByRole("button", { name: "Submit accommodation" }).click();
@@ -192,6 +200,18 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
           await login(admin, baseUrl, credentials.admin, "admin");
           await admin.goto(baseUrl + "/admin/privacy", { waitUntil: "domcontentloaded" });
           await admin.getByRole("heading", { name: "Privacy requests", exact: true }).waitFor();
+          for(const type of EXTRA_PRIVACY_TYPES) {
+            const card=admin.locator("article").filter({has:admin.getByText("Request type: "+type.replaceAll("_"," "),{exact:true})});
+            await card.getByText("Status: OPEN",{exact:true}).waitFor();
+            await card.getByLabel("Request decision").selectOption("REJECTED");
+            const reason="This synthetic "+type+" request is declined pending required request details.";
+            await card.getByLabel("Request review reason").fill(reason);
+            await card.getByRole("button",{name:"Save privacy request decision",exact:true}).click();
+            await card.getByText("Status: REJECTED",{exact:true}).waitFor();
+            await worker.goto(baseUrl+"/worker/privacy");
+            await worker.getByText(type.replaceAll("_"," ")+": REJECTED",{exact:true}).waitFor();
+            await worker.getByText("Review outcome: "+reason,{exact:true}).waitFor();
+          }
           const privacyCard = admin.locator("article").filter({ hasText: "Request type: restriction" }).first();
           await privacyCard.getByLabel("Request decision").selectOption("PROCESSING");
           await privacyCard.getByLabel("Request review reason").fill("Reviewing the processing purpose and required retained evidence.");
@@ -259,6 +279,13 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
       const history = await db.query("SELECT from_status,to_status,reviewer_account_id,reason FROM privacy_request_reviews WHERE request_id=(SELECT request_id FROM privacy_requests WHERE worker_id=$1 AND request_type='restriction') ORDER BY review_sequence", [credentials.worker.accountId]);
       assert.deepEqual(history.rows.map(row => [row.from_status, row.to_status]), [["OPEN", "PROCESSING"], ["PROCESSING", "REJECTED"]]);
       assert.ok(history.rows.every(row => row.reviewer_account_id === credentials.admin.accountId && row.reason.length >= 10));
+      const kinds=await db.query("SELECT request_type,status FROM privacy_requests WHERE worker_id=$1 AND request_type=ANY($2::text[])",[credentials.worker.accountId,EXTRA_PRIVACY_TYPES]);
+      assert.equal(kinds.rows.length,EXTRA_PRIVACY_TYPES.length);
+      assert.deepEqual(kinds.rows.map(row=>row.request_type).sort(),[...EXTRA_PRIVACY_TYPES].sort());
+      assert.ok(kinds.rows.every(row=>row.status==="REJECTED"));
+      const kindHistory=await db.query("SELECT requests.request_type,reviews.from_status,reviews.to_status,reviews.reviewer_account_id,reviews.reason FROM privacy_request_reviews reviews JOIN privacy_requests requests ON requests.request_id=reviews.request_id WHERE requests.worker_id=$1 AND requests.request_type=ANY($2::text[])",[credentials.worker.accountId,EXTRA_PRIVACY_TYPES]);
+      assert.equal(kindHistory.rows.length,EXTRA_PRIVACY_TYPES.length);
+      assert.ok(kindHistory.rows.every(row=>row.from_status==="OPEN"&&row.to_status==="REJECTED"&&row.reviewer_account_id===credentials.admin.accountId&&row.reason==="This synthetic "+row.request_type+" request is declined pending required request details."));
       const accommodation = await db.query(
         "SELECT status,case_id,approved_adjustment FROM accessibility_accommodations WHERE worker_id=$1 AND accommodation_type='Extra reading time and captions'",
         [credentials.worker.accountId]

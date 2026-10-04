@@ -3040,8 +3040,8 @@
         ],
         "scenario": "Each privacy request kind reaches staff intake and reasoned completion",
         "status": "partially-verified",
-        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Restriction Worker \u2192 Admin PROCESSING \u2192 reasoned REJECTED \u2192 Worker passed. Other request fulfilment/export/deletion remains unverified."
+        "evidence": ".autopilot/artifacts/20261004-all-privacy-kinds-probe.txt",
+        "notes": "All8types traverse Worker request\u2192Admin intake/reasonedREJECTED\u2192Workerreason withpersistentreviewer/from/tohistory. Restriction additionallyOPEN\u2192PROCESSING\u2192REJECTED. Actual fulfilment/access/export/deletion and allowed-completion branches remain unverified; intake/rejection proof is partial."
       },
       {
         "id": "M3.09.02",

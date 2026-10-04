@@ -1,6 +1,4 @@
-# Active HSE Verify continuation
-Use CURRENT_TASK.json and .autopilot guarded state. Canonical953b5b8 contains scoped withdrawal and enforced reassessment/privacy journeys. Exact reviewed candidate5fa3361 checks pass; no whole-project/release claim.
-Next: promote passing accommodation decline probe, fix old PR target in Masterplan workflow, add reusable private CI reassessment evidence, run candidate checks/review, then continue remaining frozen scenarios.
-No owner decision is pending. Historical CONTINUATION.json is stale.
-
-Review0931aa3 REJECT: UI decline checks pass, intended declined database/overlay assertions were missing. Revision1 adds explicit declined row and overlay assertions; new exact checks and candidate CI are required.
+# HSE Verify active continuation
+PR5 merged canonical1e1ba56 after localexactefd2abe checks,6GitHubchecks, inspected privateCIartifact for syntheticPRmergec8f and scoped Gatekeeper ACCEPT.
+Next: promote successful all-eight privacy request type intake/reasoned-rejection browser probe, verify exact candidate and independent inspection, merge then continue frozen scenarios.
+This covers intake/terminal rejections, not actual access/export/deletion/restriction fulfilment. No owner decision pending; whole-project acceptance remains ACTIVE.
