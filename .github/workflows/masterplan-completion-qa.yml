@@ -125,6 +125,9 @@ jobs:
       - name: Worker registration country and policy acceptance
         run: npm run test:worker-registration-policy-browser
 
+      - name: Worker email and phone OTP boundaries
+        run: npm run test:worker-registration-otp-browser
+
 
   release-readiness:
     runs-on: ubuntu-latest

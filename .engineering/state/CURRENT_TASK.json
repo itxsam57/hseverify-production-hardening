@@ -6,17 +6,17 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "45b5df98483f638b382bb083971cff9b2188da24",
-  "canonical_sha": "a795bfbc002dfc97ddddb3212f856654888a96d2",
+  "last_verified_sha": "19b04b19a8ba45e7941f1acd4e6fd96594d33d02",
+  "canonical_sha": "291b61a99ba75cb7c10a95ef57c90a3cd9e86ccd",
   "requirements": [
-    "M1.03.01"
+    "M1.03.02"
   ],
-  "last_verified_action": "Corrected readiness held-script browser and strict type/lint passed working tree; independent source review REVIEW_PASS. Prior exact9fe2701 and private CI failure retained.",
+  "last_verified_action": "PR8 merged291b61a; working Worker OTP browser passes wrong/expired/resend/stale email/phone forms with persisted counters/events and no premature activation/session. Product unchanged.",
   "evidence": [
-    ".autopilot/artifacts/20261004-worker-registration-consent-red-a795bfb.txt",
-    ".autopilot/artifacts/20261004-worker-registration-policy-review-working.txt"
+    ".autopilot/artifacts/20261004-registration-exact-19b04b1.json",
+    ".autopilot/artifacts/20261004-registration-ci-19b04b1.json"
   ],
-  "next_action": "Verify corrected committed revision across affected positive journeys/build/preview and actual PR8 CI, obtain final scoped Gatekeeper acceptance before merge",
+  "next_action": "Commit Worker OTP verification after source review; exact browser/type/lint and required PR9 CI before scoped acceptance/merge",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -29,5 +29,6 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-04T15:18:04.890421+00:00"
+  "updated_at": "2026-10-04T15:31:48.558850+00:00",
+  "verified_sha": null
 }
