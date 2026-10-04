@@ -321,13 +321,13 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             await worker.waitForFunction(value => document.querySelector("#assessment-short-answer")?.value === value, recoveredAnswer, { timeout: 10000 });
             assert.equal(await worker.getByLabel("Your answer").inputValue(), recoveredAnswer,
               "A browser reload discarded the unsynchronized offline assessment answer.");
-            if (process.env.HSE_MASTERPLAN_OFFLINE_TABS === "true") {
+            if (concurrent) {
               await worker.getByRole("button", {name:"Replace saved version with this tab",exact:true}).waitFor();
               assert.equal(await worker.getByRole("button", {name:"Submit assessment",exact:true}).isDisabled(),true,
                 "A server revision conflict exposed direct final submission.");
             }
             await workerContext.unroute("**/*", failSave);
-            if (process.env.HSE_MASTERPLAN_OFFLINE_TABS === "true") await worker.getByRole("button", {name:"Replace saved version with this tab",exact:true}).click();
+            if (concurrent) await worker.getByRole("button", {name:"Replace saved version with this tab",exact:true}).click();
             await worker.getByText("Saved", { exact: true }).first().waitFor({ timeout: 15000 });
             console.log("JOURNEY: offline answer survives reload and reconnects");
           }
