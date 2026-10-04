@@ -1,10 +1,9 @@
-# Frozen verification contract EF-PRIV-KINDS-20261004
-Status: UNLOCKED for tests/evidence/state only; new product behavior LOCKED pending reproduced root cause.
-Requirement:M3.09.01 from frozen Masterplan expanded ledger.
-Objective: exercise all eight supported privacy request types through Worker controls, Admin intake/reasoned terminal review, Worker returned status/reason and persistent reviewer history.
-Current verified boundary: previous scoped contract accepted/merged atcanonical1e1ba56; all-kind probe passes in local Chromium/PGlite.
-Allowed: privacy browser test, QA ledger/report, factory contract/state/capability/debt/decisions, Autopilot audit.
-Forbidden: product implementation changes, unsupported fulfilment or whole-project claims, real customer data operations, weakened prior assertions, guard/CI bypass.
-Mandatory: each type reaches staff; each reasoned rejection returns to Worker; records show exact type/status/reviewer/from/to/reason; existing consent/approval/decline assertions remain; exact candidate privacy/type/lint pass; independent test-quality/security/stale/regression inspection; candidate required CI succeeds before merge.
-Proof: real browser/server actions and downstream database. Rejected request is not fulfilled request; scenario remains partial until operative fulfilment branches exist.
-Recovery: normal reviewed Git revert of test/evidence changes. Definition of done: scoped verified test/evidence merged; broad Masterplan remains ACTIVE.
+# Frozen verification contract EF-AUTH-BOUNDARIES-20261004
+Status: UNLOCKED for tests/evidence/state only; product implementation LOCKED pending reproduced root cause.
+Requirements: M1.03.06, M1.03.07, M1.04.01. Separate staff invitation/registration/recovery requirements remain unverified.
+Objective: six roles reject wrong-role credentials and direct cross-portal requests, reject invalid passwords/MFA, preserve the session on Exit Portal and revoke it on Sign Out.
+Allowed: dedicated authentication browser test and named npm/critical-browser and canonical QA workflow wiring, QA ledger/report, engineering contract/state/decisions and durable continuation checkpoint/.gitignore exception, Autopilot audit.
+Forbidden: production behavior changes, registration/provisioning/recovery/tenant-scope certification from seeded identities, real provider/customer operations, guard/CI bypass.
+Mandatory: actual Chromium form controls and thirty directed cross-portal denials; wrong-role sign-in denied in every directed combination; incorrect password for six and incorrect MFA for five MFA roles; signed-out protected routes redirect; one session per account and exact role, no sessions for rejected credentials, persisted sign-out revocation and denial security events; prior critical-browser tests retained; exact candidate browser/type/lint and required CI pass; independent review accepts scope before merge.
+Proof: isolated synthetic six-role fixtures with real server login and persisted records. These fixtures do not verify registration or staff provisioning.
+Recovery: ordinary reviewed Git revert of tests/evidence/wiring. Whole Masterplan remains ACTIVE after scoped merge.

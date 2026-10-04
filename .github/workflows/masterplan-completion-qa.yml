@@ -116,6 +116,9 @@ jobs:
       - name: Worker -> Admin -> Worker privacy/accommodation journey
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
+      - name: Six-role authentication and session boundaries
+        run: npm run test:authentication-boundaries-browser
+
 
   release-readiness:
     runs-on: ubuntu-latest
