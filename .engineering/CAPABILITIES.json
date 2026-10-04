@@ -1,0 +1,13 @@
+{
+  "repository_read": "VERIFIED",
+  "repository_write": "VERIFIED",
+  "guarded_commit_push": "VERIFIED",
+  "github_actions_visibility": "VERIFIED",
+  "vps_processes": "VERIFIED",
+  "local_chromium": "VERIFIED",
+  "private_ci_browser": "CONFIGURED",
+  "production_deployment": "UNKNOWN",
+  "live_provider_credentials": "UNAVAILABLE_IN_CURRENT_EVIDENCE",
+  "owner_verification": "UNKNOWN",
+  "evidence_sha": "5fa33614608e3e735f1724639ff23c38b77dcb38"
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "task_id": "WORKFLOW-001",
+  "stage": "BUILDING",
+  "repository": "itxsam57/hseverify-production-hardening",
+  "canonical_branch": "qa/masterplan-completion-20260926",
+  "branch": "qa/scenario-verification-20261002",
+  "worktree": "/home/ubuntu/work/hseverify-current-audit",
+  "last_verified_sha": "5fa33614608e3e735f1724639ff23c38b77dcb38",
+  "canonical_sha": "953b5b87b4e914304ed9ea344f7889229139ad0c",
+  "requirements": [
+    "M3.09.03",
+    "M1.01.03"
+  ],
+  "last_verified_action": "PR4 merged after exact5fa3361 checks and independent review; decline probe passes in current source tree",
+  "evidence": [
+    ".autopilot/artifacts/20261004-enforced-exact-5fa3361.json",
+    ".autopilot/artifacts/20261004-accommodation-decline-probe-v2.txt"
+  ],
+  "next_action": "Promote accommodation decline probe; correct canonical PR CI; run exact candidate checks and independent review before merge",
+  "revision_attempt": 0,
+  "blockers": [],
+  "unknowns": [
+    "195 ledger scenarios unverified",
+    "actual adjusted delivery",
+    "other privacy fulfilment/consent categories",
+    "renewal/replacement association",
+    "live adapters/production/owner verification"
+  ],
+  "awaiting_owner": false,
+  "auto_resume": true,
+  "status": "ACTIVE"
+}

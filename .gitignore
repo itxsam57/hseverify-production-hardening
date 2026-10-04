@@ -14,7 +14,18 @@
 /full-terminal-logs/
 
 # generated engineering summaries and reports
-/.engineering/
+/.engineering/*
+!/.engineering/PROJECT_BLUEPRINT.md
+!/.engineering/REQUIREMENTS.md
+!/.engineering/ARCHITECTURE.md
+!/.engineering/SECURITY.md
+!/.engineering/DECISIONS.md
+!/.engineering/DEBT.md
+!/.engineering/CAPABILITIES.json
+!/.engineering/AUTOMATION.json
+!/.engineering/WORK_CONTRACT.md
+!/.engineering/state/
+!/.engineering/runner/
 /.reports/
 
 # next.js generated output

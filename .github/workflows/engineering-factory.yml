@@ -1,0 +1,74 @@
+name: Engineering Factory private reassessment evidence
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  private-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: memory://
+      HSE_RELEASE_SHA: ${{ github.sha }}
+      HSE_ENABLE_AUTH_SANDBOX: "false"
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Configure ephemeral test secrets and evidence directory
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, secrets
+          pathlib.Path(".engineering/evidence").mkdir(parents=True, exist_ok=True)
+          with open(os.environ["GITHUB_ENV"], "a") as stream:
+              for key in ("HSE_SESSION_SECRET", "HSE_AUTH_PEPPER"):
+                  stream.write(key + "=" + secrets.token_hex(32) + "\n")
+          PY
+      - name: Complete reassessment through a distinct credential in Chromium
+        id: journey
+        shell: bash
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:masterplan-reassessment-browser | tee .engineering/evidence/reassessment.txt
+      - name: Record exact build and command outcome
+        if: always()
+        env:
+          FACTORY_COMMAND_OUTCOME: ${{ steps.journey.outcome }}
+          FACTORY_JOB_STATUS: ${{ job.status }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          path = pathlib.Path(".engineering/evidence")
+          path.mkdir(parents=True, exist_ok=True)
+          evidence = {
+              "sha": os.environ["GITHUB_SHA"],
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "command": "npm run test:masterplan-reassessment-browser",
+              "outcome": os.environ["FACTORY_COMMAND_OUTCOME"],
+              "job_status": os.environ["FACTORY_JOB_STATUS"],
+              "environment": "synthetic private CI browser",
+              "release_ready": False
+          }
+          (path / "reassessment.json").write_text(json.dumps(evidence, indent=2) + "\n")
+          PY
+      - name: Retain exact-SHA private browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-reassessment-${{ github.sha }}
+          path: .engineering/evidence/
+          if-no-files-found: error

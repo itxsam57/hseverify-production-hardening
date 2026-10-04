@@ -3071,9 +3071,9 @@
           "Assessor"
         ],
         "scenario": "Accommodation approved/rejected with reason and Worker outcome",
-        "status": "partially-verified",
-        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Accommodation approval with reason returns to Worker and immutable case overlay. Decline has database evidence but its browser journey remains unverified."
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261004-accommodation-decline-probe-v2.txt",
+        "notes": "Actual Worker \u2192 Admin approval and decline \u2192 Worker reasons; approved case overlay retained, declined request has no case/adjustment and no extra overlay. Local Chromium/PGlite proof; actual adjusted delivery is separately M3.09.04 and remains unverified."
       },
       {
         "id": "M3.09.04",
