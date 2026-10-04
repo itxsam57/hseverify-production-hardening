@@ -47,16 +47,18 @@ export function AnswerControl({
   questionType,
   options,
   value,
-  onChange
+  onChange,
+  disabled = false
 }: {
   questionType: NonNullable<AssessmentAttemptClientView["currentQuestion"]>["questionType"];
   options: readonly string[] | null;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }): React.JSX.Element {
   if (questionType === "MULTIPLE_CHOICE") {
     return (
-      <fieldset className="content-stack">
+      <fieldset className="content-stack" disabled={disabled}>
         <legend>Choose one answer</legend>
         {(options ?? []).map((option) => (
           <label className="ds-checkbox-field" key={option}>
@@ -74,7 +76,7 @@ export function AnswerControl({
 
   if (questionType === "TRUE_FALSE") {
     return (
-      <fieldset className="content-stack">
+      <fieldset className="content-stack" disabled={disabled}>
         <legend>Choose true or false</legend>
         {[
           ["true", "True"],
@@ -100,6 +102,7 @@ export function AnswerControl({
           id="assessment-short-answer"
           type="text"
           value={value}
+          disabled={disabled}
           maxLength={2000}
           onChange={(event) => onChange(event.currentTarget.value)}
           autoComplete="off"
@@ -114,6 +117,7 @@ export function AnswerControl({
         <Textarea
           id="assessment-long-answer"
           value={value}
+          disabled={disabled}
           maxLength={20000}
           rows={10}
           onChange={(event) => onChange(event.currentTarget.value)}
@@ -129,6 +133,7 @@ export function AnswerControl({
           id="assessment-integer-answer"
           type="text"
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.value)}
           inputMode="numeric"
           autoComplete="off"
@@ -144,6 +149,7 @@ export function AnswerControl({
           id="assessment-decimal-answer"
           type="text"
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.value)}
           inputMode="decimal"
           autoComplete="off"
@@ -328,7 +334,7 @@ function ActiveAssessmentWorkspace({
         </div>
 
         <div role="status" aria-live="polite">
-          {saveStatus}
+          {recoveryReady ? saveStatus : "Restoring saved answer…"}
         </div>
 
         {conflict ? (
@@ -373,6 +379,7 @@ function ActiveAssessmentWorkspace({
             options={question.options}
             value={answer}
             onChange={setAnswer}
+            disabled={!recoveryReady}
           />
 
           <Button type="submit" disabled={pending || exitPending || !recoveryReady || conflict !== null}>

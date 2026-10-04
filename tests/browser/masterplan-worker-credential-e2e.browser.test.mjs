@@ -318,6 +318,8 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             await worker.waitForFunction(() => window.__pendingOfflineRead === true);
             assert.equal(await worker.getByRole("button", { name: "Submit assessment", exact: true }).isDisabled(), true,
               "Final submission was enabled before the offline answer finished restoring.");
+            assert.equal(await worker.getByLabel("Your answer").isDisabled(), true,
+              "Answer editing remained enabled before the retained offline response finished restoring.");
             await worker.waitForFunction(value => document.querySelector("#assessment-short-answer")?.value === value, recoveredAnswer, { timeout: 10000 });
             assert.equal(await worker.getByLabel("Your answer").inputValue(), recoveredAnswer,
               "A browser reload discarded the unsynchronized offline assessment answer.");
@@ -462,6 +464,14 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         assert.match(preservedDraft.text_value,/Stop work, verify the isolated hazard/);
         const authorization=(await verify.query("SELECT status,replacement_form_id FROM assessment_replacement_authorizations WHERE original_attempt_id=$1",[attempts[0].attempt_id])).rows[0];
         assert.equal(authorization.status,"CONSUMED");assert.equal(authorization.replacement_form_id,attempts[1].form_id);
+      }
+      if (process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" && process.env.HSE_MASTERPLAN_RECOVERY_MODE !== "replacement") {
+        const retained = await verify.query(
+          "SELECT answers.text_value FROM assessment_attempt_answers answers JOIN assessment_attempts attempts ON attempts.attempt_id=answers.attempt_id WHERE attempts.case_id=$1 AND answers.question_type='SHORT_TEXT' AND attempts.status='SUBMITTED'",
+          [journeyCaseId]
+        );
+        assert.equal(retained.rows[0]?.text_value, "Offline retained response: stop work, isolate the hazard, verify controls, and restart only after authorization.",
+          "The recovered offline response did not survive final submission to the permanent assessment answer.");
       }
       const order=(await verify.query("SELECT order_status FROM assurance_orders WHERE order_id=(SELECT order_id FROM assurance_cases WHERE case_id=$1)",[journeyCaseId])).rows[0];assert.equal(order.order_status,"COMPLETED");
       const living=await verify.query("SELECT v.version,v.status FROM living_record_competencies c JOIN living_record_versions v ON v.competency_id=c.competency_id WHERE c.source_credential_id=$1 ORDER BY v.version",[c.credential_reference]);assert.deepEqual(living.rows.map(r=>r.status),["valid","reassessment_required"]);
