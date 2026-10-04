@@ -611,8 +611,9 @@
           "Assessor"
         ],
         "scenario": "Every portal: wrong role, wrong password/MFA and signed-out redirect",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261004-auth-boundaries-permanent-v2-working.txt",
+        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge."
       },
       {
         "id": "M1.03.07",
@@ -627,8 +628,9 @@
           "Assessor"
         ],
         "scenario": "Exit Portal preserves session; Sign Out revokes it",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261004-auth-boundaries-permanent-v2-working.txt",
+        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge."
       },
       {
         "id": "M1.03.08",
@@ -654,8 +656,9 @@
           "All roles"
         ],
         "scenario": "Role-bound session rejects every cross-portal combination",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": ".autopilot/artifacts/20261004-auth-boundaries-permanent-v2-working.txt",
+        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge."
       },
       {
         "id": "M1.04.02",

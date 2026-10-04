@@ -6,21 +6,23 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "efd2abef412d93cc2912e19967a933e43c2be430",
-  "canonical_sha": "1e1ba56895c9e3c7495fa89488d4f61164d30c37",
+  "last_verified_sha": "e6dfcf9e5562b3dfe24214db4f06741a36e665ff",
+  "canonical_sha": "d7ef69ec5ed90ea28b04b2117f6651878c34221a",
   "requirements": [
-    "M3.09.01"
+    "M1.03.06",
+    "M1.03.07",
+    "M1.04.01"
   ],
-  "last_verified_action": "PR5 scoped Gatekeeper ACCEPT and merged; exact localefd privacy/type/lint and6CIchecks pass; uploaded privateCIartifact tested syntheticPRmergec8f",
+  "last_verified_action": "PR6 all-eight privacy intake/rejection merged after exact local checks, six CI checks and scoped Gatekeeper ACCEPT",
   "evidence": [
     ".autopilot/artifacts/20261004-factory-revision-exact-efd2abe.json",
     "GitHub Actions37196508328 artifact11301397435"
   ],
-  "next_action": "Promote all-eight privacy request kinds browser intake/reasoned-rejection probe; exact checks and independent inspection; fulfilment remains partial",
+  "next_action": "Validate permanent six-role authentication boundaries including all wrong-role sign-ins and downstream session/security-event assertions; independently review and run candidate CI",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "195 ledger scenarios unverified",
+    "192 ledger scenarios unverified",
     "privacy request fulfilment/export/deletion",
     "actual adjusted delivery",
     "renewal/replacement association",

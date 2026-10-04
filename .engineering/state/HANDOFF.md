@@ -1,4 +1,4 @@
 # HSE Verify active continuation
-PR5 merged canonical1e1ba56 after localexactefd2abe checks,6GitHubchecks, inspected privateCIartifact for syntheticPRmergec8f and scoped Gatekeeper ACCEPT.
-Next: promote successful all-eight privacy request type intake/reasoned-rejection browser probe, verify exact candidate and independent inspection, merge then continue frozen scenarios.
-This covers intake/terminal rejections, not actual access/export/deletion/restriction fulfilment. No owner decision pending; whole-project acceptance remains ACTIVE.
+PR6 merged canonicald7ef69e; exact locale6dfcf9 and synthetic CI mergeff175219 verified.
+Next: permanent six-role authentication boundaries, exact checks, independent review and canonical CI. Probe passed all30 direct denials and Exit/sign-out; added wrong-role form and persisted denial assertions await testing.
+No owner decision pending. Whole-project acceptance remains ACTIVE; registration, staff invitation and recovery remain separate open scenarios.

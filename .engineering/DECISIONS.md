@@ -6,3 +6,5 @@ Merge-tree equivalence does not turn a pre-merge exact-SHA run into a post-merge
 Existing historical .engineering/CONTINUATION.json points to an older worktree and is STALE; use state/CURRENT_TASK.json with the guarded Autopilot state.
 
 PR5 mergedcanonical1e1ba56 after exactlocalefd checks and inspected privateCIc8f artifact. Candidate/head and tested synthetic merge provenance remain distinct.
+
+PR6 merged canonicald7ef69e after exact locale6dfcf9 privacy/type/lint, six CI checks and scoped Gatekeeper ACCEPT. CI artifact11305603913 tested synthetic mergeff175219. M3.09.01 stays partial. Next contract EF-AUTH-BOUNDARIES-20261004 uses seeded identities only for authentication boundaries, not registration/provisioning.

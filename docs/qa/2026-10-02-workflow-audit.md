@@ -164,3 +164,6 @@ Review correction: the first decline probe/permanent test had UI proof but the i
 
 ### All privacy request types: staff intake and reasoned rejection
 The real browser probe creates access, correction, restriction, consent withdrawal, share-link revocation, retention inquiry, export and deletion requests. Each reaches Admin intake, receives a reasoned terminal review and returns status/reason to the Worker. Persistent review rows bind the correct request type and reviewer; restriction also exercises processing before rejection. All operative fulfilment branches remain open, so M3.09.01 remains partial.
+
+### Six-role authentication boundaries
+The permanent browser journey uses six isolated synthetic identities to submit all30 wrong-role sign-ins and visit all30 authenticated cross-portal dashboards. Incorrect passwords and MFA are rejected; Exit Portal and cancelled sign-out preserve the session; confirmed portal sign-out revokes it. Persisted security events and exactly one revoked role-bound session per account exclude accidental sessions from rejected credentials. Registration, provisioning, recovery and tenant/resource actions remain open. Working browser/type/lint passed; exact candidate and CI are mandatory before merge.
