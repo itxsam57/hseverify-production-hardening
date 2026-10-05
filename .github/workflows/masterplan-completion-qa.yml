@@ -88,6 +88,9 @@ jobs:
       - name: Worker registration policy runtime
         run: npm run test:worker-registration-policy
 
+      - name: Staff invitation revocation runtime boundaries
+        run: npm run test:staff-invitation-revocation
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -127,6 +130,9 @@ jobs:
 
       - name: Worker email and phone OTP boundaries
         run: npm run test:worker-registration-otp-browser
+
+      - name: Staff invitation revocation browser boundaries
+        run: npm run test:staff-invitation-revocation-browser
 
 
   release-readiness:

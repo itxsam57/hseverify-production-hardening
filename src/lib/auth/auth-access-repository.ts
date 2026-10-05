@@ -535,6 +535,67 @@ export class AuthAccessRepository {
     return result.rows[0] ? invitationFromRow(result.rows[0]) : null;
   }
 
+  async findStaffInvitationByIdForUpdate(invitationId: string): Promise<StaffInvitation | null> {
+    const result = await this.database.query<StaffInvitationRow>(
+      `SELECT ${INVITATION_COLUMNS} FROM auth_staff_invitations WHERE invitation_id = $1 FOR UPDATE`,
+      [invitationId]
+    );
+    return result.rows[0] ? invitationFromRow(result.rows[0]) : null;
+  }
+
+  async hasLiveStaffIssuerSession(input: {
+    accountId: string; sessionId: string; role: AuthRole; now: string;
+  }): Promise<boolean> {
+    // Account before session matches password changes. NO KEY UPDATE also allows
+    // logout audit foreign-key KEY SHARE checks while logout holds its session.
+    const account = await this.database.query(
+      `SELECT 1 FROM auth_accounts WHERE account_id = $1 AND account_status = 'active' FOR NO KEY UPDATE`,
+      [input.accountId]
+    );
+    if (account.rows.length !== 1) return false;
+    const result = await this.database.query(
+      `SELECT 1 FROM auth_sessions AS sessions
+       JOIN auth_accounts AS accounts ON accounts.account_id = sessions.account_id
+       JOIN auth_account_roles AS roles ON roles.account_id = accounts.account_id AND roles.role = sessions.active_role
+       WHERE sessions.session_id = $1 AND accounts.account_id = $2
+         AND sessions.active_role = $3 AND accounts.account_status = 'active'
+         AND sessions.revoked_at IS NULL AND sessions.expires_at > $4
+       FOR UPDATE OF sessions`,
+      [input.sessionId, input.accountId, input.role, input.now]
+    );
+    return result.rows.length === 1;
+  }
+
+  async revokeStaffInvitation(input: { invitationId: string; revokedAt: string }): Promise<void> {
+    await this.database.query(
+      `UPDATE auth_staff_invitations SET invitation_status = 'revoked', revoked_at = $2
+       WHERE invitation_id = $1 AND invitation_status = 'pending' AND expires_at > $2`,
+      [input.invitationId, input.revokedAt]
+    );
+  }
+
+  async unfinishedStaffEnrollmentFlowsForUpdate(invitationId: string): Promise<StaffEnrollmentFlow[]> {
+    const result = await this.database.query<StaffEnrollmentFlowRow>(
+      `SELECT ${ENROLLMENT_COLUMNS} FROM auth_staff_enrollment_flows
+       WHERE invitation_id = $1 AND current_step IN ('profile', 'totp') ORDER BY flow_id FOR UPDATE`,
+      [invitationId]
+    );
+    return result.rows.map(enrollmentFromRow);
+  }
+
+  async recordStaffInvitationRevocation(input: {
+    eventId: string; accountId: string; role: AuthRole; invitationId: string; occurredAt: string;
+  }): Promise<void> {
+    await this.database.query(
+      `INSERT INTO platform_audit_events
+       (audit_event_id, source_kind, actor_account_id, actor_role, action_key, outcome,
+        target_type, target_reference, metadata, occurred_at)
+       VALUES ($1, 'native', $2, $3, 'authentication.invitation.revoked', 'succeeded',
+        'invitation', $4, jsonb_build_object('invitationId', $4::text), $5)`,
+      [input.eventId, input.accountId, input.role, input.invitationId, input.occurredAt]
+    );
+  }
+
   async listStaffInvitations(
     invitedByAccountId: string,
     limit = 25

@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { isAuthRole } from "@/lib/auth/auth-domain";
 import { readAuthenticationRequestMetadata } from "@/lib/auth/auth-request";
 import { requireRoleSession } from "@/lib/auth/auth-session-service";
@@ -102,5 +104,26 @@ export async function createRootBootstrapInvitation(
     };
   } catch (error) {
     return invitationError(error);
+  }
+}
+
+export type StaffInvitationRevocationState = { error: string | null };
+
+export async function revokeStaffInvitation(
+  _previousState: StaffInvitationRevocationState,
+  formData: FormData
+): Promise<StaffInvitationRevocationState> {
+  const portal = formText(formData, "portal");
+  if (portal !== "root" && portal !== "admin") return {error: "This invitation cannot be revoked."};
+  const session = await requireRoleSession(portal);
+  try {
+    await (await getStaffProvisioningService()).revokeInvitation({
+      inviterAccountId: session.accountId, inviterSessionId: session.sessionId,
+      inviterRole: session.role, invitationId: formText(formData, "invitationId")
+    });
+    revalidatePath(`/${portal}/staff`);
+    return {error: null};
+  } catch (error) {
+    return {error: error instanceof StaffProvisioningError ? error.userMessage : "The invitation could not be revoked safely."};
   }
 }

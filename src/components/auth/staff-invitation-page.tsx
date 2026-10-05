@@ -1,4 +1,5 @@
 import type { StaffInvitationActionState } from "@/app/staff/actions";
+import { StaffInvitationRevocationForm } from "@/components/auth/staff-invitation-revocation-form";
 import { StaffInvitationForm } from "@/components/auth/staff-invitation-form";
 import { allowedStaffRolesForPortal } from "@/lib/auth/staff-role-policy";
 import { getStaffProvisioningService } from "@/lib/auth/staff-provisioning-service";
@@ -53,6 +54,9 @@ export async function StaffInvitationPage({
                   </p>
                 </div>
                 <strong>{invitation.status}</strong>
+                {invitation.status === "pending" && invitation.expiresAt > new Date().toISOString() ? (
+                  <StaffInvitationRevocationForm invitationId={invitation.invitationId} portal={session.role} />
+                ) : null}
               </article>
             ))}
           </div>

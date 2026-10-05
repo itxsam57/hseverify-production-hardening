@@ -6,21 +6,21 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "19b04b19a8ba45e7941f1acd4e6fd96594d33d02",
-  "canonical_sha": "291b61a99ba75cb7c10a95ef57c90a3cd9e86ccd",
+  "last_verified_sha": "9582a166b26e22996aeab2d3cf3e69d76cc0611f",
+  "canonical_sha": "216a7a0048c7093a4548ead53213df17b68ae135",
   "requirements": [
-    "M1.03.02"
+    "M1.03.05"
   ],
-  "last_verified_action": "PR8 merged291b61a; working Worker OTP browser passes wrong/expired/resend/stale email/phone forms with persisted counters/events and no premature activation/session. Product unchanged.",
+  "last_verified_action": "PR8 registration repair and PR9 Worker OTP verification merged after scoped independent ACCEPT, exact tests and nine actual CI checks each",
   "evidence": [
-    ".autopilot/artifacts/20261004-registration-exact-19b04b1.json",
-    ".autopilot/artifacts/20261004-registration-ci-19b04b1.json"
+    ".autopilot/artifacts/20261004-worker-otp-exact-9582a16.json",
+    ".autopilot/artifacts/20261004-worker-otp-ci-9582a16.json"
   ],
-  "next_action": "Commit Worker OTP verification after source review; exact browser/type/lint and required PR9 CI before scoped acceptance/merge",
+  "next_action": "Run exact-candidate staff revocation gates, independent final review and actual CI; merge only green expected SHA; then verify remaining staff activation/expiry variants",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "192 ledger scenarios unverified",
+    "189 ledger scenarios unverified",
     "privacy request fulfilment/export/deletion",
     "actual adjusted delivery",
     "renewal/replacement association",
@@ -29,6 +29,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-04T15:31:48.558850+00:00",
-  "verified_sha": null
+  "updated_at": "2026-10-05T02:01:44.386025+00:00",
+  "verified_sha": null,
+  "state": "AUTO_CONTINUE"
 }

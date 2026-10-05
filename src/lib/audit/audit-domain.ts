@@ -28,6 +28,7 @@ export const AUDIT_ACTIONS = [
   "authentication.account.unlocked",
   "authentication.invitation.created",
   "authentication.invitation.accepted",
+  "authentication.invitation.revoked",
   "authentication.mfa.enrolled",
   "authentication.mfa.failed",
   "authentication.mfa.succeeded",
