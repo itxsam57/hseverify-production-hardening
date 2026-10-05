@@ -6,17 +6,21 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "fc6e3ab752e740f2b3cd51f0849e6fae049c354b",
-  "canonical_sha": "c189624483ce3bbc44f97e3fa1181019a144ea07",
+  "last_verified_sha": "97ca1278f54214eab8156b9713a587aef7b18219",
+  "canonical_sha": "36d5862dbe7a8a9a85fe82db1b03d10d6f3e71a5",
   "requirements": [
-    "M1.03.08"
+    "M2.03.05",
+    "M2.07.05",
+    "M2.08.03"
   ],
-  "last_verified_action": "PR16 notification repair ACCEPTED/merged after14 genuine local gates/eight PR checks. Existing session, recovery-code login and actual password business rollback probes pass.",
+  "last_verified_action": "PR17 ACCEPTED/merged; exact five local/eight PR checks. Ledger23 passed/9 partial/186 unverified.",
   "evidence": [
-    ".autopilot/artifacts/20261005-company-exact-d9ac5ca.json",
-    ".autopilot/artifacts/20261005-company-ci-d9ac5ca.json"
+    ".autopilot/artifacts/20261005-account-security-boundaries-exact-97ca127.json",
+    ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json",
+    ".autopilot/artifacts/20261005-assessment-timing-native-working-v3.txt",
+    ".autopilot/artifacts/20261005-assessment-timing-working-v3.txt"
   ],
-  "next_action": "Finish permanent account-security boundary regressions; review and exact candidate/CI, then accommodation delivery and privacy fulfilment",
+  "next_action": "Run exact immutable timing candidate checks and applicable CI, then independent ACCEPT; auto-submit/extra breaks/other adjustments remain unverified.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -29,7 +33,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T09:05:48.407364+00:00",
-  "verified_sha": "fc6e3ab752e740f2b3cd51f0849e6fae049c354b",
+  "updated_at": "2026-10-05T09:49:33.947597+00:00",
+  "verified_sha": "97ca1278f54214eab8156b9713a587aef7b18219",
   "state": "AUTO_CONTINUE"
 }

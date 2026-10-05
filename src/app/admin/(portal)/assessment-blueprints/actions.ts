@@ -44,7 +44,7 @@ function deliverySettings(
   if (!ASSESSMENT_PROGRESSION_MODES.includes(progression as AssessmentProgressionMode)) {
     throw new AssessmentBlueprintInputError("Progression mode is invalid.");
   }
-  let sections: readonly { title: string; endPosition: number }[] = [];
+  let sections: readonly { title: string; endPosition: number; durationSeconds?: number }[] = [];
   const sectionsText = text(formData, `${prefix}sectionsJson`).trim();
   if (sectionsText) {
     let parsed: unknown;
@@ -61,11 +61,19 @@ function deliverySettings(
       const row = item as Record<string, unknown>;
       return {
         title: typeof row.title === "string" ? row.title : "",
-        endPosition: Number(row.endPosition)
+        endPosition: Number(row.endPosition),
+        ...(row.durationSeconds === undefined ? {} : { durationSeconds: Number(row.durationSeconds) })
       };
     });
   }
+  const timingMode = text(formData, prefix + "timerMode") || "UNTIMED";
+  if (!["UNTIMED", "COMBINED", "SEPARATE"].includes(timingMode)) {
+    throw new AssessmentBlueprintInputError("Timer mode is invalid.");
+  }
   return {
+    timing: timingMode === "UNTIMED" ? null : timingMode === "COMBINED"
+      ? { mode: "COMBINED", durationSeconds: Number(text(formData, prefix + "durationSeconds")) }
+      : { mode: "SEPARATE" },
     progressionMode: progression as AssessmentProgressionMode,
     sections,
     requireCamera: text(formData, `${prefix}requireCamera`) === "yes",

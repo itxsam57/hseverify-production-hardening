@@ -6,6 +6,7 @@ import type {
 } from "./assessment-attempt-domain";
 
 type AssessmentAttemptClientSource = Readonly<{
+  timing?: import("./assessment-attempt-timing").AssessmentTimingView | null;
   attempt: Readonly<{ attemptId: string }>;
   currentQuestion: AssessmentAttemptClientQuestion | null;
   currentDraft: AssessmentAttemptClientDraft | null;
@@ -46,6 +47,11 @@ export function toAssessmentAttemptClientView(
   view: AssessmentAttemptClientSource
 ): AssessmentAttemptClientView {
   return Object.freeze({
+    ...(view.timing ? { timing: Object.freeze({
+      mode: view.timing.mode, phaseIndex: view.timing.phaseIndex,
+      deadlineAt: view.timing.deadlineAt, remainingSeconds: view.timing.remainingSeconds,
+      expired: view.timing.expired
+    }) } : {}),
     attemptId: view.attempt.attemptId,
     currentQuestion:
       view.currentQuestion === null ? null : projectQuestion(view.currentQuestion),

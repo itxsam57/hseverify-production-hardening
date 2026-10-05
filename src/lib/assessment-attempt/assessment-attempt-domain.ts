@@ -53,6 +53,7 @@ export type AssessmentAttemptClientDraft = Readonly<{
 }>;
 
 export type AssessmentAttemptClientView = Readonly<{
+  timing?: import("./assessment-attempt-timing").AssessmentTimingView | null;
   attemptId: string;
   currentQuestion: AssessmentCandidateQuestion | null;
   currentDraft: AssessmentAttemptClientDraft | null;

@@ -1,0 +1,1 @@
+-- Retain immutable accepted timing policies and clocks on rollback.

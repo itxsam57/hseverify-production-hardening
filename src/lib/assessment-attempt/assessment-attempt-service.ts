@@ -46,6 +46,8 @@ export {
   AssessmentAttemptInputError
 } from "./assessment-attempt-domain";
 
+import { snapshotAssessmentClock, startAssessmentPhaseClock, readAssessmentClock, assertAssessmentTimeAvailable, type AssessmentTimingView } from "./assessment-attempt-timing";
+
 export type CurrentAssessmentQuestion = Readonly<{
   attemptId: string;
   position: number;
@@ -61,6 +63,7 @@ export type CurrentAssessmentQuestion = Readonly<{
 }>;
 
 export type AssessmentAttemptView = Readonly<{
+  timing: AssessmentTimingView | null;
   attempt: AssessmentAttemptRecord;
   currentQuestion: CurrentAssessmentQuestion | null;
   currentDraft: AssessmentAttemptClientDraft | null;
@@ -218,12 +221,14 @@ function sectionForPosition(
 
 async function view(
   repository: AssessmentAttemptRepository,
-  attempt: AssessmentAttemptRecord
+  attempt: AssessmentAttemptRecord,
+  now: Date
 ): Promise<AssessmentAttemptView> {
   const delivery = await new AssessmentDeliverySettingsService(
     Promise.resolve(repository.database)
   ).get(attempt.blueprintVersionId);
 
+  const timing = await readAssessmentClock(repository.database, attempt, delivery, now);
   const flagRows = await repository.database.query<{ position: number | string }>(
     `SELECT position
        FROM assessment_candidate_flags
@@ -235,6 +240,7 @@ async function view(
 
   if (attempt.status === "SUBMITTED") {
     return Object.freeze({
+      timing,
       attempt,
       currentQuestion: null,
       currentDraft: null,
@@ -249,6 +255,14 @@ async function view(
   }
   if (attempt.status !== "IN_PROGRESS") {
     throw new AssessmentAttemptConflictError("Assessment must be resumed through its recovery workflow.");
+  }
+
+  if (timing?.expired) {
+    return Object.freeze({
+      attempt, timing, currentQuestion: null, currentDraft: null, submitted: false,
+      progressionMode: delivery.progressionMode, reviewablePositions: Object.freeze([]),
+      flaggedPositions, awaitingSectionAdvance: false, awaitingFinalSubmit: false, sectionTitle: null
+    });
   }
 
   const committedCurrent = await repository.findCommittedAnswer(
@@ -286,7 +300,8 @@ async function view(
     const isFinal = attempt.currentPosition === attempt.questionCount;
     if (isFinal && delivery.progressionMode !== "STRICT") {
       return Object.freeze({
-        attempt,
+      timing,
+      attempt,
         currentQuestion: null,
         currentDraft: null,
         submitted: false,
@@ -304,7 +319,8 @@ async function view(
       section.endPosition === attempt.currentPosition
     ) {
       return Object.freeze({
-        attempt,
+      timing,
+      attempt,
         currentQuestion: null,
         currentDraft: null,
         submitted: false,
@@ -328,6 +344,7 @@ async function view(
   }
   const draft = await repository.findCurrentDraft(attempt, item);
   return Object.freeze({
+    timing,
     attempt,
     currentQuestion: currentQuestion(attempt, item),
     currentDraft: draft === null ? null : currentDraft(draft),
@@ -500,7 +517,10 @@ async function assertReviewablePosition(
 }
 
 export class AssessmentAttemptService {
-  constructor(private readonly database: DatabaseClient) {}
+  constructor(
+    private readonly database: DatabaseClient,
+    private readonly timingNow: (requestTime: Date) => Date = () => new Date()
+  ) {}
 
   async begin(
     principal: AuthorizationPrincipal,
@@ -555,7 +575,7 @@ export class AssessmentAttemptService {
           if (input.accessContext) {
             await assertAttemptBinding(repository, existing, principal, input.accessContext, now);
           }
-          return view(repository, existing);
+          return view(repository, existing, this.timingNow(now));
         }
 
         if (existing.status !== "REPLACED" || assuranceCase.case_status !== "Assessment pending") {
@@ -657,7 +677,7 @@ export class AssessmentAttemptService {
             );
 
       const alreadyForForm = await repository.findByForm(principal.accountId, form.formId);
-      if (alreadyForForm) return view(repository, alreadyForForm);
+      if (alreadyForForm) return view(repository, alreadyForForm, this.timingNow(now));
 
       const created = await repository.insertAttempt({
         attemptId: createAssessmentAttemptId(),
@@ -669,6 +689,8 @@ export class AssessmentAttemptService {
         questionCount: form.questionCount,
         now: now.toISOString()
       });
+      const delivery = await new AssessmentDeliverySettingsService(Promise.resolve(database)).get(created.blueprintVersionId);
+      await snapshotAssessmentClock(database, created, delivery, this.timingNow(now));
       if (input.accessContext) {
         await repository.insertBinding({
           attemptId: created.attemptId,
@@ -781,7 +803,7 @@ export class AssessmentAttemptService {
         );
       }
 
-      return view(repository, created);
+      return view(repository, created, this.timingNow(now));
     });
   }
 
@@ -798,7 +820,7 @@ export class AssessmentAttemptService {
       const attempt = await repository.findOwned(principal.accountId, attemptId);
       if (!attempt) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
-      return view(repository, attempt);
+      return view(repository, attempt, this.timingNow(now));
     });
   }
 
@@ -880,7 +902,8 @@ export class AssessmentAttemptService {
       const attempt = await repository.lockOwned(principal.accountId, attemptId);
       if (!attempt) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
-      if (attempt.status === "IN_PROGRESS") return view(repository, attempt);
+      await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
+      if (attempt.status === "IN_PROGRESS") return view(repository, attempt, this.timingNow(now));
       if (attempt.status !== "INTERRUPTED") throw new AssessmentAttemptConflictError();
       const resumed = await repository.resumeInterrupted({
         workerAccountId: principal.accountId,
@@ -901,7 +924,7 @@ export class AssessmentAttemptService {
           }
         }
       );
-      return view(repository, resumed);
+      return view(repository, resumed, this.timingNow(now));
     });
   }
 
@@ -935,6 +958,7 @@ export class AssessmentAttemptService {
       const locked = await repository.lockOwned(principal.accountId, attemptId);
       if (!locked) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, locked, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, locked, this.timingNow(now));
       if (locked.status !== "IN_PROGRESS") {
         throw new AssessmentAttemptConflictError();
       }
@@ -1006,6 +1030,7 @@ export class AssessmentAttemptService {
       const locked = await repository.lockOwned(principal.accountId, attemptId);
       if (!locked) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, locked, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, locked, this.timingNow(now));
 
       const committed = await repository.findCommittedAnswer(
         principal.accountId,
@@ -1024,7 +1049,7 @@ export class AssessmentAttemptService {
         if (!sameNormalizedAnswer(committed.value, replay)) {
           throw new AssessmentAttemptConflictError();
         }
-        return view(repository, locked);
+        return view(repository, locked, this.timingNow(now));
       }
 
       if (locked.status !== "IN_PROGRESS") {
@@ -1067,7 +1092,7 @@ export class AssessmentAttemptService {
           delivery.progressionMode === "SECTION_REVIEW" &&
           section?.endPosition === locked.currentPosition
         ) {
-          return view(repository, locked);
+          return view(repository, locked, this.timingNow(now));
         }
         const advanced = await repository.advancePosition(
           principal.accountId,
@@ -1076,11 +1101,11 @@ export class AssessmentAttemptService {
           now.toISOString()
         );
         if (!advanced) throw new AssessmentAttemptConflictError();
-        return view(repository, advanced);
+        return view(repository, advanced, this.timingNow(now));
       }
 
       if (delivery.progressionMode !== "STRICT") {
-        return view(repository, locked);
+        return view(repository, locked, this.timingNow(now));
       }
 
       return this.finalizeSubmittedAttempt(
@@ -1109,6 +1134,7 @@ export class AssessmentAttemptService {
         throw new AssessmentAttemptAccessError();
       }
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
       const { delivery, section, row } = await assertReviewablePosition(
         database,
         attempt,
@@ -1150,6 +1176,7 @@ export class AssessmentAttemptService {
         throw new AssessmentAttemptAccessError();
       }
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
       const { row } = await assertReviewablePosition(database, attempt, input.position);
       const normalized = normalizeAssessmentAnswer(
         row.question_type,
@@ -1190,6 +1217,7 @@ export class AssessmentAttemptService {
       const attempt = await repository.lockOwned(principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
       await assertReviewablePosition(database, attempt, input.position);
       await database.query(
         `INSERT INTO assessment_candidate_flags(
@@ -1222,6 +1250,7 @@ export class AssessmentAttemptService {
       const attempt = await repository.lockOwned(principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
       const delivery = await new AssessmentDeliverySettingsService(
         Promise.resolve(database)
       ).get(attempt.blueprintVersionId);
@@ -1260,7 +1289,10 @@ export class AssessmentAttemptService {
         now.toISOString()
       );
       if (!advanced) throw new AssessmentAttemptConflictError();
-      return view(repository, advanced);
+      if (delivery.timing?.mode === "SEPARATE") {
+        await startAssessmentPhaseClock(database, attemptId, section.index + 1, this.timingNow(now));
+      }
+      return view(repository, advanced, this.timingNow(now));
     });
   }
 
@@ -1277,6 +1309,7 @@ export class AssessmentAttemptService {
       const attempt = await repository.lockOwned(principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
+      await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
       const delivery = await new AssessmentDeliverySettingsService(
         Promise.resolve(database)
       ).get(attempt.blueprintVersionId);
@@ -1374,7 +1407,7 @@ export class AssessmentAttemptService {
       now
     });
 
-    return view(repository, submitted);
+    return view(repository, submitted, this.timingNow(now));
   }
 }
 

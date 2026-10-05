@@ -134,7 +134,7 @@ async function seedAssessment(database,credentials){
   await database.query(`INSERT INTO assessment_blueprints(blueprint_id,blueprint_reference,blueprint_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'BP-E2E-WORKER','INACTIVE',NULL,$2,$3,$3)`,[blueprintId,admin,now]);
   await database.query(`INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'End-to-End Worker Blueprint',$4::jsonb,$5,$6)`,[blueprintVersionId,blueprintId,frameworkId,JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:[]},{count:1,questionType:"SHORT_TEXT",tagsAll:[]}].filter(selector=>CONTENT_MODE==="COMBINED" || selector.questionType===(CONTENT_MODE==="MCQ_ONLY" ? "MULTIPLE_CHOICE" : "SHORT_TEXT"))),admin,now]);
   await database.query("UPDATE assessment_blueprints SET current_version_id=$2,blueprint_status='ACTIVE',updated_at=$3 WHERE blueprint_id=$1",[blueprintId,blueprintVersionId,now]);
-  await database.query(`INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,section_config_json,require_fullscreen,require_environment_declaration,require_monitoring_consent) VALUES($1,$2,$3::jsonb,FALSE,TRUE,TRUE)`,[blueprintVersionId,DELIVERY_MODE,JSON.stringify(DELIVERY_MODE==="SECTION_REVIEW" ? [{title:"Objective section",endPosition:1},{title:"Written section",endPosition:2}] : [])]);
+  await database.query(`INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,section_config_json,require_fullscreen,require_environment_declaration,require_monitoring_consent,timing_config_json) VALUES($1,$2,$3::jsonb,FALSE,TRUE,TRUE,$4::jsonb)`,[blueprintVersionId,DELIVERY_MODE,JSON.stringify(DELIVERY_MODE==="SECTION_REVIEW" ? [{title:"Objective section",endPosition:1},{title:"Written section",endPosition:2}] : []),JSON.stringify(process.env.HSE_MASTERPLAN_TIMING === "true" ? {mode:"COMBINED",durationSeconds:1200} : null)]);
   await database.query(`INSERT INTO assessment_catalogue_entries(catalogue_entry_id,catalogue_reference,catalogue_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'CAT-E2E-WORKER','INACTIVE',NULL,$2,$3,$3)`,[catalogueId,admin,now]);
   await database.query(`INSERT INTO assessment_catalogue_versions(catalogue_version_id,catalogue_entry_id,version_no,title,description,framework_id,blueprint_version_id,minimum_verified_qualifications,created_by_account_id,created_at) VALUES($1,$2,1,'End-to-End Worker Assessment','Preserved Masterplan Worker journey',$3,$4,1,$5,$6)`,[catalogueVersionId,catalogueId,frameworkId,blueprintVersionId,admin,now]);
   await database.query("UPDATE assessment_catalogue_entries SET current_version_id=$2,catalogue_status='ACTIVE',updated_at=$3 WHERE catalogue_entry_id=$1",[catalogueId,catalogueVersionId,now]);
@@ -223,6 +223,22 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           console.log("JOURNEY: funded assessment case created");
           journeyCaseId=(await worker.locator("main").getByText(/^assurance_case_[A-Za-z0-9_-]{24}$/).first().innerText()).trim();
           assert.match(journeyCaseId,/^assurance_case_[A-Za-z0-9_-]{24}$/);
+          if(process.env.HSE_MASTERPLAN_TIMING === "true") {
+            await worker.goto(baseUrl+"/worker/privacy");
+            await worker.getByLabel("Accommodation request").fill("Timing delivery verification");
+            await worker.getByRole("button",{name:"Submit accommodation",exact:true}).click();
+            await worker.getByText("Timing delivery verification",{exact:true}).waitFor();
+            await login(admin,baseUrl,credentials.admin,"admin");
+            await admin.goto(baseUrl+"/admin/privacy");
+            const accommodation=admin.locator("article").filter({hasText:"Timing delivery verification"}).first();
+            await accommodation.getByLabel("Assurance Case").selectOption(journeyCaseId);
+            await accommodation.getByLabel("Time multiplier").fill("1.5");
+            await accommodation.getByLabel("Extra break minutes").fill("0");
+            await accommodation.getByLabel("Review reason").fill("Approved extra assessment time without changing competency standards.");
+            await accommodation.getByRole("button",{name:"Save accommodation decision",exact:true}).click();
+            await accommodation.getByText("Status: APPROVED",{exact:true}).waitFor();
+            await worker.goto(baseUrl+"/worker/assessment-applications");
+          }
           await worker.getByRole("link",{name:"Continue to available assessments"}).click();
           await worker.waitForURL("**/worker/available-assessments",{timeout:20000});
           const eligibleHeading=worker.getByRole("region",{name:"Eligible assessment offerings"}).getByRole("heading",{name:"End-to-End Worker Assessment"});
@@ -234,6 +250,15 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await worker.getByRole("button",{name:"Start assessment"}).click();await worker.waitForURL(/\/precheck\?/,{timeout:15000});
           await worker.getByRole("button",{name:"Run device checks"}).click();await worker.getByText("Device checks completed.",{exact:true}).waitFor({timeout:15000});await worker.getByLabel("I confirm I am the Worker assigned to this assessment.").check();await worker.getByLabel(/I confirm my environment is suitable/).check();await worker.getByLabel(/I consent to the monitoring signals/).check();await worker.getByRole("button",{name:"Begin assessment"}).click();await worker.waitForURL(/\/worker\/assessments\/assessment_attempt_/,{timeout:20000});
           let attemptId=worker.url().split("/").pop();const originalAttemptId=attemptId;
+          if(process.env.HSE_MASTERPLAN_TIMING === "true") {
+            const timer=worker.getByRole("timer",{name:"Assessment time remaining"});
+            await timer.waitFor();
+            const remaining = text => {const match=text.match(/(\d+):(\d+) remaining/);assert.ok(match);return Number(match[1])*60+Number(match[2]);};
+            const before=remaining(await timer.innerText());assert.ok(before>=1770 && before<=1800,"Approved1.5 extra time was not applied.");
+            await worker.reload();await timer.waitFor();const after=remaining(await timer.innerText());assert.ok(after<=before && after>=before-15,"Reload reset the assessment clock.");
+            console.log("ACTUAL_WORKER_TIMING_BROWSER normal Worker request/Admin approval, actual precheck/begin exposes adjusted1800s timer and reload does not reset");
+          }
+
           if(CONTENT_MODE!=="WRITTEN_ONLY") { await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();await assertCandidateQuestionBoundary(worker);
           let mcqOffline = process.env.HSE_MASTERPLAN_MCQ_OFFLINE === "true";
           if (mcqOffline) await workerContext.route("**/worker/assessments/**", route => route.request().method() === "POST" && mcqOffline ? route.abort("internetdisconnected") : route.continue());
@@ -397,7 +422,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           if(!["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE)) await login(verifier,baseUrl,credentials.verifier,"verifier");await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);let scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.waitFor({timeout:20000});await scoreRow.locator('input[name="score"]').fill("92");await scoreRow.locator('select[name="decision"]').selectOption("PASS");await scoreRow.locator('textarea[name="reason"]').fill("Written response demonstrates correct hazard isolation and verification sequence.");await scoreRow.getByRole("button",{name:"Save scoring decision"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.getByPlaceholder("Criterion").fill("Hazard control reasoning");await scoreRow.locator('input[name="mark"]').fill("92");await scoreRow.getByRole("button",{name:"Save mark"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.getByRole("button",{name:"Finalize review"}).click();
 
           }
-          await login(admin,baseUrl,credentials.admin,"admin");
+          if(process.env.HSE_MASTERPLAN_TIMING !== "true") await login(admin,baseUrl,credentials.admin,"admin");
           await admin.goto(`${baseUrl}/admin/assessor-matching`,{waitUntil:"domcontentloaded"});
           const unassignedCard=admin.locator("article").filter({hasText:"Masterplan Worker"}).first();
           if(await unassignedCard.count()){
@@ -556,6 +581,12 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         assert.ok(freshQuestions.every(row=>!priorQuestions.has(row.question_id)),"Reassessment repeated an exposed question.");
         const replacementOrder=(await verify.query("SELECT order_status FROM assurance_orders WHERE order_id=(SELECT order_id FROM assurance_cases WHERE case_id=$1)",[reassessmentCaseId])).rows[0];
         assert.equal(replacementOrder.order_status,"COMPLETED");
+      }
+      if(process.env.HSE_MASTERPLAN_TIMING === "true") {
+        const clocks=(await verify.query("SELECT policy.time_multiplier,policy.phase_durations_json,clocks.started_at,clocks.deadline_at FROM assessment_attempts attempts JOIN assessment_attempt_time_policies policy USING(attempt_id) JOIN assessment_attempt_clocks clocks USING(attempt_id) WHERE attempts.case_id=$1",[journeyCaseId])).rows;
+        assert.equal(clocks.length,1);assert.equal(Number(clocks[0].time_multiplier),1.5);assert.deepEqual(clocks[0].phase_durations_json,[1800]);
+        assert.equal(new Date(clocks[0].deadline_at).getTime()-new Date(clocks[0].started_at).getTime(),1800000);
+        console.log("ACTUAL_WORKER_TIMING_DB owned approved multiplier snapshotted once, exact1800s clock retained through normal scoring/interview/credential");
       }
       assert.ok(journeyCaseId,"Preserved Worker journey did not expose its Assurance Case ID.");
       const c=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0];assert.equal(c.case_status,"Approved");assert.ok(c.decision_reference);assert.ok(c.credential_reference);
