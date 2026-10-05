@@ -30,6 +30,7 @@ test("outbox vocabulary is explicit, fixed and wildcard-free", () => {
   assert.deepEqual(outbox.OUTBOX_JOB_TYPES, [
     "platform.foundation.noop",
     "notification.portal.foundation",
+    "notification.account.security",
     "email.delivery.foundation",
     "secure_file.scan",
     "worker_identity.automated_checks"
@@ -334,4 +335,9 @@ test("required outbox transaction commits state and durable work together", asyn
 
   assert.equal(result, "accepted");
   assert.deepEqual(committed, ["accepted-state", "durable-outbox"]);
+});
+
+test("security jobs carry only a source event reference", () => {
+  assert.deepEqual(outbox.normalizeOutboxPayload("notification.account.security", {eventRef:"event_security_A"}), {eventRef:"event_security_A"});
+  for (const value of [{eventRef:"event_security_A",token:"secret"},{eventRef:"event_security_A",email:"person@example.test"},{eventRef:"<script>"},{fixtureRef:"owner-test"}]) assert.throws(() => outbox.normalizeOutboxPayload("notification.account.security",value),outbox.OutboxContractError);
 });

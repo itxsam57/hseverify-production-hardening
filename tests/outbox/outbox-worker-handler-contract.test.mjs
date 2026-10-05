@@ -11,8 +11,9 @@ test("shared outbox worker keeps every fixed handler explicit and lease-safe", a
 
   assert.match(
     worker,
-    /"notification\.portal\.foundation": async \(job\) =>\s*projectNotificationOutboxJob\(job\)/
+    /"notification\.portal\.foundation": async \(job, _lease, database\) =>\s*projectNotificationOutboxJob\(job, \{ database \}\)/
   );
+  assert.match(worker, /"notification\.account\.security": async \(job, _lease, database\) =>\s*projectNotificationOutboxJob\(job, \{ database \}\)/);
   assert.doesNotMatch(
     worker,
     /"notification\.portal\.foundation": projectNotificationOutboxJob/
@@ -30,5 +31,5 @@ test("shared outbox worker keeps every fixed handler explicit and lease-safe", a
     /projectNotificationOutboxJob\(job,\s*lease\)/
   );
   assert.doesNotMatch(worker, /import\s*\(|require\s*\([^"']/);
-  assert.match(worker, /handler\(claimed\.job, claimed\.lease\)/);
+  assert.match(worker, /handler\(claimed\.job, claimed\.lease, input\?\.database\)/);
 });

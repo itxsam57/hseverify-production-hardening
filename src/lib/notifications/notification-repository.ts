@@ -17,12 +17,13 @@ import {
   normalizeNotificationLimit,
   normalizeNotificationMetadata,
   notificationContent,
+  accountSecurityNotificationType,
+  type NotificationType,
   type NotificationQueryOptions,
   type NotificationRecord
 } from "./notification-domain";
 import {
-  assertNotificationProjectionJob,
-  type FoundationNotificationMetadata
+  assertNotificationProjectionJob
 } from "./notification-domain";
 import type { OutboxJobRecord } from "../outbox/outbox-domain";
 
@@ -61,7 +62,8 @@ WHERE accounts.account_id = $6
           AND memberships.account_id = $6
           AND memberships.portal_role = 'company'
           AND memberships.membership_status = 'active'
-          AND tenants.tenant_status = 'active'
+          AND (tenants.tenant_status = 'active' OR
+            ($2 IN ('account.password.changed', 'account.password.reset', 'account.mfa.replaced', 'account.recovery_codes.rotated') AND tenants.tenant_status = 'pending'))
       )
     )
   )
@@ -342,12 +344,21 @@ export class DatabaseNotificationRepository implements NotificationRepository {
     jobInput: OutboxJobRecord
   ): Promise<NotificationProjectionResult> {
     const job = assertNotificationProjectionJob(jobInput);
-    const notificationType = "platform.foundation.ready" as const;
+    let notificationType: NotificationType = "platform.foundation.ready";
+    if (job.jobType === "notification.account.security") {
+      const payload = job.payload as { eventRef: string };
+      const source = await database.query<{ event_type: string }>(
+        "SELECT event_type FROM auth_security_events WHERE event_id=$1 AND account_id=$2 AND active_role=$3",
+        [payload.eventRef, job.enqueuedByAccountId, job.enqueuedByRole]
+      );
+      if (!source.rows[0]) throw new NotificationAccessDeniedError();
+      notificationType = accountSecurityNotificationType(source.rows[0].event_type);
+    }
     const content = notificationContent(notificationType);
     const metadata = normalizeNotificationMetadata(
       notificationType,
       job.payload
-    ) as FoundationNotificationMetadata;
+    );
     const projectionKey = deriveNotificationProjectionKey({
       jobId: job.jobId,
       notificationType,

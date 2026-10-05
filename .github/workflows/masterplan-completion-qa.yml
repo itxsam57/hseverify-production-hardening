@@ -100,6 +100,9 @@ jobs:
       - name: Account-security native audit compatibility and rollback
         run: npm run test:account-security-audit
 
+      - name: Sensitive account-security notification intent and worker retry
+        run: npm run test:account-security-notifications
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40

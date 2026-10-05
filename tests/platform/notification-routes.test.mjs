@@ -38,14 +38,15 @@ test("all six fixed portals expose one hard-coded persisted notification route",
   }
 });
 
-test("notification deep-link registry maps only to already-real fixed-role dashboards", async () => {
+test("notification deep-link registry maps only to real fixed-role dashboards and authenticated account security", async () => {
   const authDomain = await readFile(resolve("src/lib/auth/auth-domain.ts"), "utf8");
   const notificationDomain = await readFile(
     resolve("src/lib/notifications/notification-domain.ts"),
     "utf8"
   );
   const expected = extractRoleHomePaths(authDomain);
-  assert.match(notificationDomain, /NOTIFICATION_TARGETS = \["portal\.dashboard"\]/);
+  assert.match(notificationDomain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security"\]/);
+  assert.match(notificationDomain, /case "account\.security":\s*return "\/account\/security"/);
   assert.match(notificationDomain, /ROLE_HOME_PATHS\[input\.role\]/);
   assert.doesNotMatch(notificationDomain, /https?:\/\//i);
   assert.deepEqual(Object.keys(expected).sort(), [...roles].sort());

@@ -1,3 +1,4 @@
+import { verifySecurityNotifications } from "../helpers/account-security-notification-browser.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHmac } from "node:crypto";
@@ -57,7 +58,7 @@ const {hashOpaqueValue,decryptSecret,createIdentifier}=loadWorkerRegistrationTs(
 test("Five MFA-protected roles rotate recovery codes and replace authenticators with exact persisted audit and factor state",{timeout:300000},async()=>{
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-mfa-security-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"mfa-security-browser",HSE_SESSION_SECRET:"mfa-security-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"mfa-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
- const roles=["company","assessor","verifier","admin","root"],generated={},secrets={},oldCounters={},oldHashes={};let browser;
+ const roles=["company","assessor","verifier","admin","root"],generated={},secrets={},oldCounters={},oldHashes={},notificationCookies={};let browser;
  async function signIn(page,identity,role,secret,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(identity.password);await page.getByLabel("Authenticator code").fill(totp(secret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();}
  try{
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
@@ -100,7 +101,7 @@ test("Five MFA-protected roles rotate recovery codes and replace authenticators 
     await signIn(loginPage,identity,role,identity.totpSecret,1);await loginPage.getByRole("alert").waitFor();
     await loginPage.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(loginPage.url()).pathname,"/"+role+"/login");
     await signIn(loginPage,identity,role,secrets[role],1);await loginPage.waitForURL("**/"+role+"/dashboard");
-    console.log("ACTUAL_FRESH_OLD_FACTOR_DENIAL",role,"fresh old factor denied and new factor accepted");await loginContext.close();
+    notificationCookies[role]=await loginContext.cookies();console.log("ACTUAL_FRESH_OLD_FACTOR_DENIAL",role,"fresh old factor denied and new factor accepted");await loginContext.close();
    }
   }});
   const db=new PGlite(directory);try{
@@ -118,5 +119,6 @@ test("Five MFA-protected roles rotate recovery codes and replace authenticators 
    }
    console.log("ACTUAL_FIVE_ROLE_MFA_MANAGEMENT_DB: exact ten code hashes, old revoked/new active factors, consumed challenge and immutable role-bound completion audits");
   }finally{await db.close();}
+  await verifySecurityNotifications({browser,root,environment,baseUrl,port,credentials,roles,cookies:notificationCookies,titles:["Recovery codes replaced", "Authenticator replaced"]});
  }finally{if(browser)await browser.close();await rm(directory,{recursive:true,force:true});}
 });
