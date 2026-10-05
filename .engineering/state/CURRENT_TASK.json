@@ -6,17 +6,17 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "cc34a5502ca1662bf31ea88634fdd632dd12ec78",
-  "canonical_sha": "08eb353ab494fc7a6d4548c36aa478fede8d6a8a",
+  "last_verified_sha": "fc6e3ab752e740f2b3cd51f0849e6fae049c354b",
+  "canonical_sha": "c189624483ce3bbc44f97e3fa1181019a144ea07",
   "requirements": [
     "M1.03.08"
   ],
-  "last_verified_action": "PR15 accepted/merged08eb353. Security notification working native4, direct SQL boundaries, foundation regressions and all three real producer/browser read/deep-link journeys pass; source REVIEW_PASS.",
+  "last_verified_action": "PR16 notification repair ACCEPTED/merged after14 genuine local gates/eight PR checks. Existing session, recovery-code login and actual password business rollback probes pass.",
   "evidence": [
     ".autopilot/artifacts/20261005-company-exact-d9ac5ca.json",
     ".autopilot/artifacts/20261005-company-ci-d9ac5ca.json"
   ],
-  "next_action": "Commit notification candidate; exact local gates, actual CI and independent acceptance; then six-role active-session browser",
+  "next_action": "Finish permanent account-security boundary regressions; review and exact candidate/CI, then accommodation delivery and privacy fulfilment",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -29,7 +29,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T08:45:59.556334+00:00",
-  "verified_sha": "cc34a5502ca1662bf31ea88634fdd632dd12ec78",
+  "updated_at": "2026-10-05T09:05:48.407364+00:00",
+  "verified_sha": "fc6e3ab752e740f2b3cd51f0849e6fae049c354b",
   "state": "AUTO_CONTINUE"
 }

@@ -103,6 +103,9 @@ jobs:
       - name: Sensitive account-security notification intent and worker retry
         run: npm run test:account-security-notifications
 
+      - name: Actual account-security password and session transaction rollback
+        run: npm run test:account-security-business-rollback
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -158,6 +161,9 @@ jobs:
 
       - name: Six-role password recovery cooldown and replay boundaries
         run: npm run test:six-role-password-recovery-browser
+      - name: Six-role own-session and foreign-session boundaries
+        run: npm run test:active-session-boundaries-browser
+
       - name: Six-role password change and session revocation boundaries
         run: npm run test:password-change-boundaries-browser
 
