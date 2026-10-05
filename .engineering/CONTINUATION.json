@@ -2,15 +2,15 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
-  "verified_sha": "f6c7af07ad1a674054b6f0c99ddf4a0520fc4dd9",
-  "last_verified_action": "PR12 recovery scoped ACCEPT and merged after focused exact checks and eight applicable CI checks",
-  "next_action": "Reproduce Company registration email rejection through actual browser and downstream pending-account/tenant/attempt/audit assertions",
+  "verified_sha": "d9ac5ca4d78345cdfc3f5f925976bdf4c544af90",
+  "last_verified_action": "PR13 scoped ACCEPT and merged after nine exact local commands and eight applicable actual CI checks; full Company email/MFA/owner journey verified",
+  "next_action": "Commit reviewed account-security mappings repair, verify exact candidate and all applicable CI, merge, then continue remaining Masterplan workflows",
   "owner_required": false,
-  "revision": 6,
+  "revision": 7,
   "blocker": null,
-  "updated_at": "2026-10-05T03:21:40.601804+00:00",
+  "updated_at": "2026-10-05T03:47:56.316595+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "f78af3aa4a123be10aa56654f506986725a56f95"
+  "canonical_sha": "baaa711a46576ceb874c43b039e15a60ff95f65c"
 }
