@@ -11,16 +11,19 @@
   "requirements": [
     "M2.07.05"
   ],
-  "last_verified_action": "PR21 accepted/merged. Timeout working tree:16 begin/migration tests, actual worker child process, natural deadline browser, type/lint and notifications pass; exact candidate build/CI pending.",
+  "last_verified_action": "Timeout eef08fb exact local passes. PR22 partial CI retained; hosted billing refusal repaired locally. Assigned review:17begin/source tests,2guidance/pinned tests,13written regressions,type and lint pass.",
   "evidence": [
-    ".autopilot/artifacts/20261005-company-worker-archive-red-0d7e98b.json",
-    ".autopilot/artifacts/20261005-worker-accept-lock-order-red.json",
-    ".autopilot/artifacts/20261005-company-worker-archive-working-v3.json"
+    ".autopilot/artifacts/20261005-timeout-exact-eef08fb.json",
+    ".autopilot/artifacts/20261005-written-review-source-red-v2-eef08fb.txt",
+    ".autopilot/artifacts/20261005-written-review-native-working.txt",
+    ".autopilot/artifacts/20261005-written-review-guidance-working-v2.txt",
+    ".autopilot/artifacts/20261005-ci-runner-policy-working.json"
   ],
-  "next_action": "Commit reviewed timeout source, run exact candidate affected tests/build/browser and PR CI; then address written-review evidence display.",
+  "next_action": "Run committed exact timeout-to-human-review browser, production build/preview and code checks; update PR22 and require actual dedicated-runner CI.",
   "revision_attempt": 0,
   "blockers": [
-    "Exact timeout candidate gates and live PostgreSQL supervised worker verification remain."
+    "PR22 hosted runner billing refusal; local policy repair awaits actual CI.",
+    "New human-review browser/type validation pending."
   ],
   "unknowns": [
     "182 ledger scenarios unverified",
@@ -31,7 +34,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T20:07:26.261645+00:00",
+  "updated_at": "2026-10-05T20:29:41.996171+00:00",
   "verified_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
   "state": "AUTO_CONTINUE",
   "resume": {

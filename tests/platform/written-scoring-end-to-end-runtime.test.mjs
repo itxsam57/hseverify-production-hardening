@@ -59,6 +59,11 @@ test("written scoring queue derives tenant scope from reviewer-owned records", a
     async query(sql, params) {
       assert.match(sql, /reviewer_account_id=\$1/);
       assert.doesNotMatch(sql, /tenant_id=\$1/);
+      if (sql.includes("generated_assessment_form_items")) {
+        assert.deepEqual(params,["reviewer-platform",["written_score_assigned"]]);
+        assert.match(sql,/versions.question_version_id=items.question_version_id/);
+        return {rows:[]};
+      }
       assert.deepEqual(params, ["reviewer-platform"]);
       return { rows: [{
         review_id: "written_score_assigned",

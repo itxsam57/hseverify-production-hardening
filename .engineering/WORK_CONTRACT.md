@@ -24,3 +24,19 @@ No timeout row promoted: exact candidate build/browser/CI and PostgreSQL product
 worker remain to verify. PR21 prerequisite merged e445518; keep counts32/12/174.
 Next product gap: assigned written reviewer needs all pinned prompts/rubrics and
 latest response or explicit unanswered evidence; current queue shows score inputs.
+
+## Assigned review and remaining runner repair
+
+Actual database RED at eef08fb reproduced absent question evidence in assigned
+review queue. Source now joins reviewer/case/tenant and pinned form versions,
+retains latest revision and explicit omitted items, and renders prompts, answers
+and rubrics. Sandbox guidance shares this source and gives omitted responses zero
+suggested credit.17begin/source,2pinned/guidance and13written regressions pass;
+strict type and lint pass. Browser now exercises expiry through human FAIL and
+Reassessment required; actual execution still pending at commit preparation.
+
+PR22 hosted m1-11/m2-01 jobs were rejected before starting by billing. Remaining
+obsolete QA cancelled after connected/release passed. Apply the already reviewed
+trusted dedicated-runner policy to remaining20workflows, hosted-fork fallback and
+isolated temporary DBs; parsed YAML check preserves every step/permission/gate.
+No cancelled/refused run counts as pass. Update PR22 and execute actual new CI.

@@ -1,8 +1,16 @@
 import "server-only";
+import { loadAssignedReviewQuestions } from "./assessment-review-source";
 import { createIdentifier } from "../auth/auth-domain";
 import type { DatabaseClient } from "../database/database";
 import { advanceAfterAssessmentReview } from "../assurance/assurance-case-progression-service";
 import { normalizeWrittenScore, normalizeWrittenScoreDecision } from "./written-scoring-domain";
+
+type ScoringReviewRow = {
+  review_id:string; tenant_id:string; case_id:string; attempt_id:string;
+  reviewer_account_id:string; rubric_version:string; score:number|null;
+  decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"|null; reason:string; status:string;
+  created_at:string|Date;
+};
 
 export class WrittenScoringService {
   constructor(private readonly database: DatabaseClient) {}
@@ -173,31 +181,34 @@ export class WrittenScoringService {
   async listReviewQueue(input: {tenantId?:string; reviewerAccountId?:string}) {
     if (input.tenantId && !input.tenantId.startsWith("tenant_")) throw new Error("Invalid tenant scope.");
     if (input.reviewerAccountId && !input.tenantId) {
-      const result = await this.database.query(
+      const result = await this.database.query<ScoringReviewRow>(
         `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at
          FROM written_score_reviews
          WHERE reviewer_account_id=$1 AND status IN ('DRAFT','FINAL')
          ORDER BY created_at DESC`,
         [input.reviewerAccountId]
       );
-      return result.rows;
+      const questions = await loadAssignedReviewQuestions(this.database,input.reviewerAccountId,result.rows.map(row => row.review_id));
+      return result.rows.map(row => ({...row,questions:questions.get(row.review_id) ?? []}));
     }
     if (!input.tenantId) throw new Error("Tenant or reviewer scope is required.");
     const result = input.reviewerAccountId
-      ? await this.database.query(
+      ? await this.database.query<ScoringReviewRow>(
           `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at
            FROM written_score_reviews
            WHERE tenant_id=$1 AND reviewer_account_id=$2 AND status IN ('DRAFT','FINAL')
            ORDER BY created_at DESC`,
           [input.tenantId, input.reviewerAccountId]
         )
-      : await this.database.query(
+      : await this.database.query<ScoringReviewRow>(
           `SELECT review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status,created_at
            FROM written_score_reviews
            WHERE tenant_id=$1 AND status='DRAFT'
            ORDER BY created_at DESC`,
           [input.tenantId]
         );
-    return result.rows;
+    if (!input.reviewerAccountId) return result.rows.map(row => ({...row,questions:[]}));
+    const questions = await loadAssignedReviewQuestions(this.database,input.reviewerAccountId,result.rows.map(row => row.review_id));
+    return result.rows.map(row => ({...row,questions:questions.get(row.review_id) ?? []}));
   }
 }

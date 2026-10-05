@@ -1,4 +1,5 @@
 import "server-only";
+import { loadAssignedReviewQuestions } from "./assessment-review-source";
 
 import { createHash } from "node:crypto";
 import { createIdentifier } from "../auth/auth-domain";
@@ -150,15 +151,16 @@ function sandboxSuggestion(rows: readonly SourceRow[]): WrittenScoringSuggestion
     suggestedPercent: number;
     rationale: string;
   }> = [];
-  let totalWords = 0;
+  let totalCompleteness = 0;
   let totalCriteria = 0;
 
   for (const row of rows) {
     const wordCount = row.text_value.trim().split(/\s+/).filter(Boolean).length;
-    totalWords += wordCount;
+
     const rubric = rubricCriteria(row.rubric_json);
     totalCriteria += rubric.length;
-    const completeness = Math.max(35, Math.min(90, 45 + Math.floor(wordCount / 8)));
+    const completeness = wordCount === 0 ? 0 : Math.max(35, Math.min(90, 45 + Math.floor(wordCount / 8)));
+    totalCompleteness += completeness;
     for (const item of rubric) {
       criteria.push({
         questionPosition: Number(row.position),
@@ -172,7 +174,7 @@ function sandboxSuggestion(rows: readonly SourceRow[]): WrittenScoringSuggestion
 
   const overall = rows.length === 0
     ? 0
-    : Math.max(35, Math.min(90, 45 + Math.floor(totalWords / Math.max(8, rows.length * 8))));
+    : Math.round(totalCompleteness / rows.length);
   return Object.freeze({
     testingOnly: true,
     overallScoreSuggestion: overall,
@@ -209,19 +211,12 @@ async function reviewForUpdate(
   return review;
 }
 
-async function sourceForAttempt(database: DatabaseClient, attemptId: string): Promise<SourceRow[]> {
-  const result = await database.query<SourceRow>(
-    `SELECT answers.position,versions.prompt,versions.rubric_json,answers.text_value
-       FROM assessment_attempt_answers answers
-       JOIN assessment_question_versions versions
-         ON versions.question_version_id=answers.question_version_id
-        AND versions.question_id=answers.question_id
-      WHERE answers.attempt_id=$1
-        AND answers.question_type IN ('SHORT_TEXT','LONG_TEXT')
-      ORDER BY answers.position`,
-    [attemptId]
-  );
-  return result.rows;
+async function sourceForReview(database: DatabaseClient, reviewId: string, reviewerAccountId: string): Promise<SourceRow[]> {
+  const questions = await loadAssignedReviewQuestions(database,reviewerAccountId,[reviewId]);
+  return (questions.get(reviewId) ?? []).filter(question =>
+    question.questionType === "SHORT_TEXT" || question.questionType === "LONG_TEXT"
+  ).map(question => ({position:question.position,prompt:question.prompt,
+    rubric_json:question.rubric,text_value:question.response ?? ""}));
 }
 
 async function nextEventVersion(database: DatabaseClient, assistanceId: string): Promise<number> {
@@ -250,7 +245,7 @@ export class WrittenScoringAssistanceService {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
       const review = await reviewForUpdate(tx, input.reviewId, input.reviewerAccountId);
-      const source = await sourceForAttempt(tx, review.attempt_id);
+      const source = await sourceForReview(tx, review.review_id, input.reviewerAccountId);
       if (source.length === 0) {
         throw new WrittenScoringAssistanceConflictError(
           "No submitted written answers are available for AI guidance."

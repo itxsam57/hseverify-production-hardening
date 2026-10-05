@@ -790,3 +790,28 @@ test("Forward migration reconciles legacy immutable clocks with truthful system 
     assert.equal((await db.query("SELECT column_name FROM information_schema.columns WHERE table_name='platform_outbox_jobs' AND column_name='enqueued_system_component'")).rows.length,1);
   } finally { await db.close(); }
 });
+
+const {loadWrittenScoringRuntime}=await import("../helpers/written-scoring-runtime-loader.mjs");
+const {WrittenScoringService}=await loadWrittenScoringRuntime();
+test("Assigned review projects all pinned questions including unanswered items",async()=>{
+ const db=await database();
+ try {
+  await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+  const worker=await seedAccount(db,"z");const verifier=await seedAccount(db,"z","verifier");
+  const offering=await seedOffering(db,"z",worker.accountId);
+  await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,timing_config_json) VALUES($1,'CONTROLLED_REVIEW',$2::jsonb)",[offering.blueprintVersionId,JSON.stringify({mode:"COMBINED",durationSeconds:60})]);
+  const service=new AssessmentAttemptService(db,t=>t);
+  const first=await service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},NOW_DATE);
+  await service.saveCurrentDraft(worker,{attemptId:first.attempt.attemptId,position:1,value:first.currentQuestion.options[0],expectedRevision:null,mutationKey:"review-source-draft-before-deadline"},new Date(NOW_DATE.getTime()+10000),null);
+  await service.getOwnedView(worker,first.attempt.attemptId,new Date(NOW_DATE.getTime()+60000));
+  const reviews=await new WrittenScoringService(db).listReviewQueue({reviewerAccountId:verifier.accountId});
+  assert.equal(reviews.length,1,"Real timeout producer must queue assigned review");
+  assert.equal(reviews[0].questions.length,2,"Assigned review must include all pinned prompts, retained answers and explicit unanswered items");
+  assert.equal(reviews[0].questions[0].answered,true);
+  assert.equal(reviews[0].questions[0].response,first.currentQuestion.options[0]);
+  assert.equal(reviews[0].questions[1].answered,false);
+  assert.equal(reviews[0].questions[1].response,null);
+  assert.match(reviews[0].questions[1].prompt,/pinned prompt/);
+  assert.deepEqual(await new WrittenScoringService(db).listReviewQueue({reviewerAccountId:"foreign-reviewer"}),[]);
+ }finally{await db.close();}
+});

@@ -269,6 +269,25 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             await worker.reload();
             await worker.getByText("Assessment submitted",{exact:true}).waitFor();
             console.log("ACTUAL_EXPIRY_BROWSER saved draft retained, natural server deadline receipt, reload remains submitted");
+            await login(verifier,baseUrl,credentials.verifier,"verifier");
+            await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);
+            let review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
+            await review.getByText(WRITTEN_PROMPT,{exact:false}).waitFor();
+            await review.getByText("Unanswered",{exact:true}).waitFor();
+            await review.getByText(MCQ_ANSWER,{exact:true}).waitFor();
+            assert.equal(await review.locator("article").count(),2);
+            await review.locator('input[name="score"]').fill("0");
+            await review.locator('select[name="decision"]').selectOption("FAIL");
+            await review.locator('textarea[name="reason"]').fill("The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.");
+            await review.getByRole("button",{name:"Save scoring decision"}).click();
+            await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
+            await review.getByPlaceholder("Criterion").fill("Unanswered hazard control reasoning");
+            await review.locator('input[name="mark"]').fill("0");
+            await review.getByRole("button",{name:"Save mark"}).click();
+            await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
+            await review.getByRole("button",{name:"Finalize review"}).click();
+            await verifier.reload();await review.getByText("FINAL",{exact:true}).waitFor();
+            console.log("ACTUAL_WRITTEN_REVIEW_BROWSER pinned questions and omitted response reviewed by assigned Verifier; human FAIL finalized");
             return {attemptId};
           }
 
@@ -484,6 +503,10 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         const audit=(await verify.query("SELECT actor_account_id,actor_role,metadata FROM platform_audit_events WHERE action_key='assessment.attempt.submitted' AND target_reference=$1",[attempt.attempt_id])).rows;
         assert.equal(audit.length,1);assert.equal(audit[0].actor_account_id,null);assert.equal(audit[0].metadata.systemComponent,"outbox-worker");
         console.log("ACTUAL_EXPIRY_DB one retained draft, no fabricated written answer, one truthful system submission");
+        const reviews=(await verify.query("SELECT score,decision,status FROM written_score_reviews WHERE attempt_id=$1",[attempt.attempt_id])).rows;
+        assert.deepEqual(reviews,[{score:0,decision:"FAIL",status:"FINAL"}]);
+        assert.equal((await verify.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0].case_status,"Reassessment required");
+        console.log("ACTUAL_WRITTEN_REVIEW_DB final human decision and retained reassessment outcome");
       } finally {await verify.close();}
       return;
     }
