@@ -6,34 +6,31 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "97ca1278f54214eab8156b9713a587aef7b18219",
-  "canonical_sha": "36d5862dbe7a8a9a85fe82db1b03d10d6f3e71a5",
+  "last_verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
+  "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
   "requirements": [
-    "M2.03.05",
-    "M2.07.05",
-    "M2.08.03"
+    "M1.09.05"
   ],
-  "last_verified_action": "PR17 ACCEPTED/merged; exact five local/eight PR checks. Ledger23 passed/9 partial/186 unverified.",
+  "last_verified_action": "PR18 bounded timing ACCEPTED/merged after ten local/eight applicable CI checks. Ledger23 passed/12 partial/183 unverified.",
   "evidence": [
     ".autopilot/artifacts/20261005-account-security-boundaries-exact-97ca127.json",
     ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json",
     ".autopilot/artifacts/20261005-assessment-timing-native-working-v3.txt",
     ".autopilot/artifacts/20261005-assessment-timing-working-v3.txt"
   ],
-  "next_action": "Run exact immutable timing candidate checks and applicable CI, then independent ACCEPT; auto-submit/extra breaks/other adjustments remain unverified.",
+  "next_action": "Repair actual suspended/revoked Company staff denial rendering; require explicit access-denied and no generic error on existing authenticated sessions.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "186 ledger scenarios unverified",
-    "privacy request fulfilment/export/deletion",
-    "actual adjusted delivery",
-    "renewal/replacement association",
-    "live adapters/production/owner verification"
+    "183 ledger scenarios unverified",
+    "timeout auto-submit and remaining accommodations",
+    "privacy fulfilment/export/deletion",
+    "live providers, deployed workflows and PostgreSQL concurrency"
   ],
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T09:49:33.947597+00:00",
-  "verified_sha": "97ca1278f54214eab8156b9713a587aef7b18219",
+  "updated_at": "2026-10-05T14:11:32.015619+00:00",
+  "verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
   "state": "AUTO_CONTINUE"
 }

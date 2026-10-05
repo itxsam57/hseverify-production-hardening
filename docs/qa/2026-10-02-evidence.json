@@ -1577,8 +1577,17 @@
           "Assessor"
         ],
         "scenario": "Accommodation changes delivery without lowering score standards",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "candidate_sha": "04bc788b61628bd37805df699e2de21da208f74f",
+          "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
+          "review": "PR18 ACCEPT",
+          "scope": "Actual owned Worker request/Admin approval changes1200s to1800s via approved1.5 multiplier; normal scoring/credential journey unchanged. Extra breaks and other adjustments unverified.",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-assessment-timing-exact-04bc788.json",
+            ".autopilot/artifacts/20261005-assessment-timing-ci-04bc788.json"
+          ]
+        }
       },
       {
         "id": "M2.03.06",
@@ -1904,8 +1913,17 @@
           "Admin"
         ],
         "scenario": "Timer expiry/auto-submit and no duplicate final outcomes",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "candidate_sha": "04bc788b61628bd37805df699e2de21da208f74f",
+          "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
+          "review": "PR18 ACCEPT",
+          "scope": "Native exact-deadline and post-lock expiry deny writes; immutable clocks and recovery retain answers. Timeout auto-submit and duplicate final outcomes on timeout unverified.",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-assessment-timing-exact-04bc788.json",
+            ".autopilot/artifacts/20261005-assessment-timing-ci-04bc788.json"
+          ]
+        }
       },
       {
         "id": "M2.07.06",
@@ -1967,8 +1985,17 @@
           "Verifier"
         ],
         "scenario": "Refresh/navigation/crash preserve answer and authoritative timer",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "candidate_sha": "04bc788b61628bd37805df699e2de21da208f74f",
+          "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
+          "review": "PR18 ACCEPT",
+          "scope": "Actual browser reload preserves deadline; native resume/rebegin preserve clock and owned separate-section advance creates one clock. Combined crash/offline/navigation recovery unverified.",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-assessment-timing-exact-04bc788.json",
+            ".autopilot/artifacts/20261005-assessment-timing-ci-04bc788.json"
+          ]
+        }
       },
       {
         "id": "M2.08.04",
@@ -3467,6 +3494,6 @@
         ]
       }
     ],
-    "updated_at": "2026-10-05T09:23:27.458193+00:00"
+    "updated_at": "2026-10-05T14:11:32.015619+00:00"
   }
 }

@@ -61,6 +61,11 @@ jobs:
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Notification authorization and Company Team runtime
+        run: |
+          npm run test:notification-platform
+          npm run test:m1-09
+
       - name: Worker ID presentation regression
         run: node --test tests/platform/worker-id-presentation.test.mjs
 
@@ -130,6 +135,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: Company staff existing-session suspension and revocation
+        run: node --test tests/browser/company-complete-journey.browser.test.mjs
 
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
         run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
