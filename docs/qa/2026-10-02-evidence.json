@@ -571,7 +571,7 @@
           "artifact": ".autopilot/artifacts/20261005-recovery-strengthened-green-v2.txt",
           "scope": "Three actual contact conflicts denied; existing nonempty identity/version/skill/evidence and role/account/Worker reference unchanged; wrong recovery OTP persists decrement/failure audit without password/session changes; real sandbox code resets password, consumes flow/challenge, revokes old session and permits replacement-password login."
         },
-        "notes": "Scoped working-tree browser proof; exact candidate, independent final acceptance and actual CI required before merge. Test-seeded registered Worker, real browser-created identity and skill drafts; no live provider claim."
+        "notes": "PR12 independently accepted and merged at f78af3a; exact candidate f6c7af0 focused gates and eight applicable actual CI checks passed. Broad local npm check intentionally incomplete. No live provider or whole-project claim."
       },
       {
         "id": "M1.03.04",
@@ -586,8 +586,13 @@
           "Assessor"
         ],
         "scenario": "Company registration: pending account, email OTP and MFA activation",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "command": "npm run test:company-registration-boundaries-browser",
+          "artifact": ".autopilot/artifacts/20261005-company-full-green.txt",
+          "scope": "Actual normal Company registration: pending account/tenant/invited owner/no sessions; wrong email persists counter/audit; verified email leaves MFA pending; wrong MFA audit persists; valid MFA activates owner and allows exact Company session while tenant stays pending."
+        },
+        "notes": "Scoped working-tree proof; exact candidate, independent acceptance and applicable CI pending. Exhaustion and audit failure rollback use actual repositories. Company approval/high-risk operations, OTP expiry/resend and live delivery are not certified by this row."
       },
       {
         "id": "M1.03.05",

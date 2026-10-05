@@ -94,6 +94,9 @@ jobs:
       - name: Password recovery attempt persistence and atomic rollback
         run: npm run test:auth-recovery-otp
 
+      - name: Company registration attempt persistence and audit rollback
+        run: npm run test:company-registration-otp
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -143,6 +146,9 @@ jobs:
 
       - name: Worker duplicate contacts and password recovery
         run: npm run test:worker-duplicate-recovery-browser
+
+      - name: Company pending registration email and MFA boundaries
+        run: npm run test:company-registration-boundaries-browser
 
   release-readiness:
     runs-on: ubuntu-latest

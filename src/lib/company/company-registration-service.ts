@@ -537,7 +537,7 @@ export class CompanyRegistrationService {
       input.requestFingerprint
     );
 
-    return this.repository.transaction(async (repository) => {
+    const result = await this.repository.transaction(async (repository) => {
       const flow = await repository.findFlowForUpdate(this.tokenHash(input.token));
       if (!flow) {
         throw new CompanyRegistrationServiceError(
@@ -556,7 +556,7 @@ export class CompanyRegistrationService {
           flow.currentStep === "pending_mfa" ||
           flow.currentStep === "complete"
         ) {
-          return this.stateFromFlow(repository, flow);
+          return { value: await this.stateFromFlow(repository, flow) } as const;
         }
         throw new CompanyRegistrationServiceError(
           "wrong_step",
@@ -605,12 +605,12 @@ export class CompanyRegistrationService {
           },
           occurredAt: nowIso
         });
-        throw new CompanyRegistrationServiceError(
+        return { error: new CompanyRegistrationServiceError(
           "invalid_code",
           attemptsRemaining > 0
             ? `The verification code is incorrect. ${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} remaining.`
             : "That verification code can no longer be used. Request a new code."
-        );
+        ) } as const;
       }
 
       if (
@@ -645,12 +645,14 @@ export class CompanyRegistrationService {
         occurredAt: nowIso
       });
 
-      return this.stateFromFlow(repository, {
+      return { value: await this.stateFromFlow(repository, {
         ...flow,
         currentStep: "pending_mfa",
         updatedAt: nowIso
-      });
+      }) } as const;
     });
+    if ("error" in result) throw result.error;
+    return result.value;
   }
 
   async verifyMfa(input: {
@@ -664,7 +666,7 @@ export class CompanyRegistrationService {
       input.requestFingerprint
     );
 
-    return this.repository.transaction(async (repository) => {
+    const result = await this.repository.transaction(async (repository) => {
       const flow = await repository.findFlowForUpdate(this.tokenHash(input.token));
       if (!flow) {
         throw new CompanyRegistrationServiceError(
@@ -679,7 +681,7 @@ export class CompanyRegistrationService {
         );
       }
       if (flow.currentStep === "complete") {
-        return this.stateFromFlow(repository, flow);
+        return { value: await this.stateFromFlow(repository, flow) } as const;
       }
       if (flow.currentStep !== "pending_mfa") {
         throw new CompanyRegistrationServiceError(
@@ -716,10 +718,10 @@ export class CompanyRegistrationService {
           metadata: { area: "company_registration" },
           occurredAt: nowIso
         });
-        throw new CompanyRegistrationServiceError(
+        return { error: new CompanyRegistrationServiceError(
           "invalid_code",
           "The authenticator code is invalid or was already used."
-        );
+        ) } as const;
       }
 
       if (
@@ -747,15 +749,17 @@ export class CompanyRegistrationService {
         occurredAt: nowIso
       });
 
-      return Object.freeze({
+      return { value: Object.freeze({
         step: "complete" as const,
         deliveryHint: null,
         resendAvailableAt: null,
         challengeExpiresAt: null,
         totpSetupKey: null,
         applicationReference: flow.caseId
-      });
+      }) } as const;
     });
+    if ("error" in result) throw result.error;
+    return result.value;
   }
 
   async resendEmail(input: {
