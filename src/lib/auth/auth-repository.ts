@@ -63,6 +63,8 @@ export type NewAuthSessionRecord = Omit<
   "revokedAt" | "revocationReason"
 >;
 
+type DatabaseTimestamp = string | Date;
+
 type AccountRow = {
   account_id: string;
   email_normalized: string;
@@ -71,12 +73,12 @@ type AccountRow = {
   account_status: AccountStatus;
   password_hash: string | null;
   worker_reference: string | null;
-  email_verified_at: string | null;
-  phone_verified_at: string | null;
+  email_verified_at: DatabaseTimestamp | null;
+  phone_verified_at: DatabaseTimestamp | null;
   failed_sign_in_count: number;
-  locked_until: string | null;
-  created_at: string;
-  updated_at: string;
+  locked_until: DatabaseTimestamp | null;
+  created_at: DatabaseTimestamp;
+  updated_at: DatabaseTimestamp;
 };
 
 type OtpRow = {
@@ -88,11 +90,11 @@ type OtpRow = {
   delivery_hint: string;
   code_hash: string;
   attempts_remaining: number;
-  resend_available_at: string;
-  expires_at: string;
-  consumed_at: string | null;
-  invalidated_at: string | null;
-  created_at: string;
+  resend_available_at: DatabaseTimestamp;
+  expires_at: DatabaseTimestamp;
+  consumed_at: DatabaseTimestamp | null;
+  invalidated_at: DatabaseTimestamp | null;
+  created_at: DatabaseTimestamp;
 };
 
 type SessionRow = {
@@ -103,10 +105,10 @@ type SessionRow = {
   csrf_token_hash: string;
   user_agent_hash: string | null;
   ip_address_hash: string | null;
-  created_at: string;
-  last_seen_at: string;
-  expires_at: string;
-  revoked_at: string | null;
+  created_at: DatabaseTimestamp;
+  last_seen_at: DatabaseTimestamp;
+  expires_at: DatabaseTimestamp;
+  revoked_at: DatabaseTimestamp | null;
   revocation_reason: string | null;
 };
 
@@ -157,6 +159,14 @@ const SESSION_COLUMNS = `
   sessions.revocation_reason
 `;
 
+function timestamp(value: DatabaseTimestamp): string {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+function optionalTimestamp(value: DatabaseTimestamp | null): string | null {
+  return value === null ? null : timestamp(value);
+}
+
 function accountFromRow(row: AccountRow): AuthAccount {
   return {
     accountId: row.account_id,
@@ -166,12 +176,12 @@ function accountFromRow(row: AccountRow): AuthAccount {
     status: row.account_status,
     passwordHash: row.password_hash,
     workerReference: row.worker_reference,
-    emailVerifiedAt: row.email_verified_at,
-    phoneVerifiedAt: row.phone_verified_at,
+    emailVerifiedAt: optionalTimestamp(row.email_verified_at),
+    phoneVerifiedAt: optionalTimestamp(row.phone_verified_at),
     failedSignInCount: row.failed_sign_in_count,
-    lockedUntil: row.locked_until,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
+    lockedUntil: optionalTimestamp(row.locked_until),
+    createdAt: timestamp(row.created_at),
+    updatedAt: timestamp(row.updated_at)
   };
 }
 
@@ -185,11 +195,11 @@ function otpFromRow(row: OtpRow): AuthOtpChallenge {
     deliveryHint: row.delivery_hint,
     codeHash: row.code_hash,
     attemptsRemaining: row.attempts_remaining,
-    resendAvailableAt: row.resend_available_at,
-    expiresAt: row.expires_at,
-    consumedAt: row.consumed_at,
-    invalidatedAt: row.invalidated_at,
-    createdAt: row.created_at
+    resendAvailableAt: timestamp(row.resend_available_at),
+    expiresAt: timestamp(row.expires_at),
+    consumedAt: optionalTimestamp(row.consumed_at),
+    invalidatedAt: optionalTimestamp(row.invalidated_at),
+    createdAt: timestamp(row.created_at)
   };
 }
 
@@ -202,10 +212,10 @@ function sessionFromRow(row: SessionRow): AuthSessionRecord {
     csrfTokenHash: row.csrf_token_hash,
     userAgentHash: row.user_agent_hash,
     ipAddressHash: row.ip_address_hash,
-    createdAt: row.created_at,
-    lastSeenAt: row.last_seen_at,
-    expiresAt: row.expires_at,
-    revokedAt: row.revoked_at,
+    createdAt: timestamp(row.created_at),
+    lastSeenAt: timestamp(row.last_seen_at),
+    expiresAt: timestamp(row.expires_at),
+    revokedAt: optionalTimestamp(row.revoked_at),
     revocationReason: row.revocation_reason
   };
 }
