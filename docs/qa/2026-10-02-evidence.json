@@ -2755,8 +2755,12 @@
         ],
         "scenario": "Revoke or expire link denies previously working recipient access",
         "status": "partially-verified",
-        "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Operative scoped-consent withdrawal denies previously working anonymous recipient; unrelated link remains accessible. Expiry branch remains unverified."
+        "evidence": {
+          "historical_consent": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
+          "accepted_owned_request_candidate": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
+          "working_boundaries": ".autopilot/artifacts/20261005-share-boundaries-working-v3.json"
+        },
+        "notes": "Operative scoped-consent withdrawal and accepted PR23 owned request fulfilment deny previously working recipients and preserve unrelated links. New working proof passes direct server-dated revocation/repeat/owner UI and natural 90-second expiry with exact persisted access outcomes. Native legacy/subsecond Date and first-outcome boundaries pass. Exact committed candidate, actual CI and independent acceptance remain mandatory before this row is promoted."
       },
       {
         "id": "M3.03.05",
@@ -3188,8 +3192,14 @@
         ],
         "scenario": "Each privacy request kind reaches staff intake and reasoned completion",
         "status": "partially-verified",
-        "evidence": ".autopilot/artifacts/20261004-all-privacy-kinds-probe.txt",
-        "notes": "All8types traverse Worker request\u2192Admin intake/reasonedREJECTED\u2192Workerreason withpersistentreviewer/from/tohistory. Restriction additionallyOPEN\u2192PROCESSING\u2192REJECTED. Actual fulfilment/access/export/deletion and allowed-completion branches remain unverified; intake/rejection proof is partial."
+        "evidence": {
+          "intake_history": ".autopilot/artifacts/20261004-all-privacy-kinds-probe.txt",
+          "fulfilment_candidate": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
+          "exact_local": ".autopilot/artifacts/20261005-privacy-exact-7bfda62.json",
+          "actual_ci": ".autopilot/artifacts/20261005-pr23-ci-exact-7bfda62.json",
+          "independent_accept": ".autopilot/artifacts/20261005-pr23-independent-accept-7bfda62.json"
+        },
+        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion."
       },
       {
         "id": "M3.09.02",
@@ -3205,7 +3215,7 @@
         "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified."
+        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. Direct revocation timestamp, legacy metadata and repeat response defects reproduced and a bounded repair is under verification; restriction and other consent effects remain open."
       },
       {
         "id": "M3.09.03",

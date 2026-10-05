@@ -102,11 +102,13 @@ export class ScopedShareLinkService {
       throw new Error("Scoped share link was not found for this Worker.");
     }
     const revokedAt = new Date(input.revokedAt).toISOString();
-    if (revokedAt < record.createdAt) {
-      throw new Error("Scoped share revocation cannot predate creation.");
-    }
+    if (record.revokedAt) return Object.freeze(record);
     await this.repository.revoke(record.shareLinkId, revokedAt);
-    return Object.freeze({ ...record, revokedAt });
+    const persisted = await this.repository.find(record.shareLinkId);
+    if (!persisted || persisted.ownerWorkerId !== input.ownerWorkerId) {
+      throw new Error("Scoped share link was not found for this Worker.");
+    }
+    return Object.freeze(persisted);
   }
 
   async listOwned(ownerWorkerId: string) {
