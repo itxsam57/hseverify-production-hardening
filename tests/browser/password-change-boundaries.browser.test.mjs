@@ -1,3 +1,4 @@
+import { verifySecurityNotifications } from "../helpers/account-security-notification-browser.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHmac } from "node:crypto";
@@ -55,7 +56,7 @@ async function freePort() {
 test("All six roles change passwords with reauthentication, keep current sessions and revoke other sessions",{timeout:300000},async()=>{
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-password-security-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"password-security-browser",HSE_SESSION_SECRET:"password-security-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"password-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
- const roles=["worker","company","assessor","verifier","admin","root"],changed={};let browser;
+ const roles=["worker","company","assessor","verifier","admin","root"],changed={},notificationCookies={};let browser;
  const newPassword="ChangedPortal!Password2026";
  async function signIn(page,identity,role,password,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(password);if(identity.totpSecret)await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();}
  try{
@@ -97,7 +98,7 @@ test("All six roles change passwords with reauthentication, keep current session
    for(const role of roles){
     const context=await browser.newContext(),page=await context.newPage();
     await signIn(page,credentials[role],role,newPassword,1);await page.waitForURL("**/"+role+"/dashboard");
-    console.log("ACTUAL_REPLACEMENT_PASSWORD_LOGIN",role);await context.close();
+    notificationCookies[role]=await context.cookies();console.log("ACTUAL_REPLACEMENT_PASSWORD_LOGIN",role);await context.close();
    }
   }});
   const db=new PGlite(directory);try{
@@ -109,5 +110,6 @@ test("All six roles change passwords with reauthentication, keep current session
    }
    console.log("ACTUAL_SIX_ROLE_PASSWORD_CHANGE_DB: one native completion audit and exact three role-bound sessions per account, only the second revoked");
   }finally{await db.close();}
+  await verifySecurityNotifications({browser,root,environment,baseUrl,port,credentials,roles,cookies:notificationCookies,titles:["Password changed"]});
  }finally{if(browser)await browser.close();await rm(directory,{recursive:true,force:true});}
 });

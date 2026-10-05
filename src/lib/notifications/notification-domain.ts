@@ -6,10 +6,17 @@ import {
   createIdentifier,
   type AuthRole
 } from "../auth/auth-domain";
-import type { OutboxJobRecord } from "../outbox/outbox-domain";
+import { normalizeAccountSecurityNotificationPayload, type AccountSecurityNotificationPayload, type OutboxJobRecord } from "../outbox/outbox-domain";
 
-export const NOTIFICATION_TYPES = ["platform.foundation.ready"] as const;
-export const NOTIFICATION_TARGETS = ["portal.dashboard"] as const;
+export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
+  password_changed: "account.password.changed",
+  password_reset_completed: "account.password.reset",
+  mfa_replaced: "account.mfa.replaced",
+  mfa_recovery_codes_rotated: "account.recovery_codes.rotated"
+} as const;
+
+export const NOTIFICATION_TYPES = ["platform.foundation.ready", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES)] as const;
+export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -21,6 +28,10 @@ export type FoundationNotificationMetadata = Readonly<{
 
 export type NotificationMetadataByType = Readonly<{
   "platform.foundation.ready": FoundationNotificationMetadata;
+  "account.password.changed": AccountSecurityNotificationPayload;
+  "account.password.reset": AccountSecurityNotificationPayload;
+  "account.mfa.replaced": AccountSecurityNotificationPayload;
+  "account.recovery_codes.rotated": AccountSecurityNotificationPayload;
 }>;
 
 export type NotificationRecord = Readonly<{
@@ -36,7 +47,7 @@ export type NotificationRecord = Readonly<{
   membershipId: string | null;
   title: string;
   body: string;
-  metadata: FoundationNotificationMetadata;
+  metadata: FoundationNotificationMetadata | AccountSecurityNotificationPayload;
   target: NotificationTarget;
   targetReference: string | null;
   readAt: string | null;
@@ -150,10 +161,16 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
   if (!isNotificationType(notificationType)) {
     throw new NotificationContractError("Unknown notification type.");
   }
-  let normalized: FoundationNotificationMetadata;
+  let normalized: FoundationNotificationMetadata | AccountSecurityNotificationPayload;
   switch (notificationType) {
     case "platform.foundation.ready":
       normalized = normalizeFoundationNotificationMetadata(value);
+      break;
+    case "account.password.changed":
+    case "account.password.reset":
+    case "account.mfa.replaced":
+    case "account.recovery_codes.rotated":
+      normalized = normalizeAccountSecurityNotificationPayload(value);
       break;
     default:
       throw new NotificationContractError(
@@ -165,6 +182,20 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
   }
   return normalized as NotificationMetadataByType[T];
 }
+
+export function accountSecurityNotificationType(eventType: string): NotificationType {
+  if (!Object.hasOwn(ACCOUNT_SECURITY_NOTIFICATION_TYPES, eventType)) {
+    throw new NotificationContractError("Security notification event is invalid.");
+  }
+  return ACCOUNT_SECURITY_NOTIFICATION_TYPES[eventType as keyof typeof ACCOUNT_SECURITY_NOTIFICATION_TYPES];
+}
+
+const SECURITY_CONTENT = {
+  "account.password.changed": { title: "Password changed", body: "Your password was changed and other active sessions were revoked. Review your account security if you did not make this change." },
+  "account.password.reset": { title: "Password reset", body: "Your password was reset and all previous sessions were revoked. Review your account security if you did not make this change." },
+  "account.mfa.replaced": { title: "Authenticator replaced", body: "Your authenticator was replaced. Review your account security if you did not make this change." },
+  "account.recovery_codes.rotated": { title: "Recovery codes replaced", body: "A new recovery-code set replaced your previous codes. Review your account security if you did not make this change." }
+} as const;
 
 export function notificationContent(notificationType: NotificationType): Readonly<{
   title: string;
@@ -180,6 +211,11 @@ export function notificationContent(notificationType: NotificationType): Readonl
         target: "portal.dashboard",
         targetReference: null
       });
+    case "account.password.changed":
+    case "account.password.reset":
+    case "account.mfa.replaced":
+    case "account.recovery_codes.rotated":
+      return Object.freeze({ ...SECURITY_CONTENT[notificationType], target: "account.security", targetReference: null });
   }
 }
 
@@ -218,9 +254,9 @@ export function deriveNotificationProjectionKey(input: {
 
 export function assertNotificationProjectionJob(
   job: OutboxJobRecord
-): OutboxJobRecord & Readonly<{ jobType: "notification.portal.foundation" }> {
+): OutboxJobRecord & Readonly<{ jobType: "notification.portal.foundation" | "notification.account.security" }> {
   if (
-    job.jobType !== "notification.portal.foundation" ||
+    !["notification.portal.foundation", "notification.account.security"].includes(job.jobType) ||
     job.enqueuedByAccountId.trim().length < 1 ||
     !isNotificationRole(job.enqueuedByRole) ||
     ((job.tenantId === null) !== (job.membershipId === null)) ||
@@ -232,7 +268,7 @@ export function assertNotificationProjectionJob(
     );
   }
   return job as OutboxJobRecord & Readonly<{
-    jobType: "notification.portal.foundation";
+    jobType: "notification.portal.foundation" | "notification.account.security";
   }>;
 }
 
@@ -252,6 +288,8 @@ export function resolveNotificationHref(input: {
   switch (input.target) {
     case "portal.dashboard":
       return ROLE_HOME_PATHS[input.role];
+    case "account.security":
+      return "/account/security";
   }
 }
 

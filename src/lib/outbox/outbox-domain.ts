@@ -9,6 +9,7 @@ import {
 export const OUTBOX_JOB_TYPES = [
   "platform.foundation.noop",
   "notification.portal.foundation",
+  "notification.account.security",
   "email.delivery.foundation",
   "secure_file.scan",
   "worker_identity.automated_checks"
@@ -71,6 +72,8 @@ export type PortalFoundationNotificationPayload = Readonly<{
   fixtureRef: string;
 }>;
 
+export type AccountSecurityNotificationPayload = Readonly<{ eventRef: string }>;
+
 export type FoundationEmailDeliveryPayload = Readonly<{
   fixtureRef: string;
 }>;
@@ -88,6 +91,7 @@ export type WorkerIdentityAutomatedChecksPayload = Readonly<{
 export type OutboxPayloadByType = Readonly<{
   "platform.foundation.noop": FoundationNoopPayload;
   "notification.portal.foundation": PortalFoundationNotificationPayload;
+  "notification.account.security": AccountSecurityNotificationPayload;
   "email.delivery.foundation": FoundationEmailDeliveryPayload;
   "secure_file.scan": SecureFileScanPayload;
   "worker_identity.automated_checks": WorkerIdentityAutomatedChecksPayload;
@@ -307,9 +311,9 @@ export function deriveOutboxIdempotencyKey(
 
 function normalizeSingleReferencePayload(
   value: unknown,
-  property: "probeRef" | "fixtureRef",
+  property: "probeRef" | "fixtureRef" | "eventRef",
   label: string
-): Readonly<Record<"probeRef" | "fixtureRef", string>> {
+): Readonly<Record<"probeRef" | "fixtureRef" | "eventRef", string>> {
   if (
     !value ||
     typeof value !== "object" ||
@@ -336,7 +340,7 @@ function normalizeSingleReferencePayload(
     throw new OutboxContractError(`Outbox ${label} reference is invalid.`);
   }
   return Object.freeze({ [property]: reference }) as Readonly<
-    Record<"probeRef" | "fixtureRef", string>
+    Record<"probeRef" | "fixtureRef" | "eventRef", string>
   >;
 }
 
@@ -352,6 +356,13 @@ function normalizePortalNotificationPayload(
 ): PortalFoundationNotificationPayload {
   const normalized = normalizeSingleReferencePayload(value, "fixtureRef", "fixture");
   return Object.freeze({ fixtureRef: normalized.fixtureRef });
+}
+
+export function normalizeAccountSecurityNotificationPayload(
+  value: unknown
+): AccountSecurityNotificationPayload {
+  const normalized = normalizeSingleReferencePayload(value, "eventRef", "event");
+  return Object.freeze({ eventRef: normalized.eventRef });
 }
 
 function normalizeFoundationEmailPayload(
@@ -441,6 +452,9 @@ export function normalizeOutboxPayload<T extends OutboxJobType>(
       break;
     case "notification.portal.foundation":
       normalized = normalizePortalNotificationPayload(value);
+      break;
+    case "notification.account.security":
+      normalized = normalizeAccountSecurityNotificationPayload(value);
       break;
     case "email.delivery.foundation":
       normalized = normalizeFoundationEmailPayload(value);

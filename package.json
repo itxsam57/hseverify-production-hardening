@@ -150,7 +150,8 @@
     "test:password-change-boundaries-browser": "node --test tests/browser/password-change-boundaries.browser.test.mjs",
     "test:account-security-audit": "node --test tests/platform/account-security-audit-runtime.test.mjs",
     "test:mfa-management-boundaries-browser": "node --test tests/browser/mfa-management-boundaries.browser.test.mjs",
-    "test:six-role-password-recovery-browser": "node --test tests/browser/six-role-password-recovery.browser.test.mjs"
+    "test:six-role-password-recovery-browser": "node --test tests/browser/six-role-password-recovery.browser.test.mjs",
+    "test:account-security-notifications": "node --test tests/platform/account-security-notification-runtime.test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

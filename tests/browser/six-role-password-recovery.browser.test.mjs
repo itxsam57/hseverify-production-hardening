@@ -1,3 +1,4 @@
+import { verifySecurityNotifications } from "../helpers/account-security-notification-browser.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHmac } from "node:crypto";
@@ -56,7 +57,7 @@ test("Six-role email recovery preserves MFA policy, revokes sessions and denies 
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-six-role-recovery-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
  const key="six-role-recovery-synthetic-sandbox-key";
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"six-role-recovery-probe",HSE_SESSION_SECRET:"six-role-recovery-synthetic-session-secret-20261005",HSE_AUTH_PEPPER:"six-role-recovery-synthetic-pepper-20261005",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:key,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
- const roles=["worker","company","assessor","verifier","admin","root"],newPassword="RecoveredPortal!Password2026";let browser;
+ const roles=["worker","company","assessor","verifier","admin","root"],newPassword="RecoveredPortal!Password2026",notificationCookies={};let browser;
  async function signIn(page,identity,role,password,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(password);if(identity.totpSecret)await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();}
  async function reset(page,code,password=newPassword,confirm=password){await page.getByLabel("Recovery code",{exact:true}).fill(code);await page.getByLabel("New password",{exact:true}).fill(password);await page.getByLabel("Confirm new password",{exact:true}).fill(confirm);await page.getByRole("button",{name:"Reset password and revoke sessions",exact:true}).click();}
  try{
@@ -82,7 +83,7 @@ test("Six-role email recovery preserves MFA policy, revokes sessions and denies 
     await page.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(page.url()).pathname,"/"+role+"/login");
     if(identity.totpSecret){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(newPassword);const wrongMfa=["111111","222222","333333","444444"].find(c=>![-1,0,1].map(o=>totp(identity.totpSecret,o)).includes(c));await page.getByLabel("Authenticator code").fill(wrongMfa);await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.getByRole("alert").waitFor();await page.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(page.url()).pathname,"/"+role+"/login");}
     await signIn(page,identity,role,newPassword,0);await page.waitForURL("**/"+role+"/dashboard");
-    console.log("ACTUAL_SIX_ROLE_RECOVERY_BROWSER",role,"mismatch/cooldown/wrong code/replay denied; old session/password denied; new password plus existing MFA accepted");
+    notificationCookies[role]=await recoveryContext.cookies();console.log("ACTUAL_SIX_ROLE_RECOVERY_BROWSER",role,"mismatch/cooldown/wrong code/replay denied; old session/password denied; new password plus existing MFA accepted");
     await oldContext.close();await recoveryContext.close();await replayContext.close();
    }
   }});
@@ -98,5 +99,6 @@ test("Six-role email recovery preserves MFA policy, revokes sessions and denies 
    }
    console.log("ACTUAL_SIX_ROLE_RECOVERY_DB exact consumed flows/challenges, attempts4, role-bound audit, prior sessions revoked, existing MFA retained");
   }finally{await db.close();}
+  await verifySecurityNotifications({browser,root,environment,baseUrl,port,credentials,roles,cookies:notificationCookies,titles:["Password reset"]});
  }finally{if(browser)await browser.close();await rm(directory,{recursive:true,force:true});}
 });

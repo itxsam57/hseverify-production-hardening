@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { DatabaseClient } from "../database/database";
+
 import { processEmailDeliveryOutboxJob } from "../email-delivery/email-delivery-handler";
 import { getWorkerIdentityAutomatedCheckHandler } from "../identity/worker-identity-check-handler";
 import { projectNotificationOutboxJob } from "../notifications/notification-projector";
@@ -19,14 +21,17 @@ import {
 
 type OutboxHandler<T extends OutboxJobType> = (
   job: Extract<OutboxJobRecord, { jobType: T }> | OutboxJobRecord,
-  lease: TrustedOutboxLease
+  lease: TrustedOutboxLease,
+  database?: DatabaseClient
 ) => Promise<OutboxHandlerResult>;
 
 const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
   Object.freeze({
     "platform.foundation.noop": async () => ({ kind: "succeeded" as const }),
-    "notification.portal.foundation": async (job) =>
-      projectNotificationOutboxJob(job),
+    "notification.portal.foundation": async (job, _lease, database) =>
+      projectNotificationOutboxJob(job, { database }),
+    "notification.account.security": async (job, _lease, database) =>
+      projectNotificationOutboxJob(job, { database }),
     "email.delivery.foundation": async (job, lease) =>
       processEmailDeliveryOutboxJob(job, lease),
     "secure_file.scan": async (job, lease) =>
@@ -37,6 +42,7 @@ const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
 
 export async function processNextOutboxJob(input?: {
   repository?: OutboxRepository;
+  database?: DatabaseClient;
 }): Promise<OutboxJobRecord | null> {
   const repository = input?.repository ?? getOutboxRepository();
   const worker = createTrustedOutboxWorker();
@@ -46,7 +52,7 @@ export async function processNextOutboxJob(input?: {
   const handler = HANDLERS[claimed.job.jobType];
   let result: OutboxHandlerResult;
   try {
-    result = await handler(claimed.job, claimed.lease);
+    result = await handler(claimed.job, claimed.lease, input?.database);
   } catch {
     result = {
       kind: "retryable",

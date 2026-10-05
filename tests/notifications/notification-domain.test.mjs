@@ -35,8 +35,8 @@ function job(overrides = {}) {
 }
 
 test("notification vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready"]);
-  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard"]);
+  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated"]);
+  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security"]);
   for (const value of [
     ...notification.NOTIFICATION_TYPES,
     ...notification.NOTIFICATION_TARGETS
@@ -159,4 +159,13 @@ test("notification identifiers and query bounds are fail-closed", () => {
   assert.throws(() => notification.normalizeNotificationLimit(101));
   assert.equal(notification.normalizeNotificationCursor(null), null);
   assert.throws(() => notification.normalizeNotificationCursor(-1));
+});
+
+test("security metadata accepts only the immutable event reference and links all roles to account security", () => {
+  for (const type of notification.NOTIFICATION_TYPES.filter(type => type.startsWith("account."))) {
+    assert.deepEqual(notification.normalizeNotificationMetadata(type, {eventRef:"event_security_A"}), {eventRef:"event_security_A"});
+    for (const metadata of [{eventRef:"event_security_A",token:"secret"},{eventRef:"event_security_A",email:"person@example.test"},{eventRef:"<script>"},{fixtureRef:"owner-test"}]) assert.throws(() => notification.normalizeNotificationMetadata(type, metadata));
+  }
+  for (const role of ["worker","company","assessor","verifier","admin","root"]) assert.equal(notification.resolveNotificationHref({role,target:"account.security",targetReference:null}), "/account/security");
+  assert.throws(() => notification.resolveNotificationHref({role:"worker",target:"account.security",targetReference:"https://example.test"}));
 });

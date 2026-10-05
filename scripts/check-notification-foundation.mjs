@@ -68,8 +68,11 @@ assert.match(down, /DROP TABLE IF EXISTS platform_notifications/);
 assert.match(down, /expanded[\s\S]*outbox job type[\s\S]*audit action\/target vocabularies/i);
 assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_type_check/);
 
-assert.match(domain, /NOTIFICATION_TYPES = \["platform\.foundation\.ready"\]/);
-assert.match(domain, /NOTIFICATION_TARGETS = \["portal\.dashboard"\]/);
+assert.match(domain, /NOTIFICATION_TYPES = \["platform\.foundation\.ready", \.\.\.Object\.values\(ACCOUNT_SECURITY_NOTIFICATION_TYPES\)\]/);
+assert.match(domain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security"\]/);
+for (const [event, type] of Object.entries({password_changed:"account.password.changed",password_reset_completed:"account.password.reset",mfa_replaced:"account.mfa.replaced",mfa_recovery_codes_rotated:"account.recovery_codes.rotated"})) {
+  assert.ok(domain.includes(event + ": \"" + type + "\""));
+}
 assert.match(domain, /ROLE_HOME_PATHS\[input\.role\]/);
 assert.match(domain, /notificationListPath/);
 assert.doesNotMatch(domain, /https?:\/\//i);
@@ -87,7 +90,7 @@ assert.match(projector, /notification_recipient_unavailable/);
 assert.match(projector, /notification\.projected/);
 assert.match(
   worker,
-  /"notification\.portal\.foundation": async \(job\) =>\s*projectNotificationOutboxJob\(job\)/
+  /"notification\.portal\.foundation": async \(job, _lease, database\) =>\s*projectNotificationOutboxJob\(job, \{ database \}\)/
 );
 assert.doesNotMatch(
   worker,
