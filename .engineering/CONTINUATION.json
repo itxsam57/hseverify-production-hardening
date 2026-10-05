@@ -2,15 +2,15 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
-  "verified_sha": "9582a166b26e22996aeab2d3cf3e69d76cc0611f",
-  "last_verified_action": "PR8 registration repair and PR9 Worker OTP verification merged after scoped independent ACCEPT, exact tests and nine actual CI checks each",
-  "next_action": "Run exact-candidate staff revocation gates, independent final review and actual CI; merge only green expected SHA; then verify remaining staff activation/expiry variants",
+  "verified_sha": "3de4ba8cec5e1b69c35855af09a20867d271c971",
+  "last_verified_action": "PR10 issuer-only revocation merged after scoped ACCEPT at3de4ba8, thirteen exact commands and nine actual CI checks",
+  "next_action": "Run exact staff lifecycle browser/revocation/type/lint/build/preview, independent final review and actual CI then merge; continue duplicate Worker recovery and Company registration",
   "owner_required": false,
   "revision": 4,
   "blocker": null,
-  "updated_at": "2026-10-05T02:01:44.386025+00:00",
+  "updated_at": "2026-10-05T02:30:43.606123+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "216a7a0048c7093a4548ead53213df17b68ae135"
+  "canonical_sha": "65ae7edb6e559ccf44f319cd30925826f78f951d"
 }

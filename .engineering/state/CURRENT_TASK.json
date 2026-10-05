@@ -6,17 +6,17 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "9582a166b26e22996aeab2d3cf3e69d76cc0611f",
-  "canonical_sha": "216a7a0048c7093a4548ead53213df17b68ae135",
+  "last_verified_sha": "3de4ba8cec5e1b69c35855af09a20867d271c971",
+  "canonical_sha": "65ae7edb6e559ccf44f319cd30925826f78f951d",
   "requirements": [
     "M1.03.05"
   ],
-  "last_verified_action": "PR8 registration repair and PR9 Worker OTP verification merged after scoped independent ACCEPT, exact tests and nine actual CI checks each",
+  "last_verified_action": "PR10 issuer-only revocation merged after scoped ACCEPT at3de4ba8, thirteen exact commands and nine actual CI checks",
   "evidence": [
     ".autopilot/artifacts/20261004-worker-otp-exact-9582a16.json",
     ".autopilot/artifacts/20261004-worker-otp-ci-9582a16.json"
   ],
-  "next_action": "Run exact-candidate staff revocation gates, independent final review and actual CI; merge only green expected SHA; then verify remaining staff activation/expiry variants",
+  "next_action": "Run exact staff lifecycle browser/revocation/type/lint/build/preview, independent final review and actual CI then merge; continue duplicate Worker recovery and Company registration",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -29,7 +29,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T02:01:44.386025+00:00",
+  "updated_at": "2026-10-05T02:30:43.606123+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE"
 }
