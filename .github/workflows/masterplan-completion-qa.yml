@@ -148,6 +148,11 @@ jobs:
       - name: Worker -> Admin -> Worker privacy/accommodation journey
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
+      - name: Owned privacy fulfilment revokes recipient access and retains unrelated sharing
+        env:
+          HSE_PRIVACY_FULFILMENT: "true"
+        run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+
       - name: Six-role authentication and session boundaries
         run: npm run test:authentication-boundaries-browser
 

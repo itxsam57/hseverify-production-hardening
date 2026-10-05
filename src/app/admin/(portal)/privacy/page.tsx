@@ -41,6 +41,7 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
             <p>Worker: {request.worker_id}</p>
             <p>Status: {request.status}</p>
             <p>Requested: {iso(request.created_at)}</p>
+            {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
             {["OPEN", "PROCESSING"].includes(request.status) ? (
               <form action={reviewPrivacyRequestAction} className="form-grid">
@@ -50,6 +51,9 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
                   <select name="decision" defaultValue={request.status === "OPEN" ? "PROCESSING" : "REJECTED"} required>
                     {request.status === "OPEN" ? <option value="PROCESSING">Start processing</option> : null}
                     <option value="REJECTED">Reject request</option>
+                    {request.request_type === "share_link_revocation" && typeof request.details?.shareLinkId === "string" && request.details.shareLinkId.trim() ? (
+                      <option value="COMPLETED">Revoke requested share link and complete</option>
+                    ) : null}
                   </select>
                 </label>
                 <label>Request review reason<textarea name="reason" minLength={10} maxLength={2000} required /></label>

@@ -1969,13 +1969,13 @@
         "scenario": "Timer expiry/auto-submit and no duplicate final outcomes",
         "status": "partially-verified",
         "evidence": {
-          "candidate_sha": "04bc788b61628bd37805df699e2de21da208f74f",
-          "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
-          "review": "PR18 ACCEPT",
-          "scope": "Native exact-deadline and post-lock expiry deny writes; immutable clocks and recovery retain answers. Timeout auto-submit and duplicate final outcomes on timeout unverified.",
+          "candidate_sha": "21580616e1b87cbd424b05175aa68cdebfa4e6bf",
+          "canonical_sha": "7718dda92be07aaf8014389010771046499da30a",
+          "review": "PR22 ACCEPT",
+          "scope": "Actual natural adjusted90s browser auto-submission retains saved MCQ, leaves omitted written response absent, exposes pinned review evidence and reaches reasoned human FAIL/reassessment. Native immutable combined/separate deadlines, interrupted and legacy timers, worker child process and rollback/idempotence pass. Separate-phase natural browser expiry and deployed PostgreSQL contention remain unverified.",
           "artifacts": [
-            ".autopilot/artifacts/20261005-assessment-timing-exact-04bc788.json",
-            ".autopilot/artifacts/20261005-assessment-timing-ci-04bc788.json"
+            ".autopilot/artifacts/20261005-final-exact-2158061.json",
+            ".autopilot/artifacts/20261005-pr22-ci-exact-2158061.json"
           ]
         }
       },

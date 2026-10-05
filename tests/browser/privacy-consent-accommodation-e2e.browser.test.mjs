@@ -11,6 +11,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
+const FULFILMENT_MODE = process.env.HSE_PRIVACY_FULFILMENT === "true";
 const EXTRA_PRIVACY_TYPES = ["access","correction","consent_withdrawal","share_link_revocation","retention_inquiry","export","deletion"];
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -94,7 +95,7 @@ async function seedCase(dataDirectory, tenantId, workerId) {
   }
 }
 
-test("Worker privacy request and accommodation approval traverse Worker -> Admin -> Worker with consent history", { timeout: 300_000 }, async () => {
+test(FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfilment and removes recipient access" : "Worker privacy request and accommodation approval traverse Worker -> Admin -> Worker with consent history", { timeout: 300_000 }, async () => {
   const root = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-privacy-browser-"));
   const port = await freePort();
@@ -179,6 +180,47 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
           const otherShareUrl = await worker.getByRole("link", { name: "Open secure share link" }).getAttribute("href");
           assert.ok(otherShareUrl);
           assert.notEqual(otherShareUrl, shareUrl);
+          if (FULFILMENT_MODE) {
+            const publicContext = await browser.newContext();
+            try {
+              const recipient = await publicContext.newPage();
+              await recipient.goto(baseUrl + otherShareUrl);
+              await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor();
+              await worker.goto(baseUrl + "/worker/privacy");
+              await worker.getByLabel("Privacy request type").selectOption("share_link_revocation");
+              await worker.getByLabel("Share link for a revocation request").selectOption({ label: "Separate optional sharing remains active" });
+              await worker.getByRole("button", { name: "Submit privacy request", exact: true }).click();
+              const workerRequest = worker.getByRole("heading", { name: "Your privacy requests", exact: true }).locator("..").locator("article").filter({ hasText: "Share link: Separate optional sharing remains active" });
+              await workerRequest.getByText("share link revocation: OPEN", { exact: true }).waitFor();
+              await login(admin, baseUrl, credentials.admin, "admin");
+              await admin.goto(baseUrl + "/admin/privacy");
+              const requestCard = admin.locator("article").filter({ hasText: "Request type: share link revocation" }).filter({ hasText: "Share link: Separate optional sharing remains active" });
+              assert.equal(await requestCard.count(), 1);
+              await requestCard.getByLabel("Request decision").selectOption("PROCESSING");
+              await requestCard.getByLabel("Request review reason").fill("Confirming this optional share link is the Worker's requested target.");
+              await requestCard.getByRole("button", { name: "Save privacy request decision", exact: true }).click();
+              await requestCard.getByText("Status: PROCESSING", { exact: true }).waitFor();
+              await worker.reload();
+              await workerRequest.getByText("share link revocation: PROCESSING", { exact: true }).waitFor();
+              await requestCard.getByLabel("Request decision").selectOption("COMPLETED");
+              await requestCard.getByLabel("Request review reason").fill("Revoked the requested optional share link and confirmed recipient access is denied.");
+              await requestCard.getByRole("button", { name: "Save privacy request decision", exact: true }).click();
+              await requestCard.getByText("Status: COMPLETED", { exact: true }).waitFor();
+              assert.equal(await requestCard.getByRole("button", { name: "Save privacy request decision", exact: true }).count(), 0);
+              await worker.reload();
+              await workerRequest.getByText("share link revocation: COMPLETED", { exact: true }).waitFor();
+              await workerRequest.getByText("Review outcome: Revoked the requested optional share link and confirmed recipient access is denied.", { exact: true }).waitFor();
+              await recipient.goto(baseUrl + otherShareUrl);
+              await recipient.getByRole("heading", { name: "Share link unavailable", exact: true }).waitFor();
+              await recipient.goto(baseUrl + shareUrl);
+              await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor();
+              await worker.goto(baseUrl + "/admin/privacy");
+              await worker.waitForURL("**/access-denied");
+              console.log("ACTUAL_PRIVACY_FULFILMENT_BROWSER owned request -> staff processing -> real revocation/completion -> Worker outcome; prior recipient denied, unrelated link active, Worker denied staff route");
+              return;
+            } finally { await publicContext.close(); }
+          }
+
           const publicContext = await browser.newContext();
           try {
             const recipient = await publicContext.newPage();
@@ -271,6 +313,24 @@ test("Worker privacy request and accommodation approval traverse Worker -> Admin
 
     const db = new PGlite(databaseDirectory);
     try {
+      if (FULFILMENT_MODE) {
+        const completed = await db.query("SELECT request_id,status,details,completed_at FROM privacy_requests WHERE worker_id=$1 AND request_type='share_link_revocation' AND details->>'sharePurpose'='Separate optional sharing remains active'", [credentials.worker.accountId]);
+        assert.equal(completed.rows.length,1);
+        assert.equal(completed.rows[0].status,"COMPLETED");
+        assert.ok(completed.rows[0].completed_at);
+        const history = await db.query("SELECT from_status,to_status,reviewer_account_id,reason FROM privacy_request_reviews WHERE request_id=$1 ORDER BY review_sequence", [completed.rows[0].request_id]);
+        assert.deepEqual(history.rows.map(row=>[row.from_status,row.to_status]),[["OPEN","PROCESSING"],["PROCESSING","COMPLETED"]]);
+        assert.ok(history.rows.every(row=>row.reviewer_account_id===credentials.admin.accountId && row.reason.length>=10));
+        const target = await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id=$1", [completed.rows[0].details.shareLinkId]);
+        assert.ok(target.rows[0].revoked_at);
+        const unrelated = await db.query("SELECT revoked_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
+        assert.equal(unrelated.rows[0].revoked_at,null);
+        const pending = await db.query("SELECT status FROM privacy_requests WHERE worker_id=$1 AND request_id<>$2", [credentials.worker.accountId,completed.rows[0].request_id]);
+        assert.equal(pending.rows.length,8);
+        assert.ok(pending.rows.every(row=>row.status==='OPEN'));
+        console.log("ACTUAL_PRIVACY_FULFILMENT_DB persisted owned target, completed timestamp, exact staff history, one revoked link, unrelated requests still open");
+        return;
+      }
       const request = await db.query(
         "SELECT request_type,status FROM privacy_requests WHERE worker_id=$1 AND request_type='restriction'",
         [credentials.worker.accountId]

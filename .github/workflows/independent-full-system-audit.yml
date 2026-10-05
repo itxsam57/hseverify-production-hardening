@@ -53,7 +53,6 @@ jobs:
       HSE_ENABLE_WORKER_DEMO_AUTH: "false"
       HSE_USE_WORKER_DEMO_DATA: "false"
       HSE_DEMO_PROFILE_IDENTITY_LOCKED: "false"
-      HSE_BROWSER_BASE_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout exact tested head
@@ -131,26 +130,32 @@ jobs:
       - name: Start application in production mode when build passed, otherwise development fallback for continued bug discovery
         shell: bash
         run: |
+          audit_port=$(node --input-type=module -e 'import net from "node:net"; const server=net.createServer(); server.listen(0,"127.0.0.1",()=>{const port=server.address().port; server.close(()=>console.log(port));}); server.on("error",()=>process.exit(1));')
+          audit_base="http://127.0.0.1:${audit_port}"
+          echo "PORT=${audit_port}" >> "$GITHUB_ENV"
+          echo "HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
+          echo "HSE_BROWSER_BASE_URL=${audit_base}" >> "$GITHUB_ENV"
           build_code=$(awk -F '\t' '$1=="production_build" {print $2}' artifacts/independent-audit/commands.tsv | tail -1)
           if [ "$build_code" = "0" ]; then
             echo production > artifacts/independent-audit/server-mode.txt
-            npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/independent-audit-server.log 2>&1 &
+            PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/start-production.mjs > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
           else
             echo development-fallback > artifacts/independent-audit/server-mode.txt
-            npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/independent-audit-server.log 2>&1 &
+            PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
           fi
-          echo $! > /tmp/independent-audit-server.pid
+          echo $! > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid
           for attempt in $(seq 1 150); do
-            if curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/ | grep -Eq '^[234][0-9][0-9]$'; then
-              exit 0
-            fi
-            if ! kill -0 "$(cat /tmp/independent-audit-server.pid)" 2>/dev/null; then
-              cat /tmp/independent-audit-server.log
+            if ! kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)" 2>/dev/null; then
+              cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log
               exit 1
+            fi
+            if curl --silent --output /dev/null --write-out '%{http_code}' "$audit_base/" | grep -Eq '^[234][0-9][0-9]$'; then
+              kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)" 2>/dev/null || exit 1
+              exit 0
             fi
             sleep 1
           done
-          cat /tmp/independent-audit-server.log
+          cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log
           exit 1
 
       - name: Fresh consumer and UI UX Chromium audit
@@ -164,7 +169,7 @@ jobs:
         if: always()
         run: |
           mkdir -p artifacts/independent-audit
-          cp /tmp/independent-audit-server.log artifacts/independent-audit/server.log || true
+          cp /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log artifacts/independent-audit/server.log || true
 
       - name: Produce complete independent defect ledger
         if: always()
@@ -221,3 +226,12 @@ jobs:
             process.exit(1);
           }
           NODE
+
+      - name: Stop only this audit's server process group
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid ]; then
+            audit_pid=$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)
+            if [[ "$audit_pid" =~ ^[0-9]+$ ]]; then kill -TERM -- "-$audit_pid" 2>/dev/null || true; fi
+          fi

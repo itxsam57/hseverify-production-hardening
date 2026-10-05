@@ -6,6 +6,25 @@ function changedRows(result: { affectedRows?: number; rowCount?: number }) {
   return result.affectedRows ?? result.rowCount ?? 0;
 }
 
+async function ownedShareLink(client: DatabaseClient, workerId: string, target: unknown) {
+  if (typeof target !== "string" || !target.trim() || target.length > 200) {
+    throw new Error("A valid requested share link is required for this Worker.");
+  }
+  const result = await client.query<{ share_link_id: string; created_at: string | Date; purpose: string }>(
+    `SELECT links.share_link_id,links.created_at,links.purpose FROM scoped_share_links links
+     JOIN auth_accounts accounts ON accounts.account_id=$2
+     WHERE links.share_link_id=$1 AND (
+       links.owner_worker_id=accounts.worker_reference OR EXISTS (
+         SELECT 1 FROM worker_identity_worker_ids ids WHERE ids.worker_account_id=accounts.account_id
+         AND ids.permanent_worker_id=links.owner_worker_id
+       )
+     ) FOR UPDATE OF links`, [target,workerId]
+  );
+  const link = result.rows[0];
+  if (!link) throw new Error("Requested share link was not found for this Worker.");
+  return link;
+}
+
 export type AccommodationReviewRow = {
   accommodation_id: string;
   tenant_id: string | null;
@@ -26,6 +45,7 @@ export type PrivacyRequestReviewRow = {
   tenant_id: string | null;
   worker_id: string;
   request_type: string;
+  details: Record<string, unknown>;
   status: string;
   created_at: string | Date;
   review_reason: string | null;
@@ -34,12 +54,34 @@ export type PrivacyRequestReviewRow = {
 export class PrivacyOperationsRepository {
   constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
+  async listOwnedShareLinks(workerId: string): Promise<Array<{ share_link_id: string; purpose: string }>> {
+    const client = await this.clientPromise;
+    const result = await client.query<{ share_link_id: string; purpose: string }>(
+      `SELECT links.share_link_id,links.purpose FROM scoped_share_links links
+       JOIN auth_accounts accounts ON accounts.account_id=$1
+       WHERE links.revoked_at IS NULL AND (
+         links.owner_worker_id=accounts.worker_reference OR EXISTS (
+           SELECT 1 FROM worker_identity_worker_ids ids WHERE ids.worker_account_id=accounts.account_id
+           AND ids.permanent_worker_id=links.owner_worker_id
+         )
+       ) ORDER BY links.created_at DESC,links.share_link_id`, [workerId]
+    );
+    return result.rows;
+  }
+
   async createRequest(input: { requestId: string; tenantId: string | null; workerId: string; type: string; details?: Record<string, unknown> }) {
     const client = await this.clientPromise;
-    await client.query(
-      `INSERT INTO privacy_requests(request_id, tenant_id, worker_id, request_type, details) VALUES($1,$2,$3,$4,$5)`,
-      [input.requestId, input.tenantId, input.workerId, input.type, JSON.stringify(input.details ?? {})]
-    );
+    await client.transaction(async (tx) => {
+      let details = input.details ?? {};
+      if (input.type === "share_link_revocation" && details.shareLinkId !== undefined) {
+        const link = await ownedShareLink(tx,input.workerId,details.shareLinkId);
+        details = { shareLinkId: link.share_link_id, sharePurpose: link.purpose };
+      }
+      await tx.query(
+        `INSERT INTO privacy_requests(request_id, tenant_id, worker_id, request_type, details) VALUES($1,$2,$3,$4,$5)`,
+        [input.requestId, input.tenantId, input.workerId, input.type, JSON.stringify(details)]
+      );
+    });
   }
 
   async listRequestReviewQueue(): Promise<PrivacyRequestReviewRow[]> {
@@ -59,7 +101,7 @@ export class PrivacyOperationsRepository {
 
   async reviewRequest(input: {
     requestId: string; reviewerAccountId: string; reviewId: string;
-    expectedStatus: string; decision: "PROCESSING" | "REJECTED"; reason: string; now: string;
+    expectedStatus: string; decision: "PROCESSING" | "REJECTED" | "COMPLETED"; reason: string; now: string;
   }) {
     const client = await this.clientPromise;
     return client.transaction(async (tx) => {
@@ -71,8 +113,19 @@ export class PrivacyOperationsRepository {
           !["OPEN", "PROCESSING"].includes(request.status) || request.status === input.decision) {
         throw new Error("Privacy request changed or is unavailable for this decision.");
       }
+      if (input.decision === "COMPLETED") {
+        const target = request.details?.shareLinkId;
+        if (request.request_type !== "share_link_revocation" || typeof target !== "string" || !target.trim()) {
+          throw new Error("This request requires its specific fulfilment operation before completion.");
+        }
+        await ownedShareLink(tx,request.worker_id,target);
+        await tx.query(
+          "UPDATE scoped_share_links SET revoked_at=COALESCE(revoked_at,$2::timestamptz) WHERE share_link_id=$1",
+          [target,input.now]
+        );
+      }
       const updated = await tx.query<PrivacyRequestReviewRow>(
-        `UPDATE privacy_requests SET status=$2,completed_at=CASE WHEN $2='REJECTED' THEN $3::timestamptz ELSE NULL END
+        `UPDATE privacy_requests SET status=$2,completed_at=CASE WHEN $2 IN ('REJECTED','COMPLETED') THEN $3::timestamptz ELSE NULL END
          WHERE request_id=$1 AND status=$4 RETURNING *`,
         [input.requestId,input.decision,input.now,input.expectedStatus]
       );
@@ -95,15 +148,12 @@ export class PrivacyOperationsRepository {
   }
 
   async completeRequest(input: { requestId:string; workerId:string; tenantId:string | null; status:string }) {
-    const client = await this.clientPromise;
-    const result = await client.query(
-      `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id IS NOT DISTINCT FROM $3 AND status='OPEN'`,
-      [input.requestId, input.workerId, input.tenantId, input.status]
-    );
-    if (changedRows(result) !== 1) throw new Error("privacy request not found or already closed");
+    if (!input.requestId || !input.workerId) throw new Error("Privacy request boundary is required.");
+    throw new Error("Privacy completion requires an authorized fulfilment review.");
   }
 
   async transitionRequest(input: { requestId:string; workerId:string; tenantId:string | null; to:string }) {
+    if (input.to === "COMPLETED") throw new Error("Privacy completion requires an authorized fulfilment review.");
     const client = await this.clientPromise;
     const result = await client.query(
       `UPDATE privacy_requests SET status=$4 WHERE request_id=$1 AND worker_id=$2 AND tenant_id IS NOT DISTINCT FROM $3 AND status='OPEN'`,

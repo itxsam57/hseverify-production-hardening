@@ -109,7 +109,6 @@ jobs:
       HSE_ENABLE_WORKER_DEMO_AUTH: "false"
       HSE_USE_WORKER_DEMO_DATA: "false"
       HSE_RELEASE_SHA: phase1-retrospective-mixed-role-burst
-      HSE_BROWSER_BASE_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v6
@@ -130,19 +129,25 @@ jobs:
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - name: Start real Next.js application
         run: |
-          npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/hse-mixed-role-server.log 2>&1 &
-          echo $! > /tmp/hse-mixed-role-server.pid
+          audit_port=$(node --input-type=module -e 'import net from "node:net"; const server=net.createServer(); server.listen(0,"127.0.0.1",()=>{const port=server.address().port; server.close(()=>console.log(port));}); server.on("error",()=>process.exit(1));')
+          audit_base="http://127.0.0.1:${audit_port}"
+          echo "PORT=${audit_port}" >> "$GITHUB_ENV"
+          echo "HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
+          echo "HSE_BROWSER_BASE_URL=${audit_base}" >> "$GITHUB_ENV"
+          PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.log 2>&1 &
+          echo $! > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.pid
           for attempt in $(seq 1 120); do
-            if curl --silent --fail --output /dev/null http://127.0.0.1:3000/; then
-              exit 0
-            fi
-            if ! kill -0 "$(cat /tmp/hse-mixed-role-server.pid)" 2>/dev/null; then
-              cat /tmp/hse-mixed-role-server.log
+            if ! kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.pid)" 2>/dev/null; then
+              cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.log
               exit 1
+            fi
+            if curl --silent --fail --output /dev/null "$audit_base/"; then
+              kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.pid)" 2>/dev/null || exit 1
+              exit 0
             fi
             sleep 1
           done
-          cat /tmp/hse-mixed-role-server.log
+          cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.log
           exit 1
       - name: Run 50-request authenticated mixed-role real-server burst
         run: node scripts/hard-browser-mixed-role-burst.mjs
@@ -150,7 +155,16 @@ jobs:
         if: always()
         run: |
           mkdir -p artifacts/phase1-retrospective
-          cp /tmp/hse-mixed-role-server.log artifacts/phase1-retrospective/mixed-role-server.log || true
+          cp /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.log artifacts/phase1-retrospective/mixed-role-server.log || true
+
+      - name: Stop only this audit's server process group
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.pid ]; then
+            audit_pid=$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-mixed-role-server.pid)
+            if [[ "$audit_pid" =~ ^[0-9]+$ ]]; then kill -TERM -- "-$audit_pid" 2>/dev/null || true; fi
+          fi
       - name: Upload mixed-role HTTP burst evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -174,7 +188,6 @@ jobs:
       HSE_ENABLE_WORKER_DEMO_AUTH: "false"
       HSE_USE_WORKER_DEMO_DATA: "false"
       HSE_RELEASE_SHA: phase1-retrospective-browser
-      HSE_BROWSER_BASE_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v6
@@ -206,19 +219,25 @@ jobs:
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - name: Start real Next.js application
         run: |
-          npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/hse-retrospective-browser-server.log 2>&1 &
-          echo $! > /tmp/hse-retrospective-browser-server.pid
+          audit_port=$(node --input-type=module -e 'import net from "node:net"; const server=net.createServer(); server.listen(0,"127.0.0.1",()=>{const port=server.address().port; server.close(()=>console.log(port));}); server.on("error",()=>process.exit(1));')
+          audit_base="http://127.0.0.1:${audit_port}"
+          echo "PORT=${audit_port}" >> "$GITHUB_ENV"
+          echo "HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
+          echo "HSE_BROWSER_BASE_URL=${audit_base}" >> "$GITHUB_ENV"
+          PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.log 2>&1 &
+          echo $! > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.pid
           for attempt in $(seq 1 120); do
-            if curl --silent --fail --output /dev/null http://127.0.0.1:3000/; then
-              exit 0
-            fi
-            if ! kill -0 "$(cat /tmp/hse-retrospective-browser-server.pid)" 2>/dev/null; then
-              cat /tmp/hse-retrospective-browser-server.log
+            if ! kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.pid)" 2>/dev/null; then
+              cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.log
               exit 1
+            fi
+            if curl --silent --fail --output /dev/null "$audit_base/"; then
+              kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.pid)" 2>/dev/null || exit 1
+              exit 0
             fi
             sleep 1
           done
-          cat /tmp/hse-retrospective-browser-server.log
+          cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.log
           exit 1
       - name: Run Worker registration/profile/identity retrospective Chromium
         run: node scripts/hard-browser-retrospective.mjs
@@ -238,7 +257,16 @@ jobs:
         if: always()
         run: |
           mkdir -p artifacts/hard-browser-retrospective
-          cp /tmp/hse-retrospective-browser-server.log artifacts/hard-browser-retrospective/server.log || true
+          cp /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.log artifacts/hard-browser-retrospective/server.log || true
+
+      - name: Stop only this audit's server process group
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.pid ]; then
+            audit_pid=$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hse-retrospective-browser-server.pid)
+            if [[ "$audit_pid" =~ ^[0-9]+$ ]]; then kill -TERM -- "-$audit_pid" 2>/dev/null || true; fi
+          fi
       - name: Upload retrospective browser evidence
         if: always()
         uses: actions/upload-artifact@v4
