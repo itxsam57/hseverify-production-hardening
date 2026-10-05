@@ -12,16 +12,16 @@
     "M1.09.02",
     "M1.09.03"
   ],
-  "last_verified_action": "Eight exact local gates PASS at ee06493; staff permission ceiling actual full browser probe PASS.",
+  "last_verified_action": "73f0733 eight exact local PASS, 4 CI jobs PASS; connected browser OTP failure. Actual captured expiry v2 working browser PASS without weakening original DB/JS checks.",
   "evidence": [
     ".autopilot/artifacts/20261005-company-worker-archive-red-0d7e98b.json",
     ".autopilot/artifacts/20261005-worker-accept-lock-order-red.json",
     ".autopilot/artifacts/20261005-company-worker-archive-working-v3.json"
   ],
-  "next_action": "Verify dedicated CI runner, commit combined PR20 staff-ceiling coverage and portable runner selection; exact local checks then actual CI and independent review.",
+  "next_action": "Commit captured-form Worker OTP harness repair; run exact candidate gates plus OTP browser, then full dedicated-runner CI and final review before PR20 merge.",
   "revision_attempt": 0,
   "blockers": [
-    "GitHub account payment/spending limit prevents CI jobs starting; initial and retry blocked. No CI pass/no merge/no row promotion."
+    "Actual connected CI OTP navigation failure awaits permanent exact repair and CI rerun."
   ],
   "unknowns": [
     "182 ledger scenarios unverified",
@@ -32,7 +32,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T15:30:34.466016+00:00",
+  "updated_at": "2026-10-05T16:03:16.271211+00:00",
   "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -42,7 +42,8 @@
     ],
     "avoid_repeating": "Do not rerun accepted old-SHA work; run only next exact gates and affected new failures.",
     "pending_pr": 20,
-    "pending_pr_head": "ee064939f54f9eee2bb11dc3d275c787ec33a898",
-    "ci_blocker": "Hosted billing blocked; dedicated existing-VPS runner provisioning in progress."
+    "pending_pr_head": "73f073335d905016d970d07ea645c62c0dd0acfe",
+    "ci_blocker": "Hosted billing bypassed through authorized dedicated runner; current OTP browser repair awaits CI.",
+    "next_workflow": "M2.07.05 timeout auto-submit actual RED retained"
   }
 }

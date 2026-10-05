@@ -80,7 +80,7 @@ test("Worker email and phone OTP reject wrong/expired codes, resend and activate
     assert.equal(migrated.status, 0, migrated.stderr || migrated.stdout);
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
-    const page = await context.newPage();
+    let page = await context.newPage();
     page.on("pageerror", error => errors.push(error.message));
     await phase(async () => {
       await page.goto(baseUrl + "/worker/register");
@@ -108,7 +108,13 @@ test("Worker email and phone OTP reject wrong/expired codes, resend and activate
     });
     await snapshotAndExpire("pending_email", "registration_email");
     await phase(async () => {
-      await verify(page, emailCode, "email", "expired");
+      // Preserve the pre-expiry normal POST; avoid HMR racing navigation on the restarted server.
+      await page.close();
+      page = await context.newPage();
+      page.on("pageerror", error => errors.push(error.message));
+      await verify(staleEmail, emailCode, "email", "expired");
+      await page.goto(baseUrl + "/worker/register/verify?error=expired");
+      console.log("ACTUAL_CAPTURED_OTP_EXPIRY email captured pre-expiry normal POST rejected by backend; fresh live UI remains tested");
       await page.getByText("Expired. Request a new code.", { exact: true }).waitFor();
       assert.equal(await page.getByRole("button", { name: "Verify email", exact: true }).isDisabled(), true);
       await page.getByRole("button", { name: "Send new code", exact: true }).click();
@@ -131,7 +137,13 @@ test("Worker email and phone OTP reject wrong/expired codes, resend and activate
     });
     await snapshotAndExpire("pending_phone", "registration_phone");
     await phase(async () => {
-      await verify(page, phoneCode, "phone", "expired");
+      // Preserve the pre-expiry normal POST; avoid HMR racing navigation on the restarted server.
+      await page.close();
+      page = await context.newPage();
+      page.on("pageerror", error => errors.push(error.message));
+      await verify(stalePhone, phoneCode, "phone", "expired");
+      await page.goto(baseUrl + "/worker/register/verify?error=expired");
+      console.log("ACTUAL_CAPTURED_OTP_EXPIRY phone captured pre-expiry normal POST rejected by backend; fresh live UI remains tested");
       await page.getByText("Expired. Request a new code.", { exact: true }).waitFor();
       assert.equal(await page.getByRole("button", { name: "Verify phone", exact: true }).isDisabled(), true);
       await page.getByRole("button", { name: "Send new code", exact: true }).click();

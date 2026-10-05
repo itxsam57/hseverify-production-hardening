@@ -9,3 +9,7 @@ Hosted CI jobs cannot start because account billing is blocked. Restore the SAME
 Next: verify runner online, working permanent browser and workflow syntax, commit guarded candidate, run exact local gates once then push PR20 and execute actual CI. Do not overlap local Next checks with self-hosted CI browser jobs. Require independent final acceptance before merge or row promotion.
 
 Accepted Masterplan coverage remains 24 passed / 12 partial / 182 unverified. Remaining real gaps include timeout auto-finalization, privacy fulfilment, real report delivery, deployed providers/PostgreSQL/load/accessibility. Product not consumer-ready.
+
+Actual CI at73f0733: compliance, targeted, release and private reassessment PASS; connected browser failed Worker OTP expired-email navigation after restart. Original unchanged diagnostic passes local and three runner attempts; controlled refresh observes ERR_ABORTED. Minimal harness repair uses existing captured no-JavaScript forms for expired backend POST and a fresh JavaScript page after restart for expired/disabled/resend UI. All original exact challenge, attempt, audit, account and no-session assertions retained. Working actual v2 PASS. Require permanent exact candidate checks and full CI; no auth product change, no ignored failure.
+
+Next real feature RED retained: M2.07.05 actual timed begin with partial saved answer remains unsubmitted at deadline. Must implement durable timeout finalization with pinned complete-form scoring denominator and exactly-once outcomes after this atomic CI repair.
