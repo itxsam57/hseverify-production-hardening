@@ -72,7 +72,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           };
           let releaseScripts;
           const scriptsReady = new Promise(resolve => { releaseScripts = resolve; });
-          await page.route("**/_next/static/**/*.js", async route => {
+          await page.route(/\/_next\/static\/.*\.js(?:\?.*)?$/, async route => {
             await scriptsReady;
             await route.continue();
           });
@@ -88,7 +88,7 @@ test("Worker registration denies missing policies/country and password mismatch,
             assert.equal(await page.getByRole("button", { name: "Create Worker account", exact: true }).isDisabled(), true);
           } finally { releaseScripts(); }
           await page.waitForLoadState("load");
-          await page.unroute("**/_next/static/**/*.js");
+          await page.unroute(/\/_next\/static\/.*\.js(?:\?.*)?$/);
           await page.getByLabel("Full name").fill("Ready Worker");
           await terms.check();
           assert.equal(await page.getByLabel("Full name").inputValue(), "Ready Worker");

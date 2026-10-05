@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
   "task_id": "WORKFLOW-001",
-  "stage": "VERIFYING",
+  "stage": "IMPLEMENTING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "0370b75565233694c7559325ddcca9e4f263ad04",
-  "canonical_sha": "ce8468ab2eb011861c53f8111fd657d466678b86",
+  "last_verified_sha": "f6c7af07ad1a674054b6f0c99ddf4a0520fc4dd9",
+  "canonical_sha": "f78af3aa4a123be10aa56654f506986725a56f95",
   "requirements": [
-    "M1.03.03",
-    "M1.03.08"
+    "M1.03.04",
+    "M1.03.02"
   ],
-  "last_verified_action": "PR11 staff lifecycle scoped ACCEPT and merged after eight exact commands and eight applicable actual CI checks",
+  "last_verified_action": "PR12 accepted and merged. Company normal email rejection reproduces rollback (5 !=4); bounded repair passes same browser/database probe.",
   "evidence": [
-    ".autopilot/artifacts/20261005-staff-lifecycle-exact-0370b75.json",
-    ".autopilot/artifacts/20261005-staff-lifecycle-ci-0370b75.json"
+    ".autopilot/artifacts/20261005-company-email-red.txt",
+    ".autopilot/artifacts/20261005-company-email-green.txt"
   ],
-  "next_action": "Finish broad verification, commit reviewed recovery candidate and run exact gates and actual CI",
+  "next_action": "Finish Company email/MFA activation browser/database and actual repository exhaustion/audit rollback tests",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -30,7 +30,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T02:57:05.277822+00:00",
+  "updated_at": "2026-10-05T03:25:22.326800+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE"
 }

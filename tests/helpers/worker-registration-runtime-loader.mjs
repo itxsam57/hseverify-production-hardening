@@ -18,7 +18,11 @@ export function loadWorkerRegistrationTs(path) {
     // Tests inject the real database repository and service config; runtime singleton getters are unused.
     if (request === "@/lib/database/database" || request === "@/lib/config/server-environment") return {};
     if (request.startsWith("@/")) return loadWorkerRegistrationTs("src/" + request.slice(2) + ".ts");
-    if (request.startsWith(".")) return loadWorkerRegistrationTs(resolve(dirname(filename), request + ".ts"));
+    if (request.startsWith(".")) {
+      const dependency = resolve(dirname(filename), request + ".ts");
+      if (dependency === resolve("src/lib/database/database.ts") || dependency === resolve("src/lib/config/server-environment.ts")) return {};
+      return loadWorkerRegistrationTs(dependency);
+    }
     return require(request);
   };
   new Function("exports", "require", "module", "__filename", "__dirname", output)(record.exports, localRequire, record, filename, dirname(filename));
