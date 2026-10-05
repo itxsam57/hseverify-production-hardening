@@ -1,27 +1,26 @@
 {
   "schema_version": 1,
   "task_id": "WORKFLOW-001",
-  "stage": "VERIFYING",
+  "stage": "IMPLEMENTING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
-  "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
+  "last_verified_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+  "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
   "requirements": [
-    "M1.09.02",
-    "M1.09.03"
+    "M2.07.05"
   ],
-  "last_verified_action": "73f0733 eight exact local PASS, 4 CI jobs PASS; connected browser OTP failure. Actual captured expiry v2 working browser PASS without weakening original DB/JS checks.",
+  "last_verified_action": "PR20 ACCEPT:9exactlocal/5CI; mergedfa57cb7. Ledger32passed12partial174unverified. Next timeout actual RED at accepted canonical.",
   "evidence": [
     ".autopilot/artifacts/20261005-company-worker-archive-red-0d7e98b.json",
     ".autopilot/artifacts/20261005-worker-accept-lock-order-red.json",
     ".autopilot/artifacts/20261005-company-worker-archive-working-v3.json"
   ],
-  "next_action": "Commit captured-form Worker OTP harness repair; run exact candidate gates plus OTP browser, then full dedicated-runner CI and final review before PR20 merge.",
+  "next_action": "Implement durable timeout producer/worker and complete pinned scoring; native real producer tests first, then affected browser/exact CI.",
   "revision_attempt": 0,
   "blockers": [
-    "Actual connected CI OTP navigation failure awaits permanent exact repair and CI rerun."
+    "M2.07.05 actual expiry retains saved answer but does not auto-submit."
   ],
   "unknowns": [
     "182 ledger scenarios unverified",
@@ -32,18 +31,23 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T16:03:16.271211+00:00",
-  "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "updated_at": "2026-10-05T16:38:15.392125+00:00",
+  "verified_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [
       ".engineering/state/CURRENT_TASK.json",
       ".engineering/WORK_CONTRACT.md"
     ],
-    "avoid_repeating": "Do not rerun accepted old-SHA work; run only next exact gates and affected new failures.",
-    "pending_pr": 20,
-    "pending_pr_head": "73f073335d905016d970d07ea645c62c0dd0acfe",
-    "ci_blocker": "Hosted billing bypassed through authorized dedicated runner; current OTP browser repair awaits CI.",
-    "next_workflow": "M2.07.05 timeout auto-submit actual RED retained"
+    "avoid_repeating": "Accepted PR20 source/9local/5CI complete; do not refresh old history. Revalidate only affected new candidate.",
+    "accepted_pr": 20,
+    "accepted_head": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+    "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+    "next_red_artifact": ".autopilot/artifacts/20261005-assessment-timeout-auto-submit-red-fa57cb7.json",
+    "coverage": {
+      "passed": 32,
+      "partial": 12,
+      "unverified": 174
+    }
   }
 }
