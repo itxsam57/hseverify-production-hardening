@@ -11,6 +11,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
+const EXPIRY_MODE = process.env.HSE_SHARE_EXPIRY === "true";
+const DIRECT_MODE = process.env.HSE_DIRECT_SHARE_REVOCATION === "true";
 const FULFILMENT_MODE = process.env.HSE_PRIVACY_FULFILMENT === "true";
 const EXTRA_PRIVACY_TYPES = ["access","correction","consent_withdrawal","share_link_revocation","retention_inquiry","export","deletion"];
 
@@ -95,8 +97,10 @@ async function seedCase(dataDirectory, tenantId, workerId) {
   }
 }
 
-test(FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfilment and removes recipient access" : "Worker privacy request and accommodation approval traverse Worker -> Admin -> Worker with consent history", { timeout: 300_000 }, async () => {
+test(DIRECT_MODE ? "Worker direct revocation uses server time and preserves the first outcome" : EXPIRY_MODE ? "Natural share-link expiry denies a previously working recipient and preserves unrelated sharing" : FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfilment and removes recipient access" : "Worker privacy request and accommodation approval traverse Worker -> Admin -> Worker with consent history", { timeout: 300_000 }, async () => {
   const root = process.cwd();
+  let shortExpiry;
+  let directRevokedAt;
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-privacy-browser-"));
   const port = await freePort();
   const baseUrl = "http://127.0.0.1:" + port;
@@ -144,6 +148,7 @@ test(FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfi
           await worker.route("**/api/share-links", async (route) => {
             if (route.request().method() !== "POST") return route.continue();
             const body = route.request().postDataJSON();
+            if (EXPIRY_MODE && body.purpose === "Employer onboarding evidence") { shortExpiry = new Date(Date.now()+90000).toISOString(); body.expiresAt = shortExpiry; }
             await route.continue({ postData: JSON.stringify({ ...body, createdAt: "2099-01-01T00:00:00.000Z" }) });
           });
 
@@ -180,6 +185,70 @@ test(FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfi
           const otherShareUrl = await worker.getByRole("link", { name: "Open secure share link" }).getAttribute("href");
           assert.ok(otherShareUrl);
           assert.notEqual(otherShareUrl, shareUrl);
+          if (DIRECT_MODE) {
+            const publicContext = await browser.newContext();
+            try {
+              const recipient = await publicContext.newPage();
+              await recipient.goto(baseUrl + shareUrl);
+              await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor();
+              await worker.route("**/api/share-links", async route => {
+                if (route.request().method() !== "DELETE") return route.continue();
+                const body=route.request().postDataJSON();
+                await route.continue({postData:JSON.stringify({...body,revokedAt:"2099-01-01T00:00:00.000Z"})});
+              });
+              const before=Date.now();
+              const responsePromise=worker.waitForResponse(response=>response.url().endsWith("/api/share-links")&&response.request().method()==="DELETE");
+              const card=worker.locator("article").filter({hasText:"Employer onboarding evidence"});
+              await card.getByRole("button",{name:"Revoke",exact:true}).click();
+              const response=await responsePromise;
+              assert.equal(response.status(),200);
+              const payload=await response.json();
+              const recorded=new Date(payload.revokedAt).getTime();
+              assert.ok(recorded>=before&&recorded<=Date.now(),"Revocation timestamp must be derived by the server, not the forged future client value.");
+              directRevokedAt=payload.revokedAt;
+              await card.getByText("Revoked",{exact:true}).waitFor();
+              const repeat=await worker.request.delete(baseUrl+"/api/share-links",{data:{shareLinkId:payload.shareLinkId,revokedAt:"2100-01-01T00:00:00.000Z"}});
+              assert.equal(repeat.status(),200);
+              assert.equal((await repeat.json()).revokedAt,directRevokedAt);
+              await worker.reload();
+              await card.getByText("Revoked",{exact:true}).waitFor();
+              await recipient.goto(baseUrl+shareUrl);
+              await recipient.getByRole("heading",{name:"Share link unavailable",exact:true}).waitFor();
+              await recipient.goto(baseUrl+otherShareUrl);
+              await recipient.getByRole("heading",{name:"Shared digital passport",exact:true}).waitFor();
+              console.log("ACTUAL_DIRECT_REVOCATION browser forged future timestamp ignored; prior recipient denied and unrelated sharing active");
+              return;
+            } finally {await publicContext.close();}
+          }
+          if (EXPIRY_MODE) {
+            assert.ok(shortExpiry);
+            const publicContext = await browser.newContext();
+            try {
+              const recipient = await publicContext.newPage();
+              await recipient.goto(baseUrl + shareUrl);
+              await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor();
+              await recipient.goto(baseUrl + otherShareUrl);
+              await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor();
+              const wait = new Date(shortExpiry).getTime() - Date.now() + 1000;
+              assert.ok(wait > 0 && wait <= 91000, "Initial working recipient must precede real expiry.");
+              console.log("ACTUAL_EXPIRY_INITIAL both recipients work before persisted 90-second expiry; waiting natural wall clock");
+              await new Promise(resolve => setTimeout(resolve, wait));
+              await recipient.goto(baseUrl + shareUrl);
+              await recipient.getByRole("heading", { name: "Share link unavailable", exact: true }).waitFor();
+              await recipient.goto(baseUrl + shareUrl);
+              await recipient.getByRole("heading", { name: "Share link unavailable", exact: true }).waitFor();
+              await recipient.goto(baseUrl + otherShareUrl);
+              await recipient.getByRole("heading", { name: "Shared digital passport", exact: true }).waitFor();
+              await worker.reload();
+              const expired = worker.locator("article").filter({ hasText: "Employer onboarding evidence" });
+              await expired.getByText("Expired", { exact: true }).waitFor();
+              assert.equal(await expired.getByRole("button", { name: "Revoke", exact: true }).count(), 0);
+              const active = worker.locator("article").filter({ hasText: "Separate optional sharing remains active" });
+              await active.getByText("Active", { exact: true }).waitFor();
+              console.log("ACTUAL_EXPIRY_BROWSER prior recipient denied twice after real expiry; unrelated sharing active; owner sees Expired");
+              return;
+            } finally { await publicContext.close(); }
+          }
           if (FULFILMENT_MODE) {
             const publicContext = await browser.newContext();
             try {
@@ -313,6 +382,36 @@ test(FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfi
 
     const db = new PGlite(databaseDirectory);
     try {
+      if (DIRECT_MODE) {
+        const target=await db.query("SELECT share_link_id,created_at,revoked_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
+        assert.equal(target.rows.length,1);
+        assert.equal(new Date(target.rows[0].revoked_at).toISOString(),directRevokedAt);
+        assert.ok(new Date(target.rows[0].created_at)<=new Date(directRevokedAt));
+        const other=await db.query("SELECT revoked_at FROM scoped_share_links WHERE purpose='Separate optional sharing remains active'");
+        assert.equal(other.rows.length,1);
+        assert.equal(other.rows[0].revoked_at,null);
+        const logs=await db.query("SELECT outcome,reason FROM scoped_share_access_logs WHERE share_link_id=$1 ORDER BY accessed_at",[target.rows[0].share_link_id]);
+        assert.deepEqual(logs.rows.map(row=>[row.outcome,row.reason]),[["granted","active"],["denied","revoked"]]);
+        console.log("ACTUAL_DIRECT_REVOCATION_DB server timestamp retained after repeat, historical creation unchanged and unrelated link active");
+        return;
+      }
+      if (EXPIRY_MODE) {
+        const target = await db.query("SELECT share_link_id,created_at,expires_at,revoked_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
+        assert.equal(target.rows.length,1);
+        const link = target.rows[0];
+        assert.equal(new Date(link.expires_at).toISOString(),shortExpiry);
+        assert.ok(new Date(link.expires_at) > new Date(link.created_at));
+        assert.ok(new Date(link.expires_at) < new Date());
+        assert.equal(link.revoked_at,null);
+        const logs = await db.query("SELECT outcome,reason FROM scoped_share_access_logs WHERE share_link_id=$1 ORDER BY accessed_at", [link.share_link_id]);
+        assert.deepEqual(logs.rows.map(row=>[row.outcome,row.reason]),[["granted","active"],["denied","expired"],["denied","expired"]]);
+        const other = await db.query("SELECT expires_at,revoked_at FROM scoped_share_links WHERE purpose='Separate optional sharing remains active'");
+        assert.equal(other.rows.length,1);
+        assert.equal(other.rows[0].revoked_at,null);
+        assert.ok(new Date(other.rows[0].expires_at)>new Date());
+        console.log("ACTUAL_EXPIRY_DB real persisted expiry unchanged, no revocation, initial allowed and two expired access records, unrelated link still valid");
+        return;
+      }
       if (FULFILMENT_MODE) {
         const completed = await db.query("SELECT request_id,status,details,completed_at FROM privacy_requests WHERE worker_id=$1 AND request_type='share_link_revocation' AND details->>'sharePurpose'='Separate optional sharing remains active'", [credentials.worker.accountId]);
         assert.equal(completed.rows.length,1);

@@ -21,6 +21,10 @@ function fieldsFromRow(value: unknown): readonly ScopedShareField[] {
   return Object.freeze(parsed as ScopedShareField[]);
 }
 
+function isoTimestamp(value: unknown): string {
+  return value instanceof Date ? value.toISOString() : new Date(String(value)).toISOString();
+}
+
 export class ScopedShareLinkRepository {
   constructor(private readonly clientPromise = getDatabaseClient()) {}
 
@@ -65,9 +69,9 @@ export class ScopedShareLinkRepository {
       fields: fieldsFromRow(row.fields),
       purpose: String(row.purpose),
       employerDetail: row.employer_detail ? String(row.employer_detail) : null,
-      createdAt: new Date(String(row.created_at)).toISOString(),
-      expiresAt: row.expires_at ? new Date(String(row.expires_at)).toISOString() : null,
-      revokedAt: row.revoked_at ? new Date(String(row.revoked_at)).toISOString() : null,
+      createdAt: isoTimestamp(row.created_at),
+      expiresAt: row.expires_at ? isoTimestamp(row.expires_at) : null,
+      revokedAt: row.revoked_at ? isoTimestamp(row.revoked_at) : null,
       tokenNonceHash: String(row.token_nonce_hash)
     });
   }
@@ -87,9 +91,9 @@ export class ScopedShareLinkRepository {
         fields: fieldsFromRow(row.fields),
         purpose: String(row.purpose),
         employerDetail: row.employer_detail ? String(row.employer_detail) : null,
-        createdAt: new Date(String(row.created_at)).toISOString(),
-        expiresAt: row.expires_at ? new Date(String(row.expires_at)).toISOString() : null,
-        revokedAt: row.revoked_at ? new Date(String(row.revoked_at)).toISOString() : null,
+        createdAt: isoTimestamp(row.created_at),
+        expiresAt: row.expires_at ? isoTimestamp(row.expires_at) : null,
+        revokedAt: row.revoked_at ? isoTimestamp(row.revoked_at) : null,
         tokenNonceHash: String(row.token_nonce_hash)
       });
     }));

@@ -52,13 +52,15 @@ export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] })
     const response = await fetch("/api/share-links", {
       method: "DELETE",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ shareLinkId, revokedAt: new Date().toISOString() })
+      body: JSON.stringify({ shareLinkId })
     });
     setBusy(null);
     if (!response.ok) {
       setFeedback({ kind: "error", text: "The share link could not be revoked. Please try again." });
       return;
     }
+    const revoked = await response.json() as ShareLinkView;
+    setVisibleLinks((current) => current.map((link) => link.shareLinkId === shareLinkId ? revoked : link));
     setFeedback({ kind: "success", text: "Share link revoked. Existing access is now blocked." });
     router.refresh();
   }

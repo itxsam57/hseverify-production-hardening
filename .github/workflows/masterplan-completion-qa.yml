@@ -90,6 +90,9 @@ jobs:
       - name: Existing privacy regression
         run: node --test tests/platform/privacy-operations-runtime.test.mjs
 
+      - name: Direct share revocation preserves historical and repeated outcomes
+        run: node --test tests/platform/scoped-share-link-revocation-runtime.test.mjs
+
       - name: Consent and accommodation runtime
         run: node --test tests/platform/privacy-consent-accommodation-runtime.test.mjs
 
@@ -151,6 +154,16 @@ jobs:
       - name: Owned privacy fulfilment revokes recipient access and retains unrelated sharing
         env:
           HSE_PRIVACY_FULFILMENT: "true"
+        run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+
+      - name: Worker direct share revocation uses authoritative server time
+        env:
+          HSE_DIRECT_SHARE_REVOCATION: "true"
+        run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+
+      - name: Natural share-link expiry denies prior recipient access
+        env:
+          HSE_SHARE_EXPIRY: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Six-role authentication and session boundaries

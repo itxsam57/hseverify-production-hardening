@@ -6,24 +6,24 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "21580616e1b87cbd424b05175aa68cdebfa4e6bf",
-  "canonical_sha": "7718dda92be07aaf8014389010771046499da30a",
+  "last_verified_sha": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
+  "canonical_sha": "c82abf6e394f634565317e0c79bee33e6b8ef95d",
   "requirements": [
-    "M3.09.01",
+    "M3.03.04",
     "M3.09.02"
   ],
-  "last_verified_action": "PR22 accepted+merged7718dda. Privacy working:27native, actual fulfilment and original browsers, type/lint/build/preview pass. Audit startup wrong-target RED fromcanonical37375449038 repaired; actual extracted production startup with occupied3000, own URL, migrated DB and own cleanup passes; existing app preserved.",
+  "last_verified_action": "PR23 accepted+mergedc82. New bounded share repair working proof PASS:35native, direct revoke+repeat/ownerUI, natural90sec expiry, prior fulfilment/originalprivacy browsers, type/lint/build/preview. Server time, legacy revocation, first persisted outcome, Date precision and immediate authoritative localrow repaired. No new exact candidate or CI acceptance yet.",
   "evidence": [
-    ".autopilot/artifacts/20261005-privacy-fulfilment-native-working-v3.txt",
-    ".autopilot/artifacts/20261005-privacy-fulfilment-browser-working.txt",
-    ".autopilot/artifacts/20261005-privacy-app-working.json",
-    ".autopilot/artifacts/audit-port-proof/result.json"
+    ".autopilot/artifacts/20261005-privacy-exact-7bfda62.json",
+    ".autopilot/artifacts/20261005-pr23-ci-exact-7bfda62.json",
+    ".autopilot/artifacts/20261005-pr23-independent-accept-7bfda62.json",
+    ".autopilot/artifacts/20261005-direct-revocation-native-red-c82abf6.txt",
+    ".autopilot/artifacts/20261005-direct-revocation-red-7bfda62.txt",
+    ".autopilot/artifacts/20261005-share-boundaries-working-v3.json"
   ],
-  "next_action": "Finish final native27 proof; commit bounded privacy fulfilment + isolated audit startup + scoped resume. Rerun exact candidate code/browser/build/port proof; push PR23; require actual CI and independent acceptance.",
+  "next_action": "Commit bounded share repair with normal trailers; run exact native35/fourbrowsermodes/type/lint/build/preview; push PR24 and require actual CI plus independent ACCEPT before merge. Keep ledger32/12/174 until accepted closure.",
   "revision_attempt": 0,
-  "blockers": [
-    "New privacy and audit workflow changes require committed exact-SHA checks and actual CI."
-  ],
+  "blockers": [],
   "unknowns": [
     "174 ledger scenarios unverified",
     "Other privacy fulfilment types and restriction effects",
@@ -32,23 +32,24 @@
   ],
   "awaiting_owner": false,
   "auto_resume": true,
-  "status": "ACTIVE",
-  "updated_at": "2026-10-05T21:44:32.166905+00:00",
-  "verified_sha": "21580616e1b87cbd424b05175aa68cdebfa4e6bf",
+  "status": "TESTING",
+  "updated_at": "2026-10-05T22:53:55.544176+00:00",
+  "verified_sha": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [
       ".engineering/state/CURRENT_TASK.json",
       ".engineering/WORK_CONTRACT.md"
     ],
-    "avoid_repeating": "Read current task and active audit only. PR22 accepted; do not repeat its gates. Verify current privacy dirty candidate.",
-    "accepted_pr": 22,
-    "accepted_head": "21580616e1b87cbd424b05175aa68cdebfa4e6bf",
-    "canonical_sha": "7718dda92be07aaf8014389010771046499da30a",
+    "avoid_repeating": "PR23 accepted; do not rerun its gates. Read current task/ACTIVE_RESUME and active driver stage only; verify new direct/expiry candidate.",
+    "accepted_pr": 23,
+    "accepted_head": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
+    "canonical_sha": "c82abf6e394f634565317e0c79bee33e6b8ef95d",
     "coverage": {
       "passed": 32,
       "partial": 12,
       "unverified": 174
     }
-  }
+  },
+  "blocker": null
 }

@@ -79,17 +79,16 @@ export async function DELETE(request: Request) {
   const session = await requireWorkerSession();
   const body = await request.json() as {
     shareLinkId?: string;
-    revokedAt?: string;
   };
 
-  if (!body.shareLinkId || !body.revokedAt) {
+  if (!body.shareLinkId) {
     return NextResponse.json({ error: "invalid_share_link_request" }, { status: 400 });
   }
 
   const result = await new ScopedShareLinkService().revoke({
     ownerWorkerId: session.workerId,
     shareLinkId: body.shareLinkId,
-    revokedAt: body.revokedAt
+    revokedAt: new Date().toISOString()
   });
 
   return NextResponse.json(result);
