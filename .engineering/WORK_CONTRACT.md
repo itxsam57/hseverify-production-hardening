@@ -11,4 +11,16 @@ PR20 accepted at08cd920 and mergedfa57cb7 after9exactlocal/5CI/independentACCEPT
 Resume: read CURRENT_TASK plus this contract, then guard receipt and exact next action. Canonical post-merge CI may run on dedicated runner; do not overlap local Next/browser/build with its jobs. Native isolated tests may run independently.
 
 ## Bounded prerequisite slice (2026-10-05)
-Three database REDs confirmed unanswered-item grading failures. LEFT JOIN all pinned form items fixes partial/empty scoring and written review routing without fabricated responses. Two remaining canonical audit workflows failed before tests for hosted billing; apply the existing reviewed dedicated runner policy and runner.temp databases, retaining all gates. Independent bounded review passed; new written assertion excludes FINAL auto-score. This slice does not close timeout or change readiness counts.
+Three database REDs confirmed unanswered-item grading failures. LEFT JOIN all pinned form items fixes partial/empty scoring and written review routing without fabricated responses. Two remaining canonical audit workflows failed before tests for hosted billing; apply the existing reviewed dedicated runner policy and isolated /tmp databases using allowed github job.env context, retaining all gates. Independent bounded review passed; new written assertion excludes FINAL auto-score. This slice does not close timeout or change readiness counts.
+
+## Current timeout verification
+
+Migration0084 and shared system finalization implemented. Actual timed producer,
+real child worker process, interrupted expiry, legacy reconciliation, audit-failure
+retry/draft retention and empty migration roundtrip pass in16native tests.
+Natural90s browser expiry confirms saved MCQ draft, omitted written answer, system
+audit and reload receipt. Type/lint/notification and outbox checks pass locally.
+No timeout row promoted: exact candidate build/browser/CI and PostgreSQL production
+worker remain to verify. PR21 prerequisite merged e445518; keep counts32/12/174.
+Next product gap: assigned written reviewer needs all pinned prompts/rubrics and
+latest response or explicit unanswered evidence; current queue shows score inputs.

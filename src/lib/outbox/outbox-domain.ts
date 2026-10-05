@@ -12,7 +12,8 @@ export const OUTBOX_JOB_TYPES = [
   "notification.account.security",
   "email.delivery.foundation",
   "secure_file.scan",
-  "worker_identity.automated_checks"
+  "worker_identity.automated_checks",
+  "assessment.attempt.expiry"
 ] as const;
 export const OUTBOX_JOB_STATUSES = [
   "pending",
@@ -88,6 +89,12 @@ export type WorkerIdentityAutomatedChecksPayload = Readonly<{
   versionRef: string;
 }>;
 
+export type AssessmentExpiryPayload = Readonly<{
+  attemptRef: string;
+  phaseIndex: number;
+  deadlineAt: string;
+}>;
+
 export type OutboxPayloadByType = Readonly<{
   "platform.foundation.noop": FoundationNoopPayload;
   "notification.portal.foundation": PortalFoundationNotificationPayload;
@@ -95,6 +102,7 @@ export type OutboxPayloadByType = Readonly<{
   "email.delivery.foundation": FoundationEmailDeliveryPayload;
   "secure_file.scan": SecureFileScanPayload;
   "worker_identity.automated_checks": WorkerIdentityAutomatedChecksPayload;
+  "assessment.attempt.expiry": AssessmentExpiryPayload;
 }>;
 
 export type OutboxPayload = OutboxPayloadByType[OutboxJobType];
@@ -106,8 +114,9 @@ export type OutboxJobRecord = Readonly<{
   schemaVersion: typeof OUTBOX_SCHEMA_VERSION;
   idempotencyKey: string;
   payload: OutboxPayload;
-  enqueuedByAccountId: string;
-  enqueuedByRole: AuthRole;
+  enqueuedByAccountId: string | null;
+  enqueuedByRole: AuthRole | null;
+  enqueuedBySystemComponent?: "outbox-worker" | null;
   tenantId: string | null;
   membershipId: string | null;
   status: OutboxJobStatus;
@@ -144,6 +153,7 @@ export type EnqueueOutboxJobInput<T extends OutboxJobType = OutboxJobType> =
   Readonly<{
     jobType: T;
     businessKey: string;
+    availableAt?: string;
     payload: OutboxPayloadByType[T];
   }>;
 
@@ -438,6 +448,26 @@ function normalizeWorkerIdentityAutomatedChecksPayload(
   return Object.freeze({ identityRef, versionRef });
 }
 
+export function normalizeAssessmentExpiryPayload(value: unknown): AssessmentExpiryPayload {
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.getPrototypeOf(value) !== Object.prototype ||
+      Object.keys(value).sort().join(",") !== "attemptRef,deadlineAt,phaseIndex") {
+    throw new OutboxContractError("Assessment expiry payload schema is invalid.");
+  }
+  const payload = value as Record<string, unknown>;
+  if (typeof payload.attemptRef !== "string" ||
+      !/^assessment_attempt_[A-Za-z0-9_-]{24}$/.test(payload.attemptRef) ||
+      typeof payload.phaseIndex !== "number" || !Number.isSafeInteger(payload.phaseIndex) ||
+      payload.phaseIndex < 0 || payload.phaseIndex > 50 ||
+      typeof payload.deadlineAt !== "string" || !Number.isFinite(Date.parse(payload.deadlineAt)) ||
+      new Date(payload.deadlineAt).toISOString() !== payload.deadlineAt) {
+    throw new OutboxContractError("Assessment expiry reference is invalid.");
+  }
+  return Object.freeze({
+    attemptRef: payload.attemptRef, phaseIndex: payload.phaseIndex, deadlineAt: payload.deadlineAt
+  });
+}
+
 export function normalizeOutboxPayload<T extends OutboxJobType>(
   jobType: T,
   value: unknown
@@ -461,6 +491,9 @@ export function normalizeOutboxPayload<T extends OutboxJobType>(
       break;
     case "secure_file.scan":
       normalized = normalizeSecureFileScanPayload(value);
+      break;
+    case "assessment.attempt.expiry":
+      normalized = normalizeAssessmentExpiryPayload(value);
       break;
     case "worker_identity.automated_checks":
       normalized = normalizeWorkerIdentityAutomatedChecksPayload(value);

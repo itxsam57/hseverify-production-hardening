@@ -3,7 +3,7 @@ import "server-only";
 import { createIdentifier } from "../auth/auth-domain";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { evaluatePlatformPermission } from "../authorization/authorization-domain";
-import { bindTrustedAuditActor } from "../audit/audit-domain";
+import { assertTrustedAuditActor, bindTrustedSystemAuditActor, type TrustedSystemAuditActor, bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
 import { AssessmentCatalogueEligibilityService } from "../assessment-catalogue/assessment-catalogue-eligibility-service";
 import { AssessmentFormGenerationService } from "../assessment-generation/assessment-form-generation-service";
@@ -19,6 +19,7 @@ import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
 import {
   AssessmentAttemptAccessError,
+  AssessmentAttemptAnswerInputError,
   AssessmentAttemptConflictError,
   AssessmentAttemptInputError,
   createAssessmentAnswerId,
@@ -45,6 +46,8 @@ export {
   AssessmentAttemptConflictError,
   AssessmentAttemptInputError
 } from "./assessment-attempt-domain";
+
+import type { AssessmentExpiryPayload } from "../outbox/outbox-domain";
 
 import { snapshotAssessmentClock, startAssessmentPhaseClock, readAssessmentClock, assertAssessmentTimeAvailable, type AssessmentTimingView } from "./assessment-attempt-timing";
 
@@ -88,6 +91,20 @@ const CASE_ID_PATTERN = /^assurance_case_[A-Za-z0-9_-]{24}$/;
 const CATALOGUE_VERSION_ID_PATTERN = /^catalogue_version_[A-Za-z0-9_-]{24}$/;
 const QUESTION_VERSION_ID_PATTERN = /^question_version_[A-Za-z0-9_-]{24}$/;
 const DRAFT_MUTATION_KEY_PATTERN = /^.{16,160}$/;
+
+async function lockCaseAndAttempt(
+  database: DatabaseClient, repository: AssessmentAttemptRepository,
+  workerAccountId: string, attemptId: string
+): Promise<AssessmentAttemptRecord | null> {
+  const owned = await repository.findOwned(workerAccountId,attemptId);
+  if (!owned) return null;
+  const assuranceCase = await database.query(
+    "SELECT case_id FROM assurance_cases WHERE case_id=$1 AND worker_account_id=$2 FOR UPDATE",
+    [owned.caseId,workerAccountId]
+  );
+  if (!assuranceCase.rows[0]) return null;
+  return repository.lockOwned(workerAccountId,attemptId);
+}
 
 async function assertLiveWorker(
   database: DatabaseClient,
@@ -238,7 +255,7 @@ async function view(
   );
   const flaggedPositions = Object.freeze(flagRows.rows.map((row) => Number(row.position)));
 
-  if (attempt.status === "SUBMITTED") {
+  if (attempt.status === "SUBMITTED" || attempt.status === "AUTO_SUBMITTED") {
     return Object.freeze({
       timing,
       attempt,
@@ -690,7 +707,7 @@ export class AssessmentAttemptService {
         now: now.toISOString()
       });
       const delivery = await new AssessmentDeliverySettingsService(Promise.resolve(database)).get(created.blueprintVersionId);
-      await snapshotAssessmentClock(database, created, delivery, this.timingNow(now));
+      await snapshotAssessmentClock(database, created, delivery, this.timingNow(now), bindTrustedAuditActor(principal));
       if (input.accessContext) {
         await repository.insertBinding({
           attemptId: created.attemptId,
@@ -817,10 +834,11 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.findOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database,repository,principal.accountId,attemptId);
       if (!attempt) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
-      return view(repository, attempt, this.timingNow(now));
+      const current = await this.expireIfDue(database,repository,attempt,this.timingNow(now));
+      return view(repository,current,this.timingNow(now));
     });
   }
 
@@ -859,7 +877,7 @@ export class AssessmentAttemptService {
     await this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
       if (attempt.status === "INTERRUPTED") return;
@@ -899,7 +917,7 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
       await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
@@ -955,7 +973,7 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const locked = await repository.lockOwned(principal.accountId, attemptId);
+      const locked = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!locked) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, locked, principal, accessContext, now);
       await assertAssessmentTimeAvailable(database, locked, this.timingNow(now));
@@ -1027,7 +1045,7 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const locked = await repository.lockOwned(principal.accountId, attemptId);
+      const locked = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!locked) throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, locked, principal, accessContext, now);
       await assertAssessmentTimeAvailable(database, locked, this.timingNow(now));
@@ -1129,7 +1147,7 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") {
         throw new AssessmentAttemptAccessError();
       }
@@ -1171,7 +1189,7 @@ export class AssessmentAttemptService {
     await this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") {
         throw new AssessmentAttemptAccessError();
       }
@@ -1214,7 +1232,7 @@ export class AssessmentAttemptService {
     await this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
       await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
@@ -1247,7 +1265,7 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
       await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
@@ -1290,7 +1308,7 @@ export class AssessmentAttemptService {
       );
       if (!advanced) throw new AssessmentAttemptConflictError();
       if (delivery.timing?.mode === "SEPARATE") {
-        await startAssessmentPhaseClock(database, attemptId, section.index + 1, this.timingNow(now));
+        await startAssessmentPhaseClock(database, attemptId, section.index + 1, this.timingNow(now), bindTrustedAuditActor(principal));
       }
       return view(repository, advanced, this.timingNow(now));
     });
@@ -1306,7 +1324,7 @@ export class AssessmentAttemptService {
     return this.database.transaction(async (database) => {
       await assertLiveWorker(database, principal, now);
       const repository = new AssessmentAttemptRepository(database);
-      const attempt = await repository.lockOwned(principal.accountId, attemptId);
+      const attempt = await lockCaseAndAttempt(database, repository, principal.accountId, attemptId);
       if (!attempt || attempt.status !== "IN_PROGRESS") throw new AssessmentAttemptAccessError();
       await assertAttemptBinding(repository, attempt, principal, accessContext, now);
       await assertAssessmentTimeAvailable(database, attempt, this.timingNow(now));
@@ -1340,18 +1358,119 @@ export class AssessmentAttemptService {
     });
   }
 
+  async processExpiry(
+    payload: AssessmentExpiryPayload, ownerAccountId: string | null,
+    actor: TrustedSystemAuditActor, now = new Date()
+  ): Promise<void> {
+    const trusted = assertTrustedAuditActor(actor);
+    if (trusted.kind !== "system" || trusted.systemComponent !== "outbox-worker") {
+      throw new AssessmentAttemptAccessError();
+    }
+    const attemptId = normalizeAssessmentAttemptReference(payload.attemptRef);
+    await this.database.transaction(async database => {
+      const repository = new AssessmentAttemptRepository(database);
+      const owner = ownerAccountId ?? (await database.query<{worker_account_id:string}>(
+        "SELECT worker_account_id FROM assessment_attempts WHERE attempt_id=$1",[attemptId]
+      )).rows[0]?.worker_account_id;
+      if (!owner) return;
+      const attempt = await lockCaseAndAttempt(database,repository,owner,attemptId);
+      if (!attempt || !["IN_PROGRESS","INTERRUPTED"].includes(attempt.status)) return;
+      const delivery = await new AssessmentDeliverySettingsService(Promise.resolve(database))
+        .get(attempt.blueprintVersionId);
+      const timing = await readAssessmentClock(database,attempt,delivery,now);
+      // Older scheduled phases and manually shortened phase starts are harmless replays.
+      if (!timing || timing.phaseIndex !== payload.phaseIndex ||
+          timing.deadlineAt !== payload.deadlineAt) return;
+      await this.expireIfDue(database,repository,attempt,now,actor);
+    });
+  }
+
+  private async expireIfDue(
+    database: DatabaseClient, repository: AssessmentAttemptRepository,
+    initial: AssessmentAttemptRecord, now: Date,
+    actor = bindTrustedSystemAuditActor("outbox-worker")
+  ): Promise<AssessmentAttemptRecord> {
+    let attempt = initial;
+    if (!["IN_PROGRESS","INTERRUPTED"].includes(attempt.status)) return attempt;
+    const assuranceCase = (await database.query<{case_status:string}>(
+      "SELECT case_status FROM assurance_cases WHERE case_id=$1 AND worker_account_id=$2",
+      [attempt.caseId,attempt.workerAccountId]
+    )).rows[0];
+    if (assuranceCase?.case_status !== "Assessment in progress") return attempt;
+    const delivery = await new AssessmentDeliverySettingsService(Promise.resolve(database))
+      .get(attempt.blueprintVersionId);
+    while (["IN_PROGRESS","INTERRUPTED"].includes(attempt.status)) {
+      const timing = await readAssessmentClock(database,attempt,delivery,now);
+      if (!timing?.expired) return attempt;
+      const item = await repository.loadCurrentPinnedItem(attempt.workerAccountId,attempt.attemptId);
+      if (!item) throw new AssessmentAttemptConflictError("Expired assessment item is unavailable.");
+      const committed = await repository.findCommittedAnswer(
+        attempt.workerAccountId,attempt.attemptId,attempt.currentPosition
+      );
+      const draft = await repository.findCurrentDraft(attempt,item);
+      if (!committed && draft && Date.parse(draft.updatedAt) <= Date.parse(timing.deadlineAt)) {
+        let raw: unknown = item.questionType === "TRUE_FALSE" ?
+          draft.value.booleanValue : draft.value.textValue;
+        if ((item.questionType === "INTEGER" || item.questionType === "DECIMAL") &&
+            typeof raw === "string" && raw.trim()) raw = Number(raw);
+        let normalized: NormalizedAssessmentAnswer | null = null;
+        try { normalized = normalizeAssessmentAnswer(item.questionType,raw,item.options); }
+        catch (error) { if (!(error instanceof AssessmentAttemptAnswerInputError)) throw error; }
+        if (normalized) await repository.insertCommittedAnswer({
+          answerId:createAssessmentAnswerId(),attempt,item,value:normalized,now:now.toISOString()
+        });
+      }
+      const section = sectionForPosition(delivery,attempt.currentPosition);
+      if (section && (delivery.progressionMode === "SECTION_REVIEW" || timing.mode === "SEPARATE")) {
+        await database.query(
+          "INSERT INTO assessment_section_locks(attempt_id,section_index,start_position,end_position,locked_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(attempt_id,section_index) DO NOTHING",
+          [attempt.attemptId,section.index,section.startPosition,section.endPosition,timing.deadlineAt]
+        );
+      }
+      if (timing.mode === "SEPARATE" && section && section.endPosition < attempt.questionCount) {
+        const moved = await database.query(
+          "UPDATE assessment_attempts SET current_position=$3,updated_at=$4 WHERE attempt_id=$1 AND status IN ('IN_PROGRESS','INTERRUPTED') AND current_position=$2",
+          [attempt.attemptId,attempt.currentPosition,section.endPosition+1,now.toISOString()]
+        );
+        if (moved.affectedRows !== 1) throw new AssessmentAttemptConflictError();
+        await startAssessmentPhaseClock(database,attempt.attemptId,section.index+1,new Date(timing.deadlineAt));
+        await new DatabaseAuditRepository(Promise.resolve(database)).append(actor,{
+          action:"assessment.section.auto_submitted",outcome:"succeeded",
+          target:{type:"resource",reference:attempt.attemptId},
+          metadata:{caseId:attempt.caseId,phaseIndex:timing.phaseIndex,deadlineAt:timing.deadlineAt,systemComponent:actor.systemComponent}
+        });
+        const advanced = await repository.lockOwned(attempt.workerAccountId,attempt.attemptId);
+        if (!advanced) throw new AssessmentAttemptConflictError();
+        attempt = advanced;
+        continue;
+      }
+      const receipt = await this.finalizeSubmittedAttempt(database,repository,actor,attempt,now);
+      return receipt.attempt;
+    }
+    return attempt;
+  }
+
   private async finalizeSubmittedAttempt(
     database: DatabaseClient,
     repository: AssessmentAttemptRepository,
-    principal: AuthorizationPrincipal,
+    principal: AuthorizationPrincipal | TrustedSystemAuditActor,
     attempt: AssessmentAttemptRecord,
     now: Date
   ): Promise<AssessmentAttemptView> {
+    const systemActor = "kind" in principal ? principal : null;
+    const userPrincipal = "kind" in principal ? null : principal;
+    const automatic = systemActor !== null;
+    if (!systemActor && !userPrincipal) throw new AssessmentAttemptAccessError();
+    const workerAccountId = userPrincipal ? userPrincipal.accountId : attempt.workerAccountId;
+    const actorAccountId = userPrincipal ? userPrincipal.accountId : `system:${systemActor!.systemComponent}`;
+    const actorRole = userPrincipal ? userPrincipal.activeRole : "system";
+    const auditActor = userPrincipal ? bindTrustedAuditActor(userPrincipal) : assertTrustedAuditActor(systemActor!);
     const submitted = await repository.markSubmitted(
-      principal.accountId,
+      workerAccountId,
       attempt.attemptId,
       attempt.currentPosition,
-      now.toISOString()
+      now.toISOString(),
+      automatic
     );
     if (!submitted) throw new AssessmentAttemptConflictError();
 
@@ -1360,7 +1479,7 @@ export class AssessmentAttemptService {
          FROM assurance_cases
         WHERE case_id=$1 AND worker_account_id=$2
         LIMIT 1`,
-      [submitted.caseId, principal.accountId]
+      [submitted.caseId,workerAccountId]
     );
     const assuranceCase = caseResult.rows[0];
     if (!assuranceCase || assuranceCase.case_status !== "Assessment in progress") {
@@ -1377,13 +1496,13 @@ export class AssessmentAttemptService {
       toStatus: "Assessment in progress",
       owner: "worker",
       nextAction: null,
-      actorAccountId: principal.accountId,
-      actorRole: principal.activeRole,
+      actorAccountId,
+      actorRole,
       now: now.toISOString()
     });
 
     await new DatabaseAuditRepository(Promise.resolve(database)).append(
-      bindTrustedAuditActor(principal),
+      auditActor,
       {
         action: "assessment.attempt.submitted",
         outcome: "succeeded",
@@ -1394,7 +1513,10 @@ export class AssessmentAttemptService {
           blueprintVersionId: submitted.blueprintVersionId,
           formId: submitted.formId,
           position: submitted.currentPosition,
-          questionCount: submitted.questionCount
+          questionCount: submitted.questionCount,
+          submissionMode: automatic ? "automatic" : "manual",
+          previousAttemptStatus:attempt.status,
+          ...(systemActor ? {systemComponent:systemActor.systemComponent} : {})
         }
       }
     );
@@ -1403,7 +1525,7 @@ export class AssessmentAttemptService {
       caseId: submitted.caseId,
       attemptId: submitted.attemptId,
       blueprintVersionId: submitted.blueprintVersionId,
-      actor: { accountId: principal.accountId, role: principal.activeRole },
+      actor: { accountId:actorAccountId,role:actorRole },
       now
     });
 

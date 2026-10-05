@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cp, mkdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -12,6 +12,8 @@ import {
 } from "./lib/next-build-system.mjs";
 
 const projectRoot = process.cwd();
+const workerBuild = spawnSync(process.execPath,["scripts/build-outbox-worker.mjs"],{stdio:"inherit"});
+if (workerBuild.status !== 0) throw new Error("Outbox worker production build failed.");
 const snapshot = await snapshotProjectConfiguration(projectRoot);
 const mode = await prepareNextMode("production-build", projectRoot);
 const nextBin = resolve(projectRoot, "node_modules", "next", "dist", "bin", "next");

@@ -194,8 +194,8 @@ function attempt(row: AttemptRow): AssessmentAttemptRecord {
     throw new Error("Stored assessment attempt position is inconsistent.");
   }
   if (
-    (row.status !== "SUBMITTED" && row.submitted_at !== null) ||
-    (row.status === "SUBMITTED" &&
+    (!["SUBMITTED","AUTO_SUBMITTED"].includes(row.status) && row.submitted_at !== null) ||
+    (["SUBMITTED","AUTO_SUBMITTED"].includes(row.status) &&
       (row.submitted_at === null || currentPosition !== questionCount))
   ) {
     throw new Error("Stored assessment attempt completion state is inconsistent.");
@@ -918,18 +918,21 @@ export class AssessmentAttemptRepository {
     workerAccountId: string,
     attemptId: string,
     expectedPosition: number,
-    now: string
+    now: string,
+    automatic = false
   ): Promise<AssessmentAttemptRecord | null> {
     const result = await this.database.query<AttemptRow>(
       `UPDATE assessment_attempts
-       SET status='SUBMITTED',submitted_at=$4,updated_at=$4
+       SET status=CASE WHEN $5 THEN 'AUTO_SUBMITTED' ELSE 'SUBMITTED' END,
+           current_position=CASE WHEN $5 THEN question_count ELSE current_position END,
+           submitted_at=$4,updated_at=$4
        WHERE worker_account_id=$1
          AND attempt_id=$2
-         AND status='IN_PROGRESS'
+         AND (status='IN_PROGRESS' OR ($5 AND status='INTERRUPTED'))
          AND current_position=$3
-         AND current_position=question_count
+         AND (current_position=question_count OR $5)
        RETURNING ${ATTEMPT_COLUMNS}`,
-      [workerAccountId, attemptId, expectedPosition, now]
+      [workerAccountId, attemptId, expectedPosition, now, automatic]
     );
     return result.rows[0] ? attempt(result.rows[0]) : null;
   }

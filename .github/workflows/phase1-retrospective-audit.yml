@@ -101,7 +101,7 @@ jobs:
     env:
       HSE_APP_ENV: test
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/hseverify-mixed-role-burst-db
+      HSE_PGLITE_DATA_DIR: /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hseverify-mixed-role-burst-db
       HSE_SESSION_SECRET: mixed-role-burst-session-secret-2026-at-least-32-characters
       HSE_AUTH_PEPPER: mixed-role-burst-auth-pepper-2026-at-least-32-characters
       HSE_ENABLE_AUTH_SANDBOX: "true"
@@ -166,7 +166,7 @@ jobs:
     env:
       HSE_APP_ENV: test
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/hseverify-retrospective-browser-db
+      HSE_PGLITE_DATA_DIR: /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hseverify-retrospective-browser-db
       HSE_SESSION_SECRET: retrospective-browser-session-secret-2026-at-least-32-characters
       HSE_AUTH_PEPPER: retrospective-browser-auth-pepper-2026-at-least-32-characters
       HSE_ENABLE_AUTH_SANDBOX: "true"

@@ -68,3 +68,26 @@ Start with:
 - `docs/bookmarks/LATER.md`
 
 Then read the current brick's engineering and testing documents plus the accepted lower-brick records needed for the change.
+
+
+### Background outbox worker
+
+`npm run build` compiles both the web application and the outbox worker. Run the
+worker as a separate supervised process from the same full release directory:
+`npm run worker:outbox`. Supply the same validated production environment and
+PostgreSQL database as the web application (`HSE_DATABASE_DRIVER=postgres`).
+Apply database migrations before starting either process. Keep runtime npm
+dependencies installed and retain `.outbox-worker-dist` and
+`scripts/run-outbox-worker.mjs` in the release. The Next standalone web directory
+alone is not the worker release.
+
+The supervisor should restart the worker after unexpected exits and send SIGTERM
+for shutdown. Existing outbox leases, retries and dead-letter monitoring apply.
+Timed assessment begin writes deadline jobs transactionally; the worker processes
+them even when the browser is closed. Authenticated reads also catch up expired
+attempts. Monitor worker liveness and dead-letter expiry jobs; a deployment without
+the supervised worker has no guaranteed unattended deadline processing.
+
+`npm run worker:outbox -- --once` processes one due job for operational diagnosis.
+PGlite is supported only for offline single-process checks, not a continuously
+running worker alongside the web application.

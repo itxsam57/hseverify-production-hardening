@@ -3,31 +3,33 @@
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
   "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
-  "last_verified_action": "PR20 nine local/fiveCI independentACCEPT,32passed12partial174unverified.",
-  "next_action": "M2.07.05 durable expiry auto-submit; native real producer first; current canonicalfa57cb7 and acceptedPR20 complete.",
+  "last_verified_action": "PR21 accepted/merged. Timeout working tree:16 begin/migration tests, actual worker child process, natural deadline browser, type/lint and notifications pass; exact candidate build/CI pending.",
+  "next_action": "Commit reviewed timeout source, run exact candidate affected tests/build/browser and PR CI; then address written-review evidence display.",
   "owner_required": false,
   "revision": 8,
   "blocker": "Timeout auto-submit actual RED, safe local implementation authorized.",
-  "updated_at": "2026-10-05T15:13:48.880153+00:00",
+  "updated_at": "2026-10-05T20:07:26.261645+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
-  "last_verified_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+  "canonical_sha": "e445518262722f48340f70ebac397d4fbafb7839",
+  "last_verified_sha": "a1b1ea08a0af530154717ae30a272377126a1eac",
   "resume": {
     "read_first": [
       ".engineering/state/CURRENT_TASK.json",
       ".engineering/WORK_CONTRACT.md"
     ],
-    "avoid_repeating": "Accepted PR20 source/9local/5CI complete; do not refresh old history. Revalidate only affected new candidate.",
-    "accepted_pr": 20,
-    "accepted_head": "08cd920a5b395ce06bd9b430f701410e5cc20699",
-    "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
-    "next_red_artifact": ".autopilot/artifacts/20261005-assessment-timeout-auto-submit-red-fa57cb7.json",
+    "avoid_repeating": "PR20 and PR21 accepted prerequisites complete. Check dirty fingerprint, guard and current atomic next action.",
+    "accepted_pr": 21,
+    "accepted_head": "a1b1ea08a0af530154717ae30a272377126a1eac",
+    "canonical_sha": "e445518262722f48340f70ebac397d4fbafb7839",
     "coverage": {
       "passed": 32,
       "partial": 12,
       "unverified": 174
     }
-  }
+  },
+  "blockers": [
+    "Exact timeout candidate gates and live PostgreSQL supervised worker verification remain."
+  ]
 }

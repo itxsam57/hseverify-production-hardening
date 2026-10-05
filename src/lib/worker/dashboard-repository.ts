@@ -224,7 +224,7 @@ function assessmentTone(status: WorkerDashboardProjection["assessments"][number]
 
 function mapAttemptStatus(value: string): WorkerDashboardProjection["assessments"][number]["status"] {
   if (value === "IN_PROGRESS") return "in_progress";
-  if (value === "SUBMITTED") return "review_pending";
+  if (value === "SUBMITTED" || value === "AUTO_SUBMITTED") return "review_pending";
   return "assigned";
 }
 

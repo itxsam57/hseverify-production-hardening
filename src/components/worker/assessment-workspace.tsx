@@ -492,25 +492,22 @@ function UntimedAssessmentWorkspace({
   );
 }
 
-function ExpiredAssessment({ attemptId }: { attemptId: string }): React.JSX.Element {
+function ExpiredAssessment(): React.JSX.Element {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState("");
-  async function requestRecovery(): Promise<void> {
-    setPending(true);
-    const result = await interruptAssessmentAction(attemptId, "technical_issue", "Assessment time expired; request controlled recovery.");
-    if (result.ok) {
-      router.push("/worker/available-assessments");
-      return;
-    }
-    setMessage(result.message);
-    setPending(false);
-  }
+  useEffect(() => {
+    router.refresh();
+    let retries = 0;
+    const interval = setInterval(() => {
+      router.refresh();
+      if (++retries >= 5) clearInterval(interval);
+    },2000);
+    return () => clearInterval(interval);
+  },[router]);
   return <section className="page-stack">
-    <h1>Assessment time expired</h1>
-    <Alert tone="warning">Previously saved responses are retained. Unsaved changes have not been submitted. Continue through the controlled recovery workflow.</Alert>
-    {message ? <Alert tone="danger">{message}</Alert> : null}
-    <Button type="button" disabled={pending} onClick={requestRecovery}>{pending ? "Saving…" : "Continue to recovery"}</Button>
+    <h1>Assessment time ended</h1>
+    <Alert tone="warning">Checking the server’s saved responses and submission receipt. Responses saved before the deadline are retained.</Alert>
+    <p role="status" aria-live="polite">Waiting for the server to confirm the next section or final receipt.</p>
+    <Button type="button" onClick={() => router.refresh()}>Check submission</Button>
   </section>;
 }
 
@@ -525,7 +522,7 @@ function TimedAssessmentWorkspace({ view }: { view: AssessmentAttemptClientView 
   }, [timing, view.submitted]);
   if (!timing || view.submitted) return <UntimedAssessmentWorkspace view={view} />;
   const remaining = Math.max(0, timing.remainingSeconds - elapsedSeconds);
-  if (timing.expired || remaining === 0) return <ExpiredAssessment attemptId={view.attemptId} />;
+  if (timing.expired || remaining === 0) return <ExpiredAssessment />;
   return <div className="page-stack">
     <p role="timer" aria-label="Assessment time remaining">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")} remaining{timing.mode === "SEPARATE" ? " in this section" : ""}</p>
     <UntimedAssessmentWorkspace view={view} />

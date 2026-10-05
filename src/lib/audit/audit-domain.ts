@@ -127,6 +127,7 @@ export const AUDIT_ACTIONS = [
   "assessment.attempt.resumed",
   "assessment.attempt.replaced",
   "assessment.attempt.submitted",
+  "assessment.section.auto_submitted",
   "decision.created",
   "decision.override.created",
   "production_launch.handover.updated",

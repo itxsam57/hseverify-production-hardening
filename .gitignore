@@ -83,3 +83,5 @@ next-env.d.ts
 /artifacts/persistent-e2e/
 /artifacts/m2-08-browser/
 /artifacts/m2-07-browser/seed.json
+
+/.outbox-worker-dist/

@@ -290,8 +290,9 @@ type JobRow = {
   schema_version: number | string;
   idempotency_key: string;
   payload: unknown;
-  enqueued_by_account_id: string;
-  enqueued_by_role: string;
+  enqueued_by_account_id: string | null;
+  enqueued_by_role: string | null;
+  enqueued_system_component?: string | null;
   tenant_id: string | null;
   membership_id: string | null;
   status: string;
@@ -337,6 +338,14 @@ function parsePayload(value: unknown): unknown {
 }
 
 function jobFromRow(row: JobRow): OutboxJobRecord {
+  const system = row.enqueued_system_component ?? null;
+  if (system !== null ?
+      (system !== "outbox-worker" || row.job_type !== "assessment.attempt.expiry" ||
+       row.enqueued_by_account_id !== null || row.enqueued_by_role !== null ||
+       row.tenant_id !== null || row.membership_id !== null) :
+      (!row.enqueued_by_account_id || !row.enqueued_by_role)) {
+    throw new OutboxContractError("Stored outbox origin is invalid.");
+  }
   if (
     !isOutboxJobType(row.job_type) ||
     !isOutboxJobStatus(row.status) ||
@@ -353,6 +362,7 @@ function jobFromRow(row: JobRow): OutboxJobRecord {
     idempotencyKey: row.idempotency_key,
     payload: normalizeOutboxPayload(row.job_type, parsePayload(row.payload)),
     enqueuedByAccountId: row.enqueued_by_account_id,
+    enqueuedBySystemComponent: system as "outbox-worker" | null,
     enqueuedByRole: row.enqueued_by_role as OutboxJobRecord["enqueuedByRole"],
     tenantId: row.tenant_id,
     membershipId: row.membership_id,
@@ -494,6 +504,11 @@ export class DatabaseOutboxRepository implements OutboxRepository {
       throw new OutboxContractError("Unknown outbox job type.");
     }
     const payload = normalizeOutboxPayload(input.jobType, input.payload);
+    if (input.availableAt !== undefined &&
+        (!Number.isFinite(Date.parse(input.availableAt)) ||
+         new Date(input.availableAt).toISOString() !== input.availableAt)) {
+      throw new OutboxContractError("Outbox availability time is invalid.");
+    }
     const idempotencyKey = deriveOutboxIdempotencyKey(
       input.jobType,
       input.businessKey,
@@ -527,6 +542,14 @@ export class DatabaseOutboxRepository implements OutboxRepository {
       }
     }
 
+    if (created && input.availableAt !== undefined) {
+      const scheduled = await database.query<JobRow>(
+        "UPDATE platform_outbox_jobs SET next_attempt_at=$2 WHERE job_id=$1 AND status='pending' RETURNING *",
+        [row.job_id, input.availableAt]
+      );
+      if (!scheduled.rows[0]) throw new OutboxContractError("Outbox scheduling failed.");
+      row = scheduled.rows[0];
+    }
     const job = jobFromRow(row);
     if (
       job.jobType !== input.jobType ||
