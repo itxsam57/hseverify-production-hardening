@@ -91,6 +91,9 @@ jobs:
       - name: Staff invitation revocation runtime boundaries
         run: npm run test:staff-invitation-revocation
 
+      - name: Password recovery attempt persistence and atomic rollback
+        run: npm run test:auth-recovery-otp
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -137,6 +140,9 @@ jobs:
       - name: Five-role staff invitation activation and token lifecycle
         run: npm run test:staff-invitation-lifecycle-browser
 
+
+      - name: Worker duplicate contacts and password recovery
+        run: npm run test:worker-duplicate-recovery-browser
 
   release-readiness:
     runs-on: ubuntu-latest

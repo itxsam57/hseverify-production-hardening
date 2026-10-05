@@ -1,3 +1,7 @@
-# HSE Verify active continuation
-PR10 issuer revocation merged canonical65ae7ed after scoped ACCEPT at3de4ba8,13exact/nineactualCI. Verification-only staff lifecycle adds five activations/pre-MFA/used denial, unknown-token baseline preservation, five fresh expiry,three cachedprofile,two cachedvalidMFA. Working3browser/type/lint green; independent source REVIEW_PASS. Exact next candidate and CI mandatory before merge.
-Ledger19passed/10partial/189unverified; M1.03.05 scoped pass. Stable test-only framework action key and successful unexpired control fix intentional restart harness. No production change in lifecycle cycle. Next duplicate Worker recovery and Company registration; broad Masterplan/live/tenant/PostgreSQLconcurrency not certified. No owner decision. AUTO_CONTINUE.
+# Active Masterplan verification
+
+AUTO_CONTINUE. Canonical ce8468ab2eb011861c53f8111fd657d466678b86; PR11 staff lifecycle merged after independent scoped ACCEPT and eight exact local/applicable CI checks. Its evidence belongs to candidate0370b75, not a whole-project certificate. Ledger19 passed/10 partial/189 unverified.
+
+Current EF-WORKER-DUPLICATE-RECOVERY-20261005. Actual browser RED at ce8468a completed three duplicate contact denials, preserved nonempty Worker identity/skill records, valid recovery and session/password boundaries, then proved wrong OTP counter remained5 after UI said4. Permanent runtime RED: seven failures on persisted counter, three existing atomic-denial paths passed. Bounded product repair returns wrong-code error outcome inside transaction then throws outside commit. Source-derived request/reset account/flow ordering concern is tracked; PostgreSQL concurrency unverified.
+
+Next: finish working runtime/browser/type/lint, strengthen wrong-code intermediate snapshot and flow/completion audit, wire named actual CI, independent security/test/source review, commit exact candidate and run gates/CI. Preserve audit history. No owner decision pending; no all-Masterplan readiness claim.
