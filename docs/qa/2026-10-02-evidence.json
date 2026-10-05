@@ -597,12 +597,13 @@
           "Assessor"
         ],
         "scenario": "Staff invitation: role-bound activation, used/expired/revoked token",
-        "status": "partially-verified",
+        "status": "passed",
         "evidence": {
-          "command": "npm run test:staff-invitation-revocation-browser",
-          "artifact": ".autopilot/artifacts/20261005-staff-review-checks.txt",
-          "scope": "Actual Root-issued profile and MFA revocation; fresh token and cached profile/valid MFA POST denied; cancelled flows, no recipient account, immutable audit and retained password history. Real runtime covers live ownership/session authorization, accepted preservation, expiry and rollback. All five role activation/expiry browser variants and PostgreSQL concurrent execution remain unverified."
-        }
+          "command": "npm run test:staff-invitation-lifecycle-browser",
+          "artifact": ".autopilot/artifacts/20261005-staff-lifecycle-working-final.txt",
+          "scope": "Actual Root-issued five roles activate mandatory MFA and log in with exactly one invited-role session; preactivation sign-in and used token rejected. Five fresh expiry denials, three cached profile and two cached valid-MFA expiry denials. Unknown/malformed token browser requests leave all six table baselines unchanged. Revocation repair accepted/merged PR10 with runtime9/browser1,13exact/nineactualCI. New lifecycle exact/review/CI gate mandatory before next merge."
+        },
+        "notes": "Expiry test holds real SSR forms across intentional server restart with stable test-owned action encryption key, no clock mocking, normal POSTs and successful unexpired control. Company tenant setup, real PostgreSQL concurrency and live adapters are outside this scoped authentication evidence."
       },
       {
         "id": "M1.03.06",

@@ -134,6 +134,9 @@ jobs:
       - name: Staff invitation revocation browser boundaries
         run: npm run test:staff-invitation-revocation-browser
 
+      - name: Five-role staff invitation activation and token lifecycle
+        run: npm run test:staff-invitation-lifecycle-browser
+
 
   release-readiness:
     runs-on: ubuntu-latest
