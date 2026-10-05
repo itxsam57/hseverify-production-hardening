@@ -9,3 +9,6 @@ Actual normal Company form at f78af3a reports four remaining attempts after wron
 
 ## Bounded MFA audit repair amendment
 Actual browser normal valid email then six-digit invalid authenticator denial reached the service. Pending MFA flow/factor and no session verified, but immutable authentication.mfa.failed count was0 instead of1. Artifact .autopilot/artifacts/20261005-company-mfa-red-v2.txt. Same throw-inside-transaction rolls back inserted failure event. Apply the same typed committed-rejection outcome to verifyMfa only; successful enrollment/membership/flow/audit stays atomic. No MFA policy/rate-limit change.
+
+## Bounded actual CI test-harness amendment
+PR13 connected browser job111604499324 failed existing Worker readiness assertion at line88, before Company step. Same exact-SHA local test reproduces. Diagnostic actual script requests all use .js?dpl=worker-policy-browser-e2e; existing glob **/_next/static/**/*.js does not match query suffix, allowing hydration during sequential pre-readiness assertions. Replace only route/unroute matcher with pathname-and-query-compatible regex. Keep every assertion and all producer/browser/database checks unchanged. No Worker product edit. Artifacts 20261005-worker-policy-ci-followup-fc560c2.txt and 20261005-worker-readiness-diagnostic.txt.
