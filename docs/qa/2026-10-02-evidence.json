@@ -565,8 +565,13 @@
           "Assessor"
         ],
         "scenario": "Duplicate Worker registration: recovery without identity merge",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "command": "npm run test:worker-duplicate-recovery-browser",
+          "artifact": ".autopilot/artifacts/20261005-recovery-strengthened-green-v2.txt",
+          "scope": "Three actual contact conflicts denied; existing nonempty identity/version/skill/evidence and role/account/Worker reference unchanged; wrong recovery OTP persists decrement/failure audit without password/session changes; real sandbox code resets password, consumes flow/challenge, revokes old session and permits replacement-password login."
+        },
+        "notes": "Scoped working-tree browser proof; exact candidate, independent final acceptance and actual CI required before merge. Test-seeded registered Worker, real browser-created identity and skill drafts; no live provider claim."
       },
       {
         "id": "M1.03.04",
@@ -603,7 +608,7 @@
           "artifact": ".autopilot/artifacts/20261005-staff-lifecycle-working-final.txt",
           "scope": "Actual Root-issued five roles activate mandatory MFA and log in with exactly one invited-role session; preactivation sign-in and used token rejected. Five fresh expiry denials, three cached profile and two cached valid-MFA expiry denials. Unknown/malformed token browser requests leave all six table baselines unchanged. Revocation repair accepted/merged PR10 with runtime9/browser1,13exact/nineactualCI. New lifecycle exact/review/CI gate mandatory before next merge."
         },
-        "notes": "Expiry test holds real SSR forms across intentional server restart with stable test-owned action encryption key, no clock mocking, normal POSTs and successful unexpired control. Company tenant setup, real PostgreSQL concurrency and live adapters are outside this scoped authentication evidence."
+        "notes": "Expiry test holds real SSR forms across intentional server restart with stable test-owned action encryption key, no clock mocking, normal POSTs and successful unexpired control. Company tenant setup, real PostgreSQL concurrency and live adapters are outside this scoped authentication evidence. PR11 exact candidate0370b75 passed eight local commands and eight applicable CI checks; independent scoped ACCEPT; canonical mergece8468a."
       },
       {
         "id": "M1.03.06",
@@ -652,8 +657,13 @@
           "Assessor"
         ],
         "scenario": "Password change, other-session revocation and privileged recovery",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "command": "npm run test:auth-recovery-otp; npm run test:worker-duplicate-recovery-browser",
+          "artifact": ".autopilot/artifacts/20261005-recovery-working-green.txt",
+          "scope": "Wrong recovery code persistence repaired after actual browser RED. Real-repository runtime10 includes five-attempt exhaustion, six-role sequential reset/replay and audit-destination rollback. Worker actual browser reset revokes prior session and old password; identity preserved."
+        },
+        "notes": "Six-role browser recovery, authenticated password change/other-session handling, privileged recovery policy, expiry/resend browser combinations, PostgreSQL concurrency and live delivery remain unverified. Independent review identified request/reset account-flow inverse ordering, tracked in DEBT.md; no concurrency claim."
       },
       {
         "id": "M1.04.01",
@@ -3437,6 +3447,6 @@
         ]
       }
     ],
-    "updated_at": "2026-10-04"
+    "updated_at": "2026-10-05"
   }
 }

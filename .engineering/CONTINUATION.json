@@ -2,15 +2,15 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
-  "verified_sha": "3de4ba8cec5e1b69c35855af09a20867d271c971",
-  "last_verified_action": "PR10 issuer-only revocation merged after scoped ACCEPT at3de4ba8, thirteen exact commands and nine actual CI checks",
-  "next_action": "Run exact staff lifecycle browser/revocation/type/lint/build/preview, independent final review and actual CI then merge; continue duplicate Worker recovery and Company registration",
+  "verified_sha": "0370b75565233694c7559325ddcca9e4f263ad04",
+  "last_verified_action": "PR11 staff lifecycle scoped ACCEPT and merged after eight exact commands and eight applicable actual CI checks",
+  "next_action": "Run exact candidate recovery/auth browser/runtime, configured remaining application gate and actual CI; merge after independent scoped ACCEPT",
   "owner_required": false,
-  "revision": 4,
+  "revision": 5,
   "blocker": null,
-  "updated_at": "2026-10-05T02:30:43.606123+00:00",
+  "updated_at": "2026-10-05T03:03:17.005807+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "65ae7edb6e559ccf44f319cd30925826f78f951d"
+  "canonical_sha": "ce8468ab2eb011861c53f8111fd657d466678b86"
 }

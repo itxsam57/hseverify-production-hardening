@@ -315,7 +315,7 @@ export class AuthRecoveryService {
       this.config.pepper
     );
 
-    return this.repository.transaction(async (repository) => {
+    const result = await this.repository.transaction(async (repository) => {
       const flow = this.validateFlow(
         await repository.findRecoveryFlowForUpdate(
           this.flowTokenHash(input.token)
@@ -361,13 +361,16 @@ export class AuthRecoveryService {
           metadata: { purpose: "password_reset", attemptsRemaining: remaining },
           occurredAt: nowIso
         });
-        throw new AuthenticationRecoveryError({
-          code: "invalid_code",
-          userMessage:
-            remaining > 0
-              ? `The verification code is incorrect. ${remaining} attempt(s) remain.`
-              : "The verification code can no longer be used. Start again."
-        });
+        // Commit the rejected attempt and its audit before surfacing the domain error.
+        return {
+          error: new AuthenticationRecoveryError({
+            code: "invalid_code",
+            userMessage:
+              remaining > 0
+                ? `The verification code is incorrect. ${remaining} attempt(s) remain.`
+                : "The verification code can no longer be used. Start again."
+          })
+        } as const;
       }
 
       if (
@@ -411,8 +414,10 @@ export class AuthRecoveryService {
         activeRole: flow.activeRole,
         occurredAt: nowIso
       });
-      return { role: flow.activeRole };
+      return { value: { role: flow.activeRole } } as const;
     });
+    if ("error" in result) throw result.error;
+    return result.value;
   }
 
   async resend(input: { token: string }): Promise<void> {
