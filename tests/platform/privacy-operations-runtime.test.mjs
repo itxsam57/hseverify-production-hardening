@@ -44,20 +44,18 @@ test("retention completion rejects missing tenant before repository write", asyn
 test("privacy completion and transitions preserve tenant scope when present", async()=>{
  const calls=[];
  const service=new PrivacyOperationsService({completeRequest:async x=>calls.push(x),transitionRequest:async x=>calls.push(x)});
- await service.complete({requestId:"r1",workerId:"w1",tenantId:"t1",status:"OPEN"});
+ await assert.rejects(service.complete({requestId:"r1",workerId:"w1",tenantId:"t1",status:"OPEN"}), /fulfilment review/);
  await service.transition({requestId:"r1",workerId:"w1",tenantId:"t1",from:"OPEN",to:"PROCESSING"});
  assert.deepEqual(calls,[
-  {requestId:"r1",workerId:"w1",tenantId:"t1",status:"COMPLETED"},
   {requestId:"r1",workerId:"w1",tenantId:"t1",from:"OPEN",to:"PROCESSING"}
  ]);
 });
 
-test("privacy completion supports global worker-owned records without a tenant", async()=>{
+test("global worker-owned records cannot be marked complete without fulfilment", async()=>{
  const calls=[];
  const service=new PrivacyOperationsService({completeRequest:async x=>calls.push(x)});
- const result=await service.complete({requestId:"r1",workerId:"w1",tenantId:null,status:"OPEN"});
- assert.equal(result.status,"COMPLETED");
- assert.deepEqual(calls,[{requestId:"r1",workerId:"w1",tenantId:null,status:"COMPLETED"}]);
+ await assert.rejects(service.complete({requestId:"r1",workerId:"w1",tenantId:null,status:"OPEN"}), /fulfilment review/);
+ assert.deepEqual(calls,[]);
 });
 
 test("privacy listing rejects a different worker owner before repository read", async()=>{
@@ -68,13 +66,13 @@ test("privacy listing rejects a different worker owner before repository read", 
  await assert.rejects(()=>service.listWorkerPrivacy(null, "w1", "w2"), /privacy owner mismatch/);
 });
 
-test("privacy completion repository keeps closed records immutable", async()=>{
+test("privacy completion repository rejects status-only completion without issuing a query", async()=>{
  const calls=[];
  const repository=new PrivacyOperationsRepository(Promise.resolve({
   query: async (...args)=>{calls.push(args); return {rowCount: 1};}
  }));
- await repository.completeRequest({requestId:"r1",workerId:"w1",tenantId:"t1",status:"COMPLETED"});
- assert.match(calls[0][0], /status='OPEN'/);
+ await assert.rejects(repository.completeRequest({requestId:"r1",workerId:"w1",tenantId:"t1",status:"COMPLETED"}), /fulfilment review/);
+ assert.deepEqual(calls,[]);
 });
 
 test("privacy repository does not report successful completion when the scoped update changes nothing", async()=>{

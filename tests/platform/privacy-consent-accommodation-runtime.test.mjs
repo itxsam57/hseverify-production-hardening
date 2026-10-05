@@ -394,3 +394,119 @@ test("previously withdrawn scoped consent repairs still-active access", async ()
     assert.equal((await service.listWorkerHistory(worker)).filter(row => row.consentId === granted.consentId).length,2);
   } finally { await db.close(); }
 });
+
+test("staff fulfilment revokes only the requested owned share link before completion", async () => {
+ const db=await database();
+ try {
+  await seedAccount(db,'privacy_fulfil_worker','fulfil-worker@example.test','worker');
+  await seedAccount(db,'privacy_fulfil_admin','fulfil-admin@example.test','admin');
+  await db.query("UPDATE auth_accounts SET worker_reference=$2 WHERE account_id=$1",['privacy_fulfil_worker','worker_fulfil_reference']);
+  for(const id of ['requested_link','unrelated_link']) await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES($1,$2,'[]'::jsonb,$3,$4,$5)",[id,'worker_fulfil_reference','Privacy fulfilment proof '+id,NOW,id.padEnd(64,'n')]);
+  const service=new PrivacyOperationsService(new PrivacyOperationsRepository(Promise.resolve(db)));
+  await service.request({requestId:'privacy_fulfil_request',workerId:'privacy_fulfil_worker',tenantId:null,type:'share_link_revocation',details:{shareLinkId:'requested_link',sharePurpose:'Forged client purpose'}});
+  const result=await service.reviewRequest({requestId:'privacy_fulfil_request',reviewerAccountId:'privacy_fulfil_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'Revoked the specifically requested optional share link.'});
+  assert.equal(result.status,'COMPLETED');
+  assert.equal(result.details.sharePurpose,'Privacy fulfilment proof requested_link');
+  await assert.rejects(service.reviewRequest({requestId:'privacy_fulfil_request',reviewerAccountId:'privacy_fulfil_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'Repeat of the already completed optional share-link revocation.'}),/changed or is unavailable/);
+  const links=await db.query("SELECT share_link_id,revoked_at FROM scoped_share_links ORDER BY share_link_id");
+  assert.ok(links.rows.find(x=>x.share_link_id==='requested_link').revoked_at);
+  assert.equal(links.rows.find(x=>x.share_link_id==='unrelated_link').revoked_at,null);
+  const history=await db.query("SELECT from_status,to_status,reviewer_account_id FROM privacy_request_reviews WHERE request_id='privacy_fulfil_request'");
+  assert.deepEqual(history.rows,[{from_status:'OPEN',to_status:'COMPLETED',reviewer_account_id:'privacy_fulfil_admin'}]);
+ }finally{await db.close();}
+});
+
+test("privacy request targets reject another Worker's link before creation", async () => {
+ const db=await database();
+ try {
+  await seedAccount(db,'requesting_worker','requesting@example.test','worker');
+  await seedAccount(db,'other_worker','other@example.test','worker');
+  await db.query("UPDATE auth_accounts SET worker_reference='other_reference' WHERE account_id='other_worker'");
+  await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('foreign_link','other_reference','[]'::jsonb,'Foreign optional link',$1,$2)",[NOW,'f'.repeat(64)]);
+  const service=new PrivacyOperationsService(new PrivacyOperationsRepository(Promise.resolve(db)));
+  await assert.rejects(service.request({requestId:'foreign_target_request',workerId:'requesting_worker',tenantId:null,type:'share_link_revocation',details:{shareLinkId:'foreign_link'}}),/share link.*Worker/i);
+  assert.equal((await db.query("SELECT request_id FROM privacy_requests")).rows.length,0);
+ }finally{await db.close();}
+});
+
+test("privacy completion requires actual fulfilment and rejects legacy status-only paths", async () => {
+ const db=await database();
+ try {
+  await seedAccount(db,'status_only_worker','status-only@example.test','worker');
+  await seedAccount(db,'status_only_admin','status-admin@example.test','admin');
+  const repository=new PrivacyOperationsRepository(Promise.resolve(db));
+  const service=new PrivacyOperationsService(repository);
+  await service.request({requestId:'status_only_request',workerId:'status_only_worker',tenantId:null,type:'access'});
+  await assert.rejects(service.reviewRequest({requestId:'status_only_request',reviewerAccountId:'status_only_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'No access export was actually provided to the Worker.'}),/fulfilment operation/);
+  for (const type of ['correction','restriction','consent_withdrawal','share_link_revocation','retention_inquiry','deletion','export']) {
+   const requestId='unsupported_'+type;
+   await service.request({requestId,workerId:'status_only_worker',tenantId:null,type});
+   await assert.rejects(service.reviewRequest({requestId,reviewerAccountId:'status_only_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'The requested operation has not actually been performed.'}),/fulfilment operation/);
+  }
+  await assert.rejects(service.complete({requestId:'status_only_request',workerId:'status_only_worker',tenantId:null,status:'OPEN'}),/fulfilment review/);
+  await assert.rejects(repository.completeRequest({requestId:'status_only_request',workerId:'status_only_worker',tenantId:null,status:'COMPLETED'}),/fulfilment review/);
+  await assert.rejects(service.transition({requestId:'status_only_request',workerId:'status_only_worker',tenantId:null,from:'OPEN',to:'COMPLETED'}),/fulfilment review/);
+  assert.equal((await db.query("SELECT status FROM privacy_requests WHERE request_id='status_only_request'")).rows[0].status,'OPEN');
+  assert.equal((await db.query("SELECT review_id FROM privacy_request_reviews")).rows.length,0);
+ }finally{await db.close();}
+});
+
+test("privacy fulfilment rolls back revocation when required review history fails and safely retries", async () => {
+ const db=await database();
+ try {
+  await seedAccount(db,'rollback_worker','rollback-worker@example.test','worker');
+  await seedAccount(db,'rollback_admin','rollback-admin@example.test','admin');
+  await db.query("UPDATE auth_accounts SET worker_reference='rollback_reference' WHERE account_id='rollback_worker'");
+  await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('rollback_link','rollback_reference','[]'::jsonb,'Rollback optional link',$1,$2)",[NOW,'r'.repeat(64)]);
+  const service=new PrivacyOperationsService(new PrivacyOperationsRepository(Promise.resolve(db)));
+  await service.request({requestId:'rollback_request',workerId:'rollback_worker',tenantId:null,type:'share_link_revocation',details:{shareLinkId:'rollback_link'}});
+  await service.reviewRequest({requestId:'rollback_request',reviewerAccountId:'rollback_admin',expectedStatus:'OPEN',decision:'PROCESSING',reason:'Confirming the specifically requested link belongs to this Worker.'});
+  await db.query(`CREATE FUNCTION reject_privacy_history() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected required history failure'; END; $$`);
+  await db.query('CREATE TRIGGER reject_privacy_history BEFORE INSERT ON privacy_request_reviews FOR EACH ROW EXECUTE FUNCTION reject_privacy_history()');
+  const decision={requestId:'rollback_request',reviewerAccountId:'rollback_admin',expectedStatus:'PROCESSING',decision:'COMPLETED',reason:'Revoked requested optional link after confirming Worker ownership.'};
+  await assert.rejects(service.reviewRequest(decision),/injected required history failure/);
+  assert.equal((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='rollback_link'")).rows[0].revoked_at,null);
+  assert.equal((await db.query("SELECT status FROM privacy_requests WHERE request_id='rollback_request'")).rows[0].status,'PROCESSING');
+  assert.equal((await db.query("SELECT review_id FROM privacy_request_reviews WHERE request_id='rollback_request'")).rows.length,1);
+  await db.query('DROP TRIGGER reject_privacy_history ON privacy_request_reviews');
+  await db.query('DROP FUNCTION reject_privacy_history()');
+  assert.equal((await service.reviewRequest(decision)).status,'COMPLETED');
+  assert.ok((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='rollback_link'")).rows[0].revoked_at);
+  const reviews=await db.query("SELECT from_status,to_status FROM privacy_request_reviews WHERE request_id='rollback_request' ORDER BY review_sequence");
+  assert.deepEqual(reviews.rows,[{from_status:'OPEN',to_status:'PROCESSING'},{from_status:'PROCESSING',to_status:'COMPLETED'}]);
+ }finally{await db.close();}
+});
+
+test("a legacy foreign target cannot be completed or revoke another Worker's link", async () => {
+ const db=await database();
+ try {
+  await seedAccount(db,'legacy_worker','legacy-requester@example.test','worker');
+  await seedAccount(db,'legacy_owner','legacy-owner@example.test','worker');
+  await seedAccount(db,'legacy_admin','legacy-admin@example.test','admin');
+  await db.query("UPDATE auth_accounts SET worker_reference='legacy_foreign_reference' WHERE account_id='legacy_owner'");
+  await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('legacy_foreign_link','legacy_foreign_reference','[]'::jsonb,'Legacy foreign optional link',$1,$2)",[NOW,'l'.repeat(64)]);
+  await db.query("INSERT INTO privacy_requests(request_id,worker_id,request_type,details) VALUES('legacy_request','legacy_worker','share_link_revocation',$1::jsonb)",[JSON.stringify({shareLinkId:'legacy_foreign_link'})]);
+  const service=new PrivacyOperationsService(new PrivacyOperationsRepository(Promise.resolve(db)));
+  await assert.rejects(service.reviewRequest({requestId:'legacy_request',reviewerAccountId:'legacy_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'Attempted completion against an unowned legacy request target.'}),/share link.*Worker/i);
+  assert.equal((await db.query("SELECT revoked_at FROM scoped_share_links WHERE share_link_id='legacy_foreign_link'")).rows[0].revoked_at,null);
+  assert.equal((await db.query("SELECT status FROM privacy_requests WHERE request_id='legacy_request'")).rows[0].status,'OPEN');
+  assert.equal((await db.query("SELECT review_id FROM privacy_request_reviews")).rows.length,0);
+ }finally{await db.close();}
+});
+
+test("privacy fulfilment revokes an owned future-dated legacy link without rewriting its history", async () => {
+ const db=await database();
+ try {
+  await seedAccount(db,'future_worker','future-worker@example.test','worker');
+  await seedAccount(db,'future_admin','future-admin@example.test','admin');
+  await db.query("UPDATE auth_accounts SET worker_reference='future_reference' WHERE account_id='future_worker'");
+  await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('future_link','future_reference','[]'::jsonb,'Future-dated historical optional link','2099-01-01T00:00:00Z',$1)",['u'.repeat(64)]);
+  const service=new PrivacyOperationsService(new PrivacyOperationsRepository(Promise.resolve(db)));
+  await service.request({requestId:'future_request',workerId:'future_worker',tenantId:null,type:'share_link_revocation',details:{shareLinkId:'future_link'}});
+  const result=await service.reviewRequest({requestId:'future_request',reviewerAccountId:'future_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'Revoked the owned historical link without rewriting its creation metadata.'});
+  assert.equal(result.status,'COMPLETED');
+  const row=(await db.query("SELECT created_at,revoked_at FROM scoped_share_links WHERE share_link_id='future_link'")).rows[0];
+  assert.equal(new Date(row.created_at).toISOString(),'2099-01-01T00:00:00.000Z');
+  assert.ok(new Date(row.revoked_at).getTime()<new Date('2099-01-01').getTime());
+ }finally{await db.close();}
+});

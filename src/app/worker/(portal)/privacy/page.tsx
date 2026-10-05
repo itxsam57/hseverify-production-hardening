@@ -12,14 +12,15 @@ export const dynamic = "force-dynamic";
 export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
   const principal = await requirePortalAuthorization("worker");
   const service = new PrivacyOperationsService();
-  const [privacy, currentConsents, consentHistory] = await Promise.all([
+  const [privacy, currentConsents, consentHistory, shareLinks] = await Promise.all([
     service.listWorkerPrivacy(
       principal.tenantMembership?.tenantId ?? null,
       principal.accountId,
       principal.accountId
     ),
     new ConsentRecordService().listCurrentWorker(principal.accountId),
-    new ConsentRecordService().listWorkerHistory(principal.accountId)
+    new ConsentRecordService().listWorkerHistory(principal.accountId),
+    service.listOwnedShareLinks(principal.accountId)
   ]);
 
   return (
@@ -46,6 +47,12 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
               <option value="retention_inquiry">Retention inquiry</option>
               <option value="export">Export</option>
               <option value="deletion">Deletion where legally permissible</option>
+            </select>
+          </label>
+          <label>Share link for a revocation request
+            <select name="shareLinkId" defaultValue="">
+              <option value="">Choose a link when requesting revocation</option>
+              {shareLinks.map(link => <option key={link.share_link_id} value={link.share_link_id}>{link.purpose}</option>)}
             </select>
           </label>
           <button type="submit">Submit privacy request</button>
@@ -98,6 +105,7 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
         {privacy.requests.length === 0 ? <p>No privacy requests yet.</p> : privacy.requests.map((request) => (
           <article className="record-row" key={request.request_id}>
             <p>{request.request_type.replaceAll("_", " ")}: {request.status}</p>
+            {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
           </article>
         ))}

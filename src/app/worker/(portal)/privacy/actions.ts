@@ -18,7 +18,9 @@ export async function submitPrivacyRequestAction(formData: FormData) {
     requestId: randomUUID(),
     tenantId: principal.tenantMembership?.tenantId ?? null,
     workerId: principal.accountId,
-    type: type as PrivacyRequestType
+    type: type as PrivacyRequestType,
+    details: type === "share_link_revocation" && typeof formData.get("shareLinkId") === "string" && String(formData.get("shareLinkId")).trim()
+      ? { shareLinkId: String(formData.get("shareLinkId")).trim() } : {}
   });
   revalidatePath("/worker/privacy");
   revalidatePath("/worker/accessibility");

@@ -64,17 +64,22 @@ export class PrivacyOperationsService {
     return request;
   }
 
+  async listOwnedShareLinks(workerId: string) {
+    if (!workerId.trim()) throw new Error("Privacy Worker boundary is required.");
+    return this.repository.listOwnedShareLinks(workerId);
+  }
+
   async listRequestReviewQueue() {
     return this.repository.listRequestReviewQueue();
   }
 
   async reviewRequest(input: {
     requestId: string; reviewerAccountId: string; expectedStatus: string;
-    decision: "PROCESSING" | "REJECTED"; reason: string;
+    decision: "PROCESSING" | "REJECTED" | "COMPLETED"; reason: string;
   }) {
     const reason = input.reason.trim();
     if (!input.requestId || !input.reviewerAccountId || reason.length < 10 || reason.length > 2000 ||
-        !["PROCESSING", "REJECTED"].includes(input.decision)) {
+        !["PROCESSING", "REJECTED", "COMPLETED"].includes(input.decision)) {
       throw new Error("Privacy request review requires a valid decision and a reason between 10 and 2000 characters.");
     }
     return this.repository.reviewRequest({ ...input, reason, reviewId: createIdentifier("privacy_review"), now: new Date().toISOString() });
@@ -129,9 +134,8 @@ export class PrivacyOperationsService {
   }
 
   async complete(input: { requestId:string; workerId:string; tenantId:string | null; status:string }) {
-    const request = completePrivacyRequest(input);
-    await this.repository.completeRequest(request);
-    return request;
+    completePrivacyRequest(input);
+    throw new Error("Privacy completion requires an authorized fulfilment review.");
   }
 
   async ensureWorkerAccess(input: { workerId: string; ownerWorkerId: string }) {
@@ -141,6 +145,7 @@ export class PrivacyOperationsService {
 
   async transition(input: { requestId: string; workerId: string; tenantId:string | null; from: string; to: string }) {
     assertPrivacyTransition(input);
+    if (input.to === "COMPLETED") throw new Error("Privacy completion requires an authorized fulfilment review.");
     await this.repository.transitionRequest(input);
     return input;
   }
