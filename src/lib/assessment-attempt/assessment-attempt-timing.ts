@@ -1,5 +1,8 @@
 import "server-only";
 
+import type { TrustedUserAuditActor } from "../audit/audit-domain";
+import { DatabaseOutboxRepository } from "../outbox/outbox-repository";
+
 import type { DatabaseClient } from "../database/database";
 import type { AssessmentDeliverySettings } from "../assessment-generation/assessment-delivery-settings";
 import type { AssessmentAttemptRecord } from "./assessment-attempt-domain";
@@ -18,7 +21,8 @@ export async function snapshotAssessmentClock(
   database: DatabaseClient,
   attempt: AssessmentAttemptRecord,
   delivery: AssessmentDeliverySettings,
-  now: Date
+  now: Date,
+  actor: TrustedUserAuditActor
 ): Promise<void> {
   if (!delivery.timing) return;
   const { adjustment } = await new CaseAccommodationService(Promise.resolve(database))
@@ -31,11 +35,11 @@ export async function snapshotAssessmentClock(
     "INSERT INTO assessment_attempt_time_policies(attempt_id,blueprint_version_id,timing_mode,time_multiplier,phase_durations_json,snapshotted_at) VALUES($1,$2,$3,$4,$5::jsonb,$6)",
     [attempt.attemptId,attempt.blueprintVersionId,delivery.timing.mode,adjustment.timeMultiplier,JSON.stringify(adjusted),now.toISOString()]
   );
-  await startAssessmentPhaseClock(database, attempt.attemptId, delivery.timing.mode === "COMBINED" ? 0 : 1, now);
+  await startAssessmentPhaseClock(database, attempt.attemptId, delivery.timing.mode === "COMBINED" ? 0 : 1, now, actor);
 }
 
 export async function startAssessmentPhaseClock(
-  database: DatabaseClient, attemptId: string, phaseIndex: number, now: Date
+  database: DatabaseClient, attemptId: string, phaseIndex: number, now: Date, actor?: TrustedUserAuditActor
 ): Promise<void> {
   const result = await database.query<{ timing_mode: string; phase_durations_json: unknown }>(
     "SELECT timing_mode,phase_durations_json FROM assessment_attempt_time_policies WHERE attempt_id=$1", [attemptId]
@@ -51,6 +55,33 @@ export async function startAssessmentPhaseClock(
     "INSERT INTO assessment_attempt_clocks(attempt_id,phase_index,started_at,deadline_at) VALUES($1,$2,$3,$4) ON CONFLICT(attempt_id,phase_index) DO NOTHING",
     [attemptId,phaseIndex,now.toISOString(),new Date(now.getTime() + duration * 1000).toISOString()]
   );
+  const clock = await database.query<{ deadline_at: string | Date }>(
+    "SELECT deadline_at FROM assessment_attempt_clocks WHERE attempt_id=$1 AND phase_index=$2",
+    [attemptId,phaseIndex]
+  );
+  let deadline = new Date(clock.rows[0].deadline_at);
+  // Begin/manual advance schedules all remaining phases. System catch-up uses those
+  // durable intents and starts the next clock at the preceding immutable deadline.
+  const phases = policy.timing_mode === "COMBINED" ? [0] :
+    Array.from({length:durations.length-phaseIndex+1}, (_, index) => phaseIndex+index);
+  for (const phase of phases) {
+    if (phase !== phaseIndex) deadline = new Date(deadline.getTime()+durations[phase-1]*1000);
+    const deadlineAt = deadline.toISOString();
+    if (actor) {
+      await new DatabaseOutboxRepository(Promise.resolve(database)).enqueueInTransaction(database,actor,{
+        jobType:"assessment.attempt.expiry",
+        businessKey:`${attemptId}:${phase}:${deadlineAt}`,
+        availableAt:deadlineAt,
+        payload:{attemptRef:attemptId,phaseIndex:phase,deadlineAt}
+      });
+    } else {
+      const intent = await database.query(
+        "SELECT job_id FROM platform_outbox_jobs WHERE job_type='assessment.attempt.expiry' AND payload->>'attemptRef'=$1 AND payload->>'phaseIndex'=$2 AND payload->>'deadlineAt'=$3",
+        [attemptId,String(phase),deadlineAt]
+      );
+      if (!intent.rows[0]) throw new AssessmentAttemptConflictError("Assessment expiry intent is unavailable.");
+    }
+  }
 }
 
 export async function readAssessmentClock(
@@ -58,7 +89,7 @@ export async function readAssessmentClock(
   delivery: AssessmentDeliverySettings, now: Date
 ): Promise<AssessmentTimingView | null> {
   // Immutable legacy blueprints have no timing policy, including historical test schemas.
-  if (!delivery.timing || attempt.status === "SUBMITTED") return null;
+  if (!delivery.timing || (attempt.status === "SUBMITTED" || attempt.status === "AUTO_SUBMITTED")) return null;
   const phaseIndex = delivery.timing.mode === "COMBINED"
     ? 0 : delivery.sections.findIndex(section => attempt.currentPosition <= section.endPosition) + 1;
   if (phaseIndex < 0 || (delivery.timing.mode === "SEPARATE" && phaseIndex === 0)) {

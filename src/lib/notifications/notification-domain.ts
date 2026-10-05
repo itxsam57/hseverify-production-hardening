@@ -254,10 +254,12 @@ export function deriveNotificationProjectionKey(input: {
 
 export function assertNotificationProjectionJob(
   job: OutboxJobRecord
-): OutboxJobRecord & Readonly<{ jobType: "notification.portal.foundation" | "notification.account.security" }> {
+): OutboxJobRecord & Readonly<{ jobType: "notification.portal.foundation" | "notification.account.security"; enqueuedByAccountId: string; enqueuedByRole: AuthRole }> {
   if (
     !["notification.portal.foundation", "notification.account.security"].includes(job.jobType) ||
+    typeof job.enqueuedByAccountId !== "string" ||
     job.enqueuedByAccountId.trim().length < 1 ||
+    job.enqueuedBySystemComponent != null ||
     !isNotificationRole(job.enqueuedByRole) ||
     ((job.tenantId === null) !== (job.membershipId === null)) ||
     (job.enqueuedByRole === "company" && job.tenantId === null) ||
@@ -269,6 +271,8 @@ export function assertNotificationProjectionJob(
   }
   return job as OutboxJobRecord & Readonly<{
     jobType: "notification.portal.foundation" | "notification.account.security";
+    enqueuedByAccountId: string;
+    enqueuedByRole: AuthRole;
   }>;
 }
 

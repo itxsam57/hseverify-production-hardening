@@ -189,7 +189,7 @@ export class InterviewPlaybookService {
               ORDER BY revisions.revision_no DESC LIMIT 1
            ) AS latest ON TRUE
           WHERE attempts.case_id=$1
-            AND attempts.status='SUBMITTED'
+            AND attempts.status IN ('SUBMITTED','AUTO_SUBMITTED')
             AND versions.question_type IN ('MULTIPLE_CHOICE','TRUE_FALSE','INTEGER','DECIMAL')
             AND NOT (
               CASE versions.question_type

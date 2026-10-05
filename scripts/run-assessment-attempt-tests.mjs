@@ -12,7 +12,8 @@ const entries = [
   "assessment-attempt/assessment-attempt-draft-domain.ts",
   "assessment-attempt/assessment-attempt-repository.ts",
   "assessment-attempt/assessment-attempt-service.ts",
-  "assessment-attempt/assessment-attempt-client-view.ts"
+  "assessment-attempt/assessment-attempt-client-view.ts",
+  "outbox/outbox-worker.ts"
 ];
 const stubs = new Set(["database/database.ts"]);
 

@@ -225,3 +225,35 @@ test("sandbox scoring guidance stays advisory and Case Replay reconstructs the s
     else process.env.HSE_SCORING_AI_MODE = previousMode;
   }
 });
+
+
+test("Pinned review evidence retains latest revisions, omitted written items and owner isolation",async()=>{
+ const previousMode=process.env.HSE_SCORING_AI_MODE;process.env.HSE_SCORING_AI_MODE="sandbox";
+ const db=await database();
+ try {
+  const worker=await seedWorkerPrincipal(db,"review-source-worker");const reviewer="account_review_source_verifier";
+  await seedStaff(db,reviewer,"verifier");
+  const rubric={maxScore:10,criteria:[{description:"Identify isolation",points:10}]};
+  const fixture=await seedInProgressAttempt(db,worker,"review-source-case",[
+    {questionType:"LONG_TEXT",prompt:"Pinned answered prompt",rubric},
+    {questionType:"SHORT_TEXT",prompt:"Pinned unanswered prompt",rubric}
+  ]);
+  const item=fixture.items[0];const answerId=stableId("assessment_answer","review-source-answer");
+  await db.query("INSERT INTO assessment_attempt_answers(answer_id,attempt_id,form_id,form_item_id,position,question_id,question_version_id,question_type,text_value,committed_at) VALUES($1,$2,$3,$4,1,$5,$6,'LONG_TEXT','Original retained response',$7)",[answerId,fixture.attemptId,fixture.formId,item.formItemId,item.questionId,item.questionVersionId,ATTEMPT_NOW]);
+  await db.query("INSERT INTO assessment_answer_revisions(revision_id,attempt_id,answer_id,position,revision_no,text_value,revised_at) VALUES($1,$2,$3,1,1,'Latest retained response',$4)",[stableId("assessment_revision","review-source-revision"),fixture.attemptId,answerId,ATTEMPT_NOW]);
+  await db.query("UPDATE assessment_attempts SET status='SUBMITTED',current_position=question_count,submitted_at=$2 WHERE attempt_id=$1",[fixture.attemptId,ATTEMPT_NOW]);
+  const reviewId=stableId("written_score","review-source-review");
+  await db.query("INSERT INTO written_score_reviews(review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status) VALUES($1,$2,$3,$4,$5,'pinned',NULL,NULL,'Awaiting review','DRAFT')",[reviewId,fixture.tenantId,fixture.caseId,fixture.attemptId,reviewer]);
+  const {loadAssignedReviewQuestions}=loadTs("src/lib/scoring/assessment-review-source.ts");
+  const questions=(await loadAssignedReviewQuestions(db,reviewer,[reviewId])).get(reviewId);
+  assert.equal(questions.length,2);assert.equal(questions[0].response,"Latest retained response");
+  assert.deepEqual(questions[0].rubricCriteria,rubric.criteria);
+  assert.equal(questions[1].answered,false);assert.equal(questions[1].response,null);
+  assert.equal((await loadAssignedReviewQuestions(db,"foreign-reviewer",[reviewId])).size,0);
+  const guidance=await new WrittenScoringAssistanceService(Promise.resolve(db)).generate({reviewId,reviewerAccountId:reviewer});
+  assert.equal(guidance.suggestion.criteria.find(c=>c.questionPosition===2).suggestedPercent,0);
+  assert.equal(guidance.suggestion.overallScoreSuggestion,23);
+  const review=(await db.query("SELECT score,decision,status FROM written_score_reviews WHERE review_id=$1",[reviewId])).rows[0];
+  assert.deepEqual(review,{score:null,decision:null,status:"DRAFT"});
+ }finally{await db.close();if(previousMode===undefined)delete process.env.HSE_SCORING_AI_MODE;else process.env.HSE_SCORING_AI_MODE=previousMode;}
+});

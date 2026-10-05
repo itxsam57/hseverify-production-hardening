@@ -33,7 +33,8 @@ test("outbox vocabulary is explicit, fixed and wildcard-free", () => {
     "notification.account.security",
     "email.delivery.foundation",
     "secure_file.scan",
-    "worker_identity.automated_checks"
+    "worker_identity.automated_checks",
+    "assessment.attempt.expiry"
   ]);
   assert.deepEqual(outbox.OUTBOX_JOB_STATUSES, [
     "pending",
@@ -340,4 +341,12 @@ test("required outbox transaction commits state and durable work together", asyn
 test("security jobs carry only a source event reference", () => {
   assert.deepEqual(outbox.normalizeOutboxPayload("notification.account.security", {eventRef:"event_security_A"}), {eventRef:"event_security_A"});
   for (const value of [{eventRef:"event_security_A",token:"secret"},{eventRef:"event_security_A",email:"person@example.test"},{eventRef:"<script>"},{fixtureRef:"owner-test"}]) assert.throws(() => outbox.normalizeOutboxPayload("notification.account.security",value),outbox.OutboxContractError);
+});
+
+ test("Assessment expiry payload accepts only immutable attempt clock references", () => {
+  const payload={attemptRef:`assessment_attempt_${"A".repeat(24)}`,phaseIndex:0,deadlineAt:"2026-10-05T00:00:00.000Z"};
+  assert.deepEqual(outbox.normalizeOutboxPayload("assessment.attempt.expiry",payload),payload);
+  for(const invalid of [{...payload,phaseIndex:-1},{...payload,deadlineAt:"tomorrow"},{...payload,answer:"secret"},{...payload,attemptRef:"other"}]) {
+    assert.throws(()=>outbox.normalizeOutboxPayload("assessment.attempt.expiry",invalid),outbox.OutboxContractError);
+  }
 });

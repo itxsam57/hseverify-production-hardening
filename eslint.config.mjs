@@ -14,6 +14,7 @@ export default defineConfig([
     ".hse-next/**",
     ".preview-bundle/**",
     ".auth-test-dist/**",
+    ".outbox-worker-dist/**",
     ".worker-evidence-runtime-test-dist/**",
     ".evidence-review-runtime-test-dist/**",
     ".billing-runtime-test-dist/**",

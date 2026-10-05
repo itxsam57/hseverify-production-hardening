@@ -154,7 +154,9 @@
     "test:account-security-notifications": "node --test tests/platform/account-security-notification-runtime.test.mjs",
     "test:active-session-boundaries-browser": "node --test tests/browser/active-session-boundaries.browser.test.mjs",
     "test:account-security-business-rollback": "node --test tests/platform/account-security-business-rollback.test.mjs",
-    "test:assessment-timing-browser": "HSE_MASTERPLAN_TIMING=true node --test --test-concurrency=1 tests/browser/masterplan-admin-authoring-e2e.browser.test.mjs tests/browser/masterplan-worker-credential-e2e.browser.test.mjs"
+    "test:assessment-timing-browser": "HSE_MASTERPLAN_TIMING=true node --test --test-concurrency=1 tests/browser/masterplan-admin-authoring-e2e.browser.test.mjs tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
+    "build:worker": "node scripts/build-outbox-worker.mjs",
+    "worker:outbox": "node scripts/run-outbox-worker.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

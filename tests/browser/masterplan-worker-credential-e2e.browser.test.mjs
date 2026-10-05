@@ -18,6 +18,7 @@ const PNG={name:"proof.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgo
 const B32="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const MCQ_PROMPT="What is the first safe action when an uncontrolled hazard is identified?";
 const MCQ_ANSWER="Stop work and isolate the hazard.";
+const EXPIRY_MODE=process.env.HSE_MASTERPLAN_EXPIRY === "true";
 const CONTENT_MODE=process.env.HSE_MASTERPLAN_CONTENT_MODE ?? "COMBINED";
 const DELIVERY_MODE=process.env.HSE_MASTERPLAN_DELIVERY_MODE ?? "STRICT";
 const WRITTEN_PROMPT="Explain the next safe action after isolating an uncontrolled hazard.";
@@ -134,7 +135,7 @@ async function seedAssessment(database,credentials){
   await database.query(`INSERT INTO assessment_blueprints(blueprint_id,blueprint_reference,blueprint_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'BP-E2E-WORKER','INACTIVE',NULL,$2,$3,$3)`,[blueprintId,admin,now]);
   await database.query(`INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'End-to-End Worker Blueprint',$4::jsonb,$5,$6)`,[blueprintVersionId,blueprintId,frameworkId,JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:[]},{count:1,questionType:"SHORT_TEXT",tagsAll:[]}].filter(selector=>CONTENT_MODE==="COMBINED" || selector.questionType===(CONTENT_MODE==="MCQ_ONLY" ? "MULTIPLE_CHOICE" : "SHORT_TEXT"))),admin,now]);
   await database.query("UPDATE assessment_blueprints SET current_version_id=$2,blueprint_status='ACTIVE',updated_at=$3 WHERE blueprint_id=$1",[blueprintId,blueprintVersionId,now]);
-  await database.query(`INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,section_config_json,require_fullscreen,require_environment_declaration,require_monitoring_consent,timing_config_json) VALUES($1,$2,$3::jsonb,FALSE,TRUE,TRUE,$4::jsonb)`,[blueprintVersionId,DELIVERY_MODE,JSON.stringify(DELIVERY_MODE==="SECTION_REVIEW" ? [{title:"Objective section",endPosition:1},{title:"Written section",endPosition:2}] : []),process.env.HSE_MASTERPLAN_TIMING === "true" ? JSON.stringify({mode:"COMBINED",durationSeconds:1200}) : null]);
+  await database.query(`INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,section_config_json,require_fullscreen,require_environment_declaration,require_monitoring_consent,timing_config_json) VALUES($1,$2,$3::jsonb,FALSE,TRUE,TRUE,$4::jsonb)`,[blueprintVersionId,DELIVERY_MODE,JSON.stringify(DELIVERY_MODE==="SECTION_REVIEW" ? [{title:"Objective section",endPosition:1},{title:"Written section",endPosition:2}] : []),process.env.HSE_MASTERPLAN_TIMING === "true" ? JSON.stringify({mode:"COMBINED",durationSeconds:EXPIRY_MODE ? 60 : 1200}) : null]);
   await database.query(`INSERT INTO assessment_catalogue_entries(catalogue_entry_id,catalogue_reference,catalogue_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'CAT-E2E-WORKER','INACTIVE',NULL,$2,$3,$3)`,[catalogueId,admin,now]);
   await database.query(`INSERT INTO assessment_catalogue_versions(catalogue_version_id,catalogue_entry_id,version_no,title,description,framework_id,blueprint_version_id,minimum_verified_qualifications,created_by_account_id,created_at) VALUES($1,$2,1,'End-to-End Worker Assessment','Preserved Masterplan Worker journey',$3,$4,1,$5,$6)`,[catalogueVersionId,catalogueId,frameworkId,blueprintVersionId,admin,now]);
   await database.query("UPDATE assessment_catalogue_entries SET current_version_id=$2,catalogue_status='ACTIVE',updated_at=$3 WHERE catalogue_entry_id=$1",[catalogueId,catalogueVersionId,now]);
@@ -254,9 +255,40 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             const timer=worker.getByRole("timer",{name:"Assessment time remaining"});
             await timer.waitFor();
             const remaining = text => {const match=text.match(/(\d+):(\d+) remaining/);assert.ok(match);return Number(match[1])*60+Number(match[2]);};
-            const before=remaining(await timer.innerText());assert.ok(before>=1770 && before<=1800,"Approved1.5 extra time was not applied.");
+            const before=remaining(await timer.innerText());assert.ok(before>=(EXPIRY_MODE ? 60 : 1770) && before<=(EXPIRY_MODE ? 90 : 1800),"Approved1.5 extra time was not applied.");
             await worker.reload();await timer.waitFor();const after=remaining(await timer.innerText());assert.ok(after<=before && after>=before-15,"Reload reset the assessment clock.");
-            console.log("ACTUAL_WORKER_TIMING_BROWSER normal Worker request/Admin approval, actual precheck/begin exposes adjusted1800s timer and reload does not reset");
+            console.log("ACTUAL_WORKER_TIMING_BROWSER approved multiplier, adjusted"+(EXPIRY_MODE ? "90" : "1800")+"s timer retained after reload");
+          }
+
+          if(EXPIRY_MODE) {
+            await worker.getByLabel(MCQ_ANSWER).check();
+            await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:15000});
+            await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:110000});
+            assert.equal(await worker.getByRole("timer").count(),0);
+            assert.equal(await worker.getByLabel(MCQ_ANSWER).count(),0);
+            await worker.reload();
+            await worker.getByText("Assessment submitted",{exact:true}).waitFor();
+            console.log("ACTUAL_EXPIRY_BROWSER saved draft retained, natural server deadline receipt, reload remains submitted");
+            await login(verifier,baseUrl,credentials.verifier,"verifier");
+            await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);
+            let review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
+            await review.getByText(WRITTEN_PROMPT,{exact:false}).waitFor();
+            await review.getByText("Unanswered",{exact:true}).waitFor();
+            await review.getByText(MCQ_ANSWER,{exact:true}).waitFor();
+            assert.equal(await review.locator("article").count(),2);
+            await review.locator('input[name="score"]').fill("0");
+            await review.locator('select[name="decision"]').selectOption("FAIL");
+            await review.locator('textarea[name="reason"]').fill("The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.");
+            await review.getByRole("button",{name:"Save scoring decision"}).click();
+            await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
+            await review.getByPlaceholder("Criterion").fill("Unanswered hazard control reasoning");
+            await review.locator('input[name="mark"]').fill("0");
+            await review.getByRole("button",{name:"Save mark"}).click();
+            await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
+            await review.getByRole("button",{name:"Finalize review"}).click();
+            await verifier.reload();await review.getByText("FINAL",{exact:true}).waitFor();
+            console.log("ACTUAL_WRITTEN_REVIEW_BROWSER pinned questions and omitted response reviewed by assigned Verifier; human FAIL finalized");
+            return {attemptId};
           }
 
           if(CONTENT_MODE!=="WRITTEN_ONLY") { await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();await assertCandidateQuestionBoundary(worker);
@@ -461,6 +493,23 @@ test("Masterplan preserved Worker journey: register to credential, share and app
     });
     assert.equal(phase2.requestedSignal,"SMOKE_COMPLETE");
 
+    if(EXPIRY_MODE) {
+      const verify=new PGlite(dbDir);
+      try {
+        const attempt=(await verify.query("SELECT attempt_id,status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows[0];
+        assert.equal(attempt.status,"AUTO_SUBMITTED");
+        const answers=(await verify.query("SELECT position,text_value FROM assessment_attempt_answers WHERE attempt_id=$1",[attempt.attempt_id])).rows;
+        assert.deepEqual(answers,[{position:1,text_value:MCQ_ANSWER}]);
+        const audit=(await verify.query("SELECT actor_account_id,actor_role,metadata FROM platform_audit_events WHERE action_key='assessment.attempt.submitted' AND target_reference=$1",[attempt.attempt_id])).rows;
+        assert.equal(audit.length,1);assert.equal(audit[0].actor_account_id,null);assert.equal(audit[0].metadata.systemComponent,"outbox-worker");
+        console.log("ACTUAL_EXPIRY_DB one retained draft, no fabricated written answer, one truthful system submission");
+        const reviews=(await verify.query("SELECT score,decision,status FROM written_score_reviews WHERE attempt_id=$1",[attempt.attempt_id])).rows;
+        assert.deepEqual(reviews,[{score:0,decision:"FAIL",status:"FINAL"}]);
+        assert.equal((await verify.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0].case_status,"Reassessment required");
+        console.log("ACTUAL_WRITTEN_REVIEW_DB final human decision and retained reassessment outcome");
+      } finally {await verify.close();}
+      return;
+    }
     console.log("JOURNEY: credential, sharing and appeal completed");
     const reassessmentDb=new PGlite(dbDir);
     try {

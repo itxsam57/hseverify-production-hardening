@@ -10,7 +10,8 @@ export const ASSESSMENT_ATTEMPT_STATUSES = Object.freeze([
   "REVIEW_REQUIRED",
   "INVALIDATED",
   "REPLACED",
-  "SUBMITTED"
+  "SUBMITTED",
+  "AUTO_SUBMITTED"
 ] as const);
 export type AssessmentAttemptStatus = (typeof ASSESSMENT_ATTEMPT_STATUSES)[number];
 

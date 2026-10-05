@@ -25,14 +25,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
     new WrittenScoringAssistanceService().listForReviewer(actor.accountId),
     Promise.resolve(getScoringAiProviderStatus())
   ]);
-  const typedReviews = reviews as Array<{
-    review_id: string;
-    case_id: string;
-    score: number | null;
-    decision: "PASS" | "FAIL" | "CHANGES_REQUESTED" | null;
-    reason: string;
-    status: string;
-  }>;
+  const typedReviews = reviews;
 
   return (
     <section className="page-stack">
@@ -73,6 +66,20 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       {review.case_id}
                       <br />
                       <strong>{review.status}</strong>
+                      <section className="content-stack" aria-label={"Assessment evidence " + review.review_id}>
+                        {review.questions.map(question => (
+                          <article key={question.position} className="content-stack">
+                            <h2>Question {question.position}</h2>
+                            <p>{question.prompt}</p>
+                            <strong>{question.answered ? "Retained response" : "Unanswered"}</strong>
+                            <p style={{whiteSpace:"pre-wrap"}}>{question.answered ? question.response ?? "No response value recorded." : "No answer was submitted for this question."}</p>
+                            {question.expectedAnswer !== null ? <p>Pinned answer key: {String(question.expectedAnswer)}</p> : null}
+                            {question.rubricCriteria.length > 0 ? (
+                              <ul>{question.rubricCriteria.map((criterion,index) => <li key={index}>{criterion.description} ({criterion.points} points)</li>)}</ul>
+                            ) : null}
+                          </article>
+                        ))}
+                      </section>
                     </td>
                     <td>
                       <section className="content-stack" aria-label={"AI scoring guidance " + review.review_id}>

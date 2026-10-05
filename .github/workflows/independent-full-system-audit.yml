@@ -45,7 +45,7 @@ jobs:
       HSE_RELEASE_SHA: independent-audit
       HSE_DEPLOYMENT_ID: independent-audit
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/hseverify-independent-audit-db
+      HSE_PGLITE_DATA_DIR: /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hseverify-independent-audit-db
       HSE_SESSION_SECRET: independent-audit-session-secret-2026-at-least-32-characters
       HSE_AUTH_PEPPER: independent-audit-auth-pepper-2026-at-least-32-characters
       HSE_ENABLE_AUTH_SANDBOX: "true"

@@ -32,12 +32,12 @@ permissions:
 
 jobs:
   chromium:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 30
     env:
       HSE_APP_ENV: test
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: /tmp/hseverify-m207-browser-db
+      HSE_PGLITE_DATA_DIR: /tmp/${{ github.run_id }}-${{ github.run_attempt }}-hseverify-m207-browser-db
       HSE_SESSION_SECRET: m2-07-browser-session-secret-2026-with-at-least-thirty-two-characters
       HSE_AUTH_PEPPER: m2-07-browser-auth-pepper-2026-with-at-least-thirty-two-characters
       HSE_ENABLE_AUTH_SANDBOX: "true"
@@ -64,7 +64,7 @@ jobs:
       - name: Install pinned Playwright without modifying lockfile
         run: npm install --no-save --package-lock=false playwright@1.55.0
       - name: Install Chromium runtime
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - name: Seed authoritative M2.07 browser scenario
         run: node scripts/m2-07-browser-qa.mjs --seed-only
       - name: Start real Next.js application
