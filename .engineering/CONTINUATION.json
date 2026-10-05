@@ -2,16 +2,21 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
-  "verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
-  "last_verified_action": "PR18 bounded timing ACCEPTED/merged after ten local/eight applicable CI checks. Ledger23 passed/12 partial/183 unverified.",
-  "next_action": "Repair actual suspended/revoked Company staff denial rendering; require explicit access-denied and no generic error on existing authenticated sessions.",
+  "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "last_verified_action": "Company Worker archive working-v3 native4/27, actual full browser, types/lint PASS; source REVIEW_PASS after tenant/link lock-order repair.",
+  "next_action": "Exact captured-form OTP repair checks and full CI, independent review, PR20 acceptance; then actual timeout auto-submit repair.",
   "owner_required": false,
   "revision": 8,
-  "blocker": null,
-  "updated_at": "2026-10-05T14:11:32.015619+00:00",
+  "blocker": "CI OTP navigation failure awaits permanent repair validation.",
+  "updated_at": "2026-10-05T15:13:48.880153+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
-  "last_verified_sha": "04bc788b61628bd37805df699e2de21da208f74f"
+  "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
+  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "resume": {
+    "pending_pr": 20,
+    "pending_pr_head": "ee064939f54f9eee2bb11dc3d275c787ec33a898",
+    "ci_blocker": "Hosted billing blocked; dedicated existing-VPS runner provisioning in progress."
+  }
 }

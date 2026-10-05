@@ -1,28 +1,30 @@
 {
   "schema_version": 1,
   "task_id": "WORKFLOW-001",
-  "stage": "IMPLEMENTING",
+  "stage": "VERIFYING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
-  "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
+  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
   "requirements": [
-    "M1.09.05"
+    "M1.09.02",
+    "M1.09.03"
   ],
-  "last_verified_action": "PR18 bounded timing ACCEPTED/merged after ten local/eight applicable CI checks. Ledger23 passed/12 partial/183 unverified.",
+  "last_verified_action": "73f0733 eight exact local PASS, 4 CI jobs PASS; connected browser OTP failure. Actual captured expiry v2 working browser PASS without weakening original DB/JS checks.",
   "evidence": [
-    ".autopilot/artifacts/20261005-account-security-boundaries-exact-97ca127.json",
-    ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json",
-    ".autopilot/artifacts/20261005-assessment-timing-native-working-v3.txt",
-    ".autopilot/artifacts/20261005-assessment-timing-working-v3.txt"
+    ".autopilot/artifacts/20261005-company-worker-archive-red-0d7e98b.json",
+    ".autopilot/artifacts/20261005-worker-accept-lock-order-red.json",
+    ".autopilot/artifacts/20261005-company-worker-archive-working-v3.json"
   ],
-  "next_action": "Repair actual suspended/revoked Company staff denial rendering; require explicit access-denied and no generic error on existing authenticated sessions.",
+  "next_action": "Commit captured-form Worker OTP harness repair; run exact candidate gates plus OTP browser, then full dedicated-runner CI and final review before PR20 merge.",
   "revision_attempt": 0,
-  "blockers": [],
+  "blockers": [
+    "Actual connected CI OTP navigation failure awaits permanent exact repair and CI rerun."
+  ],
   "unknowns": [
-    "183 ledger scenarios unverified",
+    "182 ledger scenarios unverified",
     "timeout auto-submit and remaining accommodations",
     "privacy fulfilment/export/deletion",
     "live providers, deployed workflows and PostgreSQL concurrency"
@@ -30,7 +32,18 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T14:11:32.015619+00:00",
-  "verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
-  "state": "AUTO_CONTINUE"
+  "updated_at": "2026-10-05T16:03:16.271211+00:00",
+  "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "state": "AUTO_CONTINUE",
+  "resume": {
+    "read_first": [
+      ".engineering/state/CURRENT_TASK.json",
+      ".engineering/WORK_CONTRACT.md"
+    ],
+    "avoid_repeating": "Do not rerun accepted old-SHA work; run only next exact gates and affected new failures.",
+    "pending_pr": 20,
+    "pending_pr_head": "73f073335d905016d970d07ea645c62c0dd0acfe",
+    "ci_blocker": "Hosted billing bypassed through authorized dedicated runner; current OTP browser repair awaits CI.",
+    "next_workflow": "M2.07.05 timeout auto-submit actual RED retained"
+  }
 }

@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   private-browser:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 20
     env:
       HSE_APP_ENV: test
@@ -41,7 +41,7 @@ jobs:
         id: journey
         shell: bash
         run: |
-          npx playwright install --with-deps chromium
+          npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
           npm run test:masterplan-reassessment-browser | tee .engineering/evidence/reassessment.txt
       - name: Record exact build and command outcome
         if: always()

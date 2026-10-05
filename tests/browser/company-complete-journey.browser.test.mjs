@@ -257,6 +257,21 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           siteCard = company.locator("article").filter({ hasText: "Journey Site Updated" }).first();
           await siteCard.getByRole("button", { name: "Archive site" }).waitFor({ timeout: 15_000 });
 
+          let departmentCard = company.locator("article").filter({hasText:"Journey Department"}).first();
+          await departmentCard.getByLabel("Name").fill("Journey Department Updated");
+          await departmentCard.getByRole("button",{name:"Save changes"}).click();
+          await departmentCard.getByText("Company unit details saved.",{exact:true}).waitFor();
+          await company.reload({waitUntil:"networkidle"});
+          departmentCard=company.locator("article").filter({hasText:"Journey Department Updated"}).first();
+          await departmentCard.getByRole("button",{name:"Archive department"}).click();
+          await company.getByRole("dialog").getByRole("button",{name:"Archive department"}).click();
+          await company.reload({waitUntil:"networkidle"});
+          departmentCard=company.locator("article").filter({hasText:"Journey Department Updated"}).first();
+          await departmentCard.getByRole("button",{name:"Restore department"}).click();
+          await company.reload({waitUntil:"networkidle"});
+          await departmentCard.getByRole("button",{name:"Archive department"}).waitFor();
+          console.log("ACTUAL_COMPANY_UNITS site and department create/edit/archive/restore persisted across reloads");
+
           // Workforce invitations: single, resend, revoke, bulk with mixed validity.
           await company.goto(`${baseUrl}/company/invitations`, { waitUntil: "networkidle" });
           const single = company.locator("section").filter({ hasText: "Invite one Worker" }).first();
@@ -282,6 +297,8 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           // Registration code -> real Worker redemption -> active Company link.
           const codeSection = company.locator("section").filter({ hasText: "Create registration code" }).first();
+          await codeSection.getByLabel("Site default").selectOption({label:"Journey Site Updated"});
+          await codeSection.getByLabel("Department default").selectOption({label:"Journey Department Updated"});
           await codeSection.getByLabel("Usage limit").fill("1");
           await codeSection.getByLabel("Expiry").fill("2026-10-20T12:00");
           await codeSection.getByRole("button", { name: "Create Company registration code" }).click();
@@ -335,10 +352,84 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           let memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByLabel("Company Team role").selectOption("manager");
+          await memberCard.getByLabel("Site scope (optional)").selectOption({label:"Journey Site Updated"});
+          await memberCard.getByLabel("Department scope (optional)").selectOption({label:"Journey Department Updated"});
           await memberCard.getByRole("button", { name: "Save Team access" }).click();
           await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor({ timeout: 15_000 });
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          const assignedSiteId=await memberCard.getByLabel("Site scope (optional)").inputValue();
+          const assignedDepartmentId=await memberCard.getByLabel("Department scope (optional)").inputValue();
+          for (const [kind,name] of [["site","Journey Site Updated"],["department","Journey Department Updated"]]) {
+            await company.goto(`${baseUrl}/company/organization`,{waitUntil:"networkidle"});
+            const unit=company.locator("article").filter({hasText:name}).first();
+            await unit.getByRole("button",{name:`Archive ${kind}`}).click();
+            await company.getByRole("dialog").getByRole("button",{name:`Archive ${kind}`}).click();
+            await company.reload({waitUntil:"networkidle"});
+            await worker.reload({waitUntil:"networkidle"});
+            assert.equal(await worker.getByText(name,{exact:false}).count(),0,`archived ${kind} must not remain current Worker placement`);
+          }
+          await company.goto(`${baseUrl}/company/team`,{waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          assert.equal(await memberCard.getByLabel("Site scope (optional)").inputValue(),"");
+          assert.equal(await memberCard.getByLabel("Department scope (optional)").inputValue(),"");
+          assert.equal(await memberCard.locator(`option[value="${assignedSiteId}"]`).count(),0);
+          assert.equal(await memberCard.locator(`option[value="${assignedDepartmentId}"]`).count(),0);
+          await memberCard.getByLabel("Site scope (optional)").evaluate((select,value)=>{select.add(new Option("Forged archived site",value));},assignedSiteId);
+          await memberCard.getByLabel("Site scope (optional)").selectOption(assignedSiteId);
+          await memberCard.getByRole("button",{name:"Save Team access"}).click();
+          await memberCard.getByText(/Select an active Company site\./).waitFor();
+          await company.reload({waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          assert.equal(await memberCard.getByLabel("Site scope (optional)").inputValue(),"");
+          for (const [kind,name] of [["site","Journey Site Updated"],["department","Journey Department Updated"]]) {
+            await company.goto(`${baseUrl}/company/organization`,{waitUntil:"networkidle"});
+            await company.locator("article").filter({hasText:name}).first().getByRole("button",{name:`Restore ${kind}`}).click();
+            await company.reload({waitUntil:"networkidle"});
+          }
+          await worker.reload({waitUntil:"networkidle"});
+          assert.equal(await worker.getByText(/Journey Site Updated|Journey Department Updated/).count(),0,"restore must not recreate Worker placements");
+          await company.goto(`${baseUrl}/company/team`,{waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          assert.equal(await memberCard.getByLabel("Site scope (optional)").inputValue(),"");
+          assert.equal(await memberCard.getByLabel("Department scope (optional)").inputValue(),"");
+          console.log("ACTUAL_ASSIGNED_UNIT_ARCHIVE staff/Worker placements removed, forged archived placement denied, restore does not recreate placement");
+          await memberCard.getByLabel("Company Team role").selectOption("admin");
+          await memberCard.locator('input[name="permissions"][value="company.members.manage"]').check();
+          await memberCard.locator('input[name="permissions"][value="company.members.read"]').check();
+          await memberCard.locator('input[name="permissions"][value="company.reports.export"]').uncheck();
+          await memberCard.getByRole("button",{name:"Save Team access"}).click();
+          await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor();
+          await member.goto(`${baseUrl}/company/team`,{waitUntil:"networkidle"});
+          assert.equal(new URL(member.url()).pathname,"/company/team");
+          await member.getByRole("heading",{name:"Invite Company Team member",exact:true}).waitFor();
+          const staffInvite=member.locator('section[aria-labelledby="company-team-invite-title"]');
+          assert.equal(await staffInvite.getByLabel("Company Team role").locator('option[value="owner"],option[value="admin"]').count(),0);
+          await staffInvite.getByLabel("Company Team role").selectOption("manager");
+          assert.equal(await staffInvite.locator('input[name="permissions"][value="company.reports.export"]').count(),0);
+          await staffInvite.getByLabel("Staff email").fill("forbidden-grant@example.test");
+          await staffInvite.locator("form").evaluate(form=>{const input=document.createElement("input");input.type="checkbox";input.name="permissions";input.value="company.reports.export";input.checked=true;form.append(input);});
+          await staffInvite.getByRole("button",{name:"Create Company Team invitation"}).click();
+          await staffInvite.getByText("Your current Company role cannot complete that Team change.",{exact:true}).waitFor();
+          await member.reload({waitUntil:"networkidle"});
+          await staffInvite.getByLabel("Staff email").fill("forbidden-owner@example.test");
+          await staffInvite.getByLabel("Company Team role").evaluate(select=>select.add(new Option("Forged owner","owner")));
+          await staffInvite.getByLabel("Company Team role").selectOption("owner");
+          await staffInvite.getByRole("button",{name:"Create Company Team invitation"}).click();
+          await staffInvite.getByText("Your current Company role cannot complete that Team change.",{exact:true}).waitFor();
+          await member.reload({waitUntil:"networkidle"});
+          await staffInvite.getByLabel("Staff email").fill("allowed-viewer@example.test");
+          await staffInvite.getByLabel("Company Team role").selectOption("viewer");
+          await staffInvite.getByRole("button",{name:"Create Company Team invitation"}).click();
+          await staffInvite.getByText(/Company Team invitation created/).waitFor();
+          console.log("ACTUAL_STAFF_PERMISSION_CEILING own live admin session cannot grant absent permission or owner role; permitted viewer invitation succeeds");
+          await company.reload({waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          await memberCard.getByLabel("Company Team role").selectOption("manager");
+          await memberCard.getByRole("button",{name:"Save Team access"}).click();
+          await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor();
+          await company.reload({waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
           await memberCard.getByRole("button", { name: "Suspend" }).click();
           await company.getByRole("dialog").getByRole("button", { name: "Suspend access" }).click();
           await company.reload({ waitUntil: "networkidle" });
@@ -462,6 +553,11 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
             amountMinor: 5000,
             currency: "USD"
           });
+          const invalidCapture = await fetch(`${baseUrl}/api/billing/webhook`, {
+            method: "POST", headers: { "content-type":"application/json", "x-hse-billing-signature":"0".repeat(64) }, body: captureBody
+          });
+          assert.equal(invalidCapture.status,401);
+          console.log("ACTUAL_BILLING_INVALID_SIGNATURE rejected before capture");
           const captureResponse = await fetch(`${baseUrl}/api/billing/webhook`, {
             method: "POST",
             headers: {
@@ -473,6 +569,18 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           assert.equal(captureResponse.status, 200, await captureResponse.text());
           await company.reload({ waitUntil: "networkidle" });
           await invoiceCard.getByText("PAID", { exact: true }).waitFor({ timeout: 15_000 });
+          const duplicateCapture = await fetch(`${baseUrl}/api/billing/webhook`, {
+            method:"POST", headers:{"content-type":"application/json","x-hse-billing-signature":createHmac("sha256",BILLING_WEBHOOK_SECRET).update(captureBody).digest("hex")}, body:captureBody
+          });
+          assert.equal(duplicateCapture.status,200);
+          const changedCapture = JSON.stringify({...JSON.parse(captureBody),amountMinor:6000});
+          const changedReplay = await fetch(`${baseUrl}/api/billing/webhook`, {
+            method:"POST", headers:{"content-type":"application/json","x-hse-billing-signature":createHmac("sha256",BILLING_WEBHOOK_SECRET).update(changedCapture).digest("hex")}, body:changedCapture
+          });
+          assert.equal(changedReplay.status,400);
+          await company.reload({waitUntil:"networkidle"});
+          console.log("ACTUAL_BILLING_CAPTURE_REPLAY duplicate accepted idempotently; changed signed payload denied; balance remains10");
+
           await company.locator(".metric-card").filter({ hasText: "Company credits" }).getByText("10", { exact: true }).waitFor();
 
           const refundCard = company.locator(".card").filter({ hasText: "Refunds" }).first();
@@ -504,8 +612,39 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.getByText("PARTIALLY_REFUNDED", { exact: true }).waitFor({ timeout: 15_000 });
           await company.getByText(/SUCCEEDED/).waitFor({ timeout: 15_000 });
           await company.locator(".metric-card").filter({ hasText: "Company credits" }).getByText("6", { exact: true }).waitFor();
+
+          const duplicateRefund = await fetch(`${baseUrl}/api/billing/webhook`, {
+            method:"POST", headers:{"content-type":"application/json","x-hse-billing-signature":createHmac("sha256",BILLING_WEBHOOK_SECRET).update(refundBody).digest("hex")}, body:refundBody
+          });
+          assert.equal(duplicateRefund.status,200);
+          await refundCard.getByLabel("Invoice ID").fill(invoiceId);
+          await refundCard.getByLabel("Amount (minor units)").fill("3000");
+          await refundCard.getByRole("button",{name:"Request sandbox refund"}).click();
+          const finalRefund = refundCard.locator("li").filter({hasText:"REQUIRES_PROVIDER"}).first();
+          await finalRefund.waitFor({timeout:3000});
+          const finalReference=(await finalRefund.locator("code").innerText()).trim();
+          const finalBody=JSON.stringify({id:"provider-event-company-journey-final-refund",type:"refund.succeeded",refundReference:finalReference,amountMinor:3000,currency:"USD"});
+          const finalResponse=await fetch(`${baseUrl}/api/billing/webhook`,{
+            method:"POST",headers:{"content-type":"application/json","x-hse-billing-signature":createHmac("sha256",BILLING_WEBHOOK_SECRET).update(finalBody).digest("hex")},body:finalBody
+          });
+          assert.equal(finalResponse.status,200);
+          await company.reload({waitUntil:"networkidle"});
+          await company.getByText("REFUNDED",{exact:true}).waitFor();
+          await company.locator(".metric-card").filter({hasText:"Company credits"}).getByText("0",{exact:true}).waitFor();
+          console.log("ACTUAL_BILLING_FULL_REFUND partial2000 then remaining3000; full refund confirmed with balance0");
           await company.getByRole("button", { name: "Run reconciliation" }).click();
           await company.getByText(/CLEAN — 0 discrepancy item/i).waitFor({ timeout: 15_000 });
+
+          const buyCredits=company.locator(".card").filter({hasText:"Buy sandbox credits"}).first();
+          await buyCredits.getByLabel("Credits",{exact:true}).fill("5");
+          await buyCredits.getByLabel("Amount (minor units)",{exact:true}).fill("2500");
+          await buyCredits.getByRole("button",{name:"Create sandbox checkout"}).click();
+          await company.reload({waitUntil:"networkidle"});
+          const pendingCheckouts=company.locator(".card").filter({hasText:"Sandbox checkouts"}).first();
+          assert.equal(await pendingCheckouts.locator("tbody tr").count(),2,"second explicit purchase creates a distinct checkout");
+          await pendingCheckouts.getByText("REQUIRES_PROVIDER",{exact:true}).waitFor();
+          await company.locator(".metric-card").filter({hasText:"Company credits"}).getByText("0",{exact:true}).waitFor();
+          console.log("ACTUAL_BILLING_NEW_PURCHASE distinct second checkout remains provider-pending and grants no unpaid credits");
 
           // Report queue.
           await company.goto(`${baseUrl}/company/reports`, { waitUntil: "networkidle" });
@@ -559,13 +698,41 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
                          (SELECT COALESCE(SUM(credit_delta),0) FROM billing_credit_ledger WHERE tenant_id=i.tenant_id) AS credit_balance,
                          (SELECT COUNT(*)::int FROM billing_reconciliation_runs WHERE tenant_id=i.tenant_id AND status='CLEAN') AS clean_runs
                     FROM billing_invoices AS i
-                   WHERE i.tenant_id='tenant_independent-audit-compan'
+                   WHERE i.tenant_id='tenant_independent-audit-compan' AND i.amount_minor=5000
                    ORDER BY i.created_at DESC
                    LIMIT 1`),
         db.query(`SELECT action_status,internal_owner_membership_id
                     FROM assurance_action_items
                    WHERE action_id=$1`, [ACTION_FIXTURE_ID])
       ]);
+      const sites=await db.query("SELECT name,site_status,revision FROM company_sites WHERE tenant_id='tenant_independent-audit-compan'");
+      const departments=await db.query("SELECT name,department_status,revision FROM company_departments WHERE tenant_id='tenant_independent-audit-compan'");
+      assert(sites.rows.some(row=>row.name==="Journey Site Updated" && row.site_status==="active" && Number(row.revision)===6));
+      assert(departments.rows.some(row=>row.name==="Journey Department Updated" && row.department_status==="active" && Number(row.revision)===6));
+      const purchases=await db.query("SELECT checkout_id,status FROM billing_checkouts WHERE tenant_id='tenant_independent-audit-compan'");
+      assert.equal(purchases.rows.length,2);
+      assert.equal(new Set(purchases.rows.map(row=>row.checkout_id)).size,2);
+      assert(purchases.rows.some(row=>row.status==="REQUIRES_PROVIDER"));
+
+      const workerScope=await db.query("SELECT link_id,site_id,department_id,code_id FROM company_worker_links WHERE worker_account_id='audit_worker_account_20260901'");
+      assert.equal(workerScope.rows[0].site_id,null);assert.equal(workerScope.rows[0].department_id,null);
+      assert(workerScope.rows[0].code_id,"original registration-code lineage retained");
+      const scopeHistory=await db.query("SELECT metadata FROM platform_audit_events WHERE actor_tenant_id='tenant_independent-audit-compan' AND metadata->>'workerLinkId'=$1 ORDER BY audit_sequence",[workerScope.rows[0].link_id]);
+      assert.equal(scopeHistory.rows.length,2);
+      assert(scopeHistory.rows[0].metadata.previousSiteId);
+      assert(scopeHistory.rows[0].metadata.previousDepartmentId);
+      assert.equal(scopeHistory.rows[1].metadata.previousSiteId,null);
+      assert(scopeHistory.rows[1].metadata.previousDepartmentId);
+      const teamHistory=await db.query("SELECT ended_at,ended_reason FROM company_team_unit_assignments WHERE membership_id IN(SELECT membership_id FROM auth_tenant_memberships WHERE account_id IN(SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test'))");
+      assert.equal(teamHistory.rows.length,1);assert(teamHistory.rows[0].ended_at);
+      assert.equal(teamHistory.rows[0].ended_reason,"Site archived");
+      console.log("ACTUAL_UNIT_ARCHIVE_HISTORY same Worker/link source retained, two immutable prior-scope events and ended staff assignment");
+
+      const forbiddenInvites=await db.query("SELECT invitation_id FROM auth_staff_invitations WHERE email_normalized IN('forbidden-grant@example.test','forbidden-owner@example.test')");
+      assert.equal(forbiddenInvites.rows.length,0);
+      const allowedInvite=await db.query("SELECT invitation_status FROM auth_staff_invitations WHERE email_normalized='allowed-viewer@example.test'");
+      assert.equal(allowedInvite.rows.length,1);assert.equal(allowedInvite.rows[0].invitation_status,"pending");
+      console.log("ACTUAL_STAFF_PERMISSION_DB forged grants/roles leave no invitation; legitimate viewer invitation persisted");
       assert.equal(links.rows[0]?.link_status, "active");
       assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-001" && row.order_status === "CANCELLED"));
       assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-INVALID" && row.order_status === "CANCELLED"));
@@ -590,10 +757,14 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
       assert(overrides.rows.length >= 1);
       assert(reports.rows.some((row) => row.report_id === "report_company_journey_001"));
-      assert.equal(billing.rows[0]?.status, "PARTIALLY_REFUNDED");
-      assert.equal(Number(billing.rows[0]?.refunded_amount_minor), 2000);
-      assert.equal(Number(billing.rows[0]?.credit_balance), 6);
+      assert.equal(billing.rows[0]?.status, "REFUNDED");
+      assert.equal(Number(billing.rows[0]?.refunded_amount_minor), 5000);
+      assert.equal(Number(billing.rows[0]?.credit_balance), 0);
       assert(Number(billing.rows[0]?.clean_runs) >= 1);
+      const creditHistory=await db.query("SELECT credit_delta FROM billing_credit_ledger WHERE tenant_id='tenant_independent-audit-compan'");
+      assert.deepEqual(creditHistory.rows.map(row=>Number(row.credit_delta)).sort((a,b)=>a-b),[-6,-4,10]);
+      console.log("ACTUAL_BILLING_DB exact original capture and two retained refund ledger entries, no replay double-credit or double-refund");
+
       assert.equal(actions.rows[0]?.action_status, "acknowledged");
       assert.equal(actions.rows[0]?.internal_owner_membership_id, credentials.company.membershipId);
     } finally {

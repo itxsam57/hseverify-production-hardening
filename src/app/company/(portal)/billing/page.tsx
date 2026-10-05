@@ -1,3 +1,4 @@
+import { createIdentifier } from "@/lib/auth/auth-domain";
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { resolveTenantPermissions } from "@/lib/authorization/authorization-domain";
 import { deriveTrustedTenantScope } from "@/lib/authorization/tenant-scoped-resource-domain";
@@ -22,6 +23,8 @@ export default async function CompanyBillingPage({searchParams}: {searchParams: 
     principal.tenantMembership.overrides
   );
   const canManage = permissions.has("company.billing.manage");
+  const checkoutRequestKey = createIdentifier("billingrequest");
+  const refundRequestKey = createIdentifier("billingrequest");
   const [snapshot, workerFundingRequests] = await Promise.all([
     new BillingService(await getDatabaseClient()).snapshot(principal),
     (await getWorkerAssessmentApplicationService()).listCompanyFundingRequests(scope.tenantId)
@@ -117,7 +120,7 @@ export default async function CompanyBillingPage({searchParams}: {searchParams: 
             Currency
             <input name="currency" defaultValue="USD" maxLength={3} required />
           </label>
-          <input type="hidden" name="idempotencyKey" value="checkout-request" />
+          <input type="hidden" name="idempotencyKey" value={checkoutRequestKey} />
           <button className="button button-primary" type="submit">
             Create sandbox checkout
           </button>
@@ -208,7 +211,7 @@ export default async function CompanyBillingPage({searchParams}: {searchParams: 
             Amount (minor units)
             <input name="amountMinor" type="number" min="1" required />
           </label>
-          <input type="hidden" name="idempotencyKey" value="refund-request" />
+          <input type="hidden" name="idempotencyKey" value={refundRequestKey} />
           <button className="button" type="submit">
             Request sandbox refund
           </button>

@@ -1058,8 +1058,17 @@
           "Worker"
         ],
         "scenario": "Suspension/revocation removes existing-session access",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+          "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
+          "review": "PR19 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-staff-denial-exact-4b12999.json",
+            ".autopilot/artifacts/20261005-company-staff-denial-ci-4b12999.json"
+          ],
+          "scope": "Actual suspension/reactivation/revocation of same authenticated Company staff session; explicit access-denied; exact persisted membership/session-bound security events and audit mirrors."
+        }
       },
       {
         "id": "M1.09.06",
@@ -3494,6 +3503,6 @@
         ]
       }
     ],
-    "updated_at": "2026-10-05T14:11:32.015619+00:00"
+    "updated_at": "2026-10-05T14:44:25.779921+00:00"
   }
 }

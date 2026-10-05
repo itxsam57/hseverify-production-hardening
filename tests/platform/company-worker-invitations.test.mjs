@@ -199,7 +199,14 @@ test("permanent Worker-ID request uses M1.07 authority and requires the matching
     const pending=await service.requestPermanentWorkerLink(companyPrincipal(company),permanentWorkerId,{email:worker.email,siteId:null,departmentId:null,paymentResponsibility:"company",assessmentReference:null});
     assert.equal(pending.status,"pending_worker_acceptance"); assert.equal(pending.workerAccountId,worker.accountId);
     await assert.rejects(service.acceptWorkerLink(workerPrincipal(other),pending.linkId),CompanyWorkforceAccessError);
-    const active=await service.acceptWorkerLink(workerPrincipal(worker),pending.linkId); assert.equal(active.status,"active");
+    const acceptanceQueries=[];
+    const observedDatabase={...database,query:database.query.bind(database),transaction:operation=>database.transaction(transaction=>operation({...transaction,query:async(sql,parameters)=>{acceptanceQueries.push(sql);return transaction.query(sql,parameters);}}))};
+    const observedService=new CompanyWorkforceService(observedDatabase,PEPPER,()=>new Date(NOW_DATE));
+    const active=await observedService.acceptWorkerLink(workerPrincipal(worker),pending.linkId); assert.equal(active.status,"active");
+    const tenantLock=acceptanceQueries.findIndex(sql=>/FOR UPDATE OF cases, tenants/.test(sql));
+    const linkLock=acceptanceQueries.findIndex(sql=>/FROM company_worker_links.*FOR UPDATE/s.test(sql));
+    assert(tenantLock>=0 && linkLock>tenantLock,"acceptance must lock tenant before Worker link, matching Company archive order");
+    console.log("ACTUAL_WORKER_ACCEPT_LOCK_ORDER real producer pending link accepted with tenant-before-link order");
     assert.equal((await service.acceptWorkerLink(workerPrincipal(worker),pending.linkId)).linkId,active.linkId);
     await assert.rejects(service.requestPermanentWorkerLink(companyPrincipal(company),oid("worker_id","Z"),{email:worker.email,siteId:null,departmentId:null,paymentResponsibility:"worker",assessmentReference:null}),CompanyWorkforceAccessError);
   }finally{await database.close();}
