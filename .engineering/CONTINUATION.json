@@ -2,16 +2,16 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
-  "verified_sha": "97ca1278f54214eab8156b9713a587aef7b18219",
-  "last_verified_action": "PR17 ACCEPTED/merged; exact five local/eight PR checks. Ledger23 passed/9 partial/186 unverified.",
-  "next_action": "Run exact immutable timing candidate checks and applicable CI, then independent ACCEPT; auto-submit/extra breaks/other adjustments remain unverified.",
+  "verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
+  "last_verified_action": "PR18 bounded timing ACCEPTED/merged after ten local/eight applicable CI checks. Ledger23 passed/12 partial/183 unverified.",
+  "next_action": "Repair actual suspended/revoked Company staff denial rendering; require explicit access-denied and no generic error on existing authenticated sessions.",
   "owner_required": false,
   "revision": 8,
   "blocker": null,
-  "updated_at": "2026-10-05T09:49:33.947358+00:00",
+  "updated_at": "2026-10-05T14:11:32.015619+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "36d5862dbe7a8a9a85fe82db1b03d10d6f3e71a5",
-  "last_verified_sha": "97ca1278f54214eab8156b9713a587aef7b18219"
+  "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
+  "last_verified_sha": "04bc788b61628bd37805df699e2de21da208f74f"
 }

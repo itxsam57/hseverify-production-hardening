@@ -326,6 +326,12 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await member.getByRole("button", { name: "Activate MFA and finish enrollment" }).click();
           await member.getByText("Enrollment complete", { exact: false }).waitFor({ timeout: 15_000 });
 
+          await login(member, baseUrl, "company", { email: "journey.team.member@example.test", password: TEAM_PASSWORD, totpSecret: teamSecret }, 1);
+          await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
+          await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).waitFor();
+          const staffCookiesBefore = await memberContext.cookies();
+          assert(staffCookiesBefore.some(cookie => cookie.httpOnly), "actual staff login must hold an authenticated session");
+
           await company.reload({ waitUntil: "networkidle" });
           let memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByLabel("Company Team role").selectOption("manager");
@@ -338,15 +344,34 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByRole("button", { name: "Reactivate" }).waitFor({ timeout: 15_000 });
+          await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
+          assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "suspended membership must remove existing-session tenant access");
+          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          await member.goto(`${baseUrl}/company/team`, { waitUntil: "networkidle" });
+          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          assert.equal(await member.getByRole("heading", { name: "HSE Verify could not complete this request.", exact: true }).count(), 0);
+          console.log("ACTUAL_COMPANY_STAFF_SUSPENSION existing signed-in session loses Company tenant dashboard access");
+
           await memberCard.getByRole("button", { name: "Reactivate" }).click();
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByRole("button", { name: "Suspend" }).waitFor({ timeout: 15_000 });
+          await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
+          await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).waitFor();
+
           await memberCard.getByRole("button", { name: "Revoke" }).click();
           await company.getByRole("dialog").getByRole("button", { name: "Revoke access" }).click();
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByText("revoked", { exact: true }).waitFor({ timeout: 15_000 });
+          await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
+          assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "revoked membership must remove existing-session tenant access");
+          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          await member.goto(`${baseUrl}/company/team`, { waitUntil: "networkidle" });
+          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          assert.equal(await member.getByRole("heading", { name: "HSE Verify could not complete this request.", exact: true }).count(), 0);
+          console.log("ACTUAL_COMPANY_STAFF_REVOCATION reactivated signed-in session loses Company tenant dashboard access on revocation");
+
           await memberContext.close();
 
           // Assurance order: valid submitted case, Action Centre visibility, cancellation.
@@ -546,6 +571,23 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
       assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-INVALID" && row.order_status === "CANCELLED"));
       assert.equal(team.rows[0]?.membership_status, "revoked");
       assert.equal(team.rows[0]?.membership_role, "manager");
+      const staffDenials = await db.query(`
+        SELECT e.event_id, e.metadata->>'sessionId' AS denied_session_id, a.audit_event_id
+          FROM auth_security_events e
+          JOIN auth_accounts accounts ON accounts.account_id=e.account_id
+          LEFT JOIN platform_audit_events a ON a.source_kind='auth_security_event' AND a.source_event_id=e.event_id
+         WHERE accounts.email_normalized='journey.team.member@example.test'
+           AND e.event_type='access_denied' AND e.active_role='company'
+           AND e.metadata->>'reason'='permission_denied'`);
+      assert(staffDenials.rows.length >= 4, "dashboard and Team denials on suspension and revocation must persist");
+      assert(staffDenials.rows.every(row => row.audit_event_id), "every actual denial must retain its mirrored audit");
+      const staffSessions = await db.query(`SELECT session_id, revoked_at FROM auth_sessions WHERE account_id IN
+        (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')`);
+      assert.equal(staffSessions.rows.length,1,"one existing session used throughout membership transitions");
+      assert.equal(staffSessions.rows[0].revoked_at,null,"membership denial must be proved against an existing authenticated session");
+      assert(staffDenials.rows.every(row => row.denied_session_id === staffSessions.rows[0].session_id), "all denials must bind to the exact existing staff session");
+      console.log("ACTUAL_COMPANY_STAFF_DENIAL_DB revoked membership, same authenticated session, persisted denials with complete audit mirrors");
+
       assert(overrides.rows.length >= 1);
       assert(reports.rows.some((row) => row.report_id === "report_company_journey_001"));
       assert.equal(billing.rows[0]?.status, "PARTIALLY_REFUNDED");

@@ -5,9 +5,10 @@ import { bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
 import {
   readServerAuthorizationContext,
-  requirePortalAuthorization
+  requirePortalAuthorization,
+  rejectAuthorization
 } from "../authorization/authorization-service";
-import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
+import { PORTAL_ENTRY_PERMISSIONS, type AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { getServerEnvironment } from "../config/server-environment";
 import { getDatabaseClient } from "../database/database";
 import { processNextOutboxJob } from "../outbox/outbox-worker";
@@ -46,11 +47,28 @@ async function projectNotificationsForRole(input: {
 }): Promise<NotificationMenuProjection> {
   const principal = await requirePortalAuthorization(input.role);
   const repository = input.repository ?? getNotificationRepository();
-  const [notifications, unreadCount] = await Promise.all([
-    repository.listForPrincipal(principal, input.options),
-    repository.unreadCountForPrincipal(principal)
-  ]);
-  return Object.freeze({ notifications, unreadCount });
+  try {
+    const [notifications, unreadCount] = await Promise.all([
+      repository.listForPrincipal(principal, input.options),
+      repository.unreadCountForPrincipal(principal)
+    ]);
+    return Object.freeze({ notifications, unreadCount });
+  } catch (error) {
+    if (!(error instanceof NotificationAccessDeniedError)) throw error;
+    return rejectAuthorization({
+      decision: {
+        allowed: false,
+        reason: "permission_denied",
+        auditContext: {
+          sessionId: principal.sessionId,
+          accountId: principal.accountId,
+          activeRole: principal.activeRole
+        }
+      },
+      expectedRole: input.role,
+      permission: PORTAL_ENTRY_PERMISSIONS[input.role]
+    });
+  }
 }
 
 export async function getNotificationMenu(

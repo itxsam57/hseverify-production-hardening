@@ -129,7 +129,7 @@ async function recordAuthorizationDenial(input: {
   });
 }
 
-async function rejectAuthorization(input: {
+export async function rejectAuthorization(input: {
   decision: Extract<ServerAuthorizationDecision, { allowed: false }>;
   expectedRole: AuthRole;
   permission: PlatformPermission | TenantPermission;
