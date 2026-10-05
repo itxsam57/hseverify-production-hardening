@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -458,6 +459,11 @@ test("Timed begin snapshots approved allowance and expiry denies writes without 
     await assert.rejects(db.query("UPDATE assessment_attempt_clocks SET deadline_at=deadline_at+interval '1 minute' WHERE attempt_id=$1",[id]),/append-only/i);
     await assert.rejects(db.query("UPDATE assessment_attempt_time_policies SET time_multiplier=2 WHERE attempt_id=$1",[id]),/append-only/i);
     await assert.rejects(db.query("UPDATE assessment_blueprint_delivery_settings SET timing_config_json='{\"mode\":\"COMBINED\",\"durationSeconds\":999}'::jsonb WHERE blueprint_version_id=$1",[offering.blueprintVersionId]),/append-only/i);
+    const downSql = await readFile(new URL("../../database/migrations/0083_assessment_timing.down.sql", import.meta.url), "utf8");
+    await assert.rejects(db.transaction(transaction => transaction.execute(downSql)), /Cannot remove accepted assessment timing history/);
+    assert.equal(await count(db,"assessment_attempt_clocks","attempt_id=$1",[id]),1);
+    assert.equal(await count(db,"assessment_attempt_time_policies","attempt_id=$1",[id]),1);
+    console.log("ACTUAL_TIMING_ROLLBACK_GUARD populated immutable timing history blocks destructive rollback and retains both records");
     console.log("ACTUAL_COMBINED_TIMING begin approved1.5 allowance90s; reload/rebegin same deadline; expiry exact boundary rejects five writes, answers retained and recovery cannot reset");
   } finally { await db.close(); }
 });
