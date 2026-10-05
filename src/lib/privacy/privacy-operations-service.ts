@@ -85,6 +85,13 @@ export class PrivacyOperationsService {
     return this.repository.reviewRequest({ ...input, reason, reviewId: createIdentifier("privacy_review"), now: new Date().toISOString() });
   }
 
+  async downloadWorkerData(requestId: string, workerId: string) {
+    if (!requestId.trim() || requestId.length > 200 || !workerId.trim()) {
+      throw new Error("Worker data is unavailable.");
+    }
+    return this.repository.downloadWorkerData(requestId,workerId,new Date().toISOString());
+  }
+
   async accommodation(input: Parameters<typeof createAccommodation>[0]) {
     const accommodation = createAccommodation(input);
     await this.repository.addAccommodation(accommodation);

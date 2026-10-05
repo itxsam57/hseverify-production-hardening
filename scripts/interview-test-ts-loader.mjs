@@ -1,5 +1,7 @@
 import { createRequire } from "node:module";
 import ts from "typescript";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
 const compiled = new Map();
@@ -18,6 +20,13 @@ export function loadTs(path) {
     if (request === "./assessment-review-source") return loadTs("src/lib/scoring/assessment-review-source.ts");
     if (request === "../database/database") return {};
     if (request === "server-only") return {};
+    if (request.startsWith(".") || request.startsWith("@/")) {
+      const candidate = request.startsWith("@/")
+        ? resolve("src",request.slice(2)) : resolve(dirname(path),request);
+      for (const suffix of [".ts",".tsx"]) {
+        if (existsSync(candidate+suffix)) return loadTs(candidate+suffix);
+      }
+    }
     return require(request);
   };
   const factory = new Function("exports", "require", "module", "__filename", "__dirname", output);

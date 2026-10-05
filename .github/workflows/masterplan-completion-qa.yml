@@ -156,6 +156,10 @@ jobs:
           HSE_PRIVACY_FULFILMENT: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
+      - name: Owned personal-data access and export runtime
+        run: node --test tests/platform/worker-privacy-data-runtime.test.mjs
+      - name: Worker access/export reviewed personal-data download
+        run: HSE_PRIVACY_DATA_DOWNLOAD=true node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
       - name: Worker direct share revocation uses authoritative server time
         env:
           HSE_DIRECT_SHARE_REVOCATION: "true"

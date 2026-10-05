@@ -11,6 +11,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
+const DATA_MODE = process.env.HSE_PRIVACY_DATA_DOWNLOAD === "true";
 const EXPIRY_MODE = process.env.HSE_SHARE_EXPIRY === "true";
 const DIRECT_MODE = process.env.HSE_DIRECT_SHARE_REVOCATION === "true";
 const FULFILMENT_MODE = process.env.HSE_PRIVACY_FULFILMENT === "true";
@@ -97,7 +98,7 @@ async function seedCase(dataDirectory, tenantId, workerId) {
   }
 }
 
-test(DIRECT_MODE ? "Worker direct revocation uses server time and preserves the first outcome" : EXPIRY_MODE ? "Natural share-link expiry denies a previously working recipient and preserves unrelated sharing" : FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfilment and removes recipient access" : "Worker privacy request and accommodation approval traverse Worker -> Admin -> Worker with consent history", { timeout: 300_000 }, async () => {
+test(DATA_MODE ? "Worker access/export request reaches reviewed owner-only JSON download" : DIRECT_MODE ? "Worker direct revocation uses server time and preserves the first outcome" : EXPIRY_MODE ? "Natural share-link expiry denies a previously working recipient and preserves unrelated sharing" : FULFILMENT_MODE ? "Worker share-link revocation request reaches staff fulfilment and removes recipient access" : "Worker privacy request and accommodation approval traverse Worker -> Admin -> Worker with consent history", { timeout: 300_000 }, async () => {
   const root = process.cwd();
   let shortExpiry;
   let directRevokedAt;
@@ -132,6 +133,17 @@ test(DIRECT_MODE ? "Worker direct revocation uses server time and preserves the 
       credentials.worker.accountId
     );
 
+    if (DATA_MODE) {
+      const db = new PGlite(databaseDirectory);
+      try {
+        await db.query(`INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,
+          password_hash,email_verified_at,password_set_at,worker_reference,created_at,updated_at)
+          SELECT 'privacy_download_foreign_worker','privacy-download-foreign@example.test','Foreign privacy Worker',
+          'active',password_hash,email_verified_at,password_set_at,'privacy_download_foreign_ref',created_at,updated_at
+          FROM auth_accounts WHERE account_id=$1`,[credentials.worker.accountId]);
+        await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES('privacy_download_foreign_worker','worker')");
+      } finally { await db.close(); }
+    }
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],
       probeUrl: baseUrl + "/worker/login",
@@ -145,6 +157,60 @@ test(DIRECT_MODE ? "Worker direct revocation uses server time and preserves the 
         const admin = await adminContext.newPage();
         try {
           await login(worker, baseUrl, credentials.worker, "worker");
+          if (DATA_MODE) {
+            await login(admin,baseUrl,credentials.admin,"admin");
+            const foreignContext=await browser.newContext(), publicContext=await browser.newContext();
+            try {
+              const foreign=await foreignContext.newPage();
+              await login(foreign,baseUrl,{...credentials.worker,email:"privacy-download-foreign@example.test"},"worker");
+              for (const type of ["access","export"]) {
+                await worker.goto(baseUrl+"/worker/privacy");
+                await worker.getByLabel("Privacy request type").selectOption(type);
+                await worker.getByRole("button",{name:"Submit privacy request",exact:true}).click();
+                const own=worker.locator("article").filter({hasText:type+": OPEN"});
+                await own.waitFor();
+                assert.equal(await own.getByRole("link",{name:"Download your current data (JSON)",exact:true}).count(),0);
+                await admin.goto(baseUrl+"/admin/privacy");
+                const card=admin.locator("article").filter({hasText:"Request type: "+type});
+                const requestId=await card.locator('input[name="requestId"]').inputValue();
+                const url=baseUrl+"/api/privacy/requests/"+encodeURIComponent(requestId)+"/download";
+                const open=await worker.request.get(url);assert.equal(open.status(),404);
+                await card.getByLabel("Request decision").selectOption("PROCESSING");
+                await card.getByLabel("Request review reason").fill("Review the Worker own current account and workflow data.");
+                await card.getByRole("button",{name:"Save privacy request decision",exact:true}).click();
+                await card.getByText("Status: PROCESSING",{exact:true}).waitFor();
+                await card.getByLabel("Request decision").selectOption("COMPLETED");
+                await card.getByLabel("Request review reason").fill("Prepared the Worker own current account and workflow JSON download.");
+                await card.getByRole("button",{name:"Save privacy request decision",exact:true}).click();
+                await card.getByText("Status: COMPLETED",{exact:true}).waitFor();
+                await worker.reload();
+                const done=worker.locator("article").filter({hasText:type+": COMPLETED"});
+                const link=done.getByRole("link",{name:"Download your current data (JSON)",exact:true});
+                await link.waitFor();assert.equal(await link.getAttribute("href"),new URL(url).pathname);
+                const response=await worker.request.get(url);assert.equal(response.status(),200);
+                assert.equal(response.headers()["cache-control"],"private, no-store");
+                assert.equal(response.headers()["x-content-type-options"],"nosniff");
+                assert.match(response.headers()["content-disposition"],/attachment/);
+                const data=await response.json();assert.equal(data.account.account_id,credentials.worker.accountId);
+                assert.equal(data.account.email_normalized,credentials.worker.email.toLowerCase());
+                for(const secret of ["password_hash","token_nonce_hash","privacy-download-foreign@example.test"])
+                  assert.equal(JSON.stringify(data).includes(secret),false,secret);
+                assert.equal((await foreign.request.get(url)).status(),404);
+                const anonymous=await publicContext.request.get(url,{maxRedirects:0});
+                assert.notEqual(anonymous.status(),200);
+                const staff=await admin.request.get(url,{maxRedirects:0});assert.notEqual(staff.status(),200);
+                const missing=await worker.request.get(baseUrl+"/api/privacy/requests/missing/download");
+                assert.equal(missing.status(),404);assert.deepEqual(await missing.json(),{error:"worker_data_unavailable"});
+                // Verify the visible link produces an actual browser attachment.
+                const downloadPromise=worker.waitForEvent("download");
+                await link.click();const download=await downloadPromise;
+                assert.equal(download.suggestedFilename(),"hse-verify-personal-data.json");
+                assert.equal(await download.failure(),null);
+              }
+              console.log("ACTUAL_PRIVACY_DATA_BROWSER access/export Worker -> Admin processing/completion -> real JSON attachment; foreign, anonymous, staff and open requests denied");
+              return;
+            } finally {await foreignContext.close();await publicContext.close();}
+          }
           await worker.route("**/api/share-links", async (route) => {
             if (route.request().method() !== "POST") return route.continue();
             const body = route.request().postDataJSON();
@@ -382,6 +448,20 @@ test(DIRECT_MODE ? "Worker direct revocation uses server time and preserves the 
 
     const db = new PGlite(databaseDirectory);
     try {
+      if (DATA_MODE) {
+        const requests=await db.query("SELECT request_id,request_type,status,details,completed_at FROM privacy_requests WHERE worker_id=$1",[credentials.worker.accountId]);
+        assert.equal(requests.rows.length,2);
+        assert.deepEqual(requests.rows.map(r=>r.request_type).sort(),["access","export"]);
+        for (const request of requests.rows) {
+          assert.equal(request.status,"COMPLETED");assert.ok(request.completed_at);
+          assert.equal(request.details.fulfilment.method,"owned_current_data_download");
+          const history=await db.query("SELECT from_status,to_status,reviewer_account_id,reason FROM privacy_request_reviews WHERE request_id=$1 ORDER BY review_sequence",[request.request_id]);
+          assert.deepEqual(history.rows.map(r=>[r.from_status,r.to_status]),[["OPEN","PROCESSING"],["PROCESSING","COMPLETED"]]);
+          assert.ok(history.rows.every(r=>r.reviewer_account_id===credentials.admin.accountId && r.reason.length>=10));
+        }
+        console.log("ACTUAL_PRIVACY_DATA_DB both requests completed with server-derived delivery marker and exact reasoned staff history");
+        return;
+      }
       if (DIRECT_MODE) {
         const target=await db.query("SELECT share_link_id,created_at,revoked_at FROM scoped_share_links WHERE purpose='Employer onboarding evidence'");
         assert.equal(target.rows.length,1);

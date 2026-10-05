@@ -2754,13 +2754,18 @@
           "Company"
         ],
         "scenario": "Revoke or expire link denies previously working recipient access",
-        "status": "partially-verified",
+        "status": "passed",
         "evidence": {
           "historical_consent": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
           "accepted_owned_request_candidate": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
-          "working_boundaries": ".autopilot/artifacts/20261005-share-boundaries-working-v3.json"
+          "working_boundaries": ".autopilot/artifacts/20261005-share-boundaries-working-v3.json",
+          "accepted_candidate": "270c72d985134079799e6bf0561f26d93d17ac48",
+          "accepted_merge": "3e594b7db18deed3bbf267b8556d445028ac61dc",
+          "exact_local": ".autopilot/artifacts/20261005-share-boundaries-exact-270c72d.json",
+          "actual_ci": ".autopilot/artifacts/20261005-pr24-ci-exact-270c72d.json",
+          "independent_accept": ".autopilot/artifacts/20261005-pr24-independent-accept-270c72d.json"
         },
-        "notes": "Operative scoped-consent withdrawal and accepted PR23 owned request fulfilment deny previously working recipients and preserve unrelated links. New working proof passes direct server-dated revocation/repeat/owner UI and natural 90-second expiry with exact persisted access outcomes. Native legacy/subsecond Date and first-outcome boundaries pass. Exact committed candidate, actual CI and independent acceptance remain mandatory before this row is promoted."
+        "notes": "Accepted PR24 proves direct revocation uses server time, retains the persisted first outcome with millisecond precision, updates owner UI immediately and denies a previously working recipient; real natural expiry denies the same recipient twice with exact access outcomes while unrelated sharing stays valid. Ten exact local checks, applicable actual CI and independent ACCEPT passed; merged3e594b7. This bounded scenario closure does not certify all Masterplan workflows."
       },
       {
         "id": "M3.03.05",
@@ -3215,7 +3220,7 @@
         "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. Direct revocation timestamp, legacy metadata and repeat response defects reproduced and a bounded repair is under verification; restriction and other consent effects remain open."
+        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open."
       },
       {
         "id": "M3.09.03",
@@ -3585,6 +3590,6 @@
         ]
       }
     ],
-    "updated_at": "2026-10-05T16:30:03.764189+00:00"
+    "updated_at": "2026-10-05T23:42:00.834643+00:00"
   }
 }
