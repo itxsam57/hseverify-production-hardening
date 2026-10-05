@@ -66,6 +66,9 @@ jobs:
           npm run test:notification-platform
           npm run test:m1-09
 
+      - name: Billing idempotency, refund and immutable history
+        run: node scripts/run-billing-tests.mjs
+
       - name: Worker ID presentation regression
         run: node --test tests/platform/worker-id-presentation.test.mjs
 

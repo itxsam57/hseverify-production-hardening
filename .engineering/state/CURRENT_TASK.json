@@ -6,23 +6,26 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
-  "canonical_sha": "a3ac52c132ccf4bbe7382acf9cc9d6a639d9873a",
+  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
   "requirements": [
-    "M1.09.05"
+    "M1.09.01",
+    "M3.05.01",
+    "M3.05.04",
+    "M3.05.06"
   ],
-  "last_verified_action": "PR18 bounded timing ACCEPTED/merged after ten local/eight applicable CI checks. Ledger23 passed/12 partial/183 unverified.",
+  "last_verified_action": "PR19 ACCEPTED/merged; eight local and five applicable CI passes. Ledger24 passed/12 partial/182 unverified.",
   "evidence": [
     ".autopilot/artifacts/20261005-account-security-boundaries-exact-97ca127.json",
     ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json",
     ".autopilot/artifacts/20261005-assessment-timing-native-working-v3.txt",
     ".autopilot/artifacts/20261005-assessment-timing-working-v3.txt"
   ],
-  "next_action": "Repair actual suspended/revoked Company staff denial rendering; require explicit access-denied and no generic error on existing authenticated sessions.",
+  "next_action": "Repair actual repeated billing form request keys; prove second refund/purchase and signed callback replay guards.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "183 ledger scenarios unverified",
+    "182 ledger scenarios unverified",
     "timeout auto-submit and remaining accommodations",
     "privacy fulfilment/export/deletion",
     "live providers, deployed workflows and PostgreSQL concurrency"
@@ -30,7 +33,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T14:11:32.015619+00:00",
-  "verified_sha": "04bc788b61628bd37805df699e2de21da208f74f",
+  "updated_at": "2026-10-05T14:44:25.779921+00:00",
+  "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
   "state": "AUTO_CONTINUE"
 }
