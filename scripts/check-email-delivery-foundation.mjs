@@ -136,7 +136,7 @@ assert.doesNotMatch(
   worker,
   /"email\.delivery\.foundation": processEmailDeliveryOutboxJob/
 );
-assert.match(worker, /handler\(claimed\.job, claimed\.lease\)/);
+assert.match(worker, /handler\(claimed\.job, claimed\.lease, input\?\.database\)/);
 assert.match(auditDomain, /"email\.delivery\.queued"/);
 assert.match(auditDomain, /"email_delivery"/);
 
