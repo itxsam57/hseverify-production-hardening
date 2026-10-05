@@ -132,7 +132,7 @@
     "test:company-complete-browser": "node --test tests/browser/company-complete-journey.browser.test.mjs",
     "test:staff-complete-browser": "node --test --test-concurrency=1 tests/browser/assigned-staff-workflows.browser.test.mjs tests/browser/staff-role-complete-journey.browser.test.mjs",
     "test:error-recovery-browser": "node --test tests/browser/error-recovery-controls.browser.test.mjs",
-    "test:critical-browser": "npm run test:independent-review-browser && npm run test:interview-live-media-browser && npm run test:company-complete-browser && npm run test:staff-complete-browser && npm run test:error-recovery-browser && npm run test:masterplan-reassessment-browser && npm run test:privacy-operations-browser && npm run test:authentication-boundaries-browser && npm run test:worker-registration-policy-browser && npm run test:worker-registration-otp-browser && npm run test:staff-invitation-revocation-browser && npm run test:staff-invitation-lifecycle-browser && npm run test:worker-duplicate-recovery-browser && npm run test:company-registration-boundaries-browser && npm run test:password-change-boundaries-browser && npm run test:mfa-management-boundaries-browser",
+    "test:critical-browser": "npm run test:independent-review-browser && npm run test:interview-live-media-browser && npm run test:company-complete-browser && npm run test:staff-complete-browser && npm run test:error-recovery-browser && npm run test:masterplan-reassessment-browser && npm run test:privacy-operations-browser && npm run test:authentication-boundaries-browser && npm run test:worker-registration-policy-browser && npm run test:worker-registration-otp-browser && npm run test:staff-invitation-revocation-browser && npm run test:staff-invitation-lifecycle-browser && npm run test:worker-duplicate-recovery-browser && npm run test:company-registration-boundaries-browser && npm run test:password-change-boundaries-browser && npm run test:mfa-management-boundaries-browser && npm run test:six-role-password-recovery-browser",
     "test:owner-acceptance-regressions": "node --test tests/platform/owner-acceptance-regressions.test.mjs tests/platform/assurance-case-progression-runtime.test.mjs tests/platform/decision-assurance-progression-runtime.test.mjs",
     "test:masterplan-reassessment-browser": "node scripts/run-masterplan-reassessment-test.mjs",
     "test:privacy-operations-browser": "node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs",
@@ -149,7 +149,8 @@
     "test:company-registration-boundaries-browser": "node --test tests/browser/company-registration-boundaries.browser.test.mjs",
     "test:password-change-boundaries-browser": "node --test tests/browser/password-change-boundaries.browser.test.mjs",
     "test:account-security-audit": "node --test tests/platform/account-security-audit-runtime.test.mjs",
-    "test:mfa-management-boundaries-browser": "node --test tests/browser/mfa-management-boundaries.browser.test.mjs"
+    "test:mfa-management-boundaries-browser": "node --test tests/browser/mfa-management-boundaries.browser.test.mjs",
+    "test:six-role-password-recovery-browser": "node --test tests/browser/six-role-password-recovery.browser.test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

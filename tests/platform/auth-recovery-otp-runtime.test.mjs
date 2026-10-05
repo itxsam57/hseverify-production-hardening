@@ -81,3 +81,25 @@ test("Wrong-role and unknown recovery requests issue no usable flow",async()=>{
   assert.equal((await f.db.query("SELECT count(*)::int AS count FROM auth_sessions WHERE revoked_at IS NULL")).rows[0].count,2);
  }finally{await f.db.close();}
 });
+test("Recovery resend rejects an immediate request without creating another challenge",async()=>{
+ const f=await fixture();try{
+  const c=await f.repo.authentication.findOtpChallengeForUpdate(f.challengeId);
+  assert.equal(c.resendAvailableAt,"2026-10-05T03:01:00.000Z");
+  await assert.rejects(f.service.resend({token:f.token}),e=>e.code==="cooldown");
+  assert.equal((await f.db.query("SELECT count(*)::int AS count FROM auth_otp_challenges WHERE account_id=$1 AND purpose='password_reset'",[f.accountId])).rows[0].count,1);
+ }finally{await f.db.close();}
+});
+
+test("Expired recovery challenge rejects without consuming another attempt",async()=>{const f=await fixture();try{const expired=new AuthRecoveryService(f.repo,{pepper:ENV.authPepper,sandboxEnabled:true},()=>new Date("2026-10-05T03:11:00.000Z"));await assert.rejects(expired.resetPassword({token:f.token,code:wrong(f.code),password:NEW}),e=>e.code==="invalid_code");const row=(await f.db.query("SELECT attempts_remaining FROM auth_otp_challenges WHERE challenge_id=$1",[f.challengeId])).rows[0];assert.equal(row.attempts_remaining,5);}finally{await f.db.close();}});
+
+test("Real account, OTP and session repositories return ISO timestamps and preserve nulls",async()=>{
+ const f=await fixture();try{
+  await f.db.query("UPDATE auth_accounts SET account_status='locked',locked_until=$2,phone_e164='+923001234567',phone_verified_at=$3 WHERE account_id=$1",[f.accountId,"2026-10-05T03:01:00.000Z",NOW]);
+  const account=await f.repo.authentication.findAccountById(f.accountId);
+  assert.equal(account.lockedUntil,"2026-10-05T03:01:00.000Z");assert.equal(account.emailVerifiedAt,NOW);assert.equal(account.phoneVerifiedAt,NOW);assert.equal(account.createdAt,NOW);assert.equal(account.updatedAt,NOW);
+  const otp=await f.repo.authentication.findOtpChallengeForUpdate(f.challengeId);assert.equal(otp.createdAt,NOW);assert.equal(otp.expiresAt,"2026-10-05T03:10:00.000Z");assert.equal(otp.resendAvailableAt,"2026-10-05T03:01:00.000Z");assert.equal(otp.consumedAt,null);assert.equal(otp.invalidatedAt,null);
+  await f.db.query("UPDATE auth_accounts SET account_status='active',locked_until=NULL WHERE account_id=$1",[f.accountId]);
+  const session=await f.repo.authentication.findActiveSessionByTokenHash("token-worker-one",NOW);assert.equal(session.createdAt,NOW);assert.equal(session.lastSeenAt,NOW);assert.equal(session.expiresAt,"2026-10-06T03:00:00.000Z");assert.equal(session.revokedAt,null);
+  await f.db.query("UPDATE auth_accounts SET locked_until=NULL,phone_e164=NULL,phone_verified_at=NULL WHERE account_id=$1",[f.accountId]);const cleared=await f.repo.authentication.findAccountById(f.accountId);assert.equal(cleared.lockedUntil,null);assert.equal(cleared.phoneVerifiedAt,null);
+ }finally{await f.db.close();}
+});
