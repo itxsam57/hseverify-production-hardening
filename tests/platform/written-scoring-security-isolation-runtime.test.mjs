@@ -20,7 +20,7 @@ test("written scoring runtime enforces tenant isolation through service behavior
     }
   };
   const service = new WrittenScoringService(database);
-  assert.deepEqual(await service.listReviewQueue({ tenantId: "tenant_one" }), reviews);
+  assert.deepEqual(await service.listReviewQueue({ tenantId: "tenant_one" }), reviews.map((review) => ({ ...review, questions: [] })));
   assert.deepEqual(await service.listReviewQueue({ tenantId: "tenant_other" }), []);
   await assert.rejects(service.finalize({ reviewId: "written_score_review", reviewerAccountId: "reviewer_one", tenantId: "tenant_other" }), /Reviewer does not own this scoring review\./);
 });

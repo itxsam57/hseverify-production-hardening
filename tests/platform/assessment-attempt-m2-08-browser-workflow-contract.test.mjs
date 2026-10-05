@@ -40,7 +40,7 @@ test("M2.08 browser workflow checks out and executes the exact commit with retai
   assert.match(workflow, /uses:\s*actions\/checkout@v6[\s\S]*?ref:\s*\$\{\{\s*github\.sha\s*\}\}/);
   assert.match(workflow, /npm run test:m2-08/);
   assert.match(workflow, /playwright@1\.55\.0/);
-  assert.match(workflow, /playwright install --with-deps chromium/);
+  assert.match(workflow, /playwright install (?:--with-deps|\$\{\{ runner\.environment == 'github-hosted' && '--with-deps' \|\| '' \}\}) chromium/);
   assert.match(workflow, /node scripts\/m2-08-browser-qa\.mjs --seed-only/);
   assert.match(workflow, /node scripts\/m2-08-browser-qa\.mjs/);
   assert.match(workflow, /upload-artifact@v4/);
