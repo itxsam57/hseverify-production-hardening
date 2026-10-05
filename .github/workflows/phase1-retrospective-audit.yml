@@ -48,7 +48,7 @@ permissions:
 
 jobs:
   coverage-contract:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -61,7 +61,7 @@ jobs:
         run: node --test tests/platform/hard-browser-audit-contract.test.mjs
 
   retrospective-performance:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 30
     env:
       HSE_APP_ENV: test
@@ -96,12 +96,12 @@ jobs:
           retention-days: 14
 
   mixed-role-http-burst:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 35
     env:
       HSE_APP_ENV: test
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: /tmp/hseverify-mixed-role-burst-db
+      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/hseverify-mixed-role-burst-db
       HSE_SESSION_SECRET: mixed-role-burst-session-secret-2026-at-least-32-characters
       HSE_AUTH_PEPPER: mixed-role-burst-auth-pepper-2026-at-least-32-characters
       HSE_ENABLE_AUTH_SANDBOX: "true"
@@ -127,7 +127,7 @@ jobs:
       - name: Install pinned Playwright without lockfile changes
         run: npm install --no-save --package-lock=false playwright@1.55.0
       - name: Install Chromium runtime
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - name: Start real Next.js application
         run: |
           npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/hse-mixed-role-server.log 2>&1 &
@@ -161,12 +161,12 @@ jobs:
           retention-days: 14
 
   retrospective-browser:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 45
     env:
       HSE_APP_ENV: test
       HSE_DATABASE_DRIVER: pglite
-      HSE_PGLITE_DATA_DIR: /tmp/hseverify-retrospective-browser-db
+      HSE_PGLITE_DATA_DIR: ${{ runner.temp }}/hseverify-retrospective-browser-db
       HSE_SESSION_SECRET: retrospective-browser-session-secret-2026-at-least-32-characters
       HSE_AUTH_PEPPER: retrospective-browser-auth-pepper-2026-at-least-32-characters
       HSE_ENABLE_AUTH_SANDBOX: "true"
@@ -203,7 +203,7 @@ jobs:
       - name: Install pinned Playwright without lockfile changes
         run: npm install --no-save --package-lock=false playwright@1.55.0
       - name: Install Chromium runtime
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - name: Start real Next.js application
         run: |
           npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/hse-retrospective-browser-server.log 2>&1 &

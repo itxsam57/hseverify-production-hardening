@@ -3,20 +3,31 @@
   "task": "WORKFLOW-001",
   "status": "ACTIVE",
   "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
-  "last_verified_action": "Company Worker archive working-v3 native4/27, actual full browser, types/lint PASS; source REVIEW_PASS after tenant/link lock-order repair.",
-  "next_action": "Exact captured-form OTP repair checks and full CI, independent review, PR20 acceptance; then actual timeout auto-submit repair.",
+  "last_verified_action": "PR20 nine local/fiveCI independentACCEPT,32passed12partial174unverified.",
+  "next_action": "M2.07.05 durable expiry auto-submit; native real producer first; current canonicalfa57cb7 and acceptedPR20 complete.",
   "owner_required": false,
   "revision": 8,
-  "blocker": "CI OTP navigation failure awaits permanent repair validation.",
+  "blocker": "Timeout auto-submit actual RED, safe local implementation authorized.",
   "updated_at": "2026-10-05T15:13:48.880153+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
-  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+  "last_verified_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
   "resume": {
-    "pending_pr": 20,
-    "pending_pr_head": "ee064939f54f9eee2bb11dc3d275c787ec33a898",
-    "ci_blocker": "Hosted billing blocked; dedicated existing-VPS runner provisioning in progress."
+    "read_first": [
+      ".engineering/state/CURRENT_TASK.json",
+      ".engineering/WORK_CONTRACT.md"
+    ],
+    "avoid_repeating": "Accepted PR20 source/9local/5CI complete; do not refresh old history. Revalidate only affected new candidate.",
+    "accepted_pr": 20,
+    "accepted_head": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+    "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+    "next_red_artifact": ".autopilot/artifacts/20261005-assessment-timeout-auto-submit-red-fa57cb7.json",
+    "coverage": {
+      "passed": 32,
+      "partial": 12,
+      "unverified": 174
+    }
   }
 }

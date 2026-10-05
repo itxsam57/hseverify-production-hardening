@@ -97,7 +97,7 @@ function objectiveAnswerCorrect(row: ObjectiveAnswerRow): boolean {
   }
 }
 
-async function committedAnswerRows(
+async function pinnedFormAnswerRows(
   database: DatabaseClient,
   attemptId: string
 ): Promise<readonly ObjectiveAnswerRow[]> {
@@ -112,7 +112,7 @@ async function committedAnswerRows(
        JOIN assessment_question_versions AS versions
          ON versions.question_id=items.question_id
         AND versions.question_version_id=items.question_version_id
-       JOIN assessment_attempt_answers AS answers
+       LEFT JOIN assessment_attempt_answers AS answers
          ON answers.attempt_id=attempts.attempt_id
         AND answers.position=items.position
         AND answers.question_version_id=items.question_version_id
@@ -227,9 +227,9 @@ export async function completeSubmittedAssessment(
   if (!(await reviewOrchestrationAvailable(database))) return;
 
   await caseTenant(database, input.caseId);
-  const rows = await committedAnswerRows(database, input.attemptId);
+  const rows = await pinnedFormAnswerRows(database, input.attemptId);
   if (rows.length === 0) {
-    throw new Error("Submitted assessment has no committed answers.");
+    throw new Error("Submitted assessment has no pinned form items.");
   }
 
   const hasWritten = rows.some(

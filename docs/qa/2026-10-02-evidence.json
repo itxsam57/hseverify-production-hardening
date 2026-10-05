@@ -1006,8 +1006,17 @@
           "Worker"
         ],
         "scenario": "Site and department create, edit, archive and restore",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Actual site/department create/edit/archive/restore with persisted names and revisions."
+        }
       },
       {
         "id": "M1.09.02",
@@ -1019,8 +1028,17 @@
           "Worker"
         ],
         "scenario": "Archive assigned units unassigns placements and retains history",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Actual staff/Worker live placements removed on archive, same Worker/code lineage and immutable prior scope retained; restore creates no assignments."
+        }
       },
       {
         "id": "M1.09.03",
@@ -1032,8 +1050,17 @@
           "Worker"
         ],
         "scenario": "Archived units cannot receive new placements",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Actual forged archived site placement denied; native archived site/department assignments rejected."
+        }
       },
       {
         "id": "M1.09.04",
@@ -1045,8 +1072,17 @@
           "Worker"
         ],
         "scenario": "Team invitation, MFA enrollment, role permission update",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Actual invited Company staff password/MFA activation and live owner-driven role/permission updates."
+        }
       },
       {
         "id": "M1.09.05",
@@ -1080,8 +1116,17 @@
           "Worker"
         ],
         "scenario": "Company staff cannot grant permissions above own ceiling",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Actual admin cannot grant absent permission or owner role; denied requests persist no invitations; permitted viewer invitation succeeds."
+        }
       },
       {
         "id": "M1.10.01",
@@ -2801,8 +2846,17 @@
           "Admin"
         ],
         "scenario": "Sandbox checkout, capture, credit allocation and duplicate capture",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Company sandbox checkout/capture creates exact credits, exact duplicate accepted without double-credit; second distinct purchase remains unpaid."
+        }
       },
       {
         "id": "M3.05.02",
@@ -2840,8 +2894,17 @@
           "Admin"
         ],
         "scenario": "Partial/full refund and reconciliation preserve immutable money history",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Company sandbox partial then full remaining refund, duplicate callback idempotency, clean reconciliation, exact immutable capture/refund ledger."
+        }
       },
       {
         "id": "M3.05.05",
@@ -2866,8 +2929,17 @@
           "Admin"
         ],
         "scenario": "Signed webhook/replay/forgery cannot grant duplicate or unpaid entitlement",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "candidate_sha": "08cd920a5b395ce06bd9b430f701410e5cc20699",
+          "canonical_sha": "fa57cb71f32870922b73d9a7bf0c75c07d856071",
+          "review": "PR20 independent ACCEPT",
+          "artifacts": [
+            ".autopilot/artifacts/20261005-company-workflows-otp-exact-08cd920.json",
+            ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
+          ],
+          "scope": "Company sandbox bad signature and changed signed replay denied; exact callback replay idempotent; no unpaid or duplicate entitlement."
+        }
       },
       {
         "id": "M3.06.01",
@@ -3503,6 +3575,6 @@
         ]
       }
     ],
-    "updated_at": "2026-10-05T14:44:25.779921+00:00"
+    "updated_at": "2026-10-05T16:30:03.764189+00:00"
   }
 }

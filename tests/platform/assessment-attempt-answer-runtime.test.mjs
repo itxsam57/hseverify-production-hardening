@@ -9,7 +9,8 @@ import {
   ATTEMPT_NOW_DATE,
   countRows,
   seedInProgressAttempt,
-  seedWorkerPrincipal
+  seedWorkerPrincipal,
+  stableId
 } from "../helpers/assessment-attempt-fixture.mjs";
 
 const runtime = process.env.HSE_ASSESSMENT_ATTEMPT_RUNTIME_DIST;
@@ -320,3 +321,67 @@ test("M2.07 committed answers are append-only at the database boundary", async (
     await db.close();
   }
 });
+
+// Expiry finalization must score the immutable form, including unanswered items.
+const { completeSubmittedAssessment } = await import(
+  pathToFileURL(join(runtime, "assessment-attempt", "assessment-submission-progression-service.js")).href
+);
+
+for (const scenario of [
+  { seed: "partial-score", answered: true, written: false, score: 50 },
+  { seed: "empty-score", answered: false, written: false, score: 0 },
+  { seed: "unanswered-written", answered: true, written: true, score: null }
+]) {
+  test(`Timeout progression preserves unanswered pinned items: ${scenario.seed}`, async () => {
+    const db = await database();
+    try {
+      const principal = await seedWorkerPrincipal(db, scenario.seed);
+      const fixture = await seedInProgressAttempt(db, principal, scenario.seed, [
+        { questionType: "TRUE_FALSE" },
+        { questionType: scenario.written ? "SHORT_TEXT" : "TRUE_FALSE" }
+      ]);
+      await db.query(
+        `INSERT INTO assurance_case_policy_snapshots(
+          snapshot_id,case_id,tenant_id,framework_id,policy_id,global_policy_version_id,
+          tenant_override_id,policy_source,effective_value_json,reference_time,resolved_at,
+          created_by_account_id
+        ) SELECT $1,$2,$3,framework_id,$4,$5,NULL,'GLOBAL',
+          '{"pass_mark":80}'::jsonb,$6,$6,NULL
+          FROM assessment_blueprint_versions WHERE blueprint_version_id=$7`,
+        [stableId("policy_snapshot", scenario.seed), fixture.caseId, fixture.tenantId,
+          stableId("policy", scenario.seed), stableId("policy_version", scenario.seed),
+          ATTEMPT_NOW_DATE.toISOString(), fixture.blueprintVersionId]
+      );
+      if (scenario.answered) {
+        await new AssessmentAttemptService(db).submitCurrentAnswer(principal, {
+          attemptId: fixture.attemptId, position: 1,
+          questionVersionId: fixture.items[0].questionVersionId, answer: true
+        }, ATTEMPT_NOW_DATE);
+      }
+      await db.transaction(transaction => completeSubmittedAssessment(transaction, {
+        caseId: fixture.caseId, attemptId: fixture.attemptId,
+        blueprintVersionId: fixture.blueprintVersionId,
+        actor: { accountId: principal.accountId, role: "worker" }, now: ATTEMPT_NOW_DATE
+      }));
+      const result = (await db.query(
+        "SELECT case_status FROM assurance_cases WHERE case_id=$1", [fixture.caseId]
+      )).rows[0];
+      assert.equal(result.case_status, scenario.written ? "Review pending" : "Reassessment required");
+      const reviews = (await db.query(
+        "SELECT score,decision,status FROM written_score_reviews WHERE attempt_id=$1",
+        [fixture.attemptId]
+      )).rows;
+      if (scenario.written) {
+        assert.equal(reviews.some(review => review.status === "FINAL"), false);
+      } else {
+        assert.equal(reviews.length, 1);
+        assert.equal(Number(reviews[0].score), scenario.score);
+        assert.equal(reviews[0].decision, "FAIL");
+      }
+      assert.equal(await countRows(db, "assessment_attempt_answers", "attempt_id=$1",
+        [fixture.attemptId]), scenario.answered ? 1 : 0);
+    } finally {
+      await db.close();
+    }
+  });
+}
