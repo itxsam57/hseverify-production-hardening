@@ -232,15 +232,15 @@ export class StaffProvisioningService {
     invitation: StaffInvitation;
   }> {
     const tokens = splitEnrollmentTokens(input.combinedToken);
-    const flow = this.validateFlow(
-      await input.repository.findStaffEnrollmentFlowForUpdate(
-        this.enrollmentTokenHash(tokens.flowToken)
-      ),
-      input.nowIso
-    );
     const invitation = this.validateInvitation(
       await input.repository.findStaffInvitationByTokenHashForUpdate(
         this.invitationTokenHash(tokens.invitationToken)
+      ),
+      input.nowIso
+    );
+    const flow = this.validateFlow(
+      await input.repository.findStaffEnrollmentFlowForUpdate(
+        this.enrollmentTokenHash(tokens.flowToken)
       ),
       input.nowIso
     );
@@ -347,6 +347,32 @@ export class StaffProvisioningService {
       }
       throw error;
     }
+  }
+
+  async revokeInvitation(input: {
+    inviterAccountId: string; inviterSessionId: string; inviterRole: AuthRole; invitationId: string;
+  }): Promise<void> {
+    const unavailable = () => new StaffProvisioningError("invitation_unavailable", "This invitation cannot be revoked.");
+    if ((input.inviterRole !== "root" && input.inviterRole !== "admin") || !input.invitationId || input.invitationId.length > 160) {
+      throw unavailable();
+    }
+    const nowIso = this.now().toISOString();
+    await this.repository.transaction(async repository => {
+      if (!(await repository.hasLiveStaffIssuerSession({accountId: input.inviterAccountId, sessionId: input.inviterSessionId, role: input.inviterRole, now: nowIso}))) throw unavailable();
+      const invitation = await repository.findStaffInvitationByIdForUpdate(input.invitationId);
+      if (!invitation || invitation.invitedByAccountId !== input.inviterAccountId || !allowedInvitationRoles(input.inviterRole).includes(invitation.role)) throw unavailable();
+      if (invitation.status === "revoked") return;
+      if (invitation.status !== "pending" || invitation.expiresAt <= nowIso) throw unavailable();
+      const flows = await repository.unfinishedStaffEnrollmentFlowsForUpdate(invitation.invitationId);
+      for (const flow of flows) {
+        await repository.cancelStaffEnrollment({flowId: flow.flowId, cancelledAt: nowIso});
+        if (flow.accountId && !(await repository.deleteUnfinishedStaffAccount(flow.accountId))) {
+          throw unavailable();
+        }
+      }
+      await repository.revokeStaffInvitation({invitationId: invitation.invitationId, revokedAt: nowIso});
+      await repository.recordStaffInvitationRevocation({eventId: createIdentifier("audit"), accountId: input.inviterAccountId, role: input.inviterRole, invitationId: invitation.invitationId, occurredAt: nowIso});
+    });
   }
 
   async createRootBootstrapInvitation(input: {

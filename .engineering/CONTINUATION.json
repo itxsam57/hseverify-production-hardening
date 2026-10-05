@@ -1,16 +1,16 @@
 {
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
-  "status": "IMPLEMENTING",
-  "verified_sha": "19b04b19a8ba45e7941f1acd4e6fd96594d33d02",
-  "last_verified_action": "PR8 merged291b61a; working Worker OTP browser passes wrong/expired/resend/stale email/phone forms with persisted counters/events and no premature activation/session. Product unchanged.",
-  "next_action": "Commit Worker OTP verification after source review; exact browser/type/lint and required PR9 CI before scoped acceptance/merge",
+  "status": "ACTIVE",
+  "verified_sha": "9582a166b26e22996aeab2d3cf3e69d76cc0611f",
+  "last_verified_action": "PR8 registration repair and PR9 Worker OTP verification merged after scoped independent ACCEPT, exact tests and nine actual CI checks each",
+  "next_action": "Run exact-candidate staff revocation gates, independent final review and actual CI; merge only green expected SHA; then verify remaining staff activation/expiry variants",
   "owner_required": false,
-  "revision": 3,
+  "revision": 4,
   "blocker": null,
-  "updated_at": "2026-10-04T15:31:48.558700+00:00",
+  "updated_at": "2026-10-05T02:01:44.386025+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "291b61a99ba75cb7c10a95ef57c90a3cd9e86ccd"
+  "canonical_sha": "216a7a0048c7093a4548ead53213df17b68ae135"
 }
