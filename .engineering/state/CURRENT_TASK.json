@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "WORKFLOW-001",
-  "stage": "IMPLEMENTING",
+  "stage": "VERIFYING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
@@ -9,21 +9,20 @@
   "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
   "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
   "requirements": [
-    "M1.09.01",
-    "M3.05.01",
-    "M3.05.04",
-    "M3.05.06"
+    "M1.09.02",
+    "M1.09.03"
   ],
-  "last_verified_action": "PR19 ACCEPTED/merged; eight local and five applicable CI passes. Ledger24 passed/12 partial/182 unverified.",
+  "last_verified_action": "Company Worker archive working-v3 native4/27, actual full browser, types/lint PASS; source REVIEW_PASS after tenant/link lock-order repair.",
   "evidence": [
-    ".autopilot/artifacts/20261005-account-security-boundaries-exact-97ca127.json",
-    ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json",
-    ".autopilot/artifacts/20261005-assessment-timing-native-working-v3.txt",
-    ".autopilot/artifacts/20261005-assessment-timing-working-v3.txt"
+    ".autopilot/artifacts/20261005-company-worker-archive-red-0d7e98b.json",
+    ".autopilot/artifacts/20261005-worker-accept-lock-order-red.json",
+    ".autopilot/artifacts/20261005-company-worker-archive-working-v3.json"
   ],
-  "next_action": "Repair actual repeated billing form request keys; prove second refund/purchase and signed callback replay guards.",
+  "next_action": "Run exact committed archive native/browser/types/lint/build/preview; push stacked branch preserving PR20; continue local Company permission-ceiling browser while CI billing remains external blocker.",
   "revision_attempt": 0,
-  "blockers": [],
+  "blockers": [
+    "GitHub account payment/spending limit prevents CI jobs starting; initial and retry blocked. No CI pass/no merge/no row promotion."
+  ],
   "unknowns": [
     "182 ledger scenarios unverified",
     "timeout auto-submit and remaining accommodations",
@@ -33,7 +32,17 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T14:44:25.779921+00:00",
+  "updated_at": "2026-10-05T15:13:48.880153+00:00",
   "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
-  "state": "AUTO_CONTINUE"
+  "state": "AUTO_CONTINUE",
+  "resume": {
+    "read_first": [
+      ".engineering/state/CURRENT_TASK.json",
+      ".engineering/WORK_CONTRACT.md"
+    ],
+    "avoid_repeating": "Do not rerun accepted old-SHA work; run only next exact gates and affected new failures.",
+    "pending_pr": 20,
+    "pending_pr_head": "0d7e98b205fe8d76b3bd31fa56f9f669404260dc",
+    "ci_blocker": "GitHub Actions account payment/spending limit; actual annotations retained."
+  }
 }

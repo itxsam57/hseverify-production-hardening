@@ -88,6 +88,7 @@ async function appendAudit(input: {
   principal: TenantPermissionPrincipal<typeof WRITE_PERMISSION>;
   action: AuditAction;
   unit: CompanyUnitRecord;
+  metadata?: Readonly<Record<string, unknown>>;
 }): Promise<void> {
   const audit = new DatabaseAuditRepository(Promise.resolve(input.database));
   await audit.append(bindTrustedAuditActor(input.principal), {
@@ -97,7 +98,8 @@ async function appendAudit(input: {
     metadata: {
       unitKind: input.unit.kind,
       status: input.unit.status,
-      revision: input.unit.revision
+      revision: input.unit.revision,
+      ...input.metadata
     }
   });
 }
@@ -202,6 +204,36 @@ export class DatabaseCompanyOrganizationRepository implements CompanyOrganizatio
         const row = result.rows[0];
         if (row) {
           const transitioned = record(kind, row);
+          if (target === "archived") {
+            const scopeColumn = kind === "site" ? "site_id" : "department_id";
+            const placements = await database.query<{
+              link_id: string;
+              site_id: string | null;
+              department_id: string | null;
+            }>(
+              `SELECT link_id, site_id, department_id FROM company_worker_links
+               WHERE tenant_id=$1 AND ${scopeColumn}=$2
+                 AND link_status IN ('active', 'pending_worker_acceptance')
+               ORDER BY link_id FOR UPDATE`,
+              [scope.tenantId, unitId]
+            );
+            await database.query(
+              `UPDATE company_worker_links SET ${scopeColumn}=NULL, updated_at=CURRENT_TIMESTAMP
+               WHERE tenant_id=$1 AND ${scopeColumn}=$2
+                 AND link_status IN ('active', 'pending_worker_acceptance')`,
+              [scope.tenantId, unitId]
+            );
+            for (const placement of placements.rows) {
+              await appendAudit({
+                database, principal, action: "company_organization.archived", unit: transitioned,
+                metadata: {
+                  workerLinkId: placement.link_id,
+                  previousSiteId: placement.site_id,
+                  previousDepartmentId: placement.department_id
+                }
+              });
+            }
+          }
           await appendAudit({
             database,
             principal,

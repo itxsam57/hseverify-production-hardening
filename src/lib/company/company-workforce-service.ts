@@ -458,7 +458,23 @@ export class CompanyWorkforceService {
   async acceptWorkerLink(principal:AuthorizationPrincipal,linkId:string):Promise<CompanyWorkerLinkRecord>{
     const id=linkId.trim();if(!id)throw new CompanyWorkforceAccessError();const now=this.now();
     try{return await runWorkerCommand({database:this.database,principal,now,operation:async({database,workerAccountId})=>{
-      const result=await database.query<LinkRow>(`SELECT link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,site_id,department_id,payment_responsibility,assessment_reference,worker_accepted_at,activated_at,revoked_at FROM company_worker_links WHERE link_id=$1 FOR UPDATE`,[id]);const row=result.rows[0];if(!row||row.worker_account_id!==workerAccountId)throw new CompanyWorkforceAccessError();if(row.link_status==="active")return linkRecord(row);if(row.link_status!=="pending_worker_acceptance")throw new CompanyWorkforceAccessError();await assertVerifiedCompany(database,row.tenant_id);const nowIso=now.toISOString();
+      const ownedScope = await database.query<{tenant_id: string}>(
+        `SELECT tenant_id FROM company_worker_links WHERE link_id=$1 AND worker_account_id=$2`,
+        [id, workerAccountId]
+      );
+      const tenantId = ownedScope.rows[0]?.tenant_id;
+      if (!tenantId) throw new CompanyWorkforceAccessError();
+      await assertVerifiedCompany(database, tenantId);
+      const result = await database.query<LinkRow>(
+        `SELECT link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,site_id,department_id,payment_responsibility,assessment_reference,worker_accepted_at,activated_at,revoked_at
+         FROM company_worker_links WHERE link_id=$1 AND worker_account_id=$2 AND tenant_id=$3 FOR UPDATE`,
+        [id, workerAccountId, tenantId]
+      );
+      const row = result.rows[0];
+      if (!row) throw new CompanyWorkforceAccessError();
+      if (row.link_status === "active") return linkRecord(row);
+      if (row.link_status !== "pending_worker_acceptance") throw new CompanyWorkforceAccessError();
+      const nowIso=now.toISOString();
       const updated=await database.query<LinkRow>(`UPDATE company_worker_links SET link_status='active',worker_accepted_at=$2,activated_at=$2,updated_at=$2 WHERE link_id=$1 AND link_status='pending_worker_acceptance' RETURNING link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,site_id,department_id,payment_responsibility,assessment_reference,worker_accepted_at,activated_at,revoked_at`,[id,nowIso]);await appendWorkforceAudit(database,principal,{action:"company_workforce.link.accepted",targetReference:id,metadata:{tenantId:row.tenant_id}});const active=updated.rows[0];if(!active)throw new CompanyWorkforceConflictError();return linkRecord(active);
     }});}catch(error){if(error instanceof CompanyWorkforceAccessError||error instanceof CompanyWorkforceConflictError)throw error;throw new CompanyWorkforceAccessError();}
   }

@@ -32,7 +32,7 @@ const {
   CompanyTeamAccessError
 } = teamModule;
 
-const OWNED_MIGRATION = "0027_company_organization_team_hardening";
+const OWNED_MIGRATION = "0028_company_worker_invitations_codes";
 const NOW_DATE = new Date("2026-08-11T12:30:00.000Z");
 const NOW = NOW_DATE.toISOString();
 const FAR_FUTURE = "2099-01-01T00:00:00.000Z";
@@ -491,4 +491,49 @@ test("M1.09 Company admin cannot grant admin/owner authority", async () => {
   } finally {
     await database.close();
   }
+});
+test("M1.09 Worker unit archive clears live scope, retains immutable per-link history and rolls back with audit", async () => {
+  const database = await openScriptDatabase(TEST_ENVIRONMENT);
+  try {
+    await applyMigrationsThrough(database, TEST_ENVIRONMENT.releaseSha, "0028_company_worker_invitations_codes");
+    const owner = await insertCompanyContext(database, "D");
+    const organization = new DatabaseCompanyOrganizationRepository(Promise.resolve(database));
+    const settings = principal(owner, "company.settings.manage");
+    const draft = { name:"Worker Archive Site", formattedAddress:"Islamabad", phone:"+92510000002", website:"https://archive.example.test", email:"archive@example.test", registrationNumber:null };
+    const site = await organization.create(settings,"site",draft);
+    const department = await organization.create(settings,"department",{...draft,name:"Worker Archive Department"});
+    const workerId="worker_archive_account";
+    await database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'worker-archive@example.test','Archive Worker','active','scrypt$16384$8$1$salt$hash',$2,$2,$2,$2)",[workerId,NOW]);
+    await database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",[workerId,NOW]);
+    const codeId=opaqueId("company_code","D"), linkId=opaqueId("company_worker_link","D");
+    await database.query("INSERT INTO company_registration_codes(code_id,tenant_id,code_hash,usage_limit,created_by_membership_id,expires_at) VALUES($1,$2,'worker-archive-code-hash',2,$3,$4)",[codeId,owner.tenantId,owner.membershipId,FAR_FUTURE]);
+    await database.query("INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,link_source,code_id,link_status,site_id,department_id,worker_accepted_at,activated_at) VALUES($1,$2,$3,'code',$4,'active',$5,$6,$7,$7)",[linkId,owner.tenantId,workerId,codeId,site.unitId,department.unitId,NOW]);
+    await database.query("CREATE FUNCTION fail_worker_archive_audit() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN IF NEW.action_key='company_organization.archived' THEN RAISE EXCEPTION 'required archive audit fault'; END IF; RETURN NEW; END $$");
+    await database.query("CREATE TRIGGER worker_archive_audit_fault BEFORE INSERT ON platform_audit_events FOR EACH ROW EXECUTE FUNCTION fail_worker_archive_audit()");
+    await assert.rejects(organization.archive(settings,"site",site.unitId,site.revision),/required archive audit fault/);
+    const retained=await database.query("SELECT site_id,department_id FROM company_worker_links WHERE link_id=$1",[linkId]);
+    assert.equal(retained.rows[0].site_id,site.unitId);
+    assert.equal(retained.rows[0].department_id,department.unitId);
+    assert.equal((await database.query("SELECT site_status FROM company_sites WHERE site_id=$1",[site.unitId])).rows[0].site_status,"active");
+    await database.query("DROP TRIGGER worker_archive_audit_fault ON platform_audit_events");
+    const archivedSite=await organization.archive(settings,"site",site.unitId,site.revision);
+    const afterSite=await database.query("SELECT site_id,department_id,link_status,code_id FROM company_worker_links WHERE link_id=$1",[linkId]);
+    assert.equal(afterSite.rows[0].site_id,null);
+    assert.equal(afterSite.rows[0].department_id,department.unitId);
+    await assert.rejects(database.query("UPDATE company_worker_links SET site_id=$2 WHERE link_id=$1",[linkId,site.unitId]),/site is unavailable/);
+    await organization.archive(settings,"department",department.unitId,department.revision);
+    await assert.rejects(database.query("UPDATE company_worker_links SET department_id=$2 WHERE link_id=$1",[linkId,department.unitId]),/department is unavailable/);
+    await organization.restore(settings,"site",site.unitId,archivedSite.revision);
+    const final=await database.query("SELECT site_id,department_id,link_status,code_id FROM company_worker_links WHERE link_id=$1",[linkId]);
+    assert.equal(final.rows[0].site_id,null);assert.equal(final.rows[0].department_id,null);
+    assert.equal(final.rows[0].link_status,"active");assert.equal(final.rows[0].code_id,codeId);
+    const history=await database.query("SELECT audit_event_id,metadata FROM platform_audit_events WHERE actor_tenant_id=$1 AND metadata->>'workerLinkId'=$2 ORDER BY audit_sequence",[owner.tenantId,linkId]);
+    assert.equal(history.rows.length,2);
+    assert.equal(history.rows[0].metadata.previousSiteId,site.unitId);
+    assert.equal(history.rows[0].metadata.previousDepartmentId,department.unitId);
+    assert.equal(history.rows[1].metadata.previousSiteId,null);
+    assert.equal(history.rows[1].metadata.previousDepartmentId,department.unitId);
+    await assert.rejects(database.query("DELETE FROM platform_audit_events WHERE audit_event_id=$1",[history.rows[0].audit_event_id]),/append-only|immutable/i);
+    console.log("ACTUAL_WORKER_ARCHIVE native site/department unassignment, prior scope/source retained, no restore reassignment, archived new assignment denied and required audit rollback");
+  } finally { await database.close(); }
 });

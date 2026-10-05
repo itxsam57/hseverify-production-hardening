@@ -297,6 +297,8 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           // Registration code -> real Worker redemption -> active Company link.
           const codeSection = company.locator("section").filter({ hasText: "Create registration code" }).first();
+          await codeSection.getByLabel("Site default").selectOption({label:"Journey Site Updated"});
+          await codeSection.getByLabel("Department default").selectOption({label:"Journey Department Updated"});
           await codeSection.getByLabel("Usage limit").fill("1");
           await codeSection.getByLabel("Expiry").fill("2026-10-20T12:00");
           await codeSection.getByRole("button", { name: "Create Company registration code" }).click();
@@ -350,10 +352,48 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           let memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByLabel("Company Team role").selectOption("manager");
+          await memberCard.getByLabel("Site scope (optional)").selectOption({label:"Journey Site Updated"});
+          await memberCard.getByLabel("Department scope (optional)").selectOption({label:"Journey Department Updated"});
           await memberCard.getByRole("button", { name: "Save Team access" }).click();
           await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor({ timeout: 15_000 });
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
+          const assignedSiteId=await memberCard.getByLabel("Site scope (optional)").inputValue();
+          const assignedDepartmentId=await memberCard.getByLabel("Department scope (optional)").inputValue();
+          for (const [kind,name] of [["site","Journey Site Updated"],["department","Journey Department Updated"]]) {
+            await company.goto(`${baseUrl}/company/organization`,{waitUntil:"networkidle"});
+            const unit=company.locator("article").filter({hasText:name}).first();
+            await unit.getByRole("button",{name:`Archive ${kind}`}).click();
+            await company.getByRole("dialog").getByRole("button",{name:`Archive ${kind}`}).click();
+            await company.reload({waitUntil:"networkidle"});
+            await worker.reload({waitUntil:"networkidle"});
+            assert.equal(await worker.getByText(name,{exact:false}).count(),0,`archived ${kind} must not remain current Worker placement`);
+          }
+          await company.goto(`${baseUrl}/company/team`,{waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          assert.equal(await memberCard.getByLabel("Site scope (optional)").inputValue(),"");
+          assert.equal(await memberCard.getByLabel("Department scope (optional)").inputValue(),"");
+          assert.equal(await memberCard.locator(`option[value="${assignedSiteId}"]`).count(),0);
+          assert.equal(await memberCard.locator(`option[value="${assignedDepartmentId}"]`).count(),0);
+          await memberCard.getByLabel("Site scope (optional)").evaluate((select,value)=>{select.add(new Option("Forged archived site",value));},assignedSiteId);
+          await memberCard.getByLabel("Site scope (optional)").selectOption(assignedSiteId);
+          await memberCard.getByRole("button",{name:"Save Team access"}).click();
+          await memberCard.getByText(/Select an active Company site\./).waitFor();
+          await company.reload({waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          assert.equal(await memberCard.getByLabel("Site scope (optional)").inputValue(),"");
+          for (const [kind,name] of [["site","Journey Site Updated"],["department","Journey Department Updated"]]) {
+            await company.goto(`${baseUrl}/company/organization`,{waitUntil:"networkidle"});
+            await company.locator("article").filter({hasText:name}).first().getByRole("button",{name:`Restore ${kind}`}).click();
+            await company.reload({waitUntil:"networkidle"});
+          }
+          await worker.reload({waitUntil:"networkidle"});
+          assert.equal(await worker.getByText(/Journey Site Updated|Journey Department Updated/).count(),0,"restore must not recreate Worker placements");
+          await company.goto(`${baseUrl}/company/team`,{waitUntil:"networkidle"});
+          memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          assert.equal(await memberCard.getByLabel("Site scope (optional)").inputValue(),"");
+          assert.equal(await memberCard.getByLabel("Department scope (optional)").inputValue(),"");
+          console.log("ACTUAL_ASSIGNED_UNIT_ARCHIVE staff/Worker placements removed, forged archived placement denied, restore does not recreate placement");
           await memberCard.getByRole("button", { name: "Suspend" }).click();
           await company.getByRole("dialog").getByRole("button", { name: "Suspend access" }).click();
           await company.reload({ waitUntil: "networkidle" });
@@ -631,12 +671,26 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
       ]);
       const sites=await db.query("SELECT name,site_status,revision FROM company_sites WHERE tenant_id='tenant_independent-audit-compan'");
       const departments=await db.query("SELECT name,department_status,revision FROM company_departments WHERE tenant_id='tenant_independent-audit-compan'");
-      assert(sites.rows.some(row=>row.name==="Journey Site Updated" && row.site_status==="active" && Number(row.revision)===4));
-      assert(departments.rows.some(row=>row.name==="Journey Department Updated" && row.department_status==="active" && Number(row.revision)===4));
+      assert(sites.rows.some(row=>row.name==="Journey Site Updated" && row.site_status==="active" && Number(row.revision)===6));
+      assert(departments.rows.some(row=>row.name==="Journey Department Updated" && row.department_status==="active" && Number(row.revision)===6));
       const purchases=await db.query("SELECT checkout_id,status FROM billing_checkouts WHERE tenant_id='tenant_independent-audit-compan'");
       assert.equal(purchases.rows.length,2);
       assert.equal(new Set(purchases.rows.map(row=>row.checkout_id)).size,2);
       assert(purchases.rows.some(row=>row.status==="REQUIRES_PROVIDER"));
+
+      const workerScope=await db.query("SELECT link_id,site_id,department_id,code_id FROM company_worker_links WHERE worker_account_id='audit_worker_account_20260901'");
+      assert.equal(workerScope.rows[0].site_id,null);assert.equal(workerScope.rows[0].department_id,null);
+      assert(workerScope.rows[0].code_id,"original registration-code lineage retained");
+      const scopeHistory=await db.query("SELECT metadata FROM platform_audit_events WHERE actor_tenant_id='tenant_independent-audit-compan' AND metadata->>'workerLinkId'=$1 ORDER BY audit_sequence",[workerScope.rows[0].link_id]);
+      assert.equal(scopeHistory.rows.length,2);
+      assert(scopeHistory.rows[0].metadata.previousSiteId);
+      assert(scopeHistory.rows[0].metadata.previousDepartmentId);
+      assert.equal(scopeHistory.rows[1].metadata.previousSiteId,null);
+      assert(scopeHistory.rows[1].metadata.previousDepartmentId);
+      const teamHistory=await db.query("SELECT ended_at,ended_reason FROM company_team_unit_assignments WHERE membership_id IN(SELECT membership_id FROM auth_tenant_memberships WHERE account_id IN(SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test'))");
+      assert.equal(teamHistory.rows.length,1);assert(teamHistory.rows[0].ended_at);
+      assert.equal(teamHistory.rows[0].ended_reason,"Site archived");
+      console.log("ACTUAL_UNIT_ARCHIVE_HISTORY same Worker/link source retained, two immutable prior-scope events and ended staff assignment");
 
       assert.equal(links.rows[0]?.link_status, "active");
       assert(orders.rows.some((row) => row.order_reference === "JOURNEY-ORDER-001" && row.order_status === "CANCELLED"));
