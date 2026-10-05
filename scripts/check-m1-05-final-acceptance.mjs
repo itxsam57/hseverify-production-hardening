@@ -129,7 +129,7 @@ mustContain(emailMigration, /recipient_address_hash TEXT NOT NULL/,
   "Email delivery must retain only the accepted recipient-address fingerprint.");
 
 mustContain(outboxWorker,
-  /"notification\.portal\.foundation"[\s\S]*projectNotificationOutboxJob\(job\)/,
+  /"notification\.portal\.foundation"[\s\S]*projectNotificationOutboxJob\(job, \{ database \}\)/,
   "Notification work must remain in the fixed outbox handler registry.");
 mustContain(outboxWorker,
   /"email\.delivery\.foundation"[\s\S]*processEmailDeliveryOutboxJob\(job, lease\)/,
