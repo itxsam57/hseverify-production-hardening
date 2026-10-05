@@ -58,7 +58,7 @@ const {hashOpaqueValue,decryptSecret,createIdentifier}=loadWorkerRegistrationTs(
 test("Five MFA-protected roles rotate recovery codes and replace authenticators with exact persisted audit and factor state",{timeout:300000},async()=>{
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-mfa-security-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"mfa-security-browser",HSE_SESSION_SECRET:"mfa-security-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"mfa-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
- const roles=["company","assessor","verifier","admin","root"],generated={},secrets={},oldCounters={},oldHashes={},notificationCookies={};let browser;
+ const roles=["company","assessor","verifier","admin","root"],generated={},secrets={},oldCounters={},oldHashes={},notificationCookies={},preRecoverySessions={};let browser;
  async function signIn(page,identity,role,secret,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(identity.password);await page.getByLabel("Authenticator code").fill(totp(secret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();}
  try{
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
@@ -115,10 +115,44 @@ test("Five MFA-protected roles rotate recovery codes and replace authenticators 
      const events=(await db.query("SELECT event_id,active_role FROM auth_security_events WHERE account_id=$1 AND event_type=$2",[id,event])).rows;assert.equal(events.length,1);assert.equal(events[0].active_role,role);
      const audit=(await db.query("SELECT actor_account_id,actor_role,source_event_id,target_type,target_reference FROM platform_audit_events WHERE actor_account_id=$1 AND action_key=$2",[id,action])).rows;assert.deepEqual(audit,[{actor_account_id:id,actor_role:role,source_event_id:events[0].event_id,target_type:"account",target_reference:id}]);
     }
+    preRecoverySessions[role]=(await db.query("SELECT session_id,active_role FROM auth_sessions WHERE account_id=$1 AND revoked_at IS NULL",[id])).rows;
     assert.deepEqual((await db.query("SELECT active_role,revoked_at FROM auth_sessions WHERE account_id=$1",[id])).rows,[{active_role:role,revoked_at:null},{active_role:role,revoked_at:null}]);
    }
    console.log("ACTUAL_FIVE_ROLE_MFA_MANAGEMENT_DB: exact ten code hashes, old revoked/new active factors, consumed challenge and immutable role-bound completion audits");
   }finally{await db.close();}
+
+  await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/root/login",projectRoot:root,environment,probe:async()=>{
+   async function codeLogin(page,role,code,password=credentials[role].password){
+    await page.goto(baseUrl+"/"+role+"/login");
+    await page.getByLabel("Email address").fill(credentials[role].email);
+    await page.getByLabel("Password",{exact:true}).fill(password);
+    await page.getByLabel("Authenticator code").fill(code);
+    await page.getByRole("button",{name:"Sign in",exact:true}).click();
+   }
+   for(const [index,role] of roles.entries()){
+    const acceptedContext=await browser.newContext(),deniedContext=await browser.newContext(),page=await acceptedContext.newPage(),denied=await deniedContext.newPage();
+    try {
+     await codeLogin(page,role,generated[role][0],"WrongRecovery!Password2026");await page.getByRole("alert").waitFor();
+     await page.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(page.url()).pathname,"/"+role+"/login");
+     await codeLogin(page,role,generated[role][0]);await page.waitForURL("**/"+role+"/dashboard");
+     await page.goto(baseUrl+"/account/security");await page.getByText("Unused recovery codes:",{exact:false}).filter({has:page.locator("strong")}).waitFor();assert.equal(await page.locator("p").filter({hasText:"Unused recovery codes:"}).locator("strong").innerText(),"9");
+     for(const code of [generated[role][0],"OLD1-CODE-0000",generated[roles[(index+1)%roles.length]][1]]){
+      await codeLogin(denied,role,code);await denied.getByRole("alert").waitFor();await denied.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(denied.url()).pathname,"/"+role+"/login");
+     }
+     console.log("ACTUAL_FIVE_ROLE_RECOVERY_CODE_LOGIN",role,"wrong password denied without consumption; fresh code accepted once; replay, old set and foreign account code denied");
+    } finally {await acceptedContext.close();await deniedContext.close();}
+   }
+  }});
+  const recoveryDb=new PGlite(directory);try {
+   for(const role of roles){
+    const id=credentials[role].accountId,codes=(await recoveryDb.query("SELECT code_hash,used_at FROM auth_mfa_recovery_codes WHERE account_id=$1",[id])).rows;
+    assert.equal(codes.length,10);const used=codes.filter(c=>c.used_at!==null);assert.equal(used.length,1);assert.ok(used[0].code_hash===hashOpaqueValue(generated[role][0],environment.HSE_AUTH_PEPPER,"mfa-recovery"));
+    const events=(await recoveryDb.query("SELECT event_id,active_role FROM auth_security_events WHERE account_id=$1 AND event_type='mfa_succeeded' AND metadata->>'method'='recovery_code'",[id])).rows;assert.equal(events.length,1);assert.equal(events[0].active_role,role);
+    const audit=(await recoveryDb.query("SELECT actor_role,source_event_id FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.mfa.succeeded' AND source_event_id=$2",[id,events[0].event_id])).rows;assert.deepEqual(audit,[{actor_role:role,source_event_id:events[0].event_id}]);
+    const sessions=(await recoveryDb.query("SELECT session_id,active_role,revoked_at FROM auth_sessions WHERE account_id=$1",[id])).rows;assert.equal(sessions.length,3);assert.ok(sessions.every(row=>row.active_role===role&&row.revoked_at===null));assert.equal(sessions.filter(row=>!preRecoverySessions[role].some(before=>before.session_id===row.session_id)).length,1);
+   }
+   console.log("ACTUAL_RECOVERY_CODE_LOGIN_DB exact one used/nine unused codes, one method-bound MFA audit and one new role-bound session per account");
+  } finally {await recoveryDb.close();}
   await verifySecurityNotifications({browser,root,environment,baseUrl,port,credentials,roles,cookies:notificationCookies,titles:["Recovery codes replaced", "Authenticator replaced"]});
  }finally{if(browser)await browser.close();await rm(directory,{recursive:true,force:true});}
 });
