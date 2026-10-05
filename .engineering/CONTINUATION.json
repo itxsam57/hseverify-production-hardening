@@ -4,7 +4,7 @@
   "status": "ACTIVE",
   "verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
   "last_verified_action": "Company Worker archive working-v3 native4/27, actual full browser, types/lint PASS; source REVIEW_PASS after tenant/link lock-order repair.",
-  "next_action": "Run exact committed archive native/browser/types/lint/build/preview; push stacked branch preserving PR20; continue local Company permission-ceiling browser while CI billing remains external blocker.",
+  "next_action": "Verify dedicated CI runner, commit combined PR20 staff-ceiling coverage and portable runner selection; exact local checks then actual CI and independent review.",
   "owner_required": false,
   "revision": 8,
   "blocker": "GitHub Actions account payment/spending limit",
@@ -13,5 +13,10 @@
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "canonical_sha": "b948908d483f5d5a26f26efff672216707eb7667",
-  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b"
+  "last_verified_sha": "4b129993a37920cb15dc3ff82a52dd006923939b",
+  "resume": {
+    "pending_pr": 20,
+    "pending_pr_head": "ee064939f54f9eee2bb11dc3d275c787ec33a898",
+    "ci_blocker": "Hosted billing blocked; dedicated existing-VPS runner provisioning in progress."
+  }
 }

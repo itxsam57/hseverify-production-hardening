@@ -30,7 +30,7 @@ jobs:
     uses: ./.github/workflows/engineering-factory.yml
 
   targeted:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
@@ -115,7 +115,7 @@ jobs:
         run: npm run test:account-security-business-rollback
 
   connected-browser:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
@@ -137,7 +137,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
       - name: Company staff existing-session suspension and revocation
         run: node --test tests/browser/company-complete-journey.browser.test.mjs
@@ -185,7 +185,7 @@ jobs:
         run: npm run test:assessment-timing-browser
 
   release-readiness:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 45
     env:
       HSE_APP_ENV: test
@@ -220,7 +220,7 @@ jobs:
         run: node scripts/independent-audit-seed.mjs
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
       - name: M3.11 persisted certification Admin browser
         run: node --test tests/browser/m3-11-certification.browser.test.mjs
