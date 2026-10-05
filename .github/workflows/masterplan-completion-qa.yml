@@ -97,6 +97,9 @@ jobs:
       - name: Company registration attempt persistence and audit rollback
         run: npm run test:company-registration-otp
 
+      - name: Account-security native audit compatibility and rollback
+        run: npm run test:account-security-audit
+
   connected-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -149,6 +152,12 @@ jobs:
 
       - name: Company pending registration email and MFA boundaries
         run: npm run test:company-registration-boundaries-browser
+
+      - name: Six-role password change and session revocation boundaries
+        run: npm run test:password-change-boundaries-browser
+
+      - name: Five-role recovery-code rotation and authenticator replacement
+        run: npm run test:mfa-management-boundaries-browser
 
   release-readiness:
     runs-on: ubuntu-latest

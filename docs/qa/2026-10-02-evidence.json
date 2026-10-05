@@ -592,7 +592,7 @@
           "artifact": ".autopilot/artifacts/20261005-company-full-green.txt",
           "scope": "Actual normal Company registration: pending account/tenant/invited owner/no sessions; wrong email persists counter/audit; verified email leaves MFA pending; wrong MFA audit persists; valid MFA activates owner and allows exact Company session while tenant stays pending."
         },
-        "notes": "Scoped working-tree proof; exact candidate, independent acceptance and applicable CI pending. Exhaustion and audit failure rollback use actual repositories. Company approval/high-risk operations, OTP expiry/resend and live delivery are not certified by this row."
+        "notes": "PR13 scoped independent ACCEPT and merged baaa711. Candidate d9ac5ca nine exact local commands and eight applicable actual CI checks passed. Pending tenant/email/MFA/exact owner/session proven in actual CI. Company approval/high-risk operations, OTP expiry/resend and live delivery remain outside this row."
       },
       {
         "id": "M1.03.05",
@@ -668,7 +668,7 @@
           "artifact": ".autopilot/artifacts/20261005-recovery-working-green.txt",
           "scope": "Wrong recovery code persistence repaired after actual browser RED. Real-repository runtime10 includes five-attempt exhaustion, six-role sequential reset/replay and audit-destination rollback. Worker actual browser reset revokes prior session and old password; identity preserved."
         },
-        "notes": "Six-role browser recovery, authenticated password change/other-session handling, privileged recovery policy, expiry/resend browser combinations, PostgreSQL concurrency and live delivery remain unverified. Independent review identified request/reset account-flow inverse ordering, tracked in DEBT.md; no concurrency claim."
+        "notes": "PR12 scoped Worker recovery merged; runtime10 verifies six-role sequential reset/replay/exhaustion and recovery audit rollback. Working six-role password-change browser verifies wrong current password/MFA, current-session preservation, other-session revocation, old-password denial and replacement login with exact native audit/session state. Five-role MFA browser verifies code-generation hashes, factor replacement/old-factor denial/new login/challenge consumption/audits; prior-code-set invalidation and fresh-counter old-factor denial also passed. Exact candidate/review/CI pending. Six-role browser recovery, recovery-code one-time consumption/login, notification/live delivery, PostgreSQL concurrency and broader privileged recovery remain unverified. Producer-fault tests do not certify complete AccountSecurityService password/session fault rollback."
       },
       {
         "id": "M1.04.01",

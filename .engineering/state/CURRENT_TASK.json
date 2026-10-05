@@ -6,22 +6,21 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "f6c7af07ad1a674054b6f0c99ddf4a0520fc4dd9",
-  "canonical_sha": "f78af3aa4a123be10aa56654f506986725a56f95",
+  "last_verified_sha": "d9ac5ca4d78345cdfc3f5f925976bdf4c544af90",
+  "canonical_sha": "baaa711a46576ceb874c43b039e15a60ff95f65c",
   "requirements": [
-    "M1.03.04",
-    "M1.03.02"
+    "M1.03.08"
   ],
-  "last_verified_action": "PR12 accepted and merged. Company normal email rejection reproduces rollback (5 !=4); bounded repair passes same browser/database probe.",
+  "last_verified_action": "PR13 scoped ACCEPT and merged after nine exact local commands and eight applicable actual CI checks; full Company email/MFA/owner journey verified",
   "evidence": [
-    ".autopilot/artifacts/20261005-company-email-red.txt",
-    ".autopilot/artifacts/20261005-company-email-green.txt"
+    ".autopilot/artifacts/20261005-company-exact-d9ac5ca.json",
+    ".autopilot/artifacts/20261005-company-ci-d9ac5ca.json"
   ],
-  "next_action": "Finish Company email/MFA activation browser/database and actual repository exhaustion/audit rollback tests",
+  "next_action": "Finish focused three-event audit repair checks, commit exact candidate and run applicable CI",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "187 ledger scenarios unverified",
+    "186 ledger scenarios unverified",
     "privacy request fulfilment/export/deletion",
     "actual adjusted delivery",
     "renewal/replacement association",
@@ -30,7 +29,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "ACTIVE",
-  "updated_at": "2026-10-05T03:25:22.326800+00:00",
+  "updated_at": "2026-10-05T03:59:39.475422+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE"
 }
