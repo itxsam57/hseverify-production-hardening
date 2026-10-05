@@ -170,6 +170,9 @@ jobs:
       - name: Five-role recovery-code rotation and authenticator replacement
         run: npm run test:mfa-management-boundaries-browser
 
+      - name: Actual blueprint timers and approved Worker time delivery
+        run: npm run test:assessment-timing-browser
+
   release-readiness:
     runs-on: ubuntu-latest
     timeout-minutes: 45

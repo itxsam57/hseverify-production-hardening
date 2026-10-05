@@ -213,8 +213,8 @@ async function insertVersion(
        blueprint_version_id,progression_mode,section_config_json,
        require_camera,require_microphone,require_screen_share,
        record_camera,record_microphone,record_screen,recording_retention_days,integrity_failure_mode,
-       require_fullscreen,require_environment_declaration,require_monitoring_consent,created_at
-     ) VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+       require_fullscreen,require_environment_declaration,require_monitoring_consent,created_at${delivery.timing ? ",timing_config_json" : ""}
+     ) VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15${delivery.timing ? ",$16::jsonb" : ""})`,
     [
       blueprintVersionId,
       delivery.progressionMode,
@@ -230,7 +230,8 @@ async function insertVersion(
       delivery.requireFullscreen,
       delivery.requireEnvironmentDeclaration,
       delivery.requireMonitoringConsent,
-      now.toISOString()
+      now.toISOString(),
+      ...(delivery.timing ? [JSON.stringify(delivery.timing)] : [])
     ]
   );
   return blueprintVersionId;

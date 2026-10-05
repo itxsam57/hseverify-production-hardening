@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { createServer } from "node:net";
 import test from "node:test";
 import { chromium } from "playwright";
+import { PGlite } from "@electric-sql/pglite";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
 function totp(secret) {
@@ -43,12 +44,33 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await card.getByRole("button",{name:"Deactivate",exact:true}).click();await card.getByText(/v2 · INACTIVE/).waitFor();await card.getByRole("button",{name:"Reactivate",exact:true}).click();await card.getByText(/v2 · ACTIVE/).waitFor();
         await page.goto(`${baseUrl}/admin/assessment-blueprints`);
         const blueprint=page.locator("form").filter({has:page.getByRole("button",{name:"Create blueprint",exact:true})});
-        await blueprint.locator('[name="blueprintReference"]').fill("UI-BP-1");await blueprint.locator('[name="blueprintTitle"]').fill("UI authored assessment blueprint");await blueprint.locator('[name="frameworkReference"]').fill("UI-AUTHORING");await blueprint.locator('[name="selectorsJson"]').fill(JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}]));await blueprint.getByRole("button",{name:"Create blueprint",exact:true}).click();
-        const blueprintCard=page.locator("article").filter({has:page.getByRole("heading",{name:"UI-BP-1",exact:true})});await blueprintCard.waitFor();const blueprintVersionId=await blueprintCard.locator('[name="expectedCurrentVersionId"]').inputValue();assert.match(blueprintVersionId,/^blueprint_version_/);
+        await blueprint.locator('[name="blueprintReference"]').fill("UI-BP-1");await blueprint.locator('[name="blueprintTitle"]').fill("UI authored assessment blueprint");await blueprint.locator('[name="frameworkReference"]').fill("UI-AUTHORING");await blueprint.locator('[name="selectorsJson"]').fill(JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}]));await blueprint.getByLabel("Timer mode").selectOption("COMBINED");await blueprint.getByLabel("Combined duration in seconds").fill("120");await blueprint.getByRole("button",{name:"Create blueprint",exact:true}).click();
+        const blueprintCard=page.locator("article").filter({has:page.getByRole("heading",{name:"UI-BP-1",exact:true})});await blueprintCard.waitFor();let blueprintVersionId=await blueprintCard.locator('[name="expectedCurrentVersionId"]').inputValue();assert.match(blueprintVersionId,/^blueprint_version_/);
+        await blueprintCard.getByText("Combined · 120 seconds",{exact:true}).waitFor();
+        await blueprintCard.getByText("Create a new immutable revision",{exact:true}).click();
+        const revision=blueprintCard.locator("form").filter({has:page.getByRole("button",{name:"Publish revision",exact:true})});
+        await revision.getByLabel("Revision framework reference").fill("UI-AUTHORING");
+        await revision.getByLabel("Timer mode").selectOption("SEPARATE");
+        await revision.getByLabel("Progression mode").selectOption("SECTION_REVIEW");
+        await revision.getByLabel("Section JSON").fill(JSON.stringify([{title:"Objective",endPosition:1,durationSeconds:90}]));
+        await revision.getByRole("button",{name:"Publish revision",exact:true}).click();
+        await blueprintCard.getByText("Separate section timers",{exact:true}).first().waitFor();
+        blueprintVersionId=await blueprintCard.locator('[name="expectedCurrentVersionId"]').inputValue();
+        console.log("ACTUAL_ADMIN_TIMING_BROWSER combined120 authored, immutable revision to separate section90, catalogue pins revised version");
+
         await page.goto(`${baseUrl}/admin/assessment-catalogue`);
         const catalogue=page.locator("form").filter({has:page.getByRole("button",{name:"Create catalogue entry"})});
         await catalogue.locator('[name="catalogueReference"]').fill("UI-CAT-1");await catalogue.locator('[name="catalogueTitle"]').fill("UI authored worker assessment");await catalogue.locator('[name="frameworkReference"]').fill("UI-AUTHORING");await catalogue.locator('[name="blueprintVersionId"]').fill(blueprintVersionId);await catalogue.locator('[name="minimumVerifiedQualifications"]').fill("1");await catalogue.getByRole("button",{name:"Create catalogue entry"}).click();
         const entry=page.locator("article").filter({has:page.getByRole("heading",{name:"UI-CAT-1",exact:true})});await entry.waitFor();await entry.getByText("UI authored worker assessment",{exact:true}).waitFor();assert.deepEqual(errors,[]);
       } finally {await browser.close();}}});assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
+    const database=new PGlite(dataDir);
+    try {
+      const rows=(await database.query("SELECT versions.version_no,settings.timing_config_json,settings.section_config_json FROM assessment_blueprint_versions versions JOIN assessment_blueprints blueprints USING(blueprint_id) JOIN assessment_blueprint_delivery_settings settings USING(blueprint_version_id) WHERE blueprints.blueprint_reference='UI-BP-1' ORDER BY versions.version_no")).rows;
+      assert.equal(rows.length,2);
+      assert.deepEqual(rows[0].timing_config_json,{mode:"COMBINED",durationSeconds:120});
+      assert.deepEqual(rows[1].timing_config_json,{mode:"SEPARATE"});
+      assert.equal(rows[1].section_config_json[0].durationSeconds,90);
+      console.log("ACTUAL_ADMIN_TIMING_DB original combined and revised separate policies retained independently");
+    } finally { await database.close(); }
   } finally {await rm(dataDir,{recursive:true,force:true});}
 });

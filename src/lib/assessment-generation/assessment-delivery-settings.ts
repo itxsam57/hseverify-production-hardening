@@ -8,9 +8,13 @@ export type AssessmentProgressionMode = (typeof ASSESSMENT_PROGRESSION_MODES)[nu
 export type AssessmentSectionDefinition = Readonly<{
   title: string;
   endPosition: number;
+  durationSeconds?: number;
 }>;
 
+export type AssessmentTimingSettings = Readonly<{ mode: "COMBINED"; durationSeconds: number }> | Readonly<{ mode: "SEPARATE" }>;
+
 export type AssessmentDeliverySettingsInput = Readonly<{
+  timing?: AssessmentTimingSettings | null;
   progressionMode?: AssessmentProgressionMode;
   sections?: readonly AssessmentSectionDefinition[];
   requireCamera?: boolean;
@@ -27,6 +31,7 @@ export type AssessmentDeliverySettingsInput = Readonly<{
 }>;
 
 export type AssessmentDeliverySettings = Readonly<{
+  timing: AssessmentTimingSettings | null;
   progressionMode: AssessmentProgressionMode;
   sections: readonly AssessmentSectionDefinition[];
   requireCamera: boolean;
@@ -50,6 +55,7 @@ export class AssessmentDeliverySettingsInputError extends Error {
 }
 
 export const DEFAULT_ASSESSMENT_DELIVERY_SETTINGS: AssessmentDeliverySettings = Object.freeze({
+  timing: null,
   progressionMode: "STRICT",
   sections: Object.freeze([]),
   requireCamera: false,
@@ -103,6 +109,25 @@ export function normalizeAssessmentDeliverySettings(
   } else if (sections.length > 0) {
     throw new AssessmentDeliverySettingsInputError("Assessment sections are only valid in Section Review mode.");
   }
+  const timing = input.timing ?? null;
+  const validDuration = (value: unknown): value is number =>
+    typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 86400;
+  if (timing !== null) {
+    if (timing.mode === "COMBINED") {
+      if (!validDuration(timing.durationSeconds)) {
+        throw new AssessmentDeliverySettingsInputError("Combined time must be between 1 and 86400 seconds.");
+      }
+    } else if (timing.mode === "SEPARATE") {
+      if (progressionMode !== "SECTION_REVIEW" || sections.some(section => !validDuration(section.durationSeconds))) {
+        throw new AssessmentDeliverySettingsInputError("Separate timers require Section Review and a duration for every section.");
+      }
+    } else {
+      throw new AssessmentDeliverySettingsInputError("Assessment timing mode is invalid.");
+    }
+  }
+  if (timing?.mode !== "SEPARATE" && sections.some(section => section.durationSeconds !== undefined)) {
+    throw new AssessmentDeliverySettingsInputError("Section durations require separate timers.");
+  }
   const requireCamera = Boolean(input.requireCamera);
   const requireMicrophone = Boolean(input.requireMicrophone);
   const requireScreenShare = Boolean(input.requireScreenShare);
@@ -130,10 +155,12 @@ export function normalizeAssessmentDeliverySettings(
     throw new AssessmentDeliverySettingsInputError("Assessment recording requires monitoring consent.");
   }
   return Object.freeze({
+    timing: timing === null ? null : Object.freeze({ ...timing }),
     progressionMode,
     sections: Object.freeze(sections.map((section) => Object.freeze({
       title: section.title.trim().replace(/\s+/g, " "),
-      endPosition: section.endPosition
+      endPosition: section.endPosition,
+      ...(section.durationSeconds === undefined ? {} : { durationSeconds: section.durationSeconds })
     }))),
     requireCamera,
     requireMicrophone,

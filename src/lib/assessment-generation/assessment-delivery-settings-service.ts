@@ -8,6 +8,7 @@ import {
 } from "@/lib/assessment-generation/assessment-delivery-settings";
 
 type Row = {
+  timing_config_json: unknown;
   progression_mode: AssessmentDeliverySettings["progressionMode"];
   section_config_json: unknown;
   require_camera: boolean;
@@ -24,7 +25,7 @@ type Row = {
   question_count: number | string;
 };
 
-function parseSections(value: unknown): readonly { title: string; endPosition: number }[] {
+function parseSections(value: unknown): readonly { title: string; endPosition: number; durationSeconds?: number }[] {
   let parsed = value;
   if (typeof parsed === "string") {
     try { parsed = JSON.parse(parsed); } catch { return Object.freeze([]); }
@@ -34,7 +35,7 @@ function parseSections(value: unknown): readonly { title: string; endPosition: n
     if (!item || typeof item !== "object") return [];
     const row = item as Record<string, unknown>;
     if (typeof row.title !== "string" || !Number.isSafeInteger(Number(row.endPosition))) return [];
-    return [Object.freeze({ title: row.title, endPosition: Number(row.endPosition) })];
+    return [Object.freeze({ title: row.title, endPosition: Number(row.endPosition), ...(row.durationSeconds === undefined ? {} : { durationSeconds: Number(row.durationSeconds) }) })];
   }));
 }
 
@@ -44,7 +45,7 @@ export class AssessmentDeliverySettingsService {
   async get(blueprintVersionId: string): Promise<AssessmentDeliverySettings> {
     const db = await this.databasePromise;
     const result = await db.query<Row>(
-      `SELECT settings.progression_mode,settings.section_config_json,
+      `SELECT to_jsonb(settings)->'timing_config_json' AS timing_config_json,settings.progression_mode,settings.section_config_json,
               settings.require_camera,settings.require_microphone,settings.require_screen_share,
               settings.record_camera,settings.record_microphone,settings.record_screen,
               settings.recording_retention_days,settings.integrity_failure_mode,
@@ -65,6 +66,7 @@ export class AssessmentDeliverySettingsService {
       return DEFAULT_ASSESSMENT_DELIVERY_SETTINGS;
     }
     return normalizeAssessmentDeliverySettings({
+      timing: ((typeof row.timing_config_json === "string" ? JSON.parse(row.timing_config_json) : row.timing_config_json) as AssessmentDeliverySettings["timing"]) ?? null,
       progressionMode: row.progression_mode,
       sections: parseSections(row.section_config_json),
       requireCamera: Boolean(row.require_camera),

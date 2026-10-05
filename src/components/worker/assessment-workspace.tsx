@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 
 import {
   advanceAssessmentSectionAction,
@@ -447,7 +447,7 @@ function ActiveAssessmentWorkspace({
   );
 }
 
-export function AssessmentWorkspace({
+function UntimedAssessmentWorkspace({
   view
 }: {
   view: AssessmentAttemptClientView;
@@ -490,4 +490,49 @@ export function AssessmentWorkspace({
       question={question}
     />
   );
+}
+
+function ExpiredAssessment({ attemptId }: { attemptId: string }): React.JSX.Element {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState("");
+  async function requestRecovery(): Promise<void> {
+    setPending(true);
+    const result = await interruptAssessmentAction(attemptId, "technical_issue", "Assessment time expired; request controlled recovery.");
+    if (result.ok) {
+      router.push("/worker/available-assessments");
+      return;
+    }
+    setMessage(result.message);
+    setPending(false);
+  }
+  return <section className="page-stack">
+    <h1>Assessment time expired</h1>
+    <Alert tone="warning">Previously saved responses are retained. Unsaved changes have not been submitted. Continue through the controlled recovery workflow.</Alert>
+    {message ? <Alert tone="danger">{message}</Alert> : null}
+    <Button type="button" disabled={pending} onClick={requestRecovery}>{pending ? "Saving…" : "Continue to recovery"}</Button>
+  </section>;
+}
+
+function TimedAssessmentWorkspace({ view }: { view: AssessmentAttemptClientView }): React.JSX.Element {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timing = view.timing;
+  useEffect(() => {
+    if (!timing || view.submitted) return;
+    const started = performance.now();
+    const interval = setInterval(() => setElapsedSeconds(Math.floor((performance.now() - started) / 1000)), 1000);
+    return () => clearInterval(interval);
+  }, [timing, view.submitted]);
+  if (!timing || view.submitted) return <UntimedAssessmentWorkspace view={view} />;
+  const remaining = Math.max(0, timing.remainingSeconds - elapsedSeconds);
+  if (timing.expired || remaining === 0) return <ExpiredAssessment attemptId={view.attemptId} />;
+  return <div className="page-stack">
+    <p role="timer" aria-label="Assessment time remaining">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")} remaining{timing.mode === "SEPARATE" ? " in this section" : ""}</p>
+    <UntimedAssessmentWorkspace view={view} />
+  </div>;
+}
+
+
+export function AssessmentWorkspace({ view }: { view: AssessmentAttemptClientView }): React.JSX.Element {
+  return <TimedAssessmentWorkspace key={(view.timing?.deadlineAt ?? "untimed") + ":" + (view.timing?.remainingSeconds ?? 0)} view={view} />;
 }

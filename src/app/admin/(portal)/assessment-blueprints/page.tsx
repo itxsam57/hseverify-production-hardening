@@ -27,6 +27,7 @@ function DeliverySettingsFields({
 }: {
   prefix?: string;
   defaults?: {
+    timing: import("@/lib/assessment-generation/assessment-delivery-settings").AssessmentTimingSettings | null;
     progressionMode: "STRICT" | "CONTROLLED_REVIEW" | "SECTION_REVIEW";
     sections: readonly { title: string; endPosition: number }[];
     requireCamera: boolean;
@@ -46,6 +47,13 @@ function DeliverySettingsFields({
   return (
     <fieldset className="content-stack">
       <legend>Candidate delivery settings</legend>
+      <label>Timer mode<select name={name("timerMode")} defaultValue={defaults?.timing?.mode ?? "UNTIMED"}>
+        <option value="UNTIMED">Untimed</option>
+        <option value="COMBINED">Combined timer</option>
+        <option value="SEPARATE">Separate section timers</option>
+      </select></label>
+      <label>Combined duration in seconds<input type="number" min={1} max={86400} name={name("durationSeconds")} defaultValue={defaults?.timing?.mode === "COMBINED" ? defaults.timing.durationSeconds : ""} /></label>
+      <p className="muted-copy">Separate timers require Section Review and durationSeconds for each section. Review and interruptions use the same clock; reconnecting does not add time.</p>
       <label>
         Progression mode
         <select name={name("progressionMode")} defaultValue={defaults?.progressionMode ?? "STRICT"}>
@@ -178,6 +186,7 @@ export default async function AssessmentBlueprintsPage({
                 const delivery = deliverySettings.get(item.version.blueprintVersionId);
                 return delivery ? (
                   <dl>
+                    <div><dt>Timer</dt><dd>{delivery.timing?.mode === "COMBINED" ? "Combined · " + delivery.timing.durationSeconds + " seconds" : delivery.timing?.mode === "SEPARATE" ? "Separate section timers" : "Untimed"}</dd></div>
                     <div><dt>Progression</dt><dd>{delivery.progressionMode.replaceAll("_", " ")}</dd></div>
                     <div><dt>Camera</dt><dd>{delivery.requireCamera ? "Required" : "Not required"}</dd></div>
                     <div><dt>Microphone</dt><dd>{delivery.requireMicrophone ? "Required" : "Not required"}</dd></div>

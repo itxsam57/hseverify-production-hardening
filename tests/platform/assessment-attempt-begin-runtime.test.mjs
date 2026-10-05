@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -389,4 +390,138 @@ test("M2.07 forced failure after form generation rolls back form, attempt, case 
   } finally {
     await db.close();
   }
+});
+
+test("Timed begin snapshots approved allowance and expiry denies writes without losing committed responses", async () => {
+  const db = await database();
+  try {
+    await applyMigrationsThrough(db, ENV.releaseSha, "0083_assessment_timing");
+    const worker = await seedAccount(db, "t");
+    const foreign = await seedAccount(db, "u");
+    const offering = await seedOffering(db, "t", worker.accountId);
+    await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,timing_config_json) VALUES($1,'CONTROLLED_REVIEW',$2::jsonb)",
+      [offering.blueprintVersionId,JSON.stringify({mode:"COMBINED",durationSeconds:60})]);
+    await db.query("INSERT INTO accessibility_accommodations(accommodation_id,worker_id,accommodation_type,status,case_id,review_reason,reviewed_by_account_id,reviewed_at,approved_adjustment) VALUES('timed-native-accommodation',$1,'extra_time','APPROVED',$2,'Approved test allowance',$1,$3,'{\"timeMultiplier\":1.5}'::jsonb)",
+      [worker.accountId,offering.caseId,NOW]);
+    await db.query("INSERT INTO assurance_case_accommodation_overlays(overlay_id,accommodation_id,case_id,worker_id,adjustment,approved_by_account_id,approved_at) VALUES('timed-native-overlay','timed-native-accommodation',$1,$2,'{\"timeMultiplier\":1.5}'::jsonb,$2,$3)",
+      [offering.caseId,worker.accountId,NOW]);
+    const service = new AssessmentAttemptService(db, requestTime => requestTime);
+    const first = await service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},NOW_DATE);
+    const id=first.attempt.attemptId;
+    const at = seconds => new Date(NOW_DATE.getTime()+seconds*1000);
+    assert.equal(first.timing.remainingSeconds,90);
+    assert.equal(first.timing.deadlineAt,at(90).toISOString());
+    await assert.rejects(service.getOwnedView(foreign,id,at(1)),AssessmentAttemptAccessError);
+    const before = await service.getOwnedView(worker,id,at(20));
+    assert.equal(before.timing.remainingSeconds,70);
+    const repeated = await service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},at(30));
+    assert.equal(repeated.timing.deadlineAt,first.timing.deadlineAt);
+    const answer = first.currentQuestion.options[0];
+    await service.submitCurrentAnswer(worker,{attemptId:id,position:1,answer},at(40),null);
+    const saved = (await db.query("SELECT * FROM assessment_attempt_answers WHERE attempt_id=$1",[id])).rows;
+    let releaseLock, signalLock;
+    const held = new Promise(resolve => { signalLock = resolve; });
+    const released = new Promise(resolve => { releaseLock = resolve; });
+    const blocker = db.transaction(async transaction => {
+      await transaction.query("SELECT attempt_id FROM assessment_attempts WHERE attempt_id=$1 FOR UPDATE",[id]);
+      signalLock();
+      await released;
+    });
+    await held;
+    let liveTime = at(80);
+    const lateService = new AssessmentAttemptService(db, () => liveTime);
+    const lateWrite = lateService.saveCurrentDraft(worker,{attemptId:id,position:2,value:answer,expectedRevision:null,mutationKey:"blocked-before-expiry-native-key"},at(80),null);
+    liveTime = at(90);
+    releaseLock();
+    await blocker;
+    await assert.rejects(lateWrite,/time.*expired/i);
+    console.log("ACTUAL_TIMING_LOCK_WAIT request enters before expiry; real transaction blocks acquisition; fresh post-lock clock denies crossing-deadline write");
+
+    const expired = await service.getOwnedView(worker,id,at(90));
+    assert.equal(expired.timing.expired,true);
+    assert.equal(expired.currentQuestion,null);
+    const denied=[
+      service.submitCurrentAnswer(worker,{attemptId:id,position:2,answer},at(90),null),
+      service.saveCurrentDraft(worker,{attemptId:id,position:2,value:answer,expectedRevision:null,mutationKey:"expired-native-mutation-key"},at(90),null),
+      service.reviseCommittedAnswer(worker,{attemptId:id,position:1,answer},null,at(90)),
+      service.setReviewFlag(worker,{attemptId:id,position:1,flagged:true},null,at(90)),
+      service.finalizeAssessment(worker,id,null,at(90))
+    ];
+    for (const result of await Promise.allSettled(denied)) {
+      assert.equal(result.status,"rejected");
+      assert.match(result.reason.message,/time.*expired/i);
+    }
+    assert.deepEqual((await db.query("SELECT * FROM assessment_attempt_answers WHERE attempt_id=$1",[id])).rows,saved);
+    assert.equal(await count(db,"assessment_attempt_drafts","attempt_id=$1",[id]),0);
+    await service.interrupt(worker,id,null,{reason:"technical_issue",detail:"Time expired; controlled recovery required."},at(91));
+    await assert.rejects(service.resume(worker,id,null,at(92)),/time.*expired/i);
+    assert.equal((await db.query("SELECT status FROM assessment_attempts WHERE attempt_id=$1",[id])).rows[0].status,"INTERRUPTED");
+    await assert.rejects(db.query("UPDATE assessment_attempt_clocks SET deadline_at=deadline_at+interval '1 minute' WHERE attempt_id=$1",[id]),/append-only/i);
+    await assert.rejects(db.query("UPDATE assessment_attempt_time_policies SET time_multiplier=2 WHERE attempt_id=$1",[id]),/append-only/i);
+    await assert.rejects(db.query("UPDATE assessment_blueprint_delivery_settings SET timing_config_json='{\"mode\":\"COMBINED\",\"durationSeconds\":999}'::jsonb WHERE blueprint_version_id=$1",[offering.blueprintVersionId]),/append-only/i);
+    const downSql = await readFile(new URL("../../database/migrations/0083_assessment_timing.down.sql", import.meta.url), "utf8");
+    await assert.rejects(db.transaction(transaction => transaction.execute(downSql)), /Cannot remove accepted assessment timing history/);
+    assert.equal(await count(db,"assessment_attempt_clocks","attempt_id=$1",[id]),1);
+    assert.equal(await count(db,"assessment_attempt_time_policies","attempt_id=$1",[id]),1);
+    console.log("ACTUAL_TIMING_ROLLBACK_GUARD populated immutable timing history blocks destructive rollback and retains both records");
+    console.log("ACTUAL_COMBINED_TIMING begin approved1.5 allowance90s; reload/rebegin same deadline; expiry exact boundary rejects five writes, answers retained and recovery cannot reset");
+  } finally { await db.close(); }
+});
+
+test("Separate section clock starts only on owned advance and cannot reopen or reset a section", async () => {
+  const db = await database();
+  try {
+    await applyMigrationsThrough(db, ENV.releaseSha, "0083_assessment_timing");
+    const worker = await seedAccount(db, "v");
+    const offering = await seedOffering(db, "v",worker.accountId);
+    await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,section_config_json,timing_config_json) VALUES($1,'SECTION_REVIEW',$2::jsonb,'{\"mode\":\"SEPARATE\"}'::jsonb)",
+      [offering.blueprintVersionId,JSON.stringify([{title:"First",endPosition:1,durationSeconds:60},{title:"Second",endPosition:2,durationSeconds:90}])]);
+    const service = new AssessmentAttemptService(db, requestTime => requestTime);
+    const first=await service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},NOW_DATE);
+    const id=first.attempt.attemptId,at=seconds=>new Date(NOW_DATE.getTime()+seconds*1000);
+    assert.equal(first.timing.phaseIndex,1);assert.equal(first.timing.remainingSeconds,60);
+    assert.equal(await count(db,"assessment_attempt_clocks","attempt_id=$1",[id]),1);
+    await service.submitCurrentAnswer(worker,{attemptId:id,position:1,answer:first.currentQuestion.options[0]},at(10),null);
+    const outcomes=await Promise.allSettled([service.advanceSection(worker,id,null,at(20)),service.advanceSection(worker,id,null,at(20))]);
+    assert.equal(outcomes.filter(x=>x.status==="fulfilled").length,1);
+    const advanced=outcomes.find(x=>x.status==="fulfilled").value;
+    assert.equal(advanced.timing.phaseIndex,2);assert.equal(advanced.timing.deadlineAt,at(110).toISOString());
+    assert.equal(await count(db,"assessment_attempt_clocks","attempt_id=$1",[id]),2);
+    await assert.rejects(service.reviseCommittedAnswer(worker,{attemptId:id,position:1,answer:first.currentQuestion.options[0]},null,at(21)),/section.*no longer open/i);
+    await service.interrupt(worker,id,null,{reason:"emergency_exit"},at(30));
+    const resumed=await service.resume(worker,id,null,at(40));
+    assert.equal(resumed.timing.deadlineAt,at(110).toISOString());
+    await assert.rejects(service.submitCurrentAnswer(worker,{attemptId:id,position:2,answer:advanced.currentQuestion.options[0]},at(110),null),/time.*expired/i);
+    assert.equal(await count(db,"assessment_section_locks","attempt_id=$1",[id]),1);
+    console.log("ACTUAL_SEPARATE_TIMING serialized advance starts exactly one second phase; closed section denied; resume preserves110s deadline and expiry denies answer");
+  } finally { await db.close(); }
+});
+
+test("Timed begin rolls back form, clock and case state when required clock persistence fails", async () => {
+  const db = await database();
+  try {
+    await applyMigrationsThrough(db,ENV.releaseSha,"0083_assessment_timing");
+    const worker=await seedAccount(db,"w"),offering=await seedOffering(db,"w",worker.accountId);
+    await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,timing_config_json) VALUES($1,'STRICT','{\"mode\":\"COMBINED\",\"durationSeconds\":60}'::jsonb)",[offering.blueprintVersionId]);
+    await db.execute("CREATE FUNCTION fail_native_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'native clock persistence fault'; END $$; CREATE TRIGGER fail_native_clock BEFORE INSERT ON assessment_attempt_clocks FOR EACH ROW EXECUTE FUNCTION fail_native_clock();");
+    const service=new AssessmentAttemptService(db,requestTime=>requestTime);
+    await assert.rejects(service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},NOW_DATE),/native clock persistence fault/);
+    for(const table of ["assessment_attempt_clocks","assessment_attempt_time_policies","assessment_attempts","generated_assessment_forms"]) assert.equal(await count(db,table),0);
+    assert.equal((await db.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[offering.caseId])).rows[0].case_status,"Assessment pending");
+    assert.equal(await count(db,"platform_audit_events","action_key='assessment.attempt.started'"),0);
+    console.log("ACTUAL_TIMING_BEGIN_ROLLBACK required clock fault retains pending case; no form, attempt, clock, policy or completion audit");
+  } finally { await db.close(); }
+});
+
+
+test("Timer normalization rejects invalid modes, durations and unbounded section configurations", async () => {
+  const settings = await import(pathToFileURL(join(runtime,"assessment-generation","assessment-delivery-settings.js")).href);
+  const normalize=settings.normalizeAssessmentDeliverySettings;
+  for(const durationSeconds of [0,-1,1.5,86401,NaN,Infinity,"60",null]) {
+    assert.throws(()=>normalize({timing:{mode:"COMBINED",durationSeconds}},2),/combined time/i);
+  }
+  assert.throws(()=>normalize({timing:{mode:"forged"}},2),/timing mode/i);
+  assert.throws(()=>normalize({timing:{mode:"SEPARATE"}},2),/separate timers/i);
+  assert.throws(()=>normalize({progressionMode:"SECTION_REVIEW",sections:[{title:"One",endPosition:2}],timing:{mode:"SEPARATE"}},2),/duration/i);
+  assert.equal(normalize(undefined,2).timing,null);
 });
