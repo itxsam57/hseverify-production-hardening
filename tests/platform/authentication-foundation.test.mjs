@@ -335,7 +335,7 @@ test("authentication repository keeps lifecycle and session operations constrain
   assert.match(database, /this\.sql\.begin/);
 });
 
-test("historical authentication layers remain reversible before later monotonic delivery history", async () => {
+test("authentication migration remains independently reversible beneath later layers", async () => {
   const database = await openScriptDatabase(TEST_ENVIRONMENT);
   // Isolate the layers whose destructive local rollback is being asserted.
   // Later delivery history intentionally survives its own rollback/reapply.
