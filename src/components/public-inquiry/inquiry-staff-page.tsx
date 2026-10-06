@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
-import { bindPlatformAuditReadPrincipal } from "@/lib/audit/audit-domain";
 import { getDatabaseClient } from "@/lib/database/database";
 import { getServerEnvironment } from "@/lib/config/server-environment";
 import { PublicInquiryRepository } from "@/lib/public-inquiry/public-inquiry-repository";
@@ -9,7 +8,7 @@ export async function InquiryStaffPage({role,page}:{role:"admin"|"root";page:str
  const principal=await requirePlatformPermission({expectedRole:role,permission:"platform.security.read"});
  const pageNumber=page&&/^\d{1,5}$/.test(page)?Math.min(Number(page),10000):0;
  const rows=await new PublicInquiryRepository(await getDatabaseClient(),getServerEnvironment().sessionSecret)
-  .list(bindPlatformAuditReadPrincipal(principal),pageNumber) as InquiryRow[];
+  .listForStaff(principal,pageNumber) as InquiryRow[];
  return <section className="page-stack">
   <div className="page-heading"><div><p className="eyebrow">Private staff intake</p><h1>Contact & demo requests</h1><p>Follow up with the requester using the contact details provided. Demo requests do not represent confirmed appointments.</p></div></div>
   {rows.length===0?<p>No requests on this page.</p>:rows.slice(0,25).map(row=><article key={row.inquiry_id} className="panel content-stack">
