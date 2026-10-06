@@ -46,8 +46,8 @@ const requirements = [
   },
   {
     path: "node_modules/sharp",
-    minimum: "0.35.4",
-    advisory: "GHSA-rgj7-g3m4-5g8c libheif image-processing advisory"
+    minimum: "0.35.5",
+    advisory: "GHSA-wq5f-xc86-pv6w librsvg and GHSA-rgj7-g3m4-5g8c libheif image-processing advisories"
   }
 ];
 

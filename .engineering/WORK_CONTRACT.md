@@ -1,17 +1,13 @@
-# WORKFLOW-001 — current bounded implementation contract
+# WORKFLOW-001 — current implementation contract
 
-The overall goal is to finish the frozen HSE Verify Masterplan. Whole-project completion requires actual workflow evidence, exact clean verification and applicable real UI, purpose, security and deployment gates. The working ledger now has 35 passed, 14 partial and 169 unverified scenarios (accepted baseline: 34/15/169; current slice still needs exact candidate acceptance); the product is not consumer-ready.
+Finish the frozen HSE Verify Masterplan with real multi-role workflow evidence. Accepted coverage:35 passed,14 partial,169 unverified. Working notification/OTP ledger:36 passed,15 partial,167 unverified; exact candidate and fresh CI acceptance pending. Product is not consumer-ready.
 
-## Accepted baseline
+PR27 accepted exact8af233aadfee1f7f8066ce685b6739911c67a457 after18 local cohorts, seven fresh workflows and independent review, merged e8d024c75a002060f709e488d58fef58a25d2351. Contact/demo intake reaches the scoped private Admin/Root queue; manual staff follow-up remains separate.
 
-PR26 was accepted at ecf2ccf698907bb5004859494ac1f5ec4eb2e43a and merged at 260e6f04ad21450b3a67b27c0dec32cf2e5c92e8. All 15 exact local cohorts, four actual QA jobs and both compliance runs passed. The native cohort contained 50 tests, not the previously recorded 51. Historical assessment-timeout and privacy work remains in Git history and the scenario ledger.
+Current slice: current-role Mark all read, atomic required per-record audits, existing pending Company actor binding, Worker/Company OTP resend, exhaustion and audit rollback verification. Preserve active account/session/current role/exact company membership guards and repeat read timestamps. No new dependencies or schema for notification work.
 
-## Current slice: M1.02.01 contact and demo intake
+Exact4060b94 audit exposed newly published sharp GHSA-wq5f-xc86-pv6w. Upgrade the existing override to0.35.5, regenerate only affected lock entries, retain failure evidence and rerun exact candidate security/browser/build gates before push.
 
-Implement one validated public contact/demo form, an opaque receipt and a private paginated Admin/Root queue for manual staff follow-up. Preserve credential-concern reporting. Submission, atomic email/IP quotas and required immutable audit must commit together; duplicates must not create another request, quota consumption or audit. Recheck active account, exact role and live session when reading the queue. Do not claim that email was sent or a meeting booked.
+Mandatory live email/SMS OTP delivery is still unimplemented: sandbox delivery cannot serve production. Provider transport and transactional dispatch need real implementation; local doubles do not prove live delivery. Broader privacy operations, production proxy/deployment and PostgreSQL contention remain open.
 
-Use the existing database, audit, authorization and request-fingerprint foundations. Retain drafts after rejection, wait for hydration before accepting controlled inputs, use stable explicit labels and test actual denial destinations. No new dependency, provider, CRM or runner configuration is required.
-
-Working checks must cover native validation/ownership/quota/rollback/retry, real public-to-staff browser records, existing credential concerns/navigation, types and lint. A committed candidate additionally needs build/preview/engineering/security checks, exact recorded gates, independent review and fresh applicable CI before merge. Keep tests on isolated databases and free ports with owned process groups; preserve the existing application on port 3000.
-
-Proxy trust, production abuse resistance, actual staff follow-up, live providers and PostgreSQL concurrency remain separate unverified boundaries. Read CURRENT_TASK and ACTIVE_RESUME for the latest stage; do not interpret prototype or cancelled-run evidence as accepted deployment or whole-project readiness.
+Use CURRENT_TASK and ACTIVE_RESUME to continue; do not repeat accepted PR27. Preserve port3000 and run isolated databases/free ports with owned processes.
