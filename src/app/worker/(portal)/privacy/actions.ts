@@ -20,7 +20,9 @@ export async function submitPrivacyRequestAction(formData: FormData) {
     workerId: principal.accountId,
     type: type as PrivacyRequestType,
     details: type === "share_link_revocation" && typeof formData.get("shareLinkId") === "string" && String(formData.get("shareLinkId")).trim()
-      ? { shareLinkId: String(formData.get("shareLinkId")).trim() } : {}
+      ? { shareLinkId: String(formData.get("shareLinkId")).trim() }
+      : type === "consent_withdrawal" && typeof formData.get("consentId") === "string" && String(formData.get("consentId")).trim()
+        ? { consentId: String(formData.get("consentId")).trim() } : {}
   });
   revalidatePath("/worker/privacy");
   revalidatePath("/worker/accessibility");

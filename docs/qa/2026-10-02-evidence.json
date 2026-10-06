@@ -424,8 +424,13 @@
           "Root"
         ],
         "scenario": "Runtime environments/secrets/demo isolation and startup",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "basis": "Canonicalc82 environment/build and occupied-port startup/demo-denial proof",
+          "scope": "Observed accepted exact heads and canonical audits",
+          "environment_isolation_native": ".autopilot/artifacts/20261006-next-foundation-prepared.txt"
+        },
+        "notes": "Not an actual production deployment or liveprovider certification"
       },
       {
         "id": "M1.01.02",
@@ -436,8 +441,13 @@
           "Root"
         ],
         "scenario": "All migrations apply, preserve history and rollback safely",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "basis": "All90migration application/checksum/idempotency andselectedhistorypreserving rollback/reapply",
+          "scope": "Observed accepted exact heads and canonical audits",
+          "environment_isolation_native": null
+        },
+        "notes": "No every-migration rollback/refusal mapping yet"
       },
       {
         "id": "M1.01.03",
@@ -448,8 +458,16 @@
           "Root"
         ],
         "scenario": "GitHub CI verifies exact canonical candidate",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "basis": [
+            ".autopilot/artifacts/20261005-canonical-c82abf6-audit-receipt.json",
+            ".autopilot/artifacts/20261005-pr24-ci-exact-270c72d.json"
+          ],
+          "scope": "Observed accepted exact heads and canonical audits",
+          "environment_isolation_native": null
+        },
+        "notes": "Bounded observed candidateheads/canonicalexecution; no rerunrequired"
       },
       {
         "id": "M1.01.04",
@@ -460,8 +478,13 @@
           "Root"
         ],
         "scenario": "Production configuration/health/rollback evidence corresponds to candidate",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "basis": "Accepted exactbuild/preview/isolatedproductionmode startup",
+          "scope": "Observed accepted exact heads and canonical audits",
+          "environment_isolation_native": null
+        },
+        "notes": "Actual productionconfiguration/deployedhealth/candidateboundexecutedrollback stillunverified"
       },
       {
         "id": "M1.02.01",
@@ -471,8 +494,12 @@
           "All roles"
         ],
         "scenario": "Public navigation, contact/demo/sign-in and role destinations",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "red": ".autopilot/artifacts/20261006-public-navigation-red-e750d74.txt",
+          "working_browser": ".autopilot/artifacts/20261006-masterplan-next-working-v2-public-browser.txt"
+        },
+        "notes": "Actual desktop/mobile home navigation reaches six existing public routes, both registration forms and six distinct role sign-in forms without horizontal overflow. General contact/demo fulfilment remains missing. Working-source proof; exact candidate and actual CI required before acceptance."
       },
       {
         "id": "M1.02.02",
@@ -3202,9 +3229,16 @@
           "fulfilment_candidate": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
           "exact_local": ".autopilot/artifacts/20261005-privacy-exact-7bfda62.json",
           "actual_ci": ".autopilot/artifacts/20261005-pr23-ci-exact-7bfda62.json",
-          "independent_accept": ".autopilot/artifacts/20261005-pr23-independent-accept-7bfda62.json"
+          "independent_accept": ".autopilot/artifacts/20261005-pr23-independent-accept-7bfda62.json",
+          "data_download": {
+            "accepted_head": "e750d7484b663aeec4b15a402796e6c1c6ec33e6",
+            "actual_merge": "d7aca67f85bb65dd5f2c050e96d238f82ff193a9",
+            "exact_local": ".autopilot/artifacts/20261005-privacy-data-exact-e750d74.json",
+            "actual_ci": ".autopilot/artifacts/20261006-pr25-ci-exact-e750d74.json",
+            "independent_accept": ".autopilot/artifacts/20261006-pr25-independent-accept-e750d74.json"
+          }
         },
-        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion."
+        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion. PR25 independently accepted/merged: access and export processing/completion prepare owner-authenticated current-data JSON downloads including owned provided profile sections, assessment answers/revisions and explicit record metadata. Foreign/public/staff/open requests denied; required history failure rolls status/marker back. Other request operations and legal completeness remain open. Next scoped-consent request working proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. Exact candidate/CI pending; other categories and restriction/deletion/correction/retention operations remain unverified."
       },
       {
         "id": "M3.09.02",
@@ -3220,7 +3254,7 @@
         "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open."
+        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open. Next scoped-consent request working proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. Exact candidate/CI pending; other categories and restriction/deletion/correction/retention operations remain unverified."
       },
       {
         "id": "M3.09.03",
@@ -3267,7 +3301,7 @@
         "scenario": "Consent grant/withdraw history remains versioned and need-to-know",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified."
+        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified. Next scoped-consent request working proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. Exact candidate/CI pending; other categories and restriction/deletion/correction/retention operations remain unverified."
       },
       {
         "id": "M3.09.06",
@@ -3590,6 +3624,6 @@
         ]
       }
     ],
-    "updated_at": "2026-10-05T23:42:00.834643+00:00"
+    "updated_at": "2026-10-06T11:03:05.497566+00:00"
   }
 }

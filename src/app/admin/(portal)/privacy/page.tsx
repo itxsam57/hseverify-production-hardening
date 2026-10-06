@@ -42,6 +42,7 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
             <p>Status: {request.status}</p>
             <p>Requested: {iso(request.created_at)}</p>
             {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
+            {typeof request.details?.consentPurpose === "string" ? <p>Consent: {request.details.consentPurpose}</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
             {["OPEN", "PROCESSING"].includes(request.status) ? (
               <form action={reviewPrivacyRequestAction} className="form-grid">
@@ -51,6 +52,9 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
                   <select name="decision" defaultValue={request.status === "OPEN" ? "PROCESSING" : "REJECTED"} required>
                     {request.status === "OPEN" ? <option value="PROCESSING">Start processing</option> : null}
                     <option value="REJECTED">Reject request</option>
+                    {request.request_type === "consent_withdrawal" && typeof request.details?.consentId === "string" && request.details.consentId.trim() ? (
+                      <option value="COMPLETED">Withdraw requested optional sharing consent and complete</option>
+                    ) : null}
                     {["access","export"].includes(request.request_type) ? (
                       <option value="COMPLETED">Prepare Worker data download and complete</option>
                     ) : null}
