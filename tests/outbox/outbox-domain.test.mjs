@@ -34,7 +34,8 @@ test("outbox vocabulary is explicit, fixed and wildcard-free", () => {
     "email.delivery.foundation",
     "secure_file.scan",
     "worker_identity.automated_checks",
-    "assessment.attempt.expiry"
+    "assessment.attempt.expiry",
+    "authentication.challenge.delivery"
   ]);
   assert.deepEqual(outbox.OUTBOX_JOB_STATUSES, [
     "pending",
@@ -348,5 +349,26 @@ test("security jobs carry only a source event reference", () => {
   assert.deepEqual(outbox.normalizeOutboxPayload("assessment.attempt.expiry",payload),payload);
   for(const invalid of [{...payload,phaseIndex:-1},{...payload,deadlineAt:"tomorrow"},{...payload,answer:"secret"},{...payload,attemptRef:"other"}]) {
     assert.throws(()=>outbox.normalizeOutboxPayload("assessment.attempt.expiry",invalid),outbox.OutboxContractError);
+  }
+});
+
+
+test("Authentication challenge delivery accepts only an opaque dispatch reference", () => {
+  const dispatchRef = `delivery_${"D".repeat(24)}`;
+  assert.deepEqual(
+    outbox.normalizeOutboxPayload("authentication.challenge.delivery", { dispatchRef }),
+    { dispatchRef }
+  );
+  for (const payload of [
+    { dispatchRef, code: "123456" },
+    { dispatchRef, destination: "worker@example.test" },
+    { dispatchRef, provider: "custom" },
+    { dispatchRef: "arbitrary-reference" },
+    {}
+  ]) {
+    assert.throws(
+      () => outbox.normalizeOutboxPayload("authentication.challenge.delivery", payload),
+      outbox.OutboxContractError
+    );
   }
 });
