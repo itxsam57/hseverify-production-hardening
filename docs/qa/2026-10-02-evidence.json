@@ -586,8 +586,17 @@
         ],
         "scenario": "Email and phone OTP: wrong, expired, resend and verified",
         "status": "partially-verified",
-        "evidence": ".autopilot/artifacts/20261004-worker-otp-boundaries-working-v5.txt",
-        "notes": "Working-tree actual Worker browser email and phone wrong/expired/resend/stale-form/verified boundaries pass. Server stopped before synthetic persisted expiry/cooldown dates; browser/server clock unchanged. Cached no-JS normal-POST contexts prevent dev HMR from refreshing old forms. Intermediate pending states/no sessions and final both-contact activation, exact4challenge invalidated/consumed pairs, counters4/5 and issued4/failed2/verified2 persist. UI cooldown disabled; forged early-resend POST and attempt exhaustion remain unverified. Company/staff OTP and live delivery unverified; exact candidate/review/CI pending."
+        "evidence": {
+          "prior": ".autopilot/artifacts/20261004-worker-otp-boundaries-working-v5.txt",
+          "next_boundaries": {
+            "base_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
+            "prepared_source_patch_sha256": "07d3a1e6692d6abde1a769a1909b712701d1322ddc4b6dfb6129ede6565b0275",
+            "working_snapshot": ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
+            "independent_source_review": ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json",
+            "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only"
+          }
+        },
+        "notes": "Working-tree actual Worker browser email and phone wrong/expired/resend/stale-form/verified boundaries pass. Server stopped before synthetic persisted expiry/cooldown dates; browser/server clock unchanged. Cached no-JS normal-POST contexts prevent dev HMR from refreshing old forms. Intermediate pending states/no sessions and final both-contact activation, exact4challenge invalidated/consumed pairs, counters4/5 and issued4/failed2/verified2 persist. UI cooldown disabled; forged early-resend POST and attempt exhaustion remain unverified. Company/staff OTP and live delivery unverified; exact candidate/review/CI pending. Prepared next slice adds real Worker early-resend direct POST/cross-origin/missing-origin denial for both channels and five-rejection browser exhaustion with direct correct exhausted-code replay denied;fresh challenges recover only correct stages, zero sessions. Five native Worker boundary/required-audit rollback cases and Company cooldown exact boundary/expiry recovery pass. Company new expiry/cooldown proof is native; actual Company expiry browser/staff OTP/live delivery remain unverified. Next exact candidate and fresh CI still required."
       },
       {
         "id": "M1.03.03",
@@ -793,8 +802,15 @@
           "All roles"
         ],
         "scenario": "Read/unread/mark-all and unread badge synchronize across roles",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "passed",
+        "evidence": {
+          "base_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
+          "prepared_source_patch_sha256": "07d3a1e6692d6abde1a769a1909b712701d1322ddc4b6dfb6129ede6565b0275",
+          "working_snapshot": ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
+          "independent_source_review": ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json",
+          "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only"
+        },
+        "notes": "Working prepared slice: actual six-role login, committed outbox projection, bell deep-link/read, individual read and mark-all of two unread notices with reload;24 retained notification rows and24 distinct required read audits. Native live session/account/current-role/exact Company membership guards, revoked/locked/expired authority denial, foreign account/role/tenant isolation, first read date/idempotence, whole-batch required audit rollback/retry and pending Company owner security notification pass. Exact next candidate/freshCI/acceptance still required before canonical promotion. No live delivery or PostgreSQL contention claim."
       },
       {
         "id": "M1.05.04",
@@ -804,8 +820,15 @@
           "All roles"
         ],
         "scenario": "Outbox retry/idempotency/outage does not roll back underlying business state",
-        "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "status": "partially-verified",
+        "evidence": {
+          "base_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
+          "prepared_source_patch_sha256": "07d3a1e6692d6abde1a769a1909b712701d1322ddc4b6dfb6129ede6565b0275",
+          "working_snapshot": ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
+          "independent_source_review": ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json",
+          "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only"
+        },
+        "notes": "Prepared next working security notification regression executes real recovery/outbox projection, exact idempotence, required enqueue failure atomic rollback and actual projection outage/retry without undoing accepted password/session state. This verifies recovery security notifications and common queue behavior; every business handoff notification/provider outage remains unverified. Exact next candidate/freshCI acceptance required; no whole-row promotion."
       },
       {
         "id": "M1.06.01",

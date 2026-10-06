@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createIdentifier, type AuthRole } from "../auth/auth-domain";
-import { bindTrustedAuditActor } from "../audit/audit-domain";
+import { bindNotificationAuditActor, markAllNotificationsReadForPrincipal } from "./notification-read-service";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
 import {
   readServerAuthorizationContext,
@@ -121,7 +121,7 @@ async function markReadWithAudit(input: {
     if (!result?.changed) return result;
 
     const audit = new DatabaseAuditRepository(Promise.resolve(transaction));
-    await audit.append(bindTrustedAuditActor(input.principal), {
+    await audit.append(bindNotificationAuditActor(input.principal), {
       action: "notification.read",
       outcome: "succeeded",
       target: {
@@ -137,6 +137,12 @@ async function markReadWithAudit(input: {
   });
 }
 
+export async function markAllCurrentNotificationsRead(): Promise<Readonly<{ role: AuthRole; changedCount: number }>> {
+  const principal = await requireCurrentNotificationPrincipal();
+  const changedCount = await markAllNotificationsReadForPrincipal(await getDatabaseClient(), principal);
+  return Object.freeze({ role: principal.activeRole, changedCount });
+}
+
 export async function markCurrentNotificationRead(
   notificationId: string
 ): Promise<NotificationReadResult | null> {
@@ -149,7 +155,7 @@ async function recordDeniedDeepLink(input: {
   notificationId: string;
 }): Promise<void> {
   const audit = new DatabaseAuditRepository();
-  await audit.append(bindTrustedAuditActor(input.principal), {
+  await audit.append(bindNotificationAuditActor(input.principal), {
     action: "notification.deep_link.denied",
     outcome: "denied",
     reason: "notification_unavailable",

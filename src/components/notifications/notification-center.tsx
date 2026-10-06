@@ -1,6 +1,7 @@
 import {
   createNotificationFixtureAction,
   markNotificationReadAction,
+  markAllNotificationsReadAction,
   openNotificationAction
 } from "@/app/notifications/actions";
 import { formatDateTime } from "@/lib/format";
@@ -35,6 +36,12 @@ export async function NotificationCenter({
           <span>unread</span>
         </div>
       </header>
+
+      {unreadCount > 0 ? (
+        <form action={markAllNotificationsReadAction}>
+          <button className="button button-secondary" type="submit">Mark all read</button>
+        </form>
+      ) : null}
 
       {notice === "fixture-ready" ? (
         <div className="feedback-banner feedback-success" role="status">

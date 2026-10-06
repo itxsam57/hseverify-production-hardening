@@ -57,6 +57,10 @@ jobs:
 
       - name: Public contact and demo transactional intake runtime
         run: node --test tests/platform/public-inquiry-runtime.test.mjs
+      - name: Scoped notification bulk-read atomicity
+        run: node --test tests/platform/notification-bulk-read-runtime.test.mjs
+      - name: Worker OTP cooldown, exhaustion and required-audit rollback
+        run: node --test tests/platform/worker-registration-otp-runtime.test.mjs
       - name: Strict TypeScript
         run: npm run typecheck
 
@@ -184,6 +188,8 @@ jobs:
           HSE_SHARE_EXPIRY: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
+      - name: Six-role notification read and mark-all synchronization
+        run: node --test tests/browser/all-role-notification-workflow.browser.test.mjs
       - name: Six-role authentication and session boundaries
         run: npm run test:authentication-boundaries-browser
 

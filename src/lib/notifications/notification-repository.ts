@@ -160,6 +160,19 @@ WHERE notification_id = $1
     )
   )`;
 
+export const NOTIFICATION_MARK_ALL_READ_SQL = `
+UPDATE platform_notifications
+SET read_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE recipient_account_id = $1
+  AND recipient_role = $2
+  AND read_at IS NULL
+  AND (
+    ($2 = 'company' AND tenant_id = $3 AND membership_id = $4)
+    OR ($2 <> 'company' AND tenant_id IS NULL AND membership_id IS NULL)
+  )
+RETURNING *`;
+
 export const NOTIFICATION_MARK_READ_SQL = `
 UPDATE platform_notifications
 SET read_at = CURRENT_TIMESTAMP,
@@ -324,6 +337,7 @@ export interface NotificationRepository {
     principal: AuthorizationPrincipal,
     notificationId: string
   ): Promise<NotificationRecord | null>;
+  markAllReadForPrincipal(principal: AuthorizationPrincipal): Promise<readonly NotificationRecord[]>;
   markReadForPrincipal(
     principal: AuthorizationPrincipal,
     notificationId: string
@@ -460,6 +474,20 @@ export class DatabaseNotificationRepository implements NotificationRepository {
         [notificationId, ...scope]
       );
       return result.rows[0] ? notificationFromRow(result.rows[0]) : null;
+    });
+  }
+
+  async markAllReadForPrincipal(
+    principal: AuthorizationPrincipal
+  ): Promise<readonly NotificationRecord[]> {
+    const database = await this.client();
+    return database.transaction(async (transaction) => {
+      await assertLivePrincipal(transaction, principal);
+      const updated = await transaction.query<NotificationRow>(
+        NOTIFICATION_MARK_ALL_READ_SQL,
+        scopeParameters(principal)
+      );
+      return Object.freeze(updated.rows.map(notificationFromRow));
     });
   }
 
