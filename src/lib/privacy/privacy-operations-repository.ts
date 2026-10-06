@@ -1,4 +1,5 @@
 import "server-only";
+import { collectWorkerPrivacyData } from "./worker-privacy-data";
 
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 
@@ -113,21 +114,29 @@ export class PrivacyOperationsRepository {
           !["OPEN", "PROCESSING"].includes(request.status) || request.status === input.decision) {
         throw new Error("Privacy request changed or is unavailable for this decision.");
       }
+      let details = request.details;
       if (input.decision === "COMPLETED") {
-        const target = request.details?.shareLinkId;
-        if (request.request_type !== "share_link_revocation" || typeof target !== "string" || !target.trim()) {
-          throw new Error("This request requires its specific fulfilment operation before completion.");
+        if (["access","export"].includes(request.request_type)) {
+          await collectWorkerPrivacyData(tx,request.worker_id,input.now);
+          details = { ...request.details, fulfilment: {
+            method: "owned_current_data_download", availableAt: input.now, formatVersion: 1
+          } };
+        } else {
+          const target = request.details?.shareLinkId;
+          if (request.request_type !== "share_link_revocation" || typeof target !== "string" || !target.trim()) {
+            throw new Error("This request requires its specific fulfilment operation before completion.");
+          }
+          await ownedShareLink(tx,request.worker_id,target);
+          await tx.query(
+            "UPDATE scoped_share_links SET revoked_at=COALESCE(revoked_at,$2::timestamptz) WHERE share_link_id=$1",
+            [target,input.now]
+          );
         }
-        await ownedShareLink(tx,request.worker_id,target);
-        await tx.query(
-          "UPDATE scoped_share_links SET revoked_at=COALESCE(revoked_at,$2::timestamptz) WHERE share_link_id=$1",
-          [target,input.now]
-        );
       }
       const updated = await tx.query<PrivacyRequestReviewRow>(
-        `UPDATE privacy_requests SET status=$2,completed_at=CASE WHEN $2 IN ('REJECTED','COMPLETED') THEN $3::timestamptz ELSE NULL END
+        `UPDATE privacy_requests SET status=$2,details=$5::jsonb,completed_at=CASE WHEN $2 IN ('REJECTED','COMPLETED') THEN $3::timestamptz ELSE NULL END
          WHERE request_id=$1 AND status=$4 RETURNING *`,
-        [input.requestId,input.decision,input.now,input.expectedStatus]
+        [input.requestId,input.decision,input.now,input.expectedStatus,JSON.stringify(details)]
       );
       if (!updated.rows[0]) throw new Error("Privacy request review conflicted with another decision.");
       await tx.query(
@@ -137,6 +146,18 @@ export class PrivacyOperationsRepository {
       );
       return updated.rows[0];
     });
+  }
+
+  async downloadWorkerData(requestId: string, workerId: string, now: string) {
+    const client = await this.clientPromise;
+    const found = await client.query<{ details: { fulfilment?: { method?: string } } }>(
+      `SELECT details FROM privacy_requests WHERE request_id=$1 AND worker_id=$2
+       AND request_type IN ('access','export') AND status='COMPLETED'`, [requestId,workerId]
+    );
+    if (found.rows[0]?.details?.fulfilment?.method !== "owned_current_data_download") {
+      throw new Error("Worker data is unavailable.");
+    }
+    return collectWorkerPrivacyData(client,workerId,now);
   }
 
   async addAccommodation(input: { id: string; tenantId: string | null; workerId: string; type: string; details?: Record<string, unknown> }) {

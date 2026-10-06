@@ -51,6 +51,9 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
                   <select name="decision" defaultValue={request.status === "OPEN" ? "PROCESSING" : "REJECTED"} required>
                     {request.status === "OPEN" ? <option value="PROCESSING">Start processing</option> : null}
                     <option value="REJECTED">Reject request</option>
+                    {["access","export"].includes(request.request_type) ? (
+                      <option value="COMPLETED">Prepare Worker data download and complete</option>
+                    ) : null}
                     {request.request_type === "share_link_revocation" && typeof request.details?.shareLinkId === "string" && request.details.shareLinkId.trim() ? (
                       <option value="COMPLETED">Revoke requested share link and complete</option>
                     ) : null}

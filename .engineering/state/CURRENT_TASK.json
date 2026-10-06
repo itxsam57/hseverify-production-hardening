@@ -6,22 +6,30 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
-  "canonical_sha": "c82abf6e394f634565317e0c79bee33e6b8ef95d",
+  "last_verified_sha": "270c72d985134079799e6bf0561f26d93d17ac48",
+  "canonical_sha": "3e594b7db18deed3bbf267b8556d445028ac61dc",
   "requirements": [
-    "M3.03.04",
-    "M3.09.02"
+    "M3.09.01"
   ],
-  "last_verified_action": "PR23 accepted+mergedc82. New bounded share repair working proof PASS:35native, direct revoke+repeat/ownerUI, natural90sec expiry, prior fulfilment/originalprivacy browsers, type/lint/build/preview. Server time, legacy revocation, first persisted outcome, Date precision and immediate authoritative localrow repaired. No new exact candidate or CI acceptance yet.",
+  "last_verified_action": "2e09d08 exact eleven local cohorts PASS, but actual new CI targeted failed production audit GHSA-68fv-2mgg-jv7q source-map-js1.2.1. Only transitive lock patched1.2.2 and security floor added; working audit zero vulnerabilities and floor PASS. No merge.",
   "evidence": [
     ".autopilot/artifacts/20261005-privacy-exact-7bfda62.json",
     ".autopilot/artifacts/20261005-pr23-ci-exact-7bfda62.json",
     ".autopilot/artifacts/20261005-pr23-independent-accept-7bfda62.json",
     ".autopilot/artifacts/20261005-direct-revocation-native-red-c82abf6.txt",
     ".autopilot/artifacts/20261005-direct-revocation-red-7bfda62.txt",
-    ".autopilot/artifacts/20261005-share-boundaries-working-v3.json"
+    ".autopilot/artifacts/20261005-share-boundaries-working-v3.json",
+    ".autopilot/artifacts/20261005-pr24-ci-exact-270c72d.json",
+    ".autopilot/artifacts/20261005-pr24-independent-accept-270c72d.json",
+    ".autopilot/artifacts/20261005-canonical-c82abf6-audit-receipt.json",
+    ".autopilot/artifacts/20261005-privacy-data-working-v3.json",
+    ".autopilot/artifacts/20261005-privacy-data-engineering-working.txt",
+    ".autopilot/artifacts/20261005-privacy-data-browser-red-270c72d.txt",
+    ".autopilot/artifacts/20261005-privacy-data-exact-2e09d08.json",
+    ".autopilot/artifacts/20261006-pr25-2e09d08-targeted-job.txt",
+    ".autopilot/artifacts/20261006-source-map-patch-audit.txt"
   ],
-  "next_action": "Commit bounded share repair with normal trailers; run exact native35/fourbrowsermodes/type/lint/build/preview; push PR24 and require actual CI plus independent ACCEPT before merge. Keep ledger32/12/174 until accepted closure.",
+  "next_action": "Commit minimal dependency repair, run exact local verification including live dependency audit, push PR25 and require fresh-head CI and independent ACCEPT. Then merge and integrate prepared owned consent-withdrawal request.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -33,21 +41,21 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-05T22:53:55.544176+00:00",
-  "verified_sha": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
+  "updated_at": "2026-10-06T10:29:33.794003+00:00",
+  "verified_sha": "270c72d985134079799e6bf0561f26d93d17ac48",
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [
       ".engineering/state/CURRENT_TASK.json",
       ".engineering/WORK_CONTRACT.md"
     ],
-    "avoid_repeating": "PR23 accepted; do not rerun its gates. Read current task/ACTIVE_RESUME and active driver stage only; verify new direct/expiry candidate.",
-    "accepted_pr": 23,
-    "accepted_head": "7bfda62769d8841f98331218e79023cc2fd5ab1d",
-    "canonical_sha": "c82abf6e394f634565317e0c79bee33e6b8ef95d",
+    "avoid_repeating": "Do not refresh history or repeat acceptedPR24 gates. Read ACTIVE_RESUME/currentdriverstage. Nextownedprivacydata workingproof thenexactcandidate.",
+    "accepted_pr": 24,
+    "accepted_head": "270c72d985134079799e6bf0561f26d93d17ac48",
+    "canonical_sha": "3e594b7db18deed3bbf267b8556d445028ac61dc",
     "coverage": {
-      "passed": 32,
-      "partial": 12,
+      "passed": 33,
+      "partial": 11,
       "unverified": 174
     }
   },

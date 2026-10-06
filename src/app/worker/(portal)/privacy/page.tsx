@@ -107,6 +107,10 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
             <p>{request.request_type.replaceAll("_", " ")}: {request.status}</p>
             {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
+            {request.status === "COMPLETED" && ["access","export"].includes(request.request_type) &&
+              (request.details?.fulfilment as { method?: string } | undefined)?.method === "owned_current_data_download" ? (
+                <a href={`/api/privacy/requests/${encodeURIComponent(request.request_id)}/download`}>Download your current data (JSON)</a>
+              ) : null}
           </article>
         ))}
       </section>
