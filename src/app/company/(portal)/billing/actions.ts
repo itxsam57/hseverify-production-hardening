@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { WorkerAssessmentApplicationConflictError, getWorkerAssessmentApplicationService } from "@/lib/assessment-catalogue/worker-assessment-application-service";
+import { BillingAccessError, BillingConflictError, BillingInputError } from "@/lib/billing/billing-domain";
 import { BillingService } from "@/lib/billing/billing-service";
 import { getDatabaseClient } from "@/lib/database/database";
 
@@ -28,40 +29,49 @@ function refresh(): void {
   revalidatePath("/worker/available-assessments");
 }
 
+async function runBillingOperation(operation: () => Promise<unknown>): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    if (error instanceof BillingInputError || error instanceof BillingConflictError || error instanceof BillingAccessError) {
+      redirect(`/company/billing?billingError=${encodeURIComponent(error.message)}`);
+    }
+    throw error;
+  }
+  refresh();
+  redirect("/company/billing");
+}
+
 export async function createCreditCheckout(formData: FormData): Promise<void> {
   const principal = await requireCurrentTenantPermission("company.billing.manage");
-  await (await billingService()).createCreditCheckout(principal, {
+  await runBillingOperation(async () => (await billingService()).createCreditCheckout(principal, {
     idempotencyKey: text(formData, "idempotencyKey"),
     creditUnits: integer(formData, "creditUnits"),
     amountMinor: integer(formData, "amountMinor"),
     currency: text(formData, "currency")
-  });
-  refresh();
+  }));
 }
 
 export async function completeSandboxCreditCheckout(formData: FormData): Promise<void> {
   const principal = await requireCurrentTenantPermission("company.billing.manage");
-  await (await billingService()).completeSandboxCheckout(
+  await runBillingOperation(async () => (await billingService()).completeSandboxCheckout(
     principal,
     text(formData, "checkoutId")
-  );
-  refresh();
+  ));
 }
 
 export async function requestRefund(formData: FormData): Promise<void> {
   const principal = await requireCurrentTenantPermission("company.billing.manage");
-  await (await billingService()).requestRefund(principal, {
+  await runBillingOperation(async () => (await billingService()).requestRefund(principal, {
     invoiceId: text(formData, "invoiceId"),
     idempotencyKey: text(formData, "idempotencyKey"),
     amountMinor: integer(formData, "amountMinor")
-  });
-  refresh();
+  }));
 }
 
 export async function runReconciliation(): Promise<void> {
   const principal = await requireCurrentTenantPermission("company.billing.manage");
-  await (await billingService()).runReconciliation(principal);
-  refresh();
+  await runBillingOperation(async () => (await billingService()).runReconciliation(principal));
 }
 
 async function decideWorkerFunding(formData: FormData, approved: boolean): Promise<void> {

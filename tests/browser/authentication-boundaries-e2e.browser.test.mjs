@@ -72,6 +72,7 @@ test("All six role sessions reject invalid credentials and cross-portal access a
     HSE_APP_ENV: "development",
     HSE_DATABASE_DRIVER: "pglite",
     HSE_PGLITE_DATA_DIR: databaseDirectory,
+    HSE_AUDIT_CREDENTIALS_PATH: join(databaseDirectory, "credentials.json"),
     HSE_RELEASE_SHA: "auth-boundaries-browser-e2e",
     HSE_SESSION_SECRET: "auth-boundaries-browser-session-secret-2026-more-than-thirty-two",
     HSE_AUTH_PEPPER: "auth-boundaries-browser-auth-pepper-2026-more-than-thirty-two",
@@ -88,7 +89,7 @@ test("All six role sessions reject invalid credentials and cross-portal access a
       cwd: root, env: environment, encoding: "utf8"
     });
     assert.equal(seed.status, 0, seed.stderr || seed.stdout);
-    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+    const credentials = JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH, "utf8"));
 
     const roles = ["worker", "company", "assessor", "verifier", "admin", "root"];
     await runDevelopmentServer({

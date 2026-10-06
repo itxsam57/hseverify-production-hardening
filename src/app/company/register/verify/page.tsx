@@ -49,6 +49,8 @@ export default async function CompanyRegistrationVerifyPage({
         <div className="auth-card">
           <p className="eyebrow">{state.step === "pending_email" ? "Step 1 of 2" : "Step 2 of 2"}</p>
           <h2>{state.step === "pending_email" ? "Business email" : "Authenticator"}</h2>
+          {state.step === "pending_email" && reason === "cooldown" && <p className="status-banner status-error" role="alert">Wait before requesting another verification code.</p>}
+          {state.step === "pending_email" && reason === "unavailable" && <p className="status-banner status-error" role="alert">Verification delivery is unavailable. Try again later.</p>}
           {state.step === "pending_email" ? (
             <CompanyEmailVerificationForm
               deliveryHint={state.deliveryHint}
