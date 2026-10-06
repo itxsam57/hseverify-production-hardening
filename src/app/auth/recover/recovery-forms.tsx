@@ -21,9 +21,11 @@ const INITIAL_STATE: RecoveryActionState = {
 };
 
 export function RecoveryRequestForm({
-  role
+  role,
+  available = true
 }: {
   role: AuthRole;
+  available?: boolean;
 }): React.JSX.Element {
   const [state, action, pending] = useActionState(
     requestPasswordRecovery,
@@ -32,6 +34,7 @@ export function RecoveryRequestForm({
   return (
     <form action={action} className="auth-form" noValidate>
       <input name="role" type="hidden" value={role} />
+      {!available ? <Alert tone="neutral">Email recovery is temporarily unavailable.</Alert> : null}
       <Field htmlFor="recovery-email" label="Account email">
         <Input
           autoComplete="username"
@@ -44,7 +47,7 @@ export function RecoveryRequestForm({
         />
       </Field>
       {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
-      <Button disabled={pending} fullWidth type="submit">
+      <Button disabled={pending || !available} fullWidth type="submit">
         {pending ? "Starting recovery…" : "Continue securely"}
       </Button>
     </form>
@@ -111,7 +114,7 @@ export function RecoveryCompletionForm({
 
       <form action={resendAction} className="auth-form">
         {resendState.error ? <Alert tone="danger">{resendState.error}</Alert> : null}
-        {resendState.message ? <Alert tone="success">{resendState.message}</Alert> : null}
+        {resendState.message ? <Alert tone="neutral">{resendState.message}</Alert> : null}
         <Button disabled={resendPending} fullWidth type="submit" variant="secondary">
           {resendPending ? "Issuing new code…" : "Send a new recovery code"}
         </Button>

@@ -10,12 +10,7 @@ export type RegistrationDeliveryIntent = Readonly<{
 export async function enqueueRegistrationDelivery(
   database: DatabaseClient, input: RegistrationDeliveryIntent
 ): Promise<void> {
-  await database.query(
-    `INSERT INTO auth_registration_delivery_intents
-      (delivery_id,challenge_id,status,payload_ciphertext,created_at,updated_at)
-     VALUES($1,$2,'queued',$3,$4,$4)`,
-    [input.deliveryId,input.challengeId,input.encryptedPayload,input.createdAt]
-  );
+  await insertDeliveryIntent(database,input);
   await new DatabaseOutboxRepository(Promise.resolve(database)).enqueueRegistrationDelivery(database,input.deliveryId);
 }
 
@@ -28,4 +23,18 @@ export async function readRegistrationDeliveryStatus(
     "SELECT status FROM auth_registration_delivery_intents WHERE challenge_id=$1", [challengeId]
   );
   return result.rows[0]?.status ?? null;
+}
+
+async function insertDeliveryIntent(database: DatabaseClient, input: RegistrationDeliveryIntent): Promise<void> {
+  await database.query(
+    `INSERT INTO auth_registration_delivery_intents
+      (delivery_id,challenge_id,status,payload_ciphertext,created_at,updated_at)
+     VALUES($1,$2,'queued',$3,$4,$4)`,
+    [input.deliveryId,input.challengeId,input.encryptedPayload,input.createdAt]
+  );
+}
+
+export async function enqueueRecoveryDelivery(database: DatabaseClient, input: RegistrationDeliveryIntent): Promise<void> {
+  await insertDeliveryIntent(database,input);
+  await new DatabaseOutboxRepository(Promise.resolve(database)).enqueueRecoveryDelivery(database,input.deliveryId);
 }

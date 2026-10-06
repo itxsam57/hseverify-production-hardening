@@ -16,7 +16,7 @@ type IntentRow = {
   purpose: string | null; destination_hash: string | null; code_hash: string | null;
 };
 
-const failure = (code: string) => ({code, summary: "Registration verification delivery could not be confirmed."});
+const failure = (code: string) => ({code, summary: "Verification message delivery could not be confirmed."});
 
 export async function processRegistrationDeliveryJob(
   job: OutboxJobRecord, lease: TrustedOutboxLease, database?: DatabaseClient,
@@ -24,9 +24,9 @@ export async function processRegistrationDeliveryJob(
 ): Promise<OutboxHandlerResult> {
   assertTrustedOutboxLease(lease);
   if (job.jobType !== "authentication.challenge.delivery" || lease.jobId !== job.jobId ||
-      job.enqueuedBySystemComponent !== "registration-verification" ||
+      (job.enqueuedBySystemComponent !== "registration-verification" && job.enqueuedBySystemComponent !== "recovery-verification") ||
       job.enqueuedByAccountId !== null || job.enqueuedByRole !== null ||
-      job.tenantId !== null || job.membershipId !== null) throw new Error("Invalid registration delivery origin.");
+      job.tenantId !== null || job.membershipId !== null) throw new Error("Invalid verification delivery origin.");
   const db = database ?? await getDatabaseClient();
   const {dispatchRef} = normalizeOutboxPayload("authentication.challenge.delivery",job.payload);
   const environment = injected ? null : getServerEnvironment();
@@ -40,7 +40,7 @@ export async function processRegistrationDeliveryJob(
        AND lease_id=$2 AND worker_id=$3 AND lease_expires_at>clock_timestamp()`,
       [job.jobId,lease.leaseId,lease.workerId]
     );
-    if (owned.rows.length !== 1) throw new Error("Registration delivery lease expired.");
+    if (owned.rows.length !== 1) throw new Error("Verification delivery lease expired.");
     await transaction.query(
       "SELECT delivery_id FROM auth_registration_delivery_intents WHERE delivery_id=$1 FOR UPDATE", [dispatchRef]
     );
@@ -49,15 +49,22 @@ export async function processRegistrationDeliveryJob(
               challenges.channel,challenges.expires_at,challenges.purpose,challenges.destination_hash,challenges.code_hash,
               COALESCE(challenges.consumed_at IS NULL AND challenges.invalidated_at IS NULL
                AND challenges.attempts_remaining>0 AND challenges.expires_at>clock_timestamp()
-               AND (EXISTS(SELECT 1 FROM auth_registration_flows flows
+               AND (($2='registration-verification' AND (EXISTS(SELECT 1 FROM auth_registration_flows flows
                     WHERE flows.account_id=challenges.account_id AND flows.expires_at>clock_timestamp()
                       AND flows.current_step=CASE WHEN challenges.channel='email' THEN 'pending_email' ELSE 'pending_phone' END)
                  OR (challenges.channel='email' AND EXISTS(SELECT 1 FROM company_registration_flows flows
                     WHERE flows.account_id=challenges.account_id AND flows.expires_at>clock_timestamp()
-                      AND flows.current_step='pending_email'))),false) AS live
+                      AND flows.current_step='pending_email'))))
+                 OR ($2='recovery-verification' AND challenges.purpose='password_reset' AND challenges.channel='email'
+                   AND EXISTS(SELECT 1 FROM auth_recovery_flows flows
+                     JOIN auth_accounts accounts ON accounts.account_id=flows.account_id
+                     JOIN auth_account_roles roles ON roles.account_id=flows.account_id AND roles.role=flows.active_role
+                     WHERE flows.challenge_id=challenges.challenge_id AND flows.account_id=challenges.account_id
+                       AND flows.consumed_at IS NULL AND flows.expires_at>clock_timestamp()
+                       AND accounts.account_status IN ('active','locked') AND accounts.password_hash IS NOT NULL))),false) AS live
        FROM auth_registration_delivery_intents intents
        LEFT JOIN auth_otp_challenges challenges USING(challenge_id)
-       WHERE intents.delivery_id=$1`, [dispatchRef]
+       WHERE intents.delivery_id=$1`, [dispatchRef,job.enqueuedBySystemComponent]
     );
     const row=result.rows[0];
     if (!row) return {kind:"terminal" as const, code:"delivery_intent_missing"};
@@ -79,15 +86,21 @@ export async function processRegistrationDeliveryJob(
     let value: unknown;
     try { value=JSON.parse(decryptSecret(row.payload_ciphertext!,pepper)); }
     catch { await finalize("terminal","invalid_dispatch");return {kind:"terminal" as const,code:"invalid_dispatch"}; }
+    if (!value || typeof value!=="object" || Array.isArray(value)) {
+      await finalize("terminal","invalid_dispatch");return {kind:"terminal" as const,code:"invalid_dispatch"};
+    }
     const payload=value as Partial<OtpDispatch> & {purpose?: unknown};
-    const purpose=row.channel === "email" ? "registration_email" : "registration_phone";
+    const recovery=job.enqueuedBySystemComponent==="recovery-verification";
+    const purpose=recovery ? "password_reset" : row.channel === "email" ? "registration_email" : "registration_phone";
+    const destinationHashes=recovery ?
+      [hashOpaqueValue(String(payload.destination),pepper,"auth-recovery-email-destination")] :
+      [hashOpaqueValue(String(payload.destination),pepper,`worker-registration-${row.channel}-destination`),
+       ...(row.channel==="email" ? [hashOpaqueValue(String(payload.destination),pepper,"company-registration-email-destination")] : [])];
     if (!value || typeof value !== "object" || payload.channel!==row.channel ||
         payload.purpose!==purpose || row.purpose!==purpose ||
         typeof payload.destination!=="string" || typeof payload.code!=="string" ||
         !row.destination_hash || !row.code_hash ||
-        !([hashOpaqueValue(payload.destination,pepper,`worker-registration-${row.channel}-destination`),
-           ...(row.channel==="email" ? [hashOpaqueValue(payload.destination,pepper,"company-registration-email-destination")] : [])]
-          .includes(row.destination_hash)) ||
+        !destinationHashes.includes(row.destination_hash) ||
         !verifyOtpCode({challengeId:row.challenge_id,code:payload.code,
           destinationHash:row.destination_hash,pepper,expectedHash:row.code_hash})) {
       await finalize("terminal","invalid_dispatch");return {kind:"terminal" as const,code:"invalid_dispatch"};

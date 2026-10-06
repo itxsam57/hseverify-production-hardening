@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
-import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import {
   applyPendingMigrations,
@@ -336,13 +335,27 @@ test("authentication repository keeps lifecycle and session operations constrain
 });
 
 test("authentication migration remains independently reversible beneath later layers", async () => {
-  const database = await openScriptDatabase(TEST_ENVIRONMENT);
-  // Isolate the layers whose destructive local rollback is being asserted.
-  // Later delivery history intentionally survives its own rollback/reapply.
-  await applyMigrationsThrough(database,TEST_ENVIRONMENT.releaseSha,"0009_persisted_notifications");
+  const database = await openMigratedDatabase();
   const previous = process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;
   process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK = "true";
   try {
+    const migrationIds = (await listMigrations()).map(
+      (migration) => migration.id
+    );
+    const notificationIndex = migrationIds.indexOf(
+      "0009_persisted_notifications"
+    );
+    assert.ok(notificationIndex >= 0);
+    for (const newerMigration of migrationIds
+      .slice(notificationIndex + 1)
+      .reverse()) {
+      const newerRollback = await rollbackLatestMigration(
+        database,
+        TEST_ENVIRONMENT
+      );
+      assert.equal(newerRollback, newerMigration);
+    }
+
     const notificationRollback = await rollbackLatestMigration(
       database,
       TEST_ENVIRONMENT

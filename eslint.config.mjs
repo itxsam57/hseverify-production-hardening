@@ -6,6 +6,7 @@ export default defineConfig([
   ...nextVitals,
   ...nextTypeScript,
   globalIgnores([
+    ".autopilot/artifacts/**",
     ".next/**",
     ".next-development/**",
     ".next-development-*/**",

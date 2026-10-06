@@ -1,5 +1,7 @@
 import "server-only";
 
+import { enqueueRecoveryDelivery, readRegistrationDeliveryStatus, type RegistrationDeliveryIntent } from "./registration-delivery-repository";
+
 import type { AuthRole, OtpChannel } from "@/lib/auth/auth-domain";
 import {
   AuthenticationRepository,
@@ -284,6 +286,19 @@ export class AuthAccessRepository {
     return this.database.transaction((client) =>
       operation(new AuthAccessRepository(client))
     );
+  }
+
+  async readRecoveryTime(): Promise<string> {
+    const result=await this.database.query<{now: string | Date}>("SELECT clock_timestamp() AS now");
+    return new Date(result.rows[0].now).toISOString();
+  }
+
+  async enqueueRecoveryDelivery(input: RegistrationDeliveryIntent): Promise<void> {
+    await enqueueRecoveryDelivery(this.database,input);
+  }
+
+  async readRecoveryDeliveryStatus(challengeId: string) {
+    return readRegistrationDeliveryStatus(this.database,challengeId);
   }
 
   async findAccountByEmailForUpdate(

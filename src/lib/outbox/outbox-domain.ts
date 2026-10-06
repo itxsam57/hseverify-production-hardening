@@ -118,7 +118,7 @@ export type OutboxJobRecord = Readonly<{
   payload: OutboxPayload;
   enqueuedByAccountId: string | null;
   enqueuedByRole: AuthRole | null;
-  enqueuedBySystemComponent?: "outbox-worker" | "registration-verification" | null;
+  enqueuedBySystemComponent?: "outbox-worker" | "registration-verification" | "recovery-verification" | null;
   tenantId: string | null;
   membershipId: string | null;
   status: OutboxJobStatus;

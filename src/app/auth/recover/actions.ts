@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getServerEnvironment } from "@/lib/config/server-environment";
 
 import {
   isAuthRole,
@@ -9,7 +10,8 @@ import {
 } from "@/lib/auth/auth-domain";
 import {
   AuthenticationRecoveryError,
-  getAuthRecoveryService
+  getAuthRecoveryService,
+  isPasswordRecoveryConfigured
 } from "@/lib/auth/auth-recovery-service";
 import {
   clearRecoveryToken,
@@ -41,6 +43,10 @@ function recoveryError(error: unknown): RecoveryActionState {
   };
 }
 
+function unavailableRecovery(): RecoveryActionState {
+  return { error: "Password recovery is temporarily unavailable. Please try again later.", message: null, retryAt: null };
+}
+
 function roleFromForm(formData: FormData): AuthRole {
   const value = formText(formData, "role");
   return isAuthRole(value) ? value : "worker";
@@ -50,6 +56,7 @@ export async function requestPasswordRecovery(
   _previousState: RecoveryActionState,
   formData: FormData
 ): Promise<RecoveryActionState> {
+  if (!isPasswordRecoveryConfigured()) return unavailableRecovery();
   const role = roleFromForm(formData);
   try {
     const service = await getAuthRecoveryService();
@@ -109,6 +116,7 @@ export async function resendPasswordRecoveryCode(
 ): Promise<RecoveryActionState> {
   void previousState;
   void formData;
+  if (!isPasswordRecoveryConfigured()) return unavailableRecovery();
   const token = await readRecoveryToken();
   if (!token) {
     return {
@@ -121,7 +129,7 @@ export async function resendPasswordRecoveryCode(
     await (await getAuthRecoveryService()).resend({ token });
     return {
       error: null,
-      message: "A new recovery code has been issued.",
+      message: getServerEnvironment().authSandboxEnabled ? "A new recovery code has been issued." : "If this account is eligible, check your email for the latest recovery code.",
       retryAt: null
     };
   } catch (error) {

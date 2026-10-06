@@ -232,14 +232,20 @@ test("Generic system enqueue stays denied; registration queue origin remains imm
   await assert.rejects(f.db.query("UPDATE platform_outbox_jobs SET enqueued_system_component='outbox-worker' WHERE job_type='authentication.challenge.delivery'"),/immutable/);
  }finally{await f.db.close();}
 });
-test("Monotonic rollback/reapply preserves accepted provider history and pending-account deletion scrubs unaccepted intent",async()=>{
+test("Monotonic rollback/reapply preserves accepted history, scrubs pending outcomes and restores new-reference enforcement",async()=>{
  const f=await fixture();try{
   await f.service.start(WORKER);await dispatch(f,accepted);
-  const before=(await f.db.query("SELECT * FROM auth_registration_delivery_intents")).rows;
+  const acceptedBefore=(await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows;
+  await f.service.start({...WORKER,email:"queued.rollback@example.test",phone:"+923007778891"});
+  await f.service.start({...WORKER,email:"dispatching.rollback@example.test",phone:"+923007778892"});
+  await f.db.query("UPDATE auth_registration_delivery_intents SET status='dispatching',dispatch_lease_id='fixture-live-lease' WHERE delivery_id=(SELECT delivery_id FROM auth_registration_delivery_intents WHERE status='queued' ORDER BY created_at DESC LIMIT 1)");
   const {readFileSync}=await import("node:fs");
   await f.db.transaction(tx=>tx.execute(readFileSync("database/migrations/0086_registration_otp_delivery.down.sql","utf8")));
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM auth_registration_delivery_intents WHERE status='obsolete' AND payload_ciphertext IS NULL")).rows[0].n,1);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM auth_registration_delivery_intents WHERE status='unknown' AND payload_ciphertext IS NULL AND dispatch_lease_id IS NULL")).rows[0].n,1);
   await f.db.transaction(tx=>tx.execute(readFileSync("database/migrations/0086_registration_otp_delivery.up.sql","utf8")));
-  assert.deepEqual((await f.db.query("SELECT * FROM auth_registration_delivery_intents")).rows,before);
+  assert.deepEqual((await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows,acceptedBefore);
+  await assert.rejects(f.db.query("INSERT INTO auth_registration_delivery_intents(delivery_id,challenge_id,status,created_at,updated_at) VALUES($1,'missing-challenge','obsolete',clock_timestamp(),clock_timestamp())",['delivery_'+ 'z'.repeat(24)]),/foreign key/);
   const second={...WORKER,email:"abandoned.worker@example.test",phone:"+923007778899"};
   await f.service.start(second);
   const row=(await f.db.query("SELECT account_id FROM auth_accounts WHERE email_normalized=$1",[second.email])).rows[0];
@@ -247,6 +253,55 @@ test("Monotonic rollback/reapply preserves accepted provider history and pending
   const orphan=(await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE challenge_id IS NULL")).rows[0];
   assert.equal(orphan.status,"obsolete");assert.equal(orphan.payload_ciphertext,null);
   assert.equal((await f.db.query("SELECT count(*)::int AS count FROM auth_registration_delivery_intents WHERE status='accepted'")).rows[0].count,1);
+ }finally{await f.db.close();}
+});
+
+test("Populated historical downgrade refusal is atomic and higher-layer reapply preserves history without replay",async()=>{
+ const f=await fixture();const previous=process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;
+ process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK="true";
+ try{
+  await f.service.start(WORKER);await dispatch(f,accepted);
+  await f.service.start({...WORKER,email:"lower.queued@example.test",phone:"+923007778881"});
+  await f.service.start({...WORKER,email:"lower.dispatching@example.test",phone:"+923007778882"});
+  await f.db.query("UPDATE auth_registration_delivery_intents SET status='dispatching',dispatch_lease_id='fixture-live-lease' WHERE delivery_id=(SELECT delivery_id FROM auth_registration_delivery_intents WHERE status='queued' ORDER BY created_at DESC LIMIT 1)");
+  const acceptedBefore=(await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows;
+  const {migrationStatus,rollbackLatestMigration}=await import("../../scripts/lib/migrations.mjs");
+  const ids=(await migrationStatus(f.db)).filter(row=>row.applied).map(row=>row.id);
+  const lower=ids.indexOf("0002_authentication_foundation");assert.ok(lower>=0);
+  const incompatible=ids.indexOf("0084_assessment_timeout_submission");
+  assert.ok(incompatible>=0);
+  for(const id of ids.slice(incompatible+1).reverse())assert.equal(await rollbackLatestMigration(f.db,ENV),id);
+  const ledgerBefore=(await f.db.query("SELECT * FROM hse_schema_migrations ORDER BY migration_id")).rows;
+  await assert.rejects(rollbackLatestMigration(f.db,ENV),error=>error.code==='23502' && /enqueued_by_account_id/.test(error.message));
+  assert.deepEqual((await f.db.query("SELECT * FROM hse_schema_migrations ORDER BY migration_id")).rows,ledgerBefore);
+  assert.equal((await f.db.query("SELECT is_nullable FROM information_schema.columns WHERE table_name='platform_outbox_jobs' AND column_name='enqueued_by_account_id'")).rows[0].is_nullable,'YES');
+  assert.deepEqual((await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows,acceptedBefore);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM auth_registration_delivery_intents WHERE payload_ciphertext IS NOT NULL")).rows[0].n,0);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM auth_registration_delivery_intents WHERE status='unknown'")).rows[0].n,1);
+  assert.deepEqual(await applyMigrationsThrough(f.db,ENV.releaseSha+'-full-reapply',"0086_registration_otp_delivery"),ids.slice(incompatible+1));
+  assert.deepEqual((await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows,acceptedBefore);
+  await assert.rejects(f.db.query("INSERT INTO auth_registration_delivery_intents(delivery_id,challenge_id,status,created_at,updated_at) VALUES($1,'missing-challenge','obsolete',clock_timestamp(),clock_timestamp())",['delivery_'+ 'y'.repeat(24)]),/foreign key/);
+  let sends=0;for(let i=0;i<4;i++){const job=await dispatch(f,()=>{sends++;throw new Error('Retained stale history must never send');});if(!job)break;}assert.equal(sends,0);
+  await f.service.start({...WORKER,email:"reapplied.valid@example.test",phone:"+923007778883"});
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM auth_registration_delivery_intents WHERE status='queued'")).rows[0].n,1);
+ }finally{
+  if(previous===undefined)delete process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;else process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK=previous;
+  await f.db.close();
+ }
+});
+
+test("Reattaching challenge FK retains actual abandoned accepted history while rejecting new orphan references",async()=>{
+ const f=await fixture();try{
+  await f.service.start(WORKER);await dispatch(f,accepted);
+  const before=(await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows;
+  const {readFileSync}=await import("node:fs");
+  await f.db.transaction(tx=>tx.execute(readFileSync("database/migrations/0086_registration_otp_delivery.down.sql","utf8")));
+  const account=(await f.db.query("SELECT account_id FROM auth_accounts WHERE email_normalized=$1",[WORKER.email])).rows[0];
+  await f.db.query("DELETE FROM auth_accounts WHERE account_id=$1",[account.account_id]);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM auth_otp_challenges WHERE challenge_id=$1",[before[0].challenge_id])).rows[0].n,0);
+  await f.db.transaction(tx=>tx.execute(readFileSync("database/migrations/0086_registration_otp_delivery.up.sql","utf8")));
+  assert.deepEqual((await f.db.query("SELECT * FROM auth_registration_delivery_intents WHERE status='accepted'")).rows,before);
+  await assert.rejects(f.db.query("INSERT INTO auth_registration_delivery_intents(delivery_id,challenge_id,status,created_at,updated_at) VALUES($1,'missing-new-challenge','obsolete',clock_timestamp(),clock_timestamp())",['delivery_'+ 'v'.repeat(24)]),/foreign key/);
  }finally{await f.db.close();}
 });
 

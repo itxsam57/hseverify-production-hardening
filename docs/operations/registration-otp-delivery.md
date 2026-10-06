@@ -15,7 +15,7 @@ Terminal retry exhaustion and expired final leases clear encrypted payloads in t
 Account abandonment clears pending payloads while preserving provider/job history.
 
 For an unknown outcome, check provider records before initiating another message. The user can request a new code after the existing resend cooldown; this creates a new challenge and invalidates the old one. Do not replay an unknown SMS job.
-Migration rollback is monotonic and preserves historical data and vocabulary. Reapply is tested; rolling back application code stops new registration dispatch.
+Migration rollback preserves accepted provider history and vocabulary. Pause producers and workers for schema maintenance. Queued intents become obsolete and in-flight intents become unknown; both clear ciphertext. Rollback detaches only the challenge foreign key so lower layers remain reversible. Reapply restores enforcement for new references while retaining historical IDs; obsolete/unknown intents are never replayed.
 
 Local evidence uses actual databases, registered outbox handlers and browser forms with fixed-endpoint fetch doubles.
 Live Resend inbox acceptance, live Twilio device delivery and PostgreSQL held-lock contention are separate release checks and are not claimed by these fixtures.
