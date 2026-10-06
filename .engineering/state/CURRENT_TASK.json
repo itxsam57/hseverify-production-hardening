@@ -6,34 +6,34 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "ecf2ccf698907bb5004859494ac1f5ec4eb2e43a",
-  "canonical_sha": "260e6f04ad21450b3a67b27c0dec32cf2e5c92e8",
+  "last_verified_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
+  "canonical_sha": "e8d024c75a002060f709e488d58fef58a25d2351",
   "requirements": [
-    "M1.02.01"
+    "M1.05.03",
+    "M1.03.02",
+    "M1.05.04"
   ],
-  "last_verified_action": "PR26 independently ACCEPTed/merged260e6f0 after15 exact/native50/allCI. Integrated inquiry six cohorts PASS: native54, public-native38, real Contact/demo/staff/credential-concern browser, desktop/mobile navigation, types and lint. M1.02.01 working source verified; exact candidate acceptance pending.",
+  "last_verified_action": "PR27 accepted and actual merged e8d024c;18 exact cohorts and7 fresh CI successful. Reviewed notification/OTP batch applied; prior integrated working7/7PASS.",
   "evidence": [
-    ".autopilot/artifacts/20261006-masterplan-next-exact-ecf2ccf.json",
-    ".autopilot/artifacts/20261006-pr26-ci-exact-ecf2ccf.json",
-    ".autopilot/artifacts/20261006-pr26-independent-accept-ecf2ccf.json",
-    ".autopilot/artifacts/20261006-pr26-merge-verified.json",
-    ".autopilot/artifacts/20261006-public-inquiry-snapshot-v5.json",
-    ".autopilot/artifacts/20261006-public-inquiry-working.json"
+    ".autopilot/artifacts/20261006-pr27-ci-exact-8af233a.json",
+    ".autopilot/artifacts/20261006-pr27-independent-accept-8af233a.json",
+    ".autopilot/artifacts/20261006-pr27-merge-verified.json",
+    ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
+    ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json"
   ],
-  "next_action": "Commit reviewed public inquiry slice and run18 exact cohorts/five gates; fresh PR27 CI and independent ACCEPT required before merge. Working ledger35passed/14partial/169unverified; whole Masterplan unfinished.",
+  "next_action": "Commit notification/OTP candidate; exact native/browser/security/build gates then fresh GitHub CI and independent acceptance. Whole Masterplan unfinished.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "169 Masterplan scenarios unverified;15partial",
-    "Broader privacy fulfilment and timing/recovery/accommodation variants",
-    "Production proxy trust/live abuse resistance and staff follow-up",
-    "Live providers, deployed workflows and PostgreSQL concurrency"
+    "167 unverified and15 partial working scenarios",
+    "Live email/SMS OTP transport missing; sandbox cannot serve production",
+    "Broader privacy, deployed provider workflows and PostgreSQL concurrency"
   ],
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-06T11:58:59.133177+00:00",
-  "verified_sha": "ecf2ccf698907bb5004859494ac1f5ec4eb2e43a",
+  "updated_at": "2026-10-06T15:25:07.612126+00:00",
+  "verified_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [
@@ -41,17 +41,17 @@
       ".engineering/WORK_CONTRACT.md"
     ],
     "avoid_repeating": "Read compact CURRENT_TASK/ACTIVE_RESUME and current verification receipt; do not repeat accepted PR26 or refresh historical context. Source index supports targeted next-family lookup.",
-    "accepted_pr": 26,
-    "accepted_head": "ecf2ccf698907bb5004859494ac1f5ec4eb2e43a",
-    "canonical_sha": "260e6f04ad21450b3a67b27c0dec32cf2e5c92e8",
+    "accepted_pr": 27,
+    "accepted_head": "8af233aadfee1f7f8066ce685b6739911c67a457",
+    "canonical_sha": "e8d024c75a002060f709e488d58fef58a25d2351",
     "coverage": {
-      "passed": 35,
-      "partial": 14,
-      "unverified": 169
+      "passed": 36,
+      "partial": 15,
+      "unverified": 167
     },
     "accepted_baseline_coverage": {
-      "passed": 34,
-      "partial": 15,
+      "passed": 35,
+      "partial": 14,
       "unverified": 169
     }
   },

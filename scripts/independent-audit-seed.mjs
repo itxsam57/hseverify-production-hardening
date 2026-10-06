@@ -169,7 +169,7 @@ try {
 
   const proof = await database.query(`SELECT a.email_normalized,r.role,a.account_status FROM auth_accounts a JOIN auth_account_roles r ON r.account_id=a.account_id WHERE a.account_id LIKE 'audit_%_account_20260901' ORDER BY r.role`);
   if (proof.rows.length !== roles.length) throw new Error(`Expected ${roles.length} audit role accounts, found ${proof.rows.length}.`);
-  await writeFile("/tmp/independent-audit-credentials.json", JSON.stringify(credentials, null, 2));
+  await writeFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", JSON.stringify(credentials, null, 2));
   await writeFile("artifacts/independent-audit/seed.json", JSON.stringify({ seededAt: now, roles: proof.rows, companyTenant: tenantId, companyCase: caseId }, null, 2));
   console.log(`Seeded ${proof.rows.length} production-valid independent role accounts.`);
 } finally {

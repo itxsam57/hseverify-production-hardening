@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   createDevelopmentNotificationFixture,
   markCurrentNotificationRead,
+  markAllCurrentNotificationsRead,
   openCurrentNotification
 } from "@/lib/notifications/notification-service";
 import { notificationListPath } from "@/lib/notifications/notification-domain";
@@ -46,4 +47,10 @@ export async function createNotificationFixtureAction(): Promise<void> {
   revalidatePath(notificationListPath(created.role));
   revalidatePath(`/${created.role}/dashboard`);
   redirect(`${notificationListPath(created.role)}?notice=fixture-ready`);
+}
+
+export async function markAllNotificationsReadAction(): Promise<void> {
+  const result = await markAllCurrentNotificationsRead();
+  revalidatePath(notificationListPath(result.role));
+  revalidatePath(`/${result.role}/dashboard`);
 }

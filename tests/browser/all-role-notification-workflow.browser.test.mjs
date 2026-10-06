@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { chromium } from "playwright";
+import { PGlite } from "@electric-sql/pglite";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
 const ROLES = ["worker","company","assessor","verifier","admin","root"];
@@ -113,6 +114,16 @@ test("every portal notification bell creates, opens, deep-links and marks persis
             const unreadCard = page.locator(".notification-center-item.notification-unread").first();
             await unreadCard.getByRole("button", { name: "Mark read" }).click();
             await page.locator(".notification-center-summary").getByText("0", { exact: true }).waitFor({ timeout: 15_000 });
+            for (let i = 0; i < 2; i++) {
+              await page.getByRole("button", { name: "Create persisted test notification" }).click();
+              await page.waitForURL(/notice=fixture-ready/, { timeout: 15_000 });
+              await page.locator(".notification-center-summary").getByText(String(i + 1), { exact: true }).waitFor();
+            }
+            await page.getByRole("button", { name: "Mark all read", exact: true }).click();
+            await page.locator(".notification-center-summary").getByText("0", { exact: true }).waitFor();
+            assert.equal(await page.locator(".notification-unread").count(), 0);
+            await page.reload({ waitUntil: "networkidle" });
+            assert.equal(await page.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");
             await context.close();
           }
         } finally {
@@ -121,6 +132,20 @@ test("every portal notification bell creates, opens, deep-links and marks persis
       }
     });
     assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
+    const database = new PGlite(databaseDirectory);
+    try {
+      const rows = (await database.query("SELECT recipient_role, read_at FROM platform_notifications WHERE notification_type='platform.foundation.ready'")).rows;
+      assert.equal(rows.length, 24);
+      for (const role of ROLES) {
+        const owned = rows.filter(row => row.recipient_role === role);
+        assert.equal(owned.length, 4);
+        assert.ok(owned.every(row => row.read_at));
+      }
+      const audits = (await database.query("SELECT actor_role, target_reference FROM platform_audit_events WHERE action_key='notification.read'")).rows;
+      assert.equal(audits.length, 24);
+      assert.equal(new Set(audits.map(row => row.target_reference)).size, 24);
+    } finally { await database.close(); }
+
   } finally {
     await rm(databaseDirectory, { recursive: true, force: true });
   }

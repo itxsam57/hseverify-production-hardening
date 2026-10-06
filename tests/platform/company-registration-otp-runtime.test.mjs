@@ -79,3 +79,25 @@ test("Company valid MFA enrollment audit failure rolls back factor, membership a
   assert.deepEqual(await state(f),before);
  }finally{await f.db.close();}
 });
+
+test("Company early resend preserves all rows, then cooldown boundary rotates only current email challenge",async()=>{
+ const f=await fixture();try{
+  const before=await state(f);await assert.rejects(f.service.resendEmail({token:f.token,requestFingerprint:'company-early-resend'}),e=>e.code==='challenge_cooldown');assert.deepEqual(await state(f),before);
+  const later=new CompanyRegistrationService(new CompanyRegistrationRepository(f.db),{pepper:ENV.authPepper,sandboxEnabled:true},()=>new Date('2026-10-05T03:01:00.000Z'));
+  const result=await later.resendEmail({token:f.token,requestFingerprint:'company-after-cooldown'});assert.equal(result.step,'pending_email');
+  const rows=(await f.db.query('SELECT c.*,d.encrypted_code FROM auth_otp_challenges c JOIN auth_sandbox_deliveries d ON d.challenge_id=c.challenge_id WHERE c.account_id=$1 ORDER BY c.created_at',[f.flow.account_id])).rows;assert.equal(rows.length,2);assert.ok(rows[0].invalidated_at);assert.equal(rows[0].consumed_at,null);assert.equal(rows[1].invalidated_at,null);assert.equal(rows[1].attempts_remaining,5);
+  const fresh=decryptSecret(rows[1].encrypted_code,ENV.authPepper);if(fresh!==f.code)await assert.rejects(later.verifyEmail({token:f.token,code:f.code,requestFingerprint:'old-company-code'}),e=>e.code==='invalid_code');
+  assert.equal((await later.verifyEmail({token:f.token,code:fresh,requestFingerprint:'new-company-code'})).step,'pending_mfa');
+  assert.equal((await f.db.query('SELECT count(*)::int AS count FROM auth_sessions WHERE account_id=$1',[f.flow.account_id])).rows[0].count,0);
+ }finally{await f.db.close();}
+});
+test("Company expired email does not consume attempts or advance; resend recovers pending MFA",async()=>{
+ const f=await fixture();try{
+  const later=new CompanyRegistrationService(new CompanyRegistrationRepository(f.db),{pepper:ENV.authPepper,sandboxEnabled:true},()=>new Date('2026-10-05T03:10:00.000Z'));
+  const before=await state(f);await assert.rejects(later.verifyEmail({token:f.token,code:f.code,requestFingerprint:'expired-company-code'}),e=>e.code==='challenge_expired');assert.deepEqual(await state(f),before);
+  await later.resendEmail({token:f.token,requestFingerprint:'expired-company-resend'});
+  const delivery=(await f.db.query('SELECT d.encrypted_code FROM auth_sandbox_deliveries d JOIN auth_otp_challenges c ON c.challenge_id=d.challenge_id WHERE c.account_id=$1 AND c.invalidated_at IS NULL',[f.flow.account_id])).rows[0];
+  assert.equal((await later.verifyEmail({token:f.token,code:decryptSecret(delivery.encrypted_code,ENV.authPepper),requestFingerprint:'new-company-code'})).step,'pending_mfa');
+  assert.equal((await f.db.query('SELECT count(*)::int AS count FROM auth_sessions WHERE account_id=$1',[f.flow.account_id])).rows[0].count,0);
+ }finally{await f.db.close();}
+});
