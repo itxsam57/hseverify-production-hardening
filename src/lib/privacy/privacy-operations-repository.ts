@@ -1,4 +1,5 @@
 import "server-only";
+import { ConsentRecordService } from "./consent-record-service";
 import { collectWorkerPrivacyData } from "./worker-privacy-data";
 
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
@@ -24,6 +25,25 @@ async function ownedShareLink(client: DatabaseClient, workerId: string, target: 
   const link = result.rows[0];
   if (!link) throw new Error("Requested share link was not found for this Worker.");
   return link;
+}
+
+async function ownedScopedConsent(client: DatabaseClient, workerId: string, target: unknown) {
+  if (typeof target !== "string" || !target.trim() || target.length > 200) {
+    throw new Error("A valid optional sharing consent is required for this Worker.");
+  }
+  const result = await client.query<{
+    consent_id: string; purpose: string; consent_type: string;
+    withdrawal_rule: string; metadata: { shareLinkId?: string };
+  }>(
+    `SELECT consent_id,purpose,consent_type,withdrawal_rule,metadata FROM privacy_consent_records
+     WHERE consent_id=$1 AND worker_id=$2 ORDER BY version DESC LIMIT 1 FOR UPDATE`,[target,workerId]
+  );
+  const consent = result.rows[0];
+  if (!consent || consent.consent_type !== "scoped_share_links" || consent.withdrawal_rule !== "FUTURE_PROCESSING_ONLY") {
+    throw new Error("Requested optional sharing consent was not found for this Worker.");
+  }
+  const link = await ownedShareLink(client,workerId,consent.metadata?.shareLinkId);
+  return { ...consent, sharePurpose: link.purpose };
 }
 
 export type AccommodationReviewRow = {
@@ -78,6 +98,10 @@ export class PrivacyOperationsRepository {
         const link = await ownedShareLink(tx,input.workerId,details.shareLinkId);
         details = { shareLinkId: link.share_link_id, sharePurpose: link.purpose };
       }
+      if (input.type === "consent_withdrawal" && details.consentId !== undefined) {
+        const consent = await ownedScopedConsent(tx,input.workerId,details.consentId);
+        details = { consentId: consent.consent_id, consentPurpose: consent.purpose, sharePurpose: consent.sharePurpose };
+      }
       await tx.query(
         `INSERT INTO privacy_requests(request_id, tenant_id, worker_id, request_type, details) VALUES($1,$2,$3,$4,$5)`,
         [input.requestId, input.tenantId, input.workerId, input.type, JSON.stringify(details)]
@@ -116,7 +140,13 @@ export class PrivacyOperationsRepository {
       }
       let details = request.details;
       if (input.decision === "COMPLETED") {
-        if (["access","export"].includes(request.request_type)) {
+        if (request.request_type === "consent_withdrawal" && request.details?.consentId !== undefined) {
+          const consent = await ownedScopedConsent(tx,request.worker_id,request.details.consentId);
+          await new ConsentRecordService(Promise.resolve(tx)).withdraw({
+            workerId: request.worker_id, actorAccountId: input.reviewerAccountId,
+            consentId: consent.consent_id, reason: input.reason.slice(0,1000), now: new Date(input.now)
+          });
+        } else if (["access","export"].includes(request.request_type)) {
           await collectWorkerPrivacyData(tx,request.worker_id,input.now);
           details = { ...request.details, fulfilment: {
             method: "owned_current_data_download", availableAt: input.now, formatVersion: 1

@@ -52,6 +52,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
 
+      - name: Independently invalid production configurations are rejected
+        run: node --test tests/platform/production-environment-isolation.test.mjs
+
       - name: Strict TypeScript
         run: npm run typecheck
 
@@ -155,6 +158,13 @@ jobs:
         env:
           HSE_PRIVACY_FULFILMENT: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+
+      - name: Owned scoped-consent request runtime
+        run: node --test tests/platform/privacy-consent-request-runtime.test.mjs
+      - name: Worker optional sharing consent request reaches withdrawal
+        run: HSE_PRIVACY_CONSENT_REQUEST=true node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
+      - name: Desktop and mobile public entry controls
+        run: node --test tests/browser/public-navigation.browser.test.mjs
 
       - name: Owned personal-data access and export runtime
         run: node --test tests/platform/worker-privacy-data-runtime.test.mjs

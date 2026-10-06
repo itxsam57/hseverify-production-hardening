@@ -55,6 +55,17 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
               {shareLinks.map(link => <option key={link.share_link_id} value={link.share_link_id}>{link.purpose}</option>)}
             </select>
           </label>
+          <label>Optional sharing consent for a withdrawal request
+            <select name="consentId" defaultValue="">
+              <option value="">Choose a consent when requesting withdrawal</option>
+              {currentConsents.filter(consent => consent.consentType === "scoped_share_links" &&
+                consent.action === "GRANTED" && consent.withdrawalRule === "FUTURE_PROCESSING_ONLY").map(consent => (
+                <option key={consent.consentId} value={consent.consentId}>
+                  {typeof consent.metadata.sharePurpose === "string" ? consent.metadata.sharePurpose : consent.purpose}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="submit">Submit privacy request</button>
         </form>
       </section>
@@ -106,6 +117,7 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
           <article className="record-row" key={request.request_id}>
             <p>{request.request_type.replaceAll("_", " ")}: {request.status}</p>
             {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
+            {typeof request.details?.consentPurpose === "string" ? <p>Consent: {request.details.consentPurpose}</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
             {request.status === "COMPLETED" && ["access","export"].includes(request.request_type) &&
               (request.details?.fulfilment as { method?: string } | undefined)?.method === "owned_current_data_download" ? (
