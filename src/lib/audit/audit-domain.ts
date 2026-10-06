@@ -13,6 +13,7 @@ import {
 } from "../authorization/authorization-domain";
 
 export const AUDIT_ACTIONS = [
+  "public_inquiry.received",
   "authentication.registration.started",
   "authentication.otp.issued",
   "authentication.otp.failed",
@@ -210,7 +211,7 @@ export type TrustedSystemAuditActor = Readonly<{
   activeRole: null;
   tenantId: string | null;
   membershipId: string | null;
-  systemComponent: "outbox-worker" | "public-verification-intake";
+  systemComponent: "outbox-worker" | "public-verification-intake" | "public-inquiry-intake";
   [TRUSTED_AUDIT_ACTOR]: true;
 }>;
 
@@ -350,7 +351,7 @@ export function bindTrustedCompanyApplicationAuditActor(
 }
 
 export function bindTrustedSystemAuditActor(
-  component: "outbox-worker" | "public-verification-intake",
+  component: "outbox-worker" | "public-verification-intake" | "public-inquiry-intake",
   context: Readonly<{
     tenantId: string | null;
     membershipId: string | null;
@@ -358,7 +359,7 @@ export function bindTrustedSystemAuditActor(
 ): TrustedSystemAuditActor {
   if (
     (component !== "outbox-worker" &&
-     component !== "public-verification-intake") ||
+     component !== "public-verification-intake" && component !== "public-inquiry-intake") ||
     ((context.tenantId === null) !== (context.membershipId === null)) ||
     (context.tenantId !== null && !nonEmpty(context.tenantId)) ||
     (context.membershipId !== null && !nonEmpty(context.membershipId))
@@ -399,7 +400,7 @@ export function assertTrustedAuditActor(
       (actor.tenantId !== null && !nonEmpty(actor.tenantId)) ||
       (actor.membershipId !== null && !nonEmpty(actor.membershipId)) ||
       (actor.systemComponent !== "outbox-worker" &&
-       actor.systemComponent !== "public-verification-intake")
+       actor.systemComponent !== "public-verification-intake" && actor.systemComponent !== "public-inquiry-intake")
     ) {
       throw new AuditContractError("Trusted system actor context is invalid.");
     }

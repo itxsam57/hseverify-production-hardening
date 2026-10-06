@@ -494,12 +494,18 @@
           "All roles"
         ],
         "scenario": "Public navigation, contact/demo/sign-in and role destinations",
-        "status": "partially-verified",
+        "status": "passed",
         "evidence": {
           "red": ".autopilot/artifacts/20261006-public-navigation-red-e750d74.txt",
-          "working_browser": ".autopilot/artifacts/20261006-masterplan-next-working-v2-public-browser.txt"
+          "working_browser": ".autopilot/artifacts/20261006-masterplan-next-working-v2-public-browser.txt",
+          "contact_red": ".autopilot/artifacts/20261006-public-inquiry-browser-red-ecf2ccf.txt",
+          "integrated_working": ".autopilot/artifacts/20261006-public-inquiry-working.json",
+          "contact_browser": ".autopilot/artifacts/20261006-public-inquiry-working-inquiry-browser.txt",
+          "navigation_browser": ".autopilot/artifacts/20261006-public-inquiry-working-public-browser.txt",
+          "public_native_regression": ".autopilot/artifacts/20261006-public-inquiry-working-public-native.txt",
+          "accepted_pr26_ci": ".autopilot/artifacts/20261006-pr26-ci-exact-ecf2ccf.json"
         },
-        "notes": "Actual desktop/mobile home navigation reaches six existing public routes, both registration forms and six distinct role sign-in forms without horizontal overflow. General contact/demo fulfilment remains missing. Working-source proof; exact candidate and actual CI required before acceptance."
+        "notes": "Actual desktop/mobile home links reach all six public routes, both registration forms and all six role sign-in forms. Contact and Request Demo now submit into a real private Admin/Root queue with persistent requests and immutable audit; actual valid credential-concern submission remains operative. Browser proves SSR readiness, rejected-draft retention and Worker/public denial destinations. Native tests prove validation, duplicate/purpose boundaries, quota exhaustion, required-audit rollback/retry and current staff authority. Integrated six working cohorts pass (native54, public-native38, two browsers, types, lint). This is functional intake for manual follow-up, not proof of staff responding or live email/meeting delivery. Committed exact gates and fresh candidate CI/review still required before merge; production proxy/abuse configuration remains unverified."
       },
       {
         "id": "M1.02.02",
@@ -3236,9 +3242,10 @@
             "exact_local": ".autopilot/artifacts/20261005-privacy-data-exact-e750d74.json",
             "actual_ci": ".autopilot/artifacts/20261006-pr25-ci-exact-e750d74.json",
             "independent_accept": ".autopilot/artifacts/20261006-pr25-independent-accept-e750d74.json"
-          }
+          },
+          "pr26_accepted": ".autopilot/artifacts/20261006-pr26-independent-accept-ecf2ccf.json"
         },
-        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion. PR25 independently accepted/merged: access and export processing/completion prepare owner-authenticated current-data JSON downloads including owned provided profile sections, assessment answers/revisions and explicit record metadata. Foreign/public/staff/open requests denied; required history failure rolls status/marker back. Other request operations and legal completeness remain open. Next scoped-consent request working proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. Exact candidate/CI pending; other categories and restriction/deletion/correction/retention operations remain unverified."
+        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion. PR25 independently accepted/merged: access and export processing/completion prepare owner-authenticated current-data JSON downloads including owned provided profile sections, assessment answers/revisions and explicit record metadata. Foreign/public/staff/open requests denied; required history failure rolls status/marker back. Other request operations and legal completeness remain open. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified."
       },
       {
         "id": "M3.09.02",
@@ -3254,7 +3261,7 @@
         "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open. Next scoped-consent request working proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. Exact candidate/CI pending; other categories and restriction/deletion/correction/retention operations remain unverified."
+        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified."
       },
       {
         "id": "M3.09.03",
@@ -3301,7 +3308,7 @@
         "scenario": "Consent grant/withdraw history remains versioned and need-to-know",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified. Next scoped-consent request working proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. Exact candidate/CI pending; other categories and restriction/deletion/correction/retention operations remain unverified."
+        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified."
       },
       {
         "id": "M3.09.06",
@@ -3622,8 +3629,14 @@
           "Written offline recovery needs revalidation after attempt/position buffer key change",
           "Full engineering gate and remaining Masterplan scenarios incomplete"
         ]
+      },
+      {
+        "command": "python3 .autopilot/artifacts/public-inquiry-working-driver.py",
+        "artifact": ".autopilot/artifacts/20261006-public-inquiry-working.json",
+        "result": "passed",
+        "scope": "Actual integrated public contact/demo -> private Admin/Root queue, immutable downstream records, existing credential concern, responsive public navigation; working source, committed exact CI acceptance pending"
       }
     ],
-    "updated_at": "2026-10-06T11:03:05.497566+00:00"
+    "updated_at": "2026-10-06T11:58:59.131097+00:00"
   }
 }

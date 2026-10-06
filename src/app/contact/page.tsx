@@ -2,6 +2,8 @@ import { randomBytes } from "node:crypto";
 
 import Link from "next/link";
 
+import { PublicInquiryForm } from "@/components/public-inquiry/public-inquiry-form";
+
 import { PublicConcernForm } from "@/components/public-verification/public-concern-form";
 
 function queryValue(value: string | string[] | undefined): string {
@@ -29,6 +31,20 @@ export default async function ContactPage({
   const reference = queryValue(params.reference);
   const credentialConcern = type === "credential-concern";
   const usableReference = credentialConcern && validPublicReference(reference);
+
+  if (!credentialConcern) {
+    const demo=type==="demo";
+    return <main className="public-verification-page">
+      <Link className="brand-mark" href="/">HSE Verify</Link>
+      <section className="public-verification-card">
+        <p className="eyebrow">{demo?"Request demo":"Contact"}</p>
+        <h1>{demo?"Request a demonstration":"Contact HSE Verify"}</h1>
+        <PublicInquiryForm kind={demo?"demo":"contact"} submissionNonce={randomBytes(24).toString("base64url")}/>
+        <p><Link href={demo?"/contact":"/contact?type=demo"}>{demo?"General contact":"Request a demo"}</Link></p>
+        <p>For a credential concern, <Link href="/verify">verify the identifier first</Link>.</p>
+      </section>
+    </main>;
+  }
 
   return (
     <main className="public-verification-page">
