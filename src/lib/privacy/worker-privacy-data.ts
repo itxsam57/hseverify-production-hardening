@@ -10,13 +10,17 @@ export async function collectWorkerPrivacyData(database: DatabaseClient, workerI
     FROM auth_accounts WHERE account_id=$1
     AND EXISTS(SELECT 1 FROM auth_account_roles WHERE account_id=$1 AND role='worker')`);
   if (accounts.length !== 1) throw new Error("Worker data is unavailable.");
+  const profiles = await rows(`SELECT worker_id,schema_version,version,status,
+    profile_document->'personal' AS personal,profile_document->'contact' AS contact,
+    profile_document->'professional' AS professional,created_at,updated_at,submitted_at
+    FROM worker_profiles WHERE worker_sub=$1 AND profile_document->>'workerSub'=$1`);
   const evidenceRepository = new DatabaseWorkerEvidenceRepository(Promise.resolve(database));
   const currentEvidence = await evidenceRepository.listCurrentForWorker(workerId);
   const evidence = await Promise.all(currentEvidence.map(async record => ({
     ...record, versions: await evidenceRepository.listVersionsForWorker(workerId,record.recordId)
   })));
   return {
-    formatVersion: 1, generatedAt, account: accounts[0], evidence,
+    formatVersion: 1, generatedAt, account: accounts[0], workerProfile: profiles[0] ?? null, evidence,
     identityVersions: await rows(`SELECT versions.identity_version_id,versions.version_number,versions.version_kind,
       versions.version_status,versions.created_at,versions.submitted_at,
       drafts.legal_first_name,drafts.legal_last_name,drafts.previous_legal_name,drafts.date_of_birth,

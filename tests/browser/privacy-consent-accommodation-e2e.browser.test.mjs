@@ -142,6 +142,19 @@ test(DATA_MODE ? "Worker access/export request reaches reviewed owner-only JSON 
           'active',password_hash,email_verified_at,password_set_at,'privacy_download_foreign_ref',created_at,updated_at
           FROM auth_accounts WHERE account_id=$1`,[credentials.worker.accountId]);
         await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES('privacy_download_foreign_worker','worker')");
+        for (const accountId of [credentials.worker.accountId,"privacy_download_foreign_worker"]) {
+          const account=(await db.query("SELECT worker_reference FROM auth_accounts WHERE account_id=$1",[accountId])).rows[0];
+          const now=new Date().toISOString();
+          const document={schemaVersion:1,workerSub:accountId,workerId:account.worker_reference,version:1,status:"draft",
+            personal:{legalFirstName:"Provided-"+accountId},contact:{city:"Home-"+accountId},
+            professional:{jobTitle:"Role-"+accountId},createdAt:now,updatedAt:now,submittedAt:null,
+            audit:[{private:"INTERNAL_PROFILE_AUDIT_SENTINEL"}]};
+          await db.query(`INSERT INTO worker_profiles(worker_sub,worker_id,schema_version,version,status,
+            profile_document,created_at,updated_at,submitted_at)
+            SELECT account_id,worker_reference,1,1,'draft',$2::jsonb,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,NULL
+            FROM auth_accounts WHERE account_id=$1
+            ON CONFLICT(worker_sub) DO UPDATE SET profile_document=EXCLUDED.profile_document`,[accountId,JSON.stringify(document)]);
+        }
       } finally { await db.close(); }
     }
     const result = await runDevelopmentServer({
@@ -193,6 +206,11 @@ test(DATA_MODE ? "Worker access/export request reaches reviewed owner-only JSON 
                 assert.match(response.headers()["content-disposition"],/attachment/);
                 const data=await response.json();assert.equal(data.account.account_id,credentials.worker.accountId);
                 assert.equal(data.account.email_normalized,credentials.worker.email.toLowerCase());
+                assert.equal(data.workerProfile.personal.legalFirstName,"Provided-"+credentials.worker.accountId);
+                assert.equal(data.workerProfile.contact.city,"Home-"+credentials.worker.accountId);
+                assert.equal(data.workerProfile.professional.jobTitle,"Role-"+credentials.worker.accountId);
+                assert.equal(JSON.stringify(data).includes("privacy_download_foreign_worker"),false);
+                assert.equal(JSON.stringify(data).includes("INTERNAL_PROFILE_AUDIT_SENTINEL"),false);
                 for(const secret of ["password_hash","token_nonce_hash","privacy-download-foreign@example.test"])
                   assert.equal(JSON.stringify(data).includes(secret),false,secret);
                 assert.equal((await foreign.request.get(url)).status(),404);

@@ -117,3 +117,21 @@ test("access fulfilment prepares an owner-only download before recording COMPLET
   assert.equal(retried.status,'COMPLETED');
  } finally {await db.close();}
 });
+
+test("current privacy download includes owned provided profile fields and excludes foreign profiles and internal audit payloads",async()=>{
+ const db=await database();
+ try {
+  for(const id of ['profile_export_owner','profile_export_other']){
+   await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,worker_reference,created_at,updated_at) VALUES($1,$2,$1,'active','fixture',$3,$3,$4,$3,$3)",[id,id+'@example.test',NOW,'ref_'+id]);
+   await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",[id,NOW]);
+   const profile={schemaVersion:1,workerSub:id,workerId:'ref_'+id,version:1,status:'draft',personal:{legalFirstName:'Provided-'+id},contact:{city:'Home-'+id},professional:{jobTitle:'Role-'+id},audit:[{internal:'PRIVATE_STAFF_AUDIT_SENTINEL'}],createdAt:NOW,updatedAt:NOW,submittedAt:null};
+   await db.query("INSERT INTO worker_profiles(worker_sub,worker_id,schema_version,version,status,profile_document,created_at,updated_at,submitted_at) VALUES($1,$2,1,1,'draft',$3::jsonb,$4,$4,NULL)",[id,'ref_'+id,JSON.stringify(profile),NOW]);
+  }
+  const data=await collectWorkerPrivacyData(db,'profile_export_owner',NOW);
+  assert.equal(data.workerProfile.personal.legalFirstName,'Provided-profile_export_owner');
+  assert.equal(data.workerProfile.contact.city,'Home-profile_export_owner');
+  assert.equal(data.workerProfile.professional.jobTitle,'Role-profile_export_owner');
+  assert.equal(JSON.stringify(data).includes('profile_export_other'),false);
+  assert.equal(JSON.stringify(data).includes('PRIVATE_STAFF_AUDIT_SENTINEL'),false);
+ } finally {await db.close();}
+});
