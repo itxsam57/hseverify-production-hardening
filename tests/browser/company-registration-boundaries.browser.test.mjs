@@ -58,7 +58,7 @@ test("Company registration commits email/MFA denials and activates only a Compan
  const port=await freePort(),baseUrl="http://127.0.0.1:"+port,email="company.boundary@example.test";
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"company-registration-browser",
  HSE_SESSION_SECRET:"company-registration-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"company-registration-pepper-more-than-thirty-two",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
- let browser, code, setupKey;
+ let browser, code, setupKey, issuedAt;
  try{
   const r=spawnSync(process.execPath,["scripts/db-migrate.mjs"],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);
   browser=await chromium.launch({headless:true});const context=await browser.newContext();const page=await context.newPage(),inbox=await context.newPage();
@@ -75,11 +75,27 @@ test("Company registration commits email/MFA denials and activates only a Compan
    await inbox.getByLabel("Business email").fill(email);await inbox.getByLabel("Sandbox access key").fill(SANDBOX_KEY);
    await inbox.getByRole("button",{name:"Open latest email code",exact:true}).click();
    const status=inbox.getByRole("status",{name:"Latest Company registration code"});await status.waitFor();
-   code=(await status.locator("strong").innerText()).trim();
+   code=(await status.locator("strong").innerText()).trim();issuedAt=Date.now();
+   await page.getByRole("button",{name:"Send new code",exact:true}).click();
+   await page.waitForURL("**/company/register/verify?reason=cooldown");
+   await page.getByRole("alert").getByText("Wait before requesting another verification code.",{exact:true}).waitFor({timeout:5000});
+
    await page.getByLabel("Email verification code").fill(String((Number(code)+1)%1000000).padStart(6,"0"));
    await page.getByRole("button",{name:"Verify business email",exact:true}).click();
    await page.getByRole("alert").getByText("The verification code is incorrect. 4 attempts remaining.",{exact:true}).waitFor();
    console.log("ACTUAL_COMPANY_EMAIL_REJECTION_BROWSER: wrong code denied with four attempts remaining");
+   for(let remaining=3;remaining>=0;remaining--){
+    await page.getByLabel("Email verification code").fill(String((Number(code)+1)%1000000).padStart(6,"0"));
+    await page.getByRole("button",{name:"Verify business email",exact:true}).click();
+    const message=remaining>0?`The verification code is incorrect. ${remaining} attempt${remaining===1?"":"s"} remaining.`:"That verification code can no longer be used. Request a new code.";
+    await page.getByRole("alert").getByText(message,{exact:true}).waitFor();
+   }
+   await page.getByLabel("Email verification code").fill(code);
+   await page.getByRole("button",{name:"Verify business email",exact:true}).click();
+   await page.getByRole("alert").getByText("Request a new Company email verification code.",{exact:true}).waitFor();
+   await page.getByText("Step 1 of 2",{exact:true}).waitFor();
+   console.log("ACTUAL_COMPANY_EXHAUSTION_BROWSER: five rejected codes, correct exhausted code denied");
+
   });
   const db=new PGlite(directory);try{
    const a=(await db.query("SELECT account_id,account_status,email_verified_at FROM auth_accounts WHERE email_normalized=$1",[email])).rows[0];
@@ -88,8 +104,8 @@ test("Company registration commits email/MFA denials and activates only a Compan
    assert.equal((await db.query("SELECT tenant_status FROM platform_tenants WHERE tenant_id=$1",[flow.tenant_id])).rows[0].tenant_status,"pending");
    assert.equal((await db.query("SELECT membership_status FROM auth_tenant_memberships WHERE membership_id=$1",[flow.membership_id])).rows[0].membership_status,"invited");
    assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_sessions WHERE account_id=$1",[a.account_id])).rows[0].count,0);
-   assert.equal((await db.query("SELECT attempts_remaining FROM auth_otp_challenges WHERE account_id=$1",[a.account_id])).rows[0].attempts_remaining,4);
-   assert.equal((await db.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.otp.failed'",[a.account_id])).rows[0].count,1);
+   assert.equal((await db.query("SELECT attempts_remaining FROM auth_otp_challenges WHERE account_id=$1",[a.account_id])).rows[0].attempts_remaining,0);
+   assert.equal((await db.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.otp.failed'",[a.account_id])).rows[0].count,5);
    console.log("ACTUAL_COMPANY_EMAIL_REJECTION_DB: pending foundations, no session, committed decrement and immutable audit");
   }finally{await db.close();}
 
@@ -97,6 +113,12 @@ test("Company registration commits email/MFA denials and activates only a Compan
   let verifyPage;
   await phase(async()=>{
    verifyPage=await context.newPage();await verifyPage.goto(baseUrl+"/company/register/verify");
+   await verifyPage.waitForTimeout(Math.max(0,65000-(Date.now()-issuedAt)));
+   await verifyPage.getByRole("button",{name:"Send new code",exact:true}).click();
+   await verifyPage.waitForURL("**/company/register/verify?reason=resent");
+   await inbox.goto(baseUrl+"/company/register/sandbox");await inbox.getByLabel("Business email").fill(email);await inbox.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await inbox.getByRole("button",{name:"Open latest email code",exact:true}).click();
+   const latest=inbox.getByRole("status",{name:"Latest Company registration code"});await latest.waitFor();code=(await latest.locator("strong").innerText()).trim();
+
    await verifyPage.getByLabel("Email verification code").fill(code);
    await verifyPage.getByRole("button",{name:"Verify business email",exact:true}).click();
    await verifyPage.getByText("Step 2 of 2",{exact:true}).waitFor();
@@ -138,7 +160,7 @@ test("Company registration commits email/MFA denials and activates only a Compan
    assert.deepEqual((await finalDb.query("SELECT role FROM auth_account_roles WHERE account_id=$1",[a.account_id])).rows,[{role:"company"}]);
    const sessions=(await finalDb.query("SELECT active_role,revoked_at FROM auth_sessions WHERE account_id=$1",[a.account_id])).rows;assert.deepEqual(sessions,[{active_role:"company",revoked_at:null}]);
    assert.equal((await finalDb.query("SELECT factor_status FROM auth_mfa_factors WHERE account_id=$1",[a.account_id])).rows[0].factor_status,"active");
-   const challenge=(await finalDb.query("SELECT attempts_remaining,consumed_at FROM auth_otp_challenges WHERE account_id=$1",[a.account_id])).rows[0];assert.equal(challenge.attempts_remaining,4);assert.ok(challenge.consumed_at);
+   const challenge=(await finalDb.query("SELECT attempts_remaining,consumed_at FROM auth_otp_challenges WHERE account_id=$1 ORDER BY created_at DESC LIMIT 1",[a.account_id])).rows[0];assert.equal(challenge.attempts_remaining,5);assert.ok(challenge.consumed_at);
    console.log("ACTUAL_COMPANY_ACTIVATION_DB: exact Company role/session, active owner/factor and completed flow; tenant still pending");
   }finally{await finalDb.close();}
 

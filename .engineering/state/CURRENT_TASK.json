@@ -6,22 +6,25 @@
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/scenario-verification-20261002",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
-  "canonical_sha": "e8d024c75a002060f709e488d58fef58a25d2351",
+  "last_verified_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
+  "canonical_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
   "requirements": [
-    "M1.05.03",
+    "M3.05.01",
+    "M3.05.04",
     "M1.03.02",
-    "M1.05.04"
+    "M2.07.05",
+    "M1.07.04"
   ],
-  "last_verified_action": "PR27 accepted and actual merged e8d024c;18 exact cohorts and7 fresh CI successful. Reviewed notification/OTP batch applied; prior integrated working7/7PASS.",
+  "last_verified_action": "PR28 accepted after23 exact cohorts, six fresh runs/four QA jobs and independent review; actual0a78e32 merge identical source verified. Reviewed next billing/Company recovery patch applied; focused prepared browser/native/type/lint proofs pass, new exact candidate pending.",
   "evidence": [
-    ".autopilot/artifacts/20261006-pr27-ci-exact-8af233a.json",
-    ".autopilot/artifacts/20261006-pr27-independent-accept-8af233a.json",
-    ".autopilot/artifacts/20261006-pr27-merge-verified.json",
-    ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
-    ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json"
+    ".autopilot/artifacts/20261006-pr28-ci-exact-6c21282.json",
+    ".autopilot/artifacts/20261006-pr28-independent-accept-6c21282.json",
+    ".autopilot/artifacts/20261006-pr28-merge-verified.json",
+    ".autopilot/artifacts/20261006-workflow-recovery-next-independent-review.json",
+    ".autopilot/artifacts/20261006-billing-validation-snapshot-v4.json",
+    ".autopilot/artifacts/20261006-company-registration-cooldown-snapshot-v2-exhaustion.json"
   ],
-  "next_action": "Commit notification/OTP candidate; exact native/browser/security/build gates then fresh GitHub CI and independent acceptance. Whole Masterplan unfinished.",
+  "next_action": "Commit reviewed billing/Company recovery and actual bounded workflow tests; run16 focused exact gates, fresh CI and independent acceptance before merge. Then implement live OTP dispatch and continue remaining Masterplan.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -32,27 +35,27 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-06T15:25:07.612126+00:00",
-  "verified_sha": "8af233aadfee1f7f8066ce685b6739911c67a457",
+  "updated_at": "2026-10-06T16:35:45.402267+00:00",
+  "verified_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [
-      ".engineering/state/CURRENT_TASK.json",
-      ".engineering/WORK_CONTRACT.md"
+      ".autopilot/artifacts/NEXT_ACTION.json",
+      ".engineering/state/CURRENT_TASK.json"
     ],
-    "avoid_repeating": "Read compact CURRENT_TASK/ACTIVE_RESUME and current verification receipt; do not repeat accepted PR26 or refresh historical context. Source index supports targeted next-family lookup.",
-    "accepted_pr": 27,
-    "accepted_head": "8af233aadfee1f7f8066ce685b6739911c67a457",
-    "canonical_sha": "e8d024c75a002060f709e488d58fef58a25d2351",
+    "avoid_repeating": "Read .autopilot/artifacts/NEXT_ACTION.json first and one current receipt; do not rerun accepted PR28 or refresh historical context.",
+    "accepted_pr": 28,
+    "accepted_head": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
+    "canonical_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
     "coverage": {
       "passed": 36,
       "partial": 15,
       "unverified": 167
     },
     "accepted_baseline_coverage": {
-      "passed": 35,
-      "partial": 14,
-      "unverified": 169
+      "passed": 36,
+      "partial": 15,
+      "unverified": 167
     }
   },
   "blocker": null

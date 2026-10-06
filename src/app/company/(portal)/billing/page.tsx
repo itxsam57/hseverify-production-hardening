@@ -14,8 +14,8 @@ import {
   runReconciliation
 } from "./actions";
 
-export default async function CompanyBillingPage({searchParams}: {searchParams: Promise<{fundingError?: string}>}): Promise<React.JSX.Element> {
-  const { fundingError } = await searchParams;
+export default async function CompanyBillingPage({searchParams}: {searchParams: Promise<{fundingError?: string; billingError?: string}>}): Promise<React.JSX.Element> {
+  const { fundingError, billingError } = await searchParams;
   const principal = await requireCurrentTenantPermission("company.billing.read");
   const scope = deriveTrustedTenantScope(principal);
   const permissions = resolveTenantPermissions(
@@ -44,6 +44,7 @@ export default async function CompanyBillingPage({searchParams}: {searchParams: 
         </div>
       </div>
 
+      {billingError && <p className="status-banner status-error" role="alert">{billingError}</p>}
       {fundingError && <p className="status-banner status-error" role="alert">{fundingError}</p>}
       <div className="metric-grid">
         <article className="metric-card">

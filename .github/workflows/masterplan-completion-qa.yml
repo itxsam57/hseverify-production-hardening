@@ -188,6 +188,17 @@ jobs:
           HSE_SHARE_EXPIRY: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
+      - name: Company checkout, duplicate capture and refund recovery
+        run: node --test tests/browser/company-billing-validation.browser.test.mjs
+
+      - name: Initial identity rejection retains the immutable human outcome
+        run: node --test tests/browser/initial-identity-rejection.browser.test.mjs
+
+      - name: MCQ-only and written-only natural expiry retain saved drafts
+        run: |
+          HSE_AUDIT_CREDENTIALS_PATH="$RUNNER_TEMP/mcq-expiry-credentials.json" HSE_MASTERPLAN_TIMING=true HSE_MASTERPLAN_EXPIRY=true HSE_MASTERPLAN_DELIVERY_MODE=STRICT HSE_MASTERPLAN_FUNDING_MODE=independent HSE_MASTERPLAN_CONTENT_MODE=MCQ_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
+          HSE_AUDIT_CREDENTIALS_PATH="$RUNNER_TEMP/written-expiry-credentials.json" HSE_MASTERPLAN_TIMING=true HSE_MASTERPLAN_EXPIRY=true HSE_MASTERPLAN_DELIVERY_MODE=STRICT HSE_MASTERPLAN_FUNDING_MODE=independent HSE_MASTERPLAN_CONTENT_MODE=WRITTEN_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
+
       - name: Six-role notification read and mark-all synchronization
         run: node --test tests/browser/all-role-notification-workflow.browser.test.mjs
       - name: Six-role authentication and session boundaries

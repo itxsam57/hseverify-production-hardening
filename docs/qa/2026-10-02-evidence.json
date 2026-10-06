@@ -594,9 +594,17 @@
             "working_snapshot": ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
             "independent_source_review": ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json",
             "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only"
+          },
+          "accepted_pr28": {
+            "candidate_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
+            "canonical_merge_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
+            "local_exact": "23/23PASS",
+            "fresh_ci": ".autopilot/artifacts/20261006-pr28-ci-exact-6c21282.json",
+            "independent_accept": ".autopilot/artifacts/20261006-pr28-independent-accept-6c21282.json",
+            "merge_source_identity": ".autopilot/artifacts/20261006-pr28-merge-verified.json"
           }
         },
-        "notes": "Working-tree actual Worker browser email and phone wrong/expired/resend/stale-form/verified boundaries pass. Server stopped before synthetic persisted expiry/cooldown dates; browser/server clock unchanged. Cached no-JS normal-POST contexts prevent dev HMR from refreshing old forms. Intermediate pending states/no sessions and final both-contact activation, exact4challenge invalidated/consumed pairs, counters4/5 and issued4/failed2/verified2 persist. UI cooldown disabled; forged early-resend POST and attempt exhaustion remain unverified. Company/staff OTP and live delivery unverified; exact candidate/review/CI pending. Prepared next slice adds real Worker early-resend direct POST/cross-origin/missing-origin denial for both channels and five-rejection browser exhaustion with direct correct exhausted-code replay denied;fresh challenges recover only correct stages, zero sessions. Five native Worker boundary/required-audit rollback cases and Company cooldown exact boundary/expiry recovery pass. Company new expiry/cooldown proof is native; actual Company expiry browser/staff OTP/live delivery remain unverified. Next exact candidate and fresh CI still required."
+        "notes": "Working-tree actual Worker browser email and phone wrong/expired/resend/stale-form/verified boundaries pass. Server stopped before synthetic persisted expiry/cooldown dates; browser/server clock unchanged. Cached no-JS normal-POST contexts prevent dev HMR from refreshing old forms. Intermediate pending states/no sessions and final both-contact activation, exact4challenge invalidated/consumed pairs, counters4/5 and issued4/failed2/verified2 persist. UI cooldown disabled; forged early-resend POST and attempt exhaustion remain unverified. Company/staff OTP and live delivery unverified; exact candidate/review/CI pending. Prepared next slice adds real Worker early-resend direct POST/cross-origin/missing-origin denial for both channels and five-rejection browser exhaustion with direct correct exhausted-code replay denied;fresh challenges recover only correct stages, zero sessions. Five native Worker boundary/required-audit rollback cases and Company cooldown exact boundary/expiry recovery pass. Company new expiry/cooldown proof is native; actual Company expiry browser/staff OTP/live delivery remain unverified. Next exact candidate and fresh CI still required. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario."
       },
       {
         "id": "M1.03.03",
@@ -808,9 +816,17 @@
           "prepared_source_patch_sha256": "07d3a1e6692d6abde1a769a1909b712701d1322ddc4b6dfb6129ede6565b0275",
           "working_snapshot": ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
           "independent_source_review": ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json",
-          "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only"
+          "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only",
+          "accepted_pr28": {
+            "candidate_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
+            "canonical_merge_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
+            "local_exact": "23/23PASS",
+            "fresh_ci": ".autopilot/artifacts/20261006-pr28-ci-exact-6c21282.json",
+            "independent_accept": ".autopilot/artifacts/20261006-pr28-independent-accept-6c21282.json",
+            "merge_source_identity": ".autopilot/artifacts/20261006-pr28-merge-verified.json"
+          }
         },
-        "notes": "Working prepared slice: actual six-role login, committed outbox projection, bell deep-link/read, individual read and mark-all of two unread notices with reload;24 retained notification rows and24 distinct required read audits. Native live session/account/current-role/exact Company membership guards, revoked/locked/expired authority denial, foreign account/role/tenant isolation, first read date/idempotence, whole-batch required audit rollback/retry and pending Company owner security notification pass. Exact next candidate/freshCI/acceptance still required before canonical promotion. No live delivery or PostgreSQL contention claim."
+        "notes": "Working prepared slice: actual six-role login, committed outbox projection, bell deep-link/read, individual read and mark-all of two unread notices with reload;24 retained notification rows and24 distinct required read audits. Native live session/account/current-role/exact Company membership guards, revoked/locked/expired authority denial, foreign account/role/tenant isolation, first read date/idempotence, whole-batch required audit rollback/retry and pending Company owner security notification pass. Exact next candidate/freshCI/acceptance still required before canonical promotion. No live delivery or PostgreSQL contention claim. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario."
       },
       {
         "id": "M1.05.04",
@@ -826,9 +842,17 @@
           "prepared_source_patch_sha256": "07d3a1e6692d6abde1a769a1909b712701d1322ddc4b6dfb6129ede6565b0275",
           "working_snapshot": ".autopilot/artifacts/20261006-notification-otp-combined-working-v1.json",
           "independent_source_review": ".autopilot/artifacts/20261006-notification-otp-combined-independent-review.json",
-          "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only"
+          "exact_candidate_and_fresh_ci": "Required before acceptance; prepared working evidence only",
+          "accepted_pr28": {
+            "candidate_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
+            "canonical_merge_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
+            "local_exact": "23/23PASS",
+            "fresh_ci": ".autopilot/artifacts/20261006-pr28-ci-exact-6c21282.json",
+            "independent_accept": ".autopilot/artifacts/20261006-pr28-independent-accept-6c21282.json",
+            "merge_source_identity": ".autopilot/artifacts/20261006-pr28-merge-verified.json"
+          }
         },
-        "notes": "Prepared next working security notification regression executes real recovery/outbox projection, exact idempotence, required enqueue failure atomic rollback and actual projection outage/retry without undoing accepted password/session state. This verifies recovery security notifications and common queue behavior; every business handoff notification/provider outage remains unverified. Exact next candidate/freshCI acceptance required; no whole-row promotion."
+        "notes": "Prepared next working security notification regression executes real recovery/outbox projection, exact idempotence, required enqueue failure atomic rollback and actual projection outage/retry without undoing accepted password/session state. This verifies recovery security notifications and common queue behavior; every business handoff notification/provider outage remains unverified. Exact next candidate/freshCI acceptance required; no whole-row promotion. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario."
       },
       {
         "id": "M1.06.01",
@@ -3532,7 +3556,7 @@
         "evidence": null
       }
     ],
-    "continued_at": "2026-10-03",
+    "continued_at": "2026-10-06",
     "runs": [
       {
         "command": "node --test tests/browser/complete-registration-retrospective.browser.test.mjs",

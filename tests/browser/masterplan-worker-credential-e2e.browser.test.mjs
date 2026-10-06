@@ -167,7 +167,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
   try{
     const migration=spawnSync(process.execPath,["scripts/db-migrate.mjs"],{cwd:root,env,encoding:"utf8"});assert.equal(migration.status,0,migration.stderr||migration.stdout);
     const seed=spawnSync(process.execPath,["scripts/independent-audit-seed.mjs"],{cwd:root,env,encoding:"utf8"});assert.equal(seed.status,0,seed.stderr||seed.stdout);
-    const credentials=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8"));
+    const credentials=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
     const phase1=await phaseOne(baseUrl,env,credentials);console.log("JOURNEY: identity and evidence verified");assert.equal(phase1.requestedSignal,"SMOKE_COMPLETE");
     const db=new PGlite(dbDir);
     let workerAccountId,permanentWorkerId,companyTenantId;
@@ -261,7 +261,8 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           }
 
           if(EXPIRY_MODE) {
-            await worker.getByLabel(MCQ_ANSWER).check();
+            if(CONTENT_MODE==="WRITTEN_ONLY") await worker.getByLabel("Your answer").fill("Draft response retained at written-only natural expiry.");
+            else await worker.getByLabel(MCQ_ANSWER).check();
             await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:15000});
             await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:110000});
             assert.equal(await worker.getByRole("timer").count(),0);
@@ -269,19 +270,25 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             await worker.reload();
             await worker.getByText("Assessment submitted",{exact:true}).waitFor();
             console.log("ACTUAL_EXPIRY_BROWSER saved draft retained, natural server deadline receipt, reload remains submitted");
+            if(CONTENT_MODE==="MCQ_ONLY") return {attemptId};
             await login(verifier,baseUrl,credentials.verifier,"verifier");
             await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);
             let review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
             await review.getByText(WRITTEN_PROMPT,{exact:false}).waitFor();
-            await review.getByText("Unanswered",{exact:true}).waitFor();
-            await review.getByText(MCQ_ANSWER,{exact:true}).waitFor();
-            assert.equal(await review.locator("article").count(),2);
+            if(CONTENT_MODE==="WRITTEN_ONLY") {
+              await review.getByText("Draft response retained at written-only natural expiry.",{exact:true}).waitFor();
+              assert.equal(await review.locator("article").count(),1);
+            } else {
+              await review.getByText("Unanswered",{exact:true}).waitFor();
+              await review.getByText(MCQ_ANSWER,{exact:true}).waitFor();
+              assert.equal(await review.locator("article").count(),2);
+            }
             await review.locator('input[name="score"]').fill("0");
             await review.locator('select[name="decision"]').selectOption("FAIL");
-            await review.locator('textarea[name="reason"]').fill("The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.");
+            await review.locator('textarea[name="reason"]').fill(CONTENT_MODE === "WRITTEN_ONLY" ? "The retained written response does not demonstrate the required hazard control reasoning." : "The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.");
             await review.getByRole("button",{name:"Save scoring decision"}).click();
             await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
-            await review.getByPlaceholder("Criterion").fill("Unanswered hazard control reasoning");
+            await review.getByPlaceholder("Criterion").fill(CONTENT_MODE === "WRITTEN_ONLY" ? "Insufficient hazard control reasoning" : "Unanswered hazard control reasoning");
             await review.locator('input[name="mark"]').fill("0");
             await review.getByRole("button",{name:"Save mark"}).click();
             await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
@@ -499,14 +506,16 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         const attempt=(await verify.query("SELECT attempt_id,status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows[0];
         assert.equal(attempt.status,"AUTO_SUBMITTED");
         const answers=(await verify.query("SELECT position,text_value FROM assessment_attempt_answers WHERE attempt_id=$1",[attempt.attempt_id])).rows;
-        assert.deepEqual(answers,[{position:1,text_value:MCQ_ANSWER}]);
+        assert.deepEqual(answers,[{position:1,text_value:CONTENT_MODE==="WRITTEN_ONLY" ? "Draft response retained at written-only natural expiry." : MCQ_ANSWER}]);
         const audit=(await verify.query("SELECT actor_account_id,actor_role,metadata FROM platform_audit_events WHERE action_key='assessment.attempt.submitted' AND target_reference=$1",[attempt.attempt_id])).rows;
         assert.equal(audit.length,1);assert.equal(audit[0].actor_account_id,null);assert.equal(audit[0].metadata.systemComponent,"outbox-worker");
         console.log("ACTUAL_EXPIRY_DB one retained draft, no fabricated written answer, one truthful system submission");
+        if(CONTENT_MODE!=="MCQ_ONLY") {
         const reviews=(await verify.query("SELECT score,decision,status FROM written_score_reviews WHERE attempt_id=$1",[attempt.attempt_id])).rows;
         assert.deepEqual(reviews,[{score:0,decision:"FAIL",status:"FINAL"}]);
         assert.equal((await verify.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0].case_status,"Reassessment required");
         console.log("ACTUAL_WRITTEN_REVIEW_DB final human decision and retained reassessment outcome");
+        }
       } finally {await verify.close();}
       return;
     }
