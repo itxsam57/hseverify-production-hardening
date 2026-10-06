@@ -30,6 +30,7 @@ export default function PublicHomePage(): React.JSX.Element {
         <div className="public-hero-actions">
           <Link className="button button-primary" href="/worker/register">Register as a Worker</Link>
           <Link className="button button-secondary" href="/company/register">Register a Company</Link>
+          <Link className="button button-secondary" href="/contact?type=demo">Request a demo</Link>
           <Link className="button button-secondary" href="/worker/login">
             Open Worker Portal
           </Link>

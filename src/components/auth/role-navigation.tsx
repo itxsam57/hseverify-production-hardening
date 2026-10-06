@@ -45,6 +45,7 @@ const ROLE_LINKS: Record<Exclude<AuthRole, "worker">, readonly NavigationItem[]>
   ],
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: "⌂" },
+    { href: "/admin/contact", label: "Contact & demo requests", icon: "✉" },
     { href: "/admin/company-verifications", label: "Company verifications", icon: "✓" },
     { href: "/admin/frameworks", label: "Frameworks & policy", icon: "◇" },
     { href: "/admin/question-bank", label: "Question Bank", icon: "?" },
@@ -63,6 +64,7 @@ const ROLE_LINKS: Record<Exclude<AuthRole, "worker">, readonly NavigationItem[]>
   ],
   root: [
     { href: "/root/dashboard", label: "Dashboard", icon: "⌂" },
+    { href: "/root/contact", label: "Contact & demo requests", icon: "✉" },
     { href: "/root/staff", label: "Staff & access", icon: "♟" },
     { href: "/root/notifications", label: "Notifications", icon: "♢" }
   ]
