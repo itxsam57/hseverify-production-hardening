@@ -3,12 +3,12 @@
   "task": "WORKFLOW-001",
   "status": "TESTING",
   "verified_sha": "270c72d985134079799e6bf0561f26d93d17ac48",
-  "last_verified_action": "Previousae778f2 exact11/actualCI PASS. Provided-profile gap reproduced; explicitowned personal/contact/professional projection passes actualnative4 plusfinalDATA_MODEbrowser. Initialbrowserfixture failure preserved; realstoredprofilemodel corrected. PR25 notyetmerged.",
-  "next_action": "Run eleven exact checks on newprofile-inclusiveprivacycandidate(native39/fivebrowser/engineering/typeslintbuildpreview), fivegates, pushPR25update andrequireactualnewheadCI/finalACCEPT beforemerge. Previousae CIallPASSbutnotprofile-inclusive. Ledger33/11/174.",
+  "last_verified_action": "2e09d08 exact eleven local cohorts PASS, but actual new CI targeted failed production audit GHSA-68fv-2mgg-jv7q source-map-js1.2.1. Only transitive lock patched1.2.2 and security floor added; working audit zero vulnerabilities and floor PASS. No merge.",
+  "next_action": "Commit minimal dependency repair, run exact local verification including live dependency audit, push PR25 and require fresh-head CI and independent ACCEPT. Then merge and integrate prepared owned consent-withdrawal request.",
   "owner_required": false,
   "revision": 9,
   "blocker": null,
-  "updated_at": "2026-10-06T10:22:07.364645+00:00",
+  "updated_at": "2026-10-06T10:29:33.794286+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -42,7 +42,10 @@
     ".autopilot/artifacts/20261005-canonical-c82abf6-audit-receipt.json",
     ".autopilot/artifacts/20261005-privacy-data-working-v3.json",
     ".autopilot/artifacts/20261005-privacy-data-engineering-working.txt",
-    ".autopilot/artifacts/20261005-privacy-data-browser-red-270c72d.txt"
+    ".autopilot/artifacts/20261005-privacy-data-browser-red-270c72d.txt",
+    ".autopilot/artifacts/20261005-privacy-data-exact-2e09d08.json",
+    ".autopilot/artifacts/20261006-pr25-2e09d08-targeted-job.txt",
+    ".autopilot/artifacts/20261006-source-map-patch-audit.txt"
   ],
   "unknowns": [
     "174 ledger scenarios unverified",

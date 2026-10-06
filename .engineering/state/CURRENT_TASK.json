@@ -11,7 +11,7 @@
   "requirements": [
     "M3.09.01"
   ],
-  "last_verified_action": "Previousae778f2 exact11/actualCI PASS. Provided-profile gap reproduced; explicitowned personal/contact/professional projection passes actualnative4 plusfinalDATA_MODEbrowser. Initialbrowserfixture failure preserved; realstoredprofilemodel corrected. PR25 notyetmerged.",
+  "last_verified_action": "2e09d08 exact eleven local cohorts PASS, but actual new CI targeted failed production audit GHSA-68fv-2mgg-jv7q source-map-js1.2.1. Only transitive lock patched1.2.2 and security floor added; working audit zero vulnerabilities and floor PASS. No merge.",
   "evidence": [
     ".autopilot/artifacts/20261005-privacy-exact-7bfda62.json",
     ".autopilot/artifacts/20261005-pr23-ci-exact-7bfda62.json",
@@ -24,9 +24,12 @@
     ".autopilot/artifacts/20261005-canonical-c82abf6-audit-receipt.json",
     ".autopilot/artifacts/20261005-privacy-data-working-v3.json",
     ".autopilot/artifacts/20261005-privacy-data-engineering-working.txt",
-    ".autopilot/artifacts/20261005-privacy-data-browser-red-270c72d.txt"
+    ".autopilot/artifacts/20261005-privacy-data-browser-red-270c72d.txt",
+    ".autopilot/artifacts/20261005-privacy-data-exact-2e09d08.json",
+    ".autopilot/artifacts/20261006-pr25-2e09d08-targeted-job.txt",
+    ".autopilot/artifacts/20261006-source-map-patch-audit.txt"
   ],
-  "next_action": "Run eleven exact checks on newprofile-inclusiveprivacycandidate(native39/fivebrowser/engineering/typeslintbuildpreview), fivegates, pushPR25update andrequireactualnewheadCI/finalACCEPT beforemerge. Previousae CIallPASSbutnotprofile-inclusive. Ledger33/11/174.",
+  "next_action": "Commit minimal dependency repair, run exact local verification including live dependency audit, push PR25 and require fresh-head CI and independent ACCEPT. Then merge and integrate prepared owned consent-withdrawal request.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -38,7 +41,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-06T10:22:07.364372+00:00",
+  "updated_at": "2026-10-06T10:29:33.794003+00:00",
   "verified_sha": "270c72d985134079799e6bf0561f26d93d17ac48",
   "state": "AUTO_CONTINUE",
   "resume": {
