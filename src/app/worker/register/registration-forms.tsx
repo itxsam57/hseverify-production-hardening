@@ -306,11 +306,11 @@ export function WorkerVerificationForm({
         Step {isEmail ? "1 of 2" : "2 of 2"}: {isEmail ? "email" : "phone"}
       </p>
       <p className={styles.deliveryLine}>
-        Code sent to <strong>{deliveryHint}</strong>
+        Verification contact: <strong>{deliveryHint}</strong>
       </p>
 
       {errorMessage ? <Alert tone="danger">{errorMessage}</Alert> : null}
-      {statusMessage ? <Alert tone="success">{statusMessage}</Alert> : null}
+      {statusMessage ? <Alert tone={sandboxEnabled ? "success" : "neutral"}>{statusMessage}</Alert> : null}
 
       <form
         action="/worker/register/verify/submit"

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { registrationDeliveryFeedback } from "@/lib/auth/registration-delivery-feedback";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -28,9 +29,9 @@ type VerificationPageProps = {
 
 const VERIFICATION_ERRORS: Record<string, string> = {
   "invalid-format": "Enter the latest six-digit code exactly as shown.",
-  "invalid-code": "That code was not accepted. Open the test-code inbox and use the latest code.",
-  "stale-code": "That code belongs to an older verification request. Open the inbox again and use the newest code.",
-  expired: "That code expired. Send a new code and open the inbox again.",
+  "invalid-code": "That code was not accepted. Use the latest code for the contact shown below.",
+  "stale-code": "That code belongs to an older verification request. Use the newest code for this contact.",
+  expired: "That code expired. Request a new code.",
   cooldown: "Wait until the resend timer finishes before requesting another code.",
   unavailable: "Verification could not be completed. Try the latest code again."
 };
@@ -72,7 +73,9 @@ export default async function WorkerRegistrationVerificationPage({
       ? null
       : "No active verification code exists. Send a new code to continue.";
   const statusMessage =
-    query.status === "resent"
+    !environment.authSandboxEnabled && pendingStep
+      ? registrationDeliveryFeedback(state.deliveryStatus)
+      : query.status === "resent"
       ? "A new code was created. Open the test-code inbox and use only the newest code."
       : null;
 

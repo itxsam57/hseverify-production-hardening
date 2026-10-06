@@ -2,27 +2,27 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "TESTING",
-  "verified_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
-  "last_verified_action": "PR28 accepted after23 exact cohorts, six fresh runs/four QA jobs and independent review; actual0a78e32 merge identical source verified. Reviewed next billing/Company recovery patch applied; focused prepared browser/native/type/lint proofs pass, new exact candidate pending.",
-  "next_action": "Commit reviewed billing/Company recovery and actual bounded workflow tests; run16 focused exact gates, fresh CI and independent acceptance before merge. Then implement live OTP dispatch and continue remaining Masterplan.",
+  "verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
+  "last_verified_action": "PR29 accepted after16 exact cohorts/all applicable freshCI/fourQA jobs/independentACCEPT; verified merged0e53eb3 identical tree. Prepared registration dispatch26native/browser/sandbox/type/lint/security/build/preview pass; reviewed hash18cc1dce integrated, new exact candidate pending.",
+  "next_action": "Commit reviewed registration delivery integration; run exact26native/nonSandboxbrowser and regressions/five gates, freshCI and independent acceptance. Then repair real nonSandbox recovery refusal and continue Masterplan.",
   "owner_required": false,
-  "revision": 11,
+  "revision": 12,
   "blocker": null,
-  "updated_at": "2026-10-06T16:35:45.402267+00:00",
+  "updated_at": "2026-10-06T17:27:07.230620+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "canonical_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
-  "last_verified_sha": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
+  "canonical_sha": "0e53eb31a2f2790d191056ba6b0e02c022ad2186",
+  "last_verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
   "resume": {
     "read_first": [
       ".autopilot/artifacts/NEXT_ACTION.json",
       ".engineering/state/CURRENT_TASK.json"
     ],
-    "avoid_repeating": "Read .autopilot/artifacts/NEXT_ACTION.json first and one current receipt; do not rerun accepted PR28 or refresh historical context.",
-    "accepted_pr": 28,
-    "accepted_head": "6c2128274c4b024ee5e139ce82d8e0223a8638e9",
-    "canonical_sha": "0a78e326088fd2cb531b197122fbeab28c92b738",
+    "avoid_repeating": "Read NEXT_ACTION.json and one current receipt; do not refresh history or retest accepted PR29.",
+    "accepted_pr": 29,
+    "accepted_head": "e139f878a541716a8faf04d5f443d9bf79a3d083",
+    "canonical_sha": "0e53eb31a2f2790d191056ba6b0e02c022ad2186",
     "coverage": {
       "passed": 36,
       "partial": 15,
@@ -36,16 +36,18 @@
   },
   "blockers": [],
   "evidence": [
-    ".autopilot/artifacts/20261006-pr28-ci-exact-6c21282.json",
-    ".autopilot/artifacts/20261006-pr28-independent-accept-6c21282.json",
-    ".autopilot/artifacts/20261006-pr28-merge-verified.json",
-    ".autopilot/artifacts/20261006-workflow-recovery-next-independent-review.json",
-    ".autopilot/artifacts/20261006-billing-validation-snapshot-v4.json",
-    ".autopilot/artifacts/20261006-company-registration-cooldown-snapshot-v2-exhaustion.json"
+    ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
+    ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
+    ".autopilot/artifacts/20261006-pr29-merge-verified.json",
+    ".autopilot/artifacts/20261006-registration-provider-red-canonical-0e53eb3.json",
+    ".autopilot/artifacts/20261006-registration-delivery-next-independent-review.json",
+    ".autopilot/artifacts/20261006-registration-delivery-bindings-final.json",
+    ".autopilot/artifacts/20261006-registration-delivery-portable-v2.json"
   ],
   "unknowns": [
-    "167 unverified and15 partial working scenarios",
-    "Live email/SMS OTP transport missing; sandbox cannot serve production",
-    "Broader privacy, deployed provider workflows and PostgreSQL concurrency"
+    "167 unverified and15 partial expanded scenarios",
+    "Live provider delivery/realPG contention remain unverified",
+    "NonSandbox recovery returns token without flow/challenge; actual nextRED preserved",
+    "Broader privacy/materialhandoffs/deployment workflow breadth"
   ]
 }

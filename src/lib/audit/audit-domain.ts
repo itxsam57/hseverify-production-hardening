@@ -211,7 +211,7 @@ export type TrustedSystemAuditActor = Readonly<{
   activeRole: null;
   tenantId: string | null;
   membershipId: string | null;
-  systemComponent: "outbox-worker" | "public-verification-intake" | "public-inquiry-intake";
+  systemComponent: "outbox-worker" | "public-verification-intake" | "public-inquiry-intake" | "registration-verification";
   [TRUSTED_AUDIT_ACTOR]: true;
 }>;
 
@@ -351,7 +351,7 @@ export function bindTrustedCompanyApplicationAuditActor(
 }
 
 export function bindTrustedSystemAuditActor(
-  component: "outbox-worker" | "public-verification-intake" | "public-inquiry-intake",
+  component: "outbox-worker" | "public-verification-intake" | "public-inquiry-intake" | "registration-verification",
   context: Readonly<{
     tenantId: string | null;
     membershipId: string | null;
@@ -359,7 +359,7 @@ export function bindTrustedSystemAuditActor(
 ): TrustedSystemAuditActor {
   if (
     (component !== "outbox-worker" &&
-     component !== "public-verification-intake" && component !== "public-inquiry-intake") ||
+     component !== "public-verification-intake" && component !== "public-inquiry-intake" && component !== "registration-verification") ||
     ((context.tenantId === null) !== (context.membershipId === null)) ||
     (context.tenantId !== null && !nonEmpty(context.tenantId)) ||
     (context.membershipId !== null && !nonEmpty(context.membershipId))
@@ -400,7 +400,7 @@ export function assertTrustedAuditActor(
       (actor.tenantId !== null && !nonEmpty(actor.tenantId)) ||
       (actor.membershipId !== null && !nonEmpty(actor.membershipId)) ||
       (actor.systemComponent !== "outbox-worker" &&
-       actor.systemComponent !== "public-verification-intake" && actor.systemComponent !== "public-inquiry-intake")
+       actor.systemComponent !== "public-verification-intake" && actor.systemComponent !== "public-inquiry-intake" && actor.systemComponent !== "registration-verification")
     ) {
       throw new AuditContractError("Trusted system actor context is invalid.");
     }

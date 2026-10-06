@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { registrationDeliveryFeedback } from "@/lib/auth/registration-delivery-feedback";
 import { redirect } from "next/navigation";
 
 import {
@@ -55,7 +56,7 @@ export default async function CompanyRegistrationVerifyPage({
             <CompanyEmailVerificationForm
               deliveryHint={state.deliveryHint}
               sandboxEnabled={environment.authSandboxEnabled}
-              statusMessage={reason === "resent" ? "A new verification code was sent." : null}
+              statusMessage={!environment.authSandboxEnabled ? registrationDeliveryFeedback(state.deliveryStatus) : reason === "resent" ? "A new verification code was created." : null}
             />
           ) : (
             <CompanyMfaVerificationForm setupKey={state.totpSetupKey ?? ""} />

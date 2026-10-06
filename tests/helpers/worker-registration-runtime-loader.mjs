@@ -5,6 +5,8 @@ import ts from "typescript";
 
 const require = createRequire(import.meta.url);
 const modules = new Map();
+let runtimeEnvironment;
+export function setWorkerRegistrationRuntimeEnvironment(value) { runtimeEnvironment = value; }
 export function loadWorkerRegistrationTs(path) {
   const filename = resolve(path);
   if (modules.has(filename)) return modules.get(filename).exports;
@@ -16,11 +18,13 @@ export function loadWorkerRegistrationTs(path) {
   const localRequire = request => {
     if (request === "server-only") return {};
     // Tests inject the real database repository and service config; runtime singleton getters are unused.
-    if (request === "@/lib/database/database" || request === "@/lib/config/server-environment") return {};
+    if (request === "@/lib/database/database") return {};
+    if (request === "@/lib/config/server-environment") return {getServerEnvironment: () => runtimeEnvironment};
     if (request.startsWith("@/")) return loadWorkerRegistrationTs("src/" + request.slice(2) + ".ts");
     if (request.startsWith(".")) {
       const dependency = resolve(dirname(filename), request + ".ts");
-      if (dependency === resolve("src/lib/database/database.ts") || dependency === resolve("src/lib/config/server-environment.ts")) return {};
+      if (dependency === resolve("src/lib/database/database.ts")) return {};
+      if (dependency === resolve("src/lib/config/server-environment.ts")) return {getServerEnvironment: () => runtimeEnvironment};
       return loadWorkerRegistrationTs(dependency);
     }
     return require(request);

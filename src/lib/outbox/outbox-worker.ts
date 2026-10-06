@@ -1,5 +1,7 @@
 import "server-only";
 
+import { processRegistrationDeliveryJob } from "../auth/registration-delivery-handler";
+
 import { processAssessmentExpiryJob } from "../assessment-attempt/assessment-expiry-handler";
 
 import type { DatabaseClient } from "../database/database";
@@ -29,6 +31,8 @@ type OutboxHandler<T extends OutboxJobType> = (
 
 const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
   Object.freeze({
+    "authentication.challenge.delivery": async (job,lease,database) =>
+      processRegistrationDeliveryJob(job,lease,database),
     "assessment.attempt.expiry": async (job,lease,database) =>
       processAssessmentExpiryJob(job,lease,database),
     "platform.foundation.noop": async () => ({ kind: "succeeded" as const }),

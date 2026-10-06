@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getServerEnvironment } from "@/lib/config/server-environment";
 import { listAuthorizedPlatformAuditEvents } from "@/lib/audit/audit-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getOperationalHealthSnapshot } from "@/lib/admin/operational-health-service";
@@ -24,6 +25,7 @@ export default async function AdminOperationsPage({
   });
   const health = await getOperationalHealthSnapshot();
   const providers = getProviderHealth();
+  const registrationProviders = getServerEnvironment().registrationOtpProviders;
   const certificationRows = await new CertificationReadinessRepository().list();
   const certification = certificationRows.length > 0
     ? buildCertificationSnapshot(certificationRows)
@@ -70,6 +72,12 @@ export default async function AdminOperationsPage({
           </li>
         ))}
       </ul>
+      <h2>Registration verification delivery</h2>
+      <ul aria-label="Registration delivery configuration">
+        <li>Email: {registrationProviders?.emailApiKey ? "Configured" : "Unavailable"}</li>
+        <li>SMS: {registrationProviders?.smsAccountSid ? "Configured" : "Unavailable"}</li>
+      </ul>
+      <p>Provider configuration enables queued verification messages. Delivery to a real inbox or phone requires a separate delivery check.</p>
       <h2>Production launch and operational handover</h2>
       <p aria-label="release-readiness-status">Release readiness: {release.status}</p>
       {result === "updated" ? <p role="status">Handover check saved.</p> : null}

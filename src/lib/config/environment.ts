@@ -1,7 +1,10 @@
 export type HseAppEnvironment = "development" | "test" | "preview" | "production";
 export type HseDatabaseDriver = "pglite" | "postgres";
 
+import type { OtpProviderConfig } from "../auth/otp-provider-transport";
+
 export type RuntimeEnvironment = {
+  registrationOtpProviders?: OtpProviderConfig;
   appEnvironment: HseAppEnvironment;
   databaseDriver: HseDatabaseDriver;
   databaseUrl: string | null;
@@ -134,6 +137,30 @@ export function validateRuntimeEnvironment(
     issues.push("HSE_USE_WORKER_DEMO_DATA must be false in production.");
   }
 
+  const registrationOtpProviders: OtpProviderConfig = {
+    emailApiKey: input.HSE_OTP_EMAIL_API_KEY?.trim(),
+    emailFrom: input.HSE_OTP_EMAIL_FROM?.trim(),
+    smsAccountSid: input.HSE_OTP_SMS_ACCOUNT_SID?.trim(),
+    smsAuthToken: input.HSE_OTP_SMS_AUTH_TOKEN?.trim(),
+    smsFrom: input.HSE_OTP_SMS_FROM?.trim()
+  };
+  const safe = (value: string | undefined, maximum: number) =>
+    !!value && value.length <= maximum && !/[\x00-\x1f\x7f]/.test(value);
+  if (registrationOtpProviders.emailApiKey || registrationOtpProviders.emailFrom) {
+    if (!safe(registrationOtpProviders.emailApiKey, 512) ||
+        !safe(registrationOtpProviders.emailFrom, 320) ||
+        !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(registrationOtpProviders.emailFrom ?? "")) {
+      issues.push("OTP email requires a valid API key and sender email address.");
+    }
+  }
+  if (registrationOtpProviders.smsAccountSid || registrationOtpProviders.smsAuthToken || registrationOtpProviders.smsFrom) {
+    if (!/^AC[0-9a-fA-F]{32}$/.test(registrationOtpProviders.smsAccountSid ?? "") ||
+        !safe(registrationOtpProviders.smsAuthToken, 512) ||
+        !/^\+[1-9][0-9]{7,14}$/.test(registrationOtpProviders.smsFrom ?? "")) {
+      issues.push("OTP SMS requires a valid account SID, auth token and sender number.");
+    }
+  }
+
   if (issues.length > 0) {
     throw new EnvironmentConfigurationError(issues);
   }
@@ -149,6 +176,7 @@ export function validateRuntimeEnvironment(
     authSandboxEnabled,
     authSandboxAccessKey,
     demoAuthEnabled,
-    demoDataEnabled
+    demoDataEnabled,
+    ...(Object.values(registrationOtpProviders).some(Boolean) ? { registrationOtpProviders } : {})
   };
 }

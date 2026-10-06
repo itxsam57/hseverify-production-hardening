@@ -46,6 +46,7 @@ export type RegistrationPublicStep =
 
 export type RegistrationPublicState = {
   step: RegistrationPublicStep;
+  deliveryStatus?: import("../auth/registration-delivery-repository").RegistrationDeliveryStatus | null;
   deliveryHint: string | null;
   resendAvailableAt: string | null;
   challengeExpiresAt: string | null;
@@ -94,6 +95,7 @@ export class RegistrationServiceError extends Error {
 type RegistrationServiceConfig = {
   pepper: string;
   sandboxEnabled: boolean;
+  registrationDeliveryChannels?: readonly ("email" | "phone")[];
   sandboxAccessKey: string | null;
 };
 
@@ -192,7 +194,7 @@ export class WorkerRegistrationService {
   }
 
   private ensureDeliveryAvailable(): void {
-    if (!this.config.sandboxEnabled) {
+    if (!this.config.sandboxEnabled && (!this.config.registrationDeliveryChannels?.includes("email") || !this.config.registrationDeliveryChannels?.includes("phone"))) {
       throw new RegistrationServiceError({
         code: "delivery_unavailable",
         userMessage:
@@ -305,6 +307,7 @@ export class WorkerRegistrationService {
       createdAt: nowIso
     });
 
+    if (this.config.sandboxEnabled) {
     await input.repository.insertSandboxDelivery({
       deliveryId: createIdentifier("delivery"),
       challengeId,
@@ -314,6 +317,14 @@ export class WorkerRegistrationService {
       encryptedCode: encryptSecret(code, this.config.pepper),
       createdAt: nowIso
     });
+
+    } else {
+      await input.repository.enqueueDelivery({
+        deliveryId: createIdentifier("delivery"), challengeId,
+        encryptedPayload: encryptSecret(JSON.stringify({destination: destination, code, purpose: purpose, channel: channel}), this.config.pepper),
+        createdAt: nowIso
+      });
+    }
 
     await input.repository.authentication.insertSecurityEvent({
       eventId: createIdentifier("event"),
@@ -569,7 +580,10 @@ export class WorkerRegistrationService {
               purpose: purposeForStep(flow.currentStep)
             })
           : null;
-      return this.stateFrom(flow, account, challenge);
+      const state = this.stateFrom(flow, account, challenge);
+      return !this.config.sandboxEnabled && challenge
+        ? {...state, deliveryStatus: await repository.readDeliveryStatus(challenge.challengeId)}
+        : state;
     });
   }
 
@@ -932,6 +946,10 @@ export async function getWorkerRegistrationService(): Promise<WorkerRegistration
     await getWorkerRegistrationRepository(),
     {
       pepper: environment.authPepper,
+      registrationDeliveryChannels: [
+        ...(environment.registrationOtpProviders?.emailApiKey ? ["email" as const] : []),
+        ...(environment.registrationOtpProviders?.smsAccountSid ? ["phone" as const] : [])
+      ],
       sandboxEnabled: environment.authSandboxEnabled,
       sandboxAccessKey: environment.authSandboxAccessKey
     }

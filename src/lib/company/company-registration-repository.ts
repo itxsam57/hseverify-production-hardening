@@ -1,5 +1,7 @@
 import "server-only";
 
+import { enqueueRegistrationDelivery, readRegistrationDeliveryStatus, type RegistrationDeliveryIntent } from "../auth/registration-delivery-repository";
+
 import type { AuthOtpChallenge } from "../auth/auth-repository";
 import { AuthenticationRepository } from "../auth/auth-repository";
 import { AuthAccessRepository, type MfaFactor } from "../auth/auth-access-repository";
@@ -125,6 +127,14 @@ export class CompanyRegistrationRepository {
   constructor(private readonly database: DatabaseClient) {
     this.authentication = new AuthenticationRepository(database);
     this.access = new AuthAccessRepository(database);
+  }
+
+  async readDeliveryStatus(challengeId: string) {
+    return readRegistrationDeliveryStatus(this.database, challengeId);
+  }
+
+  async enqueueDelivery(input: RegistrationDeliveryIntent): Promise<void> {
+    await enqueueRegistrationDelivery(this.database, input);
   }
 
   async transaction<T>(
