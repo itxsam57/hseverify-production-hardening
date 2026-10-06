@@ -127,7 +127,7 @@ test(CONSENT_REQUEST_MODE ? "Worker scoped-consent withdrawal request reaches st
       cwd: root, env: environment, encoding: "utf8"
     });
     assert.equal(seed.status, 0, seed.stderr || seed.stdout);
-    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+    const credentials = JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8"));
     const caseId = await seedCase(
       databaseDirectory,
       credentials.company.tenantId,
