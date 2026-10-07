@@ -95,7 +95,8 @@ export class PrivacyOperationsRepository {
     const client = await this.clientPromise;
     await client.transaction(async (tx) => {
       let details = input.details ?? {};
-      if (input.type === "restriction") {
+      // General restriction intake stays reviewable; only an explicit supported scope can be fulfilled.
+      if (input.type === "restriction" && Object.keys(details).length > 0) {
         if (details.purpose !== "optional_sharing" || Object.keys(details).some(key => key !== "purpose")) {
           throw new Error("Choose the supported optional sharing restriction scope.");
         }
@@ -147,7 +148,7 @@ export class PrivacyOperationsRepository {
       }
       let details = request.details;
       if (input.decision === "COMPLETED" && request.request_type === "restriction") {
-        if (request.details?.purpose !== "optional_sharing") throw new Error("This restriction requires its supported fulfilment scope.");
+        if (request.details?.purpose !== "optional_sharing") throw new Error("Privacy fulfilment operation requires a supported fulfilment scope for this restriction.");
         await lockSharingAccount(tx, request.worker_id, true);
       }
       if (input.decision === "COMPLETED") {

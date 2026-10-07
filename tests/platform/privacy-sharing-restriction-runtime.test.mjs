@@ -30,7 +30,6 @@ async function database() {
 
 import { loadTs as realTs } from "../../scripts/interview-test-ts-loader.mjs";
 const {PrivacyOperationsRepository}=realTs("src/lib/privacy/privacy-operations-repository.ts");
-const {ConsentRecordService}=realTs("src/lib/privacy/consent-record-service.ts");
 test("Masterplan restriction request can reach specific operative fulfilment",async()=>{
  const db=await database();
  try {
@@ -104,8 +103,9 @@ test('Required restriction review history failure rolls back revocation and shar
 
 test('Forged or unsupported restriction scope cannot install sharing restrictions',async()=>{
  const db=await database();try {await seedRestrictionActors(db);const privacy=new PrivacyOperationsRepository(Promise.resolve(db));
- for(const details of [{},{purpose:'required_assessment'},{purpose:'optional_sharing',workerId:'restriction_other'},{purpose:'optional_sharing',fulfilment:{method:'optional_sharing_restriction'}}])await assert.rejects(privacy.createRequest({requestId:'forged_restriction',workerId:'restriction_worker',tenantId:null,type:'restriction',details}),/scope/);
- await db.query("INSERT INTO privacy_requests(request_id,worker_id,request_type,details) VALUES($1,'restriction_worker','restriction','{}'::jsonb)",[decision.requestId]);
+ for(const details of [{purpose:'required_assessment'},{purpose:'optional_sharing',workerId:'restriction_other'},{purpose:'optional_sharing',fulfilment:{method:'optional_sharing_restriction'}}])await assert.rejects(privacy.createRequest({requestId:'forged_restriction',workerId:'restriction_worker',tenantId:null,type:'restriction',details}),/scope/);
+ await privacy.createRequest({requestId:decision.requestId,workerId:'restriction_worker',tenantId:null,type:'restriction'});
+ assert.deepEqual((await db.query("SELECT status,details FROM privacy_requests WHERE request_id=$1",[decision.requestId])).rows,[{status:'OPEN',details:{}}]);
  await assert.rejects(privacy.reviewRequest(decision),/supported fulfilment scope/);
  assert.equal((await db.query('SELECT count(*)::int n FROM privacy_request_reviews')).rows[0].n,0);
  }finally{await db.close();}
