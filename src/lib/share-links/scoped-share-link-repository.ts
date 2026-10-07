@@ -1,6 +1,7 @@
 import "server-only";
 
-import { getDatabaseClient } from "../database/database";
+import { lockSharingOwner, sharingIsRestricted, OptionalSharingRestrictedError } from "../privacy/optional-sharing-restriction";
+import { getDatabaseClient, type DatabaseClient } from "../database/database";
 import {
   SCOPED_SHARE_FIELDS,
   type ScopedShareAccessLog,
@@ -30,12 +31,38 @@ export class ScopedShareLinkRepository {
 
   async save(record: ScopedShareLinkRecord): Promise<void> {
     const client = await this.clientPromise;
-    await client.query(
+    await client.transaction(async tx => {
+      const accountId = await lockSharingOwner(tx, record.ownerWorkerId, true);
+      if (await sharingIsRestricted(tx, accountId)) throw new OptionalSharingRestrictedError();
+      await tx.query(
       `INSERT INTO scoped_share_links
        (share_link_id, owner_worker_id, fields, purpose, employer_detail, created_at, expires_at, revoked_at, token_nonce_hash)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [record.shareLinkId, record.ownerWorkerId, JSON.stringify(record.fields), record.purpose, record.employerDetail, record.createdAt, record.expiresAt, record.revokedAt, record.tokenNonceHash]
-    );
+      );
+    });
+  }
+
+  async isRestricted(ownerWorkerId: string): Promise<boolean> {
+    const client = await this.clientPromise;
+    return client.transaction(async tx => {
+      const accountId = await lockSharingOwner(tx, ownerWorkerId, false);
+      return sharingIsRestricted(tx, accountId);
+    });
+  }
+
+  async withSharingAccess<T>(shareLinkId: string, operation: (repository: ScopedShareLinkRepository, client: DatabaseClient, restricted: boolean) => Promise<T>): Promise<T> {
+    const client = await this.clientPromise;
+    return client.transaction(async tx => {
+      const repository = new ScopedShareLinkRepository(Promise.resolve(tx));
+      const record = await repository.find(shareLinkId);
+      let restricted = false;
+      if (record) {
+        const accountId = await lockSharingOwner(tx, record.ownerWorkerId, false);
+        restricted = await sharingIsRestricted(tx, accountId);
+      }
+      return operation(repository, tx, restricted);
+    });
   }
 
   async saveAccessLog(log: ScopedShareAccessLog): Promise<void> {

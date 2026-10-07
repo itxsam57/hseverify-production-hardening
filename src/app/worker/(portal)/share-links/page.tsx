@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 export default async function WorkerShareLinksPage(): Promise<React.JSX.Element> {
   await requirePortalAuthorization("worker");
   const session = await requireWorkerSession();
-  const links = await new ScopedShareLinkService().listOwned(session.workerId);
+  const sharing = new ScopedShareLinkService();
+  const [links, restricted] = await Promise.all([sharing.listOwned(session.workerId), sharing.isRestricted(session.workerId)]);
 
   return (
     <section className="profile-page dashboard-page" aria-labelledby="share-links-heading">
@@ -22,7 +23,7 @@ export default async function WorkerShareLinksPage(): Promise<React.JSX.Element>
           </p>
         </div>
       </div>
-      <ShareLinkManager links={links} />
+      <ShareLinkManager links={links} restricted={restricted} />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { lockSharingAccount, OPTIONAL_SHARING_RESTRICTION } from "./optional-sharing-restriction";
 import { ConsentRecordService } from "./consent-record-service";
 import { collectWorkerPrivacyData } from "./worker-privacy-data";
 
@@ -94,6 +95,13 @@ export class PrivacyOperationsRepository {
     const client = await this.clientPromise;
     await client.transaction(async (tx) => {
       let details = input.details ?? {};
+      // General restriction intake stays reviewable; only an explicit supported scope can be fulfilled.
+      if (input.type === "restriction" && Object.keys(details).length > 0) {
+        if (details.purpose !== "optional_sharing" || Object.keys(details).some(key => key !== "purpose")) {
+          throw new Error("Choose the supported optional sharing restriction scope.");
+        }
+        details = { purpose: "optional_sharing" };
+      }
       if (input.type === "share_link_revocation" && details.shareLinkId !== undefined) {
         const link = await ownedShareLink(tx,input.workerId,details.shareLinkId);
         details = { shareLinkId: link.share_link_id, sharePurpose: link.purpose };
@@ -139,8 +147,24 @@ export class PrivacyOperationsRepository {
         throw new Error("Privacy request changed or is unavailable for this decision.");
       }
       let details = request.details;
+      if (input.decision === "COMPLETED" && request.request_type === "restriction") {
+        if (request.details?.purpose !== "optional_sharing") throw new Error("Privacy fulfilment operation requires a supported fulfilment scope for this restriction.");
+        await lockSharingAccount(tx, request.worker_id, true);
+      }
       if (input.decision === "COMPLETED") {
-        if (request.request_type === "consent_withdrawal" && request.details?.consentId !== undefined) {
+        if (request.request_type === "restriction") {
+          await tx.query(
+            `UPDATE scoped_share_links links SET revoked_at=COALESCE(links.revoked_at,$2::timestamptz)
+             WHERE links.revoked_at IS NULL AND EXISTS (
+               SELECT 1 FROM auth_accounts accounts WHERE accounts.account_id=$1 AND (
+                 links.owner_worker_id=accounts.worker_reference OR EXISTS (
+                   SELECT 1 FROM worker_identity_worker_ids ids WHERE ids.worker_account_id=accounts.account_id
+                   AND ids.permanent_worker_id=links.owner_worker_id
+                 )
+               )
+             )`, [request.worker_id,input.now]);
+          details = { purpose: "optional_sharing", fulfilment: { method: OPTIONAL_SHARING_RESTRICTION, restrictedAt: input.now } };
+        } else if (request.request_type === "consent_withdrawal" && request.details?.consentId !== undefined) {
           const consent = await ownedScopedConsent(tx,request.worker_id,request.details.consentId);
           await new ConsentRecordService(Promise.resolve(tx)).withdraw({
             workerId: request.worker_id, actorAccountId: input.reviewerAccountId,

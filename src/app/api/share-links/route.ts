@@ -1,3 +1,4 @@
+import { OptionalSharingRestrictedError } from "@/lib/privacy/optional-sharing-restriction";
 import { NextResponse } from "next/server";
 import { ScopedShareLinkService } from "@/lib/share-links/scoped-share-link-service";
 import { ScopedShareLinkRepository } from "@/lib/share-links/scoped-share-link-repository";
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
   }
 
   const database = await getDatabaseClient();
+  try {
   const result = await database.transaction(async (tx) => {
     const created = await new ScopedShareLinkService(
       new ScopedShareLinkRepository(Promise.resolve(tx))
@@ -67,6 +69,12 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(result, { status: 201 });
+  } catch (error) {
+    if (error instanceof OptionalSharingRestrictedError) {
+      return NextResponse.json({error: "optional_sharing_restricted"}, {status: 403});
+    }
+    throw error;
+  }
 }
 
 export async function GET() {

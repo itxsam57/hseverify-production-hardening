@@ -55,13 +55,27 @@ async function freePort() {
 }
 test("All six roles change passwords with reauthentication, keep current sessions and revoke other sessions",{timeout:300000},async()=>{
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-password-security-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
- const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"password-security-browser",HSE_SESSION_SECRET:"password-security-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"password-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
+ const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"password-security-browser",HSE_SESSION_SECRET:"password-security-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"password-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_AUDIT_CREDENTIALS_PATH:join(directory,"credentials.json")};
  const roles=["worker","company","assessor","verifier","admin","root"],changed={},notificationCookies={};let browser;
  const newPassword="ChangedPortal!Password2026";
- async function signIn(page,identity,role,password,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(password);if(identity.totpSecret)await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();}
+ async function signIn(page,identity,role,password,offset){
+  await page.goto(baseUrl+"/"+role+"/login");
+  await page.getByLabel("Email address").fill(identity.email);
+  await page.getByLabel("Password",{exact:true}).fill(password);
+  if(identity.totpSecret){
+   // The first login uses the previous counter so the second can use the current
+   // counter without replay. Submit early enough that the previous code stays valid.
+   if(offset===-1){
+    const remaining=30_000-Date.now()%30_000;
+    if(remaining<10_000)await new Promise(resolve=>setTimeout(resolve,remaining+20));
+   }
+   await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret,offset));
+  }
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+ }
  try{
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
-  const credentials=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8"));
+  const credentials=JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH,"utf8"));
   await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:root,environment,probe:async()=>{
    browser=await chromium.launch({headless:true});
    for(const role of roles){

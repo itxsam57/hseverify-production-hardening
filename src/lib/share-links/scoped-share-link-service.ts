@@ -6,7 +6,6 @@ import { ScopedShareLinkRepository } from "./scoped-share-link-repository";
 import { ScopedShareLinkManager } from "./scoped-share-link-domain";
 import type { DigitalPassport, PassportQualification, PassportSkill } from "../living-record/living-record-domain";
 import { buildDigitalPassport, livingCompetencyFromWorkerSkill } from "../living-record/living-record-domain";
-import { getDatabaseClient } from "../database/database";
 import { LivingRecordRepository } from "../living-record/living-record-repository";
 import { getServerEnvironment } from "../config/server-environment";
 import { DatabaseWorkerEvidenceRepository } from "../worker-evidence/worker-evidence-repository";
@@ -58,12 +57,12 @@ export class ScopedShareLinkService {
     return new ScopedShareLinkManager(signingKey);
   }
 
-  private async hydrate(shareLinkId: string) {
+  private async hydrate(shareLinkId: string, repository = this.repository) {
     const manager = this.manager();
-    const record = await this.repository.find(shareLinkId);
+    const record = await repository.find(shareLinkId);
     if (record) {
       manager.restore(record);
-      for (const log of await this.repository.listLogs(shareLinkId)) {
+      for (const log of await repository.listLogs(shareLinkId)) {
         manager.restoreAccessLog(log);
       }
     }
@@ -77,22 +76,28 @@ export class ScopedShareLinkService {
     return result;
   }
 
-  async resolve(input: {
+  async resolve(input: { token: string; shareLinkId: string; passport: DigitalPassport; accessedAt: string | Date }) {
+    return this.repository.withSharingAccess(input.shareLinkId, (repository, _client, restricted) =>
+      this.resolveWithin(repository, input, restricted));
+  }
+
+  private async resolveWithin(repository: ScopedShareLinkRepository, input: {
     token: string;
     shareLinkId: string;
     passport: DigitalPassport;
     accessedAt: string | Date;
-  }) {
-    const record = await this.repository.find(input.shareLinkId);
+  }, restricted = false) {
+    const record = await repository.find(input.shareLinkId);
     if (!record) {
       return Object.freeze({ kind: "denied", reason: "invalid" as const });
     }
-    const manager = await this.hydrate(input.shareLinkId);
+    const manager = await this.hydrate(input.shareLinkId, repository);
+    if (restricted) manager.restore({...record, revokedAt: record.revokedAt ?? new Date(input.accessedAt).toISOString()});
     const previousLogCount = manager.listAccessLogs(record.ownerWorkerId, input.shareLinkId).length;
     const result = manager.resolve(input);
     const logs = manager.listAccessLogs(record.ownerWorkerId, input.shareLinkId);
     const latest = logs.at(previousLogCount);
-    if (latest) await this.repository.saveAccessLog(latest);
+    if (latest) await repository.saveAccessLog(latest);
     return result;
   }
 
@@ -111,6 +116,10 @@ export class ScopedShareLinkService {
     return Object.freeze(persisted);
   }
 
+  async isRestricted(ownerWorkerId: string) {
+    return this.repository.isRestricted(ownerWorkerId);
+  }
+
   async listOwned(ownerWorkerId: string) {
     return this.repository.listOwned(ownerWorkerId);
   }
@@ -120,12 +129,16 @@ export class ScopedShareLinkService {
     shareLinkId: string;
     accessedAt: string | Date;
   }) {
-    const record = await this.repository.find(input.shareLinkId);
+    return this.repository.withSharingAccess(input.shareLinkId, async (repository, database, restricted) => {
+    const record = await repository.find(input.shareLinkId);
     if (!record) {
       return Object.freeze({ kind: "denied", reason: "invalid" as const });
     }
 
-    const database = await getDatabaseClient();
+    if (restricted) {
+      const passport = buildDigitalPassport({workerId: record.ownerWorkerId, generatedAt: new Date(input.accessedAt).toISOString(), qualifications: [], skills: [], competencies: []});
+      return this.resolveWithin(repository, {...input, passport}, true);
+    }
     const account = await database.query<{ account_id: string }>(
       `SELECT accounts.account_id
          FROM auth_accounts AS accounts
@@ -157,9 +170,10 @@ export class ScopedShareLinkService {
       ]
     });
 
-    return this.resolve({
+    return this.resolveWithin(repository, {
       ...input,
       passport
+    });
     });
   }
 }

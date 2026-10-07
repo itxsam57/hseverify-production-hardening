@@ -35,13 +35,14 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
 
       <section className="panel page-section content-stack">
         <h2>Privacy request</h2>
+        <p>Restricting optional share links revokes your existing links and prevents new links after Admin completion. Required case processing and retained evidence continue.</p>
         <form action={submitPrivacyRequestAction} className="form-grid" aria-label="privacy request form">
           <label>
             Request type
             <select name="type" defaultValue="access" aria-label="Privacy request type">
               <option value="access">Access</option>
               <option value="correction">Correction</option>
-              <option value="restriction">Restriction</option>
+              <option value="restriction">Restrict optional share links</option>
               <option value="consent_withdrawal">Consent withdrawal</option>
               <option value="share_link_revocation">Share-link revocation</option>
               <option value="retention_inquiry">Retention inquiry</option>
@@ -118,6 +119,7 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
             <p>{request.request_type.replaceAll("_", " ")}: {request.status}</p>
             {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
             {typeof request.details?.consentPurpose === "string" ? <p>Consent: {request.details.consentPurpose}</p> : null}
+            {request.request_type === "restriction" && request.details?.purpose === "optional_sharing" ? <p>{request.status === "COMPLETED" ? "Optional share links are restricted. Existing links are revoked and new links are unavailable." : "Requested scope: optional share links. Required case processing and retained evidence continue."}</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
             {request.status === "COMPLETED" && ["access","export"].includes(request.request_type) &&
               (request.details?.fulfilment as { method?: string } | undefined)?.method === "owned_current_data_download" ? (
@@ -134,7 +136,7 @@ export default async function WorkerPrivacyPage(): Promise<React.JSX.Element> {
             <div>
               <strong>{request.accommodation_type}</strong>
               <p>Status: {request.status}</p>
-              {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
+            {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
               {request.case_id ? <p>Applied to case: {request.case_id}</p> : null}
             </div>
           </article>
