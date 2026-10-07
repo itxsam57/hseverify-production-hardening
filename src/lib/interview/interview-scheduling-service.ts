@@ -130,6 +130,11 @@ export class InterviewSchedulingService {
         [current.interviewRequestId,event.auditEventId]);
       await transaction.query("SELECT platform_enqueue_interview_notifications($1)",[event.auditEventId]);
       await transaction.query("SELECT platform_enqueue_interview_emails($1)",[event.auditEventId]);
+      const commitClock = await transaction.query<{now:string|Date}>("SELECT clock_timestamp() AS now");
+      const committedAt = commitClock.rows[0]?.now;
+      if (!committedAt || new Date(session.expires_at).getTime() <= new Date(committedAt).getTime()) {
+        throw new InterviewAssignmentAccessError();
+      }
       return updated;
     });
   }

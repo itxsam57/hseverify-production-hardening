@@ -71,3 +71,24 @@ test("Reschedule audit failure rolls back all effects and an already claimed int
   assert.deepEqual(await snapshot(),before);
  }finally{await db.close();await fixture.cleanup();}
 });
+
+test("Reschedule rechecks session expiry after its newly acquired runtime lock",async()=>{
+ const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+ try{
+  const principal=await assessorSchedulingPrincipal(db,fixture.credentials.assessor);
+  const input={principal,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha};
+  await new InterviewSchedulingService(db).scheduleInterview({...input,scheduledAt:new Date(Date.now()+86400000).toISOString()});
+  const snapshot=async()=>({request:(await db.query("SELECT scheduled_at,schedule_event_id,reschedule_reason FROM interview_requests WHERE interview_request_id=$1",[input.request.interviewRequestId])).rows,
+   jobs:(await db.query("SELECT job_id,idempotency_key FROM platform_outbox_jobs ORDER BY job_sequence")).rows,
+   audit:(await db.query("SELECT audit_event_id FROM platform_audit_events ORDER BY audit_sequence")).rows});
+  const before=await snapshot();
+  await db.query("UPDATE auth_sessions SET expires_at=clock_timestamp()+INTERVAL '2 seconds' WHERE session_id=$1",[principal.sessionId]);
+  const wrapped={transaction:callback=>db.transaction(tx=>callback({query:async(sql,args)=>{
+   const result=await tx.query(sql,args);
+   if(sql.startsWith("SELECT interview_session_id FROM interview_runtime_sessions"))await new Promise(resolve=>setTimeout(resolve,2200));
+   return result;
+  }}))};
+  await assert.rejects(()=>new InterviewSchedulingService(wrapped).scheduleInterview({...input,scheduledAt:new Date(Date.now()+172800000).toISOString(),rescheduleReason:"Worker requested another appointment"}),error=>error.name==="InterviewAssignmentAccessError");
+  assert.deepEqual(await snapshot(),before,"Expired session must roll back appointment, required audit and every notification intent");
+ }finally{await db.close();await fixture.cleanup();}
+});
