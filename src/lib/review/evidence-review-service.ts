@@ -175,20 +175,22 @@ export class EvidenceReviewService {
   constructor(private readonly database: DatabaseClient) {}
 
   async listQueue(
-    principal: AuthorizationPrincipal
+    principal: AuthorizationPrincipal,
+    query = ""
   ): Promise<readonly EvidenceReviewTask[]> {
     assertVerifierPrincipal(principal);
     const result = await this.database.query<TaskRow>(
       `SELECT ${TASK_COLUMNS}
          FROM evidence_review_tasks
-        WHERE task_status='QUEUED'
-           OR assigned_verifier_account_id=$1
+        WHERE (task_status='QUEUED' OR assigned_verifier_account_id=$1)
+          AND ($2='' OR strpos(lower(concat_ws(' ',task_id,case_id,worker_account_id,
+            source_version_id,evidence_kind,task_status,replace(task_status,'_',' '))),lower($2))>0)
         ORDER BY
           CASE task_status WHEN 'ASSIGNED' THEN 0 ELSE 1 END,
           created_at,
           task_id
         LIMIT 250`,
-      [principal.accountId]
+      [principal.accountId, query.trim().slice(0, 160)]
     );
     return Object.freeze(result.rows.map(task));
   }

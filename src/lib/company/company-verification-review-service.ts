@@ -167,7 +167,8 @@ export class CompanyVerificationReviewService {
   constructor(private readonly database: DatabaseClient) {}
 
   async listForReview(
-    principal: AuthorizationPrincipal
+    principal: AuthorizationPrincipal,
+    query = ""
   ): Promise<readonly CompanyVerificationReviewCase[]> {
     await assertLiveDecider(this.database, principal);
     const cases = await this.database.query<ReviewCaseRow>(
@@ -193,11 +194,15 @@ export class CompanyVerificationReviewService {
          ON versions.version_id = cases.current_version_id
        WHERE cases.case_status IN ('submitted', 'under_review')
          AND versions.version_status = 'submitted'
+         AND ($1='' OR strpos(lower(concat_ws(' ',cases.case_id,cases.tenant_id,
+           versions.legal_name,versions.trading_name,versions.registration_number,
+           versions.business_email_normalized,cases.case_status,replace(cases.case_status,'_',' '))),lower($1))>0)
        ORDER BY
          CASE cases.case_status WHEN 'under_review' THEN 0 ELSE 1 END,
          cases.submitted_at ASC NULLS LAST,
          cases.case_id ASC
-       LIMIT 250`
+       LIMIT 250`,
+      [query.trim().slice(0, 160)]
     );
     if (cases.rows.length === 0) return Object.freeze([]);
 

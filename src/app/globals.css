@@ -240,6 +240,10 @@ h3 { font-size: 1rem; }
 .header-menu > summary { display: flex; min-height: 44px; align-items: center; gap: 10px; border: 1px solid transparent; border-radius: 10px; padding: 4px 8px; cursor: pointer; list-style: none; }
 .header-menu > summary::-webkit-details-marker { display: none; }
 .header-menu > summary:hover, .header-menu[open] > summary { border-color: var(--slate-200); background: var(--slate-50); }
+.portal-search-menu { position: static; }
+.portal-search-panel { right: 16px; }
+.portal-search-form { display: grid; gap: 10px; padding: 16px; }
+.portal-search-form p { margin: 0; color: var(--slate-600); font-size: .8rem; }
 .notification-menu > summary { position: relative; justify-content: center; width: 44px; padding: 0; font-size: 1.25rem; }
 .notification-count { position: absolute; top: 4px; right: 3px; display: grid; min-width: 18px; height: 18px; place-items: center; border: 2px solid var(--white); border-radius: 999px; background: var(--red-700); color: var(--white); font-size: .65rem; font-weight: 800; }
 .avatar { display: inline-grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: var(--navy-900); color: var(--white); font-weight: 850; }

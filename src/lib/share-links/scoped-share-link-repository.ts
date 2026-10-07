@@ -103,27 +103,45 @@ export class ScopedShareLinkRepository {
     });
   }
 
-  async listOwned(ownerWorkerId: string): Promise<readonly ScopedShareLinkRecord[]> {
+  private async ownedLinks(ownerWorkerId: string, shareLinkId: string | null): Promise<readonly ScopedShareLinkRecord[]> {
     const client = await this.clientPromise;
-    const result = await client.query(
-      `SELECT share_link_id, owner_worker_id, fields, purpose, employer_detail, created_at, expires_at, revoked_at, token_nonce_hash
-       FROM scoped_share_links WHERE owner_worker_id = $1 ORDER BY created_at DESC`,
-      [ownerWorkerId]
-    );
-    return Object.freeze(result.rows.map((raw) => {
-      const row = raw as Record<string, unknown>;
-      return Object.freeze({
-        shareLinkId: String(row.share_link_id),
-        ownerWorkerId: String(row.owner_worker_id),
-        fields: fieldsFromRow(row.fields),
-        purpose: String(row.purpose),
-        employerDetail: row.employer_detail ? String(row.employer_detail) : null,
-        createdAt: isoTimestamp(row.created_at),
-        expiresAt: row.expires_at ? isoTimestamp(row.expires_at) : null,
-        revokedAt: row.revoked_at ? isoTimestamp(row.revoked_at) : null,
-        tokenNonceHash: String(row.token_nonce_hash)
-      });
-    }));
+    return client.transaction(async tx => {
+      const accountId = await lockSharingOwner(tx, ownerWorkerId, false);
+      const result = await tx.query(
+        `SELECT share_link_id, owner_worker_id, fields, purpose, employer_detail, created_at, expires_at, revoked_at, token_nonce_hash
+         FROM scoped_share_links links WHERE ($2::text IS NULL OR links.share_link_id=$2) AND EXISTS (
+           SELECT 1 FROM auth_accounts accounts WHERE accounts.account_id=$1 AND (
+             links.owner_worker_id=accounts.worker_reference OR EXISTS (
+               SELECT 1 FROM worker_identity_worker_ids ids WHERE ids.worker_account_id=accounts.account_id
+               AND ids.permanent_worker_id=links.owner_worker_id
+             )
+           )
+         ) ORDER BY created_at DESC, share_link_id`,
+        [accountId, shareLinkId]
+      );
+      return Object.freeze(result.rows.map((raw) => {
+        const row = raw as Record<string, unknown>;
+        return Object.freeze({
+          shareLinkId: String(row.share_link_id),
+          ownerWorkerId: String(row.owner_worker_id),
+          fields: fieldsFromRow(row.fields),
+          purpose: String(row.purpose),
+          employerDetail: row.employer_detail ? String(row.employer_detail) : null,
+          createdAt: isoTimestamp(row.created_at),
+          expiresAt: row.expires_at ? isoTimestamp(row.expires_at) : null,
+          revokedAt: row.revoked_at ? isoTimestamp(row.revoked_at) : null,
+          tokenNonceHash: String(row.token_nonce_hash)
+        });
+      }));
+    });
+  }
+
+  async listOwned(ownerWorkerId: string): Promise<readonly ScopedShareLinkRecord[]> {
+    return this.ownedLinks(ownerWorkerId, null);
+  }
+
+  async findOwned(shareLinkId: string, ownerWorkerId: string): Promise<ScopedShareLinkRecord | null> {
+    return (await this.ownedLinks(ownerWorkerId, shareLinkId))[0] ?? null;
   }
 
   async listLogs(shareLinkId: string): Promise<readonly ScopedShareAccessLog[]> {

@@ -51,10 +51,19 @@ function realTs(path) {
 }
 const {ScopedShareLinkService}=realTs("src/lib/share-links/scoped-share-link-service.ts");
 const {ScopedShareLinkRepository}=realTs("src/lib/share-links/scoped-share-link-repository.ts");
+async function seedRegisteredSharingOwners(db, references) {
+ for (const reference of references) {
+  const accountId=reference+'_account';
+  await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,worker_reference,created_at,updated_at) VALUES($1,$2,$1,'active','fixture',$3,$3,$4,$3,$3)",[accountId,accountId+'@example.test',NOW,reference]);
+  await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",[accountId,NOW]);
+ }
+}
+
 
 test("Worker direct revocation handles future-dated legacy metadata and returns the persisted first timestamp", async()=>{
  const db=await database();
  try {
+  await seedRegisteredSharingOwners(db,['legacy_owner','foreign_owner']);
   await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('legacy_direct','legacy_owner','[]'::jsonb,'Legacy direct sharing','2099-01-01T00:00:00.789Z',$1)",['n'.repeat(64)]);
   const service=new ScopedShareLinkService(new ScopedShareLinkRepository(Promise.resolve(db)));
   await assert.rejects(service.revoke({shareLinkId:'legacy_direct',ownerWorkerId:'foreign_owner',revokedAt:NOW}),/not found/i);
@@ -77,6 +86,7 @@ test("Worker direct revocation handles future-dated legacy metadata and returns 
 test("direct revocation returns the persisted first outcome on repeat",async()=>{
  const db=await database();
  try {
+  await seedRegisteredSharingOwners(db,['repeat_owner']);
   await db.query("INSERT INTO scoped_share_links(share_link_id,owner_worker_id,fields,purpose,created_at,token_nonce_hash) VALUES('repeat_direct','repeat_owner','[]'::jsonb,'Repeat direct sharing',$1,$2)",[NOW,'r'.repeat(64)]);
   const service=new ScopedShareLinkService(new ScopedShareLinkRepository(Promise.resolve(db)));
   const first='2026-10-01T00:10:00.456Z';

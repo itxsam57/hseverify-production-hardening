@@ -38,14 +38,15 @@ function formatSubmittedAt(value: string | null): string {
 export default async function CompanyVerificationReviewPage({
   searchParams
 }: {
-  searchParams: Promise<{ result?: string }>;
+  searchParams: Promise<{ result?: string; q?: string | string[] }>;
 }): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "admin",
     permission: "platform.tenants.manage"
   });
-  const queue = await (await getCompanyVerificationReviewService()).listForReview(principal);
-  const { result } = await searchParams;
+  const { result, q } = await searchParams;
+  const query = typeof q === "string" ? q.trim().slice(0, 160) : "";
+  const queue = await (await getCompanyVerificationReviewService()).listForReview(principal, query);
   const feedback = result ? RESULT_MESSAGES[result] : undefined;
 
   return (
@@ -61,10 +62,13 @@ export default async function CompanyVerificationReviewPage({
         <span className="status-pill">{queue.length} open</span>
       </header>
 
+      <p>Showing {queue.length} {query ? "matching " : ""}verification {queue.length === 1 ? "case" : "cases"}</p>
+      {queue.length === 250 ? <p>Up to 250 verification cases are shown. Refine your search to find a specific case.</p> : null}
+
       {feedback ? <Alert tone={feedback.tone}>{feedback.message}</Alert> : null}
 
       {queue.length === 0 ? (
-        <Alert tone="neutral">No submitted or in-review Company verification cases are waiting.</Alert>
+        <Alert tone="neutral">{query ? "No verification cases match your search." : "No submitted or in-review Company verification cases are waiting."}</Alert>
       ) : (
         <section className="content-stack" aria-label="Company verification queue">
           {queue.map((item) => (

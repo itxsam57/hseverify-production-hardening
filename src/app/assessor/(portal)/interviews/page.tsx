@@ -8,10 +8,17 @@ import {
   scheduleInterviewAction
 } from "./actions";
 
-export default async function AssessorInterviewsPage(): Promise<React.JSX.Element> {
+export default async function AssessorInterviewsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string }>;
+}): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
+  const params = await searchParams;
+  const query = typeof params.q === "string" ? params.q.trim().slice(0,160) : "";
   const assignments = await new InterviewSchedulingService(await getDatabaseClient()).getAssessorAssignments({
-    assessorAccountId: actor.accountId
+    assessorAccountId: actor.accountId,
+    query
   });
 
   return (
@@ -26,7 +33,8 @@ export default async function AssessorInterviewsPage(): Promise<React.JSX.Elemen
 
       <section className="dashboard-section" aria-labelledby="interview-assignment-heading">
         <h2 id="interview-assignment-heading">Scheduled interviews</h2>
-        {assignments.length === 0 ? <p>No interview assignments are currently available.</p> : (
+        {query ? <p>{assignments.length} matching {assignments.length === 1 ? "interview" : "interviews"}</p> : null}
+        {assignments.length === 0 ? <p>{query ? "No interview assignments match your search." : "No interview assignments are currently available."}</p> : (
           <div className="table-scroll">
             <table>
               <thead><tr><th>Case</th><th>Worker</th><th>Status</th><th>Schedule</th><th>Console</th><th>Conflict</th></tr></thead>

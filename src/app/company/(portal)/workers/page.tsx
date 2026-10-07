@@ -44,6 +44,12 @@ export default async function CompanyWorkersPage({
   })) if (value) exportParams.set(key, value);
 
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  function pageHref(page: number): string {
+    const query = new URLSearchParams(exportParams);
+    query.set("page", String(page));
+    return `?${query.toString()}`;
+  }
+
 
   return (
     <div className="dashboard-page">
@@ -107,9 +113,9 @@ export default async function CompanyWorkersPage({
           </div>
         )}
         <div className="button-row" aria-label="Directory pagination">
-          {result.page > 1 ? <Link className="button button-secondary" href={`?q=${encodeURIComponent(params.q ?? "")}&page=${result.page - 1}`}>Previous</Link> : null}
+          {result.page > 1 ? <Link className="button button-secondary" href={pageHref(result.page - 1)}>Previous</Link> : null}
           <span>Page {result.page} of {pages}</span>
-          {result.page < pages ? <Link className="button button-secondary" href={`?q=${encodeURIComponent(params.q ?? "")}&page=${result.page + 1}`}>Next</Link> : null}
+          {result.page < pages ? <Link className="button button-secondary" href={pageHref(result.page + 1)}>Next</Link> : null}
         </div>
       </section>
     </div>

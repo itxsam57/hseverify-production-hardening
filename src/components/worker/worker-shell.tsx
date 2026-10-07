@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOutWorker } from "@/app/worker/actions";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { WorkerAssessmentSearch } from "@/components/worker/worker-assessment-search";
 import { WorkerNavigation } from "@/components/worker/worker-navigation";
 import type { WorkerSession } from "@/lib/auth/worker-session";
 import { getNotificationMenu } from "@/lib/notifications/notification-service";
@@ -60,6 +61,7 @@ export async function WorkerShell({
           </div>
 
           <div className="header-actions">
+            <WorkerAssessmentSearch />
             <NotificationBell
               role="worker"
               unreadCount={notificationMenu.unreadCount}
@@ -85,6 +87,7 @@ export async function WorkerShell({
                 <Link href="/worker/notifications">Notifications</Link>
                 <Link href="/worker/security">Security</Link>
                 <Link href="/account/sessions">Active sessions</Link>
+                <Link href="/contact">Help and support</Link>
                 <Link href="/">Exit portal</Link>
                 <ConfirmDialog
                   action={signOutWorker}

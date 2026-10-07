@@ -99,6 +99,24 @@ jobs:
       - name: M2.08 persistence and recovery regression
         run: npm run test:m2-08
 
+      - name: Admin submitted Company verification search before queue limit
+        run: node --test tests/platform/admin-verification-search-runtime.test.mjs
+
+      - name: Root invitation SQL search before recent list limit
+        run: node --test tests/platform/root-invitation-search-runtime.test.mjs
+
+      - name: Verifier authorized review SQL search before queue limit
+        run: node --test tests/platform/verifier-review-search-runtime.test.mjs
+
+      - name: Assessor assigned interview SQL search and scope
+        run: node --test tests/platform/assessor-interview-search-runtime.test.mjs tests/platform/interview-scheduling-runtime.test.mjs
+
+      - name: Owned Worker application search and revoked-session boundary
+        run: node --test tests/platform/worker-assessment-search-runtime.test.mjs
+
+      - name: Workforce pagination retains active filters
+        run: node --test tests/platform/company-workforce-pagination.test.mjs
+
       - name: M1.10 workforce regression
         run: npm run test:m1-10
 
@@ -156,6 +174,24 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
+
+      - name: Assessor interview search navigation and direct record denial
+        run: node --test tests/browser/assessor-interview-search.browser.test.mjs
+
+      - name: Verifier review search and real claim boundary
+        run: node --test tests/browser/verifier-review-search.browser.test.mjs
+
+      - name: Root invitation header search and revoked session boundary
+        run: node --test tests/browser/root-invitation-search.browser.test.mjs
+
+      - name: Admin Company verification header search and revoked session boundary
+        run: node --test tests/browser/admin-verification-search.browser.test.mjs
+
+      - name: Worker application search desktop mobile and session revocation
+        run: node --test tests/browser/worker-assessment-search.browser.test.mjs
+
+      - name: Filtered Company workforce Next, refresh and Previous
+        run: node --test tests/browser/company-workforce-pagination.browser.test.mjs
 
       - name: Company staff existing-session suspension and revocation
         run: node --test tests/browser/company-complete-journey.browser.test.mjs
@@ -215,6 +251,9 @@ jobs:
 
       - name: Configured non-sandbox Worker and Company registration browser
         run: node --test tests/browser/registration-provider-delivery.browser.test.mjs
+
+      - name: Six-role desktop and mobile portal support navigation
+        run: node --test tests/browser/portal-help.browser.test.mjs
 
       - name: Worker restriction to Admin completion and recipient denial
         run: node --test tests/browser/privacy-sharing-restriction.browser.test.mjs
