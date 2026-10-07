@@ -111,25 +111,7 @@ test('Forged or unsupported restriction scope cannot install sharing restriction
  }finally{await db.close();}
 });
 
-const oid=(prefix,c)=>prefix+"_"+c.repeat(24);
-async function seedPermanentWorkerId(database, worker, c) {
-  const identityId=oid("worker_identity",c), versionId=oid("identity_version",c), checkId=oid("identity_duplicate_check",c), permanentWorkerId=oid("worker_id",c);
-  await database.query(`INSERT INTO worker_identities
-    (identity_id,worker_account_id,lifecycle_status,current_version_number,lock_version,created_at,updated_at)
-    VALUES ($1,$2,'draft',1,1,$3,$3)`,[identityId,worker.accountId,NOW]);
-  await database.query(`INSERT INTO worker_identity_versions
-    (identity_version_id,identity_id,version_number,parent_version_id,version_kind,version_status,created_by_account_id,created_at,submitted_at)
-    VALUES ($1,$2,1,NULL,'initial','submitted',$3,$4,$4)`,[versionId,identityId,worker.accountId,NOW]);
-  for (const [status,lock] of [["submitted",2],["automated_checks",3],["manual_review",4],["verified",5]])
-    await database.query(`UPDATE worker_identities SET lifecycle_status=$2,lock_version=$3 WHERE identity_id=$1`,[identityId,status,lock]);
-  await database.query(`INSERT INTO worker_identity_duplicate_checks
-    (check_id,identity_id,identity_version_id,worker_account_id,check_sequence,check_status,created_at)
-    VALUES ($1,$2,$3,$4,1,'clear',$5)`,[checkId,identityId,versionId,worker.accountId,NOW]);
-  await database.query(`INSERT INTO worker_identity_worker_ids
-    (permanent_worker_id,identity_id,identity_version_id,worker_account_id,issued_by_component,issued_at)
-    VALUES ($1,$2,$3,$4,'identity-assurance',$5)`,[permanentWorkerId,identityId,versionId,worker.accountId,NOW]);
-  return permanentWorkerId;
-}
+import { seedPermanentWorkerId } from "../helpers/permanent-worker-id-fixture.mjs";
 
 test('Restriction covers reference and permanent ID aliases and refuses ambiguous ownership without affecting another Worker',async()=>{
  const db=await database();try {await seedRestrictionActors(db);
@@ -159,5 +141,31 @@ test('Executed restriction and sharing queries use account-first conflicting loc
  const restricted=await sharing.withSharingAccess(record.shareLinkId,async (repo,_tx,value)=>{assert.equal(value,true);await repo.saveAccessLog({shareLinkId:record.shareLinkId,accessedAt:decision.now,outcome:'denied',reason:'revoked'});return value;});assert.equal(restricted,true);
  const access=traces.at(-1),lock=access.findIndex(sql=>sql.includes('FOR SHARE')),state=access.findIndex(sql=>sql.includes("request_type='restriction'")),log=access.findIndex(sql=>sql.includes('INSERT INTO scoped_share_access_logs'));
  assert.ok(lock>=0 && state>lock && log>state);assert.equal(access.some(sql=>sql.includes('FOR KEY SHARE')),false);
+ }finally{await db.close();}
+});
+
+test('Permanent Worker ID retains earlier owned links and permits direct revocation without granting foreign ownership',async()=>{
+ const db=await database();try {await seedRestrictionActors(db);
+ const {ScopedShareLinkRepository}=realTs('src/lib/share-links/scoped-share-link-repository.ts');
+ const {ScopedShareLinkService}=realTs('src/lib/share-links/scoped-share-link-service.ts');
+ const {ScopedShareLinkManager}=realTs('src/lib/share-links/scoped-share-link-domain.ts');
+ const repository=new ScopedShareLinkRepository(Promise.resolve(db)), service=new ScopedShareLinkService(repository);
+ service.manager=()=>new ScopedShareLinkManager('alias-sharing-test-signing-key-longer-than-thirty-two');
+ const create=ownerWorkerId=>service.create({ownerWorkerId,fields:['worker_id'],purpose:'Retained alias ownership',createdAt:NOW});
+ const earlier=await create('restriction_worker_ref'),foreign=await create('restriction_other_ref');
+ const permanent=await seedPermanentWorkerId(db,{accountId:'restriction_worker'},'y');
+ const later=await create(permanent);
+ for(const owner of ['restriction_worker_ref',permanent])assert.deepEqual(new Set((await service.listOwned(owner)).map(row=>row.shareLinkId)),new Set([earlier.record.shareLinkId,later.record.shareLinkId]));
+ assert.equal((await repository.findOwned(earlier.record.shareLinkId,permanent)).shareLinkId,earlier.record.shareLinkId);
+ assert.equal(await repository.findOwned(foreign.record.shareLinkId,permanent),null);
+ await assert.rejects(service.revoke({ownerWorkerId:permanent,shareLinkId:foreign.record.shareLinkId,revokedAt:decision.now}),/not found/);
+ const revoked=await service.revoke({ownerWorkerId:permanent,shareLinkId:earlier.record.shareLinkId,revokedAt:decision.now});assert.equal(revoked.revokedAt,decision.now);
+ const repeated=await service.revoke({ownerWorkerId:'restriction_worker_ref',shareLinkId:earlier.record.shareLinkId,revokedAt:'2026-10-01T00:20:00.000Z'});assert.equal(repeated.revokedAt,decision.now);
+ assert.equal((await repository.find(foreign.record.shareLinkId)).revokedAt,null);
+ assert.equal((await service.resolvePublic({token:earlier.token,shareLinkId:earlier.record.shareLinkId,accessedAt:decision.now})).reason,'revoked');
+ await db.query("UPDATE auth_accounts SET worker_reference=$1 WHERE account_id='restriction_other'",[permanent]);
+ await assert.rejects(service.listOwned(permanent),/ownership/);
+ await assert.rejects(service.revoke({ownerWorkerId:permanent,shareLinkId:later.record.shareLinkId,revokedAt:decision.now}),/ownership/);
+ assert.equal((await repository.find(later.record.shareLinkId)).revokedAt,null);
  }finally{await db.close();}
 });

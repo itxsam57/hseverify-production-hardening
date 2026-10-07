@@ -751,9 +751,10 @@ export class StaffProvisioningService {
   }
 
   async listInvitations(
-    inviterAccountId: string
+    inviterAccountId: string,
+    query = ""
   ): Promise<StaffInvitation[]> {
-    return this.repository.listStaffInvitations(inviterAccountId);
+    return this.repository.listStaffInvitations(inviterAccountId, 25, query);
   }
 }
 

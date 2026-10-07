@@ -1,7 +1,12 @@
 import Link from "next/link";
 
 import { signOutCurrentPortal } from "@/app/auth/actions";
+import { RootInvitationSearch } from "@/components/auth/root-invitation-search";
 import { RoleNavigation } from "@/components/auth/role-navigation";
+import { AdminVerificationSearch } from "@/components/company/admin-verification-search";
+import { CompanyWorkforceSearch } from "@/components/company/company-workforce-search";
+import { AssessorInterviewSearch } from "@/components/interview/assessor-interview-search";
+import { VerifierReviewSearch } from "@/components/review/verifier-review-search";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { AuthRole } from "@/lib/auth/auth-domain";
@@ -83,6 +88,11 @@ export async function RolePortalShell({
           </div>
 
           <div className="header-actions">
+            {session.role === "company" ? <CompanyWorkforceSearch /> : null}
+            {session.role === "assessor" ? <AssessorInterviewSearch /> : null}
+            {session.role === "verifier" ? <VerifierReviewSearch /> : null}
+            {session.role === "root" ? <RootInvitationSearch /> : null}
+            {session.role === "admin" ? <AdminVerificationSearch /> : null}
             <NotificationBell
               role={session.role}
               unreadCount={notificationMenu.unreadCount}
@@ -107,6 +117,7 @@ export async function RolePortalShell({
                 <Link href={`${basePath}/notifications`}>Notifications</Link>
                 <Link href="/account/security">Security</Link>
                 <Link href="/account/sessions">Active sessions</Link>
+                <Link href="/contact">Help and support</Link>
                 <Link href="/">Exit portal</Link>
                 <ConfirmDialog
                   action={signOutCurrentPortal}

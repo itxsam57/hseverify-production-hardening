@@ -33,7 +33,7 @@ test("interview assignment requires requested state and protects ownership", () 
   const assigned = assignInterviewRequest(createInterviewRequest({ caseId: "case-1", workerAccountId: "worker-1", requestedAt: "now" }), "assessor-1");
   assert.throws(() => assignInterviewRequest(assigned, "assessor-2"), InterviewSchedulingInputError);
   assert.throws(() => assertInterviewCaseOwnership(assigned, "worker-2"), InterviewSchedulingInputError);
-  assert.equal(scheduleInterviewRequest(assigned, "2026-09-14T11:00:00Z").scheduledAt, "2026-09-14T11:00:00Z");
+  assert.equal(scheduleInterviewRequest(assigned, "2026-09-14T11:00:00Z").scheduledAt, "2026-09-14T11:00:00.000Z");
 });
 
 test("interview console foundation defines session and media boundary", () => {

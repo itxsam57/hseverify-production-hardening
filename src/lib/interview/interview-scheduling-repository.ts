@@ -31,10 +31,14 @@ export class InterviewSchedulingRepository {
     return result.rows.map(mapRequest);
   }
 
-  async findAssignedToAssessorAccount(assessorAccountId:string):Promise<ScopedInterviewRequest[]> {
+  async findAssignedToAssessorAccount(assessorAccountId:string, query = ""):Promise<ScopedInterviewRequest[]> {
     const result = await this.database.query<InterviewRow>(
-      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE assessor_account_id=$1 ORDER BY requested_at ASC`,
-      [assessorAccountId]
+      `SELECT ${COLUMNS},tenant_id FROM interview_requests
+        WHERE assessor_account_id=$1
+          AND ($2='' OR strpos(lower(concat_ws(' ',interview_request_id,
+               case_id,worker_account_id,status,replace(status,'_',' '))),lower($2))>0)
+        ORDER BY requested_at ASC,interview_request_id ASC`,
+      [assessorAccountId, query.trim().slice(0,160)]
     );
     return result.rows.map((row) => Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }));
   }

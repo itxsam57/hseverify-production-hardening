@@ -613,15 +613,18 @@ export class AuthAccessRepository {
 
   async listStaffInvitations(
     invitedByAccountId: string,
-    limit = 25
+    limit = 25,
+    query = ""
   ): Promise<StaffInvitation[]> {
     const result = await this.database.query<StaffInvitationRow>(
       `SELECT ${INVITATION_COLUMNS}
        FROM auth_staff_invitations
        WHERE invited_by_account_id = $1
-       ORDER BY created_at DESC
+         AND ($3='' OR strpos(lower(concat_ws(' ',invitation_id,email_normalized,role,
+           invitation_status,replace(invitation_status,'_',' '))),lower($3))>0)
+       ORDER BY created_at DESC, invitation_id
        LIMIT $2`,
-      [invitedByAccountId, limit]
+      [invitedByAccountId, limit, query.trim().slice(0, 160)]
     );
     return result.rows.map(invitationFromRow);
   }

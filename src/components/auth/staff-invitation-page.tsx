@@ -12,14 +12,16 @@ type InvitationAction = (
 
 export async function StaffInvitationPage({
   session,
-  action
+  action,
+  query = ""
 }: {
   session: AuthenticatedSession & { role: "admin" | "root" };
   action: InvitationAction;
+  query?: string;
 }): Promise<React.JSX.Element> {
   const invitations = await (
     await getStaffProvisioningService()
-  ).listInvitations(session.accountId);
+  ).listInvitations(session.accountId, query);
   const allowedRoles = allowedStaffRolesForPortal(session.role);
 
   return (
@@ -41,8 +43,10 @@ export async function StaffInvitationPage({
 
       <section className="dashboard-section" aria-labelledby="recent-staff-invitations">
         <h2 id="recent-staff-invitations">Recent invitations</h2>
+        <p>Showing {invitations.length} {query ? "matching " : ""}{invitations.length === 1 ? "invitation" : "invitations"}</p>
+        {invitations.length === 25 ? <p>Up to 25 invitations are shown. Refine your search to find a specific invitation.</p> : null}
         {invitations.length === 0 ? (
-          <p>No staff invitation has been created by this account.</p>
+          <p>{query ? "No invitations match your search." : "No staff invitation has been created by this account."}</p>
         ) : (
           <div className="record-list">
             {invitations.map((invitation) => (

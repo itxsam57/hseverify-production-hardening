@@ -13,11 +13,21 @@ import {
 } from "./interview-scheduling-domain";
 import { InterviewSchedulingRepository } from "./interview-scheduling-repository";
 
+export class InterviewAssignmentAccessError extends Error {
+  constructor() {
+    super("Interview assignment was not found.");
+    this.name = "InterviewAssignmentAccessError";
+  }
+}
+
 export class InterviewSchedulingService {
   constructor(private readonly database: DatabaseClient) {}
 
-  async getAssessorAssignments(input: { assessorAccountId:string }) {
-    return new InterviewSchedulingRepository(this.database).findAssignedToAssessorAccount(input.assessorAccountId);
+  async getAssessorAssignments(input: { assessorAccountId:string; query?:string }) {
+    return new InterviewSchedulingRepository(this.database).findAssignedToAssessorAccount(
+      input.assessorAccountId,
+      input.query
+    );
   }
 
   async getAssignedInterview(input: { assessorAccountId:string; interviewRequestId:string }) {
@@ -25,7 +35,7 @@ export class InterviewSchedulingService {
       input.interviewRequestId,
       input.assessorAccountId
     );
-    if (!request) throw new Error("Interview assignment was not found.");
+    if (!request) throw new InterviewAssignmentAccessError();
     assertInterviewAssessorAccess(request, input.assessorAccountId);
     return request;
   }

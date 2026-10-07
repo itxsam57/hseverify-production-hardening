@@ -13,18 +13,19 @@ export const dynamic = "force-dynamic";
 export default async function WorkerAssessmentApplicationsPage({
   searchParams
 }: {
-  searchParams: Promise<{ status?: string; error?: string }>;
+  searchParams: Promise<{ status?: string; error?: string; q?: string }>;
 }): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "worker",
     permission: "worker.assessments.read"
   });
   const service = await getWorkerAssessmentApplicationService();
-  const [offerings, companies, applications, params] = await Promise.all([
+  const params = await searchParams;
+  const query = typeof params.q === "string" ? params.q.trim().slice(0, 160) : "";
+  const [offerings, companies, applications] = await Promise.all([
     service.listOfferings(principal),
     service.listFundingCompanies(principal),
-    service.listApplications(principal),
-    searchParams
+    service.listApplications(principal, new Date(), query)
   ]);
 
   const statusMessage =
@@ -117,8 +118,11 @@ export default async function WorkerAssessmentApplicationsPage({
 
       <section className="content-stack" aria-labelledby="application-history-heading">
         <h2 id="application-history-heading">Application and funding history</h2>
+        {query ? (
+          <p>{applications.length} matching {applications.length === 1 ? "application" : "applications"}</p>
+        ) : null}
         {applications.length === 0 ? (
-          <p>No assessment applications yet.</p>
+          <p>{query ? "No assessment applications match your search." : "No assessment applications yet."}</p>
         ) : applications.map((item) => (
           <article className="panel content-stack" key={item.applicationId}>
             <div>

@@ -136,6 +136,22 @@ export function assignInterviewRequest(
   });
 }
 
+export function normalizeInterviewScheduleTimestamp(value: string): string {
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::(\d{2})(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})?$/i);
+  if (!match) throw new InterviewSchedulingInputError("Enter a valid interview time in UTC.");
+  const calendar = `${match[1]}:${match[2] ?? "00"}${match[3] ?? ""}`;
+  const calendarDate = new Date(`${calendar}Z`);
+  if (!Number.isFinite(calendarDate.getTime()) ||
+      calendarDate.toISOString().slice(0, 19) !== calendar.slice(0, 19)) {
+    throw new InterviewSchedulingInputError("Enter a valid interview time in UTC.");
+  }
+  const instant = new Date(`${calendar}${match[4]?.toUpperCase() ?? "Z"}`);
+  if (!Number.isFinite(instant.getTime())) {
+    throw new InterviewSchedulingInputError("Enter a valid interview time in UTC.");
+  }
+  return instant.toISOString();
+}
+
 export function scheduleInterviewRequest(
   request: InterviewRequest,
   scheduledAt: string,
@@ -148,8 +164,8 @@ export function scheduleInterviewRequest(
 
   return Object.freeze({
     ...request,
-    scheduledAt,
-    reminderAt: reminderAt?.trim() || null,
+    scheduledAt: normalizeInterviewScheduleTimestamp(scheduledAt),
+    reminderAt: reminderAt?.trim() ? normalizeInterviewScheduleTimestamp(reminderAt) : null,
     rescheduleReason: null
   });
 }

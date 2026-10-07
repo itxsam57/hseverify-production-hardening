@@ -102,15 +102,15 @@ export class ScopedShareLinkService {
   }
 
   async revoke(input: Parameters<ScopedShareLinkManager["revoke"]>[0]) {
-    const record = await this.repository.find(input.shareLinkId);
-    if (!record || record.ownerWorkerId !== input.ownerWorkerId) {
+    const record = await this.repository.findOwned(input.shareLinkId, input.ownerWorkerId);
+    if (!record) {
       throw new Error("Scoped share link was not found for this Worker.");
     }
     const revokedAt = new Date(input.revokedAt).toISOString();
     if (record.revokedAt) return Object.freeze(record);
     await this.repository.revoke(record.shareLinkId, revokedAt);
     const persisted = await this.repository.find(record.shareLinkId);
-    if (!persisted || persisted.ownerWorkerId !== input.ownerWorkerId) {
+    if (!persisted || persisted.ownerWorkerId !== record.ownerWorkerId) {
       throw new Error("Scoped share link was not found for this Worker.");
     }
     return Object.freeze(persisted);

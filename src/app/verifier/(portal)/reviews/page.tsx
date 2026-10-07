@@ -2,12 +2,18 @@ import Link from "next/link";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getEvidenceReviewService } from "@/lib/review/evidence-review-service";
 
-export default async function ReviewerQueuePage(): Promise<React.JSX.Element> {
+export default async function ReviewerQueuePage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string | string[] }>
+}): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "verifier",
     permission: "verification.assigned.read"
   });
-  const tasks = await (await getEvidenceReviewService()).listQueue(principal);
+  const parameters = await searchParams;
+  const query = typeof parameters.q === "string" ? parameters.q.trim().slice(0, 160) : "";
+  const tasks = await (await getEvidenceReviewService()).listQueue(principal, query);
 
   return (
     <section className="page-stack">
@@ -18,10 +24,12 @@ export default async function ReviewerQueuePage(): Promise<React.JSX.Element> {
           <p>Each task is pinned to one Worker and one exact evidence version.</p>
         </div>
       </div>
+      <p>Showing {tasks.length} {query ? "matching " : ""}review {tasks.length === 1 ? "task" : "tasks"}</p>
+      {tasks.length === 250 ? <p>Up to 250 review tasks are shown. Refine your search to find a specific task.</p> : null}
       {tasks.length === 0 ? (
         <div className="empty-state">
           <h2>No review tasks</h2>
-          <p>Queued evidence will appear here.</p>
+          <p>{query ? "No review tasks match your search." : "Queued evidence will appear here."}</p>
         </div>
       ) : (
         <div className="table-scroll">

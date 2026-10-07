@@ -549,7 +549,8 @@ export class WorkerAssessmentApplicationService {
 
   async listApplications(
     principal: AuthorizationPrincipal,
-    now = new Date()
+    now = new Date(),
+    query = ""
   ): Promise<readonly WorkerAssessmentApplication[]> {
     await assertLiveWorker(this.database, principal, "worker.assessments.read", now);
     const result = await this.database.query<ApplicationRow>(
@@ -560,8 +561,11 @@ export class WorkerAssessmentApplicationService {
          LEFT JOIN platform_tenants AS tenants
            ON tenants.tenant_id=applications.company_tenant_id
         WHERE applications.worker_account_id=$1
+          AND ($2='' OR strpos(lower(concat_ws(' ',catalogue.title,
+               applications.application_id,applications.application_status,
+               replace(applications.application_status,'_',' '))),lower($2))>0)
         ORDER BY applications.created_at DESC,applications.application_id DESC`,
-      [principal.accountId]
+      [principal.accountId, query.trim().slice(0, 160)]
     );
     return Object.freeze(result.rows.map(application));
   }

@@ -1,10 +1,12 @@
+import { notFound } from "next/navigation";
+
 import { LiveInterviewMedia } from "@/components/interview/live-interview-media";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
 import { createInterviewConsole, createInterviewSession } from "@/lib/interview/interview-scheduling-domain";
-import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { InterviewAssignmentAccessError, InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
 import { CaseAccommodationService } from "@/lib/privacy/case-accommodation-service";
 import {
   addInterviewFollowUpAction,
@@ -63,6 +65,9 @@ export default async function AssessorInterviewConsolePage({
   const request = await scheduling.getAssignedInterview({
     assessorAccountId: actor.accountId,
     interviewRequestId
+  }).catch((error: unknown) => {
+    if (error instanceof InterviewAssignmentAccessError) notFound();
+    throw error;
   });
   const runtimeService = new InterviewRuntimeService(Promise.resolve(database));
   const [runtime, saved, playbook, accommodation] = await Promise.all([
