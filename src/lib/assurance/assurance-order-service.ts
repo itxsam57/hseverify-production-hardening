@@ -220,4 +220,25 @@ export class AssuranceOrderService {
   async listOrders(principal:AssuranceOrderReadPrincipal):Promise<readonly AssuranceOrderRecord[]>{ if(principal.authorizedTenantPermission!==ASSURANCE_ORDER_READ_PERMISSION) throw new AssuranceOrderAccessError(); const scope=deriveTrustedTenantScope(principal as TenantPermissionPrincipal<"company.orders.read">); return new AssuranceOrderRepository(this.database).listOrders(scope.tenantId); }
   async findOrder(principal:AssuranceOrderReadPrincipal,orderId:string):Promise<AssuranceOrderRecord|null>{ const id=normalizeAssuranceReference(orderId,"assurance_order"); if(!id) return null; const scope=deriveTrustedTenantScope(principal); return new AssuranceOrderRepository(this.database).findOrder(scope.tenantId,id); }
   async listCases(principal:AssuranceOrderReadPrincipal,orderId:string){ const id=normalizeAssuranceReference(orderId,"assurance_order"); if(!id) return Object.freeze([]); const scope=deriveTrustedTenantScope(principal); return new AssuranceOrderRepository(this.database).listCases(scope.tenantId,id); }
+  async listInterviewSchedules(principal:AssuranceOrderReadPrincipal,orderId:string):Promise<Readonly<Record<string,string>>> {
+    const id=normalizeAssuranceReference(orderId,"assurance_order");
+    if(!id) return Object.freeze({});
+    return runTenantScopedCommand({database:this.database,principal,permission:ASSURANCE_ORDER_READ_PERMISSION,
+      operation:async({database,scope})=>{
+        const result=await database.query<{case_id:string;scheduled_at:string|Date}>(
+          `SELECT DISTINCT ON (requests.case_id) requests.case_id,requests.scheduled_at
+           FROM interview_requests requests JOIN assurance_cases cases
+             ON cases.case_id=requests.case_id AND cases.tenant_id=requests.tenant_id
+           WHERE cases.tenant_id=$1 AND cases.order_id=$2 AND requests.scheduled_at IS NOT NULL
+             AND requests.status IN ('ASSIGNED','WAITING_ROOM')
+           ORDER BY requests.case_id,requests.requested_at DESC,requests.interview_request_id DESC`,
+          [scope.tenantId,id]);
+        const live=await database.query<{session_id:string}>(
+          "SELECT session_id FROM auth_sessions WHERE session_id=$1 AND account_id=$2 AND revoked_at IS NULL AND expires_at>clock_timestamp()",
+          [scope.sessionId,scope.accountId]);
+        if(!live.rows[0]) throw new AssuranceOrderAccessError();
+        return Object.freeze(Object.fromEntries(result.rows.map(row=>[row.case_id,new Date(row.scheduled_at).toISOString()])));
+      }});
+  }
+
 }
