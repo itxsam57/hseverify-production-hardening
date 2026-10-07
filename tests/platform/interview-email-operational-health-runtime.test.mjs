@@ -44,7 +44,7 @@ test("Actual Admin email health reflects fixed worker retry and acceptance with 
   for(let i=0;i<3;i++)assert.equal((await processNextOutboxJob({repository,database:db})).status,"succeeded");assert.equal(calls,3);
   const sent=await getInterviewEmailHealth(admin,db);assert.equal(sent.queueDepth,0);assert.equal(sent.sent,3);assert.equal(sent.completedAttempts24h,6);assert.equal(sent.failedAttempts24h,3);assert.equal(sent.failureRate24h,0.5);assert.ok(sent.lastAcceptedAt);assert.equal(sent.nextRetryAt,null);
   assert.doesNotMatch(JSON.stringify(sent),/@|provider_reference|recipient|configured-health-key/);
-  await new InterviewSchedulingService(db).scheduleInterview({principal:assessor,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:new Date(Date.now()+172800000).toISOString()});
+  await new InterviewSchedulingService(db).scheduleInterview({principal:assessor,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:new Date(Date.now()+172800000).toISOString(),rescheduleReason:"Worker requested a later appointment"});
   for(const role of ["worker","assessor","company"])await db.query("UPDATE auth_accounts SET email_normalized=$2 WHERE account_id=$1",[fixture.credentials[role].accountId,"changed-health-"+role+"@example.test"]);
   globalThis.fetch=async()=>{throw new Error("Suppressed recipient must not reach provider");};
   for(let i=0;i<6;i++)assert.equal((await processNextOutboxJob({repository,database:db})).status,"succeeded");

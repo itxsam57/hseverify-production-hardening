@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { advanceAfterInterviewRecommendation } from "@/lib/assurance/assurance-case-progression-service";
@@ -10,6 +11,7 @@ import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-servi
 import { getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
 import {
   INTERVIEW_CONSOLE_RECOMMENDATIONS,
+  InterviewSchedulingInputError,
   type InterviewConsoleRecommendation
 } from "@/lib/interview/interview-scheduling-domain";
 import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
@@ -183,7 +185,13 @@ export async function scheduleInterviewAction(formData: FormData): Promise<void>
     interviewRequestId
   });
 
-  await service.scheduleInterview({ principal: actor, tenantId: request.tenantId, request, scheduledAt });
+  try {
+    await service.scheduleInterview({ principal: actor, tenantId: request.tenantId, request, scheduledAt,
+      rescheduleReason: text(formData, "rescheduleReason") });
+  } catch (error) {
+    if (error instanceof InterviewSchedulingInputError) redirect("/assessor/interviews?scheduleError=invalid");
+    throw error;
+  }
   revalidateInterview(interviewRequestId);
 }
 

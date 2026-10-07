@@ -11,7 +11,7 @@ import {
 export default async function AssessorInterviewsPage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; scheduleError?: string }>;
 }): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
   const params = await searchParams;
@@ -33,6 +33,9 @@ export default async function AssessorInterviewsPage({
 
       <section className="dashboard-section" aria-labelledby="interview-assignment-heading">
         <h2 id="interview-assignment-heading">Scheduled interviews</h2>
+        {params.scheduleError === "invalid" ? (
+          <p role="alert">Check the interview time and provide a reschedule reason between 10 and 1000 characters. Interviews already claimed or in the waiting room cannot be rescheduled.</p>
+        ) : null}
         {query ? <p>{assignments.length} matching {assignments.length === 1 ? "interview" : "interviews"}</p> : null}
         {assignments.length === 0 ? <p>{query ? "No interview assignments match your search." : "No interview assignments are currently available."}</p> : (
           <div className="table-scroll">
@@ -43,13 +46,21 @@ export default async function AssessorInterviewsPage({
                   <td>{assignment.caseId}</td>
                   <td>{assignment.workerAccountId}</td>
                   <td>{assignment.status}</td>
-                  <td>{assignment.scheduledAt ?? (
-                    <form action={scheduleInterviewAction}>
-                      <input type="hidden" name="interviewRequestId" value={assignment.interviewRequestId} />
-                      <input name="scheduledAt" type="datetime-local" required aria-label="Interview time (UTC)" />
-                      <button className="button button-secondary button-small" type="submit">Schedule</button>
-                    </form>
-                  )}</td>
+                  <td>
+                    {assignment.scheduledAt ? <p>{assignment.scheduledAt}</p> : null}
+                    {assignment.status === "ASSIGNED" ? (
+                      <form action={scheduleInterviewAction}>
+                        <input type="hidden" name="interviewRequestId" value={assignment.interviewRequestId} />
+                        <input name="scheduledAt" type="datetime-local" required aria-label="Interview time (UTC)" />
+                        {assignment.scheduledAt ? (
+                          <textarea name="rescheduleReason" minLength={10} maxLength={1000} required aria-label="Reschedule reason" placeholder="Explain why the appointment is changing" />
+                        ) : null}
+                        <button className="button button-secondary button-small" type="submit">
+                          {assignment.scheduledAt ? "Reschedule interview" : "Schedule"}
+                        </button>
+                      </form>
+                    ) : null}
+                  </td>
                   <td><Link href={"/assessor/interviews/" + assignment.interviewRequestId}>Open interview console</Link></td>
                   <td>
                     <details>

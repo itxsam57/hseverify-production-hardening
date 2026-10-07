@@ -28,7 +28,7 @@ test("Actual notification worker projects authorized recipients; partial enqueue
  const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
  try{
   const principal=await assessorSchedulingPrincipal(db,fixture.credentials.assessor),service=new InterviewSchedulingService(db);
-  const schedule=async(request,scheduledAt)=>service.scheduleInterview({principal,tenantId:fixture.credentials.company.tenantId,request,scheduledAt});
+  const schedule=async(request,scheduledAt,rescheduleReason)=>service.scheduleInterview({principal,tenantId:fixture.credentials.company.tenantId,request,scheduledAt,rescheduleReason});
   const jobs=async()=> (await db.query("SELECT * FROM platform_outbox_jobs WHERE job_type='notification.interview.scheduled' ORDER BY job_sequence")).rows;
   const notices=async()=> (await db.query("SELECT * FROM platform_notifications WHERE notification_type='interview.scheduled' ORDER BY notification_sequence")).rows;
   const instant=new Date(Date.now()+3600000).toISOString();await schedule(fixture.requests.Alpha,instant);
@@ -66,7 +66,7 @@ test("Actual notification worker projects authorized recipients; partial enqueue
   assert.deepEqual(await reconcileInterviewScheduledNotifications(db),{examined:1,deferred:0});
   assert.equal((await jobs()).length,6);assert.equal((await reconcileInterviewScheduledNotifications(db)).examined,0);
   const oldBetaJobs=(await jobs()).slice(3);
-  await schedule(fixture.requests.Beta,new Date(Date.parse(instant)+60000).toISOString());
+  await schedule(fixture.requests.Beta,new Date(Date.parse(instant)+60000).toISOString(),"Worker requested a later appointment");
   assert.equal((await jobs()).length,9);
   for(const job of oldBetaJobs){
    assert.deepEqual((await db.query("SELECT * FROM platform_project_interview_notification($1)",[job.job_id])).rows,[{created:false,suppressed:true}]);

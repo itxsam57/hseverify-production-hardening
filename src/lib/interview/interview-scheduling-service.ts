@@ -12,6 +12,7 @@ import {
   completeInterviewRequest,
   assertInterviewAssessorAccess,
   assertInterviewCaseOwnership,
+  InterviewSchedulingInputError,
   type InterviewRequest
 } from "./interview-scheduling-domain";
 import { InterviewSchedulingRepository } from "./interview-scheduling-repository";
@@ -90,7 +91,7 @@ export class InterviewSchedulingService {
     return new InterviewSchedulingRepository(this.database).update(input.tenantId, assignInterviewRequest(input.request, input.assessorAccountId));
   }
 
-  async scheduleInterview(input: { principal: AuthorizationPrincipal; tenantId: string; request: InterviewRequest; scheduledAt: string; reminderAt?: string }): Promise<InterviewRequest> {
+  async scheduleInterview(input: { principal: AuthorizationPrincipal; tenantId: string; request: InterviewRequest; scheduledAt: string; reminderAt?: string; rescheduleReason?: string }): Promise<InterviewRequest> {
     const actor = bindTrustedAuditActor(input.principal);
     if (actor.activeRole !== "assessor") throw new InterviewAssignmentAccessError();
     return this.database.transaction(async (transaction) => {
@@ -110,11 +111,20 @@ export class InterviewSchedulingService {
       const session=live.rows[0],now=clock.rows[0]?.now;
       if (!session || session.active_role !== "assessor" || session.revoked_at !== null || !now ||
           new Date(session.expires_at).getTime() <= new Date(now).getTime()) throw new InterviewAssignmentAccessError();
-      const updated = await repository.update(current.tenantId,scheduleInterviewRequest(current,input.scheduledAt,input.reminderAt));
+      const next = scheduleInterviewRequest(current,input.scheduledAt,input.reminderAt,input.rescheduleReason);
+      if (next === current) return current;
+      const runtime = await transaction.query<{interview_session_id:string}>(
+        "SELECT interview_session_id FROM interview_runtime_sessions WHERE interview_request_id=$1 FOR UPDATE",
+        [current.interviewRequestId]);
+      if (runtime.rows[0]) {
+        throw new InterviewSchedulingInputError("An interview already claimed or in the waiting room cannot be rescheduled.");
+      }
+      const updated = await repository.update(current.tenantId,next);
       const event = await new DatabaseAuditRepository(Promise.resolve(transaction)).append(actor,{
         action: "interview.scheduled",outcome: "succeeded",
         target: {type: "resource",reference: current.interviewRequestId},
-        metadata: {tenantRef: current.tenantId,caseRef: current.caseId,workerRef: current.workerAccountId,scheduledAt: updated.scheduledAt}
+        metadata: {tenantRef: current.tenantId,caseRef: current.caseId,workerRef: current.workerAccountId,scheduledAt: updated.scheduledAt,
+          ...(current.scheduledAt ? {previousScheduledAt: current.scheduledAt,rescheduleReason: updated.rescheduleReason} : {})}
       });
       await transaction.query("UPDATE interview_requests SET schedule_event_id=$2 WHERE interview_request_id=$1",
         [current.interviewRequestId,event.auditEventId]);
