@@ -43,9 +43,9 @@ export class InterviewSchedulingRepository {
     return result.rows.map((row) => Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }));
   }
 
-  async findByRequestIdForAssessor(interviewRequestId:string, assessorAccountId:string):Promise<ScopedInterviewRequest|null> {
+  async findByRequestIdForAssessor(interviewRequestId:string, assessorAccountId:string, forUpdate = false):Promise<ScopedInterviewRequest|null> {
     const result = await this.database.query<InterviewRow>(
-      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND assessor_account_id=$2`,
+      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND assessor_account_id=$2${forUpdate ? " FOR UPDATE" : ""}`,
       [interviewRequestId, assessorAccountId]
     );
     const row = result.rows[0];

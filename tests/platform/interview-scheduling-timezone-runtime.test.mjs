@@ -1,3 +1,4 @@
+import {assessorSchedulingPrincipal} from "../helpers/assessor-scheduling-native-principal.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {PGlite} from "@electric-sql/pglite";
@@ -9,7 +10,7 @@ test("UTC interview and reminder inputs retain their instant under a different d
  try{
   await db.exec("SET TIME ZONE 'America/New_York'");
   const selected=new Date(Date.now()+86400000).toISOString().slice(0,16),expected=selected+":00.000Z";
-  await new InterviewSchedulingService(db).scheduleInterview({tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:selected,reminderAt:selected});
+  await new InterviewSchedulingService(db).scheduleInterview({principal:await assessorSchedulingPrincipal(db,fixture.credentials.assessor),tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:selected,reminderAt:selected});
   const stored=(await db.query("SELECT scheduled_at,reminder_at,timezone FROM interview_requests WHERE interview_request_id=$1",[fixture.requests.Alpha.interviewRequestId])).rows[0];
   const actual=new Date(stored.scheduled_at).toISOString();console.log("ACTUAL_DATABASE_TIMEZONE_PROBE",JSON.stringify({expected,actual,recordTimezone:stored.timezone}));
   assert.equal(actual,expected,"Declared UTC interview must not shift under the database session timezone");

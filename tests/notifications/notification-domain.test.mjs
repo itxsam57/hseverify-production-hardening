@@ -35,8 +35,8 @@ function job(overrides = {}) {
 }
 
 test("notification vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated"]);
-  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security"]);
+  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated"]);
+  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security", "interview.record", "company.assurance.case"]);
   for (const value of [
     ...notification.NOTIFICATION_TYPES,
     ...notification.NOTIFICATION_TARGETS
@@ -168,4 +168,19 @@ test("security metadata accepts only the immutable event reference and links all
   }
   for (const role of ["worker","company","assessor","verifier","admin","root"]) assert.equal(notification.resolveNotificationHref({role,target:"account.security",targetReference:null}), "/account/security");
   assert.throws(() => notification.resolveNotificationHref({role:"worker",target:"account.security",targetReference:"https://example.test"}));
+});
+
+test("Scheduled notices accept only fixed recipient-role record references",()=>{
+ for(const role of ["worker","assessor"]){
+  assert.equal(notification.resolveNotificationHref({role,target:"interview.record",targetReference:"interview_request_abc"}),"/"+role+"/interviews/interview_request_abc");
+ }
+ assert.equal(notification.resolveNotificationHref({role:"company",target:"company.assurance.case",targetReference:"assurance_order_abc#assurance_case_abc"}),"/company/assurance-orders/assurance_order_abc#assurance_case_abc");
+ for(const input of [
+  {role:"admin",target:"interview.record",targetReference:"interview_request_abc"},
+  {role:"worker",target:"company.assurance.case",targetReference:"order#case"},
+  {role:"company",target:"company.assurance.case",targetReference:"order#case#third"},
+  ...["https://example.test","../other","//example.test","record?account=other","record%2fother",""].map(targetReference=>({role:"worker",target:"interview.record",targetReference}))
+ ])assert.throws(()=>notification.resolveNotificationHref(input),notification.NotificationContractError);
+ assert.deepEqual(notification.normalizeNotificationMetadata("interview.scheduled",{eventRef:"audit_abc"}),{eventRef:"audit_abc"});
+ assert.throws(()=>notification.normalizeNotificationMetadata("interview.scheduled",{eventRef:"audit_abc",href:"https://example.test"}));
 });

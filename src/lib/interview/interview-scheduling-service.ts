@@ -1,4 +1,7 @@
 import "server-only";
+import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
+import { bindTrustedAuditActor } from "../audit/audit-domain";
+import { DatabaseAuditRepository } from "../audit/audit-repository";
 
 import type { DatabaseClient } from "../database/database";
 import {
@@ -80,8 +83,37 @@ export class InterviewSchedulingService {
     return new InterviewSchedulingRepository(this.database).update(input.tenantId, assignInterviewRequest(input.request, input.assessorAccountId));
   }
 
-  async scheduleInterview(input: { tenantId: string; request: InterviewRequest; scheduledAt: string; reminderAt?: string }): Promise<InterviewRequest> {
-    return new InterviewSchedulingRepository(this.database).update(input.tenantId, scheduleInterviewRequest(input.request, input.scheduledAt, input.reminderAt));
+  async scheduleInterview(input: { principal: AuthorizationPrincipal; tenantId: string; request: InterviewRequest; scheduledAt: string; reminderAt?: string }): Promise<InterviewRequest> {
+    const actor = bindTrustedAuditActor(input.principal);
+    if (actor.activeRole !== "assessor") throw new InterviewAssignmentAccessError();
+    return this.database.transaction(async (transaction) => {
+      const account = await transaction.query<{account_id:string}>(
+        `SELECT accounts.account_id FROM auth_accounts accounts JOIN auth_account_roles roles
+         ON roles.account_id=accounts.account_id AND roles.role='assessor'
+         WHERE accounts.account_id=$1 AND accounts.account_status='active' FOR NO KEY UPDATE OF accounts FOR UPDATE OF roles`,
+        [actor.accountId]);
+      if (!account.rows[0]) throw new InterviewAssignmentAccessError();
+      const live = await transaction.query<{session_id:string;active_role:string;expires_at:string|Date;revoked_at:string|Date|null}>(
+        "SELECT session_id,active_role,expires_at,revoked_at FROM auth_sessions WHERE session_id=$1 AND account_id=$2 FOR UPDATE",
+        [actor.sessionId,actor.accountId]);
+      const repository = new InterviewSchedulingRepository(transaction);
+      const current = await repository.findByRequestIdForAssessor(input.request.interviewRequestId,actor.accountId,true);
+      if (!current || current.tenantId !== input.tenantId) throw new InterviewAssignmentAccessError();
+      const clock = await transaction.query<{now:string|Date}>("SELECT clock_timestamp() AS now");
+      const session=live.rows[0],now=clock.rows[0]?.now;
+      if (!session || session.active_role !== "assessor" || session.revoked_at !== null || !now ||
+          new Date(session.expires_at).getTime() <= new Date(now).getTime()) throw new InterviewAssignmentAccessError();
+      const updated = await repository.update(current.tenantId,scheduleInterviewRequest(current,input.scheduledAt,input.reminderAt));
+      const event = await new DatabaseAuditRepository(Promise.resolve(transaction)).append(actor,{
+        action: "interview.scheduled",outcome: "succeeded",
+        target: {type: "resource",reference: current.interviewRequestId},
+        metadata: {tenantRef: current.tenantId,caseRef: current.caseId,workerRef: current.workerAccountId,scheduledAt: updated.scheduledAt}
+      });
+      await transaction.query("UPDATE interview_requests SET schedule_event_id=$2 WHERE interview_request_id=$1",
+        [current.interviewRequestId,event.auditEventId]);
+      await transaction.query("SELECT platform_enqueue_interview_notifications($1)",[event.auditEventId]);
+      return updated;
+    });
   }
 
   async completeInterview(input: {

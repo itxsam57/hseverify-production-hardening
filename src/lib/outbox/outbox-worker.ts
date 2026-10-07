@@ -1,4 +1,5 @@
 import "server-only";
+import {projectInterviewScheduledNotification} from "../notifications/interview-notification-projector";
 
 import { processRegistrationDeliveryJob } from "../auth/registration-delivery-handler";
 
@@ -38,6 +39,8 @@ const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
     "platform.foundation.noop": async () => ({ kind: "succeeded" as const }),
     "notification.portal.foundation": async (job, _lease, database) =>
       projectNotificationOutboxJob(job, { database }),
+    "notification.interview.scheduled": async (job,_lease,database) =>
+      projectInterviewScheduledNotification(job,database),
     "notification.account.security": async (job, _lease, database) =>
       projectNotificationOutboxJob(job, { database }),
     "email.delivery.foundation": async (job, lease) =>

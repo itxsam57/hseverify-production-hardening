@@ -13,6 +13,7 @@ const entry = resolve(".outbox-worker-dist/outbox/outbox-worker.js");
 if (!existsSync(entry)) throw new Error("Build the outbox worker before starting it.");
 const require = createRequire(import.meta.url);
 const { processNextOutboxJob } = require(entry);
+const {reconcileInterviewScheduledNotifications} = require(resolve(".outbox-worker-dist/notifications/interview-notification-projector.js"));
 const { getDatabaseClient } = require(resolve(".outbox-worker-dist/database/database.js"));
 const { DatabaseOutboxRepository } = require(resolve(".outbox-worker-dist/outbox/outbox-repository.js"));
 let stopping = false;
@@ -23,6 +24,8 @@ try {
   database = await getDatabaseClient();
   const repository = new DatabaseOutboxRepository(Promise.resolve(database));
   do {
+    const repair=await reconcileInterviewScheduledNotifications(database);
+    if(repair.deferred) console.error("Interview notification enqueue temporarily unavailable; durable source retained for retry.");
     const job = await processNextOutboxJob({database,repository});
     if (once) {
       console.log(JSON.stringify({processed:job ? 1 : 0,status:job?.status ?? "idle"}));

@@ -108,6 +108,9 @@ jobs:
       - name: Verifier authorized review SQL search before queue limit
         run: node --test tests/platform/verifier-review-search-runtime.test.mjs
 
+      - name: Scheduling notification native source, retry, rollback and recipient access
+        run: node --test tests/platform/interview-scheduling-notification-runtime.test.mjs
+
       - name: UTC interview scheduling under alternate database timezone
         run: node --test tests/platform/interview-scheduling-timezone-runtime.test.mjs
 
@@ -180,6 +183,11 @@ jobs:
 
       - name: Assessor interview search navigation and direct record denial
         run: node --test tests/browser/assessor-interview-search.browser.test.mjs
+
+      - name: Scheduling notices through compiled worker to authorized recipient records
+        run: |
+          node scripts/build-outbox-worker.mjs
+          node --test tests/browser/interview-scheduling-notification.browser.test.mjs
 
       - name: UTC scheduling browser with alternate browser and server timezone
         run: node --test tests/browser/interview-scheduling-timezone.browser.test.mjs

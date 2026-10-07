@@ -183,7 +183,7 @@ export async function scheduleInterviewAction(formData: FormData): Promise<void>
     interviewRequestId
   });
 
-  await service.scheduleInterview({ tenantId: request.tenantId, request, scheduledAt });
+  await service.scheduleInterview({ principal: actor, tenantId: request.tenantId, request, scheduledAt });
   revalidateInterview(interviewRequestId);
 }
 

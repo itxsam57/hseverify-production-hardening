@@ -10,6 +10,7 @@ export const OUTBOX_JOB_TYPES = [
   "platform.foundation.noop",
   "notification.portal.foundation",
   "notification.account.security",
+  "notification.interview.scheduled",
   "email.delivery.foundation",
   "secure_file.scan",
   "worker_identity.automated_checks",
@@ -75,6 +76,9 @@ export type PortalFoundationNotificationPayload = Readonly<{
 }>;
 
 export type AccountSecurityNotificationPayload = Readonly<{ eventRef: string }>;
+export type InterviewScheduledNotificationPayload = Readonly<{
+ eventRef: string; recipientRef: string; recipientRole: "worker" | "assessor" | "company"; membershipRef: string | null;
+}>;
 
 export type FoundationEmailDeliveryPayload = Readonly<{
   fixtureRef: string;
@@ -100,6 +104,7 @@ export type OutboxPayloadByType = Readonly<{
   "platform.foundation.noop": FoundationNoopPayload;
   "notification.portal.foundation": PortalFoundationNotificationPayload;
   "notification.account.security": AccountSecurityNotificationPayload;
+  "notification.interview.scheduled": InterviewScheduledNotificationPayload;
   "email.delivery.foundation": FoundationEmailDeliveryPayload;
   "secure_file.scan": SecureFileScanPayload;
   "worker_identity.automated_checks": WorkerIdentityAutomatedChecksPayload;
@@ -470,6 +475,28 @@ export function normalizeAssessmentExpiryPayload(value: unknown): AssessmentExpi
   });
 }
 
+export function normalizeInterviewScheduledNotificationPayload(value: unknown): InterviewScheduledNotificationPayload {
+ if (!value || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) {
+  throw new OutboxContractError("Interview notification payload must be a plain object.");
+ }
+ const input = value as Record<string,unknown>;
+ if (Object.keys(input).sort().join(",") !== "eventRef,membershipRef,recipientRef,recipientRole") {
+  throw new OutboxContractError("Interview notification payload schema is invalid.");
+ }
+ for (const key of ["eventRef","recipientRef"]) {
+  if (typeof input[key] !== "string" || input[key].length<1 || input[key].length>200 || !SAFE_REFERENCE.test(input[key])) {
+   throw new OutboxContractError("Interview notification reference is invalid.");
+  }
+ }
+ if (typeof input.recipientRole !== "string" || !["worker","assessor","company"].includes(input.recipientRole) ||
+     (input.recipientRole === "company" ? typeof input.membershipRef !== "string" ||
+      input.membershipRef.length<1 || input.membershipRef.length>200 || !SAFE_REFERENCE.test(input.membershipRef)
+      : input.membershipRef !== null)) {
+  throw new OutboxContractError("Interview notification recipient scope is invalid.");
+ }
+ return Object.freeze(input) as InterviewScheduledNotificationPayload;
+}
+
 export function normalizeOutboxPayload<T extends OutboxJobType>(
   jobType: T,
   value: unknown
@@ -484,6 +511,9 @@ export function normalizeOutboxPayload<T extends OutboxJobType>(
       break;
     case "notification.portal.foundation":
       normalized = normalizePortalNotificationPayload(value);
+      break;
+    case "notification.interview.scheduled":
+      normalized = normalizeInterviewScheduledNotificationPayload(value);
       break;
     case "notification.account.security":
       normalized = normalizeAccountSecurityNotificationPayload(value);

@@ -1,4 +1,5 @@
 import "server-only";
+import {canOpenInterviewNotification} from "./interview-notification-access";
 
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import type { DatabaseClient } from "../database/database";
@@ -242,7 +243,7 @@ function notificationFromRow(row: NotificationRow): NotificationRecord {
     row.notification_type,
     parseMetadata(row.metadata)
   );
-  const content = notificationContent(row.notification_type);
+  const content = notificationContent(row.notification_type,{role:row.recipient_role,targetReference:row.target_reference});
   if (
     row.title !== content.title ||
     row.body !== content.body ||
@@ -473,7 +474,9 @@ export class DatabaseNotificationRepository implements NotificationRepository {
         NOTIFICATION_FIND_SQL,
         [notificationId, ...scope]
       );
-      return result.rows[0] ? notificationFromRow(result.rows[0]) : null;
+      const notification=result.rows[0] ? notificationFromRow(result.rows[0]) : null;
+      if(notification && !await canOpenInterviewNotification(transaction,principal,notification))return null;
+      return notification;
     });
   }
 
