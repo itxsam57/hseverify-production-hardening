@@ -52,6 +52,8 @@ test("private inquiry queue permits current Admin/Root sessions and denies publi
   const {bindPlatformAuditReadPrincipal}=load("src/lib/audit/audit-domain.ts");
   await repo.submit(input,fingerprint,now);
   await assert.rejects(repo.list({}),/audit|denied/i);
+  await assert.rejects(repo.listForStaff({}));
+  for(const role of ["worker","company","assessor","verifier"]) await assert.rejects(repo.listForStaff({accountId:"account_"+role,sessionId:"session_"+role,activeRole:role,accountStatus:"active",tenantMembership:null}),/audit|denied/i);
   for(const role of ["worker","company","assessor","verifier"])assert.throws(()=>bindPlatformAuditReadPrincipal({accountId:"account_"+role,sessionId:"session_"+role,activeRole:role,accountStatus:"active",tenantMembership:null}),/audit|denied/i);
   for(const role of ["admin","root"]){
    const id="account_"+role,sid="session_"+role;
@@ -59,12 +61,12 @@ test("private inquiry queue permits current Admin/Root sessions and denies publi
    await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,$2)",[id,role]);
    await db.query("INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,expires_at) VALUES($1,$2,$3,$1,$1,'2099-01-01')",[sid,id,role]);
    const principal=bindPlatformAuditReadPrincipal({accountId:id,sessionId:sid,activeRole:role,accountStatus:"active",tenantMembership:null});
-   const rows=await repo.list(principal);assert.equal(rows.length,1);assert.equal(rows[0].email,input.email);
+   const rows=await repo.listForStaff({accountId:id,sessionId:sid,activeRole:role,accountStatus:"active",tenantMembership:null});assert.equal(rows.length,1);assert.equal(rows[0].email,input.email);
    await db.query("UPDATE auth_accounts SET account_status='locked',locked_until='2099-01-01' WHERE account_id=$1",[id]);
-   await assert.rejects(repo.list(principal),/denied/);
+   await assert.rejects(repo.listForStaff(principal),/denied/);
    await db.query("UPDATE auth_accounts SET account_status='active',locked_until=NULL WHERE account_id=$1",[id]);
    await db.query("UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP,revocation_reason='fixture' WHERE session_id=$1",[sid]);
-   await assert.rejects(repo.list(principal),/denied/);
+   await assert.rejects(repo.listForStaff(principal),/denied/);
   }
  }finally{await db.close();}
 });

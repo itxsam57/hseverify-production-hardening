@@ -13,7 +13,8 @@ export const OUTBOX_JOB_TYPES = [
   "email.delivery.foundation",
   "secure_file.scan",
   "worker_identity.automated_checks",
-  "assessment.attempt.expiry"
+  "assessment.attempt.expiry",
+  "authentication.challenge.delivery"
 ] as const;
 export const OUTBOX_JOB_STATUSES = [
   "pending",
@@ -103,6 +104,7 @@ export type OutboxPayloadByType = Readonly<{
   "secure_file.scan": SecureFileScanPayload;
   "worker_identity.automated_checks": WorkerIdentityAutomatedChecksPayload;
   "assessment.attempt.expiry": AssessmentExpiryPayload;
+  "authentication.challenge.delivery": Readonly<{ dispatchRef: string }>;
 }>;
 
 export type OutboxPayload = OutboxPayloadByType[OutboxJobType];
@@ -116,7 +118,7 @@ export type OutboxJobRecord = Readonly<{
   payload: OutboxPayload;
   enqueuedByAccountId: string | null;
   enqueuedByRole: AuthRole | null;
-  enqueuedBySystemComponent?: "outbox-worker" | null;
+  enqueuedBySystemComponent?: "outbox-worker" | "registration-verification" | "recovery-verification" | null;
   tenantId: string | null;
   membershipId: string | null;
   status: OutboxJobStatus;
@@ -321,9 +323,9 @@ export function deriveOutboxIdempotencyKey(
 
 function normalizeSingleReferencePayload(
   value: unknown,
-  property: "probeRef" | "fixtureRef" | "eventRef",
+  property: "probeRef" | "fixtureRef" | "eventRef" | "dispatchRef",
   label: string
-): Readonly<Record<"probeRef" | "fixtureRef" | "eventRef", string>> {
+): Readonly<Record<"probeRef" | "fixtureRef" | "eventRef" | "dispatchRef", string>> {
   if (
     !value ||
     typeof value !== "object" ||
@@ -350,7 +352,7 @@ function normalizeSingleReferencePayload(
     throw new OutboxContractError(`Outbox ${label} reference is invalid.`);
   }
   return Object.freeze({ [property]: reference }) as Readonly<
-    Record<"probeRef" | "fixtureRef" | "eventRef", string>
+    Record<"probeRef" | "fixtureRef" | "eventRef" | "dispatchRef", string>
   >;
 }
 
@@ -492,6 +494,12 @@ export function normalizeOutboxPayload<T extends OutboxJobType>(
     case "secure_file.scan":
       normalized = normalizeSecureFileScanPayload(value);
       break;
+    case "authentication.challenge.delivery": {
+      const reference = normalizeSingleReferencePayload(value, "dispatchRef", "dispatch").dispatchRef;
+      if (!/^delivery_[A-Za-z0-9_-]{24}$/.test(reference)) throw new OutboxContractError("Invalid dispatch reference.");
+      normalized = Object.freeze({dispatchRef: reference});
+      break;
+    }
     case "assessment.attempt.expiry":
       normalized = normalizeAssessmentExpiryPayload(value);
       break;

@@ -59,6 +59,10 @@ jobs:
         run: node --test tests/platform/public-inquiry-runtime.test.mjs
       - name: Scoped notification bulk-read atomicity
         run: node --test tests/platform/notification-bulk-read-runtime.test.mjs
+      - name: Configured non-sandbox encrypted OTP delivery and registered-worker lifecycle
+        run: node --test tests/auth/registration-provider-onboarding.test.mjs
+      - name: Configured password recovery delivery, anti-enumeration and reset lifecycle
+        run: node --test tests/auth/recovery-provider-delivery.test.mjs
       - name: Worker OTP cooldown, exhaustion and required-audit rollback
         run: node --test tests/platform/worker-registration-otp-runtime.test.mjs
       - name: Strict TypeScript
@@ -206,6 +210,12 @@ jobs:
 
       - name: Worker registration country and policy acceptance
         run: npm run test:worker-registration-policy-browser
+
+      - name: Configured non-sandbox Worker and Company registration browser
+        run: node --test tests/browser/registration-provider-delivery.browser.test.mjs
+
+      - name: Configured six-role password recovery, session revocation and retained MFA
+        run: node --test tests/browser/recovery-provider-delivery.browser.test.mjs
 
       - name: Worker email and phone OTP boundaries
         run: npm run test:worker-registration-otp-browser

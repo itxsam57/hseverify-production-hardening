@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { RecoveryRequestForm } from "@/app/auth/recover/recovery-forms";
+import { isPasswordRecoveryConfigured } from "@/lib/auth/auth-recovery-service";
 import { BrandMark } from "@/components/brand-mark";
 import { isAuthRole, type AuthRole } from "@/lib/auth/auth-domain";
 
@@ -33,7 +34,7 @@ export default async function RecoveryPage({
           <p className="muted-copy">
             Enter the email used for this exact portal role.
           </p>
-          <RecoveryRequestForm role={role} />
+          <RecoveryRequestForm role={role} available={isPasswordRecoveryConfigured()} />
           <div className="auth-footer-links">
             <Link href={`/${role}/login`}>Return to sign in</Link>
             <span aria-hidden="true"> · </span>

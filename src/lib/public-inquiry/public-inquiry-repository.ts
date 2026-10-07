@@ -1,8 +1,9 @@
 import "server-only";
 import { randomBytes, createHmac } from "node:crypto";
+import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
 import type { DatabaseClient } from "@/lib/database/database";
 import { DatabaseAuditRepository } from "@/lib/audit/audit-repository";
-import { bindTrustedSystemAuditActor, derivePlatformAuditReadScope } from "@/lib/audit/audit-domain";
+import { bindPlatformAuditReadPrincipal, bindTrustedSystemAuditActor, derivePlatformAuditReadScope } from "@/lib/audit/audit-domain";
 import type { PlatformAuditReadPrincipal } from "@/lib/audit/audit-domain";
 import { AUDIT_PLATFORM_READ_GUARD_SQL } from "@/lib/audit/audit-repository";
 import { normalizeInquiry, inquirySubmissionKey } from "./public-inquiry-domain";
@@ -45,6 +46,9 @@ export class PublicInquiryRepository {
     });
    return {reference:id,created:true};
   });
+ }
+ async listForStaff(principal: AuthorizationPrincipal, page=0) {
+  return this.list(bindPlatformAuditReadPrincipal(principal),page);
  }
  async list(principal: PlatformAuditReadPrincipal, page=0) {
   const scope=derivePlatformAuditReadScope(principal);

@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { RegistrationDeliveryIntent, RegistrationDeliveryStatus } from "./registration-delivery-repository";
+
 import {
   createIdentifier,
   createOpaqueToken,
@@ -57,6 +59,7 @@ export class AuthenticationRecoveryError extends Error {
 export type RecoveryPublicState = {
   role: AuthRole;
   expiresAt: string;
+  deliveryStatus?: RegistrationDeliveryStatus | null;
 };
 
 function addMilliseconds(value: Date, milliseconds: number): string {
@@ -69,6 +72,7 @@ export class AuthRecoveryService {
     private readonly config: {
       pepper: string;
       sandboxEnabled: boolean;
+      registrationDeliveryChannels?: readonly ("email" | "phone")[];
     },
     private readonly now: () => Date = () => new Date()
   ) {}
@@ -119,7 +123,7 @@ export class AuthRecoveryService {
     email: string;
     requestFingerprintHash: string;
     now: Date;
-  }): Promise<string> {
+  }): Promise<{challengeId: string; deliveryIntent: RegistrationDeliveryIntent | null}> {
     const nowIso = input.now.toISOString();
     await input.repository.authentication.invalidateOtpChallenges({
       accountId: input.accountId,
@@ -152,6 +156,8 @@ export class AuthRecoveryService {
       expiresAt: addMilliseconds(input.now, RECOVERY_OTP_TTL_MS),
       createdAt: nowIso
     });
+    let deliveryIntent: RegistrationDeliveryIntent | null = null;
+    if (this.config.sandboxEnabled) {
     await input.repository.insertSandboxDelivery({
       deliveryId: createIdentifier("delivery"),
       challengeId,
@@ -161,6 +167,11 @@ export class AuthRecoveryService {
       encryptedCode: encryptSecret(code, this.config.pepper),
       createdAt: nowIso
     });
+    } else {
+      deliveryIntent = {deliveryId:createIdentifier("delivery"),challengeId,
+        encryptedPayload:encryptSecret(JSON.stringify({destination:input.email,code,purpose:"password_reset",channel:"email"}),this.config.pepper),
+        createdAt:nowIso};
+    }
     await input.repository.authentication.insertSecurityEvent({
       eventId: createIdentifier("event"),
       accountId: input.accountId,
@@ -169,7 +180,7 @@ export class AuthRecoveryService {
       metadata: { purpose: "password_reset", channel: "email" },
       occurredAt: nowIso
     });
-    return challengeId;
+    return {challengeId,deliveryIntent};
   }
 
   async request(input: {
@@ -193,7 +204,7 @@ export class AuthRecoveryService {
     });
 
     const token = createOpaqueToken();
-    if (!this.config.sandboxEnabled || !email) {
+    if ((!this.config.sandboxEnabled && !this.config.registrationDeliveryChannels?.includes("email")) || !email) {
       return { token };
     }
 
@@ -224,7 +235,7 @@ export class AuthRecoveryService {
         accountId: account.accountId,
         invalidatedAt: nowIso
       });
-      const challengeId = await this.issueChallenge({
+      const {challengeId,deliveryIntent} = await this.issueChallenge({
         repository,
         accountId: account.accountId,
         email: account.email,
@@ -240,6 +251,7 @@ export class AuthRecoveryService {
         expiresAt: addMilliseconds(now, RECOVERY_FLOW_TTL_MS),
         createdAt: nowIso
       });
+      if (deliveryIntent) await repository.enqueueRecoveryDelivery(deliveryIntent);
       await repository.authentication.insertSecurityEvent({
         eventId: createIdentifier("event"),
         accountId: account.accountId,
@@ -267,21 +279,22 @@ export class AuthRecoveryService {
       ) {
         return null;
       }
-      return { role: flow.activeRole, expiresAt: flow.expiresAt };
+      return { role: flow.activeRole, expiresAt: flow.expiresAt,
+        ...(!this.config.sandboxEnabled ? {deliveryStatus:await repository.readRecoveryDeliveryStatus(flow.challengeId)} : {}) };
     });
   }
 
   private validateFlow(flow: RecoveryFlow | null, nowIso: string): RecoveryFlow {
     if (!flow || flow.consumedAt) {
       throw new AuthenticationRecoveryError({
-        code: "flow_missing",
-        userMessage: "This recovery request is no longer available."
+        code: this.config.sandboxEnabled ? "flow_missing" : "invalid_code",
+        userMessage: this.config.sandboxEnabled ? "This recovery request is no longer available." : "The verification code is invalid or expired."
       });
     }
     if (flow.expiresAt <= nowIso) {
       throw new AuthenticationRecoveryError({
-        code: "flow_expired",
-        userMessage: "This recovery request has expired. Start again."
+        code: this.config.sandboxEnabled ? "flow_expired" : "invalid_code",
+        userMessage: this.config.sandboxEnabled ? "This recovery request has expired. Start again." : "The verification code is invalid or expired."
       });
     }
     return flow;
@@ -303,7 +316,6 @@ export class AuthRecoveryService {
     }
 
     const now = this.now();
-    const nowIso = now.toISOString();
     await this.enforceRateLimit({
       bucketValue: this.flowTokenHash(input.token),
       context: "reset",
@@ -316,15 +328,11 @@ export class AuthRecoveryService {
     );
 
     const result = await this.repository.transaction(async (repository) => {
-      const flow = this.validateFlow(
-        await repository.findRecoveryFlowForUpdate(
-          this.flowTokenHash(input.token)
-        ),
-        nowIso
-      );
-      const challenge = await repository.authentication.findOtpChallengeForUpdate(
-        flow.challengeId
-      );
+      const candidate=await repository.findRecoveryFlowForUpdate(this.flowTokenHash(input.token));
+      const flow=this.validateFlow(candidate,this.config.sandboxEnabled ? this.now().toISOString() : await repository.readRecoveryTime());
+      const challenge = await repository.authentication.findOtpChallengeForUpdate(flow.challengeId);
+      const nowIso=this.config.sandboxEnabled ? this.now().toISOString() : await repository.readRecoveryTime();
+      this.validateFlow(flow,nowIso);
       if (
         !challenge ||
         challenge.accountId !== flow.accountId ||
@@ -366,7 +374,7 @@ export class AuthRecoveryService {
           error: new AuthenticationRecoveryError({
             code: "invalid_code",
             userMessage:
-              remaining > 0
+              !this.config.sandboxEnabled ? "The verification code is invalid or expired." : remaining > 0
                 ? `The verification code is incorrect. ${remaining} attempt(s) remain.`
                 : "The verification code can no longer be used. Start again."
           })
@@ -421,25 +429,26 @@ export class AuthRecoveryService {
   }
 
   async resend(input: { token: string }): Promise<void> {
-    if (!this.config.sandboxEnabled) {
+    if (!this.config.sandboxEnabled && !this.config.registrationDeliveryChannels?.includes("email")) {
       throw new AuthenticationRecoveryError({
         code: "unavailable",
         userMessage: "Recovery delivery is unavailable in this environment."
       });
     }
-    const now = this.now();
-    const nowIso = now.toISOString();
     await this.repository.transaction(async (repository) => {
-      const flow = this.validateFlow(
-        await repository.findRecoveryFlowForUpdate(
-          this.flowTokenHash(input.token)
-        ),
-        nowIso
-      );
+      const candidate = await repository.findRecoveryFlowForUpdate(this.flowTokenHash(input.token));
+      let nowIso=this.config.sandboxEnabled ? this.now().toISOString() : await repository.readRecoveryTime();
+      // Production resend must not reveal whether the requested account/role exists.
+      if (!this.config.sandboxEnabled && (!candidate || candidate.consumedAt || candidate.expiresAt<=nowIso)) return;
+      const flow = this.validateFlow(candidate,nowIso);
       const previous = await repository.authentication.findOtpChallengeForUpdate(
         flow.challengeId
       );
+      nowIso=this.config.sandboxEnabled ? this.now().toISOString() : await repository.readRecoveryTime();
+      if (!this.config.sandboxEnabled && flow.expiresAt<=nowIso) return;
+      this.validateFlow(flow,nowIso);
       if (previous && previous.resendAvailableAt > nowIso) {
+        if (!this.config.sandboxEnabled) return;
         throw new AuthenticationRecoveryError({
           code: "cooldown",
           userMessage: "Wait before requesting another verification code.",
@@ -455,7 +464,7 @@ export class AuthRecoveryService {
           userMessage: "This recovery request is no longer available."
         });
       }
-      const challengeId = await this.issueChallenge({
+      const {challengeId,deliveryIntent} = await this.issueChallenge({
         repository,
         accountId: flow.accountId,
         email: account.email,
@@ -464,7 +473,7 @@ export class AuthRecoveryService {
           this.config.pepper,
           "auth-recovery-resend-request"
         ),
-        now
+        now: new Date(nowIso)
       });
       if (
         !(await repository.updateRecoveryChallenge({
@@ -478,14 +487,23 @@ export class AuthRecoveryService {
           userMessage: "This recovery request is no longer available."
         });
       }
+      if (deliveryIntent) await repository.enqueueRecoveryDelivery(deliveryIntent);
     });
   }
+}
+
+export function isPasswordRecoveryConfigured(): boolean {
+  const environment = getServerEnvironment();
+  return environment.authSandboxEnabled || Boolean(
+    environment.registrationOtpProviders?.emailApiKey && environment.registrationOtpProviders.emailFrom
+  );
 }
 
 export async function getAuthRecoveryService(): Promise<AuthRecoveryService> {
   const environment = getServerEnvironment();
   return new AuthRecoveryService(await getAuthAccessRepository(), {
     pepper: environment.authPepper,
-    sandboxEnabled: environment.authSandboxEnabled
+    sandboxEnabled: environment.authSandboxEnabled,
+    registrationDeliveryChannels: environment.registrationOtpProviders?.emailApiKey && environment.registrationOtpProviders.emailFrom ? ["email"] : []
   });
 }

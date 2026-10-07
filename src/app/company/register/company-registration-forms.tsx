@@ -121,8 +121,8 @@ export function CompanyEmailVerificationForm({
   );
   return (
     <>
-      {deliveryHint ? <p className={styles.deliveryLine}>Code sent to <strong>{deliveryHint}</strong></p> : null}
-      {statusMessage ? <Alert tone="success">{statusMessage}</Alert> : null}
+      {deliveryHint ? <p className={styles.deliveryLine}>Verification contact: <strong>{deliveryHint}</strong></p> : null}
+      {statusMessage ? <Alert tone={sandboxEnabled ? "success" : "neutral"}>{statusMessage}</Alert> : null}
       <ActionAlert state={state} />
       <form action={action} className={styles.formGrid} noValidate>
         <Field error={state.fieldErrors.code} htmlFor="code" label="Email verification code">

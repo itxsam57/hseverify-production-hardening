@@ -340,7 +340,8 @@ function parsePayload(value: unknown): unknown {
 function jobFromRow(row: JobRow): OutboxJobRecord {
   const system = row.enqueued_system_component ?? null;
   if (system !== null ?
-      (system !== "outbox-worker" || row.job_type !== "assessment.attempt.expiry" ||
+      (!((system === "outbox-worker" && row.job_type === "assessment.attempt.expiry") ||
+         ((system === "registration-verification" || system === "recovery-verification") && row.job_type === "authentication.challenge.delivery")) ||
        row.enqueued_by_account_id !== null || row.enqueued_by_role !== null ||
        row.tenant_id !== null || row.membership_id !== null) :
       (!row.enqueued_by_account_id || !row.enqueued_by_role)) {
@@ -362,7 +363,7 @@ function jobFromRow(row: JobRow): OutboxJobRecord {
     idempotencyKey: row.idempotency_key,
     payload: normalizeOutboxPayload(row.job_type, parsePayload(row.payload)),
     enqueuedByAccountId: row.enqueued_by_account_id,
-    enqueuedBySystemComponent: system as "outbox-worker" | null,
+    enqueuedBySystemComponent: system as "outbox-worker" | "registration-verification" | "recovery-verification" | null,
     enqueuedByRole: row.enqueued_by_role as OutboxJobRecord["enqueuedByRole"],
     tenantId: row.tenant_id,
     membershipId: row.membership_id,
@@ -400,6 +401,22 @@ function attemptFromRow(row: AttemptRow): OutboxAttemptRecord {
     finishedAt: optionalTimestamp(row.finished_at),
     nextAttemptAt: optionalTimestamp(row.next_attempt_at)
   });
+}
+
+async function finalizeRegistrationDelivery(
+  database: DatabaseClient, job: OutboxJobRecord
+): Promise<void> {
+  if (job.jobType !== "authentication.challenge.delivery") return;
+  const {dispatchRef} = normalizeOutboxPayload(job.jobType,job.payload);
+  await database.query(
+    `UPDATE auth_registration_delivery_intents intents
+     SET status=CASE WHEN status='dispatching' AND
+         NOT EXISTS(SELECT 1 FROM auth_otp_challenges challenges
+                    WHERE challenges.challenge_id=intents.challenge_id AND challenges.channel='email')
+         THEN 'unknown' ELSE 'terminal' END,
+       payload_ciphertext=NULL,failure_code='delivery_not_confirmed',updated_at=CURRENT_TIMESTAMP
+     WHERE delivery_id=$1 AND status IN ('queued','dispatching')`, [dispatchRef]
+  );
 }
 
 async function appendLifecycleAudit(input: {
@@ -489,6 +506,59 @@ export class DatabaseOutboxRepository implements OutboxRepository {
   constructor(
     private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()
   ) {}
+
+  async enqueueRegistrationDelivery(database: DatabaseClient, dispatchRef: string): Promise<OutboxJobRecord> {
+    return this.enqueueChallengeDelivery(database,dispatchRef,"registration-verification");
+  }
+
+  async enqueueRecoveryDelivery(database: DatabaseClient, dispatchRef: string): Promise<OutboxJobRecord> {
+    return this.enqueueChallengeDelivery(database,dispatchRef,"recovery-verification");
+  }
+
+  private async enqueueChallengeDelivery(database: DatabaseClient, dispatchRef: string,
+    component: "registration-verification" | "recovery-verification"): Promise<OutboxJobRecord> {
+    const payload = normalizeOutboxPayload("authentication.challenge.delivery", {dispatchRef});
+    const eligibility = component==="registration-verification" ?
+      `challenges.purpose IN ('registration_email','registration_phone')
+       AND (EXISTS (SELECT 1 FROM auth_registration_flows flows
+             WHERE flows.account_id=challenges.account_id AND flows.current_step IN ('pending_email','pending_phone'))
+         OR EXISTS (SELECT 1 FROM company_registration_flows flows
+             WHERE flows.account_id=challenges.account_id AND flows.current_step='pending_email'))` :
+      `challenges.purpose='password_reset' AND challenges.channel='email'
+       AND EXISTS (SELECT 1 FROM auth_recovery_flows flows
+         JOIN auth_accounts accounts ON accounts.account_id=flows.account_id
+         JOIN auth_account_roles roles ON roles.account_id=flows.account_id AND roles.role=flows.active_role
+         WHERE flows.challenge_id=challenges.challenge_id AND flows.account_id=challenges.account_id
+           AND flows.consumed_at IS NULL AND flows.expires_at>clock_timestamp()
+           AND accounts.account_status IN ('active','locked') AND accounts.password_hash IS NOT NULL)`;
+    const valid = await database.query(
+      `SELECT intents.delivery_id FROM auth_registration_delivery_intents intents
+       JOIN auth_otp_challenges challenges USING(challenge_id)
+       WHERE intents.delivery_id=$1 AND intents.status='queued'
+         AND challenges.account_id IS NOT NULL
+         AND challenges.consumed_at IS NULL AND challenges.invalidated_at IS NULL
+         AND ${eligibility}`,
+      [dispatchRef]
+    );
+    if (valid.rows.length !== 1) throw new OutboxContractError("Authentication delivery binding is invalid.");
+    const key = deriveOutboxIdempotencyKey("authentication.challenge.delivery", dispatchRef, `system:${component}`);
+    const inserted = await database.query<JobRow>(
+      `INSERT INTO platform_outbox_jobs(job_id,job_type,schema_version,idempotency_key,payload,
+        enqueued_system_component) VALUES($1,'authentication.challenge.delivery',1,$2,$3::jsonb,
+        $4) ON CONFLICT(job_type,idempotency_key) DO NOTHING RETURNING *`,
+      [createOutboxJobId(), key, JSON.stringify(payload),component]
+    );
+    const row = inserted.rows[0] ?? (await database.query<JobRow>(
+      OUTBOX_FIND_DEDUPLICATED_SQL, ["authentication.challenge.delivery", key])).rows[0];
+    if (!row) throw new OutboxContractError("Authentication delivery job missing.");
+    const job = jobFromRow(row);
+    if (job.enqueuedBySystemComponent !== component ||
+        JSON.stringify(job.payload) !== JSON.stringify(payload)) throw new OutboxContractError("Authentication delivery conflict.");
+    if (inserted.rows.length) await appendLifecycleAudit({database,
+      actor: bindTrustedSystemAuditActor(component),
+      action: "outbox.job.enqueued", outcome: "succeeded", job});
+    return job;
+  }
 
   private client(): Promise<DatabaseClient> {
     return this.clientPromise;
@@ -629,6 +699,7 @@ export class DatabaseOutboxRepository implements OutboxRepository {
               throw new OutboxContractError("Expired final outbox job was not terminalized.");
             }
             const terminalJob = jobFromRow(terminalRow);
+            await finalizeRegistrationDelivery(transaction,terminalJob);
             await appendLifecycleAudit({
               database: transaction,
               actor: bindTrustedSystemAuditActor("outbox-worker", {
@@ -831,6 +902,7 @@ export class DatabaseOutboxRepository implements OutboxRepository {
       );
       if (!attempt.rows[0]) throw new StaleOutboxLeaseError();
       const job = jobFromRow(row);
+      await finalizeRegistrationDelivery(transaction,job);
       await appendLifecycleAudit({
         database: transaction,
         actor: bindTrustedSystemAuditActor("outbox-worker", {

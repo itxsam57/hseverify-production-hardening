@@ -44,6 +44,7 @@ const MAX_STARTS_PER_WINDOW = 5;
 
 export type CompanyRegistrationPublicState = Readonly<{
   step: "pending_email" | "pending_mfa" | "complete";
+  deliveryStatus?: import("../auth/registration-delivery-repository").RegistrationDeliveryStatus | null;
   deliveryHint: string | null;
   resendAvailableAt: string | null;
   challengeExpiresAt: string | null;
@@ -81,6 +82,7 @@ export class CompanyRegistrationServiceError extends Error {
 type CompanyRegistrationConfig = Readonly<{
   pepper: string;
   sandboxEnabled: boolean;
+  registrationDeliveryChannels?: readonly ("email" | "phone")[];
 }>;
 
 function addMilliseconds(value: Date, milliseconds: number): string {
@@ -127,7 +129,7 @@ export class CompanyRegistrationService {
   }
 
   private ensureDeliveryAvailable(): void {
-    if (!this.config.sandboxEnabled) {
+    if (!this.config.sandboxEnabled && (!this.config.registrationDeliveryChannels?.includes("email"))) {
       throw new CompanyRegistrationServiceError(
         "delivery_unavailable",
         "Company registration email verification is not available in this environment."
@@ -222,6 +224,7 @@ export class CompanyRegistrationService {
       expiresAt,
       createdAt: nowIso
     });
+    if (this.config.sandboxEnabled) {
     await input.repository.insertSandboxDelivery({
       deliveryId: createIdentifier("delivery"),
       challengeId,
@@ -230,6 +233,14 @@ export class CompanyRegistrationService {
       encryptedCode: encryptSecret(code, this.config.pepper),
       createdAt: nowIso
     });
+    } else {
+      await input.repository.enqueueDelivery({
+        deliveryId: createIdentifier("delivery"), challengeId,
+        encryptedPayload: encryptSecret(JSON.stringify({destination: input.email, code, purpose: "registration_email", channel: "email"}), this.config.pepper),
+        createdAt: nowIso
+      });
+    }
+
     await input.repository.authentication.insertSecurityEvent({
       eventId: createIdentifier("event"),
       accountId: input.accountId,
@@ -263,6 +274,8 @@ export class CompanyRegistrationService {
       );
       return Object.freeze({
         step: "pending_email" as const,
+        ...(!this.config.sandboxEnabled && challenge
+          ? {deliveryStatus: await repository.readDeliveryStatus(challenge.challengeId)} : {}),
         deliveryHint: challenge?.deliveryHint ?? null,
         resendAvailableAt: challenge?.resendAvailableAt ?? null,
         challengeExpiresAt: challenge?.expiresAt ?? null,
@@ -814,6 +827,10 @@ export async function getCompanyRegistrationService(): Promise<CompanyRegistrati
     await getCompanyRegistrationRepository(),
     {
       pepper: environment.authPepper,
+      registrationDeliveryChannels: [
+        ...(environment.registrationOtpProviders?.emailApiKey ? ["email" as const] : []),
+        ...(environment.registrationOtpProviders?.smsAccountSid ? ["phone" as const] : [])
+      ],
       sandboxEnabled: environment.authSandboxEnabled
     }
   );
