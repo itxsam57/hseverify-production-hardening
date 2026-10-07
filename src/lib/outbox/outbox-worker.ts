@@ -1,3 +1,4 @@
+import {processInterviewEmailJob} from "../email-delivery/interview-email-handler";
 import "server-only";
 import {projectInterviewScheduledNotification} from "../notifications/interview-notification-projector";
 
@@ -43,6 +44,7 @@ const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
       projectInterviewScheduledNotification(job,database),
     "notification.account.security": async (job, _lease, database) =>
       projectNotificationOutboxJob(job, { database }),
+    "email.interview.scheduled": async (job,lease,database) => processInterviewEmailJob(job,lease,database),
     "email.delivery.foundation": async (job, lease) =>
       processEmailDeliveryOutboxJob(job, lease),
     "secure_file.scan": async (job, lease) =>

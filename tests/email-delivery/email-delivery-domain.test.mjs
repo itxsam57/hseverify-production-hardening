@@ -9,15 +9,17 @@ const outbox = await import(
 );
 
 test("email delivery vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(email.EMAIL_DELIVERY_TYPES, ["platform.foundation.email"]);
+  assert.deepEqual(email.EMAIL_DELIVERY_TYPES, ["platform.foundation.email", "interview.scheduled"]);
   assert.deepEqual(email.EMAIL_DELIVERY_STATUSES, [
     "queued",
     "processing",
     "retry_wait",
     "delivered",
+    "sent",
+    "suppressed",
     "terminal_failed"
   ]);
-  assert.deepEqual(email.EMAIL_ADAPTER_KEYS, ["local_test"]);
+  assert.deepEqual(email.EMAIL_ADAPTER_KEYS, ["local_test", "resend"]);
   assert.equal(new Set(email.EMAIL_ATTEMPT_OUTCOMES).size, email.EMAIL_ATTEMPT_OUTCOMES.length);
   for (const value of [
     ...email.EMAIL_DELIVERY_TYPES,

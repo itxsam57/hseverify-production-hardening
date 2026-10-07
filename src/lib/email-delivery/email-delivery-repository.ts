@@ -103,7 +103,10 @@ FROM platform_outbox_job_attempts AS outbox_attempts
 WHERE email_attempts.delivery_id = $1
   AND email_attempts.outcome = 'running'
   AND outbox_attempts.attempt_id = email_attempts.source_outbox_attempt_id
-  AND outbox_attempts.outcome = 'lease_expired'
+  AND (outbox_attempts.outcome = 'lease_expired' OR
+ (outbox_attempts.outcome IN ('retry_scheduled','terminal_failed') AND EXISTS(
+  SELECT 1 FROM platform_email_deliveries deliveries WHERE deliveries.delivery_id=email_attempts.delivery_id
+   AND deliveries.delivery_type='interview.scheduled')))
 RETURNING email_attempts.*`;
 
 export const EMAIL_RECONCILE_DELIVERY_SQL = `
@@ -131,11 +134,11 @@ JOIN platform_outbox_job_attempts AS outbox_attempts
   ON outbox_attempts.attempt_id = $3
  AND outbox_attempts.job_id = jobs.job_id
 WHERE jobs.job_id = $2
-  AND jobs.job_type = 'email.delivery.foundation'
+  AND jobs.job_type IN ('email.delivery.foundation','email.interview.scheduled')
   AND jobs.status = 'leased'
   AND jobs.lease_id = $6
   AND jobs.worker_id = $5
-  AND jobs.lease_expires_at > CURRENT_TIMESTAMP
+  AND jobs.lease_expires_at > clock_timestamp()
   AND outbox_attempts.attempt_number::smallint = $4
   AND outbox_attempts.worker_id = $5
   AND outbox_attempts.lease_id = $6
@@ -178,7 +181,7 @@ WHERE attempts.source_outbox_attempt_id = $1
   AND jobs.status = 'leased'
   AND jobs.lease_id = $4
   AND jobs.worker_id = $3
-  AND jobs.lease_expires_at > CURRENT_TIMESTAMP
+  AND jobs.lease_expires_at > clock_timestamp()
 RETURNING attempts.*`;
 
 export const EMAIL_FINALIZE_DELIVERY_SQL = `
@@ -398,6 +401,15 @@ async function resolveRecipientAddress(
   database: DatabaseClient,
   job: EmailDeliveryOutboxJob
 ): Promise<string | null> {
+  if(job.jobType==="email.interview.scheduled"){
+   const result=await database.query<{email_normalized:string}>(
+    "SELECT accounts.email_normalized FROM platform_interview_notification_recipients($1) recipients "+
+    "JOIN auth_accounts accounts ON accounts.account_id=recipients.account_id "+
+    "WHERE recipients.account_id=$2 AND recipients.role=$3 AND recipients.membership_id IS NOT DISTINCT FROM $4 "+
+    "AND accounts.email_verified_at IS NOT NULL",
+    [job.payload.eventRef,job.payload.recipientRef,job.payload.recipientRole,job.payload.membershipRef]);
+   return result.rows[0]?.email_normalized??null;
+  }
   const result = await database.query<{ email_normalized: string }>(
     EMAIL_RECIPIENT_SQL,
     [
@@ -461,7 +473,7 @@ export type QueueEmailDeliveryResult = Readonly<{
 
 export type FinalizeEmailAttemptInput = Readonly<{
   outcome: Exclude<EmailAttemptOutcome, "running" | "lease_expired">;
-  status: Extract<EmailDeliveryStatus, "retry_wait" | "delivered" | "terminal_failed">;
+  status: Extract<EmailDeliveryStatus, "retry_wait" | "delivered" | "terminal_failed" | "sent" | "suppressed">;
   code: string;
   summary: string;
   providerReferenceHash?: string | null;
@@ -517,6 +529,7 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
     jobInput: OutboxJobRecord
   ): Promise<QueueEmailDeliveryResult> {
     const job = assertEmailDeliveryJob(jobInput);
+    if(job.jobType!=="email.delivery.foundation")throw new EmailDeliveryContractError("Business email is queued by its authoritative source producer.");
     const recipientAddress = await resolveRecipientAddress(database, job);
     if (!recipientAddress) {
       throw new EmailDeliveryContractError(
@@ -574,6 +587,9 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
   ): Promise<EmailDeliveryAttemptPreparation> {
     const job = assertEmailDeliveryJob(jobInput);
     const lease = assertTrustedOutboxLease(leaseInput);
+    if (adapterKey !== (job.jobType === "email.interview.scheduled" ? "resend" : "local_test")) {
+      throw new EmailDeliveryContractError("Email adapter does not match its fixed delivery type.");
+    }
     if (lease.jobId !== job.jobId || !isEmailAdapterKey(adapterKey)) {
       throw new StaleOutboxLeaseError();
     }
@@ -590,6 +606,7 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
       );
     }
 
+    if(delivery.status==="sent" || delivery.status==="suppressed")return Object.freeze({kind:delivery.status==="sent" ? "already_sent" as const : "already_suppressed" as const,delivery});
     if (delivery.status === "delivered") {
       return Object.freeze({ kind: "already_delivered" as const, delivery });
     }
@@ -609,6 +626,7 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
       if (reconciled.rows[0]) delivery = deliveryFromRow(reconciled.rows[0]);
     }
 
+    if(delivery.status==="sent" || delivery.status==="suppressed")return Object.freeze({kind:delivery.status==="sent" ? "already_sent" as const : "already_suppressed" as const,delivery});
     if (delivery.status === "delivered") {
       return Object.freeze({ kind: "already_delivered" as const, delivery });
     }
@@ -697,6 +715,8 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
     const lease = assertTrustedOutboxLease(leaseInput);
     if (lease.jobId !== job.jobId) throw new StaleOutboxLeaseError();
     if (
+      input.outcome === "accepted" && input.status !== "sent" ||
+      input.outcome === "suppressed" && input.status !== "suppressed" ||
       input.outcome === "delivered" && input.status !== "delivered" ||
       input.outcome === "retryable_failure" && input.status !== "retry_wait" ||
       input.outcome === "terminal_failure" && input.status !== "terminal_failed"
@@ -705,14 +725,17 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
         "Email attempt outcome and delivery status do not agree."
       );
     }
+    if (job.jobType === "email.interview.scheduled" ? input.outcome === "delivered" : input.outcome === "accepted" || input.outcome === "suppressed") {
+      throw new EmailDeliveryContractError("Email outcome does not match its fixed delivery type.");
+    }
     const result = normalizeEmailResultText({
       code: input.code,
       summary: input.summary
     });
     const providerReferenceHash = input.providerReferenceHash ?? null;
     if (
-      (input.outcome === "delivered" && !/^[a-f0-9]{64}$/.test(providerReferenceHash ?? "")) ||
-      (input.outcome !== "delivered" && providerReferenceHash !== null)
+      ((input.outcome === "delivered" || input.outcome === "accepted") && !/^[a-f0-9]{64}$/.test(providerReferenceHash ?? "")) ||
+      (input.outcome !== "delivered" && input.outcome !== "accepted" && providerReferenceHash !== null)
     ) {
       throw new EmailDeliveryContractError(
         "Email provider reference fingerprint does not match the outcome."

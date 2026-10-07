@@ -112,6 +112,7 @@ export class InterviewSchedulingService {
       await transaction.query("UPDATE interview_requests SET schedule_event_id=$2 WHERE interview_request_id=$1",
         [current.interviewRequestId,event.auditEventId]);
       await transaction.query("SELECT platform_enqueue_interview_notifications($1)",[event.auditEventId]);
+      await transaction.query("SELECT platform_enqueue_interview_emails($1)",[event.auditEventId]);
       return updated;
     });
   }

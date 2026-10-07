@@ -71,8 +71,8 @@ assert.match(down, /DROP TABLE IF EXISTS platform_email_deliveries/);
 assert.match(down, /expanded[\s\S]*outbox job type[\s\S]*audit action\/target vocabularies/i);
 assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_type_check/);
 
-assert.match(domain, /EMAIL_DELIVERY_TYPES = \["platform\.foundation\.email"\]/);
-assert.match(domain, /EMAIL_ADAPTER_KEYS = \["local_test"\]/);
+assert.match(domain, /EMAIL_DELIVERY_TYPES = \["platform\.foundation\.email", "interview\.scheduled"\]/);
+assert.match(domain, /EMAIL_ADAPTER_KEYS = \["local_test", "resend"\]/);
 assert.match(domain, /hashEmailRecipientAddress/);
 assert.match(domain, /deriveEmailDispatchKey/);
 assert.match(domain, /hashProviderReference/);
@@ -89,7 +89,7 @@ assert.match(repository, /recipient_account_id = \$1[\s\S]*recipient_role = \$2/
 assert.match(repository, /tenant_id = \$3[\s\S]*membership_id = \$4/);
 assert.match(repository, /source_outbox_attempt_id = \$1/);
 assert.match(repository, /jobs\.lease_id = \$4[\s\S]*jobs\.worker_id = \$3/);
-assert.match(repository, /jobs\.lease_expires_at > CURRENT_TIMESTAMP/);
+assert.match(repository, /jobs\.lease_expires_at > clock_timestamp\(\)/);
 assert.match(repository, /outbox_attempts\.attempt_number::smallint = \$4/);
 assert.match(repository, /ON CONFLICT \(delivery_key\) DO NOTHING/);
 assert.match(repository, /ON CONFLICT \(source_outbox_attempt_id\) DO NOTHING/);

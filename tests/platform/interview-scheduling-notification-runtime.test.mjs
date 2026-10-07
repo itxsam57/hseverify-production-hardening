@@ -10,7 +10,7 @@ test("Scheduling a persisted assigned interview queues its required notification
  const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
  try{
   const service=new InterviewSchedulingService(db),request=fixture.requests.Alpha;
-  const count=async()=>Number((await db.query("SELECT COUNT(*) AS total FROM platform_outbox_jobs WHERE job_type LIKE 'notification.%' OR job_type LIKE 'email.%'")).rows[0].total);
+  const count=async()=>Number((await db.query("SELECT COUNT(*) AS total FROM platform_outbox_jobs WHERE job_type LIKE 'notification.%'")).rows[0].total);
   const before=await count(),scheduledAt=new Date(Date.now()+3600000).toISOString();
   await service.scheduleInterview({principal:await assessorSchedulingPrincipal(db,fixture.credentials.assessor),tenantId:fixture.credentials.company.tenantId,request,scheduledAt});
   const persisted=(await db.query("SELECT scheduled_at FROM interview_requests WHERE interview_request_id=$1",[request.interviewRequestId])).rows[0];
@@ -89,6 +89,9 @@ test("Notification migration restores original constraints when empty and refuse
  try{
   const definitions=(await db.query("SELECT platform_interview_notification_rollback_constraints() AS definitions")).rows[0].definitions;
   for(const definition of definitions)assert.doesNotMatch(definition.definition,/interview\.scheduled|interview\.record|company\.assurance\.case/);
+  const emailDown=await readFile("database/migrations/0089_interview_scheduling_email.down.sql","utf8");
+  const emailUp=await readFile("database/migrations/0089_interview_scheduling_email.up.sql","utf8");
+  await db.transaction(tx=>tx.exec(emailDown));
   await db.transaction(tx=>tx.exec(down));
   for(const definition of definitions){
    const current=(await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[definition.table,definition.constraint])).rows[0].definition;
@@ -96,6 +99,7 @@ test("Notification migration restores original constraints when empty and refuse
   }
   assert.equal(Number((await db.query("SELECT count(*) AS total FROM interview_requests")).rows[0].total),3);
   await db.transaction(tx=>tx.exec(up));
+  await db.transaction(tx=>tx.exec(emailUp));
   const principal=await assessorSchedulingPrincipal(db,fixture.credentials.assessor);
   await new InterviewSchedulingService(db).scheduleInterview({principal,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:new Date(Date.now()-5*3600000).toISOString()});
   assert.equal(Number((await db.query("SELECT count(*) AS total FROM platform_outbox_jobs WHERE job_type='notification.interview.scheduled'")).rows[0].total),0,"Beyond the existing four-hour recovery window creates no late notice");

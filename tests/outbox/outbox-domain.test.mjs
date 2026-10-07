@@ -33,6 +33,7 @@ test("outbox vocabulary is explicit, fixed and wildcard-free", () => {
     "notification.account.security",
     "notification.interview.scheduled",
     "email.delivery.foundation",
+    "email.interview.scheduled",
     "secure_file.scan",
     "worker_identity.automated_checks",
     "assessment.attempt.expiry",

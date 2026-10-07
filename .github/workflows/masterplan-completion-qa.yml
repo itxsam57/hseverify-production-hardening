@@ -111,6 +111,12 @@ jobs:
       - name: Scheduling notification native source, retry, rollback and recipient access
         run: node --test tests/platform/interview-scheduling-notification-runtime.test.mjs
 
+      - name: Scheduling email actual worker, suppression, ambiguous retry and source repair
+        run: node --test tests/platform/interview-scheduling-email-runtime.test.mjs
+
+      - name: Scheduling email compiled CLI and exact migration rollback
+        run: node --test tests/platform/interview-scheduling-email-cli-rollback.test.mjs
+
       - name: UTC interview scheduling under alternate database timezone
         run: node --test tests/platform/interview-scheduling-timezone-runtime.test.mjs
 

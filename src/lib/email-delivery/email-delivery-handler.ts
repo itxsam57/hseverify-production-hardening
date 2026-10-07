@@ -125,6 +125,7 @@ export async function processEmailDeliveryOutboxJob(
   }> = {}
 ): Promise<OutboxHandlerResult> {
   const job = assertEmailDeliveryJob(jobInput);
+  if(job.jobType!=="email.delivery.foundation")throw new Error("Foundation email handler requires its fixed type.");
   const lease = assertTrustedOutboxLease(leaseInput);
   if (lease.jobId !== job.jobId) {
     return Object.freeze({
@@ -162,6 +163,7 @@ export async function processEmailDeliveryOutboxJob(
     return attempt;
   });
 
+  if(preparation.kind==="already_sent" || preparation.kind==="already_suppressed")return Object.freeze({kind:"succeeded" as const});
   if (preparation.kind === "already_delivered") {
     return Object.freeze({ kind: "succeeded" as const });
   }

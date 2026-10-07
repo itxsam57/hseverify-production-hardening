@@ -6,25 +6,30 @@ import {
   OUTBOX_SCHEMA_VERSION,
   normalizeOutboxPayload,
   type OutboxJobRecord,
+  type InterviewScheduledNotificationPayload,
   type TrustedOutboxLease
 } from "../outbox/outbox-domain";
 
-export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email"] as const;
+export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email", "interview.scheduled"] as const;
 export const EMAIL_DELIVERY_STATUSES = [
   "queued",
   "processing",
   "retry_wait",
   "delivered",
+  "sent",
+  "suppressed",
   "terminal_failed"
 ] as const;
 export const EMAIL_ATTEMPT_OUTCOMES = [
   "running",
+  "accepted",
+  "suppressed",
   "delivered",
   "retryable_failure",
   "terminal_failure",
   "lease_expired"
 ] as const;
-export const EMAIL_ADAPTER_KEYS = ["local_test"] as const;
+export const EMAIL_ADAPTER_KEYS = ["local_test", "resend"] as const;
 
 export const EMAIL_DELIVERY_SCHEMA_VERSION = 1 as const;
 
@@ -43,10 +48,8 @@ export type FoundationEmailDeliveryPayload = Readonly<{
 }>;
 
 export type EmailDeliveryOutboxJob = Omit<OutboxJobRecord, "jobType" | "payload"> &
-  Readonly<{
-    jobType: "email.delivery.foundation";
-    payload: FoundationEmailDeliveryPayload;
-  }>;
+ (Readonly<{jobType:"email.delivery.foundation";payload:FoundationEmailDeliveryPayload}> |
+  Readonly<{jobType:"email.interview.scheduled";payload:InterviewScheduledNotificationPayload}>);
 
 export type EmailDeliveryRecord = Readonly<{
   sequence: number;
@@ -94,6 +97,8 @@ export type EmailDeliveryAttemptPreparation =
       kind: "already_delivered";
       delivery: EmailDeliveryRecord;
     }>
+  | Readonly<{ kind: "already_sent"; delivery: EmailDeliveryRecord }>
+  | Readonly<{ kind: "already_suppressed"; delivery: EmailDeliveryRecord }>
   | Readonly<{
       kind: "already_terminal";
       delivery: EmailDeliveryRecord;
@@ -182,22 +187,16 @@ export function createEmailAttemptId(): string {
   return createIdentifier("email_attempt");
 }
 
-export function assertEmailDeliveryJob(
-  job: OutboxJobRecord
-): EmailDeliveryOutboxJob {
-  if (
-    job.jobType !== "email.delivery.foundation" ||
-    job.schemaVersion !== OUTBOX_SCHEMA_VERSION
-  ) {
-    throw new EmailDeliveryContractError(
-      "Email delivery requires the registered fixed outbox job type."
-    );
-  }
-  const payload = normalizeOutboxPayload(
-    "email.delivery.foundation",
-    job.payload
-  ) as FoundationEmailDeliveryPayload;
-  return Object.freeze({ ...job, jobType: "email.delivery.foundation" as const, payload });
+export function assertEmailDeliveryJob(job:OutboxJobRecord):EmailDeliveryOutboxJob {
+ if(job.schemaVersion!==OUTBOX_SCHEMA_VERSION)throw new EmailDeliveryContractError();
+ if(job.jobType==="email.delivery.foundation"){
+  return Object.freeze({...job,jobType:job.jobType,payload:normalizeOutboxPayload(job.jobType,job.payload)});
+ }
+ if(job.jobType==="email.interview.scheduled" && job.enqueuedByRole==="assessor" &&
+    job.enqueuedByAccountId && !job.enqueuedBySystemComponent && job.tenantId===null && job.membershipId===null){
+  return Object.freeze({...job,jobType:job.jobType,payload:normalizeOutboxPayload(job.jobType,job.payload)});
+ }
+ throw new EmailDeliveryContractError("Email delivery requires a registered trusted fixed source.");
 }
 
 export function deriveEmailDeliveryKey(job: EmailDeliveryOutboxJob): string {
