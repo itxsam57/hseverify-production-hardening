@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
-import ts from "typescript";
+
+import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
@@ -23,41 +21,8 @@ const ENV = {
 };
 
 async function loadProgressionRuntime() {
-  const out = mkdtempSync(resolve(tmpdir(), "hse-assurance-progression-"));
-  const files = [
-    "src/lib/auth/auth-domain.ts",
-    "src/lib/assurance/assurance-order-domain.ts",
-    "src/lib/assurance/assurance-order-repository.ts",
-    "src/lib/interview/interview-scheduling-domain.ts",
-    "src/lib/interview/interview-scheduling-repository.ts",
-    "src/lib/interview/interview-scheduling-service.ts",
-    "src/lib/assurance/assurance-case-progression-service.ts"
-  ];
-  for (const sourceFile of files) {
-    const source = readFileSync(sourceFile, "utf8").replace(/^import "server-only";\n?/, "");
-    const output = ts.transpileModule(source, {
-      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
-    }).outputText;
-    const target = resolve(out, sourceFile.replace(/^src\//, "").replace(/\.ts$/, ".js"));
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, output);
-  }
-  const assignmentShim = resolve(out, "lib/interview/interview-assignment-service.js");
-  mkdirSync(dirname(assignmentShim), { recursive: true });
-  writeFileSync(
-    assignmentShim,
-    `class InterviewAssignmentService {
-  constructor(database) { this.database = database; }
-  async evaluateAndPersist() {
-    throw new Error("Interview assignment must not run in PASS/FAIL recommendation progression tests.");
-  }
-}
-module.exports = { InterviewAssignmentService };
-`
-  );
-  return import(
-    `file://${resolve(out, "lib/assurance/assurance-case-progression-service.js")}`
-  );
+  // Compile the real dependency graph using the shared injected-database runtime loader.
+  return loadWorkerRegistrationTs("src/lib/assurance/assurance-case-progression-service.ts");
 }
 
 async function seedInterviewPendingCase(database, suffix) {

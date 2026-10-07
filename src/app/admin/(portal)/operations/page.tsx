@@ -9,18 +9,18 @@ import { getProviderHealth } from "@/lib/integrations/provider-health-domain";
 import { buildCertificationSnapshot, buildEmptyCertificationSnapshot } from "@/lib/operations/certification-readiness-domain";
 import { CertificationReadinessRepository } from "@/lib/operations/certification-readiness-repository";
 import { getProductionLaunchService } from "@/lib/operations/production-launch-service";
-import { updateProductionLaunchCheckAction } from "./actions";
+import { updateProductionLaunchCheckAction, retryInterviewEmailsAction } from "./actions";
 
 export default async function AdminOperationsPage({
   searchParams
 }: {
-  searchParams: Promise<{ result?: string }>;
+  searchParams: Promise<{ result?: string; emailRetry?: string }>;
 }): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "admin",
     permission: "platform.operations.manage"
   });
-  const { result } = await searchParams;
+  const { result, emailRetry } = await searchParams;
   const events = await listAuthorizedPlatformAuditEvents({
     expectedRole: "admin",
     options: { limit: 10 }
@@ -102,6 +102,14 @@ export default async function AdminOperationsPage({
         </dl>
         <p>Attempt totals count accepted and failed outcomes, excluding suppressed and expired-lease attempts. Failed attempts can include missing configuration or unconfirmed sends.</p>
         <p>Sent records show provider acceptance. Inbox delivery is not confirmed. Retries follow the outbox schedule.</p>
+        <p>Eligible delayed retries: {emailHealth.eligibleRetries}. Manual retry keeps the original job, provider key and attempt limit. The worker checks current recipient access before sending.</p>
+        <form action={retryInterviewEmailsAction}>
+          <button type="submit" disabled={!emailConfigured || emailHealth.eligibleRetries === 0}>Retry interview emails now</button>
+        </form>
+        {!emailConfigured ? <p>Configure email delivery before requesting a retry.</p> : null}
+        {emailRetry === "retry-requested" ? <p role="status">Eligible retries are available to the worker now.</p> : null}
+        {emailRetry === "retry-idle" ? <p role="status">No eligible delayed retries remain.</p> : null}
+        {emailRetry === "retry-unavailable" ? <p role="alert">Email delivery is not configured. No retry was requested.</p> : null}
       </section>
       <h2>Registration verification delivery</h2>
       <ul aria-label="Registration delivery configuration">
