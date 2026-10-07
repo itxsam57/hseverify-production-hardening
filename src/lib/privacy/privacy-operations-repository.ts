@@ -170,6 +170,18 @@ export class PrivacyOperationsRepository {
             workerId: request.worker_id, actorAccountId: input.reviewerAccountId,
             consentId: consent.consent_id, reason: input.reason.slice(0,1000), now: new Date(input.now)
           });
+        } else if (request.request_type === "retention_inquiry") {
+          const reviewer = await tx.query(
+            "SELECT accounts.account_id FROM auth_accounts accounts JOIN auth_account_roles roles " +
+            "ON roles.account_id=accounts.account_id AND roles.role='admin' " +
+            "WHERE accounts.account_id=$1 AND accounts.account_status='active' FOR SHARE OF accounts,roles",
+            [input.reviewerAccountId]
+          );
+          if (!reviewer.rows[0]) throw new Error("Retention inquiry response requires an active Admin reviewer.");
+          // Fulfil an information request with the staff response, without purging or changing retained records.
+          details = { ...request.details, fulfilment: {
+            method: "retention_inquiry_response", answeredAt: input.now
+          } };
         } else if (["access","export"].includes(request.request_type)) {
           await collectWorkerPrivacyData(tx,request.worker_id,input.now);
           details = { ...request.details, fulfilment: {
