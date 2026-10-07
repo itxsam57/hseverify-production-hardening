@@ -1,5 +1,5 @@
-import {processInterviewEmailJob} from "../email-delivery/interview-email-handler";
 import "server-only";
+import {processInterviewEmailJob} from "../email-delivery/interview-email-handler";
 import {projectInterviewScheduledNotification} from "../notifications/interview-notification-projector";
 
 import { processRegistrationDeliveryJob } from "../auth/registration-delivery-handler";

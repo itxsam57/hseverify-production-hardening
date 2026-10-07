@@ -68,8 +68,8 @@ assert.match(down, /DROP TABLE IF EXISTS platform_notifications/);
 assert.match(down, /expanded[\s\S]*outbox job type[\s\S]*audit action\/target vocabularies/i);
 assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_type_check/);
 
-assert.match(domain, /NOTIFICATION_TYPES = \["platform\.foundation\.ready", \.\.\.Object\.values\(ACCOUNT_SECURITY_NOTIFICATION_TYPES\)\]/);
-assert.match(domain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security"\]/);
+assert.match(domain, /NOTIFICATION_TYPES = \["platform\.foundation\.ready", "interview\.scheduled", \.\.\.Object\.values\(ACCOUNT_SECURITY_NOTIFICATION_TYPES\)\]/);
+assert.match(domain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security", "interview\.record", "company\.assurance\.case"\]/);
 for (const [event, type] of Object.entries({password_changed:"account.password.changed",password_reset_completed:"account.password.reset",mfa_replaced:"account.mfa.replaced",mfa_recovery_codes_rotated:"account.recovery_codes.rotated"})) {
   assert.ok(domain.includes(event + ": \"" + type + "\""));
 }
