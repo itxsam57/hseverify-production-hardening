@@ -108,6 +108,9 @@ jobs:
       - name: Verifier authorized review SQL search before queue limit
         run: node --test tests/platform/verifier-review-search-runtime.test.mjs
 
+      - name: UTC interview scheduling under alternate database timezone
+        run: node --test tests/platform/interview-scheduling-timezone-runtime.test.mjs
+
       - name: Assessor assigned interview SQL search and scope
         run: node --test tests/platform/assessor-interview-search-runtime.test.mjs tests/platform/interview-scheduling-runtime.test.mjs
 
@@ -177,6 +180,9 @@ jobs:
 
       - name: Assessor interview search navigation and direct record denial
         run: node --test tests/browser/assessor-interview-search.browser.test.mjs
+
+      - name: UTC scheduling browser with alternate browser and server timezone
+        run: node --test tests/browser/interview-scheduling-timezone.browser.test.mjs
 
       - name: Verifier review search and real claim boundary
         run: node --test tests/browser/verifier-review-search.browser.test.mjs

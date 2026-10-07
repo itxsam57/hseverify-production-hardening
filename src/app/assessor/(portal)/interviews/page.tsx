@@ -37,7 +37,7 @@ export default async function AssessorInterviewsPage({
         {assignments.length === 0 ? <p>{query ? "No interview assignments match your search." : "No interview assignments are currently available."}</p> : (
           <div className="table-scroll">
             <table>
-              <thead><tr><th>Case</th><th>Worker</th><th>Status</th><th>Schedule</th><th>Console</th><th>Conflict</th></tr></thead>
+              <thead><tr><th>Case</th><th>Worker</th><th>Status</th><th>Schedule (UTC)</th><th>Console</th><th>Conflict</th></tr></thead>
               <tbody>{assignments.map((assignment) => (
                 <tr key={assignment.interviewRequestId}>
                   <td>{assignment.caseId}</td>
@@ -46,7 +46,7 @@ export default async function AssessorInterviewsPage({
                   <td>{assignment.scheduledAt ?? (
                     <form action={scheduleInterviewAction}>
                       <input type="hidden" name="interviewRequestId" value={assignment.interviewRequestId} />
-                      <input name="scheduledAt" type="datetime-local" required aria-label="Interview time" />
+                      <input name="scheduledAt" type="datetime-local" required aria-label="Interview time (UTC)" />
                       <button className="button button-secondary button-small" type="submit">Schedule</button>
                     </form>
                   )}</td>
