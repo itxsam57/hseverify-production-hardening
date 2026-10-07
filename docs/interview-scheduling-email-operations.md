@@ -11,3 +11,5 @@ Resend retains idempotency keys for 24 hours and rejects a changed request paylo
 Rollback is refused while scheduling email history remains. Empty rollback restores the exact previous constraints and attempt functions. Roll back migration 0089 before rolling back its scheduling source dependency 0088.
 
 Verification uses real native SQL/services and the compiled CLI with controlled transport. It does not certify live email delivery or PostgreSQL multi-connection contention.
+
+The authenticated notifications page shows the current recipient’s ten most recent interview email records, filtered before pagination. It distinguishes Queued, Sending, Retrying, Sent, Suppressed and Failed. Sent means provider acceptance, not confirmed delivery. Retry/failure copy preserves uncertainty after a timeout or local finalization failure; an expired provider retry window shows Confirmation unavailable. Unrelated recipients receive no email rows, and private Worker record links resolve to not found. Provider health and delivery confirmation still require separate implementation and verification.

@@ -23,6 +23,13 @@ export class InterviewAssignmentAccessError extends Error {
   }
 }
 
+export class InterviewWorkerAccessError extends Error {
+  constructor() {
+    super("Interview request was not found.");
+    this.name = "InterviewWorkerAccessError";
+  }
+}
+
 export class InterviewSchedulingService {
   constructor(private readonly database: DatabaseClient) {}
 
@@ -48,7 +55,7 @@ export class InterviewSchedulingService {
       input.interviewRequestId,
       input.workerAccountId
     );
-    if (!request) throw new Error("Interview request was not found.");
+    if (!request) throw new InterviewWorkerAccessError();
     assertInterviewCaseOwnership(request, input.workerAccountId);
     return request;
   }

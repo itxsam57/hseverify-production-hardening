@@ -332,3 +332,19 @@ export function isFinalEmailAttempt(attemptNumber: number): boolean {
   }
   return attemptNumber === OUTBOX_MAX_ATTEMPTS;
 }
+
+export function describeInterviewEmailDelivery(delivery: Pick<EmailDeliveryRecord, "status" | "lastResultCode">): Readonly<{ label: string; description: string }> {
+  if (delivery.status === "terminal_failed" && delivery.lastResultCode === "idempotency_window_expired") {
+    return { label: "Confirmation unavailable", description: "We could not confirm whether this email was sent. Contact support if you need help." };
+  }
+  const descriptions: Record<EmailDeliveryStatus, { label: string; description: string }> = {
+    queued: { label: "Queued", description: "Waiting to send." },
+    processing: { label: "Sending", description: "Your interview email is being sent." },
+    retry_wait: { label: "Retrying", description: "Sending could not be confirmed. We will try again shortly." },
+    sent: { label: "Sent", description: "Accepted for sending. Delivery has not been confirmed." },
+    delivered: { label: "Delivered", description: "Delivery has been confirmed." },
+    suppressed: { label: "Suppressed", description: "This email is no longer needed, or the recipient details have changed." },
+    terminal_failed: { label: "Failed", description: "Sending could not be confirmed. Your interview details remain available in this portal." }
+  };
+  return descriptions[delivery.status];
+}

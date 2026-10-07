@@ -114,6 +114,9 @@ jobs:
       - name: Scheduling email actual worker, suppression, ambiguous retry and source repair
         run: node --test tests/platform/interview-scheduling-email-runtime.test.mjs
 
+      - name: Owned interview email state filtering and truthful labels
+        run: node --test tests/platform/interview-email-delivery-visibility-runtime.test.mjs
+
       - name: Scheduling email compiled CLI and exact migration rollback
         run: node --test tests/platform/interview-scheduling-email-cli-rollback.test.mjs
 
@@ -194,6 +197,9 @@ jobs:
         run: |
           node scripts/build-outbox-worker.mjs
           node --test tests/browser/interview-scheduling-notification.browser.test.mjs
+
+      - name: Interview email queued, retry, sent and private-link browser journey
+        run: node --test tests/browser/interview-email-delivery-visibility.browser.test.mjs
 
       - name: UTC scheduling browser with alternate browser and server timezone
         run: node --test tests/browser/interview-scheduling-timezone.browser.test.mjs

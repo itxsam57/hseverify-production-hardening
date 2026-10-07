@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { InterviewWaitingRoomChecks } from "@/components/interview/interview-waiting-room-checks";
 import { LiveInterviewMedia } from "@/components/interview/live-interview-media";
@@ -7,7 +8,7 @@ import { requirePortalAuthorization } from "@/lib/authorization/authorization-se
 import { getDatabaseClient } from "@/lib/database/database";
 import { formatDateTime } from "@/lib/format";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
-import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { InterviewWorkerAccessError, InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
 import { CaseAccommodationService } from "@/lib/privacy/case-accommodation-service";
 import {
   enterInterviewWaitingRoomAction,
@@ -33,6 +34,9 @@ export default async function WorkerInterviewPage({
   const request = await service.getWorkerInterview({
     workerAccountId: principal.accountId,
     interviewRequestId
+  }).catch((error: unknown) => {
+    if (error instanceof InterviewWorkerAccessError) notFound();
+    throw error;
   });
   const [runtime, accommodation] = await Promise.all([
     new InterviewRuntimeService(Promise.resolve(database)).view(principal, interviewRequestId),

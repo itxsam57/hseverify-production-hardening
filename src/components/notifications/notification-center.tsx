@@ -1,3 +1,4 @@
+import { EmailDeliveryPanel } from "./email-delivery-panel";
 import {
   createNotificationFixtureAction,
   markNotificationReadAction,
@@ -124,6 +125,7 @@ export async function NotificationCenter({
           </ul>
         </section>
       )}
+      <EmailDeliveryPanel role={role} />
     </div>
   );
 }

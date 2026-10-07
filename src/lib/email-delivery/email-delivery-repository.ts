@@ -33,6 +33,7 @@ import {
   type EmailDeliveryOutboxJob,
   type EmailDeliveryRecord,
   type EmailDeliveryStatus,
+  type EmailDeliveryType,
   type EmailDeliveryAttemptPreparation
 } from "./email-delivery-domain";
 
@@ -241,6 +242,7 @@ WHERE recipient_account_id = $1
     )
   )
   AND ($5::bigint IS NULL OR delivery_sequence < $5::bigint)
+  AND ($7::text IS NULL OR delivery_type = $7)
 ORDER BY delivery_sequence DESC
 LIMIT $6`;
 
@@ -462,6 +464,7 @@ function scopeParameters(
 }
 
 export type EmailDeliveryQueryOptions = Readonly<{
+  deliveryType?: EmailDeliveryType;
   beforeSequence?: number | null;
   limit?: number;
 }>;
@@ -807,13 +810,18 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
   ): Promise<readonly EmailDeliveryRecord[]> {
     const cursor = normalizeEmailDeliveryCursor(options.beforeSequence);
     const limit = normalizeEmailDeliveryLimit(options.limit);
+    const deliveryType = options.deliveryType ?? null;
+    if (deliveryType !== null && !isEmailDeliveryType(deliveryType)) {
+      throw new EmailDeliveryContractError("Email delivery type filter is invalid.");
+    }
     const database = await this.client();
     return database.transaction(async (transaction) => {
       await assertLivePrincipal(transaction, principal);
       const rows = await transaction.query<DeliveryRow>(EMAIL_LIST_SQL, [
         ...scopeParameters(principal),
         cursor,
-        limit
+        limit,
+        deliveryType
       ]);
       return Object.freeze(rows.rows.map(deliveryFromRow));
     });

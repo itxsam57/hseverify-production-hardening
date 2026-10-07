@@ -76,7 +76,8 @@
   padding: 0;
 }
 
-.notification-center-item {
+.notification-center-item,
+.email-delivery-item {
   align-items: center;
   border: 1px solid var(--border-subtle, #d7dce2);
   border-radius: 0.75rem;
@@ -97,11 +98,13 @@
 }
 
 .notification-center-copy h2,
+.notification-center-copy h3,
 .notification-center-copy p {
   margin: 0;
 }
 
-.notification-center-copy h2 {
+.notification-center-copy h2,
+.notification-center-copy h3 {
   font-size: 1rem;
 }
 
@@ -130,7 +133,8 @@
 
 @media (max-width: 700px) {
   .notification-test-control,
-  .notification-center-item {
+  .notification-center-item,
+  .email-delivery-item {
     align-items: stretch;
     flex-direction: column;
   }
