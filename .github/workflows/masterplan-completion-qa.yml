@@ -114,6 +114,9 @@ jobs:
       - name: Scheduling email actual worker, suppression, ambiguous retry and source repair
         run: node --test tests/platform/interview-scheduling-email-runtime.test.mjs
 
+      - name: Admin scheduling email health metrics and live access
+        run: node --test tests/platform/interview-email-operational-health-runtime.test.mjs
+
       - name: Owned interview email state filtering and truthful labels
         run: node --test tests/platform/interview-email-delivery-visibility-runtime.test.mjs
 
@@ -197,6 +200,9 @@ jobs:
         run: |
           node scripts/build-outbox-worker.mjs
           node --test tests/browser/interview-scheduling-notification.browser.test.mjs
+
+      - name: Admin operational email queue, retry and acceptance browser workflow
+        run: node --test tests/browser/interview-email-operational-health.browser.test.mjs
 
       - name: Interview email queued, retry, sent and private-link browser journey
         run: node --test tests/browser/interview-email-delivery-visibility.browser.test.mjs

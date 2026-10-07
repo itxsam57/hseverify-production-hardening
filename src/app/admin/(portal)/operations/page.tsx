@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { formatDateTime } from "@/lib/format";
+import { getInterviewEmailHealth } from "@/lib/email-delivery/interview-email-health-service";
 import { getServerEnvironment } from "@/lib/config/server-environment";
 import { listAuthorizedPlatformAuditEvents } from "@/lib/audit/audit-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
@@ -25,7 +27,10 @@ export default async function AdminOperationsPage({
   });
   const health = await getOperationalHealthSnapshot();
   const providers = getProviderHealth();
-  const registrationProviders = getServerEnvironment().registrationOtpProviders;
+  const environment = getServerEnvironment();
+  const registrationProviders = environment.registrationOtpProviders;
+  const emailConfigured = Boolean(registrationProviders?.emailApiKey && registrationProviders?.emailFrom && environment.publicBaseUrl);
+  const emailHealth = await getInterviewEmailHealth(principal);
   const certificationRows = await new CertificationReadinessRepository().list();
   const certification = certificationRows.length > 0
     ? buildCertificationSnapshot(certificationRows)
@@ -72,6 +77,32 @@ export default async function AdminOperationsPage({
           </li>
         ))}
       </ul>
+      <section aria-labelledby="interview-email-health-heading">
+        <h2 id="interview-email-health-heading">Interview email delivery</h2>
+        <p>Configuration: {emailConfigured ? "Configured" : "Not configured"} (Resend)</p>
+        <p>Configuration does not confirm provider availability or inbox delivery.</p>
+        <ul aria-label="Interview email queue">
+          <li>Queued: {emailHealth.queued}</li>
+          <li>Sending: {emailHealth.processing}</li>
+          <li>Retrying: {emailHealth.retrying}</li>
+          <li>Sent: {emailHealth.sent}</li>
+          <li>Failed: {emailHealth.failed}</li>
+          <li>Suppressed: {emailHealth.suppressed}</li>
+          <li>Queue depth: {emailHealth.queueDepth}</li>
+        </ul>
+        <dl className="compact-definition-list">
+          <div><dt>Last provider acceptance</dt><dd>{emailHealth.lastAcceptedAt ? formatDateTime(emailHealth.lastAcceptedAt) : "None recorded"}</dd></div>
+          <div><dt>Completed send attempts (accepted or failed) in the last 24 hours</dt><dd>{emailHealth.completedAttempts24h}</dd></div>
+          <div><dt>Failed attempts in the last 24 hours</dt><dd>{emailHealth.failedAttempts24h}</dd></div>
+          <div><dt>Attempt failure rate in the last 24 hours</dt><dd>{emailHealth.failureRate24h === null ? "No completed attempts" : Math.round(emailHealth.failureRate24h * 100) + "%"}</dd></div>
+          <div><dt>Next scheduled retry</dt><dd>{emailHealth.nextRetryAt ? formatDateTime(emailHealth.nextRetryAt) : "None scheduled"}</dd></div>
+          <div><dt>Delivery confirmation</dt><dd>Unavailable</dd></div>
+          <div><dt>Credential expiry</dt><dd>Not reported by provider</dd></div>
+          <div><dt>Circuit breaker</dt><dd>Not configured</dd></div>
+        </dl>
+        <p>Attempt totals count accepted and failed outcomes, excluding suppressed and expired-lease attempts. Failed attempts can include missing configuration or unconfirmed sends.</p>
+        <p>Sent records show provider acceptance. Inbox delivery is not confirmed. Retries follow the outbox schedule.</p>
+      </section>
       <h2>Registration verification delivery</h2>
       <ul aria-label="Registration delivery configuration">
         <li>Email: {registrationProviders?.emailApiKey ? "Configured" : "Unavailable"}</li>
