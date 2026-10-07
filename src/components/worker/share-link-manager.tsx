@@ -11,7 +11,7 @@ type ShareLinkView = {
   revokedAt: string | null;
 };
 
-export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] }): React.JSX.Element {
+export function ShareLinkManager({ links, restricted = false }: { links: readonly ShareLinkView[]; restricted?: boolean }): React.JSX.Element {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(null);
@@ -19,6 +19,7 @@ export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] })
 
   const [visibleLinks, setVisibleLinks] = useState<readonly ShareLinkView[]>(links);
   async function createLink(formData: FormData): Promise<void> {
+    if (restricted) { setFeedback({kind: "error", text: "Optional sharing is restricted. New share links are unavailable."}); return; }
     setBusy("create");
     setFeedback(null);
     setCreatedUrl(null);
@@ -37,7 +38,7 @@ export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] })
     });
     setBusy(null);
     if (!response.ok) {
-      setFeedback({ kind: "error", text: "The share link could not be created. Check the selected details and try again." });
+      setFeedback({ kind: "error", text: response.status === 403 ? "Optional sharing is restricted. New share links are unavailable." : "The share link could not be created. Check the selected details and try again." });
       return;
     }
     const result = await response.json() as { shareUrl: string; record: ShareLinkView };
@@ -67,6 +68,7 @@ export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] })
 
   return (
     <>
+      {restricted ? <p role="status">Optional sharing is restricted. Existing links are revoked and new share links are unavailable.</p> : null}
       <form className="dashboard-section auth-form" action={(formData) => void createLink(formData)}>
         <div>
           <p className="section-kicker">Controlled disclosure</p>
@@ -100,7 +102,7 @@ export function ShareLinkManager({ links }: { links: readonly ShareLinkView[] })
             <option value="90">90 days</option>
           </select>
         </div>
-        <button className="button button-primary" disabled={busy !== null} type="submit">
+        <button className="button button-primary" disabled={busy !== null || restricted} type="submit">
           {busy === "create" ? "Creating…" : "Create secure link"}
         </button>
       </form>

@@ -43,6 +43,7 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
             <p>Requested: {iso(request.created_at)}</p>
             {typeof request.details?.sharePurpose === "string" ? <p>Share link: {request.details.sharePurpose}</p> : null}
             {typeof request.details?.consentPurpose === "string" ? <p>Consent: {request.details.consentPurpose}</p> : null}
+            {request.request_type === "restriction" && request.details?.purpose === "optional_sharing" ? <p>Scope: optional share links. Completion revokes existing links and prevents new links. Required case processing and retained evidence continue.</p> : null}
             {request.review_reason ? <p>Review outcome: {request.review_reason}</p> : null}
             {["OPEN", "PROCESSING"].includes(request.status) ? (
               <form action={reviewPrivacyRequestAction} className="form-grid">
@@ -55,6 +56,7 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
                     {request.request_type === "consent_withdrawal" && typeof request.details?.consentId === "string" && request.details.consentId.trim() ? (
                       <option value="COMPLETED">Withdraw requested optional sharing consent and complete</option>
                     ) : null}
+                    {request.request_type === "restriction" && request.details?.purpose === "optional_sharing" ? <option value="COMPLETED">Restrict optional share links and complete</option> : null}
                     {["access","export"].includes(request.request_type) ? (
                       <option value="COMPLETED">Prepare Worker data download and complete</option>
                     ) : null}
