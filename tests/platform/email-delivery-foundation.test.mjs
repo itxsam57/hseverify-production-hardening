@@ -534,7 +534,7 @@ test("email delivery reads are direct recipient and Company tenant boundaries", 
       scopeA.tenantId,
       scopeA.membershipId,
       null,
-      50
+      50, null
     ]);
     assert.deepEqual(listA.rows.map((row) => row.delivery_id), [
       deliveryA.rows[0].delivery_id
