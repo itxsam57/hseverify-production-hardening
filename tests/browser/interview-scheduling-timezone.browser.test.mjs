@@ -70,7 +70,7 @@ test("Assessor UTC schedule is independent of server and browser timezones",{tim
     await page.goto(baseUrl+"/assessor/interviews?"+new URLSearchParams({q:fixture.requests.Alpha.interviewRequestId}),{waitUntil:"domcontentloaded"});
     const row=page.locator("tbody tr");assert.equal(await row.count(),1);
     await row.getByLabel("Interview time (UTC)",{exact:true}).fill(selected);await row.getByRole("button",{name:"Schedule",exact:true}).click();
-    await row.locator('input[name="scheduledAt"]').waitFor({state:"detached"});displayed=await row.innerText();
+    await row.getByRole("button",{name:"Reschedule interview",exact:true}).waitFor({state:"visible"});displayed=await row.innerText();
    }finally{await browser.close();}
   }});assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
   const db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);try{
