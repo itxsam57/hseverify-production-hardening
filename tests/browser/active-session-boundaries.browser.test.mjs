@@ -54,13 +54,29 @@ async function freePort() {
 }
 test("Six-role active sessions preserve foreign accounts, revoke owned other and current sessions", {timeout:300000}, async()=>{
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-session-security-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
- const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"session-security-browser",HSE_SESSION_SECRET:"session-security-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"session-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
+ const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_AUDIT_CREDENTIALS_PATH:join(directory,"credentials.json"),HSE_RELEASE_SHA:"session-security-browser",HSE_SESSION_SECRET:"session-security-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"session-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
  const roles=["worker","company","assessor","verifier","admin","root"],targets={};let browser;
- async function signIn(page,identity,role,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(identity.password);if(identity.totpSecret)await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL("**/"+role+"/dashboard");}
+ async function signIn(page,identity,role,offset){
+  await page.goto(baseUrl+"/"+role+"/login");
+  await page.getByLabel("Email address").fill(identity.email);
+  await page.getByLabel("Password",{exact:true}).fill(identity.password);
+  if(identity.totpSecret){
+   // The previous counter reserves the current one for the second session.
+   // Submit early enough that it remains inside the unchanged MFA window.
+   if(offset===-1){
+    const remaining=30_000-Date.now()%30_000;
+    if(remaining<10_000)await new Promise(resolve=>setTimeout(resolve,remaining+20));
+   }
+   await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret,offset));
+  }
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await page.waitForURL("**/"+role+"/dashboard");
+ }
+
  const current=page=>page.locator("article").filter({has:page.getByRole("heading",{name:"Current session",exact:true})});
  try {
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
-  const credentials=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8"));
+  const credentials=JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH,"utf8"));
   await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:root,environment,probe:async()=>{
    browser=await chromium.launch({headless:true});
    const victimContexts={},victimPages={},victimIds={};
