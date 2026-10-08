@@ -3,7 +3,7 @@ export type InterviewEmailResult =
  | Readonly<{kind:"accepted";providerReference:string}>
  | Readonly<{kind:"retryable" | "terminal";code:string}>;
 export async function sendInterviewEmail(input:Readonly<{
- providers:OtpProviderConfig;publicBaseUrl?:string;recipient:string;href:string;idempotencyKey:string;
+ providers:OtpProviderConfig;publicBaseUrl?:string;recipient:string;href:string;idempotencyKey:string;kind?:"scheduled"|"reminder";
 }>,fetcher:typeof fetch=fetch):Promise<InterviewEmailResult>{
  const safe=(value:string|undefined,max:number)=>!!value && value.length<=max && !/[\x00-\x1f\x7f]/.test(value);
  if(!safe(input.providers.emailApiKey,512) || !safe(input.providers.emailFrom,320) || !input.publicBaseUrl){
@@ -24,8 +24,9 @@ export async function sendInterviewEmail(input:Readonly<{
   const response=await fetcher("https://api.resend.com/emails",{
    method:"POST",redirect:"error",signal:AbortSignal.timeout(10000),
    headers:{Authorization:"Bearer "+input.providers.emailApiKey,"Content-Type":"application/json","Idempotency-Key":input.idempotencyKey},
-   body:JSON.stringify({from:input.providers.emailFrom,to:[input.recipient],subject:"Interview scheduled",
-    text:"An interview has been scheduled. Sign in to HSE Verify and open your record for the current time and preparation details: "+href})
+   body:JSON.stringify({from:input.providers.emailFrom,to:[input.recipient],subject:input.kind==="reminder" ? "Interview reminder" : "Interview scheduled",
+    text:(input.kind==="reminder" ? "Your interview is approaching. " : "An interview has been scheduled. ")+
+      "Sign in to HSE Verify and open your record for the current time and preparation details: "+href})
   });
   if(!response.ok){
    if(response.status===409){

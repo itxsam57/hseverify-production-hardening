@@ -35,7 +35,7 @@ export default async function AssessorInterviewsPage({
         <h2 id="interview-assignment-heading">Scheduled interviews</h2>
         {params.recoverySaved==="yes" ? <p role="status">Replacement interview requested. An eligible Assessor will schedule it; unmatched requests go to the Admin queue.</p> : null}
         {params.scheduleError === "invalid" ? (
-          <p role="alert">Check the interview time and provide a reschedule reason between 10 and 1000 characters. Interviews already claimed or in the waiting room cannot be rescheduled. The time must fit Worker availability when provided.</p>
+          <p role="alert">Check the interview time and provide a reschedule reason between 10 and 1000 characters. Interviews already claimed or in the waiting room cannot be rescheduled. The time must fit Worker availability when provided. Choose a reminder in the future before the interview, or leave it blank.</p>
         ) : null}
         {query ? <p>{assignments.length} matching {assignments.length === 1 ? "interview" : "interviews"}</p> : null}
         {assignments.length === 0 ? <p>{query ? "No interview assignments match your search." : "No interview assignments are currently available."}</p> : (
@@ -50,10 +50,15 @@ export default async function AssessorInterviewsPage({
                   <td>
                     {assignment.workerAvailability ? <p>Worker availability: {assignment.workerAvailability.availableFrom} to {assignment.workerAvailability.availableUntil}</p> : <p>Worker availability not provided.</p>}
                     {assignment.scheduledAt ? <p>{assignment.scheduledAt}</p> : null}
+                    {assignment.reminderAt ? <p>Reminder (UTC): {assignment.reminderAt}</p> : null}
                     {assignment.status === "ASSIGNED" ? (
                       <form action={scheduleInterviewAction}>
                         <input type="hidden" name="interviewRequestId" value={assignment.interviewRequestId} />
                         <input name="scheduledAt" type="datetime-local" required aria-label="Interview time (UTC)" />
+                        <label>Reminder time (UTC)
+                          <input name="reminderAt" type="datetime-local" step={1} defaultValue={assignment.reminderAt?.slice(0,19) ?? ""} />
+                        </label>
+                        <p>Optional. Choose a future time before the appointment. Leave blank for no reminder.</p>
                         {assignment.scheduledAt ? (
                           <textarea name="rescheduleReason" minLength={10} maxLength={1000} required aria-label="Reschedule reason" placeholder="Explain why the appointment is changing" />
                         ) : null}

@@ -19,6 +19,7 @@ export async function assessorInterviewSearchFixture(){
    await db.query("INSERT INTO assurance_cases(case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,case_status,owner_kind,next_action,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,'Interview pending','assessor','Complete assigned interview.',$7,$7)",[caseId,order,target,tenant,link,worker,now]);
    const request=await service.requestInterview({tenantId:tenant,caseId,workerAccountId:worker,requestedAt:now});
    requests[name]=await service.assignInterview({tenantId:tenant,request,assessorAccountId:name==="ForeignAlpha"?"search_foreign_assessor":fixture.credentials.assessor.accountId});
+   await db.query("UPDATE assurance_cases SET interview_reference=$2 WHERE case_id=$1",[caseId,requests[name].interviewRequestId]);
   }
   // Distinguish searchable case references without replacing generated IDs.
   return {...fixture,requests};

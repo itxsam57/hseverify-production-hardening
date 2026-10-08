@@ -237,7 +237,7 @@ export async function scheduleInterviewAction(formData: FormData): Promise<void>
 
   try {
     await service.scheduleInterview({ principal: actor, tenantId: request.tenantId, request, scheduledAt,
-      rescheduleReason: text(formData, "rescheduleReason") });
+      reminderAt: text(formData, "reminderAt"), rescheduleReason: text(formData, "rescheduleReason") });
   } catch (error) {
     if (error instanceof InterviewSchedulingInputError) redirect("/assessor/interviews?scheduleError=invalid");
     throw error;

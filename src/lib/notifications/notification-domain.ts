@@ -15,7 +15,7 @@ export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
   mfa_recovery_codes_rotated: "account.recovery_codes.rotated"
 } as const;
 
-export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES)] as const;
+export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES)] as const;
 export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
@@ -29,6 +29,7 @@ export type FoundationNotificationMetadata = Readonly<{
 export type NotificationMetadataByType = Readonly<{
   "platform.foundation.ready": FoundationNotificationMetadata;
   "interview.scheduled": Readonly<{eventRef:string}>;
+  "interview.reminder": Readonly<{eventRef:string}>;
   "account.password.changed": AccountSecurityNotificationPayload;
   "account.password.reset": AccountSecurityNotificationPayload;
   "account.mfa.replaced": AccountSecurityNotificationPayload;
@@ -167,6 +168,7 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "platform.foundation.ready":
       normalized = normalizeFoundationNotificationMetadata(value);
       break;
+    case "interview.reminder":
     case "interview.scheduled":
     case "account.password.changed":
     case "account.password.reset":
@@ -206,12 +208,13 @@ export function notificationContent(notificationType: NotificationType, context?
   targetReference: string | null;
 }> {
   switch (notificationType) {
+    case "interview.reminder":
     case "interview.scheduled": {
       if (!context) throw new NotificationContractError("Interview notification target context is required.");
       const target = context.role === "company" ? "company.assurance.case" : "interview.record";
       resolveNotificationHref({role:context.role,target,targetReference:context.targetReference});
-      return Object.freeze({title:"Interview scheduled",
-        body:"An interview has been scheduled. Open the record for the current time and preparation details.",
+      return Object.freeze({title:notificationType==="interview.reminder" ? "Interview reminder" : "Interview scheduled",
+        body:notificationType==="interview.reminder" ? "Your interview is approaching. Open the record for the current time and preparation details." : "An interview has been scheduled. Open the record for the current time and preparation details.",
         target,targetReference:context.targetReference});
     }
     case "platform.foundation.ready":

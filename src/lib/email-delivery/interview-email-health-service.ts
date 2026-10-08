@@ -25,9 +25,11 @@ export type InterviewEmailHealth = Readonly<{
 const ELIGIBLE_RETRIES_SQL = `
  SELECT jobs.job_id FROM platform_outbox_jobs jobs
  JOIN platform_email_deliveries deliveries ON deliveries.source_job_id=jobs.job_id
- WHERE jobs.job_type='email.interview.scheduled' AND jobs.status='retry_wait'
-  AND deliveries.delivery_type='interview.scheduled' AND deliveries.status IN ('retry_wait','processing')
+ WHERE jobs.job_type IN ('email.interview.scheduled','email.interview.reminder') AND jobs.status='retry_wait'
+  AND deliveries.delivery_type IN ('interview.scheduled','interview.reminder') AND deliveries.status IN ('retry_wait','processing')
   AND jobs.attempt_count<jobs.max_attempts AND jobs.next_attempt_at>clock_timestamp()
+   AND (jobs.job_type<>'email.interview.reminder' OR (SELECT (source.metadata->>'reminderAt')::timestamptz
+    FROM platform_audit_events source WHERE source.audit_event_id=jobs.payload->>'eventRef')<=clock_timestamp())
   AND NOT EXISTS (
    SELECT 1 FROM platform_email_delivery_attempts attempt
    WHERE attempt.source_job_id=jobs.job_id AND attempt.adapter_key='resend'
@@ -43,7 +45,7 @@ WITH authorized AS (
   AND sessions.revoked_at IS NULL AND sessions.expires_at>clock_timestamp()
   AND accounts.account_status='active'
 ), deliveries AS (
- SELECT * FROM platform_email_deliveries WHERE delivery_type='interview.scheduled'
+ SELECT * FROM platform_email_deliveries WHERE delivery_type IN ('interview.scheduled','interview.reminder')
 ), counts AS (
  SELECT count(*) FILTER (WHERE status='queued')::int AS queued,
   count(*) FILTER (WHERE status='processing')::int AS processing,
@@ -63,7 +65,7 @@ WITH authorized AS (
 ), retries AS (
  SELECT min(jobs.next_attempt_at) AS next_retry_at FROM platform_outbox_jobs jobs
  JOIN deliveries ON deliveries.source_job_id=jobs.job_id
- WHERE jobs.job_type='email.interview.scheduled' AND jobs.status='retry_wait'
+ WHERE jobs.job_type IN ('email.interview.scheduled','email.interview.reminder') AND jobs.status='retry_wait'
 )
 SELECT counts.*,attempts.*,retries.*,(SELECT count(*)::int FROM (${ELIGIBLE_RETRIES_SQL}) eligible) AS eligible_retries,clock_timestamp() AS generated_at
 FROM authorized CROSS JOIN counts CROSS JOIN attempts CROSS JOIN retries
@@ -120,15 +122,15 @@ export async function requestInterviewEmailRetries(principal: AuthorizationPrinc
     await requireLiveAdmin();
     let count = 0;
     for (const candidate of candidates.rows) {
-      const updated = await transaction.query<{job_id:string}>(
+      const updated = await transaction.query<{job_id:string;job_type:string}>(
         "UPDATE platform_outbox_jobs SET next_attempt_at=clock_timestamp(),updated_at=clock_timestamp() " +
-        "WHERE job_id=$1 AND job_id IN (" + ELIGIBLE_RETRIES_SQL + ") RETURNING job_id", [candidate.job_id]
+        "WHERE job_id=$1 AND job_id IN (" + ELIGIBLE_RETRIES_SQL + ") RETURNING job_id,job_type", [candidate.job_id]
       );
       if (!updated.rows[0]) continue;
       await new DatabaseAuditRepository(Promise.resolve(transaction)).append(bindTrustedAuditActor(principal), {
         action: "email.delivery.retry_scheduled", outcome: "succeeded", reason: "manual_retry",
         target: {type:"job",reference:candidate.job_id},
-        metadata: {deliveryType:"interview.scheduled",adapterKey:"resend",manual:true}
+        metadata: {deliveryType:updated.rows[0].job_type==="email.interview.reminder" ? "interview.reminder" : "interview.scheduled",adapterKey:"resend",manual:true}
       });
       count++;
     }

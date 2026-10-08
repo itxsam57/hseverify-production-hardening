@@ -3,7 +3,7 @@ import type {AuthorizationPrincipal} from "../authorization/authorization-contex
 import type {DatabaseClient} from "../database/database";
 import type {NotificationRecord} from "./notification-domain";
 export async function canOpenInterviewNotification(database:DatabaseClient,principal:AuthorizationPrincipal,notification:NotificationRecord):Promise<boolean>{
- if(notification.notificationType !== "interview.scheduled")return true;
+ if(notification.notificationType !== "interview.scheduled" && notification.notificationType !== "interview.reminder")return true;
  if(notification.target === "interview.record" && ["worker","assessor"].includes(principal.activeRole)){
   const result=await database.query<{interview_request_id:string}>(
    `SELECT interview_request_id FROM interview_requests WHERE interview_request_id=$1

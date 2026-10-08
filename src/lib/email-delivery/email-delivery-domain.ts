@@ -10,7 +10,7 @@ import {
   type TrustedOutboxLease
 } from "../outbox/outbox-domain";
 
-export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email", "interview.scheduled"] as const;
+export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email", "interview.scheduled", "interview.reminder"] as const;
 export const EMAIL_DELIVERY_STATUSES = [
   "queued",
   "processing",
@@ -49,7 +49,7 @@ export type FoundationEmailDeliveryPayload = Readonly<{
 
 export type EmailDeliveryOutboxJob = Omit<OutboxJobRecord, "jobType" | "payload"> &
  (Readonly<{jobType:"email.delivery.foundation";payload:FoundationEmailDeliveryPayload}> |
-  Readonly<{jobType:"email.interview.scheduled";payload:InterviewScheduledNotificationPayload}>);
+  Readonly<{jobType:"email.interview.scheduled" | "email.interview.reminder";payload:InterviewScheduledNotificationPayload}>);
 
 export type EmailDeliveryRecord = Readonly<{
   sequence: number;
@@ -192,7 +192,7 @@ export function assertEmailDeliveryJob(job:OutboxJobRecord):EmailDeliveryOutboxJ
  if(job.jobType==="email.delivery.foundation"){
   return Object.freeze({...job,jobType:job.jobType,payload:normalizeOutboxPayload(job.jobType,job.payload)});
  }
- if(job.jobType==="email.interview.scheduled" && job.enqueuedByRole==="assessor" &&
+ if((job.jobType==="email.interview.scheduled" || job.jobType==="email.interview.reminder") && job.enqueuedByRole==="assessor" &&
     job.enqueuedByAccountId && !job.enqueuedBySystemComponent && job.tenantId===null && job.membershipId===null){
   return Object.freeze({...job,jobType:job.jobType,payload:normalizeOutboxPayload(job.jobType,job.payload)});
  }

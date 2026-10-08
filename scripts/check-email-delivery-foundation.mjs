@@ -71,7 +71,7 @@ assert.match(down, /DROP TABLE IF EXISTS platform_email_deliveries/);
 assert.match(down, /expanded[\s\S]*outbox job type[\s\S]*audit action\/target vocabularies/i);
 assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_type_check/);
 
-assert.match(domain, /EMAIL_DELIVERY_TYPES = \["platform\.foundation\.email", "interview\.scheduled"\]/);
+assert.match(domain, /EMAIL_DELIVERY_TYPES = \["platform\.foundation\.email", "interview\.scheduled", "interview\.reminder"\]/);
 assert.match(domain, /EMAIL_ADAPTER_KEYS = \["local_test", "resend"\]/);
 assert.match(domain, /hashEmailRecipientAddress/);
 assert.match(domain, /deriveEmailDispatchKey/);

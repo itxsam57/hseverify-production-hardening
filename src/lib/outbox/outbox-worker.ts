@@ -42,9 +42,12 @@ const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
       projectNotificationOutboxJob(job, { database }),
     "notification.interview.scheduled": async (job,_lease,database) =>
       projectInterviewScheduledNotification(job,database),
+    "notification.interview.reminder": async (job,_lease,database) =>
+      projectInterviewScheduledNotification(job,database),
     "notification.account.security": async (job, _lease, database) =>
       projectNotificationOutboxJob(job, { database }),
     "email.interview.scheduled": async (job,lease,database) => processInterviewEmailJob(job,lease,database),
+    "email.interview.reminder": async (job,lease,database) => processInterviewEmailJob(job,lease,database),
     "email.delivery.foundation": async (job, lease) =>
       processEmailDeliveryOutboxJob(job, lease),
     "secure_file.scan": async (job, lease) =>

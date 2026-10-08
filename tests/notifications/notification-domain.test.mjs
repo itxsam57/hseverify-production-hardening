@@ -35,7 +35,7 @@ function job(overrides = {}) {
 }
 
 test("notification vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated"]);
+  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated"]);
   assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security", "interview.record", "company.assurance.case"]);
   for (const value of [
     ...notification.NOTIFICATION_TYPES,

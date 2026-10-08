@@ -107,7 +107,7 @@ WHERE email_attempts.delivery_id = $1
   AND (outbox_attempts.outcome = 'lease_expired' OR
  (outbox_attempts.outcome IN ('retry_scheduled','terminal_failed') AND EXISTS(
   SELECT 1 FROM platform_email_deliveries deliveries WHERE deliveries.delivery_id=email_attempts.delivery_id
-   AND deliveries.delivery_type='interview.scheduled')))
+   AND deliveries.delivery_type IN ('interview.scheduled','interview.reminder'))))
 RETURNING email_attempts.*`;
 
 export const EMAIL_RECONCILE_DELIVERY_SQL = `
@@ -135,7 +135,7 @@ JOIN platform_outbox_job_attempts AS outbox_attempts
   ON outbox_attempts.attempt_id = $3
  AND outbox_attempts.job_id = jobs.job_id
 WHERE jobs.job_id = $2
-  AND jobs.job_type IN ('email.delivery.foundation','email.interview.scheduled')
+  AND jobs.job_type IN ('email.delivery.foundation','email.interview.scheduled','email.interview.reminder')
   AND jobs.status = 'leased'
   AND jobs.lease_id = $6
   AND jobs.worker_id = $5
@@ -403,9 +403,9 @@ async function resolveRecipientAddress(
   database: DatabaseClient,
   job: EmailDeliveryOutboxJob
 ): Promise<string | null> {
-  if(job.jobType==="email.interview.scheduled"){
+  if(job.jobType==="email.interview.scheduled" || job.jobType==="email.interview.reminder"){
    const result=await database.query<{email_normalized:string}>(
-    "SELECT accounts.email_normalized FROM platform_interview_notification_recipients($1) recipients "+
+    "SELECT accounts.email_normalized FROM "+(job.jobType==="email.interview.reminder" ? "platform_interview_reminder_recipients" : "platform_interview_notification_recipients")+"($1) recipients "+
     "JOIN auth_accounts accounts ON accounts.account_id=recipients.account_id "+
     "WHERE recipients.account_id=$2 AND recipients.role=$3 AND recipients.membership_id IS NOT DISTINCT FROM $4 "+
     "AND accounts.email_verified_at IS NOT NULL",
@@ -590,7 +590,7 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
   ): Promise<EmailDeliveryAttemptPreparation> {
     const job = assertEmailDeliveryJob(jobInput);
     const lease = assertTrustedOutboxLease(leaseInput);
-    if (adapterKey !== (job.jobType === "email.interview.scheduled" ? "resend" : "local_test")) {
+    if (adapterKey !== (job.jobType === "email.delivery.foundation" ? "local_test" : "resend")) {
       throw new EmailDeliveryContractError("Email adapter does not match its fixed delivery type.");
     }
     if (lease.jobId !== job.jobId || !isEmailAdapterKey(adapterKey)) {
@@ -728,7 +728,7 @@ export class DatabaseEmailDeliveryRepository implements EmailDeliveryRepository 
         "Email attempt outcome and delivery status do not agree."
       );
     }
-    if (job.jobType === "email.interview.scheduled" ? input.outcome === "delivered" : input.outcome === "accepted" || input.outcome === "suppressed") {
+    if (job.jobType !== "email.delivery.foundation" ? input.outcome === "delivered" : input.outcome === "accepted" || input.outcome === "suppressed") {
       throw new EmailDeliveryContractError("Email outcome does not match its fixed delivery type.");
     }
     const result = normalizeEmailResultText({

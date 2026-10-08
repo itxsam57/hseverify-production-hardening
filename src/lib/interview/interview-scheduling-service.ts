@@ -162,8 +162,22 @@ export class InterviewSchedulingService {
       const session=live.rows[0],now=clock.rows[0]?.now;
       if (!session || session.active_role !== "assessor" || session.revoked_at !== null || !now ||
           new Date(session.expires_at).getTime() <= new Date(now).getTime()) throw new InterviewAssignmentAccessError();
-      const next = scheduleInterviewRequest(current,input.scheduledAt,input.reminderAt,input.rescheduleReason);
+      let next = scheduleInterviewRequest(current,input.scheduledAt,input.reminderAt,input.rescheduleReason);
+      if (next === current && next.reminderAt && input.reminderAt !== undefined) {
+        const source = await transaction.query<{audit_event_id:string}>(
+          `SELECT source.audit_event_id FROM interview_requests requests
+           JOIN platform_audit_events source ON source.audit_event_id=requests.schedule_event_id
+           WHERE requests.interview_request_id=$1 AND source.action_key='interview.scheduled'
+             AND source.metadata->>'reminderAt'=$2`,[current.interviewRequestId,next.reminderAt]);
+        if (!source.rows[0]) {
+          // Explicit confirmation gives legacy reminders an immutable source without rewriting history.
+          next = scheduleInterviewRequest({...current,reminderAt:null},input.scheduledAt,input.reminderAt,input.rescheduleReason);
+        }
+      }
       if (next === current) return current;
+      if (next.reminderAt && new Date(next.reminderAt).getTime() <= new Date(now).getTime()) {
+        throw new InterviewSchedulingInputError("Choose a reminder time in the future.");
+      }
       if(current.workerAvailability && next.scheduledAt &&
          (next.scheduledAt<current.workerAvailability.availableFrom || next.scheduledAt>=current.workerAvailability.availableUntil)){
         throw new InterviewSchedulingInputError("Choose an interview time within the Worker availability window.");
@@ -178,17 +192,24 @@ export class InterviewSchedulingService {
       const event = await new DatabaseAuditRepository(Promise.resolve(transaction)).append(actor,{
         action: "interview.scheduled",outcome: "succeeded",
         target: {type: "resource",reference: current.interviewRequestId},
-        metadata: {tenantRef: current.tenantId,caseRef: current.caseId,workerRef: current.workerAccountId,scheduledAt: updated.scheduledAt,
+        metadata: {tenantRef: current.tenantId,caseRef: current.caseId,workerRef: current.workerAccountId,scheduledAt: updated.scheduledAt,reminderAt: updated.reminderAt,
           ...(current.scheduledAt ? {previousScheduledAt: current.scheduledAt,rescheduleReason: updated.rescheduleReason} : {})}
       });
       await transaction.query("UPDATE interview_requests SET schedule_event_id=$2 WHERE interview_request_id=$1",
         [current.interviewRequestId,event.auditEventId]);
       await transaction.query("SELECT platform_enqueue_interview_notifications($1)",[event.auditEventId]);
       await transaction.query("SELECT platform_enqueue_interview_emails($1)",[event.auditEventId]);
+      if (updated.reminderAt) {
+        await transaction.query("SELECT platform_enqueue_interview_reminder_notifications($1)",[event.auditEventId]);
+        await transaction.query("SELECT platform_enqueue_interview_reminder_emails($1)",[event.auditEventId]);
+      }
       const commitClock = await transaction.query<{now:string|Date}>("SELECT clock_timestamp() AS now");
       const committedAt = commitClock.rows[0]?.now;
       if (!committedAt || new Date(session.expires_at).getTime() <= new Date(committedAt).getTime()) {
         throw new InterviewAssignmentAccessError();
+      }
+      if (updated.reminderAt && new Date(updated.reminderAt).getTime() <= new Date(committedAt).getTime()) {
+        throw new InterviewSchedulingInputError("Choose a reminder time in the future.");
       }
       return updated;
     });

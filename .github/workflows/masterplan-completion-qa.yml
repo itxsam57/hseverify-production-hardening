@@ -126,6 +126,9 @@ jobs:
       - name: Interview replacement ownership, history and rollback
         run: node --test tests/platform/interview-replacement-runtime.test.mjs
 
+      - name: Reminder due time, recipient boundaries, replacement suppression and exact rollback
+        run: node --test tests/platform/interview-reminder-runtime.test.mjs
+
       - name: UTC interview scheduling under alternate database timezone
         run: node --test tests/platform/interview-scheduling-timezone-runtime.test.mjs
 
@@ -201,6 +204,9 @@ jobs:
 
       - name: No-show and technical replacement across Assessor Worker Company and Admin
         run: node --test --test-concurrency=1 tests/browser/interview-replacement.browser.test.mjs
+
+      - name: Actual reminder due time, private recipient links and obsolete-work suppression
+        run: node --test tests/browser/interview-reminder.browser.test.mjs
 
       - name: Scheduling notices through compiled worker to authorized recipient records
         run: |

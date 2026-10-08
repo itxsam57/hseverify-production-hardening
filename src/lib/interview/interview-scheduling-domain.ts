@@ -166,6 +166,7 @@ export function scheduleInterviewRequest(
   const instant = normalizeInterviewScheduleTimestamp(scheduledAt);
   const reminder = reminderAt === undefined ? request.reminderAt :
     reminderAt.trim() ? normalizeInterviewScheduleTimestamp(reminderAt) : null;
+  if (reminder && reminder >= instant) throw new InterviewSchedulingInputError("Choose a reminder time before the interview.");
   if (request.scheduledAt === instant && request.reminderAt === reminder) return request;
   const next = request.scheduledAt ? rescheduleInterviewRequest(request, rescheduleReason ?? "") : request;
   return Object.freeze({

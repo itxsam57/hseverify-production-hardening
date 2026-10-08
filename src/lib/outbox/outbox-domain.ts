@@ -11,8 +11,10 @@ export const OUTBOX_JOB_TYPES = [
   "notification.portal.foundation",
   "notification.account.security",
   "notification.interview.scheduled",
+  "notification.interview.reminder",
   "email.delivery.foundation",
   "email.interview.scheduled",
+  "email.interview.reminder",
   "secure_file.scan",
   "worker_identity.automated_checks",
   "assessment.attempt.expiry",
@@ -106,8 +108,10 @@ export type OutboxPayloadByType = Readonly<{
   "notification.portal.foundation": PortalFoundationNotificationPayload;
   "notification.account.security": AccountSecurityNotificationPayload;
   "notification.interview.scheduled": InterviewScheduledNotificationPayload;
+  "notification.interview.reminder": InterviewScheduledNotificationPayload;
   "email.delivery.foundation": FoundationEmailDeliveryPayload;
   "email.interview.scheduled": InterviewScheduledNotificationPayload;
+  "email.interview.reminder": InterviewScheduledNotificationPayload;
   "secure_file.scan": SecureFileScanPayload;
   "worker_identity.automated_checks": WorkerIdentityAutomatedChecksPayload;
   "assessment.attempt.expiry": AssessmentExpiryPayload;
@@ -515,7 +519,9 @@ export function normalizeOutboxPayload<T extends OutboxJobType>(
       normalized = normalizePortalNotificationPayload(value);
       break;
     case "notification.interview.scheduled":
+    case "notification.interview.reminder":
     case "email.interview.scheduled":
+    case "email.interview.reminder":
       normalized = normalizeInterviewScheduledNotificationPayload(value);
       break;
     case "notification.account.security":
