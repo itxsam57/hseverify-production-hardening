@@ -114,8 +114,8 @@ mustNotContain(notificationDomain, /https?:\/\//,
 mustContain(emailDomain, /EMAIL_ADAPTER_KEYS = \["local_test", "resend"\] as const/,
   "Email adapter authority must remain exactly local_test and resend.");
 mustContain(emailRepository,
-  /adapterKey !== \(job\.jobType === "email\.interview\.scheduled" \? "resend" : "local_test"\)/,
-  "Only interview scheduling jobs may use resend; foundation jobs must retain local_test.");
+  /const job = assertEmailDeliveryJob\(jobInput\);[\s\S]*adapterKey !== \(job\.jobType === "email\.delivery\.foundation" \? "local_test" : "resend"\)/,
+  "Only validated scheduling and reminder jobs may use resend; foundation jobs must retain local_test.");
 mustContain(emailAdapter, /local_test/,
   "The accepted local/test email adapter must remain explicit.");
 mustNotContain(emailAdapter, /\bfetch\s*\(/,
