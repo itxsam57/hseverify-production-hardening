@@ -31,7 +31,11 @@ test("outbox vocabulary is explicit, fixed and wildcard-free", () => {
     "platform.foundation.noop",
     "notification.portal.foundation",
     "notification.account.security",
+    "notification.interview.scheduled",
+    "notification.interview.reminder",
     "email.delivery.foundation",
+    "email.interview.scheduled",
+    "email.interview.reminder",
     "secure_file.scan",
     "worker_identity.automated_checks",
     "assessment.attempt.expiry",
@@ -371,4 +375,17 @@ test("Authentication challenge delivery accepts only an opaque dispatch referenc
       outbox.OutboxContractError
     );
   }
+});
+
+test("Interview scheduling and reminder work have sealed recipient-bound event contracts",()=>{
+ const payload={eventRef:"audit_abc",recipientRef:"account_abc",recipientRole:"worker",membershipRef:null};
+ for(const jobType of ["notification.interview.scheduled","email.interview.scheduled","notification.interview.reminder","email.interview.reminder"]){
+  assert.deepEqual(outbox.normalizeOutboxPayload(jobType,payload),payload);
+  assert.deepEqual(outbox.normalizeOutboxPayload(jobType,{...payload,recipientRole:"company",membershipRef:"membership_abc"}),{...payload,recipientRole:"company",membershipRef:"membership_abc"});
+  for(const value of [
+   {...payload,href:"https://example.test"},{...payload,recipientRole:"admin"},
+   {...payload,recipientRole:{toString:()=>"worker"}},{...payload,recipientRole:"company"},
+   {...payload,membershipRef:"membership_other"},{...payload,eventRef:"<script>"},{...payload,recipientRef:""}
+  ])assert.throws(()=>outbox.normalizeOutboxPayload(jobType,value),outbox.OutboxContractError);
+ }
 });

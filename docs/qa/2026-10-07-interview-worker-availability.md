@@ -1,0 +1,8 @@
+# Worker interview availability
+Masterplan 19.1: a Worker provides one UTC availability interval on the owned interview page. The interval is shown in the assigned Assessor list and enforced for new or changed appointment start times. The start is inclusive and end exclusive. An unchanged appointment is idempotent. Missing availability permits existing scheduling behavior and is labelled as not provided.
+
+Only an active persisted Worker role/session may update its owned request in REQUESTED/ASSIGNED state before any runtime claim. A future end and ordered pair are required. Existing appointments remain intact when preferences change; the UI explains the need to contact the Assessor. Claimed/closed requests reject changes. Required immutable availability audit and final database-clock session validation are atomic with the window; duplicate save creates no audit or notification work. Availability is not an appointment and sends no scheduling notifications.
+
+Owner privacy export includes provided availability and current appointment, joined to the owned case/tenant. It excludes Assessor identity, staff reason and internal event pointers. Empty migration rollback restores the exact original audit constraint; retained availability or its immutable audit prevents destructive rollback. Existing older notification/email rollback tests unwind this dependency first.
+
+Proof: actual Worker-form and native producer REDs precede implementation; focused owned-export RED precedes projection. Final frozen checks and independent review must pass before integration. PGlite and controlled expiry waits do not prove real PostgreSQL contention. This does not certify all Assessor availability, no-show recovery, whole interview workflow or consumer readiness.

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { formatDateTime } from "@/lib/format";
+import { getInterviewEmailHealth } from "@/lib/email-delivery/interview-email-health-service";
 import { getServerEnvironment } from "@/lib/config/server-environment";
 import { listAuthorizedPlatformAuditEvents } from "@/lib/audit/audit-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
@@ -7,25 +9,28 @@ import { getProviderHealth } from "@/lib/integrations/provider-health-domain";
 import { buildCertificationSnapshot, buildEmptyCertificationSnapshot } from "@/lib/operations/certification-readiness-domain";
 import { CertificationReadinessRepository } from "@/lib/operations/certification-readiness-repository";
 import { getProductionLaunchService } from "@/lib/operations/production-launch-service";
-import { updateProductionLaunchCheckAction } from "./actions";
+import { updateProductionLaunchCheckAction, retryInterviewEmailsAction } from "./actions";
 
 export default async function AdminOperationsPage({
   searchParams
 }: {
-  searchParams: Promise<{ result?: string }>;
+  searchParams: Promise<{ result?: string; emailRetry?: string }>;
 }): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "admin",
     permission: "platform.operations.manage"
   });
-  const { result } = await searchParams;
+  const { result, emailRetry } = await searchParams;
   const events = await listAuthorizedPlatformAuditEvents({
     expectedRole: "admin",
     options: { limit: 10 }
   });
   const health = await getOperationalHealthSnapshot();
   const providers = getProviderHealth();
-  const registrationProviders = getServerEnvironment().registrationOtpProviders;
+  const environment = getServerEnvironment();
+  const registrationProviders = environment.registrationOtpProviders;
+  const emailConfigured = Boolean(registrationProviders?.emailApiKey && registrationProviders?.emailFrom && environment.publicBaseUrl);
+  const emailHealth = await getInterviewEmailHealth(principal);
   const certificationRows = await new CertificationReadinessRepository().list();
   const certification = certificationRows.length > 0
     ? buildCertificationSnapshot(certificationRows)
@@ -72,6 +77,40 @@ export default async function AdminOperationsPage({
           </li>
         ))}
       </ul>
+      <section aria-labelledby="interview-email-health-heading">
+        <h2 id="interview-email-health-heading">Interview email delivery</h2>
+        <p>Configuration: {emailConfigured ? "Configured" : "Not configured"} (Resend)</p>
+        <p>Configuration does not confirm provider availability or inbox delivery.</p>
+        <ul aria-label="Interview email queue">
+          <li>Queued: {emailHealth.queued}</li>
+          <li>Sending: {emailHealth.processing}</li>
+          <li>Retrying: {emailHealth.retrying}</li>
+          <li>Sent: {emailHealth.sent}</li>
+          <li>Failed: {emailHealth.failed}</li>
+          <li>Suppressed: {emailHealth.suppressed}</li>
+          <li>Queue depth: {emailHealth.queueDepth}</li>
+        </ul>
+        <dl className="compact-definition-list">
+          <div><dt>Last provider acceptance</dt><dd>{emailHealth.lastAcceptedAt ? formatDateTime(emailHealth.lastAcceptedAt) : "None recorded"}</dd></div>
+          <div><dt>Completed send attempts (accepted or failed) in the last 24 hours</dt><dd>{emailHealth.completedAttempts24h}</dd></div>
+          <div><dt>Failed attempts in the last 24 hours</dt><dd>{emailHealth.failedAttempts24h}</dd></div>
+          <div><dt>Attempt failure rate in the last 24 hours</dt><dd>{emailHealth.failureRate24h === null ? "No completed attempts" : Math.round(emailHealth.failureRate24h * 100) + "%"}</dd></div>
+          <div><dt>Next scheduled retry</dt><dd>{emailHealth.nextRetryAt ? formatDateTime(emailHealth.nextRetryAt) : "None scheduled"}</dd></div>
+          <div><dt>Delivery confirmation</dt><dd>Unavailable</dd></div>
+          <div><dt>Credential expiry</dt><dd>Not reported by provider</dd></div>
+          <div><dt>Circuit breaker</dt><dd>Not configured</dd></div>
+        </dl>
+        <p>Attempt totals count accepted and failed outcomes, excluding suppressed and expired-lease attempts. Failed attempts can include missing configuration or unconfirmed sends.</p>
+        <p>Sent records show provider acceptance. Inbox delivery is not confirmed. Retries follow the outbox schedule.</p>
+        <p>Eligible delayed retries: {emailHealth.eligibleRetries}. Manual retry keeps the original job, provider key and attempt limit. The worker checks current recipient access before sending.</p>
+        <form action={retryInterviewEmailsAction}>
+          <button type="submit" disabled={!emailConfigured || emailHealth.eligibleRetries === 0}>Retry interview emails now</button>
+        </form>
+        {!emailConfigured ? <p>Configure email delivery before requesting a retry.</p> : null}
+        {emailRetry === "retry-requested" ? <p role="status">Eligible retries are available to the worker now.</p> : null}
+        {emailRetry === "retry-idle" ? <p role="status">No eligible delayed retries remain.</p> : null}
+        {emailRetry === "retry-unavailable" ? <p role="alert">Email delivery is not configured. No retry was requested.</p> : null}
+      </section>
       <h2>Registration verification delivery</h2>
       <ul aria-label="Registration delivery configuration">
         <li>Email: {registrationProviders?.emailApiKey ? "Configured" : "Unavailable"}</li>

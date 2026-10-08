@@ -1,0 +1,7 @@
+# Worker interview technical reporting
+The owned Worker technical-issue action previously created TECHNICAL_HOLD before any appointment existed, so the runtime scheduling guard then denied the first Assessor schedule. Actual native and authenticated browser RED artifacts are retained under .autopilot/artifacts/20261008-worker-technical-report-* in the working audit repository.
+A Worker without an existing runtime may now report only during the existing scheduled join window (30 minutes before through 4 hours after). The service locks the request and runtime and checks fresh database time before writes; the Worker page mirrors eligibility. Existing nonclosed runtimes remain reportable outside that initial window, and Assessor console behavior is preserved.
+Permanent native tests exercise unscheduled, early, late, valid-window, existing-runtime and time advancing while the lock is held. The permanent browser schedules through the Assessor form, submits the owned Worker form, refreshes and checks persisted TECHNICAL_HOLD/diagnostics at mobile width.
+This fixes pre-runtime Worker reporting only. Full no-show/technical rescheduling, other console recovery, real PostgreSQL concurrency and live release readiness remain separate Masterplan obligations.
+
+Expected validation/window conflicts show fixed accessible feedback and allow retry; missing/foreign access remains a non-enumerating not-found response. Unexpected failures are not concealed. A successful retry clears the prior error and shows a recorded confirmation; issue text is never put in a URL.

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requestInterviewEmailRetries, InterviewEmailRetryUnavailableError } from "@/lib/email-delivery/interview-email-health-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import {
   getProductionLaunchService,
@@ -44,4 +45,18 @@ export async function updateProductionLaunchCheckAction(formData: FormData): Pro
   }
 
   redirect(`/admin/operations?result=${result}`);
+}
+
+export async function retryInterviewEmailsAction(): Promise<void> {
+  const principal = await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});
+  let result: string;
+  try {
+    const count = await requestInterviewEmailRetries(principal);
+    result = count > 0 ? "retry-requested" : "retry-idle";
+    revalidatePath("/admin/operations", "page");
+  } catch (error) {
+    if (error instanceof InterviewEmailRetryUnavailableError) result = "retry-unavailable";
+    else throw error;
+  }
+  redirect("/admin/operations?emailRetry=" + result);
 }

@@ -1,18 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect, notFound } from "next/navigation";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { advanceAfterInterviewRecommendation } from "@/lib/assurance/assurance-case-progression-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { InterviewAssignmentService } from "@/lib/interview/interview-assignment-service";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
-import { getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
+import { InterviewPlaybookAccessError, InterviewPlaybookInputError, getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
 import {
   INTERVIEW_CONSOLE_RECOMMENDATIONS,
+  InterviewSchedulingInputError,
   type InterviewConsoleRecommendation
 } from "@/lib/interview/interview-scheduling-domain";
-import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { InterviewAssignmentAccessError, InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { InterviewSchedulingRepository } from "@/lib/interview/interview-scheduling-repository";
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -87,18 +90,29 @@ function revalidateInterview(interviewRequestId: string): void {
   revalidatePath(`/assessor/interviews/${interviewRequestId}`);
 }
 
+function consoleActionFailure(error: unknown, interviewRequestId: string): never {
+  if (error instanceof InterviewAssignmentAccessError || error instanceof InterviewPlaybookAccessError) notFound();
+  if (error instanceof InterviewSchedulingInputError ||
+      (error instanceof InterviewPlaybookInputError && error.message === "Interview is closed.")) {
+    redirect("/assessor/interviews/" + encodeURIComponent(interviewRequestId) + "?consoleError=closed");
+  }
+  throw error;
+}
+
 export async function saveInterviewConsoleAction(formData: FormData): Promise<void> {
   if (text(formData, "intent") === "submit") {
     return submitInterviewConsoleAction(formData);
   }
   const input = consoleInput(formData);
   const actor = await assessorActor();
-  const service = new InterviewSchedulingService(await getDatabaseClient());
-  const request = await service.getAssignedInterview({
-    assessorAccountId: actor.accountId,
-    interviewRequestId: input.interviewRequestId
-  });
+  const database = await getDatabaseClient();
+  try {
+    await database.transaction(async(transaction)=>{
+  const service = new InterviewSchedulingService(transaction);
+  const request = await new InterviewSchedulingRepository(transaction).findByRequestIdForAssessor(input.interviewRequestId,actor.accountId,true);
+  if (!request) throw new InterviewAssignmentAccessError();
 
+  if (!["ASSIGNED","WAITING_ROOM"].includes(request.status)) throw new InterviewSchedulingInputError("Interview is closed.");
   await service.saveConsoleState({
     tenantId: request.tenantId,
     interviewSessionId: input.interviewSessionId,
@@ -109,6 +123,10 @@ export async function saveInterviewConsoleAction(formData: FormData): Promise<vo
     submitted: false,
     updatedAt: new Date().toISOString()
   });
+    });
+  } catch (error) {
+    consoleActionFailure(error, input.interviewRequestId);
+  }
   revalidateInterview(input.interviewRequestId);
 }
 
@@ -130,12 +148,22 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
   const actor = await assessorActor();
   const now = new Date();
   const database = await getDatabaseClient();
-  await database.transaction(async (transaction) => {
+  try {
+    await database.transaction(async (transaction) => {
     const service = new InterviewSchedulingService(transaction);
-    const request = await service.getAssignedInterview({
+    const preliminary = await service.getAssignedInterview({
       assessorAccountId: actor.accountId,
       interviewRequestId: input.interviewRequestId
     });
+    const caseLock = await transaction.query<{case_status:string;interview_reference:string|null}>(
+      "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
+      [preliminary.caseId,preliminary.tenantId]);
+    const request = await new InterviewSchedulingRepository(transaction).findByRequestIdForAssessor(input.interviewRequestId,actor.accountId,true);
+    if (!request || caseLock.rows[0]?.case_status !== "Interview pending" ||
+        caseLock.rows[0].interview_reference !== input.interviewRequestId ||
+        !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
+      throw new InterviewSchedulingInputError("Only the current open interview can submit a recommendation.");
+    }
     const runtime = await new InterviewRuntimeService(Promise.resolve(transaction)).view(
       actor,
       input.interviewRequestId
@@ -166,9 +194,33 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
       actor: { accountId: actor.accountId, role: "assessor" },
       now
     });
-  });
+    });
+  } catch (error) {
+    consoleActionFailure(error, input.interviewRequestId);
+  }
 
   revalidateInterview(input.interviewRequestId);
+}
+
+
+export async function requestReplacementInterviewAction(formData:FormData):Promise<void> {
+  const actor=await assessorActor();
+  const interviewRequestId=text(formData,"interviewRequestId");
+  if(!interviewRequestId || interviewRequestId.length>200)notFound();
+  const service=new InterviewSchedulingService(await getDatabaseClient());
+  let replacement;
+  try {
+    replacement=await service.requestReplacementInterview({principal:actor,interviewRequestId,reason:text(formData,"replacementReason")});
+  } catch(error) {
+    if(error instanceof InterviewAssignmentAccessError)notFound();
+    if(error instanceof InterviewSchedulingInputError)redirect("/assessor/interviews/"+encodeURIComponent(interviewRequestId)+"?recoveryError=invalid");
+    throw error;
+  }
+  revalidateInterview(interviewRequestId);
+  revalidateInterview(replacement.interviewRequestId);
+  revalidatePath("/worker/interviews/"+interviewRequestId);
+  revalidatePath("/worker/interviews/"+replacement.interviewRequestId);
+  redirect("/assessor/interviews?recoverySaved=yes");
 }
 
 export async function scheduleInterviewAction(formData: FormData): Promise<void> {
@@ -183,7 +235,13 @@ export async function scheduleInterviewAction(formData: FormData): Promise<void>
     interviewRequestId
   });
 
-  await service.scheduleInterview({ tenantId: request.tenantId, request, scheduledAt });
+  try {
+    await service.scheduleInterview({ principal: actor, tenantId: request.tenantId, request, scheduledAt,
+      reminderAt: text(formData, "reminderAt"), rescheduleReason: text(formData, "rescheduleReason") });
+  } catch (error) {
+    if (error instanceof InterviewSchedulingInputError) redirect("/assessor/interviews?scheduleError=invalid");
+    throw error;
+  }
   revalidateInterview(interviewRequestId);
 }
 
@@ -268,6 +326,10 @@ export async function addInterviewFollowUpAction(formData: FormData): Promise<vo
   const interviewRequestId = text(formData, "interviewRequestId");
   const prompt = text(formData, "prompt");
   const actor = await assessorActor();
-  await getInterviewPlaybookService().addFollowUp(actor, interviewRequestId, prompt);
+  try {
+    await getInterviewPlaybookService().addFollowUp(actor, interviewRequestId, prompt);
+  } catch (error) {
+    consoleActionFailure(error, interviewRequestId);
+  }
   revalidateInterview(interviewRequestId);
 }

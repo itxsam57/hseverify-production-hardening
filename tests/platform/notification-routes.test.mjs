@@ -38,16 +38,24 @@ test("all six fixed portals expose one hard-coded persisted notification route",
   }
 });
 
-test("notification deep-link registry maps only to real fixed-role dashboards and authenticated account security", async () => {
+test("notification registry permits only fixed authenticated dashboard, security and interview record targets", async () => {
   const authDomain = await readFile(resolve("src/lib/auth/auth-domain.ts"), "utf8");
   const notificationDomain = await readFile(
     resolve("src/lib/notifications/notification-domain.ts"),
     "utf8"
   );
   const expected = extractRoleHomePaths(authDomain);
-  assert.match(notificationDomain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security"\]/);
+  assert.match(notificationDomain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security", "interview\.record", "company\.assurance\.case"\]/);
   assert.match(notificationDomain, /case "account\.security":\s*return "\/account\/security"/);
   assert.match(notificationDomain, /ROLE_HOME_PATHS\[input\.role\]/);
+  for (const role of ["worker", "assessor"]) {
+    const page = await readFile(resolve("src/app/" + role + "/(portal)/interviews/[interviewRequestId]/page.tsx"), "utf8");
+    assert.ok(page.length > 0);
+  }
+  const companyPage = await readFile(resolve("src/app/company/(portal)/assurance-orders/[orderId]/page.tsx"), "utf8");
+  assert.ok(companyPage.length > 0);
+  assert.match(notificationDomain, /input.role !== "company"/);
+  assert.match(notificationDomain, /encodeURIComponent\(references\[0\]\).*encodeURIComponent\(references\[1\]\)/);
   assert.doesNotMatch(notificationDomain, /https?:\/\//i);
   assert.deepEqual(Object.keys(expected).sort(), [...roles].sort());
 });

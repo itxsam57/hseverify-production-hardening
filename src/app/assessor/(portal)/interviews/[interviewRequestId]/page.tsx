@@ -14,6 +14,7 @@ import {
   claimInterviewAction,
   endInterviewAction,
   markInterviewNoShowAction,
+  requestReplacementInterviewAction,
   pauseInterviewAction,
   reportAssessorInterviewTechnicalIssueAction,
   resumeInterviewAction,
@@ -51,15 +52,17 @@ function ScoreField({
 }
 
 export default async function AssessorInterviewConsolePage({
-  params
+  params, searchParams
 }: {
   params: Promise<{ interviewRequestId: string }>;
+  searchParams: Promise<{recoveryError?:string; consoleError?:string}>;
 }): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({
     expectedRole: "assessor",
     permission: "interview.assigned.read"
   });
   const { interviewRequestId } = await params;
+  const messages=await searchParams;
   const database = await getDatabaseClient();
   const scheduling = new InterviewSchedulingService(database);
   const request = await scheduling.getAssignedInterview({
@@ -106,13 +109,13 @@ export default async function AssessorInterviewConsolePage({
     submitted: saved?.submitted ?? initialConsole.submitted
   };
 
-  const locked = consoleState.submitted || request.status === "COMPLETED";
-  const runtimeClosed = runtime.status === "ENDED" || runtime.status === "NO_SHOW";
-  const mediaEnabled =
+  const locked = consoleState.submitted || ["COMPLETED","CANCELLED"].includes(request.status);
+  const runtimeClosed = request.status === "CANCELLED" || runtime.status === "ENDED" || runtime.status === "NO_SHOW";
+  const mediaEnabled = !locked && (
     runtime.status === "ADMITTED" ||
     runtime.status === "ACTIVE" ||
     runtime.status === "PAUSED" ||
-    runtime.status === "TECHNICAL_HOLD";
+    runtime.status === "TECHNICAL_HOLD");
   const canClaim =
     !locked &&
     (runtime.status === null ||
@@ -144,6 +147,22 @@ export default async function AssessorInterviewConsolePage({
           {(runtime.status ?? request.status).replaceAll("_", " ")}
         </span>
       </header>
+
+
+      {messages.consoleError==="closed" ? <p role="alert">This interview is closed. Your changes were not saved. Open the current interview from your assignments.</p> : null}
+      {messages.recoveryError==="invalid" ? <p role="alert">Provide a reason between 10 and 1000 characters. Only the current no-show or technical hold can request a replacement.</p> : null}
+      {request.status==="CANCELLED" ? <p role="status">This interview is archived. Check interview assignments for the replacement; unmatched requests await an eligible Assessor.</p> : null}
+      {!locked && (runtime.status==="NO_SHOW" || runtime.status==="TECHNICAL_HOLD") ? (
+        <section className="dashboard-section" aria-labelledby="replacement-heading">
+          <h2 id="replacement-heading">Replacement interview</h2>
+          <p>Save your draft notes before requesting a replacement. The original appointment and interview history will be retained. An eligible Assessor will schedule a new appointment.</p>
+          <form action={requestReplacementInterviewAction} className="form-grid">
+            <input type="hidden" name="interviewRequestId" value={request.interviewRequestId} />
+            <label>Replacement reason<textarea name="replacementReason" rows={3} minLength={10} maxLength={1000} required /></label>
+            <button className="button button-primary" type="submit">Request replacement interview</button>
+          </form>
+        </section>
+      ) : null}
 
       <section className="dashboard-section" aria-labelledby="runtime-heading">
         <h2 id="runtime-heading">Interview runtime</h2>
@@ -233,7 +252,7 @@ export default async function AssessorInterviewConsolePage({
         <LiveInterviewMedia
           interviewRequestId={request.interviewRequestId}
           role="assessor"
-          enabled={mediaEnabled && !locked}
+          enabled={mediaEnabled}
           recordingPolicy={runtime.recordingPolicy}
           recordingEnabled={runtime.status === "ACTIVE"}
           recordingRetentionDays={runtime.recordingRetentionDays}
@@ -290,6 +309,7 @@ export default async function AssessorInterviewConsolePage({
             Notes
             <textarea
               name="notes"
+              aria-label="Notes"
               rows={6}
               defaultValue={consoleState.notes.at(-1)?.content ?? ""}
               disabled={locked}
@@ -308,6 +328,7 @@ export default async function AssessorInterviewConsolePage({
             Scorecard comments
             <textarea
               name="comments"
+              aria-label="Scorecard comments"
               rows={4}
               defaultValue={consoleState.scorecard.comments ?? ""}
               disabled={locked}
@@ -317,6 +338,7 @@ export default async function AssessorInterviewConsolePage({
             Recommendation
             <select
               name="recommendation"
+              aria-label="Recommendation"
               defaultValue={consoleState.recommendation ?? ""}
               disabled={locked}
               required
@@ -338,6 +360,7 @@ export default async function AssessorInterviewConsolePage({
                 type="submit"
                 name="intent"
                 value="save"
+                formNoValidate
               >
                 Save draft
               </button>
@@ -352,7 +375,7 @@ export default async function AssessorInterviewConsolePage({
             </div>
           ) : (
             <p className="status-banner status-success">
-              Final interview record submitted and locked.
+              {request.status === "CANCELLED" ? "Archived interview record. Notes and scores are read-only." : "Final interview record submitted and locked."}
             </p>
           )}
         </form>

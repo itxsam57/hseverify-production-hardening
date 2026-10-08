@@ -15,8 +15,8 @@ export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
   mfa_recovery_codes_rotated: "account.recovery_codes.rotated"
 } as const;
 
-export const NOTIFICATION_TYPES = ["platform.foundation.ready", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES)] as const;
-export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security"] as const;
+export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES)] as const;
+export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -28,6 +28,8 @@ export type FoundationNotificationMetadata = Readonly<{
 
 export type NotificationMetadataByType = Readonly<{
   "platform.foundation.ready": FoundationNotificationMetadata;
+  "interview.scheduled": Readonly<{eventRef:string}>;
+  "interview.reminder": Readonly<{eventRef:string}>;
   "account.password.changed": AccountSecurityNotificationPayload;
   "account.password.reset": AccountSecurityNotificationPayload;
   "account.mfa.replaced": AccountSecurityNotificationPayload;
@@ -166,6 +168,8 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "platform.foundation.ready":
       normalized = normalizeFoundationNotificationMetadata(value);
       break;
+    case "interview.reminder":
+    case "interview.scheduled":
     case "account.password.changed":
     case "account.password.reset":
     case "account.mfa.replaced":
@@ -197,13 +201,22 @@ const SECURITY_CONTENT = {
   "account.recovery_codes.rotated": { title: "Recovery codes replaced", body: "A new recovery-code set replaced your previous codes. Review your account security if you did not make this change." }
 } as const;
 
-export function notificationContent(notificationType: NotificationType): Readonly<{
+export function notificationContent(notificationType: NotificationType, context?: {role: AuthRole; targetReference: string | null}): Readonly<{
   title: string;
   body: string;
   target: NotificationTarget;
-  targetReference: null;
+  targetReference: string | null;
 }> {
   switch (notificationType) {
+    case "interview.reminder":
+    case "interview.scheduled": {
+      if (!context) throw new NotificationContractError("Interview notification target context is required.");
+      const target = context.role === "company" ? "company.assurance.case" : "interview.record";
+      resolveNotificationHref({role:context.role,target,targetReference:context.targetReference});
+      return Object.freeze({title:notificationType==="interview.reminder" ? "Interview reminder" : "Interview scheduled",
+        body:notificationType==="interview.reminder" ? "Your interview is approaching. Open the record for the current time and preparation details." : "An interview has been scheduled. Open the record for the current time and preparation details.",
+        target,targetReference:context.targetReference});
+    }
     case "platform.foundation.ready":
       return Object.freeze({
         title: "Notification foundation ready",
@@ -283,6 +296,20 @@ export function resolveNotificationHref(input: {
 }): string {
   if (!isNotificationRole(input.role) || !isNotificationTarget(input.target)) {
     throw new NotificationContractError("Notification target is invalid.");
+  }
+  const recordReference = /^[A-Za-z0-9_-]{1,200}$/;
+  if (input.target === "interview.record") {
+    if (!["worker","assessor"].includes(input.role) || !input.targetReference || !recordReference.test(input.targetReference)) {
+      throw new NotificationContractError("Interview notification target is invalid.");
+    }
+    return "/"+input.role+"/interviews/"+encodeURIComponent(input.targetReference);
+  }
+  if (input.target === "company.assurance.case") {
+    const references=input.targetReference?.split("#");
+    if (input.role !== "company" || references?.length !== 2 || !references.every(value => recordReference.test(value))) {
+      throw new NotificationContractError("Company interview notification target is invalid.");
+    }
+    return "/company/assurance-orders/"+encodeURIComponent(references[0])+"#"+encodeURIComponent(references[1]);
   }
   if (input.targetReference !== null) {
     throw new NotificationContractError(

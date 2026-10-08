@@ -128,14 +128,13 @@ async function sessionForUpdate(
   return result.rows[0] ?? null;
 }
 
-function assertParticipant(principal: AuthorizationPrincipal, request: RequestRow): "worker" | "assessor" {
+function assertParticipant(principal: AuthorizationPrincipal, request: RequestRow, readOnly = false): "worker" | "assessor" {
   if (principal.accountStatus !== "active") throw new InterviewRuntimeAccessError();
-  if (principal.activeRole === "worker" && principal.accountId === request.worker_account_id) return "worker";
-  if (
-    principal.activeRole === "assessor" &&
-    principal.accountId === request.assessor_account_id
-  ) return "assessor";
-  throw new InterviewRuntimeAccessError();
+  const participant = principal.activeRole === "worker" && principal.accountId === request.worker_account_id
+    ? "worker" : principal.activeRole === "assessor" && principal.accountId === request.assessor_account_id ? "assessor" : null;
+  if (!participant) throw new InterviewRuntimeAccessError();
+  if (!readOnly && request.status === "CANCELLED") throw new InterviewRuntimeConflictError("Interview is closed.");
+  return participant;
 }
 
 async function insertEvent(
@@ -277,7 +276,7 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     const request = await requestForUpdate(database, interviewRequestId);
-    assertParticipant(principal, request);
+    assertParticipant(principal, request, true);
     return readView(database, interviewRequestId);
   }
 
@@ -509,20 +508,35 @@ export class InterviewRuntimeService {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
       const request = await requestForUpdate(tx, interviewRequestId);
-      assertParticipant(principal, request);
-      const session = await ensureWaitingRoomSession(tx, request, now);
+      const participant = assertParticipant(principal, request);
+      const existing = await sessionForUpdate(tx, interviewRequestId);
+      let runtimeTime = now;
+      if (participant === "worker") {
+        const clock = await tx.query<{ now: string | Date }>("SELECT clock_timestamp() AS now");
+        runtimeTime = new Date(clock.rows[0]?.now ?? "");
+        const scheduled = request.scheduled_at ? new Date(request.scheduled_at).getTime() : Number.NaN;
+        if (!Number.isFinite(runtimeTime.getTime()) || (!existing && (
+          !["ASSIGNED", "WAITING_ROOM"].includes(request.status) ||
+          !Number.isFinite(scheduled) ||
+          runtimeTime.getTime() < scheduled - 30 * 60 * 1000 ||
+          runtimeTime.getTime() > scheduled + 4 * 60 * 60 * 1000
+        ))) {
+          throw new InterviewRuntimeConflictError("Technical reporting opens during the scheduled join window.");
+        }
+      }
+      const session = existing ?? await ensureWaitingRoomSession(tx, request, runtimeTime);
       if (["ENDED","NO_SHOW"].includes(session.status)) {
         throw new InterviewRuntimeConflictError("Interview is already closed.");
       }
       await tx.query(
         "UPDATE interview_runtime_sessions SET status='TECHNICAL_HOLD',pause_reason=$2,paused_at=$3,updated_at=$3 WHERE interview_request_id=$1",
-        [interviewRequestId, issue, now.toISOString()]
+        [interviewRequestId, issue, runtimeTime.toISOString()]
       );
       await tx.query(
         "UPDATE interview_requests SET technical_issue=$2 WHERE interview_request_id=$1",
         [interviewRequestId, issue]
       );
-      await insertEvent(tx, session.interview_session_id, principal.accountId, "TECHNICAL_ISSUE", now, issue);
+      await insertEvent(tx, session.interview_session_id, principal.accountId, "TECHNICAL_ISSUE", runtimeTime, issue);
       return readView(tx, interviewRequestId);
     });
   }

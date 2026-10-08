@@ -57,6 +57,7 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
                       <option value="COMPLETED">Withdraw requested optional sharing consent and complete</option>
                     ) : null}
                     {request.request_type === "restriction" && request.details?.purpose === "optional_sharing" ? <option value="COMPLETED">Restrict optional share links and complete</option> : null}
+                    {request.request_type === "retention_inquiry" ? <option value="COMPLETED">Answer retention inquiry and complete</option> : null}
                     {["access","export"].includes(request.request_type) ? (
                       <option value="COMPLETED">Prepare Worker data download and complete</option>
                     ) : null}
@@ -66,6 +67,7 @@ export default async function AdminPrivacyPage(): Promise<React.JSX.Element> {
                   </select>
                 </label>
                 <label>Request review reason<textarea name="reason" minLength={10} maxLength={2000} required /></label>
+                {request.request_type === "retention_inquiry" ? <p>Provide the Worker with the applicable retention categories, policy and any holds in your review response. Completing this inquiry records your answer; it does not delete records.</p> : null}
                 <button type="submit">Save privacy request decision</button>
               </form>
             ) : null}

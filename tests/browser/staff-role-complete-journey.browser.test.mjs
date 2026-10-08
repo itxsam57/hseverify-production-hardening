@@ -264,7 +264,7 @@ async function runAdminForms(page, baseUrl) {
   const tenantId = ADMIN_DECISION_TENANT_ID;
   const caseId = ADMIN_DECISION_CASE_ID;
   await gotoOk(page, baseUrl, "/admin/decisions", "Decision Engine");
-  const scopeForm = page.locator('form[method="get"]').first();
+  const scopeForm = page.locator('form[method="get"]').filter({ has: page.getByRole("button", { name: "Load case decisions", exact: true }) });
   await scopeForm.getByLabel("Tenant ID").fill(tenantId);
   await scopeForm.getByLabel("Case ID").fill(caseId);
   await scopeForm.getByRole("button", { name: "Load case decisions" }).click();

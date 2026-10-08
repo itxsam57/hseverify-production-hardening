@@ -90,7 +90,7 @@ mustContain(outboxRepository, /FOR UPDATE SKIP LOCKED/,
   "Outbox concurrency must keep SKIP LOCKED claim semantics.");
 mustContain(outboxRepository, /lease_expires_at > CURRENT_TIMESTAMP/,
   "Outbox completion/retry paths must require an unexpired lease.");
-mustContain(emailRepository, /jobs\.lease_expires_at > CURRENT_TIMESTAMP/,
+mustContain(emailRepository, /jobs\.lease_expires_at > clock_timestamp\(\)/,
   "Email attempt start/finalization must require the live outbox lease.");
 mustContain(emailHandler, /preparation\.kind === "already_delivered"[\s\S]*kind: "succeeded"/,
   "Durably delivered email state must short-circuit redispatch.");
@@ -111,8 +111,11 @@ mustContain(notificationDomain, /portal\.dashboard/,
 mustNotContain(notificationDomain, /https?:\/\//,
   "Notification targets must not become arbitrary network URLs.");
 
-mustContain(emailDomain, /EMAIL_ADAPTER_KEYS = \["local_test"\] as const/,
-  "The accepted email provider authority must remain exactly the local/test adapter.");
+mustContain(emailDomain, /EMAIL_ADAPTER_KEYS = \["local_test", "resend"\] as const/,
+  "Email adapter authority must remain exactly local_test and resend.");
+mustContain(emailRepository,
+  /const job = assertEmailDeliveryJob\(jobInput\);[\s\S]*adapterKey !== \(job\.jobType === "email\.delivery\.foundation" \? "local_test" : "resend"\)/,
+  "Only validated scheduling and reminder jobs may use resend; foundation jobs must retain local_test.");
 mustContain(emailAdapter, /local_test/,
   "The accepted local/test email adapter must remain explicit.");
 mustNotContain(emailAdapter, /\bfetch\s*\(/,

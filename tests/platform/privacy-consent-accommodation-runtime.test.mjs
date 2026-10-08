@@ -438,7 +438,7 @@ test("privacy completion requires actual fulfilment and rejects legacy status-on
   const service=new PrivacyOperationsService(repository);
   await service.request({requestId:'status_only_request',workerId:'status_only_worker',tenantId:null,type:'correction'});
   await assert.rejects(service.reviewRequest({requestId:'status_only_request',reviewerAccountId:'status_only_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'No access export was actually provided to the Worker.'}),/fulfilment operation/);
-  for (const type of ['correction','restriction','consent_withdrawal','share_link_revocation','retention_inquiry','deletion']) {
+  for (const type of ['correction','restriction','consent_withdrawal','share_link_revocation','deletion']) {
    const requestId='unsupported_'+type;
    await service.request({requestId,workerId:'status_only_worker',tenantId:null,type});
    await assert.rejects(service.reviewRequest({requestId,reviewerAccountId:'status_only_admin',expectedStatus:'OPEN',decision:'COMPLETED',reason:'The requested operation has not actually been performed.'}),/fulfilment operation/);

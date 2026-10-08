@@ -2,16 +2,18 @@ import "server-only";
 
 import type { DatabaseClient } from "../database/database";
 import type { InterviewRequest, InterviewRequestStatus, InterviewConsole } from "./interview-scheduling-domain";
+import { InterviewSchedulingInputError } from "./interview-scheduling-domain";
 
 type InterviewRow = {
   interview_request_id:string; case_id:string; worker_account_id:string; status:InterviewRequestStatus;
   requested_at:string|Date; scheduled_at:string|Date|null; assessor_account_id:string|null;
+  candidate_available_from:string|Date|null; candidate_available_until:string|Date|null;
   timezone:string; reminder_at:string|Date|null; reschedule_reason:string|null; tenant_id:string;
 };
 
-export type ScopedInterviewRequest = InterviewRequest & { tenantId: string };
+export type ScopedInterviewRequest = InterviewRequest & { tenantId: string; workerAvailability: Readonly<{availableFrom:string;availableUntil:string}> | null };
 
-const COLUMNS = "interview_request_id,case_id,worker_account_id,status,requested_at,scheduled_at,assessor_account_id,timezone,reminder_at,reschedule_reason";
+const COLUMNS = "interview_request_id,case_id,worker_account_id,status,requested_at,scheduled_at,assessor_account_id,timezone,reminder_at,reschedule_reason,candidate_available_from,candidate_available_until";
 const iso = (value:string|Date|null):string|null => value === null ? null : (value instanceof Date ? value.toISOString() : new Date(value).toISOString());
 
 function mapRequest(row:InterviewRow):InterviewRequest {
@@ -21,6 +23,10 @@ function mapRequest(row:InterviewRow):InterviewRequest {
     assessorAccountId:row.assessor_account_id, timezone:row.timezone, reminderAt:iso(row.reminder_at),
     rescheduleReason:row.reschedule_reason
   });
+}
+
+function mapScopedRequest(row:InterviewRow):ScopedInterviewRequest {
+  return Object.freeze({...mapRequest(row),tenantId:row.tenant_id,workerAvailability:row.candidate_available_from && row.candidate_available_until ? Object.freeze({availableFrom:iso(row.candidate_available_from)!,availableUntil:iso(row.candidate_available_until)!}) : null});
 }
 
 export class InterviewSchedulingRepository {
@@ -40,25 +46,25 @@ export class InterviewSchedulingRepository {
         ORDER BY requested_at ASC,interview_request_id ASC`,
       [assessorAccountId, query.trim().slice(0,160)]
     );
-    return result.rows.map((row) => Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }));
+    return result.rows.map(mapScopedRequest);
   }
 
-  async findByRequestIdForAssessor(interviewRequestId:string, assessorAccountId:string):Promise<ScopedInterviewRequest|null> {
+  async findByRequestIdForAssessor(interviewRequestId:string, assessorAccountId:string, forUpdate = false):Promise<ScopedInterviewRequest|null> {
     const result = await this.database.query<InterviewRow>(
-      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND assessor_account_id=$2`,
+      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND assessor_account_id=$2${forUpdate ? " FOR UPDATE" : ""}`,
       [interviewRequestId, assessorAccountId]
     );
     const row = result.rows[0];
-    return row ? Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }) : null;
+    return row ? mapScopedRequest(row) : null;
   }
 
-  async findByRequestIdForWorker(interviewRequestId:string, workerAccountId:string):Promise<ScopedInterviewRequest|null> {
+  async findByRequestIdForWorker(interviewRequestId:string, workerAccountId:string, forUpdate = false):Promise<ScopedInterviewRequest|null> {
     const result = await this.database.query<InterviewRow>(
-      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND worker_account_id=$2`,
+      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND worker_account_id=$2${forUpdate ? " FOR UPDATE" : ""}`,
       [interviewRequestId, workerAccountId]
     );
     const row = result.rows[0];
-    return row ? Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }) : null;
+    return row ? mapScopedRequest(row) : null;
   }
 
   async findByCase(tenantId:string, caseId:string):Promise<InterviewRequest|null> {
@@ -85,12 +91,24 @@ export class InterviewSchedulingRepository {
     return mapRequest(result.rows[0]);
   }
 
+  private async assertConsoleSessionBinding(input: {tenantId: string; interviewSessionId: string; interviewRequestId: string}): Promise<void> {
+    const result = await this.database.query(
+      "SELECT 1 FROM interview_runtime_sessions WHERE interview_session_id=$1 AND (tenant_id<>$2 OR interview_request_id<>$3)",
+      [input.interviewSessionId, input.tenantId, input.interviewRequestId]
+    );
+    if (result.rows.length) throw new InterviewSchedulingInputError("Interview session does not belong to this request.");
+  }
+
   async saveConsoleDraft(input:{tenantId:string; interviewSessionId:string; interviewRequestId:string; notes:readonly unknown[]; recommendation:string|null; submitted:boolean; updatedAt:string}):Promise<void> {
-    await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,recommendation=$5,submitted=$6,updated_at=$7`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),input.recommendation,input.submitted,input.updatedAt]);
+    await this.assertConsoleSessionBinding(input);
+    const saved = await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,recommendation=$5,submitted=$6,updated_at=$7 WHERE interview_console_drafts.interview_request_id=EXCLUDED.interview_request_id RETURNING interview_session_id`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),input.recommendation,input.submitted,input.updatedAt]);
+    if (!saved.rows.length) throw new InterviewSchedulingInputError("Interview session does not belong to this request.");
   }
 
   async saveConsoleState(input:{tenantId:string; interviewSessionId:string; interviewRequestId:string; notes:readonly unknown[]; scorecard:unknown; recommendation:string|null; submitted:boolean; updatedAt:string}):Promise<void> {
-    await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,scorecard,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,scorecard=$5::jsonb,recommendation=$6,submitted=$7,updated_at=$8`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),JSON.stringify(input.scorecard),input.recommendation,input.submitted,input.updatedAt]);
+    await this.assertConsoleSessionBinding(input);
+    const saved = await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,scorecard,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,scorecard=$5::jsonb,recommendation=$6,submitted=$7,updated_at=$8 WHERE interview_console_drafts.interview_request_id=EXCLUDED.interview_request_id RETURNING interview_session_id`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),JSON.stringify(input.scorecard),input.recommendation,input.submitted,input.updatedAt]);
+    if (!saved.rows.length) throw new InterviewSchedulingInputError("Interview session does not belong to this request.");
   }
 
   async loadLatestConsoleDraft(tenantId:string, interviewRequestId:string):Promise<(Partial<InterviewConsole> & { interviewSessionId:string })|null> {

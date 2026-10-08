@@ -41,9 +41,9 @@ const ENV = {
 
 const oid = (prefix, char) => `${prefix}_${char.repeat(24)}`;
 
-async function database() {
+async function database(through = "0062_independent_review_backfill") {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0062_independent_review_backfill");
+  await applyMigrationsThrough(db, ENV.releaseSha, through);
   return db;
 }
 
@@ -454,7 +454,7 @@ test("independent identity manual review reaches Verifier and approved outcome v
 
 
 test("approved case review automatically creates and assigns a required interview to an active assessor", async () => {
-  const db = await database();
+  const db = await database("0090_interview_worker_availability");
   try {
     const worker = await seedAccount(db, {
       accountId: "account_interview_worker_01",

@@ -315,7 +315,7 @@ test("combined M1.05 tenant, role, session and revocation isolation is non-enume
     assert.equal(notificationWrongRole.rows.length, 0);
 
     const emailListA = await database.query(sql.emailList, [
-      companyA.accountId, "company", companyA.tenantId, companyA.membershipId, null, 50
+      companyA.accountId, "company", companyA.tenantId, companyA.membershipId, null, 50, null
     ]);
     assert.deepEqual(emailListA.rows.map((row) => row.delivery_id), [deliveryA.row.delivery_id]);
     const emailCross = await database.query(sql.emailFind, [

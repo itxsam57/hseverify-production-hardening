@@ -31,7 +31,7 @@ const requirements = [
   },
   {
     path: "node_modules/next",
-    minimum: "16.3.6",
+    minimum: "16.3.8",
     advisory: "GHSA-p293-qw3h-jr36 and GHSA-2xp9-vwfh-vxw4 remote-code-execution advisories"
   },
   {

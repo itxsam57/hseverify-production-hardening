@@ -154,9 +154,10 @@ export class InterviewPlaybookService {
         trade_scope: string | null;
         qualification_scope: string | null;
         risk_level: string;
+        status: string;
       }>(
         `SELECT interview_request_id,tenant_id,case_id,worker_account_id,
-                assessor_account_id,trade_scope,qualification_scope,risk_level
+                assessor_account_id,trade_scope,qualification_scope,risk_level,status
            FROM interview_requests
           WHERE interview_request_id=$1
           FOR UPDATE`,
@@ -167,6 +168,7 @@ export class InterviewPlaybookService {
         throw new InterviewPlaybookAccessError();
       }
 
+      if (request.status === "CANCELLED") throw new InterviewPlaybookInputError("Interview is closed.");
       const existing = await latestSet(tx, request.tenant_id, interviewRequestId);
       if (existing) return existing;
 
@@ -340,12 +342,13 @@ export class InterviewPlaybookService {
     }
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await tx.query<{ tenant_id: string; assessor_account_id: string | null }>(
-        "SELECT tenant_id,assessor_account_id FROM interview_requests WHERE interview_request_id=$1 FOR UPDATE",
+      const request = await tx.query<{ tenant_id: string; assessor_account_id: string | null; status: string }>(
+        "SELECT tenant_id,assessor_account_id,status FROM interview_requests WHERE interview_request_id=$1 FOR UPDATE",
         [interviewRequestId]
       );
       const row = request.rows[0];
       if (!row || row.assessor_account_id !== principal.accountId) throw new InterviewPlaybookAccessError();
+      if (row.status === "CANCELLED") throw new InterviewPlaybookInputError("Interview is closed.");
       const current = await latestSet(tx, row.tenant_id, interviewRequestId);
       if (!current) throw new InterviewPlaybookInputError("Create the interview playbook before adding follow-ups.");
       const questions = [

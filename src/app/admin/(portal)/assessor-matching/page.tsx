@@ -47,7 +47,7 @@ export default async function AdminAssessorMatchingPage({
       ) : null}
       {params.error ? <p className="status-banner status-error" role="alert">{params.error}</p> : null}
 
-      <section className="surface-card">
+      <section className="dashboard-section">
         <h2>Configure Assessor matching profile</h2>
         <form action={saveAssessorMatchingProfileAction} className="form-grid">
           <label>Assessor<select name="assessorAccountId" required defaultValue="">
@@ -73,10 +73,10 @@ export default async function AdminAssessorMatchingPage({
         </p>
       </section>
 
-      <section className="surface-card">
+      <section className="dashboard-section">
         <h2>Current matching profiles</h2>
         {profiles.length === 0 ? <p>No matching profiles are configured.</p> : (
-          <div className="data-table-wrap"><table className="data-table">
+          <div className="table-scroll"><table className="data-table">
             <thead><tr><th>Assessor</th><th>Status</th><th>Languages</th><th>Jurisdictions</th><th>Risk</th><th>Capacity</th></tr></thead>
             <tbody>{profiles.map((row) => (
               <tr key={row.assessorAccountId}>
@@ -92,7 +92,7 @@ export default async function AdminAssessorMatchingPage({
         )}
       </section>
 
-      <section className="surface-card">
+      <section className="dashboard-section">
         <h2>Unassigned interview requests</h2>
         {unassigned.length === 0 ? <p>No interview request is waiting for assignment.</p> : (
           <div className="record-list">

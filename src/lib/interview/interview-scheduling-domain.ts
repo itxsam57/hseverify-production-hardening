@@ -155,18 +155,24 @@ export function normalizeInterviewScheduleTimestamp(value: string): string {
 export function scheduleInterviewRequest(
   request: InterviewRequest,
   scheduledAt: string,
-  reminderAt?: string
+  reminderAt?: string,
+  rescheduleReason?: string
 ): InterviewRequest {
   if (!scheduledAt.trim()) throw new InterviewSchedulingInputError();
   if (request.status !== "ASSIGNED" || !request.assessorAccountId) {
     throw new InterviewSchedulingInputError("Assigned assessor is required before scheduling.");
   }
 
+  const instant = normalizeInterviewScheduleTimestamp(scheduledAt);
+  const reminder = reminderAt === undefined ? request.reminderAt :
+    reminderAt.trim() ? normalizeInterviewScheduleTimestamp(reminderAt) : null;
+  if (reminder && reminder >= instant) throw new InterviewSchedulingInputError("Choose a reminder time before the interview.");
+  if (request.scheduledAt === instant && request.reminderAt === reminder) return request;
+  const next = request.scheduledAt ? rescheduleInterviewRequest(request, rescheduleReason ?? "") : request;
   return Object.freeze({
-    ...request,
-    scheduledAt: normalizeInterviewScheduleTimestamp(scheduledAt),
-    reminderAt: reminderAt?.trim() ? normalizeInterviewScheduleTimestamp(reminderAt) : null,
-    rescheduleReason: null
+    ...next,
+    scheduledAt: instant,
+    reminderAt: reminder
   });
 }
 
@@ -174,15 +180,16 @@ export function rescheduleInterviewRequest(
   request: InterviewRequest,
   reason: string
 ): InterviewRequest {
-  if (request.status !== "ASSIGNED" || !reason.trim()) {
-    throw new InterviewSchedulingInputError("Assigned interviews require a reschedule reason.");
+  const normalized = reason.trim();
+  if (request.status !== "ASSIGNED" || normalized.length < 10 || normalized.length > 1000) {
+    throw new InterviewSchedulingInputError("Reschedule reason must contain between 10 and 1000 characters.");
   }
 
   return Object.freeze({
     ...request,
     scheduledAt: null,
     reminderAt: null,
-    rescheduleReason: reason.trim()
+    rescheduleReason: normalized
   });
 }
 

@@ -37,6 +37,13 @@ export async function collectWorkerPrivacyData(database: DatabaseClient, workerI
       WHERE bindings.worker_account_id=$1 AND identities.worker_account_id=$1 ORDER BY bindings.created_at,binding_id`),
     cases: await rows(`SELECT case_id,case_status,next_action,created_at,updated_at,closed_at
       FROM assurance_cases WHERE worker_account_id=$1 ORDER BY created_at,case_id`),
+    interviewAvailability: await rows(`SELECT requests.interview_request_id,requests.case_id,requests.status,requests.scheduled_at,
+      requests.candidate_available_from,requests.candidate_available_until
+      FROM interview_requests requests JOIN assurance_cases cases
+        ON cases.case_id=requests.case_id AND cases.tenant_id=requests.tenant_id
+      WHERE requests.worker_account_id=$1 AND cases.worker_account_id=$1
+        AND requests.candidate_available_from IS NOT NULL
+      ORDER BY requests.requested_at,requests.interview_request_id`),
     assessmentAttempts: await rows(`SELECT attempts.attempt_id,attempts.case_id,attempts.status,
       attempts.question_count,attempts.started_at,attempts.submitted_at,attempts.created_at,attempts.updated_at
       FROM assessment_attempts attempts JOIN assurance_cases cases ON cases.case_id=attempts.case_id

@@ -5,6 +5,7 @@ import type { OtpProviderConfig } from "../auth/otp-provider-transport";
 
 export type RuntimeEnvironment = {
   registrationOtpProviders?: OtpProviderConfig;
+  publicBaseUrl?: string;
   appEnvironment: HseAppEnvironment;
   databaseDriver: HseDatabaseDriver;
   databaseUrl: string | null;
@@ -161,12 +162,24 @@ export function validateRuntimeEnvironment(
     }
   }
 
+  let publicBaseUrl:string|undefined;
+  if(input.HSE_PUBLIC_BASE_URL?.trim()){
+   try{
+    const url=new URL(input.HSE_PUBLIC_BASE_URL.trim());
+    const local=(appEnvironment==="development" || appEnvironment==="test") && url.protocol==="http:" &&
+      ["localhost","127.0.0.1","[::1]"].includes(url.hostname);
+    if((url.protocol!=="https:" && !local) || url.username || url.password || url.search || url.hash || url.pathname!=="/")throw new Error();
+    publicBaseUrl=url.origin;
+   }catch{issues.push("HSE_PUBLIC_BASE_URL must be a clean HTTPS origin, or a local HTTP origin in development/test.");}
+  }
+
   if (issues.length > 0) {
     throw new EnvironmentConfigurationError(issues);
   }
 
   return {
     appEnvironment,
+    ...(publicBaseUrl ? {publicBaseUrl}:{}),
     databaseDriver,
     databaseUrl,
     pgliteDataDir: databaseDriver === "pglite" ? pgliteDataDir : null,

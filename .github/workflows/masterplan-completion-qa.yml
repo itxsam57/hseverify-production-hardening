@@ -108,6 +108,27 @@ jobs:
       - name: Verifier authorized review SQL search before queue limit
         run: node --test tests/platform/verifier-review-search-runtime.test.mjs
 
+      - name: Scheduling notification native source, retry, rollback and recipient access
+        run: node --test tests/platform/interview-scheduling-notification-runtime.test.mjs
+
+      - name: Scheduling email actual worker, suppression, ambiguous retry and source repair
+        run: node --test tests/platform/interview-scheduling-email-runtime.test.mjs
+
+      - name: Admin scheduling email health metrics and live access
+        run: node --test tests/platform/interview-email-operational-health-runtime.test.mjs
+
+      - name: Owned interview email state filtering and truthful labels
+        run: node --test tests/platform/interview-email-delivery-visibility-runtime.test.mjs
+
+      - name: Scheduling email compiled CLI and exact migration rollback
+        run: node --test tests/platform/interview-scheduling-email-cli-rollback.test.mjs
+
+      - name: Interview replacement ownership, history and rollback
+        run: node --test tests/platform/interview-replacement-runtime.test.mjs
+
+      - name: Reminder due time, recipient boundaries, replacement suppression and exact rollback
+        run: node --test tests/platform/interview-reminder-runtime.test.mjs
+
       - name: UTC interview scheduling under alternate database timezone
         run: node --test tests/platform/interview-scheduling-timezone-runtime.test.mjs
 
@@ -180,6 +201,23 @@ jobs:
 
       - name: Assessor interview search navigation and direct record denial
         run: node --test tests/browser/assessor-interview-search.browser.test.mjs
+
+      - name: No-show and technical replacement across Assessor Worker Company and Admin
+        run: node --test --test-concurrency=1 tests/browser/interview-replacement.browser.test.mjs
+
+      - name: Actual reminder due time, private recipient links and obsolete-work suppression
+        run: node --test tests/browser/interview-reminder.browser.test.mjs
+
+      - name: Scheduling notices through compiled worker to authorized recipient records
+        run: |
+          node scripts/build-outbox-worker.mjs
+          node --test tests/browser/interview-scheduling-notification.browser.test.mjs
+
+      - name: Admin operational email queue, retry and acceptance browser workflow
+        run: node --test tests/browser/interview-email-operational-health.browser.test.mjs
+
+      - name: Interview email queued, retry, sent and private-link browser journey
+        run: node --test tests/browser/interview-email-delivery-visibility.browser.test.mjs
 
       - name: UTC scheduling browser with alternate browser and server timezone
         run: node --test tests/browser/interview-scheduling-timezone.browser.test.mjs

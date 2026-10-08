@@ -18,7 +18,8 @@ export function loadTs(path) {
     if (request === "./privacy-operations-repository") return loadTs("src/lib/privacy/privacy-operations-repository.ts");
     if (request === "./privacy-operations-domain") return loadTs("src/lib/privacy/privacy-operations-domain.ts");
     if (request === "./assessment-review-source") return loadTs("src/lib/scoring/assessment-review-source.ts");
-    if (request === "../database/database") return {};
+    // Runtime services receive the real test database; singleton getters are unused.
+    if (request === "../database/database" || request === "@/lib/database/database") return {};
     if (request === "server-only") return {};
     if (request.startsWith(".") || request.startsWith("@/")) {
       const candidate = request.startsWith("@/")

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { InterviewWaitingRoomChecks } from "@/components/interview/interview-waiting-room-checks";
 import { LiveInterviewMedia } from "@/components/interview/live-interview-media";
@@ -7,10 +8,11 @@ import { requirePortalAuthorization } from "@/lib/authorization/authorization-se
 import { getDatabaseClient } from "@/lib/database/database";
 import { formatDateTime } from "@/lib/format";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
-import { InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
+import { InterviewWorkerAccessError, InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
 import { CaseAccommodationService } from "@/lib/privacy/case-accommodation-service";
 import {
   enterInterviewWaitingRoomAction,
+  saveInterviewAvailabilityAction,
   reportWorkerInterviewTechnicalIssueAction
 } from "../actions";
 
@@ -22,18 +24,24 @@ export const metadata = {
 };
 
 export default async function WorkerInterviewPage({
-  params
+  params,searchParams
 }: {
   params: Promise<{ interviewRequestId: string }>;
+  searchParams:Promise<{availabilityError?:string;availabilitySaved?:string;technicalError?:string;technicalSaved?:string}>;
 }): Promise<React.JSX.Element> {
   const principal = await requirePortalAuthorization("worker");
+  const messages=await searchParams;
   const { interviewRequestId } = await params;
   const database = await getDatabaseClient();
   const service = new InterviewSchedulingService(database);
   const request = await service.getWorkerInterview({
     workerAccountId: principal.accountId,
     interviewRequestId
+  }).catch((error: unknown) => {
+    if (error instanceof InterviewWorkerAccessError) notFound();
+    throw error;
   });
+  const replacementInterviewId=request.status==="CANCELLED" ? await service.getWorkerReplacementInterviewId({workerAccountId:principal.accountId,interviewRequestId}) : null;
   const [runtime, accommodation] = await Promise.all([
     new InterviewRuntimeService(Promise.resolve(database)).view(principal, interviewRequestId),
     new CaseAccommodationService(Promise.resolve(database)).resolveForWorker(
@@ -49,19 +57,24 @@ export default async function WorkerInterviewPage({
       ? clock.rows[0].now.toISOString()
       : String(clock.rows[0]?.now ?? "")
   );
+  const scheduledWindowOpen =
+    Number.isFinite(scheduledAt) &&
+    now >= scheduledAt - EARLY_JOIN_MS &&
+    now <= scheduledAt + LATE_JOIN_MS;
   const joinWindowOpen =
     request.status === "WAITING_ROOM" ||
-    (request.status === "ASSIGNED" &&
-      Number.isFinite(scheduledAt) &&
-      now >= scheduledAt - EARLY_JOIN_MS &&
-      now <= scheduledAt + LATE_JOIN_MS);
+    (request.status === "ASSIGNED" && scheduledWindowOpen);
+  const technicalReportAllowed = request.status !== "CANCELLED" &&
+    !["ENDED", "NO_SHOW"].includes(runtime.status ?? "") &&
+    (Boolean(runtime.interviewSessionId) ||
+      (["ASSIGNED", "WAITING_ROOM"].includes(request.status) && scheduledWindowOpen));
 
   const inWaitingRoom = request.status === "WAITING_ROOM";
-  const mediaEnabled =
+  const mediaEnabled = request.status !== "CANCELLED" && (
     runtime.status === "ADMITTED" ||
     runtime.status === "ACTIVE" ||
     runtime.status === "PAUSED" ||
-    runtime.status === "TECHNICAL_HOLD";
+    runtime.status === "TECHNICAL_HOLD");
   const ready = runtime.status === "READY" || Boolean(runtime.workerReadyAt);
 
   return (
@@ -80,6 +93,29 @@ export default async function WorkerInterviewPage({
           tone={ready || mediaEnabled ? "positive" : "warning"}
         />
       </header>
+
+      {request.status==="CANCELLED" ? <p role="status">This interview is archived. {replacementInterviewId ? <Link href={"/worker/interviews/"+replacementInterviewId}>Open replacement interview</Link> : "Contact the Assessor about the current appointment."}</p> : null}
+
+      {messages.technicalError === "invalid" ? (
+        <p role="alert">Check the technical issue (5 to 2000 characters). Initial reports require the scheduled join window; closed interviews cannot accept a report.</p>
+      ) : null}
+      {messages.technicalSaved === "yes" ? <p role="status">Technical issue recorded.</p> : null}
+
+      <section className="dashboard-section" aria-labelledby="availability-heading">
+        <h2 id="availability-heading">Interview availability (UTC)</h2>
+        <p>Choose a time window when you can attend. The Assessor chooses an appointment within it.</p>
+        {messages.availabilityError==="invalid" ? <p role="alert">Enter a valid future availability window ending after it starts. Claimed or closed interviews cannot change availability.</p> : null}
+        {messages.availabilitySaved==="yes" ? <p role="status">Interview availability saved.</p> : null}
+        {request.scheduledAt ? <p>An appointment is scheduled. Changing availability leaves that appointment intact; contact the Assessor if it needs to move.</p> : null}
+        {["REQUESTED","ASSIGNED"].includes(request.status) && !runtime.status ? (
+          <form action={saveInterviewAvailabilityAction}>
+            <input type="hidden" name="interviewRequestId" value={interviewRequestId} />
+            <label>Available from (UTC)<input type="datetime-local" name="availableFrom" required defaultValue={request.workerAvailability?.availableFrom.slice(0,16) ?? ""} /></label>
+            <label>Available until (UTC)<input type="datetime-local" name="availableUntil" required defaultValue={request.workerAvailability?.availableUntil.slice(0,16) ?? ""} /></label>
+            <button type="submit" className="button button-secondary">Save interview availability</button>
+          </form>
+        ) : <p>Availability changes are closed for this interview.</p>}
+      </section>
 
       <section className="dashboard-section" aria-labelledby="schedule-heading">
         <h2 id="schedule-heading">Interview details</h2>
@@ -139,7 +175,7 @@ export default async function WorkerInterviewPage({
         ) : null}
       </section>
 
-      {!["ENDED","NO_SHOW"].includes(runtime.status ?? "") ? (
+      {technicalReportAllowed ? (
         <section className="dashboard-section" aria-labelledby="technical-heading">
           <h2 id="technical-heading">Technical issue</h2>
           <form action={reportWorkerInterviewTechnicalIssueAction} className="form-grid">
