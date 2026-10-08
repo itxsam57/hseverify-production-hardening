@@ -6,12 +6,13 @@ import type { InterviewRequest, InterviewRequestStatus, InterviewConsole } from 
 type InterviewRow = {
   interview_request_id:string; case_id:string; worker_account_id:string; status:InterviewRequestStatus;
   requested_at:string|Date; scheduled_at:string|Date|null; assessor_account_id:string|null;
+  candidate_available_from:string|Date|null; candidate_available_until:string|Date|null;
   timezone:string; reminder_at:string|Date|null; reschedule_reason:string|null; tenant_id:string;
 };
 
-export type ScopedInterviewRequest = InterviewRequest & { tenantId: string };
+export type ScopedInterviewRequest = InterviewRequest & { tenantId: string; workerAvailability: Readonly<{availableFrom:string;availableUntil:string}> | null };
 
-const COLUMNS = "interview_request_id,case_id,worker_account_id,status,requested_at,scheduled_at,assessor_account_id,timezone,reminder_at,reschedule_reason";
+const COLUMNS = "interview_request_id,case_id,worker_account_id,status,requested_at,scheduled_at,assessor_account_id,timezone,reminder_at,reschedule_reason,candidate_available_from,candidate_available_until";
 const iso = (value:string|Date|null):string|null => value === null ? null : (value instanceof Date ? value.toISOString() : new Date(value).toISOString());
 
 function mapRequest(row:InterviewRow):InterviewRequest {
@@ -21,6 +22,10 @@ function mapRequest(row:InterviewRow):InterviewRequest {
     assessorAccountId:row.assessor_account_id, timezone:row.timezone, reminderAt:iso(row.reminder_at),
     rescheduleReason:row.reschedule_reason
   });
+}
+
+function mapScopedRequest(row:InterviewRow):ScopedInterviewRequest {
+  return Object.freeze({...mapRequest(row),tenantId:row.tenant_id,workerAvailability:row.candidate_available_from && row.candidate_available_until ? Object.freeze({availableFrom:iso(row.candidate_available_from)!,availableUntil:iso(row.candidate_available_until)!}) : null});
 }
 
 export class InterviewSchedulingRepository {
@@ -40,7 +45,7 @@ export class InterviewSchedulingRepository {
         ORDER BY requested_at ASC,interview_request_id ASC`,
       [assessorAccountId, query.trim().slice(0,160)]
     );
-    return result.rows.map((row) => Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }));
+    return result.rows.map(mapScopedRequest);
   }
 
   async findByRequestIdForAssessor(interviewRequestId:string, assessorAccountId:string, forUpdate = false):Promise<ScopedInterviewRequest|null> {
@@ -49,16 +54,16 @@ export class InterviewSchedulingRepository {
       [interviewRequestId, assessorAccountId]
     );
     const row = result.rows[0];
-    return row ? Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }) : null;
+    return row ? mapScopedRequest(row) : null;
   }
 
-  async findByRequestIdForWorker(interviewRequestId:string, workerAccountId:string):Promise<ScopedInterviewRequest|null> {
+  async findByRequestIdForWorker(interviewRequestId:string, workerAccountId:string, forUpdate = false):Promise<ScopedInterviewRequest|null> {
     const result = await this.database.query<InterviewRow>(
-      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND worker_account_id=$2`,
+      `SELECT ${COLUMNS},tenant_id FROM interview_requests WHERE interview_request_id=$1 AND worker_account_id=$2${forUpdate ? " FOR UPDATE" : ""}`,
       [interviewRequestId, workerAccountId]
     );
     const row = result.rows[0];
-    return row ? Object.freeze({ ...mapRequest(row), tenantId: row.tenant_id }) : null;
+    return row ? mapScopedRequest(row) : null;
   }
 
   async findByCase(tenantId:string, caseId:string):Promise<InterviewRequest|null> {

@@ -8,6 +8,7 @@ import {
   assignInterviewRequest,
   createInterviewRequest,
   scheduleInterviewRequest,
+  normalizeInterviewScheduleTimestamp,
   moveInterviewToWaitingRoom,
   completeInterviewRequest,
   assertInterviewAssessorAccess,
@@ -59,6 +60,43 @@ export class InterviewSchedulingService {
     if (!request) throw new InterviewWorkerAccessError();
     assertInterviewCaseOwnership(request, input.workerAccountId);
     return request;
+  }
+
+  async setWorkerAvailability(input:{principal:AuthorizationPrincipal;interviewRequestId:string;availableFrom:string;availableUntil:string}):Promise<void> {
+    const actor=bindTrustedAuditActor(input.principal);
+    if(actor.activeRole!=="worker")throw new InterviewWorkerAccessError();
+    const availableFrom=normalizeInterviewScheduleTimestamp(input.availableFrom),availableUntil=normalizeInterviewScheduleTimestamp(input.availableUntil);
+    if(availableFrom>=availableUntil)throw new InterviewSchedulingInputError("Availability must end after it starts.");
+    await this.database.transaction(async(transaction)=>{
+      const account=await transaction.query<{account_id:string}>(
+        `SELECT accounts.account_id FROM auth_accounts accounts JOIN auth_account_roles roles
+         ON roles.account_id=accounts.account_id AND roles.role='worker'
+         WHERE accounts.account_id=$1 AND accounts.account_status='active' FOR NO KEY UPDATE OF accounts FOR UPDATE OF roles`,[actor.accountId]);
+      if(!account.rows[0])throw new InterviewWorkerAccessError();
+      const live=await transaction.query<{active_role:string;expires_at:string|Date;revoked_at:string|Date|null}>(
+        "SELECT active_role,expires_at,revoked_at FROM auth_sessions WHERE session_id=$1 AND account_id=$2 FOR UPDATE",[actor.sessionId,actor.accountId]);
+      const request=await new InterviewSchedulingRepository(transaction).findByRequestIdForWorker(input.interviewRequestId,actor.accountId,true);
+      if(!request)throw new InterviewWorkerAccessError();
+      const session=live.rows[0];
+      const requireLiveSession=async()=>{
+        const clock=await transaction.query<{now:string|Date}>("SELECT clock_timestamp() AS now"),now=clock.rows[0]?.now;
+        if(!session || session.active_role!=="worker" || session.revoked_at!==null || !now ||
+          new Date(session.expires_at).getTime()<=new Date(now).getTime())throw new InterviewWorkerAccessError();
+        return new Date(now).getTime();
+      };
+      const now=await requireLiveSession();
+      if(new Date(availableUntil).getTime()<=now)throw new InterviewSchedulingInputError("Availability must include a future time.");
+      if(!["REQUESTED","ASSIGNED"].includes(request.status))throw new InterviewSchedulingInputError("This interview no longer accepts availability changes.");
+      const runtime=await transaction.query<{interview_session_id:string}>("SELECT interview_session_id FROM interview_runtime_sessions WHERE interview_request_id=$1 FOR UPDATE",[request.interviewRequestId]);
+      if(runtime.rows[0])throw new InterviewSchedulingInputError("A claimed interview cannot change availability.");
+      if(request.workerAvailability?.availableFrom===availableFrom && request.workerAvailability.availableUntil===availableUntil){await requireLiveSession();return;}
+      await transaction.query("UPDATE interview_requests SET candidate_available_from=$2,candidate_available_until=$3 WHERE interview_request_id=$1",[request.interviewRequestId,availableFrom,availableUntil]);
+      await new DatabaseAuditRepository(Promise.resolve(transaction)).append(actor,{
+        action:"interview.availability.updated",outcome:"succeeded",target:{type:"resource",reference:request.interviewRequestId},
+        metadata:{tenantRef:request.tenantId,caseRef:request.caseId,workerRef:actor.accountId,availableFrom,availableUntil,previousAvailability:request.workerAvailability}
+      });
+      await requireLiveSession();
+    });
   }
 
   async enterWaitingRoom(input: { tenantId:string; request:InterviewRequest; workerAccountId:string }): Promise<InterviewRequest> {
@@ -113,6 +151,10 @@ export class InterviewSchedulingService {
           new Date(session.expires_at).getTime() <= new Date(now).getTime()) throw new InterviewAssignmentAccessError();
       const next = scheduleInterviewRequest(current,input.scheduledAt,input.reminderAt,input.rescheduleReason);
       if (next === current) return current;
+      if(current.workerAvailability && next.scheduledAt &&
+         (next.scheduledAt<current.workerAvailability.availableFrom || next.scheduledAt>=current.workerAvailability.availableUntil)){
+        throw new InterviewSchedulingInputError("Choose an interview time within the Worker availability window.");
+      }
       const runtime = await transaction.query<{interview_session_id:string}>(
         "SELECT interview_session_id FROM interview_runtime_sessions WHERE interview_request_id=$1 FOR UPDATE",
         [current.interviewRequestId]);

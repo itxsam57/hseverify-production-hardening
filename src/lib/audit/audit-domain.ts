@@ -44,6 +44,7 @@ export const AUDIT_ACTIONS = [
   "outbox.job.retry_scheduled",
   "outbox.job.terminal_failed",
   "interview.scheduled",
+  "interview.availability.updated",
   "notification.interview.intent.recorded",
   "notification.interview.enqueue.deferred",
   "notification.interview.suppressed",

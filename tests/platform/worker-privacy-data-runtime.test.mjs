@@ -23,7 +23,7 @@ async function database() {
   await applyMigrationsThrough(
     db,
     ENV.releaseSha,
-    "0078_privacy_request_review_history"
+    "0090_interview_worker_availability"
   );
   return db;
 }

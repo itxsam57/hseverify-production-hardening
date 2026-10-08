@@ -35,6 +35,7 @@ test("Empty email migration rollback restores exact seven constraints and two at
   const constraints=(await db.query("SELECT platform_interview_email_rollback_constraints() AS originals")).rows[0].originals;
   const functions=(await db.query("SELECT platform_interview_email_rollback_functions() AS originals")).rows[0].originals;
   assert.equal(constraints.length,7);assert.equal(functions.length,2);
+  const availabilityDown=await readFile("database/migrations/0090_interview_worker_availability.down.sql","utf8");await db.transaction(tx=>tx.exec(availabilityDown));
   const down=await readFile("database/migrations/0089_interview_scheduling_email.down.sql","utf8");await db.exec("BEGIN;"+down+"COMMIT;");
   for(const original of constraints){
    const actual=(await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[original.table,original.constraint])).rows[0];

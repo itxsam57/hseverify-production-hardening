@@ -157,8 +157,8 @@
     "test:assessment-timing-browser": "HSE_MASTERPLAN_TIMING=true node --test --test-concurrency=1 tests/browser/masterplan-admin-authoring-e2e.browser.test.mjs tests/browser/masterplan-worker-credential-e2e.browser.test.mjs",
     "build:worker": "node scripts/build-outbox-worker.mjs",
     "worker:outbox": "node scripts/run-outbox-worker.mjs",
-    "test:interview-email-manual-retry": "node --test tests/platform/interview-email-manual-retry-runtime.test.mjs tests/platform/interview-reschedule-runtime.test.mjs tests/platform/company-interview-appointment-runtime.test.mjs",
-    "test:interview-email-manual-retry-browser": "node --test tests/browser/interview-email-manual-retry.browser.test.mjs tests/browser/interview-reschedule.browser.test.mjs tests/browser/company-interview-appointment.browser.test.mjs",
+    "test:interview-email-manual-retry": "node --test tests/platform/interview-email-manual-retry-runtime.test.mjs tests/platform/interview-reschedule-runtime.test.mjs tests/platform/interview-worker-availability-runtime.test.mjs tests/platform/company-interview-appointment-runtime.test.mjs tests/platform/interview-worker-technical-report-runtime.test.mjs",
+    "test:interview-email-manual-retry-browser": "node --test tests/browser/interview-email-manual-retry.browser.test.mjs tests/browser/interview-reschedule.browser.test.mjs tests/browser/interview-worker-availability.browser.test.mjs tests/browser/company-interview-appointment.browser.test.mjs tests/browser/interview-worker-technical-report.browser.test.mjs",
     "test:retention-inquiry": "node --test tests/platform/privacy-retention-inquiry-runtime.test.mjs",
     "test:retention-inquiry-browser": "node --test tests/browser/privacy-retention-inquiry.browser.test.mjs"
   },

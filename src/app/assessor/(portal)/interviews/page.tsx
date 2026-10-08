@@ -34,7 +34,7 @@ export default async function AssessorInterviewsPage({
       <section className="dashboard-section" aria-labelledby="interview-assignment-heading">
         <h2 id="interview-assignment-heading">Scheduled interviews</h2>
         {params.scheduleError === "invalid" ? (
-          <p role="alert">Check the interview time and provide a reschedule reason between 10 and 1000 characters. Interviews already claimed or in the waiting room cannot be rescheduled.</p>
+          <p role="alert">Check the interview time and provide a reschedule reason between 10 and 1000 characters. Interviews already claimed or in the waiting room cannot be rescheduled. The time must fit Worker availability when provided.</p>
         ) : null}
         {query ? <p>{assignments.length} matching {assignments.length === 1 ? "interview" : "interviews"}</p> : null}
         {assignments.length === 0 ? <p>{query ? "No interview assignments match your search." : "No interview assignments are currently available."}</p> : (
@@ -47,6 +47,7 @@ export default async function AssessorInterviewsPage({
                   <td>{assignment.workerAccountId}</td>
                   <td>{assignment.status}</td>
                   <td>
+                    {assignment.workerAvailability ? <p>Worker availability: {assignment.workerAvailability.availableFrom} to {assignment.workerAvailability.availableUntil}</p> : <p>Worker availability not provided.</p>}
                     {assignment.scheduledAt ? <p>{assignment.scheduledAt}</p> : null}
                     {assignment.status === "ASSIGNED" ? (
                       <form action={scheduleInterviewAction}>

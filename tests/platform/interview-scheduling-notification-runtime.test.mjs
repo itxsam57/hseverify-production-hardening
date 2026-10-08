@@ -91,6 +91,8 @@ test("Notification migration restores original constraints when empty and refuse
   for(const definition of definitions)assert.doesNotMatch(definition.definition,/interview\.scheduled|interview\.record|company\.assurance\.case/);
   const emailDown=await readFile("database/migrations/0089_interview_scheduling_email.down.sql","utf8");
   const emailUp=await readFile("database/migrations/0089_interview_scheduling_email.up.sql","utf8");
+  const availabilityDown=await readFile("database/migrations/0090_interview_worker_availability.down.sql","utf8"),availabilityUp=await readFile("database/migrations/0090_interview_worker_availability.up.sql","utf8");
+  await db.transaction(tx=>tx.exec(availabilityDown));
   await db.transaction(tx=>tx.exec(emailDown));
   await db.transaction(tx=>tx.exec(down));
   for(const definition of definitions){
@@ -100,6 +102,7 @@ test("Notification migration restores original constraints when empty and refuse
   assert.equal(Number((await db.query("SELECT count(*) AS total FROM interview_requests")).rows[0].total),3);
   await db.transaction(tx=>tx.exec(up));
   await db.transaction(tx=>tx.exec(emailUp));
+  await db.transaction(tx=>tx.exec(availabilityUp));
   const principal=await assessorSchedulingPrincipal(db,fixture.credentials.assessor);
   await new InterviewSchedulingService(db).scheduleInterview({principal,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:new Date(Date.now()-5*3600000).toISOString()});
   assert.equal(Number((await db.query("SELECT count(*) AS total FROM platform_outbox_jobs WHERE job_type='notification.interview.scheduled'")).rows[0].total),0,"Beyond the existing four-hour recovery window creates no late notice");

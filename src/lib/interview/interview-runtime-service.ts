@@ -509,20 +509,35 @@ export class InterviewRuntimeService {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
       const request = await requestForUpdate(tx, interviewRequestId);
-      assertParticipant(principal, request);
-      const session = await ensureWaitingRoomSession(tx, request, now);
+      const participant = assertParticipant(principal, request);
+      const existing = await sessionForUpdate(tx, interviewRequestId);
+      let runtimeTime = now;
+      if (participant === "worker") {
+        const clock = await tx.query<{ now: string | Date }>("SELECT clock_timestamp() AS now");
+        runtimeTime = new Date(clock.rows[0]?.now ?? "");
+        const scheduled = request.scheduled_at ? new Date(request.scheduled_at).getTime() : Number.NaN;
+        if (!Number.isFinite(runtimeTime.getTime()) || (!existing && (
+          !["ASSIGNED", "WAITING_ROOM"].includes(request.status) ||
+          !Number.isFinite(scheduled) ||
+          runtimeTime.getTime() < scheduled - 30 * 60 * 1000 ||
+          runtimeTime.getTime() > scheduled + 4 * 60 * 60 * 1000
+        ))) {
+          throw new InterviewRuntimeConflictError("Technical reporting opens during the scheduled join window.");
+        }
+      }
+      const session = existing ?? await ensureWaitingRoomSession(tx, request, runtimeTime);
       if (["ENDED","NO_SHOW"].includes(session.status)) {
         throw new InterviewRuntimeConflictError("Interview is already closed.");
       }
       await tx.query(
         "UPDATE interview_runtime_sessions SET status='TECHNICAL_HOLD',pause_reason=$2,paused_at=$3,updated_at=$3 WHERE interview_request_id=$1",
-        [interviewRequestId, issue, now.toISOString()]
+        [interviewRequestId, issue, runtimeTime.toISOString()]
       );
       await tx.query(
         "UPDATE interview_requests SET technical_issue=$2 WHERE interview_request_id=$1",
         [interviewRequestId, issue]
       );
-      await insertEvent(tx, session.interview_session_id, principal.accountId, "TECHNICAL_ISSUE", now, issue);
+      await insertEvent(tx, session.interview_session_id, principal.accountId, "TECHNICAL_ISSUE", runtimeTime, issue);
       return readView(tx, interviewRequestId);
     });
   }
