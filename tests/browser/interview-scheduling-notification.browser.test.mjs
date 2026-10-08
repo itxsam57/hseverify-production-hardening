@@ -75,7 +75,7 @@ test("Real scheduling action delivers in-app notices through the built worker to
    const row=assessorPage.locator("tbody tr");assert.equal(await row.count(),1);
    await row.getByLabel("Interview time (UTC)",{exact:true}).fill(selected);
    await row.getByRole("button",{name:"Schedule",exact:true}).click();
-   await row.locator('input[name="scheduledAt"]').waitFor({state:"detached"});
+   await row.getByRole("button",{name:"Reschedule interview",exact:true}).waitFor();
   })).requestedSignal,"SMOKE_COMPLETE");
   // The real CLI owns and closes its offline database between server processes.
   for(let i=0;i<3;i++){

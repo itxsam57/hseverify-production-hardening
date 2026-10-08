@@ -11,7 +11,7 @@ import {
 export default async function AssessorInterviewsPage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string; scheduleError?: string }>;
+  searchParams: Promise<{ q?: string; scheduleError?: string; recoverySaved?:string }>;
 }): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({ expectedRole: "assessor", permission: "interview.assigned.read" });
   const params = await searchParams;
@@ -33,6 +33,7 @@ export default async function AssessorInterviewsPage({
 
       <section className="dashboard-section" aria-labelledby="interview-assignment-heading">
         <h2 id="interview-assignment-heading">Scheduled interviews</h2>
+        {params.recoverySaved==="yes" ? <p role="status">Replacement interview requested. An eligible Assessor will schedule it; unmatched requests go to the Admin queue.</p> : null}
         {params.scheduleError === "invalid" ? (
           <p role="alert">Check the interview time and provide a reschedule reason between 10 and 1000 characters. Interviews already claimed or in the waiting room cannot be rescheduled. The time must fit Worker availability when provided.</p>
         ) : null}
@@ -64,14 +65,14 @@ export default async function AssessorInterviewsPage({
                   </td>
                   <td><Link href={"/assessor/interviews/" + assignment.interviewRequestId}>Open interview console</Link></td>
                   <td>
-                    <details>
+                    {!["CANCELLED","COMPLETED"].includes(assignment.status) ? <details>
                       <summary>Declare conflict</summary>
                       <form action={declareInterviewConflictAction}>
                         <input type="hidden" name="interviewRequestId" value={assignment.interviewRequestId} />
                         <textarea name="reason" minLength={5} maxLength={2000} required aria-label="Conflict reason" />
                         <button className="button button-secondary button-small" type="submit">Release and re-match</button>
                       </form>
-                    </details>
+                    </details> : <span>Closed interview</span>}
                   </td>
                 </tr>
               ))}</tbody>

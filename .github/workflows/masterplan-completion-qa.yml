@@ -123,6 +123,9 @@ jobs:
       - name: Scheduling email compiled CLI and exact migration rollback
         run: node --test tests/platform/interview-scheduling-email-cli-rollback.test.mjs
 
+      - name: Interview replacement ownership, history and rollback
+        run: node --test tests/platform/interview-replacement-runtime.test.mjs
+
       - name: UTC interview scheduling under alternate database timezone
         run: node --test tests/platform/interview-scheduling-timezone-runtime.test.mjs
 
@@ -195,6 +198,9 @@ jobs:
 
       - name: Assessor interview search navigation and direct record denial
         run: node --test tests/browser/assessor-interview-search.browser.test.mjs
+
+      - name: No-show and technical replacement across Assessor Worker Company and Admin
+        run: node --test --test-concurrency=1 tests/browser/interview-replacement.browser.test.mjs
 
       - name: Scheduling notices through compiled worker to authorized recipient records
         run: |

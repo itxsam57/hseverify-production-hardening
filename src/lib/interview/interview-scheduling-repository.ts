@@ -2,6 +2,7 @@ import "server-only";
 
 import type { DatabaseClient } from "../database/database";
 import type { InterviewRequest, InterviewRequestStatus, InterviewConsole } from "./interview-scheduling-domain";
+import { InterviewSchedulingInputError } from "./interview-scheduling-domain";
 
 type InterviewRow = {
   interview_request_id:string; case_id:string; worker_account_id:string; status:InterviewRequestStatus;
@@ -90,12 +91,24 @@ export class InterviewSchedulingRepository {
     return mapRequest(result.rows[0]);
   }
 
+  private async assertConsoleSessionBinding(input: {tenantId: string; interviewSessionId: string; interviewRequestId: string}): Promise<void> {
+    const result = await this.database.query(
+      "SELECT 1 FROM interview_runtime_sessions WHERE interview_session_id=$1 AND (tenant_id<>$2 OR interview_request_id<>$3)",
+      [input.interviewSessionId, input.tenantId, input.interviewRequestId]
+    );
+    if (result.rows.length) throw new InterviewSchedulingInputError("Interview session does not belong to this request.");
+  }
+
   async saveConsoleDraft(input:{tenantId:string; interviewSessionId:string; interviewRequestId:string; notes:readonly unknown[]; recommendation:string|null; submitted:boolean; updatedAt:string}):Promise<void> {
-    await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,recommendation=$5,submitted=$6,updated_at=$7`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),input.recommendation,input.submitted,input.updatedAt]);
+    await this.assertConsoleSessionBinding(input);
+    const saved = await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,recommendation=$5,submitted=$6,updated_at=$7 WHERE interview_console_drafts.interview_request_id=EXCLUDED.interview_request_id RETURNING interview_session_id`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),input.recommendation,input.submitted,input.updatedAt]);
+    if (!saved.rows.length) throw new InterviewSchedulingInputError("Interview session does not belong to this request.");
   }
 
   async saveConsoleState(input:{tenantId:string; interviewSessionId:string; interviewRequestId:string; notes:readonly unknown[]; scorecard:unknown; recommendation:string|null; submitted:boolean; updatedAt:string}):Promise<void> {
-    await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,scorecard,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,scorecard=$5::jsonb,recommendation=$6,submitted=$7,updated_at=$8`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),JSON.stringify(input.scorecard),input.recommendation,input.submitted,input.updatedAt]);
+    await this.assertConsoleSessionBinding(input);
+    const saved = await this.database.query(`INSERT INTO interview_console_drafts (tenant_id,interview_session_id,interview_request_id,notes,scorecard,recommendation,submitted,updated_at) VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8) ON CONFLICT (tenant_id,interview_session_id) DO UPDATE SET notes=$4::jsonb,scorecard=$5::jsonb,recommendation=$6,submitted=$7,updated_at=$8 WHERE interview_console_drafts.interview_request_id=EXCLUDED.interview_request_id RETURNING interview_session_id`, [input.tenantId,input.interviewSessionId,input.interviewRequestId,JSON.stringify(input.notes),JSON.stringify(input.scorecard),input.recommendation,input.submitted,input.updatedAt]);
+    if (!saved.rows.length) throw new InterviewSchedulingInputError("Interview session does not belong to this request.");
   }
 
   async loadLatestConsoleDraft(tenantId:string, interviewRequestId:string):Promise<(Partial<InterviewConsole> & { interviewSessionId:string })|null> {

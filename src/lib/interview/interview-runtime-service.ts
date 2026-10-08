@@ -128,14 +128,13 @@ async function sessionForUpdate(
   return result.rows[0] ?? null;
 }
 
-function assertParticipant(principal: AuthorizationPrincipal, request: RequestRow): "worker" | "assessor" {
+function assertParticipant(principal: AuthorizationPrincipal, request: RequestRow, readOnly = false): "worker" | "assessor" {
   if (principal.accountStatus !== "active") throw new InterviewRuntimeAccessError();
-  if (principal.activeRole === "worker" && principal.accountId === request.worker_account_id) return "worker";
-  if (
-    principal.activeRole === "assessor" &&
-    principal.accountId === request.assessor_account_id
-  ) return "assessor";
-  throw new InterviewRuntimeAccessError();
+  const participant = principal.activeRole === "worker" && principal.accountId === request.worker_account_id
+    ? "worker" : principal.activeRole === "assessor" && principal.accountId === request.assessor_account_id ? "assessor" : null;
+  if (!participant) throw new InterviewRuntimeAccessError();
+  if (!readOnly && request.status === "CANCELLED") throw new InterviewRuntimeConflictError("Interview is closed.");
+  return participant;
 }
 
 async function insertEvent(
@@ -277,7 +276,7 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     const request = await requestForUpdate(database, interviewRequestId);
-    assertParticipant(principal, request);
+    assertParticipant(principal, request, true);
     return readView(database, interviewRequestId);
   }
 

@@ -41,6 +41,7 @@ export default async function WorkerInterviewPage({
     if (error instanceof InterviewWorkerAccessError) notFound();
     throw error;
   });
+  const replacementInterviewId=request.status==="CANCELLED" ? await service.getWorkerReplacementInterviewId({workerAccountId:principal.accountId,interviewRequestId}) : null;
   const [runtime, accommodation] = await Promise.all([
     new InterviewRuntimeService(Promise.resolve(database)).view(principal, interviewRequestId),
     new CaseAccommodationService(Promise.resolve(database)).resolveForWorker(
@@ -63,17 +64,17 @@ export default async function WorkerInterviewPage({
   const joinWindowOpen =
     request.status === "WAITING_ROOM" ||
     (request.status === "ASSIGNED" && scheduledWindowOpen);
-  const technicalReportAllowed =
+  const technicalReportAllowed = request.status !== "CANCELLED" &&
     !["ENDED", "NO_SHOW"].includes(runtime.status ?? "") &&
     (Boolean(runtime.interviewSessionId) ||
       (["ASSIGNED", "WAITING_ROOM"].includes(request.status) && scheduledWindowOpen));
 
   const inWaitingRoom = request.status === "WAITING_ROOM";
-  const mediaEnabled =
+  const mediaEnabled = request.status !== "CANCELLED" && (
     runtime.status === "ADMITTED" ||
     runtime.status === "ACTIVE" ||
     runtime.status === "PAUSED" ||
-    runtime.status === "TECHNICAL_HOLD";
+    runtime.status === "TECHNICAL_HOLD");
   const ready = runtime.status === "READY" || Boolean(runtime.workerReadyAt);
 
   return (
@@ -92,6 +93,8 @@ export default async function WorkerInterviewPage({
           tone={ready || mediaEnabled ? "positive" : "warning"}
         />
       </header>
+
+      {request.status==="CANCELLED" ? <p role="status">This interview is archived. {replacementInterviewId ? <Link href={"/worker/interviews/"+replacementInterviewId}>Open replacement interview</Link> : "Contact the Assessor about the current appointment."}</p> : null}
 
       {messages.technicalError === "invalid" ? (
         <p role="alert">Check the technical issue (5 to 2000 characters). Initial reports require the scheduled join window; closed interviews cannot accept a report.</p>
