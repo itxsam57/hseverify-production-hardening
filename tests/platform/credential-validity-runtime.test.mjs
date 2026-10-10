@@ -227,6 +227,12 @@ test("Actual appeal renew after expiry produces a distinct configured renewal wi
   assert.equal(association.old_credential_id,original.credentialId);assert.equal(association.new_credential_id,replacement.credentialId);
   assert.equal(association.new_case_id,result.replacement.caseId);assert.equal(association.new_decision_id,result.replacement.decisionId);
   assert.equal(association.policy_snapshot_id,JSON.parse(replacement.qrPayload).validity.snapshotId);
+  await assert.rejects(
+   x.database.execute(readFileSync("database/migrations/0100_credential_replacements.down.sql","utf8")),
+   error=>error?.code==="55000"&&/retained credential replacement history/i.test(error.message)
+  );
+  assert.deepEqual((await x.database.query("SELECT * FROM credential_replacements WHERE appeal_id=$1",[appeal.appealId])).rows[0],association);
+
   assert.equal((await x.database.query("SELECT state FROM platform_decisions WHERE decision_id=$1",[x.decision.decisionId])).rows[0].state,"APPROVED");
   const lifecycle=(await x.database.query("SELECT status,version,changed_at FROM credential_lifecycle_events WHERE credential_id=$1 ORDER BY version",[original.credentialId])).rows;
   assert.deepEqual(lifecycle.map(row=>[row.status,Number(row.version)]),[["valid",1],["revoked",2]]);
