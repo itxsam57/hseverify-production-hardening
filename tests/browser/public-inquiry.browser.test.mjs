@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -10,6 +10,9 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
+
+const { issueCredential, credentialAuthentication } = loadTs("src/lib/credential/credential-issuance-domain.ts");
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -63,17 +66,19 @@ async function login(page, baseUrl, identity, role) {
 test("Public contact/demo reaches private staff intake with preserved drafts on rejection",{timeout:240000},async()=>{
  const databaseDirectory=await mkdtemp(join(tmpdir(),"hse-inquiry-browser-"));
  const port=await freePort(),baseUrl="http://127.0.0.1:"+port;
- const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_RELEASE_SHA:"public-inquiry-browser",HSE_SESSION_SECRET:"public-inquiry-browser-session-secret-more-than-32",HSE_AUTH_PEPPER:"public-inquiry-browser-auth-pepper-more-than-32",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_ENABLE_AUTH_SANDBOX:"false"};
+ const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_RELEASE_SHA:"public-inquiry-browser",HSE_CREDENTIAL_SIGNING_SECRET:process.env.HSE_CREDENTIAL_SIGNING_SECRET ?? randomBytes(32).toString("hex"),HSE_SESSION_SECRET:"public-inquiry-browser-session-secret-more-than-32",HSE_AUTH_PEPPER:"public-inquiry-browser-auth-pepper-more-than-32",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_ENABLE_AUTH_SANDBOX:"false"};
  try{
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
    const r=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr);
   }
   const credentials=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
-  const publicCredentialId="credential_id_"+"C".repeat(24);
+  const publicCredential=issueCredential({workerId:credentials.worker.accountId,qualification:"Public concern regression fixture",issuedAt:new Date().toISOString(),expiresAt:null},"C".repeat(24),environment.HSE_CREDENTIAL_SIGNING_SECRET);
+  assert.equal(credentialAuthentication(publicCredential,environment.HSE_CREDENTIAL_SIGNING_SECRET),"authenticated");
+  const publicCredentialId=publicCredential.credentialId;
   const seedDb=new PGlite(databaseDirectory);
   try{
-   await seedDb.query("INSERT INTO credential_issuances(credential_id,worker_id,qualification,issued_at,status,version,public_status_url,qr_payload,signature,pdf_url) VALUES($1,$2,'Public concern regression fixture',CURRENT_TIMESTAMP,'valid',1,$3,$3,$4,$5)",
-    [publicCredentialId,credentials.worker.accountId,"/verify/"+publicCredentialId,"s".repeat(64),"/api/credentials/"+publicCredentialId+"/pdf"]);
+   await seedDb.query("INSERT INTO credential_issuances(credential_id,worker_id,qualification,issued_at,expires_at,status,version,public_status_url,qr_payload,signature,pdf_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+    [publicCredentialId,publicCredential.workerId,publicCredential.qualification,publicCredential.issuedAt,publicCredential.expiresAt,publicCredential.status,publicCredential.version,publicCredential.publicStatusUrl,publicCredential.qrPayload,publicCredential.signature,publicCredential.pdfUrl]);
   }finally{await seedDb.close();}
   const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl,projectRoot:process.cwd(),environment,probe:async()=>{
    const browser=await chromium.launch({headless:true});
