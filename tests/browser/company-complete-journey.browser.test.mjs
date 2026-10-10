@@ -648,10 +648,32 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           // Report queue.
           await company.goto(`${baseUrl}/company/reports`, { waitUntil: "networkidle" });
-          await company.getByLabel("Report ID").fill("report_company_journey_001");
-          await company.getByLabel("Format").selectOption("csv");
-          await company.getByRole("button", { name: "Queue report delivery" }).click();
-          await company.getByText("report_company_journey_001", { exact: false }).waitFor({ timeout: 15_000 });
+          await company.getByLabel("Report type", { exact: true }).selectOption("workforce-status");
+          await company.getByLabel("Format", { exact: true }).selectOption("csv");
+          await company.getByLabel("Definition name (for saving)", { exact: true }).fill("report_company_journey_001");
+          await company.getByRole("button", { name: "Save report definition", exact: true }).click();
+          await company.waitForURL("**/company/reports?notice=saved");
+          await company.getByRole("status").filter({ hasText: "Your report definition is saved." }).waitFor();
+          const savedReport = company.locator("[data-definition-id]").filter({ hasText: "report_company_journey_001" });
+          assert.equal(await savedReport.count(), 1);
+          const definitionId = await savedReport.getAttribute("data-definition-id");
+          assert.match(definitionId, /^report_definition_[A-Za-z0-9_-]{24}$/);
+          await company.reload({ waitUntil: "domcontentloaded" });
+          const persistedDefinition = company.locator('[data-definition-id="' + definitionId + '"]');
+          await persistedDefinition.getByText("report_company_journey_001", { exact: true }).waitFor();
+          await persistedDefinition.getByRole("button", { name: "Queue saved report", exact: true }).click();
+          await company.waitForURL("**/company/reports?notice=queued");
+          await company.getByRole("status").filter({ hasText: "Your report is queued." }).waitFor();
+          const queuedReport = company.locator("[data-report-id]");
+          assert.equal(await queuedReport.count(), 1);
+          const reportId = await queuedReport.getAttribute("data-report-id");
+          assert.ok(reportId, "The persisted queue must expose its server-assigned report ID.");
+          await company.reload({ waitUntil: "domcontentloaded" });
+          const persistedReport = company.locator('[data-report-id="' + reportId + '"]');
+          await persistedReport.getByText("Workforce status report", { exact: true }).waitFor();
+          await persistedReport.getByText("queued", { exact: true }).waitFor();
+          assert.match(await persistedReport.innerText(), /CSV/);
+          assert.match(await persistedReport.innerText(), /Saved definition version 1/);
 
           // Tenant-scope CRUD demonstration.
           await company.goto(`${baseUrl}/company/tenant-scope`, { waitUntil: "networkidle" });

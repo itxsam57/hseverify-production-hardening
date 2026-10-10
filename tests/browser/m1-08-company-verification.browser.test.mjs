@@ -389,14 +389,32 @@ async function runBrowserAcceptance(baseUrl, output) {
     await companyPage.getByText(/COMPLETED|CLEAN/).first().waitFor({ timeout: 15_000 });
 
     await gotoOk(companyPage, baseUrl, "/company/reports", "Reports");
-    await companyPage.getByLabel("Report ID").fill("report_m108_workforce");
-    await companyPage.getByLabel("Format").selectOption("csv");
-    const [reportResponse] = await Promise.all([
-      companyPage.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/company/reports")),
-      companyPage.getByRole("button", { name: "Queue report delivery" }).click()
-    ]);
-    assert(reportResponse.status() < 500, `Report queue failed with HTTP ${reportResponse.status()}: ${await companyPage.locator("body").innerText()}\n${output()}`);
-    await companyPage.getByText("report_m108_workforce", { exact: false }).waitFor({ timeout: 15_000 });
+    await companyPage.getByLabel("Report type", { exact: true }).selectOption("workforce-status");
+    await companyPage.getByLabel("Format", { exact: true }).selectOption("csv");
+    await companyPage.getByLabel("Definition name (for saving)", { exact: true }).fill("report_m108_workforce");
+    await companyPage.getByRole("button", { name: "Save report definition", exact: true }).click();
+    await companyPage.waitForURL("**/company/reports?notice=saved");
+    await companyPage.getByRole("status").filter({ hasText: "Your report definition is saved." }).waitFor();
+    const savedReport = companyPage.locator("[data-definition-id]").filter({ hasText: "report_m108_workforce" });
+    assert.equal(await savedReport.count(), 1);
+    const definitionId = await savedReport.getAttribute("data-definition-id");
+    assert.match(definitionId, /^report_definition_[A-Za-z0-9_-]{24}$/);
+    await companyPage.reload({ waitUntil: "domcontentloaded" });
+    const persistedDefinition = companyPage.locator('[data-definition-id="' + definitionId + '"]');
+    await persistedDefinition.getByText("report_m108_workforce", { exact: true }).waitFor();
+    await persistedDefinition.getByRole("button", { name: "Queue saved report", exact: true }).click();
+    await companyPage.waitForURL("**/company/reports?notice=queued");
+    await companyPage.getByRole("status").filter({ hasText: "Your report is queued." }).waitFor();
+    const queuedReport = companyPage.locator("[data-report-id]");
+    assert.equal(await queuedReport.count(), 1);
+    const reportId = await queuedReport.getAttribute("data-report-id");
+    assert.ok(reportId, "The persisted queue must expose its server-assigned report ID.");
+    await companyPage.reload({ waitUntil: "domcontentloaded" });
+    const persistedReport = companyPage.locator('[data-report-id="' + reportId + '"]');
+    await persistedReport.getByText("Workforce status report", { exact: true }).waitFor();
+    await persistedReport.getByText("queued", { exact: true }).waitFor();
+    assert.match(await persistedReport.innerText(), /CSV/);
+    assert.match(await persistedReport.innerText(), /Saved definition version 1/);
 
     await gotoOk(adminSession.page, baseUrl, "/admin/frameworks", "Frameworks & effective policy");
     const createFramework = adminSession.page.locator("form").filter({ has: adminSession.page.getByRole("heading", { name: "Create framework" }) });
