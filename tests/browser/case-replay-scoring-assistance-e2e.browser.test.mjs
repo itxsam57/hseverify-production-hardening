@@ -168,7 +168,7 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
     });
     assert.equal(seed.status, 0, seed.stderr || seed.stdout);
     const credentials = JSON.parse(
-      await readFile("/tmp/independent-audit-credentials.json", "utf8")
+      await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8")
     );
     const fixture = await seedWrittenReview(
       databaseDirectory,

@@ -237,7 +237,7 @@ test("all role portal pages keep usable proportions, navigation and notification
       });
       assert.equal(result.status, 0, result.stderr || result.stdout);
     }
-    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+    const credentials = JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8"));
 
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],

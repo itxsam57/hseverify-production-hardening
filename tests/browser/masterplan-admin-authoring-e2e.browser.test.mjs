@@ -24,7 +24,7 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
   const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dataDir,HSE_RELEASE_SHA:"admin-authoring-browser-test",HSE_SESSION_SECRET:"admin-authoring-browser-session-secret-2026-32",HSE_AUTH_PEPPER:"admin-authoring-browser-auth-pepper-2026-32",HSE_ENABLE_AUTH_SANDBOX:"false",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   try {
     for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
-    const {admin}=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8"));
+    const {admin}=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
     const port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
     const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/admin/login`,projectRoot:process.cwd(),environment,
       probe:async()=>{const browser=await chromium.launch({headless:true});try {

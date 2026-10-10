@@ -68,7 +68,7 @@ test("Public contact/demo reaches private staff intake with preserved drafts on 
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
    const r=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr);
   }
-  const credentials=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8"));
+  const credentials=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
   const publicCredentialId="credential_id_"+"C".repeat(24);
   const seedDb=new PGlite(databaseDirectory);
   try{
