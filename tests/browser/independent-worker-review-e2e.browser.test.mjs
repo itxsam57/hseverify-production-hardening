@@ -142,9 +142,22 @@ async function reviseEvidence(page, baseUrl, kind, label, value) {
   await card.getByLabel(label, { exact: false }).first().fill(value);
   await card.getByRole("button", { name: "Save metadata" }).click();
   await card.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor();
-  await card.getByLabel(kind === "qualification" ? "Primary certificate file" : "Evidence file", { exact: true }).setInputFiles({ ...PNG_FILE, name: `${kind}-corrected.png` });
+  const versionId = await card.locator('input[name="versionId"]').inputValue();
+  const filename = `${kind}-corrected-${versionId}.png`;
+  await card.getByLabel(kind === "qualification" ? "Primary certificate file" : "Evidence file", { exact: true }).setInputFiles({ ...PNG_FILE, name: filename });
   await card.getByRole("button", { name: "Upload file", exact: true }).click();
-  await card.getByText(/uploaded, security-scanned and bound/).waitFor();
+  await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor();
+  const attachedFile = card.getByText(`${filename} · ${kind === "qualification" ? "primary certificate" : `${kind} evidence`} · active`, { exact: true });
+  // Local processing deliberately drains a bounded batch. Exercise the same
+  // status-check control a Worker uses while queued scans finish in later batches.
+  for (let attempt = 0; attempt < 20 && !(await attachedFile.count()); attempt += 1) {
+    await Promise.all([
+      page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
+      card.getByRole("button", { name: "Check scan status", exact: true }).click()
+    ]);
+    await page.reload({ waitUntil: "domcontentloaded" });
+  }
+  await attachedFile.waitFor();
   await card.getByRole("button", { name: "Submit this version" }).click();
   await card.getByText("active · submitted", { exact: true }).waitFor();
 }
