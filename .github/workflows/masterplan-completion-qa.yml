@@ -458,3 +458,23 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: PostgreSQL JSON parameters through script and runtime transactions
         run: npm run test:postgres-json
+
+  consumer-cohorts:
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 60
+    env:
+      HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for actual consumer workflows
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
+      - name: Company, authoring, privacy, all-role controls and handover consumers
+        run: npm run test:consumer-cohorts-browser
