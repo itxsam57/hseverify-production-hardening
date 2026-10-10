@@ -670,7 +670,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           assert.ok(reportId, "The persisted queue must expose its server-assigned report ID.");
           await company.reload({ waitUntil: "domcontentloaded" });
           const persistedReport = company.locator('[data-report-id="' + reportId + '"]');
-          await persistedReport.getByText("Workforce status report", { exact: true }).waitFor();
+          await persistedReport.getByText("Workforce status", { exact: true }).waitFor();
           await persistedReport.getByText("queued", { exact: true }).waitFor();
           assert.match(await persistedReport.innerText(), /CSV/);
           assert.match(await persistedReport.innerText(), /Saved definition version 1/);

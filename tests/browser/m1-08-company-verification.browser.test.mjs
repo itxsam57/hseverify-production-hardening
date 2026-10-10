@@ -411,7 +411,7 @@ async function runBrowserAcceptance(baseUrl, output) {
     assert.ok(reportId, "The persisted queue must expose its server-assigned report ID.");
     await companyPage.reload({ waitUntil: "domcontentloaded" });
     const persistedReport = companyPage.locator('[data-report-id="' + reportId + '"]');
-    await persistedReport.getByText("Workforce status report", { exact: true }).waitFor();
+    await persistedReport.getByText("Workforce status", { exact: true }).waitFor();
     await persistedReport.getByText("queued", { exact: true }).waitFor();
     assert.match(await persistedReport.innerText(), /CSV/);
     assert.match(await persistedReport.innerText(), /Saved definition version 1/);
