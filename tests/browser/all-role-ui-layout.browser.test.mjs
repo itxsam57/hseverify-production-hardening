@@ -292,7 +292,12 @@ test("all role portal pages keep usable proportions, navigation and notification
             const mobileBox = await notificationSummary.boundingBox();
             assert(mobileBox && mobileBox.width >= 40 && mobileBox.height >= 40, `${role} mobile notification control is undersized`);
             await notificationSummary.click();
-            await page.locator("details.notification-menu[open] .menu-panel").waitFor({ state: "visible" });
+            const mobileNotificationPanel = page.locator("details.notification-menu[open] .menu-panel");
+            await mobileNotificationPanel.waitFor({ state: "visible" });
+            const panelBox = await mobileNotificationPanel.boundingBox();
+            assert(panelBox && panelBox.y >= mobileBox.y + mobileBox.height, `${role} mobile notification panel covers its toggle`);
+            await notificationSummary.click();
+            await mobileNotificationPanel.waitFor({ state: "hidden" });
 
             const mobileNav = page.locator("details.mobile-nav-menu > summary");
             await mobileNav.waitFor({ state: "visible" });
