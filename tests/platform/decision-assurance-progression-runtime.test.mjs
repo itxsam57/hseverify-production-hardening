@@ -28,6 +28,9 @@ async function loadRepository() {
     "src/lib/auth/auth-domain.ts",
     "src/lib/credential/certification-record-repository.ts",
     "src/lib/credential/credential-issuance-domain.ts",
+    "src/lib/credential/credential-validity-domain.ts",
+    "src/lib/credential/credential-reassessment-replacement-service.ts",
+    "src/lib/assessment-catalogue/assessment-reassessment-source-service.ts",
     "src/lib/credential/credential-issuance-repository.ts",
     "src/lib/living-record/living-record-domain.ts",
     "src/lib/living-record/living-record-repository.ts",
@@ -49,6 +52,7 @@ async function loadRepository() {
     "module.exports={getDatabaseClient:async()=>{throw new Error('test injects database')}};"
   );
   return {
+    credentialDomain: await import(`file://${resolve(out, "lib/credential/credential-issuance-domain.js")}`),
     repository: await import(`file://${resolve(out, "lib/decision/decision-engine-repository.js")}`),
     domain: await import(`file://${resolve(out, "lib/decision/decision-engine-domain.js")}`)
   };
@@ -121,7 +125,7 @@ test("Admin final decision atomically progresses Assurance Case and parent order
       createdAt: "2026-09-25T10:05:00.000Z"
     });
 
-    await new DecisionRepository(Promise.resolve(database)).saveDecisionAndProgressCase(
+    await new DecisionRepository(Promise.resolve(database), ENV.sessionSecret).saveDecisionAndProgressCase(
       decision,
       "admin_account_acceptance_01"
     );
@@ -184,7 +188,7 @@ test("APPROVED credential-target decision atomically issues credential, certific
       credentialTarget: "Operational Safety Credential"
     });
 
-    const { repository, domain } = await loadRepository();
+    const { repository, domain, credentialDomain } = await loadRepository();
     const { DecisionRepository } = repository;
     const { createDecision } = domain;
     const decision = createDecision({
@@ -198,7 +202,7 @@ test("APPROVED credential-target decision atomically issues credential, certific
       createdAt: "2026-09-25T11:00:00.000Z"
     });
 
-    await new DecisionRepository(Promise.resolve(database)).saveDecisionAndProgressCase(
+    await new DecisionRepository(Promise.resolve(database), ENV.sessionSecret).saveDecisionAndProgressCase(
       decision,
       "admin_account_acceptance_01"
     );
@@ -215,12 +219,14 @@ test("APPROVED credential-target decision atomically issues credential, certific
 
     const credential = (
       await database.query(
-        "SELECT worker_id,qualification,status,version FROM credential_issuances WHERE credential_id=$1",
+        "SELECT * FROM credential_issuances WHERE credential_id=$1",
         [caseRow.credential_reference]
       )
     ).rows[0];
     assert.equal(credential.worker_id, "worker_id_acceptance_000001");
     assert.equal(credential.qualification, "Operational Safety Credential");
+    assert.equal(credentialDomain.credentialAuthentication(credentialDomain.credentialFromRow(credential), ENV.sessionSecret), "authenticated");
+    assert.equal(credentialDomain.verifyCredentialSignature(credentialDomain.credentialFromRow(credential), "wrong-decision-signing-secret-more-than-32"), false);
     assert.equal(credential.status, "valid");
     assert.equal(Number(credential.version), 1);
 
@@ -267,7 +273,7 @@ test("Decision override keeps platform decision and Assurance Case lifecycle ali
     const { repository, domain } = await loadRepository();
     const { DecisionRepository } = repository;
     const { createDecision, createManualDecisionOverride } = domain;
-    const repo = new DecisionRepository(Promise.resolve(database));
+    const repo = new DecisionRepository(Promise.resolve(database), ENV.sessionSecret);
     const decision = createDecision({
       tenantId,
       caseId,

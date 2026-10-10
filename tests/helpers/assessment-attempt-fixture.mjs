@@ -77,7 +77,7 @@ function questionStorage(question) {
   }
 }
 
-export async function seedInProgressAttempt(db, principal, seed, questions) {
+export async function seedInProgressAttempt(db, principal, seed, questions, { readyForBegin = false } = {}) {
   if (!Array.isArray(questions) || questions.length < 1) {
     throw new Error("Attempt fixture requires questions.");
   }
@@ -232,6 +232,11 @@ export async function seedInProgressAttempt(db, principal, seed, questions) {
               'Complete the assessment for this Assurance Case.',$7,$8,$8)`,
     [caseId, orderId, targetId, tenantId, `worker_link_${digest(seed).slice(0, 24)}`, principal.accountId, attemptId, ATTEMPT_NOW]
   );
+
+  if (readyForBegin) {
+    await db.query("UPDATE assurance_cases SET case_status='Assessment pending',assessment_reference=NULL WHERE case_id=$1", [caseId]);
+    return Object.freeze({ attemptId,caseId,orderId,tenantId,formId,catalogueVersionId,blueprintVersionId,items:Object.freeze(items) });
+  }
 
   await db.transaction(async (tx) => {
     await tx.query(

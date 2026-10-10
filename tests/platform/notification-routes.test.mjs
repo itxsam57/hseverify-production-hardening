@@ -38,14 +38,14 @@ test("all six fixed portals expose one hard-coded persisted notification route",
   }
 });
 
-test("notification registry permits only fixed authenticated dashboard, security and interview record targets", async () => {
+test("notification registry permits only fixed authenticated dashboard, security, interview and funding record targets", async () => {
   const authDomain = await readFile(resolve("src/lib/auth/auth-domain.ts"), "utf8");
   const notificationDomain = await readFile(
     resolve("src/lib/notifications/notification-domain.ts"),
     "utf8"
   );
   const expected = extractRoleHomePaths(authDomain);
-  assert.match(notificationDomain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security", "interview\.record", "company\.assurance\.case"\]/);
+  assert.match(notificationDomain, /NOTIFICATION_TARGETS = \["portal\.dashboard", "account\.security", "interview\.record", "company\.assurance\.case", "company\.billing\.funding", "worker\.assessment\.case"\]/);
   assert.match(notificationDomain, /case "account\.security":\s*return "\/account\/security"/);
   assert.match(notificationDomain, /ROLE_HOME_PATHS\[input\.role\]/);
   for (const role of ["worker", "assessor"]) {

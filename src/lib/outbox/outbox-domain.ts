@@ -18,7 +18,12 @@ export const OUTBOX_JOB_TYPES = [
   "secure_file.scan",
   "worker_identity.automated_checks",
   "assessment.attempt.expiry",
-  "authentication.challenge.delivery"
+  "authentication.challenge.delivery",
+  "report.generation",
+  "notification.assessment.funding",
+  "email.report.ready",
+  "notification.assurance.event",
+  "email.assurance.event"
 ] as const;
 export const OUTBOX_JOB_STATUSES = [
   "pending",
@@ -79,6 +84,90 @@ export type PortalFoundationNotificationPayload = Readonly<{
 }>;
 
 export type AccountSecurityNotificationPayload = Readonly<{ eventRef: string }>;
+export type AssessmentFundingNotificationPayload = Readonly<{ eventRef: string }>;
+export type ReportGenerationPayload = Readonly<{ reportRef: string }>;
+export type ReportReadyEmailPayload = Readonly<{ deliveryRef: string }>;
+
+export const ASSURANCE_EVENT_TYPES = [
+  "evidence.submitted", "evidence.reviewed", "evidence.additional.requested",
+  "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"
+] as const;
+export type AssuranceEventType = (typeof ASSURANCE_EVENT_TYPES)[number];
+export type AssuranceFundingEventType = "assessment.funding.requested" | "assessment.funding.approved";
+export type AssuranceEventNotificationPayload = Readonly<{eventType: AssuranceEventType; eventRef: string}>;
+export type AssuranceEventEmailPayload = Readonly<{
+  eventType: AssuranceEventType | AssuranceFundingEventType;
+  eventRef: string;
+  recipientRef: string;
+  recipientRole: AuthRole;
+  membershipRef: string | null;
+}>;
+
+function requireAssuranceObject(value: unknown, fields: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.getPrototypeOf(value) !== Object.prototype ||
+      Object.keys(value).sort().join(",") !== fields) {
+    throw new OutboxContractError("Assurance event payload schema is invalid.");
+  }
+  return value as Record<string, unknown>;
+}
+
+function normalizeAssuranceSource(input: Record<string, unknown>, email: boolean):
+  Readonly<{eventType: AssuranceEventType | AssuranceFundingEventType; eventRef: string}> {
+  const eventType = input.eventType;
+  const funding = eventType === "assessment.funding.requested" || eventType === "assessment.funding.approved";
+  if (typeof eventType !== "string" ||
+      (!ASSURANCE_EVENT_TYPES.includes(eventType as AssuranceEventType) && !(email && funding))) {
+    throw new OutboxContractError("Assurance event type is invalid.");
+  }
+  const prefixes: Record<AssuranceEventType | AssuranceFundingEventType, string> = {
+    "evidence.submitted": "audit",
+    "evidence.reviewed": "review",
+    "evidence.additional.requested": "review",
+    "decision.recorded": "case",
+    "credential.issued": "issuance",
+    "appeal.submitted": "appeal",
+    "appeal.updated": "appeal",
+    "assessment.funding.requested": "funding",
+    "assessment.funding.approved": "funding"
+  };
+  const type = eventType as AssuranceEventType | AssuranceFundingEventType;
+  const eventRef = input.eventRef;
+  if (typeof eventRef !== "string" || eventRef.length > 192) {
+    throw new OutboxContractError("Assurance event reference is invalid.");
+  }
+  const parts = eventRef.split(":");
+  const versioned = type === "credential.issued" || type.startsWith("appeal.");
+  if (parts.length !== (versioned ? 3 : 2) || parts[0] !== prefixes[type] ||
+      !/^[A-Za-z0-9_-]{1,160}$/.test(parts[1]) ||
+      (versioned && (!/^[1-9][0-9]{0,15}$/.test(parts[2]) ||
+                    !Number.isSafeInteger(Number(parts[2]))))) {
+    throw new OutboxContractError("Assurance source reference is invalid.");
+  }
+  return Object.freeze({eventType: type, eventRef});
+}
+
+export function normalizeAssuranceEventNotificationPayload(value: unknown): AssuranceEventNotificationPayload {
+  const input = requireAssuranceObject(value, "eventRef,eventType");
+  return normalizeAssuranceSource(input, false) as AssuranceEventNotificationPayload;
+}
+
+export function normalizeAssuranceEventEmailPayload(value: unknown): AssuranceEventEmailPayload {
+  const input = requireAssuranceObject(value, "eventRef,eventType,membershipRef,recipientRef,recipientRole");
+  const source = normalizeAssuranceSource(input, true);
+  const {recipientRef,recipientRole,membershipRef} = input;
+  const roles: readonly string[] = ["worker","company","verifier","assessor","admin","root"];
+  if (typeof recipientRef !== "string" || !/^[A-Za-z0-9_-]{1,160}$/.test(recipientRef) ||
+      typeof recipientRole !== "string" || !roles.includes(recipientRole) ||
+      (recipientRole === "company"
+        ? typeof membershipRef !== "string" || !/^[A-Za-z0-9_-]{1,160}$/.test(membershipRef)
+        : membershipRef !== null)) {
+    throw new OutboxContractError("Assurance recipient binding is invalid.");
+  }
+  return Object.freeze({...source, recipientRef, recipientRole: recipientRole as AuthRole,
+    membershipRef: membershipRef as string | null});
+}
+
 export type InterviewScheduledNotificationPayload = Readonly<{
  eventRef: string; recipientRef: string; recipientRole: "worker" | "assessor" | "company"; membershipRef: string | null;
 }>;
@@ -116,6 +205,11 @@ export type OutboxPayloadByType = Readonly<{
   "worker_identity.automated_checks": WorkerIdentityAutomatedChecksPayload;
   "assessment.attempt.expiry": AssessmentExpiryPayload;
   "authentication.challenge.delivery": Readonly<{ dispatchRef: string }>;
+  "report.generation": ReportGenerationPayload;
+  "notification.assessment.funding": AssessmentFundingNotificationPayload;
+  "email.report.ready": ReportReadyEmailPayload;
+  "notification.assurance.event": AssuranceEventNotificationPayload;
+  "email.assurance.event": AssuranceEventEmailPayload;
 }>;
 
 export type OutboxPayload = OutboxPayloadByType[OutboxJobType];
@@ -334,9 +428,9 @@ export function deriveOutboxIdempotencyKey(
 
 function normalizeSingleReferencePayload(
   value: unknown,
-  property: "probeRef" | "fixtureRef" | "eventRef" | "dispatchRef",
+  property: "probeRef" | "fixtureRef" | "eventRef" | "dispatchRef" | "reportRef" | "deliveryRef",
   label: string
-): Readonly<Record<"probeRef" | "fixtureRef" | "eventRef" | "dispatchRef", string>> {
+): Readonly<Record<"probeRef" | "fixtureRef" | "eventRef" | "dispatchRef" | "reportRef" | "deliveryRef", string>> {
   if (
     !value ||
     typeof value !== "object" ||
@@ -363,7 +457,7 @@ function normalizeSingleReferencePayload(
     throw new OutboxContractError(`Outbox ${label} reference is invalid.`);
   }
   return Object.freeze({ [property]: reference }) as Readonly<
-    Record<"probeRef" | "fixtureRef" | "eventRef" | "dispatchRef", string>
+    Record<"probeRef" | "fixtureRef" | "eventRef" | "dispatchRef" | "reportRef" | "deliveryRef", string>
   >;
 }
 
@@ -386,6 +480,32 @@ export function normalizeAccountSecurityNotificationPayload(
 ): AccountSecurityNotificationPayload {
   const normalized = normalizeSingleReferencePayload(value, "eventRef", "event");
   return Object.freeze({ eventRef: normalized.eventRef });
+}
+
+export function normalizeReportGenerationPayload(value: unknown): ReportGenerationPayload {
+  const { reportRef } = normalizeSingleReferencePayload(value, "reportRef", "report");
+  if (!/^report_[A-Za-z0-9_-]{3,80}$/.test(reportRef)) {
+    throw new OutboxContractError("Report generation reference is invalid.");
+  }
+  return Object.freeze({ reportRef });
+}
+
+export function normalizeReportReadyEmailPayload(value: unknown): ReportReadyEmailPayload {
+  const { deliveryRef } = normalizeSingleReferencePayload(value, "deliveryRef", "report email delivery");
+  if (!/^report_email_[A-Za-z0-9_-]{24}$/.test(deliveryRef)) {
+    throw new OutboxContractError("Report email delivery reference is invalid.");
+  }
+  return Object.freeze({ deliveryRef });
+}
+
+export function normalizeAssessmentFundingNotificationPayload(
+  value: unknown
+): AssessmentFundingNotificationPayload {
+  const { eventRef } = normalizeSingleReferencePayload(value, "eventRef", "application event");
+  if (!/^assessment_application_event_[A-Za-z0-9_-]{24}$/.test(eventRef)) {
+    throw new OutboxContractError("Assessment funding event reference is invalid.");
+  }
+  return Object.freeze({ eventRef });
 }
 
 function normalizeFoundationEmailPayload(
@@ -526,6 +646,21 @@ export function normalizeOutboxPayload<T extends OutboxJobType>(
       break;
     case "notification.account.security":
       normalized = normalizeAccountSecurityNotificationPayload(value);
+      break;
+    case "report.generation":
+      normalized = normalizeReportGenerationPayload(value);
+      break;
+    case "notification.assessment.funding":
+      normalized = normalizeAssessmentFundingNotificationPayload(value);
+      break;
+    case "email.report.ready":
+      normalized = normalizeReportReadyEmailPayload(value);
+      break;
+    case "notification.assurance.event":
+      normalized = normalizeAssuranceEventNotificationPayload(value);
+      break;
+    case "email.assurance.event":
+      normalized = normalizeAssuranceEventEmailPayload(value);
       break;
     case "email.delivery.foundation":
       normalized = normalizeFoundationEmailPayload(value);

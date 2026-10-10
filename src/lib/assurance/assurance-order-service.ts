@@ -1,11 +1,12 @@
 import "server-only";
+import { evaluateWorkerAssessmentHistory } from "../assessment-catalogue/assessment-eligibility-policy-service";
 
 import { runTenantScopedCommand } from "../authorization/tenant-scoped-command-guard";
 import { deriveTrustedTenantScope, type TenantPermissionPrincipal } from "../authorization/tenant-scoped-resource-domain";
 import { bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
 import type { DatabaseClient } from "../database/database";
-import { pinAssuranceCasePolicySnapshot, validateAssurancePolicySelection } from "../policy/effective-policy-service";
+import { pinAssuranceCasePolicySnapshot, validateAssurancePolicySelection, resolveEffectivePolicy } from "../policy/effective-policy-service";
 import {
   ASSURANCE_ORDER_MANAGE_PERMISSION, ASSURANCE_ORDER_READ_PERMISSION,
   AssuranceOrderAccessError, AssuranceOrderConflictError, AssuranceOrderInputError, AssuranceOrderNotFoundError,
@@ -15,6 +16,7 @@ import {
   type AssuranceOrderRecord, type AssuranceOrderWorkerRecord, type AssuranceValidationResult,
   type AssuranceCaseStatus, type AssurancePendingOwner
 } from "./assurance-order-domain";
+import { EffectivePolicyConflictError } from "../policy/effective-policy-domain";
 import { AssuranceOrderRepository } from "./assurance-order-repository";
 
 const companyOrdersManage = "company.orders.manage" as const;
@@ -102,6 +104,17 @@ async function initialCaseStateForWorker(
     permanentWorkerId
   });
 }
+async function workerAssessmentPolicyReason(database:DatabaseClient,order:AssuranceOrderRecord,workerAccountId:string,now:Date):Promise<string|null>{
+  if(!order.effectivePolicyReference||order.assessmentFrameworkReferences.length===0)return null;
+  try {
+    const policy=await resolveEffectivePolicy(database,{tenantId:order.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now});
+    const decision=await evaluateWorkerAssessmentHistory(database,{workerAccountId,frameworkId:policy.frameworkId,policyValues:policy.effectiveValue,now,lockWorker:true});
+    return decision.eligibilityReason;
+  } catch(error) {
+    if(error instanceof EffectivePolicyConflictError)return error.message;
+    throw error;
+  }
+}
 async function audit(database:DatabaseClient,principal:AssuranceOrderManagePrincipal,action:Parameters<DatabaseAuditRepository["append"]>[1]["action"],reference:string,metadata:Record<string,unknown>={}):Promise<void>{
   await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action,outcome:"succeeded",target:{type:"resource",reference},metadata});
 }
@@ -155,7 +168,7 @@ export class AssuranceOrderService {
       await assertVerifiedCompany(database,scope.tenantId); const repository=new AssuranceOrderRepository(database); const order=await repository.lockOrder(scope.tenantId,id); if(!order) throw new AssuranceOrderNotFoundError(); if(!["DRAFT","VALIDATION_FAILED","READY"].includes(order.orderStatus)) throw new AssuranceOrderConflictError("Submitted Assurance Order cannot be revalidated as a draft.");
       const errors:string[]=[...(await assertActiveUnit(database,scope.tenantId,order.siteId,order.departmentId))]; const targets=await repository.listTargets(scope.tenantId,id,true); const targetResults:{targetId:string;eligible:boolean;reason:string|null}[]=[];
       if(targets.length===0) errors.push("Add at least one active linked Worker before validation.");
-      for(const target of targets){ const live=await activeLink(database,scope.tenantId,target.workerLinkId,true); const reason=!live?"Worker link is no longer active for this Company.":null; targetResults.push({targetId:target.targetId,eligible:reason===null,reason}); if(reason) errors.push(`${target.workerAccountId}: ${reason}`); }
+      for(const target of targets){ const live=await activeLink(database,scope.tenantId,target.workerLinkId,true); const reason=!live?"Worker link is no longer active for this Company.":await workerAssessmentPolicyReason(database,order,target.workerAccountId,now); targetResults.push({targetId:target.targetId,eligible:reason===null,reason}); if(reason) errors.push(`${target.workerAccountId}: ${reason}`); }
       errors.push(...await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now}));
       // Credential issuance is now owned by later release bricks; submitted assurance cases keep this field explicit until certification activation.
       if(order.credentialTarget) errors.push("Credential target dependency is not yet available in M2.01.");
@@ -175,6 +188,8 @@ export class AssuranceOrderService {
       const targets=await repository.listTargets(scope.tenantId,id,true); if(targets.length===0||targets.some(t=>t.targetStatus!=="eligible")) throw new AssuranceOrderConflictError("Assurance Order eligibility changed; validate again.");
       for(const target of targets){ if(!await activeLink(database,scope.tenantId,target.workerLinkId,true)) throw new AssuranceOrderConflictError("A Worker link changed; validate the Assurance Order again."); }
       const policyErrors=await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now});if(policyErrors.length>0)throw new AssuranceOrderConflictError(`Effective policy changed; validate again. ${policyErrors.join(" ")}`);
+
+      for(const target of targets){const reason=await workerAssessmentPolicyReason(database,order,target.workerAccountId,now);if(reason)throw new AssuranceOrderConflictError(reason);}
 
       // The worker target rows are part of submitted scope. Move them to their
       // terminal submitted target state while the parent order is still READY;

@@ -3,10 +3,16 @@ import "server-only";
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
+import { eligibleInterviewQuestions, InterviewPolicyInputError, normalizeInterviewPolicy,
+  validateInterviewPolicyScorecard, type InterviewQuestionKind, type InterviewSelectionContext,
+  type InterviewPolicyScorecard } from "./interview-policy-domain";
+import { loadPinnedInterviewPolicy, selectApprovedInterviewQuestions } from "./interview-policy-service";
 
 export type InterviewPlaybookQuestion = Readonly<{
   questionId: string;
-  kind: "MANDATORY" | "WEAK_AREA" | "INTEGRITY" | "FOLLOW_UP";
+  kind: InterviewQuestionKind;
+  templateId?: string;
+  scoringGuidance?: string;
   source: string;
   prompt: string;
   topic: string | null;
@@ -48,13 +54,15 @@ function parseQuestions(value: unknown): readonly InterviewPlaybookQuestion[] {
     if (
       typeof row.questionId !== "string" ||
       typeof row.kind !== "string" ||
-      !["MANDATORY","WEAK_AREA","INTEGRITY","FOLLOW_UP"].includes(row.kind) ||
+      !["MANDATORY","RANDOM","WEAK_AREA","HIGH_RISK","INTEGRITY","FOLLOW_UP"].includes(row.kind) ||
       typeof row.source !== "string" ||
       typeof row.prompt !== "string"
     ) return [];
     return [Object.freeze({
       questionId: row.questionId,
       kind: row.kind as InterviewPlaybookQuestion["kind"],
+      ...(typeof row.templateId === "string" ? { templateId: row.templateId } : {}),
+      ...(typeof row.scoringGuidance === "string" ? { scoringGuidance: row.scoringGuidance } : {}),
       source: row.source,
       prompt: row.prompt,
       topic: typeof row.topic === "string" ? row.topic : null,
@@ -78,6 +86,77 @@ function parseObject(value: unknown): Readonly<Record<string, unknown>> {
     }
   }
   return Object.freeze({});
+}
+
+type PlaybookRequestRow = {
+  interview_request_id: string;
+  tenant_id: string;
+  case_id: string;
+  worker_account_id: string;
+  assessor_account_id: string | null;
+  trade_scope: string | null;
+  qualification_scope: string | null;
+  risk_level: InterviewSelectionContext["riskLevel"];
+  language: string;
+  jurisdiction: string;
+  status: string;
+};
+
+async function openAssignedRequestForUpdate(
+  database: DatabaseClient,
+  principal: AuthorizationPrincipal,
+  interviewRequestId: string
+): Promise<PlaybookRequestRow> {
+  const preliminary = await database.query<{
+    tenant_id: string; case_id: string; assessor_account_id: string | null;
+  }>(
+    "SELECT tenant_id,case_id,assessor_account_id FROM interview_requests WHERE interview_request_id=$1",
+    [interviewRequestId]
+  );
+  const owned = preliminary.rows[0];
+  if (!owned || owned.assessor_account_id !== principal.accountId) {
+    throw new InterviewPlaybookAccessError();
+  }
+
+  // Match recommendation/replacement case-first locking, then recheck ownership.
+  const cases = await database.query<{ case_status: string; interview_reference: string | null }>(
+    "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
+    [owned.case_id, owned.tenant_id]
+  );
+  const requests = await database.query<PlaybookRequestRow>(
+    `SELECT interview_request_id,tenant_id,case_id,worker_account_id,
+            assessor_account_id,trade_scope,qualification_scope,risk_level,language,jurisdiction,status
+       FROM interview_requests WHERE interview_request_id=$1 FOR UPDATE`,
+    [interviewRequestId]
+  );
+  const request = requests.rows[0];
+  if (!request || request.assessor_account_id !== principal.accountId) {
+    throw new InterviewPlaybookAccessError();
+  }
+  if (
+    request.tenant_id !== owned.tenant_id || request.case_id !== owned.case_id ||
+    !["ASSIGNED", "WAITING_ROOM"].includes(request.status) ||
+    cases.rows[0]?.case_status !== "Interview pending" ||
+    cases.rows[0].interview_reference !== interviewRequestId
+  ) {
+    throw new InterviewPlaybookInputError("Interview is closed.");
+  }
+
+  const sessions = await database.query<{ status: string }>(
+    "SELECT status FROM interview_runtime_sessions WHERE tenant_id=$1 AND interview_request_id=$2 FOR UPDATE",
+    [request.tenant_id, interviewRequestId]
+  );
+  const drafts = await database.query<{ submitted: boolean }>(
+    "SELECT submitted FROM interview_console_drafts WHERE tenant_id=$1 AND interview_request_id=$2 FOR UPDATE",
+    [request.tenant_id, interviewRequestId]
+  );
+  if (
+    sessions.rows.some((row) => ["ENDED", "NO_SHOW"].includes(row.status)) ||
+    drafts.rows.some((row) => row.submitted)
+  ) {
+    throw new InterviewPlaybookInputError("Interview is closed.");
+  }
+  return request;
 }
 
 async function latestSet(
@@ -113,6 +192,71 @@ async function latestSet(
   });
 }
 
+async function validateFrozenPlaybook(
+  database: DatabaseClient, tenantId: string, caseId: string, set: InterviewQuestionSetView
+): Promise<void> {
+  const pinned = await loadPinnedInterviewPolicy(database, tenantId, caseId);
+  if (!pinned.policy) {
+    if (set.sourceContext.policyMode === "CONFIGURED") throw new InterviewPolicyInputError("Interview frozen policy does not belong to this case.");
+    return;
+  }
+  if (set.sourceContext.policyMode !== "CONFIGURED" ||
+      set.sourceContext.caseId !== caseId ||
+      set.sourceContext.policySnapshotId !== pinned.snapshotId ||
+      set.sourceContext.policyVersionId !== pinned.policyVersionId ||
+      JSON.stringify(normalizeInterviewPolicy(set.sourceContext.interviewPolicy)) !== JSON.stringify(pinned.policy)) {
+    throw new InterviewPolicyInputError("Interview frozen policy reference is inconsistent.");
+  }
+  const selection = parseObject(set.sourceContext.selectionContext) as InterviewSelectionContext;
+  const requests = await database.query<PlaybookRequestRow>(
+    "SELECT interview_request_id,tenant_id,case_id,worker_account_id,assessor_account_id,trade_scope,qualification_scope,risk_level,language,jurisdiction,status FROM interview_requests WHERE tenant_id=$1 AND interview_request_id=$2 AND case_id=$3",
+    [tenantId,set.interviewRequestId,caseId]);
+  const request = requests.rows[0];
+  if (!request || set.sourceContext.workerAccountId !== request.worker_account_id ||
+      selection.tradeScope !== request.trade_scope || selection.qualificationScope !== request.qualification_scope ||
+      selection.riskLevel !== request.risk_level || selection.language !== request.language || selection.jurisdiction !== request.jurisdiction ||
+      !Array.isArray(selection.weakTopics) || typeof selection.writtenWeakness !== "boolean" ||
+      typeof selection.hasIntegrityFlags !== "boolean" || !Number.isInteger(selection.previousAttemptCount)) {
+    throw new InterviewPolicyInputError("Interview frozen case context is inconsistent.");
+  }
+  for (const key of ["tradeScope","qualificationScope","riskLevel","language","jurisdiction"] as const) {
+    if (pinned.policy.context && key in pinned.policy.context && pinned.policy.context[key] !== selection[key]) {
+      throw new InterviewPolicyInputError("Interview context differs from the case-pinned policy.");
+    }
+  }
+  const initial = selectApprovedInterviewQuestions(pinned.policy, selection, set.interviewRequestId, pinned.snapshotId!);
+  const approved = eligibleInterviewQuestions(pinned.policy, selection);
+  const expectedIds = initial.map(q => q.templateId);
+  const initialQuestions = set.questions.filter(q => q.kind !== "FOLLOW_UP");
+  if (JSON.stringify(initialQuestions.map(q => q.templateId)) !== JSON.stringify(expectedIds) ||
+      JSON.stringify(set.sourceContext.selectedTemplateIds) !== JSON.stringify(set.questions.map(q => q.templateId)) ||
+      new Set(set.questions.map(q => q.questionId)).size !== set.questions.length ||
+      new Set(set.questions.map(q => q.templateId)).size !== set.questions.length) {
+    throw new InterviewPolicyInputError("Interview approved question selection is inconsistent.");
+  }
+  for (const question of set.questions) {
+    const template = approved.find(t => t.templateId === question.templateId);
+    if (!template || question.source !== "effective_policy" || question.kind !== template.kind ||
+        question.prompt !== template.prompt || question.topic !== template.topic ||
+        question.scoringGuidance !== template.scoringGuidance ||
+        question.mandatory !== ["MANDATORY", "HIGH_RISK"].includes(template.kind)) {
+      throw new InterviewPolicyInputError("Interview question differs from its approved frozen template.");
+    }
+  }
+}
+
+export async function validateInterviewFrozenScorecard(
+  database: DatabaseClient, tenantId: string, caseId: string, interviewRequestId: string,
+  scorecard: unknown, complete = false
+): Promise<InterviewPolicyScorecard | null> {
+  const pinned = await loadPinnedInterviewPolicy(database, tenantId, caseId);
+  if (!pinned.policy) return null;
+  const set = await latestSet(database, tenantId, interviewRequestId);
+  if (!set) throw new InterviewPolicyInputError("Create the approved interview question set before saving the scorecard.");
+  await validateFrozenPlaybook(database, tenantId, caseId, set);
+  return validateInterviewPolicyScorecard(scorecard, set, pinned.policy, complete);
+}
+
 export class InterviewPlaybookService {
   constructor(private readonly databasePromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
@@ -145,32 +289,9 @@ export class InterviewPlaybookService {
     }
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const requestResult = await tx.query<{
-        interview_request_id: string;
-        tenant_id: string;
-        case_id: string;
-        worker_account_id: string;
-        assessor_account_id: string | null;
-        trade_scope: string | null;
-        qualification_scope: string | null;
-        risk_level: string;
-        status: string;
-      }>(
-        `SELECT interview_request_id,tenant_id,case_id,worker_account_id,
-                assessor_account_id,trade_scope,qualification_scope,risk_level,status
-           FROM interview_requests
-          WHERE interview_request_id=$1
-          FOR UPDATE`,
-        [interviewRequestId]
-      );
-      const request = requestResult.rows[0];
-      if (!request || request.assessor_account_id !== principal.accountId) {
-        throw new InterviewPlaybookAccessError();
-      }
-
-      if (request.status === "CANCELLED") throw new InterviewPlaybookInputError("Interview is closed.");
+      const request = await openAssignedRequestForUpdate(tx, principal, interviewRequestId);
       const existing = await latestSet(tx, request.tenant_id, interviewRequestId);
-      if (existing) return existing;
+      if (existing) { await validateFrozenPlaybook(tx, request.tenant_id, request.case_id, existing); return existing; }
 
       const weakAreas = await tx.query<{ domain_reference: string; count: number | string }>(
         `SELECT versions.domain_reference,COUNT(*)::int AS count
@@ -235,7 +356,7 @@ export class InterviewPlaybookService {
         [request.case_id]
       );
 
-      const questions: InterviewPlaybookQuestion[] = [
+      let questions: InterviewPlaybookQuestion[] = [
         {
           questionId: createIdentifier("interview_question"),
           kind: "MANDATORY",
@@ -286,7 +407,33 @@ export class InterviewPlaybookService {
         });
       }
 
+      const pinned = await loadPinnedInterviewPolicy(tx, request.tenant_id, request.case_id);
+      const selectionContext: InterviewSelectionContext = {
+        tradeScope: request.trade_scope, qualificationScope: request.qualification_scope,
+        riskLevel: request.risk_level, language: request.language, jurisdiction: request.jurisdiction,
+        weakTopics: weakAreas.rows.map(row => row.domain_reference),
+        writtenWeakness: written.rows[0]?.decision === "CHANGES_REQUESTED" || Number(written.rows[0]?.score ?? 100) < 70,
+        hasIntegrityFlags: integrity.rows.length > 0,
+        previousAttemptCount: Number(attempts.rows[0]?.count ?? 0)
+      };
+      if (pinned.policy && pinned.snapshotId) {
+        const selected = selectApprovedInterviewQuestions(pinned.policy, selectionContext, interviewRequestId, pinned.snapshotId);
+        questions = selected.map(template => ({
+          questionId: createIdentifier("interview_question"), templateId: template.templateId,
+          kind: template.kind, source: "effective_policy", prompt: template.prompt,
+          topic: template.topic, mandatory: ["MANDATORY", "HIGH_RISK"].includes(template.kind),
+          ...(template.scoringGuidance ? { scoringGuidance: template.scoringGuidance } : {})
+        }));
+      }
       const sourceContext = {
+        policyMode: pinned.policy ? "CONFIGURED" : "LEGACY",
+        policySnapshotId: pinned.snapshotId,
+        policyVersionId: pinned.policyVersionId,
+        ...(pinned.policy ? {
+          interviewPolicy: pinned.policy, selectionContext,
+          selectedTemplateIds: questions.map(q => q.templateId),
+          legacyContextFields: ["tradeScope","qualificationScope","riskLevel","language","jurisdiction"].filter(key => !(key in (pinned.policy?.context ?? {})))
+        } : {}),
         caseId: request.case_id,
         workerAccountId: request.worker_account_id,
         tradeScope: request.trade_scope,
@@ -337,29 +484,32 @@ export class InterviewPlaybookService {
       throw new InterviewPlaybookAccessError();
     }
     const prompt = promptInput.trim().replace(/\s+/g, " ");
-    if (prompt.length < 10 || prompt.length > 1000) {
-      throw new InterviewPlaybookInputError("Follow-up question must contain between 10 and 1000 characters.");
-    }
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await tx.query<{ tenant_id: string; assessor_account_id: string | null; status: string }>(
-        "SELECT tenant_id,assessor_account_id,status FROM interview_requests WHERE interview_request_id=$1 FOR UPDATE",
-        [interviewRequestId]
-      );
-      const row = request.rows[0];
-      if (!row || row.assessor_account_id !== principal.accountId) throw new InterviewPlaybookAccessError();
-      if (row.status === "CANCELLED") throw new InterviewPlaybookInputError("Interview is closed.");
+      const row = await openAssignedRequestForUpdate(tx, principal, interviewRequestId);
       const current = await latestSet(tx, row.tenant_id, interviewRequestId);
       if (!current) throw new InterviewPlaybookInputError("Create the interview playbook before adding follow-ups.");
+      await validateFrozenPlaybook(tx, row.tenant_id, row.case_id, current);
+      const policy = current.sourceContext.policyMode === "CONFIGURED"
+        ? normalizeInterviewPolicy(current.sourceContext.interviewPolicy) : null;
+      const approved = policy ? eligibleInterviewQuestions(policy, current.sourceContext.selectionContext as InterviewSelectionContext)
+        .find(q => q.kind === "FOLLOW_UP" && q.templateId === prompt) : null;
+      if (policy && (!approved || current.questions.some(q => q.templateId === approved.templateId))) {
+        throw new InterviewPlaybookInputError("Choose an unused approved follow-up template for this case.");
+      }
+      if (!policy && (prompt.length < 10 || prompt.length > 1000)) {
+        throw new InterviewPlaybookInputError("Follow-up question must contain between 10 and 1000 characters.");
+      }
       const questions = [
         ...current.questions,
         Object.freeze({
           questionId: createIdentifier("interview_question"),
           kind: "FOLLOW_UP" as const,
-          source: "assessor",
-          prompt,
-          topic: null,
-          mandatory: false
+          source: approved ? "effective_policy" : "assessor",
+          prompt: approved?.prompt ?? prompt,
+          topic: approved?.topic ?? null,
+          mandatory: false,
+          ...(approved ? { templateId: approved.templateId, ...(approved.scoringGuidance ? { scoringGuidance: approved.scoringGuidance } : {}) } : {})
         })
       ];
       await tx.query(
@@ -372,7 +522,7 @@ export class InterviewPlaybookService {
           row.tenant_id,
           interviewRequestId,
           current.versionNo + 1,
-          JSON.stringify(current.sourceContext),
+          JSON.stringify({ ...current.sourceContext, ...(policy ? { selectedTemplateIds: questions.map(q => q.templateId) } : {}) }),
           JSON.stringify(questions),
           principal.accountId,
           now.toISOString()

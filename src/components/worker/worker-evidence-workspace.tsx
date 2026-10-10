@@ -625,7 +625,7 @@ function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): Reac
   const canRevise = submitted && record.lifecycleStatus === "active";
 
   return (
-    <article className="panel page-section content-stack">
+    <article id={record.recordId} className="panel page-section content-stack">
       <div className="section-heading-row">
         <div>
           <p className="eyebrow">{record.kind}</p>

@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
 import { getDatabaseClient } from "@/lib/database/database";
 import {
   buildDigitalPassport,
-  currentLivingCompetencyVersion,
+  projectLivingCompetencyVersion,
   livingCompetencyFromWorkerSkill,
   type PassportEmployment,
   type PassportQualification,
@@ -143,14 +144,16 @@ export default async function WorkerPassportPage(): Promise<React.JSX.Element> {
         {passport.competencies.length ? (
           <ul className="timeline-list" aria-label="Assessed competencies">
             {passport.competencies.map((item) => {
-              const current = currentLivingCompetencyVersion(item);
+              const current = projectLivingCompetencyVersion(item, passport.generatedAt);
               return (
-                <li key={item.competencyId}>
+                <li id={item.sourceCredentialId ?? undefined} key={item.competencyId}>
                   <strong>{item.title}</strong>
                   <p>
                     {current.status.replaceAll("_", " ")}
                     {current.expiresAt ? ` · expires ${current.expiresAt}` : " · no expiry recorded"}
                   </p>
+                  {current.restrictions.length ? <p>{current.restrictions.join(" ")}</p> : null}
+                  {item.sourceCredentialId ? <p><Link href={`/verify/result/${item.sourceCredentialId}`}>Verify credential</Link></p> : null}
                 </li>
               );
             })}

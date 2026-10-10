@@ -22,8 +22,9 @@ export default async function AvailableAssessmentsPage({
     permission: "worker.assessments.read"
   });
   const attemptService = await getAssessmentAttemptService();
-  const [available, inProgress, interrupted, params] = await Promise.all([
+  const [available, unavailable, inProgress, interrupted, params] = await Promise.all([
     (await getAssessmentCatalogueEligibilityService()).listAvailableForWorker(principal),
+    (await getAssessmentCatalogueEligibilityService()).listUnavailableForWorker(principal),
     attemptService.listOwnedInProgress(principal),
     attemptService.listOwnedInterrupted(principal),
     searchParams
@@ -48,6 +49,19 @@ export default async function AvailableAssessmentsPage({
         <p className="status-banner status-success" role="status">
           Recovery review requested. A Verifier must decide whether the original bound attempt can resume or a replacement is required.
         </p>
+      ) : null}
+
+      {unavailable.length > 0 ? (
+        <section className="content-stack" aria-labelledby="waiting-assessments-heading">
+          <h2 id="waiting-assessments-heading">Waiting and restricted assessments</h2>
+          {unavailable.map(item => (
+            <article className="panel page-section" id={item.caseId} key={item.caseId + item.catalogueVersionId}>
+              <h3>{item.title}</h3>
+              <p role="status">{item.eligibilityReason}</p>
+              {item.availableAt ? <p>Available from <time dateTime={item.availableAt}>{item.availableAt}</time></p> : null}
+            </article>
+          ))}
+        </section>
       ) : null}
 
       <section className="content-stack" aria-labelledby="interrupted-assessments-heading">
@@ -152,7 +166,7 @@ export default async function AvailableAssessmentsPage({
       ) : (
         <section className="content-stack" aria-label="Eligible assessment offerings">
           {available.map((assessment) => (
-            <article className="panel page-section" key={`${assessment.caseId}-${assessment.catalogueVersionId}`}>
+            <article id={assessment.caseId} className="panel page-section" key={`${assessment.caseId}-${assessment.catalogueVersionId}`}>
               <div className="section-heading-row">
                 <div>
                   <p className="eyebrow">{assessment.catalogueReference}</p>

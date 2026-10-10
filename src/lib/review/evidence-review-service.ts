@@ -23,8 +23,8 @@ import {
   readSecureFileAccessCore,
   type SecureFileAccessLookup
 } from "../secure-files/secure-file-access-core";
-import type { SecureFileRecord } from "../secure-files/secure-file-domain";
-import { createLocalTestPrivateObjectStorage } from "../secure-files/private-object-storage";
+import { createRuntimePrivateObjectStorage } from "../secure-files/private-object-storage";
+import { secureFileFromRow, type SecureFileRow } from "../secure-files/secure-file-repository";
 import {
   EvidenceReviewAccessError,
   EvidenceReviewConflictError,
@@ -55,31 +55,6 @@ type TaskRow = {
   assigned_verifier_account_id: string | null;
   claimed_at: string | Date | null;
   decided_at: string | Date | null;
-  created_at: string | Date;
-  updated_at: string | Date;
-};
-
-type DelegatedSecureFileRow = {
-  file_sequence: number | string;
-  file_id: string;
-  schema_version: number | string;
-  reservation_key: string;
-  owner_account_id: string;
-  owner_role: SecureFileRecord["ownerRole"];
-  tenant_id: string | null;
-  membership_id: string | null;
-  storage_adapter_key: SecureFileRecord["storageAdapterKey"];
-  object_key: string;
-  display_filename: string;
-  lifecycle_status: SecureFileRecord["lifecycleStatus"];
-  file_extension: SecureFileRecord["fileExtension"];
-  declared_mime: SecureFileRecord["declaredMime"];
-  detected_mime: SecureFileRecord["detectedMime"];
-  byte_size: number | string | null;
-  content_sha256: string | null;
-  quarantined_at: string | Date | null;
-  available_at: string | Date | null;
-  unsafe_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -171,6 +146,12 @@ async function auditCaseDecision(
   );
 }
 
+export type EvidenceReviewSkillContext = Readonly<{
+  skillName: string | null; category: string | null; proficiencyClaim: string | null;
+  experienceMonths: number | null; relatedTrade: string | null; assuranceStatus: string;
+  evidenceAvailable: boolean; secureFileId: string | null;
+}>;
+
 export class EvidenceReviewService {
   constructor(private readonly database: DatabaseClient) {}
 
@@ -208,6 +189,46 @@ export class EvidenceReviewService {
       [taskId, principal.accountId]
     );
     return result.rows[0] ? task(result.rows[0]) : null;
+  }
+
+  private async assignedSkillContext(
+    database: DatabaseClient, principal: AuthorizationPrincipal, taskId: string
+  ): Promise<EvidenceReviewSkillContext | null> {
+    const result = await database.query<{
+      skill_name: string | null; category: string | null; proficiency_claim: string | null;
+      experience_months: number | null; related_trade: string | null; skill_assurance_status: string;
+      evidence_available: boolean; secure_file_id: string | null;
+    }>(
+      `SELECT skills.skill_name,skills.category,skills.proficiency_claim,skills.experience_months,
+        skills.related_trade,skills.skill_assurance_status,tasks.secure_file_id,
+        EXISTS(SELECT 1 FROM worker_evidence_attachments attachments
+          JOIN platform_secure_files files ON files.file_id=attachments.secure_file_id
+           AND files.owner_account_id=records.worker_account_id AND files.owner_role='worker'
+           AND files.lifecycle_status='available'
+          WHERE attachments.record_id=records.record_id AND attachments.version_id=versions.version_id
+           AND attachments.secure_file_id=tasks.secure_file_id AND attachments.superseded_at IS NULL) AS evidence_available
+       FROM evidence_review_tasks tasks
+       JOIN worker_evidence_records records ON records.record_id=tasks.source_record_id
+        AND records.worker_account_id=tasks.worker_account_id AND records.record_kind='skill'
+        AND records.lifecycle_status='active' AND records.current_version_id=tasks.source_version_id
+       JOIN worker_evidence_versions versions ON versions.version_id=tasks.source_version_id
+        AND versions.record_id=records.record_id AND versions.version_status='submitted'
+       JOIN worker_skill_versions skills ON skills.version_id=versions.version_id
+       WHERE tasks.task_id=$1 AND tasks.assigned_verifier_account_id=$2 AND tasks.evidence_kind='skill'
+        AND tasks.task_status='ASSIGNED' AND tasks.worker_account_id<>$2`,
+      [taskId, principal.accountId]
+    );
+    const row=result.rows[0];
+    return row ? Object.freeze({skillName:row.skill_name,category:row.category,proficiencyClaim:row.proficiency_claim,
+      experienceMonths:row.experience_months,relatedTrade:row.related_trade,assuranceStatus:row.skill_assurance_status,
+      evidenceAvailable:row.evidence_available,secureFileId:row.secure_file_id}) : null;
+  }
+
+  async findAssignedSkill(principal: AuthorizationPrincipal, taskId: string): Promise<EvidenceReviewSkillContext | null> {
+    return this.database.transaction(async database => {
+      await liveVerifier(database,principal);
+      return this.assignedSkillContext(database,principal,taskId);
+    });
   }
 
   async claim(
@@ -306,8 +327,11 @@ export class EvidenceReviewService {
     taskId: string,
     outcomeValue: unknown,
     reasonValue: unknown,
-    now = new Date()
+    now = new Date(),
+    options: { assessorVisible?: boolean; confirmTrade?: boolean } = {}
   ): Promise<void> {
+    if (options.assessorVisible !== undefined && typeof options.assessorVisible !== "boolean") throw new EvidenceReviewInputError();
+    if (options.confirmTrade !== undefined && typeof options.confirmTrade !== "boolean") throw new EvidenceReviewInputError();
     const outcome = normalizeOutcome(outcomeValue);
     const reason = normalizeReason(reasonValue);
 
@@ -345,11 +369,24 @@ export class EvidenceReviewService {
         );
       }
 
+      const tradeContext = options.confirmTrade === true ? await this.assignedSkillContext(database,principal,taskId) : null;
+      if (options.confirmTrade === true && (outcome !== "APPROVED" || !tradeContext?.relatedTrade ||
+          !tradeContext.evidenceAvailable || !tradeContext.secureFileId)) {
+        throw new EvidenceReviewConflictError("Explicit trade confirmation requires the assigned current skill and available evidence.");
+      }
       const inserted = await database.query(
-        `INSERT INTO evidence_review_decisions(
-           decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at
-         ) VALUES($1,$2,$3,$4,$5,$6,$7)
-         ON CONFLICT(task_id) DO NOTHING`,
+        tradeContext
+          ? `INSERT INTO evidence_review_decisions(
+               decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at,assessor_visible,
+               verified_trade,verification_method,verification_source_file_id
+             ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'evidence_review',$10) ON CONFLICT(task_id) DO NOTHING`
+          : options.assessorVisible === true
+          ? `INSERT INTO evidence_review_decisions(
+               decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at,assessor_visible
+             ) VALUES($1,$2,$3,$4,$5,$6,$7,TRUE) ON CONFLICT(task_id) DO NOTHING`
+          : `INSERT INTO evidence_review_decisions(
+               decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at
+             ) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(task_id) DO NOTHING`,
         [
           createReviewDecisionId(),
           taskId,
@@ -357,7 +394,8 @@ export class EvidenceReviewService {
           principal.accountId,
           outcome,
           reason,
-          now.toISOString()
+          now.toISOString(),
+          ...(tradeContext ? [options.assessorVisible === true, tradeContext.relatedTrade, tradeContext.secureFileId] : [])
         ]
       );
       if (inserted.affectedRows !== 1) {
@@ -1204,13 +1242,6 @@ export class EvidenceReviewService {
       throw new EvidenceReviewAccessError();
     }
     const environment = getServerEnvironment();
-    if (
-      environment.appEnvironment !== "development" &&
-      environment.appEnvironment !== "test"
-    ) {
-      throw new EvidenceReviewAccessError();
-    }
-
     const lookup = this.delegatedLookup(reviewTask);
     const issued = await authorizeSecureFileAccessCore({
       principal,
@@ -1226,54 +1257,54 @@ export class EvidenceReviewService {
       expectedPurpose: "preview",
       signingSecret: environment.sessionSecret,
       repository: lookup,
-      storage: createLocalTestPrivateObjectStorage(environment.appEnvironment),
+      storage: createRuntimePrivateObjectStorage(environment.appEnvironment),
       now
     });
   }
 
   private delegatedLookup(reviewTask: EvidenceReviewTask): SecureFileAccessLookup {
     return {
-      findForPrincipal: async (principal, fileId) => {
-        assertVerifierPrincipal(principal);
-        if (
-          principal.accountId !== reviewTask.assignedVerifierAccountId ||
-          fileId !== reviewTask.secureFileId
-        ) {
-          return null;
-        }
-        const result = await this.database.query<DelegatedSecureFileRow>(
-          `SELECT *
-             FROM platform_secure_files
-            WHERE file_id=$1 AND lifecycle_status='available'`,
-          [fileId]
+      findForPrincipal: async (principal, fileId) => this.database.transaction(async database => {
+        await liveVerifier(database, principal);
+        if (fileId !== reviewTask.secureFileId) return null;
+        const result = await database.query<SecureFileRow>(
+          `SELECT files.*
+             FROM evidence_review_tasks tasks
+             JOIN platform_secure_files files ON files.file_id=tasks.secure_file_id
+               AND files.owner_account_id=tasks.worker_account_id AND files.owner_role='worker'
+               AND files.lifecycle_status='available'
+            WHERE tasks.task_id=$1 AND tasks.assigned_verifier_account_id=$2
+              AND files.file_id=$3 AND tasks.task_status IN ('ASSIGNED','APPROVED','REJECTED','CHANGES_REQUESTED')
+              AND ((tasks.tenant_id IS NULL AND tasks.case_id IS NULL)
+                OR EXISTS(SELECT 1 FROM assurance_cases cases WHERE cases.case_id=tasks.case_id
+                  AND cases.tenant_id=tasks.tenant_id AND cases.worker_account_id=tasks.worker_account_id))
+              AND (
+                (tasks.evidence_kind='identity' AND EXISTS(
+                  SELECT 1 FROM worker_identities identities
+                  JOIN worker_identity_versions versions ON versions.identity_id=identities.identity_id
+                    AND versions.version_number=identities.current_version_number AND versions.version_status='submitted'
+                  JOIN worker_identity_evidence_bindings bindings ON bindings.identity_version_id=versions.identity_version_id
+                    AND bindings.worker_account_id=identities.worker_account_id AND bindings.purpose='identity_document'
+                    AND bindings.binding_status='active' AND bindings.secure_file_id=files.file_id
+                  WHERE identities.identity_id=tasks.source_record_id AND versions.identity_version_id=tasks.source_version_id
+                    AND identities.worker_account_id=tasks.worker_account_id))
+                OR (tasks.evidence_kind IN ('qualification','experience','employment','skill') AND EXISTS(
+                  SELECT 1 FROM worker_evidence_records records
+                  JOIN worker_evidence_versions versions ON versions.record_id=records.record_id
+                    AND versions.version_id=records.current_version_id AND versions.version_status='submitted'
+                  WHERE records.record_id=tasks.source_record_id AND records.worker_account_id=tasks.worker_account_id
+                    AND records.record_kind=tasks.evidence_kind AND versions.version_id=tasks.source_version_id
+                    AND (EXISTS(SELECT 1 FROM worker_evidence_attachments attachments
+                      WHERE attachments.record_id=records.record_id AND attachments.version_id=versions.version_id
+                        AND attachments.secure_file_id=files.file_id AND attachments.superseded_at IS NULL)
+                      OR EXISTS(SELECT 1 FROM worker_employment_leaving_letters letters
+                        WHERE letters.employment_record_id=records.record_id AND letters.employment_version_id=versions.version_id
+                          AND letters.secure_file_id=files.file_id AND letters.status='active'))))
+              )`,
+          [reviewTask.taskId, principal.accountId, fileId]
         );
-        const row = result.rows[0];
-        if (!row) return null;
-        return Object.freeze({
-          sequence: Number(row.file_sequence),
-          fileId: row.file_id,
-          schemaVersion: Number(row.schema_version),
-          reservationKey: row.reservation_key,
-          ownerAccountId: row.owner_account_id,
-          ownerRole: row.owner_role,
-          tenantId: row.tenant_id,
-          membershipId: row.membership_id,
-          storageAdapterKey: row.storage_adapter_key,
-          objectKey: row.object_key,
-          displayFilename: row.display_filename,
-          lifecycleStatus: row.lifecycle_status,
-          fileExtension: row.file_extension,
-          declaredMime: row.declared_mime,
-          detectedMime: row.detected_mime,
-          byteSize: row.byte_size === null ? null : Number(row.byte_size),
-          contentSha256: row.content_sha256,
-          quarantinedAt: maybe(row.quarantined_at),
-          availableAt: maybe(row.available_at),
-          unsafeAt: maybe(row.unsafe_at),
-          createdAt: iso(row.created_at),
-          updatedAt: iso(row.updated_at)
-        }) as SecureFileRecord;
-      }
+        return result.rows[0] ? secureFileFromRow(result.rows[0]) : null;
+      })
     };
   }
 }

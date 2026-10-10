@@ -107,7 +107,7 @@ WHERE email_attempts.delivery_id = $1
   AND (outbox_attempts.outcome = 'lease_expired' OR
  (outbox_attempts.outcome IN ('retry_scheduled','terminal_failed') AND EXISTS(
   SELECT 1 FROM platform_email_deliveries deliveries WHERE deliveries.delivery_id=email_attempts.delivery_id
-   AND deliveries.delivery_type IN ('interview.scheduled','interview.reminder'))))
+   AND deliveries.delivery_type IN ('interview.scheduled','interview.reminder','evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved'))))
 RETURNING email_attempts.*`;
 
 export const EMAIL_RECONCILE_DELIVERY_SQL = `
@@ -135,7 +135,7 @@ JOIN platform_outbox_job_attempts AS outbox_attempts
   ON outbox_attempts.attempt_id = $3
  AND outbox_attempts.job_id = jobs.job_id
 WHERE jobs.job_id = $2
-  AND jobs.job_type IN ('email.delivery.foundation','email.interview.scheduled','email.interview.reminder')
+  AND jobs.job_type IN ('email.delivery.foundation','email.interview.scheduled','email.interview.reminder','email.assurance.event')
   AND jobs.status = 'leased'
   AND jobs.lease_id = $6
   AND jobs.worker_id = $5
@@ -241,6 +241,15 @@ WHERE recipient_account_id = $1
       AND membership_id IS NULL
     )
   )
+  AND (platform_email_deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
+    SELECT 1 FROM platform_outbox_jobs source
+    CROSS JOIN LATERAL platform_assurance_event_recipients(source.payload->>'eventType',source.payload->>'eventRef') eligible
+    WHERE source.job_id=platform_email_deliveries.source_job_id AND source.job_type='email.assurance.event'
+      AND eligible.notification_type=platform_email_deliveries.delivery_type
+      AND eligible.account_id=platform_email_deliveries.recipient_account_id AND eligible.role=platform_email_deliveries.recipient_role
+      AND eligible.tenant_id IS NOT DISTINCT FROM platform_email_deliveries.tenant_id
+      AND eligible.membership_id IS NOT DISTINCT FROM platform_email_deliveries.membership_id
+  ))
   AND ($5::bigint IS NULL OR delivery_sequence < $5::bigint)
   AND ($7::text IS NULL OR delivery_type = $7)
 ORDER BY delivery_sequence DESC
@@ -262,7 +271,16 @@ WHERE delivery_id = $1
       AND tenant_id IS NULL
       AND membership_id IS NULL
     )
-  )`;
+  )
+  AND (platform_email_deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
+    SELECT 1 FROM platform_outbox_jobs source
+    CROSS JOIN LATERAL platform_assurance_event_recipients(source.payload->>'eventType',source.payload->>'eventRef') eligible
+    WHERE source.job_id=platform_email_deliveries.source_job_id AND source.job_type='email.assurance.event'
+      AND eligible.notification_type=platform_email_deliveries.delivery_type
+      AND eligible.account_id=platform_email_deliveries.recipient_account_id AND eligible.role=platform_email_deliveries.recipient_role
+      AND eligible.tenant_id IS NOT DISTINCT FROM platform_email_deliveries.tenant_id
+      AND eligible.membership_id IS NOT DISTINCT FROM platform_email_deliveries.membership_id
+  ))`;
 
 export const EMAIL_ATTEMPTS_SCOPED_SQL = `
 SELECT attempts.*
@@ -283,6 +301,15 @@ WHERE deliveries.delivery_id = $1
       AND deliveries.membership_id IS NULL
     )
   )
+  AND (deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
+    SELECT 1 FROM platform_outbox_jobs source
+    CROSS JOIN LATERAL platform_assurance_event_recipients(source.payload->>'eventType',source.payload->>'eventRef') eligible
+    WHERE source.job_id=deliveries.source_job_id AND source.job_type='email.assurance.event'
+      AND eligible.notification_type=deliveries.delivery_type
+      AND eligible.account_id=deliveries.recipient_account_id AND eligible.role=deliveries.recipient_role
+      AND eligible.tenant_id IS NOT DISTINCT FROM deliveries.tenant_id
+      AND eligible.membership_id IS NOT DISTINCT FROM deliveries.membership_id
+  ))
 ORDER BY attempts.attempt_number DESC
 LIMIT $6`;
 
@@ -403,6 +430,15 @@ async function resolveRecipientAddress(
   database: DatabaseClient,
   job: EmailDeliveryOutboxJob
 ): Promise<string | null> {
+  if(job.jobType==="email.assurance.event"){
+   const result=await database.query<{email_normalized:string}>(
+    "SELECT accounts.email_normalized FROM platform_assurance_event_recipients($1,$2) recipients "+
+    "JOIN auth_accounts accounts ON accounts.account_id=recipients.account_id "+
+    "WHERE recipients.account_id=$3 AND recipients.role=$4 AND recipients.membership_id IS NOT DISTINCT FROM $5 "+
+    "AND accounts.email_verified_at IS NOT NULL",
+    [job.payload.eventType,job.payload.eventRef,job.payload.recipientRef,job.payload.recipientRole,job.payload.membershipRef]);
+   return result.rows[0]?.email_normalized??null;
+  }
   if(job.jobType==="email.interview.scheduled" || job.jobType==="email.interview.reminder"){
    const result=await database.query<{email_normalized:string}>(
     "SELECT accounts.email_normalized FROM "+(job.jobType==="email.interview.reminder" ? "platform_interview_reminder_recipients" : "platform_interview_notification_recipients")+"($1) recipients "+

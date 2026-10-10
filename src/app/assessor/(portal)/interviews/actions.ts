@@ -5,10 +5,11 @@ import { redirect, notFound } from "next/navigation";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { advanceAfterInterviewRecommendation } from "@/lib/assurance/assurance-case-progression-service";
-import { getDatabaseClient } from "@/lib/database/database";
+import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
+import { InterviewPolicyInputError } from "@/lib/interview/interview-policy-domain";
 import { InterviewAssignmentService } from "@/lib/interview/interview-assignment-service";
-import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
-import { InterviewPlaybookAccessError, InterviewPlaybookInputError, getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
+import { InterviewRuntimeService, InterviewRuntimeConflictError, isCompleteInterviewScorecard } from "@/lib/interview/interview-runtime-service";
+import { InterviewPlaybookAccessError, InterviewPlaybookInputError, validateInterviewFrozenScorecard, getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
 import {
   INTERVIEW_CONSOLE_RECOMMENDATIONS,
   InterviewSchedulingInputError,
@@ -41,6 +42,14 @@ function consoleInput(formData: FormData) {
     interviewSessionId,
     interviewRequestId,
     notes: text(formData, "notes"),
+    questionSetId: text(formData, "questionSetId"),
+    questionSetVersion: Number(text(formData, "questionSetVersion")),
+    coveredQuestionIds: formData.getAll("coveredQuestionId").map(value => String(value)),
+    safetyFindings: [...formData.entries()].filter(([key, value]) => key.startsWith("safety:") && String(value).trim())
+      .map(([key, value]) => ({
+        criterionId: key.slice(7), status: String(value),
+        comments: text(formData, "safetyComments:" + key.slice(7)) || null
+      })),
     technicalKnowledge: score(formData, "technicalKnowledge"),
     practicalReasoning: score(formData, "practicalReasoning"),
     safetyAwareness: score(formData, "safetyAwareness"),
@@ -62,20 +71,45 @@ function scorecard(input: ReturnType<typeof consoleInput>) {
     consistencyWithWrittenAnswers: input.consistencyWithWrittenAnswers,
     confidenceClarity: input.confidenceClarity,
     tradeJudgment: input.tradeJudgment,
-    comments: input.comments
+    comments: input.comments,
+    questionSetId: input.questionSetId,
+    questionSetVersion: input.questionSetVersion,
+    coveredQuestionIds: input.coveredQuestionIds,
+    safetyFindings: input.safetyFindings
   };
 }
 
 function completeScorecard(input: ReturnType<typeof consoleInput>): boolean {
-  return [
-    input.technicalKnowledge,
-    input.practicalReasoning,
-    input.safetyAwareness,
-    input.communication,
-    input.consistencyWithWrittenAnswers,
-    input.confidenceClarity,
-    input.tradeJudgment
-  ].every((value) => value !== null);
+  return isCompleteInterviewScorecard(scorecard(input));
+}
+
+async function frozenScorecard(
+  database: DatabaseClient, request: {tenantId:string;caseId:string;interviewRequestId:string},
+  input: ReturnType<typeof consoleInput>, complete: boolean
+) {
+  const scores = scorecard(input);
+  const frozen = await validateInterviewFrozenScorecard(database,request.tenantId,request.caseId,request.interviewRequestId,scores,complete);
+  const runtime = await database.query<{status:string;interview_session_id:string}>(
+    "SELECT status,interview_session_id FROM interview_runtime_sessions WHERE tenant_id=$1 AND interview_request_id=$2 FOR UPDATE",
+    [request.tenantId,request.interviewRequestId]);
+  if ((runtime.rows[0] || frozen || complete) &&
+      runtime.rows[0]?.interview_session_id !== input.interviewSessionId) {
+    throw new InterviewPolicyInputError("Interview session does not match the current runtime.");
+  }
+  if (!frozen) return scores;
+  const saved = await database.query<{scorecard:Record<string,unknown>}>(
+    "SELECT scorecard FROM interview_console_drafts WHERE tenant_id=$1 AND interview_request_id=$2 ORDER BY updated_at DESC LIMIT 1 FOR UPDATE",
+    [request.tenantId,request.interviewRequestId]);
+  if (runtime.rows[0]?.status === "ENDED") {
+    const previous = await validateInterviewFrozenScorecard(database,request.tenantId,request.caseId,request.interviewRequestId,saved.rows[0]?.scorecard,true);
+    if (JSON.stringify(previous) !== JSON.stringify(frozen)) {
+      throw new InterviewPolicyInputError("Coverage and safety findings are frozen when the interview is ended.");
+    }
+  }
+  if (complete && frozen.safetyFindings.some(finding => finding.status === "CONFIRMED") && input.recommendation !== "FAIL") {
+    throw new InterviewPolicyInputError("A confirmed automatic-fail safety finding requires the Fail recommendation.");
+  }
+  return {...scores,...frozen,...(runtime.rows[0]?.status === "ENDED" ? {activeSeconds:saved.rows[0]?.scorecard.activeSeconds} : {})};
 }
 
 async function assessorActor() {
@@ -92,6 +126,10 @@ function revalidateInterview(interviewRequestId: string): void {
 
 function consoleActionFailure(error: unknown, interviewRequestId: string): never {
   if (error instanceof InterviewAssignmentAccessError || error instanceof InterviewPlaybookAccessError) notFound();
+  if (error instanceof InterviewPolicyInputError || error instanceof InterviewRuntimeConflictError ||
+      (error instanceof InterviewPlaybookInputError && error.message !== "Interview is closed.")) {
+    redirect("/assessor/interviews/" + encodeURIComponent(interviewRequestId) + "?consoleError=policy&consoleMessage=" + encodeURIComponent(error.message));
+  }
   if (error instanceof InterviewSchedulingInputError ||
       (error instanceof InterviewPlaybookInputError && error.message === "Interview is closed.")) {
     redirect("/assessor/interviews/" + encodeURIComponent(interviewRequestId) + "?consoleError=closed");
@@ -109,16 +147,21 @@ export async function saveInterviewConsoleAction(formData: FormData): Promise<vo
   try {
     await database.transaction(async(transaction)=>{
   const service = new InterviewSchedulingService(transaction);
+  const preliminary = await service.getAssignedInterview({assessorAccountId:actor.accountId,interviewRequestId:input.interviewRequestId});
+  const currentCase = await transaction.query<{case_status:string;interview_reference:string|null}>(
+    "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
+    [preliminary.caseId,preliminary.tenantId]);
   const request = await new InterviewSchedulingRepository(transaction).findByRequestIdForAssessor(input.interviewRequestId,actor.accountId,true);
   if (!request) throw new InterviewAssignmentAccessError();
 
-  if (!["ASSIGNED","WAITING_ROOM"].includes(request.status)) throw new InterviewSchedulingInputError("Interview is closed.");
+  if (!["ASSIGNED","WAITING_ROOM"].includes(request.status) || currentCase.rows[0]?.case_status !== "Interview pending" ||
+      currentCase.rows[0].interview_reference !== input.interviewRequestId) throw new InterviewSchedulingInputError("Interview is closed.");
   await service.saveConsoleState({
     tenantId: request.tenantId,
     interviewSessionId: input.interviewSessionId,
     interviewRequestId: input.interviewRequestId,
     notes: input.notes ? [{ content: input.notes, authorAccountId: actor.accountId }] : [],
-    scorecard: scorecard(input),
+    scorecard: await frozenScorecard(transaction,request,input,false),
     recommendation: input.recommendation,
     submitted: false,
     updatedAt: new Date().toISOString()
@@ -141,7 +184,7 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
     throw new Error("A valid interview recommendation is required before final submission.");
   }
   if (!completeScorecard(input)) {
-    throw new Error("Every interview score dimension is required before final submission.");
+    throw new Error("Every interview score dimension and scorecard comments are required before final submission.");
   }
   const recommendation = input.recommendation as InterviewConsoleRecommendation;
 
@@ -177,7 +220,7 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
       interviewSessionId: input.interviewSessionId,
       interviewRequestId: input.interviewRequestId,
       notes: input.notes ? [{ content: input.notes, authorAccountId: actor.accountId }] : [],
-      scorecard: scorecard(input),
+      scorecard: await frozenScorecard(transaction,request,input,true),
       recommendation,
       submitted: true,
       updatedAt: now.toISOString()
@@ -317,7 +360,11 @@ export async function markInterviewNoShowAction(formData: FormData): Promise<voi
 export async function endInterviewAction(formData: FormData): Promise<void> {
   const interviewRequestId = text(formData, "interviewRequestId");
   const actor = await assessorActor();
-  await new InterviewRuntimeService().end(actor, interviewRequestId);
+  try {
+    await new InterviewRuntimeService().end(actor, interviewRequestId);
+  } catch (error) {
+    consoleActionFailure(error, interviewRequestId);
+  }
   revalidateInterview(interviewRequestId);
 }
 

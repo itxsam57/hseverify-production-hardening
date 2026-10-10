@@ -159,7 +159,7 @@ async function decideQueueItem(page, baseUrl, kind, outcome, reason) {
   await page.getByRole("button", { name: "Claim review" }).click();
   await page.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
   await page.getByLabel("Decision").selectOption(outcome);
-  await page.getByLabel("Reason").last().fill(reason);
+  await page.getByLabel("Reason", { exact: true }).fill(reason);
   await page.getByRole("button", { name: "Finalize review" }).click();
   await page.getByText(outcome, { exact: true }).waitFor({ timeout: 15_000 });
 }

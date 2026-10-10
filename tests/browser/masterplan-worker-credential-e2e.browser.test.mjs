@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { configuredPolicy } from "../helpers/interview-policy-config.mjs";
 
 const EMAIL="masterplan.worker.e2e@example.test";
 const PHONE="+923001234567";
@@ -18,7 +19,13 @@ const PNG={name:"proof.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgo
 const B32="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const MCQ_PROMPT="What is the first safe action when an uncontrolled hazard is identified?";
 const MCQ_ANSWER="Stop work and isolate the hazard.";
+const ASSURANCE_NOTIFICATIONS=process.env.HSE_MASTERPLAN_ASSURANCE_NOTIFICATIONS==="true";
+const INTERVIEW_POLICY = process.env.HSE_MASTERPLAN_INTERVIEW_POLICY === "true";
+const INTERVIEW_POLICY_MIN_ACTIVE_SECONDS = 15;
+const configuredActiveSince = new WeakMap();
 const EXPIRY_MODE=process.env.HSE_MASTERPLAN_EXPIRY === "true";
+const COMPLETE_REASSESSMENT=process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true";
+const REPLACED_RESTRICTION="This issuance has been replaced. Verify the current credential shared by the Worker.";
 const CONTENT_MODE=process.env.HSE_MASTERPLAN_CONTENT_MODE ?? "COMBINED";
 const DELIVERY_MODE=process.env.HSE_MASTERPLAN_DELIVERY_MODE ?? "STRICT";
 const WRITTEN_PROMPT="Explain the next safe action after isolating an uncontrolled hazard.";
@@ -38,7 +45,96 @@ async function freePort(){return new Promise((resolve,reject)=>{const s=createSe
 async function login(page,baseUrl,credential,role){await page.goto(`${baseUrl}/${role}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("Email address").fill(credential.email);await page.getByLabel("Password").fill(credential.password);if(credential.totpSecret)await page.getByLabel("Authenticator code").fill(await freshTotp(credential.email,credential.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL(`**/${role}/dashboard`,{timeout:30000});}
 async function sandboxCode(page,baseUrl,channel,destination){await page.goto(`${baseUrl}/worker/register/sandbox`,{waitUntil:"domcontentloaded"});await page.getByLabel("Delivery channel").selectOption(channel);await page.getByLabel("Delivery destination").fill(destination);await page.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await page.getByRole("button",{name:"Open latest sandbox delivery"}).click();const status=page.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor({timeout:15000});return (await status.locator("strong").innerText()).trim();}
 async function uploadIdentity(page,heading,name,document=false){const card=page.getByRole("region",{name:heading,exact:true});if(document){await card.getByLabel("Document type").selectOption("passport");await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");await card.getByLabel("Issue date").fill("2025-01-01");await card.getByLabel("Expiry date").fill("2035-01-01");}await card.getByLabel("Choose file").setInputFiles({...PNG,name});await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/identity")),card.getByRole("button",{name:"Upload evidence"}).click()]);}
-async function approveReview(page,baseUrl,kind,reason){await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});const row=page.locator("tbody tr").filter({hasText:kind}).first();await row.getByRole("link",{name:"Review"}).click();await page.getByRole("button",{name:"Claim review"}).click();await page.getByText("ASSIGNED",{exact:true}).waitFor({timeout:15000});await page.getByLabel("Decision").selectOption("APPROVED");await page.getByLabel("Reason").last().fill(reason);await page.getByRole("button",{name:"Finalize review"}).click();await page.getByText("APPROVED",{exact:true}).waitFor({timeout:15000});}
+async function approveReview(page,baseUrl,kind,reason){await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});const row=page.locator("tbody tr").filter({hasText:kind}).first();await row.getByRole("link",{name:"Review"}).click();await page.getByRole("button",{name:"Claim review"}).click();await page.getByText("ASSIGNED",{exact:true}).waitFor({timeout:15000});await page.getByLabel("Decision").selectOption("APPROVED");await page.getByLabel("Reason", { exact: true }).fill(reason);await page.getByRole("button",{name:"Finalize review"}).click();await page.getByText("APPROVED",{exact:true}).waitFor({timeout:15000});}
+
+async function publishInterviewPolicy(page,baseUrl,credential) {
+  await login(page,baseUrl,credential,"admin");
+  await page.goto(`${baseUrl}/admin/frameworks`);
+  const form=page.locator("form").filter({has:page.getByRole("button",{name:"Publish immutable version"})});
+  await form.getByLabel("Framework reference",{exact:true}).fill("E2E-WORKER");
+  await form.getByLabel("Policy reference",{exact:true}).fill("E2E-WORKER-POLICY");
+  await form.getByLabel("Title",{exact:true}).fill("Approved competency interview policy");
+  await form.getByLabel("Effective from",{exact:true}).fill("2026-01-01T00:00");
+  await form.getByLabel("Policy values JSON").fill(JSON.stringify({pass_mark:70,...(COMPLETE_REASSESSMENT?{credentialValidityDays:60}:{}),interview:{...configuredPolicy(),minimumActiveSeconds:INTERVIEW_POLICY_MIN_ACTIVE_SECONDS}}));
+  await form.getByLabel("Override allowed fields JSON").fill("[]");
+  await form.getByLabel("Override directions JSON").fill("{}");
+  await form.getByRole("button",{name:"Publish immutable version"}).click();
+  await page.getByRole("status").getByText("Immutable policy version published.",{exact:true}).waitFor();
+  console.log("ACTUAL_INTERVIEW_ADMIN_BROWSER approved typed JSON policy published before the original Worker application");
+}
+function extractCredentialPdf(body) {
+  assert.match(body.subarray(0,16).toString("ascii"),/^%PDF-\d\.\d/);
+  const parsed=spawnSync("pdftotext",["-","-"],{input:body,encoding:"utf8"});
+  assert.equal(parsed.status,0,parsed.stderr || "The real PDF text parser failed.");
+  return parsed.stdout.replace(/\s+/g," ").trim();
+}
+async function assertReplacementPublicConsumers(page,baseUrl,credentialId,expected) {
+  const response=await page.goto(baseUrl+"/verify/result/"+credentialId,{waitUntil:"domcontentloaded"});
+  assert.equal(response?.status(),200);
+  await page.getByText("End-to-End Worker Assessment",{exact:true}).waitFor();
+  await page.getByText(expected.status==="revoked"?"Revoked":"Valid",{exact:true}).first().waitFor();
+  const api=await page.request.get(baseUrl+"/api/credentials/"+credentialId);
+  assert.equal(api.status(),200);
+  assert.match(api.headers()["cache-control"],/no-store/);
+  const result=await api.json();
+  assert.equal(result.credentialId,credentialId);assert.equal(result.status,expected.status);
+  assert.equal(result.issuedAt,expected.issuedAt);assert.equal(result.expiresAt,expected.expiresAt);
+  assert.equal(new Date(result.expiresAt).getTime()-new Date(result.issuedAt).getTime(),60*86400000);
+  if(expected.status==="revoked"){
+    assert.ok(result.restrictions.includes(REPLACED_RESTRICTION));
+    await page.getByText(REPLACED_RESTRICTION,{exact:true}).waitFor();
+  }else assert.equal(result.restrictions.includes(REPLACED_RESTRICTION),false);
+  const pdf=await page.request.get(baseUrl+"/api/credentials/"+credentialId+"/pdf");
+  assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);
+  const text=extractCredentialPdf(await pdf.body());
+  assert.ok(text.includes("Status: "+expected.status),text);
+  assert.ok(text.includes("Expiry: "+expected.expiresAt),text);
+  if(expected.status==="revoked")assert.ok(text.includes(REPLACED_RESTRICTION),text);
+  await page.reload({waitUntil:"domcontentloaded"});
+  await page.getByText(expected.status==="revoked"?"Revoked":"Valid",{exact:true}).first().waitFor();
+  return result;
+}
+async function configuredInterviewDuration(page) {
+  if (!INTERVIEW_POLICY) return;
+  configuredActiveSince.set(page,Date.now());
+  await page.getByRole("tab",{name:"Notes and scoring",exact:true}).click();
+  for (const label of ["Technical knowledge","Practical reasoning","Safety awareness","Communication","Consistency with written answers","Confidence / clarity","Trade judgment"]) {
+    await page.getByLabel(label).fill("5");
+  }
+  await page.getByLabel("Scorecard comments").fill("Controlled complete draft before the published minimum active duration.");
+  await page.locator('select[name="recommendation"]').selectOption("PASS");
+  for (const input of await page.locator('input[type="checkbox"][name="coveredQuestionId"]').all()) await input.check();
+  await page.locator('select[name="safety:live-work"]').selectOption("NOT_OBSERVED");
+  await page.getByRole("button",{name:"Save draft"}).click();
+  await page.getByRole("button",{name:"End interview"}).click();
+  await page.getByRole("alert").filter({hasText:/active.*seconds|duration/i}).waitFor();
+  assert.equal(await page.getByRole("button",{name:"Submit final recommendation"}).isDisabled(),true);
+  await page.getByRole("tab",{name:"Questions",exact:true}).click();
+  console.log("ACTUAL_INTERVIEW_DURATION_BROWSER End denied before the Admin-published minimum without closing the interview");
+}
+async function waitConfiguredActiveMinimum(page) {
+  if (!INTERVIEW_POLICY) return;
+  const since=configuredActiveSince.get(page);
+  assert.ok(since,"Configured interview active interval was not observed.");
+  const remaining=(INTERVIEW_POLICY_MIN_ACTIVE_SECONDS+1)*1000-(Date.now()-since);
+  if (remaining>0) await new Promise(resolve=>setTimeout(resolve,remaining));
+}
+async function configuredInterviewCoverage(page,{denyIncomplete=false}={}) {
+  if (!INTERVIEW_POLICY) return;
+  if (denyIncomplete) {
+    for (const input of await page.locator('input[type="checkbox"][name="coveredQuestionId"]').all()) await input.uncheck();
+    await page.getByRole("button",{name:"Save draft"}).click();
+    await page.getByRole("button",{name:"End interview"}).click();
+    await page.getByRole("alert").filter({hasText:/coverage.*mandatory|mandatory.*coverage/i}).waitFor();
+    assert.equal(await page.getByRole("button",{name:"Submit final recommendation"}).isDisabled(),true);
+    await page.getByRole("tab",{name:"Notes and scoring",exact:true}).click();
+    console.log("ACTUAL_INTERVIEW_COVERAGE_BROWSER End denied incomplete configured coverage without closing the interview");
+  }
+  const coverage=page.locator('input[type="checkbox"][name="coveredQuestionId"]');
+  assert.ok(await coverage.count()>=4,"Mandatory, high-risk, randomized and approved follow-up questions were not selected.");
+  for (const input of await coverage.all()) await input.check();
+  await page.locator('select[name="safety:live-work"]').selectOption("NOT_OBSERVED");
+}
 
 async function phaseOne(baseUrl,environment,credentials){
   return runDevelopmentServer({
@@ -130,8 +226,10 @@ async function seedAssessment(database,credentials){
   const frameworkId=stableId("framework","masterplan-worker-e2e"), blueprintId=stableId("assessment_blueprint","masterplan-worker-e2e"), blueprintVersionId=stableId("blueprint_version","masterplan-worker-e2e"), catalogueId=stableId("assessment_catalogue","masterplan-worker-e2e"), catalogueVersionId=stableId("catalogue_version","masterplan-worker-e2e");
   const policyId=stableId("policy","masterplan-worker-e2e"),policyVersionId=stableId("policy_version","masterplan-worker-e2e");
   await database.query(`INSERT INTO assurance_frameworks(framework_id,framework_reference,title,framework_status,created_by_account_id,created_at,updated_at) VALUES($1,'E2E-WORKER','End-to-End Worker Framework','ACTIVE',$2,$3,$3)`,[frameworkId,admin,now]);
+  if (!INTERVIEW_POLICY) {
   await database.query(`INSERT INTO assurance_policy_packs(policy_id,framework_id,policy_reference,title,policy_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'E2E-WORKER-POLICY','End-to-End Worker Policy','ACTIVE',$3,$4,$4)`,[policyId,frameworkId,admin,now]);
-  await database.query(`INSERT INTO assurance_policy_versions(policy_version_id,policy_id,version_no,version_status,effective_from,effective_to,policy_values,override_allowed_fields,override_directions,created_by_account_id,created_at) VALUES($1,$2,1,'PUBLISHED','2026-01-01T00:00:00Z',NULL,$3::jsonb,'[]'::jsonb,'{}'::jsonb,$4,$5)`,[policyVersionId,policyId,JSON.stringify({pass_mark:70}),admin,now]);
+  await database.query(`INSERT INTO assurance_policy_versions(policy_version_id,policy_id,version_no,version_status,effective_from,effective_to,policy_values,override_allowed_fields,override_directions,created_by_account_id,created_at) VALUES($1,$2,1,'PUBLISHED','2026-01-01T00:00:00Z',NULL,$3::jsonb,'[]'::jsonb,'{}'::jsonb,$4,$5)`,[policyVersionId,policyId,JSON.stringify({pass_mark:70,...(COMPLETE_REASSESSMENT?{credentialValidityDays:60}:{})}),admin,now]);
+  }
   await database.query(`INSERT INTO assessment_blueprints(blueprint_id,blueprint_reference,blueprint_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'BP-E2E-WORKER','INACTIVE',NULL,$2,$3,$3)`,[blueprintId,admin,now]);
   await database.query(`INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'End-to-End Worker Blueprint',$4::jsonb,$5,$6)`,[blueprintVersionId,blueprintId,frameworkId,JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:[]},{count:1,questionType:"SHORT_TEXT",tagsAll:[]}].filter(selector=>CONTENT_MODE==="COMBINED" || selector.questionType===(CONTENT_MODE==="MCQ_ONLY" ? "MULTIPLE_CHOICE" : "SHORT_TEXT"))),admin,now]);
   await database.query("UPDATE assessment_blueprints SET current_version_id=$2,blueprint_status='ACTIVE',updated_at=$3 WHERE blueprint_id=$1",[blueprintId,blueprintVersionId,now]);
@@ -158,6 +256,95 @@ async function seedAssessment(database,credentials){
   await database.query(`INSERT INTO assessor_assignment_profiles(assessor_account_id,trade_scopes,qualification_scopes,languages,jurisdictions,risk_levels,availability_json,max_active_interviews,profile_status,updated_at) VALUES($1,'["*"]'::jsonb,'["*"]'::jsonb,'["*"]'::jsonb,'["*"]'::jsonb,'["*"]'::jsonb,'{}'::jsonb,8,'ACTIVE',$2) ON CONFLICT(assessor_account_id) DO UPDATE SET profile_status='ACTIVE',trade_scopes='["*"]'::jsonb,qualification_scopes='["*"]'::jsonb,languages='["*"]'::jsonb,jurisdictions='["*"]'::jsonb,risk_levels='["*"]'::jsonb,updated_at=$2`,[assessor,now]);
   await database.query(`INSERT INTO staff_calibrations(calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,note,recorded_by_account_id,created_at) VALUES($1,$2,'assessor','E2E-WORKER','CURRENT','2026-01-01T00:00:00Z','2027-12-31T00:00:00Z','Current framework calibration for preserved E2E interview matching.',$3,$4)`,[stableId("staff_calibration","masterplan-worker-e2e"),assessor,admin,now]);
   return {catalogueVersionId};
+}
+
+
+async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env,credentials,workerAccountId,journeyCaseId}){
+ const {openScriptDatabase}=await import("../../scripts/lib/database.mjs");
+ const {loadWorkerRegistrationTs,setWorkerRegistrationRuntimeEnvironment}=await import("../helpers/worker-registration-runtime-loader.mjs");
+ const {DatabaseOutboxRepository}=loadWorkerRegistrationTs("src/lib/outbox/outbox-repository.ts");
+ const {processNextOutboxJob}=loadWorkerRegistrationTs("src/lib/outbox/outbox-worker.ts");
+ const db=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:dbDir});
+ let records,emailStatuses;
+ try{
+  setWorkerRegistrationRuntimeEnvironment({registrationOtpProviders:{},publicBaseUrl:baseUrl});
+  const repo=new DatabaseOutboxRepository(Promise.resolve(db));
+  let examined=0;
+  for(;examined<100;examined++){
+   const processed=await processNextOutboxJob({database:db,repository:repo});
+   if(!processed)break;
+   if(processed.jobType==="notification.assurance.event")assert.equal(processed.status,"succeeded","The actual registered assurance projector must complete.");
+   if(processed.jobType==="email.assurance.event"){
+    assert.ok(["succeeded","retry_wait","terminal_failed"].includes(processed.status));
+    assert.notEqual(processed.lastErrorCode,"handler_exception","The registered fixed email handler must run.");
+   }
+  }
+  assert.ok(examined<100,"The owned fixture queue exceeded the bounded registered worker run.");
+  const sourceCase=(await db.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1 AND worker_account_id=$2",[journeyCaseId,workerAccountId])).rows[0];
+  assert.ok(sourceCase?.credential_reference);
+  const appeal=(await db.query("SELECT appeal_id FROM credential_appeals WHERE credential_id=$1 ORDER BY created_at DESC LIMIT 1",[sourceCase.credential_reference])).rows[0];
+  assert.ok(appeal);
+  records=(await db.query("SELECT DISTINCT ON(notification_type) notification_id,notification_type,target_key,target_reference,read_at "+
+   "FROM platform_notifications WHERE recipient_account_id=$1 AND recipient_role='worker' "+
+   "AND ((notification_type='decision.recorded' AND target_reference=$2) OR "+
+    "(notification_type='credential.issued' AND target_reference=$3) OR "+
+    "(notification_type='appeal.updated' AND target_reference=$4)) ORDER BY notification_type,notification_sequence DESC",
+    [workerAccountId,journeyCaseId,sourceCase.credential_reference,appeal.appeal_id])).rows;
+  for(const type of ["decision.recorded","credential.issued","appeal.updated"])assert.ok(records.some(row=>row.notification_type===type),"Original "+type+" producer was not projected.");
+  assert.notEqual(credentials.worker.accountId,workerAccountId,"Foreign browser denial must use the separate real seeded Worker.");
+  emailStatuses=(await db.query("SELECT delivery_type,status,last_result_code,delivered_at FROM platform_email_deliveries "+
+   "WHERE recipient_account_id=$1 AND delivery_type IN ('evidence.submitted','evidence.reviewed','decision.recorded','credential.issued','appeal.submitted','appeal.updated') ORDER BY delivery_sequence DESC",[workerAccountId])).rows;
+  assert.ok(emailStatuses.length>=5);
+  assert.ok(emailStatuses.every(row=>["retry_wait","suppressed","terminal_failed"].includes(row.status) && row.delivered_at===null),"Empty provider configuration cannot claim provider acceptance or delivery.");
+  console.log("ACTUAL_ASSURANCE_WORKER_DB",JSON.stringify({examined,types:records.map(r=>r.notification_type),emailStatuses:emailStatuses.map(r=>({type:r.delivery_type,status:r.status,code:r.last_result_code}))}));
+ }finally{setWorkerRegistrationRuntimeEnvironment(undefined);await db.close();}
+ const proof=await runDevelopmentServer({
+  args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:root,environment:env,
+  probe:async()=>{
+   const browser=await chromium.launch({headless:true});
+   const context=await browser.newContext({viewport:{width:1440,height:1000}}),worker=await context.newPage();
+   try{
+    await login(worker,baseUrl,{email:EMAIL,password:PASSWORD},"worker");
+    for(const type of ["decision.recorded","credential.issued","appeal.updated"]){
+     const record=records.find(row=>row.notification_type===type);
+     await worker.goto(baseUrl+"/worker/notifications",{waitUntil:"domcontentloaded"});
+     const item=worker.locator(".notification-center-item").filter({has:worker.locator('input[name="notificationId"][value="'+record.notification_id+'"]')});
+     assert.equal(await item.count(),1);
+     await item.getByRole("button",{name:"Open",exact:true}).click();
+     const expected=type==="decision.recorded"?"/worker/assurance-cases/"+record.target_reference:
+      type==="credential.issued"?"/worker/passport#"+record.target_reference:"/worker/appeals#"+record.target_reference;
+     await worker.waitForURL(baseUrl+expected,{timeout:20000});
+     if(type==="decision.recorded"){
+      await worker.getByRole("heading",{name:"Assurance case",exact:true}).waitFor();
+      await worker.getByText("Case: "+record.target_reference,{exact:true}).waitFor();
+     }else await worker.locator('[id="'+record.target_reference+'"]').waitFor();
+     console.log("ACTUAL_ASSURANCE_NOTIFICATION_OPEN",type,expected);
+    }
+    await worker.goto(baseUrl+"/worker/notifications",{waitUntil:"domcontentloaded"});
+    const emailPanel=worker.locator("section").filter({has:worker.getByRole("heading",{name:"Email delivery",exact:true})});
+    await emailPanel.getByText("Your recent portal email updates.",{exact:true}).waitFor();
+    assert.equal(await emailPanel.getByText("Delivered",{exact:true}).count(),0);
+    assert.equal(await emailPanel.getByText("Sent",{exact:true}).count(),0);
+    assert.ok(await emailPanel.locator(".email-delivery-item").count()>0);
+    assert.ok(await emailPanel.getByText(/Retrying|Suppressed|Failed|Confirmation unavailable/,{exact:true}).count()>0);
+    const foreignContext=await browser.newContext({viewport:{width:1440,height:1000}}),foreignWorker=await foreignContext.newPage();
+    try{
+     await login(foreignWorker,baseUrl,credentials.worker,"worker");
+     const denied=await foreignWorker.goto(baseUrl+"/worker/assurance-cases/"+journeyCaseId,{waitUntil:"domcontentloaded"});
+     assert.equal(denied.status(),404,"A different real Worker cannot access the notification recipient\'s owned case.");
+     assert.equal((await foreignWorker.locator("main").innerText()).includes(journeyCaseId),false);
+    }finally{await foreignContext.close();}
+    return {code:0,signal:"SMOKE_COMPLETE"};
+   }finally{await context.close();await browser.close();}
+  }
+ });
+ assert.equal(proof.requestedSignal,"SMOKE_COMPLETE");
+ const retained=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:dbDir});
+ try{
+  const read=(await retained.query("SELECT notification_id,read_at FROM platform_notifications WHERE notification_id=ANY($1::text[])",[records.map(row=>row.notification_id)])).rows;
+  assert.ok(read.length>=3);assert.ok(read.every(row=>row.read_at!==null),"Real Open action must retain the one-way read timestamp.");
+ }finally{await retained.close();}
+ console.log("ACTUAL_ASSURANCE_NOTIFICATION_BROWSER original retained sources, registered worker, owned Open/read and foreign denial passed");
 }
 
 test("Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
@@ -195,6 +382,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         const worker=await workerContext.newPage(),verifier=await verifierContext.newPage(),assessor=await assessorContext.newPage(),admin=await adminContext.newPage();
         const errors=[];for(const p of [worker,verifier,assessor,admin]){p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>{if(m.type()==="error")errors.push(m.text());});}
         try{
+          if (INTERVIEW_POLICY) await publishInterviewPolicy(admin,baseUrl,credentials.admin);
           await login(worker,baseUrl,{email:EMAIL,password:PASSWORD},"worker");
           await worker.goto(`${baseUrl}/worker/assessment-applications`,{waitUntil:"domcontentloaded"});
           await worker.getByRole("heading",{name:"End-to-End Worker Assessment"}).first().waitFor({timeout:20000});
@@ -461,7 +649,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           if(!["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE)) await login(verifier,baseUrl,credentials.verifier,"verifier");await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);let scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.waitFor({timeout:20000});await scoreRow.locator('input[name="score"]').fill("92");await scoreRow.locator('select[name="decision"]').selectOption("PASS");await scoreRow.locator('textarea[name="reason"]').fill("Written response demonstrates correct hazard isolation and verification sequence.");await scoreRow.getByRole("button",{name:"Save scoring decision"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.getByPlaceholder("Criterion").fill("Hazard control reasoning");await scoreRow.locator('input[name="mark"]').fill("92");await scoreRow.getByRole("button",{name:"Save mark"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.getByRole("button",{name:"Finalize review"}).click();
 
           }
-          if(process.env.HSE_MASTERPLAN_TIMING !== "true") await login(admin,baseUrl,credentials.admin,"admin");
+          if(process.env.HSE_MASTERPLAN_TIMING !== "true" && !INTERVIEW_POLICY) await login(admin,baseUrl,credentials.admin,"admin");
           await admin.goto(`${baseUrl}/admin/assessor-matching`,{waitUntil:"domcontentloaded"});
           const unassignedCard=admin.locator("article").filter({hasText:"Masterplan Worker"}).first();
           if(await unassignedCard.count()){
@@ -475,14 +663,18 @@ test("Masterplan preserved Worker journey: register to credential, share and app
 
           await worker.goto(`${baseUrl}/worker/interviews/${interviewId}`);await worker.getByRole("button",{name:"Enter waiting room"}).click();await worker.getByRole("button",{name:"Check camera, microphone & connection"}).click();await worker.getByText("Camera, microphone and connection checks passed.",{exact:true}).waitFor({timeout:20000});await worker.getByLabel("I confirm I am the Worker assigned to this interview.").check();await worker.getByRole("button",{name:"Ready for Interview"}).click();await worker.getByText(/Ready checks and required consent are recorded/).waitFor({timeout:20000});
 
-          await assessor.goto(`${baseUrl}${href}`);await assessor.getByRole("button",{name:"Claim interview"}).click();await assessor.getByRole("button",{name:"Admit ready Worker"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Admit ready Worker"}).click();await assessor.getByRole("button",{name:"Start interview"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Start interview"}).click();await assessor.getByLabel(/I allow this browser to use my camera and microphone/).check();await assessor.getByRole("button",{name:"Enable camera & microphone"}).click();await assessor.getByText("Waiting for worker to join",{exact:true}).waitFor({timeout:20000});
-          await assessor.getByLabel("Assessor follow-up question").fill("Describe how you would verify the area remains controlled before restart.");await assessor.getByRole("button",{name:"Add versioned follow-up"}).click();await assessor.getByLabel("Pause reason").fill("Controlled pause to verify the candidate connection.");await assessor.getByRole("button",{name:"Pause interview"}).click();await assessor.getByRole("button",{name:"Resume interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"Resume interview"}).click();
+          await assessor.goto(`${baseUrl}${href}`);await assessor.getByRole("button",{name:"Claim interview"}).click();await assessor.getByRole("button",{name:"Admit ready Worker"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Admit ready Worker"}).click();await assessor.getByRole("button",{name:"Start interview"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Start interview"}).click();await configuredInterviewDuration(assessor);await assessor.getByLabel(/I allow this browser to use my camera and microphone/).check();await assessor.getByRole("button",{name:"Enable camera & microphone"}).click();await assessor.getByText("Waiting for worker to join",{exact:true}).waitFor({timeout:20000});
+          await assessor.getByRole("tab",{name:"Questions",exact:true}).click();if (INTERVIEW_POLICY) {
+            await assessor.getByLabel("Approved follow-up question").selectOption("follow");
+            await assessor.getByText("Approved policy version:",{exact:false}).waitFor();
+          } else await assessor.getByLabel("Assessor follow-up question").fill("Describe how you would verify the area remains controlled before restart.");await assessor.getByRole("button",{name:"Add versioned follow-up"}).click();await assessor.getByLabel("Pause reason").fill("Controlled pause to verify the candidate connection.");await assessor.getByRole("button",{name:"Pause interview"}).click();await assessor.getByRole("button",{name:"Resume interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"Resume interview"}).click();if(INTERVIEW_POLICY)configuredActiveSince.set(assessor,Date.now());
+          await assessor.getByRole("tab",{name:"Notes and scoring",exact:true}).click();
           for(const label of ["Technical knowledge","Practical reasoning","Safety awareness","Communication","Consistency with written answers","Confidence / clarity","Trade judgment"])await assessor.getByLabel(label).fill("5");
-          await assessor.getByLabel("Notes",{exact:true}).fill("Candidate consistently explained controlled isolation and verification.");await assessor.getByLabel("Scorecard comments").fill("Strong evidence-based interview.");await assessor.locator('select[name="recommendation"]').selectOption("PASS");await assessor.getByRole("button",{name:"Save draft"}).click();await assessor.waitForFunction(()=>document.querySelector('select[name="recommendation"]')?.value==="PASS");await assessor.getByRole("button",{name:"End interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"End interview"}).click();await assessor.getByRole("button",{name:"Submit final recommendation"}).waitFor({timeout:15000});const finalForm=assessor.getByRole("button",{name:"Submit final recommendation"}).locator("xpath=ancestor::form");const validity=await finalForm.evaluate((form)=>({valid:form.checkValidity(),invalid:[...form.querySelectorAll(":invalid")].map((el)=>({name:el.getAttribute("name"),value:(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||el instanceof HTMLSelectElement)?el.value:null}))}));assert.equal(validity.valid,true,"Final interview form invalid: "+JSON.stringify(validity.invalid));await assessor.getByRole("button",{name:"Submit final recommendation"}).click();try{await assessor.getByText(/Final interview record submitted and locked/).waitFor({timeout:20000});}catch(error){throw new Error("Final recommendation transaction failed.\nASSESSOR:\n"+await assessor.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
+          await assessor.getByLabel("Notes",{exact:true}).fill("Candidate consistently explained controlled isolation and verification.");await assessor.getByLabel("Scorecard comments").fill("Strong evidence-based interview.");await assessor.locator('select[name="recommendation"]').selectOption("PASS");await configuredInterviewCoverage(assessor,{denyIncomplete:true});await assessor.getByRole("button",{name:"Save draft"}).click();await assessor.waitForFunction(()=>document.querySelector('select[name="recommendation"]')?.value==="PASS");await waitConfiguredActiveMinimum(assessor);await assessor.getByRole("button",{name:"End interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"End interview"}).click();await assessor.getByRole("tab",{name:"Notes and scoring",exact:true}).click();await assessor.getByRole("button",{name:"Submit final recommendation"}).waitFor({timeout:15000});const finalForm=assessor.getByRole("button",{name:"Submit final recommendation"}).locator("xpath=ancestor::form");const validity=await finalForm.evaluate((form)=>({valid:form.checkValidity(),invalid:[...form.querySelectorAll(":invalid")].map((el)=>({name:el.getAttribute("name"),value:(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||el instanceof HTMLSelectElement)?el.value:null}))}));assert.equal(validity.valid,true,"Final interview form invalid: "+JSON.stringify(validity.invalid));await assessor.getByRole("button",{name:"Submit final recommendation"}).click();try{await assessor.getByText(/Final interview record submitted and locked/).waitFor({timeout:20000});}catch(error){throw new Error("Final recommendation transaction failed.\nASSESSOR:\n"+await assessor.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${journeyCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});
 
-          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText("End-to-End Worker Assessment",{exact:true}).first().waitFor({timeout:20000});await worker.getByText(/valid · no expiry recorded/i).waitFor();
+          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText("End-to-End Worker Assessment",{exact:true}).first().waitFor({timeout:20000});await worker.getByText(COMPLETE_REASSESSMENT?/valid · expires \d{4}-\d{2}-\d{2}/i:/valid · no expiry recorded/i).waitFor();
           await worker.goto(`${baseUrl}/worker/appeals`);const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:"End-to-End Worker Assessment"});const credentialId=await credentialOption.getAttribute("value");assert.ok(credentialId?.startsWith("credential_id_"));
           const publicPage=await workerContext.newPage();const publicResponse=await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});assert.equal(publicResponse?.status(),200);await publicPage.getByText("End-to-End Worker Assessment",{exact:true}).waitFor();const publicApi=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}`);assert.equal(publicApi.status(),200);assert.equal((await publicApi.json()).status,"valid");
           const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);assert.ok((await pdf.body()).subarray(0,8).toString().startsWith("%PDF-1.4"));await publicPage.close();
@@ -491,7 +683,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
 
           await worker.goto(`${baseUrl}/worker/appeals`);await worker.getByLabel("Credential").selectOption(credentialId);await worker.getByLabel("Appeal grounds").fill("The issued competency should be reassessed against the retained qualification evidence after this end-to-end verification.");await worker.locator('input[name="evidenceRecordIds"]').first().check();await worker.getByRole("button",{name:"Submit credential appeal"}).click();await worker.getByText("Appeal submitted for independent review.",{exact:true}).waitFor({timeout:15000});
           await admin.goto(`${baseUrl}/admin/appeals`);let appeal=admin.locator("article").filter({hasText:credentialId}).first();await appeal.getByLabel("Review status").selectOption("under_review");await appeal.getByLabel("Accepted-outcome action").selectOption("none");await appeal.getByLabel("Reasoned review outcome").fill("Independent review opened against the original issued credential and retained qualification evidence.");await appeal.getByRole("button",{name:"Record appeal review"}).click();await appeal.getByText(/^Status: under review · Version/).waitFor({timeout:15000});await admin.reload();appeal=admin.locator("article").filter({hasText:credentialId}).first();await appeal.getByLabel("Review status").selectOption("accepted");await appeal.getByLabel("Accepted-outcome action").selectOption("reassessment");await appeal.getByLabel("Reasoned review outcome").fill("Appeal accepted; competency reassessment is required before returning the Living Record to valid.");await appeal.getByRole("button",{name:"Record appeal review"}).click();await appeal.getByText(/^Status: accepted · Version/).waitFor({timeout:15000});
-          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText(/reassessment required · no expiry recorded/i).waitFor({timeout:20000});await worker.getByText(/Version 2 · reassessment required/i).waitFor();
+          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText(COMPLETE_REASSESSMENT?/reassessment required · expires \d{4}-\d{2}-\d{2}/i:/reassessment required · no expiry recorded/i).waitFor({timeout:20000});await worker.getByText(/Version 2 · reassessment required/i).waitFor();
 
           assert.deepEqual(errors.filter(e=>!e.includes("favicon") && !((process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" || process.env.HSE_MASTERPLAN_MCQ_OFFLINE === "true") && e === "Failed to load resource: net::ERR_INTERNET_DISCONNECTED")),[],`Browser errors:\n${errors.join("\n")}\n${output()}`);
           return {credentialId,interviewId,attemptId,originalAttemptId};
@@ -530,13 +722,21 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         await reassessmentDb.query("UPDATE assessment_questions SET question_status='ACTIVE',current_version_id=$2,current_content_fingerprint=$3 WHERE question_id=$1",[qid,vid,fp]);
       }
     } finally {await reassessmentDb.close();}
-    let originalCredentialId,reassessmentCaseId=null;
+    let originalCredentialId,originalAppealId,originalAppealVersion,originalCredentialBefore,originalPolicyBefore,originalAppealEventsBefore,reassessmentCaseId=null,reassessmentApplicationId=null;
     if(process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true") {
     assert.equal(CONTENT_MODE,"COMBINED");
     assert.equal(DELIVERY_MODE,"STRICT");
     const oldDb=new PGlite(dbDir);
 
-    try { originalCredentialId=(await oldDb.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0].credential_reference; }
+    try {
+      originalCredentialId=(await oldDb.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0].credential_reference;
+      const accepted=(await oldDb.query("SELECT appeal_id,version FROM credential_appeals WHERE credential_id=$1 AND status='accepted' AND outcome_action='reassessment'",[originalCredentialId])).rows;
+      assert.equal(accepted.length,1);originalAppealId=accepted[0].appeal_id;originalAppealVersion=Number(accepted[0].version);
+      originalCredentialBefore=(await oldDb.query("SELECT issued_at,expires_at,qr_payload,signature FROM credential_issuances WHERE credential_id=$1",[originalCredentialId])).rows[0];
+      originalPolicyBefore=(await oldDb.query("SELECT * FROM assurance_case_policy_snapshots WHERE case_id=$1",[journeyCaseId])).rows;
+      originalAppealEventsBefore=(await oldDb.query("SELECT * FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",[originalAppealId])).rows;
+      assert.equal(new Date(originalCredentialBefore.expires_at).getTime()-new Date(originalCredentialBefore.issued_at).getTime(),60*86400000);
+    }
     finally { await oldDb.close(); }
 
     const reassessment=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/worker/login`,projectRoot:root,environment:env,
@@ -550,15 +750,25 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         const errors=[];for(const p of [worker,verifier,assessor,admin]){p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>{if(m.type()==="error")errors.push(m.text());});}
         try{
           await login(worker,baseUrl,{email:EMAIL,password:PASSWORD},"worker");
-          await worker.goto(`${baseUrl}/worker/assessment-applications`);
+          await worker.goto(baseUrl+"/worker/appeals");
+          const acceptedAppeal=worker.locator('article[id="'+originalAppealId+'"]');
+          await acceptedAppeal.getByText(/^Status: accepted · Version/).waitFor();
+          await acceptedAppeal.getByRole("link",{name:"Continue reassessment",exact:true}).click();
+          await worker.waitForURL(url=>url.pathname==="/worker/assessment-applications" && url.searchParams.get("sourceAppealId")===originalAppealId,{timeout:20000});
+          const applicationForm=worker.getByRole("button",{name:"Apply — worker pays"}).locator("xpath=ancestor::form");
+          assert.equal(await applicationForm.locator('input[name="sourceAppealId"]').inputValue(),originalAppealId);
           await worker.getByRole("button",{name:"Apply — worker pays"}).click();
           await worker.getByText("Application created. Complete the sandbox self-payment confirmation to fund the assessment.",{exact:true}).waitFor({timeout:20000});
           await worker.getByText("Status: COMPLETED",{exact:true}).waitFor();
+          const paymentForm=worker.getByRole("button",{name:"Confirm sandbox payment"}).locator("xpath=ancestor::form");
+          reassessmentApplicationId=await paymentForm.locator('input[name="applicationId"]').inputValue();
           await worker.getByRole("button",{name:"Confirm sandbox payment"}).click();
           await worker.getByText("Funding confirmed. The assessment case is ready.",{exact:true}).waitFor({timeout:20000});
           reassessmentCaseId=(await worker.locator("article").filter({hasText:"Status: CASE CREATED"}).getByText(/^assurance_case_[A-Za-z0-9_-]{24}$/).innerText()).trim();
           assert.match(reassessmentCaseId,/^assurance_case_[A-Za-z0-9_-]{24}$/);
-          await worker.getByRole("link",{name:"Continue to available assessments"}).click();
+          const reassessmentApplication=worker.locator("article").filter({hasText:reassessmentCaseId});
+          await reassessmentApplication.getByText(originalAppealId,{exact:true}).waitFor();
+          await reassessmentApplication.getByRole("link",{name:"Continue to available assessments"}).click();
           await worker.waitForURL("**/worker/available-assessments",{timeout:20000});
           const eligibleHeading=worker.getByRole("region",{name:"Eligible assessment offerings"}).getByRole("heading",{name:"End-to-End Worker Assessment"});
           try {
@@ -595,17 +805,39 @@ test("Masterplan preserved Worker journey: register to credential, share and app
 
           await worker.goto(`${baseUrl}/worker/interviews/${interviewId}`);await worker.getByRole("button",{name:"Enter waiting room"}).click();await worker.getByRole("button",{name:"Check camera, microphone & connection"}).click();await worker.getByText("Camera, microphone and connection checks passed.",{exact:true}).waitFor({timeout:20000});await worker.getByLabel("I confirm I am the Worker assigned to this interview.").check();await worker.getByRole("button",{name:"Ready for Interview"}).click();await worker.getByText(/Ready checks and required consent are recorded/).waitFor({timeout:20000});
 
-          await assessor.goto(`${baseUrl}${href}`);await assessor.getByRole("button",{name:"Claim interview"}).click();await assessor.getByRole("button",{name:"Admit ready Worker"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Admit ready Worker"}).click();await assessor.getByRole("button",{name:"Start interview"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Start interview"}).click();await assessor.getByLabel(/I allow this browser to use my camera and microphone/).check();await assessor.getByRole("button",{name:"Enable camera & microphone"}).click();await assessor.getByText("Waiting for worker to join",{exact:true}).waitFor({timeout:20000});
-          await assessor.getByLabel("Assessor follow-up question").fill("Describe how you would verify the area remains controlled before restart.");await assessor.getByRole("button",{name:"Add versioned follow-up"}).click();await assessor.getByLabel("Pause reason").fill("Controlled pause to verify the candidate connection.");await assessor.getByRole("button",{name:"Pause interview"}).click();await assessor.getByRole("button",{name:"Resume interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"Resume interview"}).click();
+          await assessor.goto(`${baseUrl}${href}`);await assessor.getByRole("button",{name:"Claim interview"}).click();await assessor.getByRole("button",{name:"Admit ready Worker"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Admit ready Worker"}).click();await assessor.getByRole("button",{name:"Start interview"}).waitFor({timeout:20000});await assessor.getByRole("button",{name:"Start interview"}).click();await configuredInterviewDuration(assessor);await assessor.getByLabel(/I allow this browser to use my camera and microphone/).check();await assessor.getByRole("button",{name:"Enable camera & microphone"}).click();await assessor.getByText("Waiting for worker to join",{exact:true}).waitFor({timeout:20000});
+          await assessor.getByRole("tab",{name:"Questions",exact:true}).click();if (INTERVIEW_POLICY) {
+            await assessor.getByLabel("Approved follow-up question").selectOption("follow");
+            await assessor.getByText("Approved policy version:",{exact:false}).waitFor();
+          } else await assessor.getByLabel("Assessor follow-up question").fill("Describe how you would verify the area remains controlled before restart.");await assessor.getByRole("button",{name:"Add versioned follow-up"}).click();await assessor.getByLabel("Pause reason").fill("Controlled pause to verify the candidate connection.");await assessor.getByRole("button",{name:"Pause interview"}).click();await assessor.getByRole("button",{name:"Resume interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"Resume interview"}).click();if(INTERVIEW_POLICY)configuredActiveSince.set(assessor,Date.now());
+          await assessor.getByRole("tab",{name:"Notes and scoring",exact:true}).click();
           for(const label of ["Technical knowledge","Practical reasoning","Safety awareness","Communication","Consistency with written answers","Confidence / clarity","Trade judgment"])await assessor.getByLabel(label).fill("5");
-          await assessor.getByLabel("Notes",{exact:true}).fill("Candidate consistently explained controlled isolation and verification.");await assessor.getByLabel("Scorecard comments").fill("Strong evidence-based interview.");await assessor.locator('select[name="recommendation"]').selectOption("PASS");await assessor.getByRole("button",{name:"Save draft"}).click();await assessor.waitForFunction(()=>document.querySelector('select[name="recommendation"]')?.value==="PASS");await assessor.getByRole("button",{name:"End interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"End interview"}).click();await assessor.getByRole("button",{name:"Submit final recommendation"}).waitFor({timeout:15000});const finalForm=assessor.getByRole("button",{name:"Submit final recommendation"}).locator("xpath=ancestor::form");const validity=await finalForm.evaluate((form)=>({valid:form.checkValidity(),invalid:[...form.querySelectorAll(":invalid")].map((el)=>({name:el.getAttribute("name"),value:(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||el instanceof HTMLSelectElement)?el.value:null}))}));assert.equal(validity.valid,true,"Final interview form invalid: "+JSON.stringify(validity.invalid));await assessor.getByRole("button",{name:"Submit final recommendation"}).click();try{await assessor.getByText(/Final interview record submitted and locked/).waitFor({timeout:20000});}catch(error){throw new Error("Final recommendation transaction failed.\nASSESSOR:\n"+await assessor.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
+          await assessor.getByLabel("Notes",{exact:true}).fill("Candidate consistently explained controlled isolation and verification.");await assessor.getByLabel("Scorecard comments").fill("Strong evidence-based interview.");await assessor.locator('select[name="recommendation"]').selectOption("PASS");await configuredInterviewCoverage(assessor);await assessor.getByRole("button",{name:"Save draft"}).click();await assessor.waitForFunction(()=>document.querySelector('select[name="recommendation"]')?.value==="PASS");await waitConfiguredActiveMinimum(assessor);await assessor.getByRole("button",{name:"End interview"}).waitFor({timeout:15000});await assessor.getByRole("button",{name:"End interview"}).click();await assessor.getByRole("tab",{name:"Notes and scoring",exact:true}).click();await assessor.getByRole("button",{name:"Submit final recommendation"}).waitFor({timeout:15000});const finalForm=assessor.getByRole("button",{name:"Submit final recommendation"}).locator("xpath=ancestor::form");const validity=await finalForm.evaluate((form)=>({valid:form.checkValidity(),invalid:[...form.querySelectorAll(":invalid")].map((el)=>({name:el.getAttribute("name"),value:(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||el instanceof HTMLSelectElement)?el.value:null}))}));assert.equal(validity.valid,true,"Final interview form invalid: "+JSON.stringify(validity.invalid));await assessor.getByRole("button",{name:"Submit final recommendation"}).click();try{await assessor.getByText(/Final interview record submitted and locked/).waitFor({timeout:20000});}catch(error){throw new Error("Final recommendation transaction failed.\nASSESSOR:\n"+await assessor.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${reassessmentCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});
 
-          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText("End-to-End Worker Assessment",{exact:true}).first().waitFor({timeout:20000});await worker.getByText(/valid · no expiry recorded/i).waitFor();
-          await worker.goto(`${baseUrl}/worker/appeals`);const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:"End-to-End Worker Assessment"});const credentialId=(await credentialOption.evaluateAll(options=>options.map(option=>option.value))).find(id=>id!==originalCredentialId);assert.ok(credentialId?.startsWith("credential_id_"));
-          const publicContext=await browser.newContext();const publicPage=await publicContext.newPage();const publicResponse=await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});assert.equal(publicResponse?.status(),200);await publicPage.getByText("End-to-End Worker Assessment",{exact:true}).waitFor();const publicApi=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}`);assert.equal(publicApi.status(),200);assert.equal((await publicApi.json()).status,"valid");
-          const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);assert.ok((await pdf.body()).subarray(0,8).toString().startsWith("%PDF-1.4"));await publicContext.close();
+          await worker.goto(baseUrl+"/worker/appeals");
+          const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:"End-to-End Worker Assessment"});
+          const credentialId=(await credentialOption.evaluateAll(options=>options.map(option=>option.value))).find(id=>id!==originalCredentialId);
+          assert.ok(credentialId?.startsWith("credential_id_"));
+          await worker.goto(baseUrl+"/worker/passport");
+          const oldCompetency=worker.locator('[id="'+originalCredentialId+'"]'),newCompetency=worker.locator('[id="'+credentialId+'"]');
+          await oldCompetency.getByText(/^revoked · expires /).waitFor();
+          await oldCompetency.getByText(REPLACED_RESTRICTION,{exact:true}).waitFor();
+          await newCompetency.getByText(/^valid · expires /).waitFor();
+          assert.equal(await newCompetency.getByRole("link",{name:"Verify credential",exact:true}).getAttribute("href"),"/verify/result/"+credentialId);
+          const livingHistory=worker.locator("section").filter({has:worker.getByRole("heading",{name:"Living Record history",exact:true})});
+          await livingHistory.getByText(/^Version 3 · revoked/).waitFor();
+          await livingHistory.getByText(/^Version 2 · reassessment required/).waitFor();
+          assert.equal(await livingHistory.getByText(/^Version 1 · valid/).count(),2);
+          const publicContext=await browser.newContext(),publicPage=await publicContext.newPage();
+          try {
+            await assertReplacementPublicConsumers(publicPage,baseUrl,originalCredentialId,{status:"revoked",issuedAt:new Date(originalCredentialBefore.issued_at).toISOString(),expiresAt:new Date(originalCredentialBefore.expires_at).toISOString()});
+            const freshApi=await publicPage.request.get(baseUrl+"/api/credentials/"+credentialId);
+            assert.equal(freshApi.status(),200);const fresh=await freshApi.json();
+            await assertReplacementPublicConsumers(publicPage,baseUrl,credentialId,{status:"valid",issuedAt:fresh.issuedAt,expiresAt:fresh.expiresAt});
+          }finally{await publicContext.close();}
+          console.log("ACTUAL_REASSESSMENT_PUBLIC_BROWSER old revoked, new valid, exact expiry, real PDFs, fresh reloads and Passport retained history");
 
 
           assert.deepEqual(errors,[],`Reassessment browser errors:\n${errors.join("\n")}\n${output()}`);
@@ -631,7 +863,31 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         assert.ok(replacementCase.credential_reference);
         assert.notEqual(replacementCase.credential_reference,originalCredentialId);
         const replacementLiving=(await verify.query("SELECT v.status FROM living_record_competencies c JOIN living_record_versions v ON v.competency_id=c.competency_id WHERE c.source_credential_id=$1 ORDER BY v.version",[replacementCase.credential_reference])).rows;
-        assert.equal(replacementLiving.at(-1)?.status,"valid");
+        assert.deepEqual(replacementLiving.map(row=>row.status),["valid"]);
+        const links=(await verify.query("SELECT * FROM credential_replacements WHERE old_credential_id=$1",[originalCredentialId])).rows;
+        assert.equal(links.length,1);const link=links[0];
+        assert.equal(link.disposition,"REPLACED");assert.equal(link.appeal_id,originalAppealId);
+        assert.equal(link.old_case_id,journeyCaseId);assert.equal(link.new_case_id,reassessmentCaseId);
+        assert.equal(link.new_credential_id,replacementCase.credential_reference);assert.equal(link.tenant_id,journeyTenantId);assert.equal(link.worker_id,permanentWorkerId);
+        const sources=(await verify.query("SELECT source.*,application.assurance_case_id,application.application_status FROM worker_assessment_reassessment_sources source JOIN worker_assessment_applications application USING(application_id) WHERE source.application_id=$1",[reassessmentApplicationId])).rows;
+        assert.equal(sources.length,1);const source=sources[0];
+        assert.equal(source.source_appeal_id,originalAppealId);assert.equal(Number(source.source_appeal_version),originalAppealVersion);
+        assert.equal(source.source_case_id,journeyCaseId);assert.equal(source.source_tenant_id,journeyTenantId);
+        assert.equal(source.source_credential_id,originalCredentialId);assert.equal(source.worker_account_id,workerAccountId);
+        assert.equal(source.permanent_worker_id,permanentWorkerId);assert.equal(source.assurance_case_id,reassessmentCaseId);assert.equal(source.application_status,"CASE_CREATED");
+        const freshIssuance=(await verify.query("SELECT issued_at,expires_at,qr_payload FROM credential_issuances WHERE credential_id=$1",[replacementCase.credential_reference])).rows[0];
+        const validity=JSON.parse(freshIssuance.qr_payload).validity;
+        const newPin=(await verify.query("SELECT snapshot_id,global_policy_version_id,framework_id FROM assurance_case_policy_snapshots WHERE case_id=$1",[reassessmentCaseId])).rows[0];
+        assert.equal(validity.mode,"days");assert.equal(validity.days,60);
+        assert.equal(validity.snapshotId,newPin.snapshot_id);assert.equal(validity.snapshotId,link.policy_snapshot_id);
+        assert.equal(validity.policyVersionId,newPin.global_policy_version_id);assert.equal(newPin.framework_id,source.source_framework_id);
+        assert.notEqual(newPin.snapshot_id,originalPolicyBefore[0].snapshot_id);
+        assert.equal(newPin.global_policy_version_id,originalPolicyBefore[0].global_policy_version_id,"The fresh case must independently pin the actually published current60-day policy.");
+        assert.equal(new Date(freshIssuance.expires_at).getTime()-new Date(freshIssuance.issued_at).getTime(),60*86400000);
+        assert.deepEqual((await verify.query("SELECT issued_at,expires_at,qr_payload,signature FROM credential_issuances WHERE credential_id=$1",[originalCredentialId])).rows[0],originalCredentialBefore);
+        assert.deepEqual((await verify.query("SELECT * FROM assurance_case_policy_snapshots WHERE case_id=$1",[journeyCaseId])).rows,originalPolicyBefore);
+        assert.deepEqual((await verify.query("SELECT * FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",[originalAppealId])).rows,originalAppealEventsBefore);
+        console.log("ACTUAL_REASSESSMENT_LINKAGE_DB explicit immutable application source finalized once, old signature/policy/appeal history retained, new current policy pin");
         const forms=(await verify.query("SELECT attempts.case_id,items.question_id FROM assessment_attempts attempts JOIN generated_assessment_form_items items ON items.form_id=attempts.form_id WHERE attempts.case_id=ANY($1::text[])",[[journeyCaseId,reassessmentCaseId]])).rows;
         const priorQuestions=new Set(forms.filter(row=>row.case_id===journeyCaseId).map(row=>row.question_id));
         const freshQuestions=forms.filter(row=>row.case_id===reassessmentCaseId);
@@ -645,6 +901,31 @@ test("Masterplan preserved Worker journey: register to credential, share and app
         assert.equal(clocks.length,1);assert.equal(Number(clocks[0].time_multiplier),1.5);assert.deepEqual(clocks[0].phase_durations_json,[1800]);
         assert.equal(new Date(clocks[0].deadline_at).getTime()-new Date(clocks[0].started_at).getTime(),1800000);
         console.log("ACTUAL_WORKER_TIMING_DB owned approved multiplier snapshotted once, exact1800s clock retained through normal scoring/interview/credential");
+      }
+      if (INTERVIEW_POLICY) {
+        const cases=[journeyCaseId,...(reassessmentCaseId?[reassessmentCaseId]:[])];
+        const records=(await verify.query(`SELECT requests.trade_scope,requests.qualification_scope,requests.risk_level,requests.jurisdiction,
+          requests.recording_retention_days,snapshots.global_policy_version_id,sets.question_set_id,sets.version_no,
+          sets.source_context_json,sets.questions_json,drafts.scorecard,drafts.submitted
+          FROM interview_requests requests
+          JOIN assurance_case_policy_snapshots snapshots ON snapshots.case_id=requests.case_id AND snapshots.tenant_id=requests.tenant_id
+          JOIN LATERAL (SELECT * FROM interview_question_sets WHERE interview_request_id=requests.interview_request_id ORDER BY version_no DESC LIMIT 1) sets ON TRUE
+          JOIN interview_console_drafts drafts ON drafts.interview_request_id=requests.interview_request_id
+          WHERE requests.case_id=ANY($1::text[]) AND requests.status='COMPLETED'`,[cases])).rows;
+        assert.equal(records.length,cases.length);
+        for (const row of records) {
+          assert.equal(row.trade_scope,"electrical");assert.equal(row.qualification_scope,"level-3");
+          assert.equal(row.risk_level,"HIGH");assert.equal(row.jurisdiction,"GB");assert.equal(row.recording_retention_days,45);
+          assert.equal(row.source_context_json.policyVersionId,row.global_policy_version_id);
+          assert.equal(row.source_context_json.policyMode,"CONFIGURED");
+          assert.equal(row.questions_json.filter(q=>q.kind==="RANDOM").length,1);
+          assert(row.questions_json.some(q=>q.templateId==="safety"));assert(row.questions_json.some(q=>q.templateId==="follow"));
+          assert(!row.questions_json.some(q=>q.templateId==="foreign"));
+          assert.equal(row.scorecard.questionSetId,row.question_set_id);assert.equal(row.scorecard.questionSetVersion,row.version_no);
+          assert.equal(row.scorecard.coveredQuestionIds.length,row.questions_json.length);
+          assert.ok(row.scorecard.activeSeconds>=INTERVIEW_POLICY_MIN_ACTIVE_SECONDS);assert.equal(row.scorecard.safetyFindings[0].status,"NOT_OBSERVED");assert.equal(row.submitted,true);
+        }
+        console.log("ACTUAL_INTERVIEW_POLICY_DB published version pinned to both cases; authoritative context, approved selection, coverage, findings and exact set reference retained");
       }
       assert.ok(journeyCaseId,"Preserved Worker journey did not expose its Assurance Case ID.");
       const c=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0];assert.equal(c.case_status,"Approved");assert.ok(c.decision_reference);assert.ok(c.credential_reference);
@@ -675,8 +956,9 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           "The recovered offline response did not survive final submission to the permanent assessment answer.");
       }
       const order=(await verify.query("SELECT order_status FROM assurance_orders WHERE order_id=(SELECT order_id FROM assurance_cases WHERE case_id=$1)",[journeyCaseId])).rows[0];assert.equal(order.order_status,"COMPLETED");
-      const living=await verify.query("SELECT v.version,v.status FROM living_record_competencies c JOIN living_record_versions v ON v.competency_id=c.competency_id WHERE c.source_credential_id=$1 ORDER BY v.version",[c.credential_reference]);assert.deepEqual(living.rows.map(r=>r.status),["valid","reassessment_required"]);
+      const living=await verify.query("SELECT v.version,v.status FROM living_record_competencies c JOIN living_record_versions v ON v.competency_id=c.competency_id WHERE c.source_credential_id=$1 ORDER BY v.version",[c.credential_reference]);assert.deepEqual(living.rows.map(r=>r.status),COMPLETE_REASSESSMENT?["valid","reassessment_required","revoked"]:["valid","reassessment_required"]);
     } finally {await verify.close();}
+    if(ASSURANCE_NOTIFICATIONS)await verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env,credentials,workerAccountId,journeyCaseId});
   } finally {
     await rm(dbDir, { recursive: true, force: true });
   }

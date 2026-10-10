@@ -34,6 +34,8 @@ jobs:
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: memory://
       HSE_RELEASE_SHA: masterplan-completion-qa
@@ -67,6 +69,21 @@ jobs:
         run: node --test tests/auth/recovery-provider-delivery.test.mjs
       - name: Worker OTP cooldown, exhaustion and required-audit rollback
         run: node --test tests/platform/worker-registration-otp-runtime.test.mjs
+      - name: Assessor console case context and private preview boundaries
+        run: npm run test:interview-console-context
+
+      - name: Credential authenticity, reports, funding, privacy execution and pinned interview rules
+        run: |
+          npm run test:credential-authentication
+          npm run test:assessment-eligibility
+          npm run test:report-generation
+          npm run test:funding-notifications
+          npm run test:privacy-execution
+          npm run test:interview-policy
+
+      - name: Cold database and private object business recovery
+        run: npm run test:restore-business-recovery
+
       - name: Strict TypeScript
         run: npm run typecheck
 
@@ -179,6 +196,8 @@ jobs:
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: memory://
       HSE_RELEASE_SHA: masterplan-completion-browser
@@ -332,6 +351,18 @@ jobs:
       - name: Five-role recovery-code rotation and authenticator replacement
         run: npm run test:mfa-management-boundaries-browser
 
+      - name: Assessor console live media, Verifier sharing and private evidence
+        run: npm run test:interview-live-media-browser
+
+      - name: Real reports, funding handoff, privacy execution and pinned interview policy journeys
+        run: |
+          npm run test:credential-validity-browser
+          npm run test:assessment-eligibility-browser
+          npm run test:report-generation-browser
+          npm run test:funding-notifications-browser
+          npm run test:privacy-execution-browser
+          npm run test:interview-policy-browser
+
       - name: Actual blueprint timers and approved Worker time delivery
         run: npm run test:assessment-timing-browser
 
@@ -340,6 +371,8 @@ jobs:
     timeout-minutes: 45
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: .data/m3-release-db
       HSE_RELEASE_SHA: ${{ github.sha }}

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
-import ts from "typescript";
+import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
@@ -24,38 +21,12 @@ const ENV = {
 
 
 async function loadAppealStack() {
-  const out = mkdtempSync(resolve(tmpdir(), "hse-credential-appeal-stack-"));
-  for (const sourceFile of [
-    "src/lib/worker-evidence/worker-evidence-domain.ts",
-    "src/lib/living-record/living-record-domain.ts",
-    "src/lib/living-record/living-record-repository.ts",
-    "src/lib/credential/credential-issuance-domain.ts",
-    "src/lib/credential/credential-issuance-repository.ts",
-    "src/lib/credential/credential-appeals-domain.ts",
-    "src/lib/credential/credential-appeals-repository.ts",
-    "src/lib/credential/credential-lifecycle-service.ts",
-    "src/lib/credential/credential-appeals-service.ts"
-  ]) {
-    const source = readFileSync(sourceFile, "utf8").replace(/^import "server-only";\n?/, "");
-    const output = ts.transpileModule(source, {
-      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
-    }).outputText;
-    const target = resolve(out, sourceFile.replace(/^src\//, "").replace(/\.ts$/, ".js"));
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, output);
-  }
-  const dbTarget = resolve(out, "lib/database/database.js");
-  mkdirSync(dirname(dbTarget), { recursive: true });
-  writeFileSync(
-    dbTarget,
-    "module.exports={getDatabaseClient:async()=>{throw new Error('test injects database')}};"
-  );
   return {
-    service: await import(`file://${resolve(out, "lib/credential/credential-appeals-service.js")}`),
-    appealsRepository: await import(`file://${resolve(out, "lib/credential/credential-appeals-repository.js")}`),
-    credentialRepository: await import(`file://${resolve(out, "lib/credential/credential-issuance-repository.js")}`),
-    livingRepository: await import(`file://${resolve(out, "lib/living-record/living-record-repository.js")}`),
-    livingDomain: await import(`file://${resolve(out, "lib/living-record/living-record-domain.js")}`)
+    service: loadTs("src/lib/credential/credential-appeals-service.ts"),
+    appealsRepository: loadTs("src/lib/credential/credential-appeals-repository.ts"),
+    credentialRepository: loadTs("src/lib/credential/credential-issuance-repository.ts"),
+    livingRepository: loadTs("src/lib/living-record/living-record-repository.ts"),
+    livingDomain: loadTs("src/lib/living-record/living-record-domain.ts")
   };
 }
 

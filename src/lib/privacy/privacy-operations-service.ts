@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { ContactCityCorrection, RecordingDeletion } from "./privacy-execution";
 import { createIdentifier } from "../auth/auth-domain";
 import { PrivacyOperationsRepository } from "./privacy-operations-repository";
 import {
@@ -76,6 +77,7 @@ export class PrivacyOperationsService {
   async reviewRequest(input: {
     requestId: string; reviewerAccountId: string; expectedStatus: string;
     decision: "PROCESSING" | "REJECTED" | "COMPLETED"; reason: string;
+    reviewerSessionId?: string; approvedCorrection?: ContactCityCorrection; approvedDeletion?: RecordingDeletion;
   }) {
     const reason = input.reason.trim();
     if (!input.requestId || !input.reviewerAccountId || reason.length < 10 || reason.length > 2000 ||
@@ -163,9 +165,23 @@ export class PrivacyOperationsService {
     return { ...input, status: "PENDING" as const };
   }
 
-  async completeRetention(input: { id:string; tenantId:string; status:string }) {
-    const job = completeRetentionJob(input);
-    await this.repository.completeRetentionJob(job);
-    return job;
+  async currentContactCorrectionVersion(workerId:string) {return this.repository.currentContactCorrectionVersion(workerId);}
+
+  async listOwnedRecordingAssets(workerId:string) {
+    if (!workerId.trim()) throw new Error("Worker boundary is required.");
+    return this.repository.listOwnedRecordingAssets(workerId);
+  }
+
+  async listRetentionTenants() {return this.repository.listRetentionTenants();}
+
+  async listRetentionJobs() {return this.repository.listRetentionJobs();}
+
+  async completeRetention(input: { id:string;tenantId:string;status:string;reviewerAccountId?:string;reviewerSessionId?:string;reason?:string }) {
+    completeRetentionJob(input);
+    const reason=input.reason?.trim()??"";
+    if (!input.reviewerAccountId || !input.reviewerSessionId || reason.length<10 || reason.length>2000) {
+      throw new Error("Retention execution requires authorized Admin approval and a reason.");
+    }
+    return this.repository.completeRetentionJob({...input,reviewerAccountId:input.reviewerAccountId,reason,now:new Date().toISOString()});
   }
 }
