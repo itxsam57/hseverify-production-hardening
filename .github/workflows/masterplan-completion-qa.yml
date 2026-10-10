@@ -419,3 +419,42 @@ jobs:
           name: m3-11-certification-${{ github.sha }}
           path: artifacts/m3-11/certification.json
           if-no-files-found: error
+
+  postgres-json:
+    # Hosted service containers provide an actual PostgreSQL boundary independently
+    # of the PGlite journey suite and the optional self-hosted runner.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hse_test
+          POSTGRES_PASSWORD: disposable-ci-postgres-only
+          POSTGRES_DB: hse_json_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hse_test -d hse_json_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      HSE_APP_ENV: test
+      HSE_POSTGRES_TEST_DATABASE_URL: postgresql://hse_test:disposable-ci-postgres-only@127.0.0.1:5432/hse_json_test
+      HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      HSE_SESSION_SECRET: postgres-json-disposable-ci-session-secret-2026
+      HSE_AUTH_PEPPER: postgres-json-disposable-ci-auth-pepper-2026
+      HSE_CREDENTIAL_SIGNING_SECRET: postgres-json-disposable-ci-signing-secret-2026
+      HSE_ENABLE_AUTH_SANDBOX: "false"
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: PostgreSQL JSON parameters through script and runtime transactions
+        run: npm run test:postgres-json
