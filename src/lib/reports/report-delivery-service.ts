@@ -1,6 +1,6 @@
 import "server-only";
 import type { OutboxJobRecord, TrustedOutboxLease } from "../outbox/outbox-domain";
-import type { PrivateObjectStorage } from "../secure-files/private-object-storage-core";
+import type { PrivateObjectStorage } from "../secure-files/private-object-storage";
 import { createRuntimePrivateObjectStorage } from "../secure-files/private-object-storage";
 import { getServerEnvironment } from "../config/server-environment";
 import { ReportInputError, type ReportExportRequest } from "./report-delivery-domain";

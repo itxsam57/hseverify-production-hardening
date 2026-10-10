@@ -6,7 +6,7 @@ import type { TenantPermissionPrincipal, TrustedTenantScope } from "../authoriza
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 import { assertTrustedOutboxLease, type OutboxJobRecord, type TrustedOutboxLease } from "../outbox/outbox-domain";
 import { DatabaseOutboxRepository } from "../outbox/outbox-repository";
-import type { PrivateObjectStorage } from "../secure-files/private-object-storage-core";
+import type { PrivateObjectStorage } from "../secure-files/private-object-storage";
 import {
   REPORT_TYPE, ReportAccessError, ReportArtifactUnavailableError,
   ReportConflictError, ReportInputError, ReportNotFoundError, createReportCsv,

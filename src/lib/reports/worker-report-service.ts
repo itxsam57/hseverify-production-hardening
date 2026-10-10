@@ -6,7 +6,7 @@ import {getServerEnvironment} from "../config/server-environment";
 import {assertTrustedOutboxLease,type OutboxJobRecord,type TrustedOutboxLease} from "../outbox/outbox-domain";
 import {DatabaseOutboxRepository} from "../outbox/outbox-repository";
 import {createRuntimePrivateObjectStorage} from "../secure-files/private-object-storage";
-import type {PrivateObjectStorage} from "../secure-files/private-object-storage-core";
+import type {PrivateObjectStorage} from "../secure-files/private-object-storage";
 import {ReportAccessError,ReportArtifactUnavailableError,ReportConflictError,ReportInputError,ReportNotFoundError,
  createReportCsv,createReportPrint,REPORT_FORMATS,type ReportFormat,type ReportStatus} from "./report-delivery-domain";
 import {WORKER_REPORT_TYPES,REPORT_TITLES,isWorkerReportType,normalizeReportFilters,
