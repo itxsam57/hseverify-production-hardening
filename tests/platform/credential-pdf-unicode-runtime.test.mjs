@@ -12,7 +12,8 @@ const NOW = new Date("2026-10-10T00:00:00.000Z");
 const FINGERPRINT = "a".repeat(64);
 
 function pdfText(bytes) {
-  const parsed = spawnSync("pdftotext", ["-", "-"], { input: Buffer.from(bytes), encoding: "utf8" });
+  // Preserve literal trailing hyphens in identifiers; default extraction dehyphenates prose.
+  const parsed = spawnSync("pdftotext", ["-layout", "-", "-"], { input: Buffer.from(bytes), encoding: "utf8" });
   assert.equal(parsed.status, 0, parsed.stderr);
   return parsed.stdout;
 }
@@ -62,9 +63,11 @@ async function issuedCredential(fixture) {
   return credential;
 }
 
-test("Genuine signed Unicode issuance survives the current public PDF consumer with dates and live status", async () => {
+for (const terminalHyphen of [false, true]) test("Genuine signed Unicode issuance survives the current public PDF consumer with dates and live status" + (terminalHyphen ? " (terminal identifier hyphen)" : ""), async () => {
   const fixture = await credentialDecisionFixture({ qualification: "José Müller Иван 安全" });
   try {
+    // Base64url identifiers may end in a literal hyphen. Keep this boundary deterministic.
+    if (terminalHyphen) fixture.decision = Object.freeze({ ...fixture.decision, decisionId: "decision_ud0N9rcIMKxrHLt31ygguOk-" });
     const credential = await issuedCredential(fixture);
     assert.equal(credential.qualification, "José Müller Иван 安全");
     const request = actualPdfRoute(fixture);

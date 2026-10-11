@@ -7,14 +7,14 @@
   "branch": "qa/interview-email-20261007",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
   "last_verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
-  "canonical_sha": "0e53eb31a2f2790d191056ba6b0e02c022ad2186",
+  "canonical_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "requirements": [
     "M1.03.02",
     "M1.03.04",
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "Company365day truebrowser passed; candidate2a5a159 independentreview ACCEPT. Fullgate2a5a159 stopped at legacy issuer-review reportfixture; reviewed independentAdmin report+notification fixture repairs now pass real report/fundingnotification suites; remainingnative preflight pending.",
+  "last_verified_action": "All nine remaining native preflight commands passed. Exact 2af78bd full gate failed terminal-hyphen PDF extraction; deterministic signed issuance regression reproduced it. Layout-preserving extraction now passes all three PDF cases with exact identifiers and signature checks retained.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -22,9 +22,13 @@
     ".autopilot/artifacts/20261006-registration-provider-red-canonical-0e53eb3.json",
     ".autopilot/artifacts/20261006-registration-delivery-next-independent-review.json",
     ".autopilot/artifacts/20261006-registration-delivery-bindings-final.json",
-    ".autopilot/artifacts/20261006-registration-delivery-portable-v2.json"
+    ".autopilot/artifacts/20261006-registration-delivery-portable-v2.json",
+    ".autopilot/artifacts/20261011-remaining-native-preflight.json",
+    ".autopilot/artifacts/20261011-exact-2af78bd.json",
+    ".autopilot/artifacts/20261011-pdf-terminal-hyphen-red.log",
+    ".autopilot/artifacts/20261011-pdf-terminal-hyphen-green.log"
   ],
-  "next_action": "Finish remainingnative preflight, commit reviewed fixture repairs, run new clean-SHA fullgate and actualPostgreSQL proofs before push/CI/preview.",
+  "next_action": "Commit reviewed PDF extractor regression, run a new clean-SHA full gate and actual PostgreSQL proofs, then verified push/CI and guarded preview promotion.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -36,15 +40,15 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-11T05:52:54.852472+00:00",
+  "updated_at": "2026-10-11T06:14:58.637143+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [
-      ".autopilot/artifacts/NEXT_ACTION.json",
-      ".engineering/state/CURRENT_TASK.json"
+      ".engineering/CONTINUATION.json",
+      ".autopilot/artifacts/NEXT_ACTION.json"
     ],
-    "avoid_repeating": "Read NEXT_ACTION.json and one current receipt; do not refresh history or retest accepted PR29.",
+    "avoid_repeating": "Do not certify failed or interrupted full gates. Preserve original preview data and old dirty checkout. Resume current exact-SHA receipt.",
     "accepted_pr": 29,
     "accepted_head": "e139f878a541716a8faf04d5f443d9bf79a3d083",
     "canonical_sha": "0e53eb31a2f2790d191056ba6b0e02c022ad2186",
