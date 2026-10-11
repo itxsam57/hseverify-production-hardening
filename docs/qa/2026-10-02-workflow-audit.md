@@ -250,3 +250,11 @@ Actual Chromium diagnostics showed stale final recommendation comments were miss
 Permanent test repairs submit a complete stale scorecard and capture its real original-session POST plus closed denial and unchanged archived comments. Funding delivery uses a bounded real CLI drain, matching the exact application/type job and recipient/target notice, without certifying unrelated email retries. Credential validity and Admin authoring now use genuine Root invitation, browser password/TOTP enrollment and independent MFA login; retained database history proves actual issuer/reviewer and author/reviewer provenance.
 
 All four focused browser files pass six cases; focused lint passes. Independent final review ACCEPT verifies matching file hashes and all six actual cases before the normal guarded commit. Fresh clean exact-SHA full, actual PostgreSQL, hosted CI and preview promotion remain pending. No new GitHub publication or preview promotion occurred. Broader Masterplan coverage, runtime heartbeat instrumentation and final provider integration remain open.
+
+### Exact f237 timer sampling failure
+
+The fresh f23714a full gate failed at the active timer fixed1.1-second sample (0:07 unchanged). Its failed receipt remains authoritative; PostgreSQL stages were not reached. Publication and CI observers blocked without external writes; no candidate CI run or preview promotion occurred.
+
+Actual Chromium diagnostic completed the real WebRTC/private-evidence journey and confirmed running/resumed numeric advancement with interval initialization after DOMContentLoaded. It did not reproduce the fixed-sample failure. Bounded fixture repair and independent review remain pending; product timer behavior is unchanged. A new clean exact-SHA full gate remains required.
+
+The timer fixture now requires valid minutes:seconds values and strict numeric advancement within five seconds, checks pause equality over three one-second intervals and resumed-duration retention. The real focused Chromium journey passes1/1, lint passes and independent review gives scoped ACCEPT for the matching file hash. No other browser assertions or product timer code changed. Commit and new clean exact-SHA full/PG gates are next.

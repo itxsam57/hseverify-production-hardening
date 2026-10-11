@@ -456,20 +456,36 @@ test(
 
 
             const duration=assessor.getByLabel("Interview duration",{exact:true});
-            const runningTime=await duration.textContent();
-            await assessor.waitForTimeout(1100);
-            assert.notEqual(await duration.textContent(),runningTime,"Active interview timer must advance.");
+            const elapsedSeconds=text=>{
+              assert.match(text,/^\d+:[0-5]\d$/,"Interview duration must be a valid minutes:seconds value.");
+              const [minutes,seconds]=text.split(":").map(Number);
+              return minutes*60+seconds;
+            };
+            const waitForDurationAdvance=async baseline=>{
+              await assessor.waitForFunction(({baseline})=>{
+                const text=document.querySelector('output[aria-label="Interview duration"]')?.textContent??"";
+                if(!/^\d+:[0-5]\d$/.test(text))return false;
+                const [minutes,seconds]=text.split(":").map(Number);
+                return minutes*60+seconds>baseline;
+              },{baseline},{timeout:5000,polling:100});
+              assert(elapsedSeconds(await duration.textContent())>baseline,"Running interview timer must increase numerically.");
+            };
+            const runningTime=elapsedSeconds(await duration.textContent());
+            // DOMContentLoaded can precede hydration and the first timer effect.
+            await waitForDurationAdvance(runningTime);
             await assessor.getByLabel("Pause reason",{exact:true}).fill("Candidate requested a short pause.");
             await assessor.getByRole("button",{name:"Pause interview",exact:true}).click();
             await assessor.getByText("· Stopped",{exact:false}).waitFor();
-            const pausedTime=await duration.textContent();
-            await assessor.waitForTimeout(1100);
-            assert.equal(await duration.textContent(),pausedTime,"Paused interview timer must stop.");
+            const pausedTime=elapsedSeconds(await duration.textContent());
+            for(let interval=0;interval<3;interval++){
+              await assessor.waitForTimeout(1000);
+              assert.equal(elapsedSeconds(await duration.textContent()),pausedTime,"Paused interview timer must stay stopped across multiple intervals.");
+            }
             await assessor.getByRole("button",{name:"Resume interview",exact:true}).click();
             await assessor.getByText("· Running",{exact:false}).waitFor();
-            const resumedTime=await duration.textContent();
-            await assessor.waitForTimeout(1100);
-            assert.notEqual(await duration.textContent(),resumedTime,"Resumed timer must continue from retained duration.");
+            const resumedTime=elapsedSeconds(await duration.textContent());
+            assert(resumedTime>=pausedTime,"Resume must retain the paused duration.");
+            await waitForDurationAdvance(resumedTime);
             assert.equal(await assessor.getByLabel("Notes",{exact:true}).inputValue(),draftNotes);
             console.log("ACTUAL_CONSOLE_SHARING Private default and checked Verifier reason reach only the assigned Assessor; owned private HTTP previews, unknown/unbound404 and pause/resume timer verified.");
             assert.deepEqual(

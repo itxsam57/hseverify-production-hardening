@@ -3,12 +3,12 @@
   "task": "WORKFLOW-001",
   "status": "TESTING",
   "verified_sha": null,
-  "last_verified_action": "Exact7b21380 full gate failed replacement stale-final fixtures. Frozen remaining critical groups and all21 consumer files were discovered; later16 consumer files PASS. Actual diagnostics confirmed requiredcomments/noPOST, originalissuer independence denial, olderemail processed beforeapprovalbell, and stalequestioncopy. Four repaired browserfiles PASS sixcases plusfocusedlint; independent final review ACCEPT with matching file hashes. Fullcandidate acceptance remains unverified.",
-  "next_action": "Commit four independently reviewed fixture repairs and checkpoint, then run fresh clean exact full plus both actual PostgreSQL gates; publish QA branch/PR only if exact gates pass, inspect hosted CI, then data-preserving preview promotion.",
+  "last_verified_action": "Exact f237 full FAIL preserved (fixed1100ms active timer unchanged); no PG/CI/publication/promotion. Actual Chromium diagnostic confirms running/resumed advance after hydration. Narrow bounded numeric timer fixture repair passes entire real WebRTC/private evidence/draft/history journey1/1 and lint; independent review scoped ACCEPT with matching source hash. Full candidate remains unverified.",
+  "next_action": "Run fresh clean exact-SHA full verification plus both actual PostgreSQL gates after normal guarded timer-fixture commit; publish QA branch/PR only on complete exact gates PASS, inspect hosted CI, then data-preserving preview promotion.",
   "owner_required": false,
-  "revision": 14,
+  "revision": 15,
   "blocker": null,
-  "updated_at": "2026-10-11T21:18:59.879347+00:00",
+  "updated_at": "2026-10-11T21:52:47.833175+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -54,7 +54,13 @@
     ".autopilot/artifacts/20261012-fixture-red-diagnostics.json",
     ".autopilot/artifacts/20261012-fixture-focused-results.json",
     ".autopilot/artifacts/20261012-four-fixture-lint.log",
-    ".autopilot/artifacts/20261012-four-fixture-independent-review.json"
+    ".autopilot/artifacts/20261012-four-fixture-independent-review.json",
+    ".autopilot/artifacts/20261011-exact-f23714a.json",
+    ".autopilot/artifacts/20261012-f23714a-verified-candidate-publication.json",
+    ".autopilot/artifacts/20261012-f23714a-hosted-ci.json",
+    ".autopilot/artifacts/20261012-live-media-timer-diagnostic.log",
+    ".autopilot/artifacts/20261012-live-media-timer-repair.json",
+    ".autopilot/artifacts/20261012-live-media-timer-independent-review.json"
   ],
   "unknowns": [
     "167 unverified and15 partial expanded scenarios",
@@ -62,5 +68,5 @@
     "NonSandbox recovery returns token without flow/challenge; actual nextRED preserved",
     "Broader privacy/materialhandoffs/deployment workflow breadth"
   ],
-  "current_candidate_base_sha": "7b213809561c0d6d7223260a59c099ef76899752"
+  "current_candidate_base_sha": "f23714a9c487e8a3e78a4e115fb7d284780ee9c2"
 }
