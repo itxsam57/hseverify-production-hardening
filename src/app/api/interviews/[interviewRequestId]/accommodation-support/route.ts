@@ -10,8 +10,10 @@ function sameOriginSupportPost(request: Request): boolean {
  try {
   const browser = new URL(rawOrigin), internal = new URL(request.url), environment = getServerEnvironment();
   if (rawOrigin !== browser.origin) return false;
-  if (environment.publicBaseUrl && !["development","test"].includes(environment.appEnvironment)) {
-   return browser.origin === new URL(environment.publicBaseUrl).origin && isSameOriginRegistrationPost(request);
+  if (environment.publicBaseUrl) {
+   // Configured public previews use the same canonical/proxy boundary as production.
+   if (browser.origin === new URL(environment.publicBaseUrl).origin) return isSameOriginRegistrationPost(request);
+   if (!["development","test"].includes(environment.appEnvironment)) return false;
   }
   if (environment.appEnvironment === "development" || environment.appEnvironment === "test") {
    if (!["localhost","127.0.0.1","[::1]"].includes(browser.hostname) ||

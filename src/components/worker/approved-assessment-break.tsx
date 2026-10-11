@@ -27,17 +27,8 @@ export function ApprovedBreakControl({view,onPrepare}:{view:AssessmentAttemptCli
  </section>;
 }
 export function ApprovedBreakRest({view}:{view:AssessmentAttemptClientView}):React.JSX.Element {
- const router=useRouter(),[elapsed,setElapsed]=useState(0),[exitPending,setExitPending]=useState(false),[error,setError]=useState("");
+ const router=useRouter(),[exitPending,setExitPending]=useState(false),[error,setError]=useState("");
  const rest=view.accommodationBreak!;
- useEffect(()=>{
-  const started=performance.now();
-  const timer=setInterval(()=>{
-   const passed=Math.floor((performance.now()-started)/1000);setElapsed(passed);
-   if(passed>=rest.remainingSeconds)router.refresh();
-  },1000);
-  return()=>clearInterval(timer);
- },[rest.remainingSeconds,router]);
- const remaining=Math.max(0,rest.remainingSeconds-elapsed);
  async function exit():Promise<void>{
   setExitPending(true);setError("");
   try{
@@ -50,7 +41,7 @@ export function ApprovedBreakRest({view}:{view:AssessmentAttemptClientView}):Rea
  return <section className="page-stack" aria-labelledby="approved-break-heading">
   <h1 id="approved-break-heading">Approved break</h1>
   <p>Assessment work time is paused. Questions, review and answer editing resume after this fixed break.</p>
-  <p role="timer" aria-label="Approved break time remaining">{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,"0")} remaining</p>
+  <ApprovedBreakCountdown key={`${rest.endsAt}:${rest.remainingSeconds}`} remainingSeconds={rest.remainingSeconds} />
   <p>Break ends at: <time data-testid="approved-break-end" dateTime={rest.endsAt??undefined}>{rest.endsAt}</time></p>
   <p>Break time left after this break: {Math.floor(rest.remainingAllowanceSeconds/60)} {Math.floor(rest.remainingAllowanceSeconds/60) === 1 ? "minute" : "minutes"}.</p>
   <div className="button-row">
@@ -59,4 +50,18 @@ export function ApprovedBreakRest({view}:{view:AssessmentAttemptClientView}):Rea
   </div>
   {error?<p role="alert">{error}</p>:null}
  </section>;
+}
+
+function ApprovedBreakCountdown({remainingSeconds}:{remainingSeconds:number}):React.JSX.Element {
+ const router=useRouter(),[elapsed,setElapsed]=useState(0);
+ useEffect(()=>{
+  const started=performance.now();
+  const timer=setInterval(()=>{
+   const passed=Math.floor((performance.now()-started)/1000);setElapsed(passed);
+   if(passed>=remainingSeconds)router.refresh();
+  },1000);
+  return()=>clearInterval(timer);
+ },[remainingSeconds,router]);
+ const remaining=Math.max(0,remainingSeconds-elapsed);
+ return <p role="timer" aria-label="Approved break time remaining">{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,"0")} remaining</p>;
 }
