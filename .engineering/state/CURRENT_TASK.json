@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "All nine remaining native preflight commands passed. Exact 2af78bd full gate failed terminal-hyphen PDF extraction; deterministic signed issuance regression reproduced it. Layout-preserving extraction now passes all three PDF cases with exact identifiers and signature checks retained.",
+  "last_verified_action": "PDF extraction regression three cases PASS. 6619fea full gate deliberately interrupted before CI repair. Push compliance previously rejected imported established canonical merges; nine real-Git ancestor tests now PASS and actual revised push/PR scripts both validate19candidatecommits.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -26,9 +26,15 @@
     ".autopilot/artifacts/20261011-remaining-native-preflight.json",
     ".autopilot/artifacts/20261011-exact-2af78bd.json",
     ".autopilot/artifacts/20261011-pdf-terminal-hyphen-red.log",
-    ".autopilot/artifacts/20261011-pdf-terminal-hyphen-green.log"
+    ".autopilot/artifacts/20261011-pdf-terminal-hyphen-green.log",
+    ".autopilot/artifacts/20261011-exact-6619fea.json",
+    ".autopilot/artifacts/20261011-compliance-range-red.log",
+    ".autopilot/artifacts/20261011-compliance-range-green.log",
+    ".autopilot/artifacts/20261011-compliance-push-integration.log",
+    ".autopilot/artifacts/20261011-compliance-pull_request-integration.log",
+    ".autopilot/artifacts/20261011-remaining-workflow-review.json"
   ],
-  "next_action": "Commit reviewed PDF extractor regression, run a new clean-SHA full gate and actual PostgreSQL proofs, then verified push/CI and guarded preview promotion.",
+  "next_action": "Commit independently reviewed fail-closed CI range correction and restart complete clean-SHA release/actual PostgreSQL gate; only PASS permits push and canonical PR CI, then preserved-data preview promotion.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -40,7 +46,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-11T06:14:58.637143+00:00",
+  "updated_at": "2026-10-11T14:43:25.678583+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
