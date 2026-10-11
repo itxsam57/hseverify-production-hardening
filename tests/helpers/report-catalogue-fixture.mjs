@@ -111,11 +111,16 @@ export async function reportCatalogueFixture(){
   assert.ok(source.credential_reference);
   const credential=(await database.query("SELECT credential_id,expires_at FROM credential_issuances WHERE credential_id=$1",[source.credential_reference])).rows[0];
   assert.equal(new Date(credential.expires_at).getTime()-Date.parse(issuedAt),7*86400000);
+  const appealReviewer=id("account","report-catalogue-independent-appeal");
+  await database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,email_verified_at,password_hash,password_set_at,created_at,updated_at) SELECT $1,'report-independent-appeal@example.test','Independent report appeal reviewer','active',$2,password_hash,password_set_at,$2,$2 FROM auth_accounts WHERE account_id=$3",[appealReviewer,now,admin]);
+  await database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[appealReviewer,now]);
   const applyAppeal=async()=>{
    const appeals=new CredentialAppealsService(Promise.resolve(database),key),appeal=await appeals.submit({
     credentialId:source.credential_reference,workerId,reason:"private-appeal-reason-marker",evidence:["private-appeal-evidence-marker"],createdAt:new Date().toISOString()
    },"report-owned-appeal");
-   return appeals.reviewOutcome(appeal,{status:"accepted",reviewerId:admin,reason:"private-appeal-review-marker",outcomeAction:"reassessment",reviewedAt:new Date().toISOString()});
+   const review={status:"accepted",reason:"private-appeal-review-marker",outcomeAction:"reassessment",reviewedAt:new Date().toISOString()};
+   await assert.rejects(appeals.reviewOutcome(appeal,{...review,reviewerId:admin}),/independent reviewer outside the original decision/);
+   return appeals.reviewOutcome(appeal,{...review,reviewerId:appealReviewer});
   };
   const evidence=new WorkerEvidenceService(Promise.resolve(database));
   const draft=await evidence.createDraft(fixture.worker,"qualification");let qualification=await evidence.saveQualificationDraft(fixture.worker,{

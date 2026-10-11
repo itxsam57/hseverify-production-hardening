@@ -95,7 +95,13 @@ test("Original appeal submission and reasoned review retain next-actor and Worke
   try {
     const {credentialId,workerId}=await approvedDecision(x), service=new CredentialAppealsService(Promise.resolve(x.database));
     const appeal=await service.submit({credentialId,workerId,reason:"Please reconsider the retained evidence underlying this assurance outcome.",createdAt:new Date().toISOString()},"notification_fixture");
-    const reviewed=await service.reviewOutcome(appeal,{status:"under_review",reviewerId:x.admin.accountId,reason:"Independent review started against the original retained evidence.",outcomeAction:"none"});
+    const reviewerId="account_notification_independent_appeal";
+    await x.database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,email_verified_at,password_hash,password_set_at,created_at,updated_at) SELECT $1,'notification-independent-appeal@example.test','Independent notification appeal reviewer','active',CURRENT_TIMESTAMP,password_hash,password_set_at,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP FROM auth_accounts WHERE account_id=$2",[reviewerId,x.admin.accountId]);
+    await x.database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[reviewerId]);
+    const review={status:"under_review",reason:"Independent review started against the original retained evidence.",outcomeAction:"none"};
+    await assert.rejects(service.reviewOutcome(appeal,{...review,reviewerId:x.admin.accountId}),/independent reviewer outside the original decision/);
+    assert.deepEqual((await x.database.query("SELECT status FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",[appeal.appealId])).rows.map(r=>r.status),["submitted"]);
+    const reviewed=await service.reviewOutcome(appeal,{...review,reviewerId});
     assert.equal(reviewed.appeal.version,2);
     assert.deepEqual((await x.database.query("SELECT status FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",[appeal.appealId])).rows.map(r=>r.status),["submitted","under_review"]);
     await requireJobs(x.database,"appeal.submitted","appeal:"+appeal.appealId+":1");
