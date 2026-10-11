@@ -86,10 +86,39 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       }
     }
   });
-  const runWorker = () => {
-    const result = spawnSync(process.execPath, ["scripts/run-outbox-worker.mjs", "--once"], { env: fixture.environment, encoding: "utf8" });
-    assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.match(result.stdout, /"status":"succeeded"/);
+  const runWorkerUntilFundingNotice = async (notificationType, recipientAccountId, targetReference) => {
+    const readTarget = async () => {
+      const db = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+      try {
+        const targets = (await db.query(
+          "SELECT jobs.job_id,jobs.status FROM platform_outbox_jobs jobs CROSS JOIN LATERAL platform_assessment_funding_notification_source(jobs.payload->>'eventRef') source WHERE jobs.job_type='notification.assessment.funding' AND source.application_id=$1 AND source.notification_type=$2",
+          [application.application_id, notificationType]
+        )).rows;
+        assert.equal(targets.length, 1, "The actual funding transition must retain exactly one matching bell job.");
+        const target = targets[0];
+        const notices = (await db.query(
+          "SELECT notification_id FROM platform_notifications WHERE source_job_id=$1 AND notification_type=$2 AND recipient_account_id=$3 AND target_reference=$4",
+          [target.job_id, notificationType, recipientAccountId, targetReference]
+        )).rows;
+        assert.notEqual(target.status, "terminal_failed", "The required funding bell must not terminally fail.");
+        assert(notices.length <= 1);
+        return { ...target, delivered: notices.length === 1 };
+      } finally { await db.close(); }
+    };
+    for (let attempt = 0; attempt <= 12; attempt++) {
+      const target = await readTarget();
+      if (target.status === "succeeded") {
+        assert.equal(target.delivered, true, "Success must retain the exact recipient's actionable notice.");
+        console.log("ACTUAL_FUNDING_CLI_TARGET", notificationType, "delivered after", attempt, "real CLI jobs");
+        return;
+      }
+      assert(attempt < 12, "The real CLI did not deliver the exact funding bell within its bounded drain.");
+      const result = spawnSync(process.execPath, ["scripts/run-outbox-worker.mjs", "--once"], { env: fixture.environment, encoding: "utf8" });
+      const processed = JSON.parse(result.stdout.trim());
+      assert.equal(processed.processed, 1, result.stderr || result.stdout);
+      assert(["succeeded", "retry_wait"].includes(processed.status), result.stderr || result.stdout);
+      assert.equal(result.status, processed.status === "succeeded" ? 0 : 1, result.stderr || result.stdout);
+    }
   };
   let application, funded;
   try {
@@ -110,7 +139,7 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       assert.equal(application.application_status, "FUNDING_REQUESTED");
       assert.equal((await database.query("SELECT count(*)::int AS n FROM platform_outbox_jobs WHERE job_type='notification.assessment.funding'")).rows[0].n, 1);
     } finally { await database.close(); }
-    runWorker();
+    await runWorkerUntilFundingNotice("assessment.funding.requested", fixture.company.accountId, application.funding_request_id);
     assert.equal((await server(async () => {
       await login(companyPage, baseUrl, fixture.credentials.company, "company");
       const bell = companyPage.locator("details.notification-menu");
@@ -136,7 +165,7 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       assert.equal((await database.query("SELECT reserved_credit_units FROM funding_requests WHERE funding_request_id=$1", [application.funding_request_id])).rows[0].reserved_credit_units, 1);
       assert.equal((await database.query("SELECT count(*)::int AS n FROM assurance_cases WHERE worker_account_id=$1", [fixture.worker.accountId])).rows[0].n, 1);
     } finally { await database.close(); }
-    runWorker();
+    await runWorkerUntilFundingNotice("assessment.funding.approved", fixture.worker.accountId, funded.assurance_case_id);
     assert.equal((await server(async () => {
       await workerPage.goto(baseUrl + "/worker/dashboard", { waitUntil: "domcontentloaded" });
       const bell = workerPage.locator("details.notification-menu");

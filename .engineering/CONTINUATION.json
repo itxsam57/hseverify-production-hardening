@@ -3,12 +3,12 @@
   "task": "WORKFLOW-001",
   "status": "TESTING",
   "verified_sha": null,
-  "last_verified_action": "Exact05f3d34 native suites/types/lint and independent review, media, Company browsers passed; staff cohort failed stale labels and pre0103 authoring. Actual DOM diagnosis retained. Fixed staff cohort now passes with real Root-invited independent Admin approval and retained DB provenance; final reviewer console-error assertion and both actual staff browsers PASS; lint zero errors/five existing warnings.",
-  "next_action": "Commit independently reviewed staff fixture repairs after final focused browser/lint pass; run fresh clean exact full+PostgreSQL gates, then guarded GitHub push/QA PR CI and data-preserving preview promotion.",
+  "last_verified_action": "Exact7b21380 full gate failed replacement stale-final fixtures. Frozen remaining critical groups and all21 consumer files were discovered; later16 consumer files PASS. Actual diagnostics confirmed requiredcomments/noPOST, originalissuer independence denial, olderemail processed beforeapprovalbell, and stalequestioncopy. Four repaired browserfiles PASS sixcases plusfocusedlint; independent final review ACCEPT with matching file hashes. Fullcandidate acceptance remains unverified.",
+  "next_action": "Commit four independently reviewed fixture repairs and checkpoint, then run fresh clean exact full plus both actual PostgreSQL gates; publish QA branch/PR only if exact gates pass, inspect hosted CI, then data-preserving preview promotion.",
   "owner_required": false,
-  "revision": 13,
+  "revision": 14,
   "blocker": null,
-  "updated_at": "2026-10-11T20:09:17.784710+00:00",
+  "updated_at": "2026-10-11T21:18:59.879347+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -47,12 +47,20 @@
     ".autopilot/artifacts/20261011-staff-browser-provenance-green.log",
     ".autopilot/artifacts/20261011-staff-browser-final-green.log",
     ".autopilot/artifacts/20261011-staff-browser-final-lint.log",
-    ".autopilot/artifacts/20261012-staff-fixture-independent-review.json"
+    ".autopilot/artifacts/20261012-staff-fixture-independent-review.json",
+    ".autopilot/artifacts/20261011-exact-7b21380.json",
+    ".autopilot/artifacts/20261012-remaining-browser-discovery.json",
+    ".autopilot/artifacts/20261012-consumer-remaining-discovery.json",
+    ".autopilot/artifacts/20261012-fixture-red-diagnostics.json",
+    ".autopilot/artifacts/20261012-fixture-focused-results.json",
+    ".autopilot/artifacts/20261012-four-fixture-lint.log",
+    ".autopilot/artifacts/20261012-four-fixture-independent-review.json"
   ],
   "unknowns": [
     "167 unverified and15 partial expanded scenarios",
     "Live provider delivery/realPG contention remain unverified",
     "NonSandbox recovery returns token without flow/challenge; actual nextRED preserved",
     "Broader privacy/materialhandoffs/deployment workflow breadth"
-  ]
+  ],
+  "current_candidate_base_sha": "7b213809561c0d6d7223260a59c099ef76899752"
 }

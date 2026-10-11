@@ -240,3 +240,13 @@ The Root/staff journey still expected direct active question creation. It now pr
 
 
 Final focused staff browser run passes both journeys with provenance and reviewer console-error assertions. Independent source review accepts the exact repaired files; lint passes with zero errors and five existing warnings. The earlier failed full receipt remains failed. A new clean exact-SHA full run is still required before push or preview promotion.
+
+### Four later browser fixtures reconciled after exact7b failure
+
+The exact7b21380 full gate remains FAIL. Frozen follow-up discovery executed all remaining critical groups; the consumer runner's authoring failure stopped its fifth file, so the remaining16 were separately executed and all passed. These discovery results are scoped evidence, not a replacement release gate.
+
+Actual Chromium diagnostics showed stale final recommendation comments were missing, making HTML validation prevent any POST; a same-issuer appeal was correctly denied; and the second one-job CLI call successfully consumed an older email while the approval bell remained pending. The authoring DOM contained the current no-publication text; correcting that copy in the diagnostic completed the entire existing lifecycle, including its unchanged zero-button archive assertion. A predicted superseded-history control failure was withdrawn on that runtime evidence.
+
+Permanent test repairs submit a complete stale scorecard and capture its real original-session POST plus closed denial and unchanged archived comments. Funding delivery uses a bounded real CLI drain, matching the exact application/type job and recipient/target notice, without certifying unrelated email retries. Credential validity and Admin authoring now use genuine Root invitation, browser password/TOTP enrollment and independent MFA login; retained database history proves actual issuer/reviewer and author/reviewer provenance.
+
+All four focused browser files pass six cases; focused lint passes. Independent final review ACCEPT verifies matching file hashes and all six actual cases before the normal guarded commit. Fresh clean exact-SHA full, actual PostgreSQL, hosted CI and preview promotion remain pending. No new GitHub publication or preview promotion occurred. Broader Masterplan coverage, runtime heartbeat instrumentation and final provider integration remain open.

@@ -9,11 +9,14 @@ import test from "node:test";
 import { chromium } from "playwright";
 import { PGlite } from "@electric-sql/pglite";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
+const {AuthAccessRepository}=loadWorkerRegistrationTs("src/lib/auth/auth-access-repository.ts");
+const {StaffProvisioningService}=loadWorkerRegistrationTs("src/lib/auth/staff-provisioning-service.ts");
 
-function totp(secret) {
+function totp(secret, counterOffset=0) {
   const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", bits=[...secret].map(c=>alphabet.indexOf(c).toString(2).padStart(5,"0")).join("");
   const bytes=[];for(let i=0;i+8<=bits.length;i+=8)bytes.push(parseInt(bits.slice(i,i+8),2));
-  const count=Buffer.alloc(8);count.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
+  const count=Buffer.alloc(8);count.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)+counterOffset));
   const digest=createHmac("sha1",Buffer.from(bytes)).update(count).digest(),offset=digest.at(-1)&15;
   return String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0");
 }
@@ -24,13 +27,15 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
   const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dataDir,HSE_RELEASE_SHA:"admin-authoring-browser-test",HSE_SESSION_SECRET:"admin-authoring-browser-session-secret-2026-32",HSE_AUTH_PEPPER:"admin-authoring-browser-auth-pepper-2026-32",HSE_ENABLE_AUTH_SANDBOX:"false",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   try {
     for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
-    const {admin}=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
-    const reviewer={...admin,accountId:"question_browser_independent_reviewer",email:"question.browser.reviewer@example.test"};
+    const {admin,root}=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
+    const reviewer={email:"question.browser.reviewer@example.test",password:"IndependentReviewer!Browser2026",accountId:null,totpSecret:null};
+    assert.notEqual(reviewer.password,admin.password);
     const seedDb=new PGlite(dataDir);
+    let reviewerInvitation;
     try {
-      await seedDb.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) SELECT $1,$2,'Independent question reviewer','active',password_hash,email_verified_at,password_set_at,created_at,updated_at FROM auth_accounts WHERE account_id=$3",[reviewer.accountId,reviewer.email,admin.accountId]);
-      await seedDb.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',NOW())",[reviewer.accountId]);
-      await seedDb.query("INSERT INTO auth_mfa_factors(factor_id,account_id,factor_type,encrypted_secret,factor_status,last_accepted_counter,created_at,activated_at) SELECT 'question_reviewer_mfa',$1,factor_type,encrypted_secret,'active',NULL,NOW(),NOW() FROM auth_mfa_factors WHERE account_id=$2 AND factor_status='active'",[reviewer.accountId,admin.accountId]);
+      const service=new StaffProvisioningService(new AuthAccessRepository(seedDb),{pepper:environment.HSE_AUTH_PEPPER,sandboxEnabled:false,sandboxAccessKey:null});
+      reviewerInvitation=await service.createInvitation({inviterAccountId:root.accountId,inviterRole:"root",email:reviewer.email,role:"admin",requestFingerprint:"admin-authoring-independent-reviewer"});
+      assert.equal(reviewerInvitation.invitation.invitedByAccountId,root.accountId);
     }finally{await seedDb.close();}
     const port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
     const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/admin/login`,projectRoot:process.cwd(),environment,
@@ -39,8 +44,19 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await page.goto(`${baseUrl}/admin/login`);await page.getByLabel("Email address").fill(admin.email);await page.getByLabel("Password").fill(admin.password);await page.getByLabel("Authenticator code").fill(totp(admin.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL("**/admin/dashboard");
         const reviewerContext=await browser.newContext(),reviewPage=await reviewerContext.newPage();
         reviewPage.on("pageerror",error=>errors.push(error.message));
-        await reviewPage.goto(`${baseUrl}/admin/login`);await reviewPage.getByLabel("Email address").fill(reviewer.email);await reviewPage.getByLabel("Password").fill(reviewer.password);await reviewPage.getByLabel("Authenticator code").fill(totp(reviewer.totpSecret));await reviewPage.getByRole("button",{name:"Sign in",exact:true}).click();await reviewPage.waitForURL("**/admin/dashboard");
-        assert.notEqual(admin.accountId,reviewer.accountId);
+        await reviewPage.goto(`${baseUrl}/staff/invite/${reviewerInvitation.token}`);
+        await reviewPage.getByRole("heading",{name:"Create account credentials",exact:true}).waitFor();
+        await reviewPage.getByLabel("Full name").fill("Independent question reviewer");
+        await reviewPage.getByLabel("Create password").fill(reviewer.password);
+        await reviewPage.getByLabel("Confirm password").fill(reviewer.password);
+        await reviewPage.getByRole("button",{name:"Continue to authenticator setup"}).click();
+        reviewer.totpSecret=(await reviewPage.locator(".security-key-card strong").innerText()).trim();
+        assert.notEqual(reviewer.totpSecret,admin.totpSecret);
+        await reviewPage.getByLabel("Authenticator code").fill(totp(reviewer.totpSecret));
+        await reviewPage.getByRole("button",{name:"Activate MFA and finish enrollment"}).click();
+        await reviewPage.getByText("Enrollment complete",{exact:false}).waitFor();
+        await reviewPage.goto(`${baseUrl}/admin/login`);await reviewPage.getByLabel("Email address").fill(reviewer.email);await reviewPage.getByLabel("Password").fill(reviewer.password);await reviewPage.getByLabel("Authenticator code").fill(totp(reviewer.totpSecret,1));await reviewPage.getByRole("button",{name:"Sign in",exact:true}).click();await reviewPage.waitForURL("**/admin/dashboard");
+        assert.notEqual(admin.email,reviewer.email);
         await page.goto(`${baseUrl}/admin/frameworks`);
         const framework=page.locator("form").filter({has:page.getByRole("button",{name:"Create framework",exact:true})});
         await framework.getByLabel("Reference",{exact:true}).fill("UI-AUTHORING");await framework.getByLabel("Title",{exact:true}).fill("UI authored assurance framework");await framework.getByRole("button",{name:"Create framework",exact:true}).click();await page.getByText("UI-AUTHORING",{exact:true}).waitFor();
@@ -51,7 +67,7 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         const question=page.locator("form").filter({has:page.getByRole("button",{name:"Create draft question",exact:true})});
         await question.getByLabel("Stable reference").fill("UI-Q-1");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify(version));await question.getByRole("button",{name:"Create draft question",exact:true}).click();
         const card=page.locator('[data-question-reference="UI-Q-1"]'),reviewCard=reviewPage.locator('[data-question-reference="UI-Q-1"]');
-        await card.getByText(/v1 · DRAFT/).first().waitFor();await card.getByText("This question has never been published.",{exact:true}).waitFor();
+        await card.getByText(/v1 · DRAFT/).first().waitFor();await card.getByText("This question has no current publication.",{exact:true}).waitFor();
         await card.getByRole("button",{name:"Submit for review",exact:true}).click();await card.getByText(/v1 · UNDER_REVIEW/).first().waitFor();
         assert.equal(await card.getByRole("button",{name:"Approve version",exact:true}).count(),0);
         await card.getByText("Another administrator must review this version.",{exact:true}).waitFor();
@@ -108,13 +124,35 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
       } finally {await browser.close();}}});assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
     const database=new PGlite(dataDir);
     try {
+      const enrolled=(await database.query("SELECT account_id FROM auth_accounts WHERE email_normalized=$1",[reviewer.email])).rows;
+      assert.equal(enrolled.length,1);reviewer.accountId=enrolled[0].account_id;
+      assert.notEqual(reviewer.accountId,admin.accountId);
+      const invitation=(await database.query("SELECT invited_by_account_id,accepted_by_account_id,invitation_status FROM auth_staff_invitations WHERE invitation_id=$1",[reviewerInvitation.invitation.invitationId])).rows[0];
+      assert.equal(invitation.invited_by_account_id,root.accountId);
+      assert.equal(invitation.accepted_by_account_id,reviewer.accountId);
+      assert.equal(invitation.invitation_status,"accepted");
       const rows=(await database.query("SELECT versions.version_no,settings.timing_config_json,settings.section_config_json FROM assessment_blueprint_versions versions JOIN assessment_blueprints blueprints USING(blueprint_id) JOIN assessment_blueprint_delivery_settings settings USING(blueprint_version_id) WHERE blueprints.blueprint_reference='UI-BP-1' ORDER BY versions.version_no")).rows;
       assert.equal(rows.length,2);
       assert.deepEqual(rows[0].timing_config_json,{mode:"COMBINED",durationSeconds:120});
       assert.deepEqual(rows[1].timing_config_json,{mode:"SEPARATE"});
       assert.equal(rows[1].section_config_json[0].durationSeconds,90);
       const history=(await database.query("SELECT q.question_reference,v.version_no,w.workflow_state,w.author_account_id,w.approved_by_account_id,w.provenance FROM assessment_questions q JOIN assessment_question_versions v USING(question_id) JOIN question_version_workflow w USING(question_id,question_version_id) WHERE q.question_reference IN ('UI-Q-1','UI-Q-CAPACITY') ORDER BY q.question_reference,v.version_no")).rows;
-      assert.equal(history.length,4);assert.equal(history.find(r=>r.question_reference==="UI-Q-1"&&r.version_no===3).workflow_state,"ARCHIVED");
+      assert.equal(history.length,4);
+      for(const row of history){
+        assert.equal(row.author_account_id,admin.accountId);
+        assert.equal(row.provenance,"AUTHORED");
+        if(row.question_reference==="UI-Q-1"&&row.version_no===2){assert.equal(row.workflow_state,"CHANGES_REQUESTED");assert.equal(row.approved_by_account_id,null);}
+        else{assert.equal(row.approved_by_account_id,reviewer.accountId);assert.notEqual(row.author_account_id,row.approved_by_account_id);}
+      }
+      assert.equal(history.find(r=>r.question_reference==="UI-Q-1"&&r.version_no===3).workflow_state,"ARCHIVED");
+      const transitions=(await database.query("SELECT q.question_reference,v.version_no,e.to_state,e.actor_account_id FROM question_version_workflow_events e JOIN assessment_question_versions v ON v.question_version_id=e.question_version_id JOIN assessment_questions q ON q.question_id=v.question_id WHERE q.question_reference IN ('UI-Q-1','UI-Q-CAPACITY')")).rows;
+      for(const row of history){
+        const events=transitions.filter(event=>event.question_reference===row.question_reference&&event.version_no===row.version_no);
+        assert(events.some(event=>event.to_state==="UNDER_REVIEW"&&event.actor_account_id===admin.accountId));
+        const outcome=row.question_reference==="UI-Q-1"&&row.version_no===2?"CHANGES_REQUESTED":"APPROVED";
+        assert(events.some(event=>event.to_state===outcome&&event.actor_account_id===reviewer.accountId));
+        if(outcome==="APPROVED")assert(events.some(event=>event.to_state==="PUBLISHED"&&event.actor_account_id===reviewer.accountId));
+      }
       const capacity=history.find(r=>r.question_reference==="UI-Q-CAPACITY");assert.equal(capacity.workflow_state,"PUBLISHED");assert.equal(capacity.author_account_id,admin.accountId);assert.equal(capacity.approved_by_account_id,reviewer.accountId);assert.equal(capacity.provenance,"AUTHORED");
       console.log("ACTUAL_ADMIN_TIMING_DB original combined and revised separate policies retained independently");
     } finally { await database.close(); }

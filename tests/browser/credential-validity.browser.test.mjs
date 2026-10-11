@@ -15,13 +15,15 @@ function pdfText(bytes){
 }
 
 const KEY="credential-validity-browser-ephemeral-test-signing-key-more-than-32";
+const REVIEWER_EMAIL="independent-validity-reviewer@example.test";
+const REVIEWER_PASSWORD="ValidityReviewer!2026";
 const id=(prefix,seed)=>prefix+"_"+createHash("sha256").update(seed).digest("hex").slice(0,24);
 // Same seeded Admin MFA convention as credential-appeal-operational-e2e.
-function totp(secret){
+function totp(secret,offsetSteps=0){
  const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";let bits="";
  for(const char of secret.toUpperCase().replace(/=+$/g,""))bits+=alphabet.indexOf(char).toString(2).padStart(5,"0");
  const bytes=[];for(let i=0;i+8<=bits.length;i+=8)bytes.push(Number.parseInt(bits.slice(i,i+8),2));
- const counter=Buffer.alloc(8);counter.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
+ const counter=Buffer.alloc(8);counter.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)+offsetSteps));
  const digest=createHmac("sha1",Buffer.from(bytes)).update(counter).digest(),offset=digest.at(-1)&15;
  return String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0");
 }
@@ -33,7 +35,7 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
  const {createDecision,createManualDecisionOverride}=loadTs("src/lib/decision/decision-engine-domain.ts");
  const {CredentialIssuanceRepository}=loadTs("src/lib/credential/credential-issuance-repository.ts");
  const credentials=new CredentialIssuanceRepository(Promise.resolve(database)),repo=new DecisionRepository(Promise.resolve(database),KEY),issued=[];
- let browser,renewalAppeal;
+ let browser,renewalAppeal,reviewerInvitation;
  try{
   const workerId=(await database.query("SELECT COALESCE((SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1 LIMIT 1),worker_reference) AS worker_id FROM auth_accounts WHERE account_id=$1",[fixture.credentials.worker.accountId])).rows[0].worker_id;
   const renewalReference=new Date().toISOString();
@@ -77,14 +79,32 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
   const shareKey=createHash("sha256").update("hseverify:scoped-share-links\0","utf8").update(fixture.environment.HSE_SESSION_SECRET,"utf8").digest("hex");
   const shareManager=new ScopedShareLinkManager(shareKey),share=shareManager.create({ownerWorkerId:workerId,fields:["competencies"],purpose:"Browser live competency verification",createdAt:new Date().toISOString(),expiresAt:null});
   await new ScopedShareLinkRepository(Promise.resolve(database)).save(share.record);
+  // Keep the genuine issuer history; provision a separate reviewer through the Root invitation producer.
+  const {AuthAccessRepository}=loadTs("src/lib/auth/auth-access-repository.ts");
+  const {StaffProvisioningService}=loadTs("src/lib/auth/staff-provisioning-service.ts");
+  reviewerInvitation=await new StaffProvisioningService(new AuthAccessRepository(database),{
+   pepper:fixture.environment.HSE_AUTH_PEPPER,sandboxEnabled:false,sandboxAccessKey:null
+  }).createInvitation({inviterAccountId:fixture.credentials.root.accountId,inviterRole:"root",email:REVIEWER_EMAIL,role:"admin",requestFingerprint:"credential-validity-independent-reviewer"});
   await database.close();
   browser=await chromium.launch({headless:true});
   const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[],failed=[];
   page.on("pageerror",error=>errors.push(error.message));page.on("requestfailed",request=>failed.push(request.url()));
   const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/verify",projectRoot:process.cwd(),environment:{...fixture.environment,HSE_CREDENTIAL_SIGNING_SECRET:KEY},probe:async()=>{
+   await page.goto(baseUrl+"/staff/invite/"+reviewerInvitation.token,{waitUntil:"domcontentloaded"});
+   await page.getByText("Create account credentials",{exact:false}).waitFor();
+   await page.getByLabel("Full name").fill("Independent validity reviewer");
+   await page.getByLabel("Create password").fill(REVIEWER_PASSWORD);
+   await page.getByLabel("Confirm password").fill(REVIEWER_PASSWORD);
+   await page.getByRole("button",{name:"Continue to authenticator setup",exact:true}).click();
+   const reviewerSecret=(await page.locator(".security-key-card strong").innerText()).trim();
+   await page.getByLabel("Authenticator code").fill(totp(reviewerSecret));
+   await page.getByRole("button",{name:"Activate MFA and finish enrollment",exact:true}).click();
+   await page.getByText("Enrollment complete",{exact:false}).waitFor();
+   await page.context().clearCookies();
    await page.goto(baseUrl+"/admin/login",{waitUntil:"domcontentloaded"});
-   await page.getByLabel("Email address").fill(fixture.credentials.admin.email);await page.getByLabel("Password").fill(fixture.credentials.admin.password);
-   if(fixture.credentials.admin.totpSecret)await page.getByLabel("Authenticator code").fill(totp(fixture.credentials.admin.totpSecret));
+   await page.getByLabel("Email address").fill(REVIEWER_EMAIL);await page.getByLabel("Password").fill(REVIEWER_PASSWORD);
+   // Enrollment consumes the current TOTP step; an accepted adjacent step proves a fresh MFA login.
+   await page.getByLabel("Authenticator code").fill(totp(reviewerSecret,1));
    await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL("**/admin/dashboard");
    await page.goto(baseUrl+"/admin/appeals",{waitUntil:"domcontentloaded"});
    const review=page.getByRole("form",{name:"Review "+renewalAppeal.appealId,exact:true});
@@ -158,5 +178,29 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
    assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
   }});
   assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
+  const persisted=await openScriptDatabase({databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:fixture.environment.HSE_PGLITE_DATA_DIR});
+  try{
+   const proof=await persisted.query(`SELECT appeal.status,appeal.outcome_action,appeal.reviewer_account_id,
+    reviewer.email_normalized AS reviewer_email,event.reviewer_account_id AS event_reviewer,
+    original.actor_account_id AS issuer_account_id,replacement.actor_account_id AS replacement_actor,
+    invitation.invited_by_account_id,invitation.accepted_by_account_id,invitation.invitation_status AS invitation_status
+    FROM credential_appeals appeal JOIN auth_accounts reviewer ON reviewer.account_id=appeal.reviewer_account_id
+    JOIN credential_appeal_events event ON event.appeal_id=appeal.appeal_id AND event.version=appeal.version
+    JOIN credential_replacements replacement ON replacement.appeal_id=appeal.appeal_id
+    JOIN assurance_case_timeline_events original ON original.case_id=replacement.old_case_id AND original.event_type='decision_recorded'
+    JOIN auth_staff_invitations invitation ON invitation.invitation_id=$2
+    WHERE appeal.appeal_id=$1`,[renewalAppeal.appealId,reviewerInvitation.invitation.invitationId]);
+   assert.equal(proof.rows.length,1);
+   const row=proof.rows[0];
+   assert.equal(row.status,"accepted");assert.equal(row.outcome_action,"renew");
+   assert.equal(row.reviewer_email,REVIEWER_EMAIL);
+   assert.equal(row.issuer_account_id,fixture.credentials.admin.accountId);
+   assert.notEqual(row.reviewer_account_id,row.issuer_account_id);
+   assert.equal(row.event_reviewer,row.reviewer_account_id);
+   assert.equal(row.replacement_actor,row.reviewer_account_id);
+   assert.equal(row.invited_by_account_id,fixture.credentials.root.accountId);
+   assert.equal(row.invitation_status,"accepted");
+   assert.equal(row.accepted_by_account_id,row.reviewer_account_id);
+  }finally{await persisted.close();}
  }finally{if(browser)await browser.close();await database.close().catch(()=>{});await fixture.cleanup();}
 });
