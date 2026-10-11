@@ -2,23 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
 
-import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { credentialDecisionFixture } from "../helpers/credential-decision-fixture.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
-
-const ENV = {
-  appEnvironment: "test",
-  databaseDriver: "pglite",
-  databaseUrl: null,
-  pgliteDataDir: "memory://",
-  releaseSha: "credential-appeal-operational-runtime",
-  sessionSecret: "credential-appeal-operational-session-secret-more-than-32",
-  authPepper: "credential-appeal-operational-auth-pepper-more-than-32",
-  authSandboxEnabled: false,
-  authSandboxAccessKey: null,
-  demoAuthEnabled: false,
-  demoDataEnabled: false
-};
-
 
 async function loadAppealStack() {
   return {
@@ -31,64 +16,26 @@ async function loadAppealStack() {
 }
 
 async function database() {
-  const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(
-    db,
-    ENV.releaseSha,
-    "0074_credential_appeal_operational_workflow"
-  );
-  return db;
+  const fixture = await credentialDecisionFixture({qualification:"HSE Operational Assurance"});
+  const db = fixture.database, at = "2026-09-25T11:00:00.127Z";
+  await applyMigrationsThrough(db, fixture.environment.releaseSha, "0074_credential_appeal_operational_workflow");
+  for (const id of ["original_decision_admin", "account_admin_reviewer_01", "account_admin_reviewer_02"]) {
+    await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,'Independent test admin','active','test-only',$3,$3,$3,$3)", [id,id+"@example.test",at]);
+    await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[id,at]);
+  }
+  await fixture.repo.saveDecisionAndProgressCase(fixture.decision,"original_decision_admin");
+  const credentialId=(await db.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[fixture.caseId])).rows[0].credential_reference;
+  return {db,credentialId,workerId:"worker_id_validity_000001"};
 }
 
 test("accepted credential appeal preserves reasoned review history and appends a Living Record reassessment version", async () => {
-  const db = await database();
+  const {db,credentialId,workerId} = await database();
   const stack = await loadAppealStack();
   const { CredentialAppealsService } = stack.service;
   const { CredentialAppealsRepository } = stack.appealsRepository;
   const { LivingRecordRepository } = stack.livingRepository;
-  const { createLivingCompetencyRecord } = stack.livingDomain;
   try {
-    const workerId = "worker_id_" + "w".repeat(24);
-    const credentialId = "credential_id_" + "c".repeat(24);
-    const now = "2026-10-02T00:00:00.000Z";
-
-    await db.query(
-      `INSERT INTO credential_issuances(
-         credential_id,worker_id,qualification,issued_at,expires_at,status,version,
-         public_status_url,qr_payload,signature,pdf_url
-       ) VALUES($1,$2,'HSE Operational Assurance',$3,NULL,'valid',1,$4,$5,$6,$7)`,
-      [
-        credentialId,
-        workerId,
-        now,
-        "/verify/result/" + credentialId,
-        JSON.stringify({ credentialId }),
-        "a".repeat(64),
-        "/api/credentials/" + credentialId + "/pdf"
-      ]
-    );
-    await db.query(
-      "INSERT INTO credential_lifecycle_events(credential_id,status,version,changed_at) VALUES($1,'valid',1,$2)",
-      [credentialId, now]
-    );
-
     const living = new LivingRecordRepository(Promise.resolve(db));
-    await living.replaceCompetencyRecord(
-      workerId,
-      createLivingCompetencyRecord({
-        competencyId: "competency_" + "x".repeat(24),
-        title: "HSE Operational Assurance",
-        sourceCredentialId: credentialId,
-        initial: {
-          status: "valid",
-          effectiveAt: now,
-          expiresAt: null,
-          restrictions: [],
-          conditions: [],
-          reassessment: { required: false, dueAt: null, reason: null }
-        }
-      })
-    );
 
     const service = new CredentialAppealsService(Promise.resolve(db));
     const submitted = await service.submit({
@@ -167,54 +114,14 @@ test("accepted credential appeal preserves reasoned review history and appends a
 });
 
 test("accepted appeal can apply an explicit credential lifecycle action and mirror it into Living Record history", async () => {
-  const db = await database();
+  const {db,credentialId,workerId} = await database();
   const stack = await loadAppealStack();
   const { CredentialAppealsService } = stack.service;
   const { CredentialIssuanceRepository } = stack.credentialRepository;
   const { LivingRecordRepository } = stack.livingRepository;
-  const { createLivingCompetencyRecord } = stack.livingDomain;
   try {
-    const workerId = "worker_id_" + "y".repeat(24);
-    const credentialId = "credential_id_" + "d".repeat(24);
-    const now = "2026-10-02T00:00:00.000Z";
-    const credentials = new CredentialIssuanceRepository(Promise.resolve(db));
-
-    await db.query(
-      `INSERT INTO credential_issuances(
-         credential_id,worker_id,qualification,issued_at,expires_at,status,version,
-         public_status_url,qr_payload,signature,pdf_url
-       ) VALUES($1,$2,'HSE Lifecycle Assurance',$3,NULL,'valid',1,$4,$5,$6,$7)`,
-      [
-        credentialId,
-        workerId,
-        now,
-        "/verify/result/" + credentialId,
-        JSON.stringify({ credentialId }),
-        "b".repeat(64),
-        "/api/credentials/" + credentialId + "/pdf"
-      ]
-    );
-    await db.query(
-      "INSERT INTO credential_lifecycle_events(credential_id,status,version,changed_at) VALUES($1,'valid',1,$2)",
-      [credentialId, now]
-    );
     const living = new LivingRecordRepository(Promise.resolve(db));
-    await living.replaceCompetencyRecord(
-      workerId,
-      createLivingCompetencyRecord({
-        competencyId: "competency_" + "z".repeat(24),
-        title: "HSE Lifecycle Assurance",
-        sourceCredentialId: credentialId,
-        initial: {
-          status: "valid",
-          effectiveAt: now,
-          expiresAt: null,
-          restrictions: [],
-          conditions: [],
-          reassessment: { required: false, dueAt: null, reason: null }
-        }
-      })
-    );
+    const credentials = new CredentialIssuanceRepository(Promise.resolve(db));
 
     const service = new CredentialAppealsService(Promise.resolve(db));
     const appeal = await service.submit({

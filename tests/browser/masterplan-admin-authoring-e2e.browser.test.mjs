@@ -19,17 +19,28 @@ function totp(secret) {
 }
 async function freePort(){return new Promise((resolve,reject)=>{const server=createServer();server.once("error",reject);server.listen(0,"127.0.0.1",()=>{const port=server.address().port;server.close(error=>error?reject(error):resolve(port));});});}
 
-test("Admin authors a policy, revises a question, publishes a blueprint and connects a versioned catalogue in Chromium",{timeout:180000},async()=>{
+test("Admin authors a policy, revises a question, publishes a blueprint and connects a versioned catalogue in Chromium",{timeout:300000},async()=>{
   const dataDir=await mkdtemp(join(tmpdir(),"hse-admin-authoring-"));
   const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dataDir,HSE_RELEASE_SHA:"admin-authoring-browser-test",HSE_SESSION_SECRET:"admin-authoring-browser-session-secret-2026-32",HSE_AUTH_PEPPER:"admin-authoring-browser-auth-pepper-2026-32",HSE_ENABLE_AUTH_SANDBOX:"false",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   try {
     for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
     const {admin}=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
+    const reviewer={...admin,accountId:"question_browser_independent_reviewer",email:"question.browser.reviewer@example.test"};
+    const seedDb=new PGlite(dataDir);
+    try {
+      await seedDb.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) SELECT $1,$2,'Independent question reviewer','active',password_hash,email_verified_at,password_set_at,created_at,updated_at FROM auth_accounts WHERE account_id=$3",[reviewer.accountId,reviewer.email,admin.accountId]);
+      await seedDb.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',NOW())",[reviewer.accountId]);
+      await seedDb.query("INSERT INTO auth_mfa_factors(factor_id,account_id,factor_type,encrypted_secret,factor_status,last_accepted_counter,created_at,activated_at) SELECT 'question_reviewer_mfa',$1,factor_type,encrypted_secret,'active',NULL,NOW(),NOW() FROM auth_mfa_factors WHERE account_id=$2 AND factor_status='active'",[reviewer.accountId,admin.accountId]);
+    }finally{await seedDb.close();}
     const port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
     const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/admin/login`,projectRoot:process.cwd(),environment,
       probe:async()=>{const browser=await chromium.launch({headless:true});try {
         const page=await browser.newPage();const errors=[];page.on("pageerror",error=>errors.push(error.message));
         await page.goto(`${baseUrl}/admin/login`);await page.getByLabel("Email address").fill(admin.email);await page.getByLabel("Password").fill(admin.password);await page.getByLabel("Authenticator code").fill(totp(admin.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL("**/admin/dashboard");
+        const reviewerContext=await browser.newContext(),reviewPage=await reviewerContext.newPage();
+        reviewPage.on("pageerror",error=>errors.push(error.message));
+        await reviewPage.goto(`${baseUrl}/admin/login`);await reviewPage.getByLabel("Email address").fill(reviewer.email);await reviewPage.getByLabel("Password").fill(reviewer.password);await reviewPage.getByLabel("Authenticator code").fill(totp(reviewer.totpSecret));await reviewPage.getByRole("button",{name:"Sign in",exact:true}).click();await reviewPage.waitForURL("**/admin/dashboard");
+        assert.notEqual(admin.accountId,reviewer.accountId);
         await page.goto(`${baseUrl}/admin/frameworks`);
         const framework=page.locator("form").filter({has:page.getByRole("button",{name:"Create framework",exact:true})});
         await framework.getByLabel("Reference",{exact:true}).fill("UI-AUTHORING");await framework.getByLabel("Title",{exact:true}).fill("UI authored assurance framework");await framework.getByRole("button",{name:"Create framework",exact:true}).click();await page.getByText("UI-AUTHORING",{exact:true}).waitFor();
@@ -37,11 +48,43 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await policy.getByLabel("Framework reference",{exact:true}).fill("UI-AUTHORING");await policy.getByLabel("Policy reference",{exact:true}).fill("UI-POLICY");await policy.getByLabel("Title",{exact:true}).fill("UI authored policy");await policy.getByLabel("Effective from",{exact:true}).fill("2026-01-01T00:00");await policy.getByRole("button",{name:"Publish immutable version"}).click();await page.getByRole("status").getByText("Immutable policy version published.",{exact:true}).waitFor();
         await page.goto(`${baseUrl}/admin/question-bank`);
         const version={questionType:"MULTIPLE_CHOICE",prompt:"Which action controls an uncontrolled hazard?",options:["Stop work","Ignore it"],answerKey:"Stop work",rubric:null,frameworkReference:"UI-AUTHORING",domainReference:"Hazard control",difficulty:"MEDIUM",tags:["core"]};
-        const question=page.locator("form").filter({has:page.getByRole("button",{name:"Create active question"})});
-        await question.getByLabel("Stable reference").fill("UI-Q-1");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify(version));await question.getByRole("button",{name:"Create active question"}).click();
-        const card=page.locator("article").filter({has:page.getByRole("heading",{name:"UI-Q-1",exact:true})});await card.getByText(/v1 · ACTIVE/).waitFor();
-        await card.getByText("Create a new immutable revision",{exact:true}).click();await card.getByLabel("Replacement version JSON").fill(JSON.stringify({...version,prompt:"Which immediate action controls an uncontrolled hazard safely?"}));await card.getByRole("button",{name:"Publish revision"}).click();await card.getByText(/v2 · ACTIVE/).waitFor();
-        await card.getByRole("button",{name:"Deactivate",exact:true}).click();await card.getByText(/v2 · INACTIVE/).waitFor();await card.getByRole("button",{name:"Reactivate",exact:true}).click();await card.getByText(/v2 · ACTIVE/).waitFor();
+        const question=page.locator("form").filter({has:page.getByRole("button",{name:"Create draft question",exact:true})});
+        await question.getByLabel("Stable reference").fill("UI-Q-1");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify(version));await question.getByRole("button",{name:"Create draft question",exact:true}).click();
+        const card=page.locator('[data-question-reference="UI-Q-1"]'),reviewCard=reviewPage.locator('[data-question-reference="UI-Q-1"]');
+        await card.getByText(/v1 · DRAFT/).first().waitFor();await card.getByText("This question has never been published.",{exact:true}).waitFor();
+        await card.getByRole("button",{name:"Submit for review",exact:true}).click();await card.getByText(/v1 · UNDER_REVIEW/).first().waitFor();
+        assert.equal(await card.getByRole("button",{name:"Approve version",exact:true}).count(),0);
+        await card.getByText("Another administrator must review this version.",{exact:true}).waitFor();
+        await reviewPage.goto(`${baseUrl}/admin/question-bank`);
+        await reviewCard.getByRole("button",{name:"Approve version",exact:true}).click();await reviewCard.getByText(/v1 · APPROVED/).first().waitFor();
+        await reviewCard.getByRole("button",{name:"Publish approved version",exact:true}).click();await reviewCard.getByText(/v1 · PUBLISHED/).first().waitFor();
+        await page.goto(`${baseUrl}/admin/question-bank`);await card.getByText("Create a new immutable revision",{exact:true}).click();
+        await card.getByLabel("Replacement version JSON").fill(JSON.stringify({...version,prompt:"Which immediate action controls an uncontrolled hazard safely?"}));await card.getByRole("button",{name:"Save draft revision",exact:true}).click();
+        await card.getByText(/v2 · DRAFT/).first().waitFor();await card.getByText("Published: Which action controls an uncontrolled hazard?",{exact:true}).waitFor();
+        // Both live controls and the untouched old publication remain available during review.
+        await card.getByRole("button",{name:"Pause live version",exact:true}).click();await card.getByText("Not currently delivering: Which action controls an uncontrolled hazard?",{exact:true}).waitFor();
+        await card.getByRole("button",{name:"Resume live version",exact:true}).click();await card.getByText("Published: Which action controls an uncontrolled hazard?",{exact:true}).waitFor();
+        await card.getByRole("button",{name:"Submit for review",exact:true}).click();await card.getByText(/v2 · UNDER_REVIEW/).first().waitFor();
+        await reviewPage.goto(`${baseUrl}/admin/question-bank`);
+        const changes=reviewCard.locator("form").filter({has:reviewPage.getByRole("button",{name:"Request changes",exact:true})});
+        await changes.getByLabel("Decision reason").fill("Clarify the immediate control sequence.");await changes.getByRole("button",{name:"Request changes",exact:true}).click();await reviewCard.getByText(/v2 · CHANGES_REQUESTED/).first().waitFor();
+        await page.goto(`${baseUrl}/admin/question-bank`);await card.getByText("Create a new immutable revision",{exact:true}).click();
+        await card.getByLabel("Replacement version JSON").fill(JSON.stringify({...version,prompt:"Which corrected immediate action safely controls an uncontrolled hazard?"}));await card.getByRole("button",{name:"Save draft revision",exact:true}).click();await card.getByText(/v3 · DRAFT/).first().waitFor();
+        await card.getByRole("button",{name:"Submit for review",exact:true}).click();await card.getByText(/v3 · UNDER_REVIEW/).first().waitFor();
+        await reviewPage.goto(`${baseUrl}/admin/question-bank`);await reviewCard.getByRole("button",{name:"Approve version",exact:true}).click();await reviewCard.getByText(/v3 · APPROVED/).first().waitFor();
+        await reviewCard.getByRole("button",{name:"Publish approved version",exact:true}).click();await reviewCard.getByText(/v3 · PUBLISHED/).first().waitFor();
+        await reviewCard.getByRole("button",{name:"Pause publication",exact:true}).click();await reviewCard.getByText(/v3 · PAUSED/).first().waitFor();
+        await reviewCard.getByRole("button",{name:"Resume publication",exact:true}).click();await reviewCard.getByText(/v3 · PUBLISHED/).first().waitFor();
+        const retire=reviewCard.locator("form").filter({has:reviewPage.getByRole("button",{name:"Retire version",exact:true})});
+        await retire.getByLabel("Decision reason").fill("Retired after the real browser lifecycle verification.");await retire.getByRole("button",{name:"Retire version",exact:true}).click();await reviewCard.getByText(/v3 · RETIRED/).first().waitFor();
+        await reviewCard.getByRole("button",{name:"Archive version",exact:true}).click();await reviewCard.getByText(/v3 · ARCHIVED/).first().waitFor();
+        assert.equal(await reviewCard.getByRole("button").count(),0);
+        // A second genuinely reviewed published question supplies blueprint capacity.
+        await page.goto(`${baseUrl}/admin/question-bank`);
+        await question.getByLabel("Stable reference").fill("UI-Q-CAPACITY");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify({...version,prompt:"Which first action safely supplies the assessment capacity?"}));await question.getByRole("button",{name:"Create draft question",exact:true}).click();
+        const capacityCard=page.locator('[data-question-reference="UI-Q-CAPACITY"]');await capacityCard.getByText(/DRAFT/).first().waitFor();await capacityCard.getByRole("button",{name:"Submit for review",exact:true}).click();await capacityCard.getByText(/UNDER_REVIEW/).first().waitFor();
+        await reviewPage.goto(`${baseUrl}/admin/question-bank`);const capacityReview=reviewPage.locator('[data-question-reference="UI-Q-CAPACITY"]');await capacityReview.getByRole("button",{name:"Approve version",exact:true}).click();await capacityReview.getByText(/APPROVED/).first().waitFor();await capacityReview.getByRole("button",{name:"Publish approved version",exact:true}).click();await capacityReview.getByText(/PUBLISHED/).first().waitFor();
+        console.log("ACTUAL_TWO_ADMIN_QUESTION_BROWSER independent login author Draft submit reviewer approval publication request-changes revision old-live pause-resume retire archive");
         await page.goto(`${baseUrl}/admin/assessment-blueprints`);
         const blueprint=page.locator("form").filter({has:page.getByRole("button",{name:"Create blueprint",exact:true})});
         await blueprint.locator('[name="blueprintReference"]').fill("UI-BP-1");await blueprint.locator('[name="blueprintTitle"]').fill("UI authored assessment blueprint");await blueprint.locator('[name="frameworkReference"]').fill("UI-AUTHORING");await blueprint.locator('[name="selectorsJson"]').fill(JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}]));await blueprint.getByLabel("Timer mode").selectOption("COMBINED");await blueprint.getByLabel("Combined duration in seconds").fill("120");await blueprint.getByRole("button",{name:"Create blueprint",exact:true}).click();
@@ -70,6 +113,9 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
       assert.deepEqual(rows[0].timing_config_json,{mode:"COMBINED",durationSeconds:120});
       assert.deepEqual(rows[1].timing_config_json,{mode:"SEPARATE"});
       assert.equal(rows[1].section_config_json[0].durationSeconds,90);
+      const history=(await database.query("SELECT q.question_reference,v.version_no,w.workflow_state,w.author_account_id,w.approved_by_account_id,w.provenance FROM assessment_questions q JOIN assessment_question_versions v USING(question_id) JOIN question_version_workflow w USING(question_id,question_version_id) WHERE q.question_reference IN ('UI-Q-1','UI-Q-CAPACITY') ORDER BY q.question_reference,v.version_no")).rows;
+      assert.equal(history.length,4);assert.equal(history.find(r=>r.question_reference==="UI-Q-1"&&r.version_no===3).workflow_state,"ARCHIVED");
+      const capacity=history.find(r=>r.question_reference==="UI-Q-CAPACITY");assert.equal(capacity.workflow_state,"PUBLISHED");assert.equal(capacity.author_account_id,admin.accountId);assert.equal(capacity.approved_by_account_id,reviewer.accountId);assert.equal(capacity.provenance,"AUTHORED");
       console.log("ACTUAL_ADMIN_TIMING_DB original combined and revised separate policies retained independently");
     } finally { await database.close(); }
   } finally {await rm(dataDir,{recursive:true,force:true});}

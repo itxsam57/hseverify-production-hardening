@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import {
+  CredentialAppealReviewAuthorizationError,
   APPEAL_OUTCOME_ACTIONS,
   type AppealOutcomeAction
 } from "@/lib/credential/credential-appeals-domain";
@@ -52,6 +53,7 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
     outcomeAction
     });
   } catch (error) {
+    if (error instanceof CredentialAppealReviewAuthorizationError) redirect("/admin/appeals?error=independence");
     if (error instanceof CredentialRenewalInputError) redirect("/admin/appeals?error=renewal");
     throw error;
   }

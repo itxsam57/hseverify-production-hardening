@@ -205,7 +205,11 @@ test("Actual appeal renew after expiry produces a distinct configured renewal wi
   assert.equal(ownDenied.status,"submitted");assert.equal(Number(ownDenied.version),1);
   assert.equal((await x.database.query("SELECT count(*) AS count FROM credential_issuances")).rows[0].count,1);
   assert.equal((await x.database.query("SELECT count(*) AS count FROM assurance_cases")).rows[0].count,1);
-  const result=await service.reviewOutcome(appeal,{status:"accepted",reviewerId:admin.accountId,reason:"Independent review confirms the renewal evidence meets the current policy.",outcomeAction:"renew",reviewedAt});
+  await assert.rejects(service.reviewOutcome(appeal,{status:"accepted",reviewerId:admin.accountId,reason:"Original decision actor attempts renewal.",outcomeAction:"renew",reviewedAt}),/independent|original decision/i);
+  const independentReviewer="account_independent_renewal_admin";
+  await x.database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'independent-renewal@example.test','Independent renewal admin','active','test-only',$2,$2,$2,$2)",[independentReviewer,ISSUED]);
+  await x.database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[independentReviewer,ISSUED]);
+  const result=await service.reviewOutcome(appeal,{status:"accepted",reviewerId:independentReviewer,reason:"Independent review confirms the renewal evidence meets the current policy.",outcomeAction:"renew",reviewedAt});
   assert.equal(result.credentialAction,"renew");
   const rows=(await x.database.query("SELECT credential_id FROM credential_issuances ORDER BY issued_at")).rows;
   assert.equal(rows.length,2);
@@ -270,8 +274,11 @@ test("Actual renewal rejects foreign Worker or unavailable policy provenance and
     assert.equal((await x.database.query("SELECT count(*) AS count FROM credential_issuances")).rows[0].count,1);
     continue;
    }
+   const independentReviewer="account_invalid_provenance_reviewer";
+   await x.database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'provenance-reviewer@example.test','Independent reviewer','active','test-only',$2,$2,$2,$2)",[independentReviewer,ISSUED]);
+   await x.database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[independentReviewer,ISSUED]);
    const appeal=await service.submit({credentialId:row.credential_id,workerId:foreign?"worker_id_"+"x".repeat(24):row.worker_id,reason:"Controlled review requires valid original ownership and rule provenance.",createdAt:"2026-10-26T11:00:00.127Z"},"denied_renewal");
-   await assert.rejects(service.reviewOutcome(appeal,{status:"accepted",reviewerId:"admin_validity",reason:"Independent review attempts renewal.",outcomeAction:"renew",reviewedAt:"2026-11-01T11:00:00.127Z"}),/ownership|configured|provenance/i);
+   await assert.rejects(service.reviewOutcome(appeal,{status:"accepted",reviewerId:independentReviewer,reason:"Independent review attempts renewal.",outcomeAction:"renew",reviewedAt:"2026-11-01T11:00:00.127Z"}),/ownership|configured|provenance/i);
    assert.equal((await x.database.query("SELECT count(*) AS count FROM credential_issuances")).rows[0].count,1);
    assert.equal((await x.database.query("SELECT count(*) AS count FROM credential_replacements")).rows[0].count,0);
    assert.equal((await x.database.query("SELECT count(*) AS count FROM assurance_cases")).rows[0].count,1);

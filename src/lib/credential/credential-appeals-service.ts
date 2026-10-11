@@ -94,20 +94,24 @@ export class CredentialAppealsService {
     reviewerId = ""
   ): Promise<CredentialAppeal> {
     const database = await this.clientPromise;
-    const repository = new CredentialAppealsRepository(Promise.resolve(database));
-    const current = await repository.find(appeal.appealId);
-    if (!current) throw new Error("Appeal not found.");
-    if (status === "submitted" || status === "withdrawn") {
-      throw new Error("Appeal review status is invalid.");
-    }
-    const reviewed = reviewCredentialAppeal(current, {
-      status,
-      reviewerId,
-      reason: "Appeal status reviewed.",
-      outcomeAction: "none",
-      reviewedAt: new Date().toISOString()
+    return database.transaction(async (transaction) => {
+      const repository = new CredentialAppealsRepository(Promise.resolve(transaction));
+      const current = await repository.find(appeal.appealId);
+      if (!current) throw new Error("Appeal not found.");
+      if (current.version !== appeal.version) throw new Error("Appeal update conflict.");
+      if (status === "submitted" || status === "withdrawn") {
+        throw new Error("Appeal review status is invalid.");
+      }
+      await repository.assertIndependentReviewer(current, reviewerId);
+      const reviewed = reviewCredentialAppeal(current, {
+        status,
+        reviewerId,
+        reason: "Appeal status reviewed.",
+        outcomeAction: "none",
+        reviewedAt: new Date().toISOString()
+      });
+      return repository.updateStatus(reviewed);
     });
-    return repository.updateStatus(reviewed);
   }
 
   async reviewOutcome(
@@ -126,6 +130,7 @@ export class CredentialAppealsService {
       const current = await appeals.find(appeal.appealId);
       if (!current) throw new Error("Appeal not found.");
       if (current.version !== appeal.version) throw new Error("Appeal update conflict.");
+      await appeals.assertIndependentReviewer(current, input.reviewerId);
 
       const reviewedAt = input.reviewedAt ?? new Date().toISOString();
       const updated = reviewCredentialAppeal(current, {

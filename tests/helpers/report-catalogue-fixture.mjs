@@ -1,3 +1,4 @@
+import { seedPublishedQuestion } from "./question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {posix} from "node:path";
@@ -59,9 +60,7 @@ export async function reportCatalogueFixture(){
     await database.query("INSERT INTO assessment_catalogue_versions(catalogue_version_id,catalogue_entry_id,version_no,title,description,framework_id,blueprint_version_id,minimum_verified_qualifications,created_by_account_id,created_at) VALUES($1,$2,1,'Owned safety assessment','Funding workflow fixture',$3,$4,0,$5,$6)", [version, entry, framework, blueprint, admin, now]);
     await database.query("UPDATE assessment_catalogue_entries SET current_version_id=$2,catalogue_status='ACTIVE' WHERE catalogue_entry_id=$1", [entry, version]);
     const question = id("assessment_question", "report-catalogue"), questionVersion = id("question_version", "report-catalogue"), fingerprint = createHash("sha256").update("funding question").digest("hex");
-    await database.query("INSERT INTO assessment_questions(question_id,question_reference,question_status,current_version_id,current_content_fingerprint,created_by_account_id,created_at,updated_at) VALUES($1,'REPORT-CATALOGUE-Q','INACTIVE',NULL,NULL,$2,$3,$3)", [question, admin, now]);
-    await database.query("INSERT INTO assessment_question_versions(question_version_id,question_id,version_no,question_type,prompt,options_json,answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,content_fingerprint,created_by_account_id,created_at) VALUES($1,$2,1,'MULTIPLE_CHOICE','private-question-prompt-marker',$3::jsonb,$4::jsonb,NULL,$5,'Core','MEDIUM','[]'::jsonb,$6,$7,$8)", [questionVersion, question, JSON.stringify(["Stop and assess", "Ignore the hazard"]), JSON.stringify("Stop and assess"), framework, fingerprint, admin, now]);
-    await database.query("UPDATE assessment_questions SET current_version_id=$2,current_content_fingerprint=$3,question_status='ACTIVE' WHERE question_id=$1", [question, questionVersion, fingerprint]);
+    await seedPublishedQuestion(database,{questionId:question,versionId:questionVersion,reference:"REPORT-CATALOGUE-Q",questionType:"MULTIPLE_CHOICE",prompt:"private-question-prompt-marker",options:["Stop and assess","Ignore the hazard"],answerKey:"Stop and assess",frameworkId:framework,fingerprint,authorAccountId:admin,now});
 
   const company={...fixture.principal,authorizedTenantPermission:"company.billing.manage"},billing=new BillingService(database);
   const checkout=await billing.createCreditCheckout(company,{idempotencyKey:"report-catalogue-"+randomUUID(),creditUnits:3,amountMinor:300,currency:"USD"});

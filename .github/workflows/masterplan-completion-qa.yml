@@ -84,6 +84,11 @@ jobs:
       - name: Cold database and private object business recovery
         run: npm run test:restore-business-recovery
 
+      - name: Independent question approval and trusted recent decision MFA
+        run: |
+          node scripts/run-question-bank-tests.mjs
+          npm run test:owner-acceptance-regressions
+
       - name: Strict TypeScript
         run: npm run typecheck
 

@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const tests = [
+  "tests/browser/decision-recent-mfa.browser.test.mjs",
+  "tests/browser/credential-appeal-operational-e2e.browser.test.mjs",
   "tests/browser/m1-08-company-verification.browser.test.mjs",
   "tests/browser/masterplan-admin-authoring-e2e.browser.test.mjs",
   "tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs",

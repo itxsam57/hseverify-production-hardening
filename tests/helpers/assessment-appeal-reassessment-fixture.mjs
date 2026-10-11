@@ -17,9 +17,12 @@ export async function acceptedReassessmentSource(fixture,database) {
  const decision=createDecision({tenantId:oldCase.tenant_id,caseId:oldCase.case_id,state:"APPROVED",reasonCode:"review_ready",explanation:"Original evidence review is complete.",ruleVersion:"reassessment-test",inputReferences:[oldCase.case_id],createdAt:now.toISOString()});
  await new DecisionRepository(Promise.resolve(database),KEY).saveDecisionAndProgressCase(decision,fixture.credentials.admin.accountId);
  const issued=(await database.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[oldCase.case_id])).rows[0].credential_reference;
+ const reviewerId="account_independent_appeal_reviewer";
+ await database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'independent-appeal@example.test','Independent appeal reviewer','active','test-only-unused',$2,$2,$2,$2) ON CONFLICT DO NOTHING",[reviewerId,now.toISOString()]);
+ await database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2) ON CONFLICT DO NOTHING",[reviewerId,now.toISOString()]);
  const appeals=new CredentialAppealsService(Promise.resolve(database),KEY);
  const appeal=await appeals.submit({credentialId:issued,workerId:oldCase.permanent_worker_id,reason:"The original evidence requires an independently reviewed reassessment.",createdAt:now.toISOString()},"explicit_reassessment");
- const accepted=await appeals.reviewOutcome(appeal,{status:"accepted",reviewerId:fixture.credentials.admin.accountId,reason:"A new reassessment must retain its original credential and appeal lineage.",outcomeAction:"reassessment",reviewedAt:now.toISOString()});
+ const accepted=await appeals.reviewOutcome(appeal,{status:"accepted",reviewerId,reason:"A new reassessment must retain its original credential and appeal lineage.",outcomeAction:"reassessment",reviewedAt:now.toISOString()});
  return {service,oldCase,appeal:accepted.appeal,now};
 }
 

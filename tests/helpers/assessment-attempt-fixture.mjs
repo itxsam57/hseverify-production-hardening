@@ -1,3 +1,4 @@
+import { hasQuestionApprovalLifecycle, seedPublishedQuestion } from "./question-publication-fixture.mjs";
 import { createHash } from "node:crypto";
 
 export const ATTEMPT_NOW_DATE = new Date("2026-08-31T20:10:00.000Z");
@@ -164,6 +165,11 @@ export async function seedInProgressAttempt(db, principal, seed, questions, { re
     const storage = questionStorage(question);
     const contentFingerprint = digest(`${question.questionType}:${prompt}:${JSON.stringify(storage.options)}`);
 
+    if (await hasQuestionApprovalLifecycle(db)) {
+      await seedPublishedQuestion(db,{questionId,versionId:questionVersionId,reference:`M207-Q-${digest(questionSeed).slice(0,12).toUpperCase()}`,questionType:question.questionType,prompt,options:storage.options,answerKey:storage.answerKey,rubric:storage.rubric,frameworkId,domainReference:"Core",difficulty:"MEDIUM",tags:[],fingerprint:contentFingerprint,now:ATTEMPT_NOW});
+    } else {
+      // Historical snapshot/draft fixture: its caller deliberately pins the older
+      // migration ceiling. It does not certify current question publication.
     await db.transaction(async (tx) => {
       await tx.query(
         `INSERT INTO assessment_questions(
@@ -199,6 +205,7 @@ export async function seedInProgressAttempt(db, principal, seed, questions, { re
         [questionId, questionVersionId, contentFingerprint, ATTEMPT_NOW]
       );
     });
+    }
     items.push(Object.freeze({
       formItemId,
       position: index + 1,

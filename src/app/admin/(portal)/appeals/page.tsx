@@ -23,6 +23,8 @@ export default async function AdminCredentialAppealsPage({
         ? "A reasoned review outcome of at least 10 characters is required."
         : params.error === "action"
           ? "The selected credential/Living Record action is invalid for this review status."
+          : params.error === "independence"
+            ? "This appeal requires an independent authorized reviewer. No changes were saved."
           : params.error === "renewal"
             ? "Renewal requires an eligible original case, an authenticated issuance and a current policy with configured validity. No changes were saved."
           : params.error === "missing"

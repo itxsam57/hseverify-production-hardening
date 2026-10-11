@@ -1,3 +1,4 @@
+import { seedPublishedQuestion } from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
@@ -30,9 +31,7 @@ test("Published waiting/attempt policy follows actual terminal answer through Wo
     await database.query("UPDATE assessment_catalogue_entries SET current_version_id=$2,catalogue_status='ACTIVE' WHERE catalogue_entry_id=$1",[entry,catalogue]);
     for (const seed of ["eligibility-second","eligibility-third"]) {
       const question=id("assessment_question",seed), version=id("question_version",seed), fingerprint=createHash("sha256").update(seed).digest("hex");
-      await database.query("INSERT INTO assessment_questions(question_id,question_reference,question_status,current_version_id,current_content_fingerprint,created_by_account_id,created_at,updated_at) VALUES($1,$2,'INACTIVE',NULL,NULL,$3,$4,$4)",[question,seed.toUpperCase(),admin.accountId,now.toISOString()]);
-      await database.query("INSERT INTO assessment_question_versions(question_version_id,question_id,version_no,question_type,prompt,options_json,answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,content_fingerprint,created_by_account_id,created_at) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,'[\"Stop and assess\",\"Ignore the hazard\"]'::jsonb,'\"Stop and assess\"'::jsonb,NULL,$4,'Core','MEDIUM','[]'::jsonb,$5,$6,$7)",[version,question,seed+" safe choice",source.framework_id,fingerprint,admin.accountId,now.toISOString()]);
-      await database.query("UPDATE assessment_questions SET current_version_id=$2,current_content_fingerprint=$3,question_status='ACTIVE' WHERE question_id=$1",[question,version,fingerprint]);
+      await seedPublishedQuestion(database,{questionId:question,versionId:version,reference:seed.toUpperCase(),questionType:"MULTIPLE_CHOICE",prompt:seed+" safe choice",options:["Stop and assess","Ignore the hazard"],answerKey:"Stop and assess",frameworkId:source.framework_id,fingerprint,authorAccountId:admin.accountId,now:now.toISOString()});
     }
     const applications=new WorkerAssessmentApplicationService(database), eligibility=new AssessmentCatalogueEligibilityService(database), attempts=new AssessmentAttemptService(database);
     const firstApp=await applications.applyWorkerPay(fixture.worker,source.catalogue_version_id,now);
