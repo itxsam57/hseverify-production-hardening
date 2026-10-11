@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "task_id": "WORKFLOW-001",
-  "stage": "IMPLEMENTING",
+  "stage": "Company producer verification",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "branch": "qa/scenario-verification-20261002",
+  "branch": "qa/interview-email-20261007",
   "worktree": "/home/ubuntu/work/hseverify-current-audit",
   "last_verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
   "canonical_sha": "0e53eb31a2f2790d191056ba6b0e02c022ad2186",
@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "PR29 accepted after16 exact cohorts/all applicable freshCI/fourQA jobs/independentACCEPT; verified merged0e53eb3 identical tree. Prepared registration dispatch26native/browser/sandbox/type/lint/security/build/preview pass; reviewed hash18cc1dce integrated, new exact candidate pending.",
+  "last_verified_action": "Scoped safeguarded workflow checks passed; Company producer4/4 independently rerun; interrupted7c66519 fullgate uncertified.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -24,7 +24,7 @@
     ".autopilot/artifacts/20261006-registration-delivery-bindings-final.json",
     ".autopilot/artifacts/20261006-registration-delivery-portable-v2.json"
   ],
-  "next_action": "Commit reviewed registration delivery integration; run exact26native/nonSandboxbrowser and regressions/five gates, freshCI and independent acceptance. Then repair real nonSandbox recovery refusal and continue Masterplan.",
+  "next_action": "Finish Company365day/browserUI proof; commit reviewed fix and run fresh exact-SHA full gates, then push for canonicalQA CI.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -36,8 +36,8 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-06T17:27:07.230347+00:00",
-  "verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
+  "updated_at": "2026-10-11T05:25:30.564091+00:00",
+  "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
     "read_first": [

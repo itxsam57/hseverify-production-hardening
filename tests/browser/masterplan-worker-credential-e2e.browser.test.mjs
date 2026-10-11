@@ -25,6 +25,8 @@ const INTERVIEW_POLICY = process.env.HSE_MASTERPLAN_INTERVIEW_POLICY === "true";
 const INTERVIEW_POLICY_MIN_ACTIVE_SECONDS = 15;
 const configuredActiveSince = new WeakMap();
 const EXPIRY_MODE=process.env.HSE_MASTERPLAN_EXPIRY === "true";
+const COMPANY_CREDENTIAL_TARGET_MODE=process.env.HSE_MASTERPLAN_COMPANY_CREDENTIAL_TARGET === "true";
+const ISSUED_QUALIFICATION=COMPANY_CREDENTIAL_TARGET_MODE ? "Company Issued Safety Competency" : "End-to-End Worker Assessment";
 const COMPLETE_REASSESSMENT=process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true";
 const REPLACED_RESTRICTION="This issuance has been replaced. Verify the current credential shared by the Worker.";
 const CONTENT_MODE=process.env.HSE_MASTERPLAN_CONTENT_MODE ?? "COMBINED";
@@ -244,7 +246,7 @@ async function seedAssessment(database,credentials){
   await database.query(`INSERT INTO assurance_frameworks(framework_id,framework_reference,title,framework_status,created_by_account_id,created_at,updated_at) VALUES($1,'E2E-WORKER','End-to-End Worker Framework','ACTIVE',$2,$3,$3)`,[frameworkId,admin,now]);
   if (!INTERVIEW_POLICY) {
   await database.query(`INSERT INTO assurance_policy_packs(policy_id,framework_id,policy_reference,title,policy_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'E2E-WORKER-POLICY','End-to-End Worker Policy','ACTIVE',$3,$4,$4)`,[policyId,frameworkId,admin,now]);
-  await database.query(`INSERT INTO assurance_policy_versions(policy_version_id,policy_id,version_no,version_status,effective_from,effective_to,policy_values,override_allowed_fields,override_directions,created_by_account_id,created_at) VALUES($1,$2,1,'PUBLISHED','2026-01-01T00:00:00Z',NULL,$3::jsonb,'[]'::jsonb,'{}'::jsonb,$4,$5)`,[policyVersionId,policyId,JSON.stringify({pass_mark:70,...(COMPLETE_REASSESSMENT?{credentialValidityDays:60}:{})}),admin,now]);
+  await database.query(`INSERT INTO assurance_policy_versions(policy_version_id,policy_id,version_no,version_status,effective_from,effective_to,policy_values,override_allowed_fields,override_directions,created_by_account_id,created_at) VALUES($1,$2,1,'PUBLISHED','2026-01-01T00:00:00Z',NULL,$3::jsonb,'[]'::jsonb,'{}'::jsonb,$4,$5)`,[policyVersionId,policyId,JSON.stringify({pass_mark:70,...(COMPLETE_REASSESSMENT?{credentialValidityDays:60}:COMPANY_CREDENTIAL_TARGET_MODE?{credentialValidityDays:365}:{})}),admin,now]);
   }
   await database.query(`INSERT INTO assessment_blueprints(blueprint_id,blueprint_reference,blueprint_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'BP-E2E-WORKER','INACTIVE',NULL,$2,$3,$3)`,[blueprintId,admin,now]);
   await database.query(`INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'End-to-End Worker Blueprint',$4::jsonb,$5,$6)`,[blueprintVersionId,blueprintId,frameworkId,JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:[]},{count:1,questionType:"SHORT_TEXT",tagsAll:[]}].filter(selector=>CONTENT_MODE==="COMBINED" || selector.questionType===(CONTENT_MODE==="MCQ_ONLY" ? "MULTIPLE_CHOICE" : "SHORT_TEXT"))),admin,now]);
@@ -360,7 +362,7 @@ async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env
 }
 
 test("Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
-  const companyFunded=process.env.HSE_MASTERPLAN_FUNDING_MODE === "company";
+  const companyFunded=process.env.HSE_MASTERPLAN_FUNDING_MODE === "company" || COMPANY_CREDENTIAL_TARGET_MODE;
   const root=process.cwd(),dbDir=await mkdtemp(join(tmpdir(),"hse-masterplan-worker-e2e-")),port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
   const env={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dbDir,HSE_RELEASE_SHA:"masterplan-worker-e2e",HSE_CREDENTIAL_SIGNING_SECRET:"synthetic-masterplan-worker-signing-secret-2026",HSE_SESSION_SECRET:"masterplan-worker-e2e-session-secret-2026-more-than-32",HSE_AUTH_PEPPER:"masterplan-worker-e2e-auth-pepper-2026-more-than-32",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   try{
@@ -400,7 +402,28 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await login(worker,baseUrl,{email:EMAIL,password:PASSWORD},"worker");
           await worker.goto(`${baseUrl}/worker/assessment-applications`,{waitUntil:"domcontentloaded"});
           await worker.getByRole("heading",{name:"End-to-End Worker Assessment"}).first().waitFor({timeout:20000});
-          if(companyFunded){
+          if(COMPANY_CREDENTIAL_TARGET_MODE){
+            await login(company,baseUrl,credentials.company,"company");
+            await company.goto(baseUrl+"/company/assurance-orders/new");
+            await company.getByLabel("Order name").fill("Company credential target browser assurance");
+            await company.getByLabel("Order reference",{exact:true}).fill("COMPANY-CREDENTIAL-TARGET-BROWSER");
+            await company.getByLabel("Assessment framework references").fill("E2E-WORKER");
+            await company.getByLabel("Effective policy reference").fill("E2E-WORKER-POLICY");
+            await company.getByLabel("Credential target").fill(ISSUED_QUALIFICATION);
+            await company.getByRole("checkbox",{name:"Interview required",exact:true}).check();
+            await company.getByRole("checkbox",{name:new RegExp(permanentWorkerId)}).check();
+            await company.getByRole("button",{name:"Save Draft",exact:true}).click();
+            await company.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
+            await company.getByRole("button",{name:"Validate Order",exact:true}).click();
+            try { await company.getByRole("button",{name:"Submit Order",exact:true}).waitFor({timeout:10000}); }
+            catch(error){throw new Error("Company credential target could not validate READY.\n"+await company.locator("main").innerText(),{cause:error});}
+            await company.getByRole("button",{name:"Submit Order",exact:true}).click();
+            await company.locator('tbody tr[id^="assurance_case_"]').waitFor();
+            journeyCaseId=await company.locator('tbody tr[id^="assurance_case_"]').getAttribute("id");
+            await company.getByText("Assessment pending",{exact:true}).waitFor();
+            console.log("ACTUAL_COMPANY_CREDENTIAL_ORDER_BROWSER unique target, verified linked Worker selected, real draft/READY/submit, exact framework policy pinned");
+            await worker.goto(baseUrl+"/worker/available-assessments");
+          }else if(companyFunded){
             await worker.getByLabel("Funding Company").selectOption({label:"Independent Audit Company"});
             await worker.getByRole("button",{name:"Request 1 assessment credit"}).click();
             await worker.getByText("Company funding request submitted.",{exact:true}).waitFor({timeout:20000});
@@ -423,8 +446,8 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await worker.getByRole("button",{name:"Confirm sandbox payment"}).click();
           await worker.getByText("Funding confirmed. The assessment case is ready.",{exact:true}).waitFor({timeout:20000});
           }
-          console.log("JOURNEY: funded assessment case created");
-          journeyCaseId=(await worker.locator("main").getByText(/^assurance_case_[A-Za-z0-9_-]{24}$/).first().innerText()).trim();
+          console.log(COMPANY_CREDENTIAL_TARGET_MODE ? "JOURNEY: submitted Company assessment case created" : "JOURNEY: funded assessment case created");
+          if(!COMPANY_CREDENTIAL_TARGET_MODE)journeyCaseId=(await worker.locator("main").getByText(/^assurance_case_[A-Za-z0-9_-]{24}$/).first().innerText()).trim();
           assert.match(journeyCaseId,/^assurance_case_[A-Za-z0-9_-]{24}$/);
           if(process.env.HSE_MASTERPLAN_TIMING === "true") {
             await worker.goto(baseUrl+"/worker/privacy");
@@ -442,7 +465,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             await accommodation.getByText("Status: APPROVED",{exact:true}).waitFor();
             await worker.goto(baseUrl+"/worker/assessment-applications");
           }
-          await worker.getByRole("link",{name:"Continue to available assessments"}).click();
+          if(!COMPANY_CREDENTIAL_TARGET_MODE)await worker.getByRole("link",{name:"Continue to available assessments"}).click();
           await worker.waitForURL("**/worker/available-assessments",{timeout:20000});
           const eligibleHeading=worker.getByRole("region",{name:"Eligible assessment offerings"}).getByRole("heading",{name:"End-to-End Worker Assessment"});
           try {
@@ -688,12 +711,13 @@ test("Masterplan preserved Worker journey: register to credential, share and app
 
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${journeyCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();try{await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});}catch(error){throw new Error("Final decision failed at actual browser boundary.\nADMIN URL: "+admin.url()+"\nADMIN:\n"+await admin.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
-          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText("End-to-End Worker Assessment",{exact:true}).first().waitFor({timeout:20000});await worker.getByText(COMPLETE_REASSESSMENT?/valid · expires \d{4}-\d{2}-\d{2}/i:/valid · no expiry recorded/i).waitFor();
-          await worker.goto(`${baseUrl}/worker/appeals`);const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:"End-to-End Worker Assessment"});const credentialId=await credentialOption.getAttribute("value");assert.ok(credentialId?.startsWith("credential_id_"));
-          const publicPage=await workerContext.newPage();const publicResponse=await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});assert.equal(publicResponse?.status(),200);await publicPage.getByText("End-to-End Worker Assessment",{exact:true}).waitFor();const publicApi=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}`);assert.equal(publicApi.status(),200);assert.equal((await publicApi.json()).status,"valid");
-          const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);assert.ok((await pdf.body()).subarray(0,8).toString().startsWith("%PDF-1.4"));await publicPage.close();
+          if(COMPANY_CREDENTIAL_TARGET_MODE){await company.reload();await company.getByText("COMPANY-CREDENTIAL-TARGET-BROWSER · COMPLETED",{exact:true}).waitFor();console.log("ACTUAL_COMPANY_ORDER_COMPLETED_BROWSER original Company order completed after real final decision");}
+          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText(ISSUED_QUALIFICATION,{exact:true}).first().waitFor({timeout:20000});await worker.getByText((COMPLETE_REASSESSMENT||COMPANY_CREDENTIAL_TARGET_MODE)?/valid · expires \d{4}-\d{2}-\d{2}/i:/valid · no expiry recorded/i).waitFor();
+          await worker.goto(`${baseUrl}/worker/appeals`);const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:ISSUED_QUALIFICATION});const credentialId=await credentialOption.getAttribute("value");assert.ok(credentialId?.startsWith("credential_id_"));
+          const publicPage=await workerContext.newPage();const publicResponse=await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});assert.equal(publicResponse?.status(),200);await publicPage.getByText(ISSUED_QUALIFICATION,{exact:true}).waitFor();const publicApi=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}`);assert.equal(publicApi.status(),200);const publicCredential=await publicApi.json();assert.equal(publicCredential.status,"valid");assert.equal(publicCredential.qualification,ISSUED_QUALIFICATION);if(COMPANY_CREDENTIAL_TARGET_MODE){assert.ok(publicCredential.expiresAt);assert.equal(new Date(publicCredential.expiresAt).getTime()-new Date(publicCredential.issuedAt).getTime(),365*86400000);}
+          const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);const pdfBody=await pdf.body();assert.ok(pdfBody.subarray(0,8).toString().startsWith("%PDF-1.4"));if(COMPANY_CREDENTIAL_TARGET_MODE){const text=extractCredentialPdf(pdfBody);assert.ok(text.includes(ISSUED_QUALIFICATION));assert.ok(text.includes("Expiry: "+publicCredential.expiresAt));}await publicPage.close();
 
-          await worker.goto(`${baseUrl}/worker/share-links`);await worker.getByLabel("Competencies", { exact: true }).check();await worker.getByLabel("Purpose").fill("Masterplan end-to-end verification");await worker.getByLabel("Recipient or employer (optional)").fill("E2E Employer");await worker.getByLabel("Link expiry").selectOption("7");await worker.getByRole("button",{name:"Create secure link"}).click();await worker.getByText("Share link created.",{exact:false}).waitFor({timeout:15000});const shareUrl=await worker.getByRole("link",{name:"Open secure share link"}).getAttribute("href");assert.ok(shareUrl);const share=await workerContext.newPage();await share.goto(`${baseUrl}${shareUrl}`);await share.getByText("End-to-End Worker Assessment",{exact:true}).waitFor({timeout:15000});await share.close();
+          await worker.goto(`${baseUrl}/worker/share-links`);await worker.getByLabel("Competencies", { exact: true }).check();await worker.getByLabel("Purpose").fill("Masterplan end-to-end verification");await worker.getByLabel("Recipient or employer (optional)").fill("E2E Employer");await worker.getByLabel("Link expiry").selectOption("7");await worker.getByRole("button",{name:"Create secure link"}).click();await worker.getByText("Share link created.",{exact:false}).waitFor({timeout:15000});const shareUrl=await worker.getByRole("link",{name:"Open secure share link"}).getAttribute("href");assert.ok(shareUrl);const share=await workerContext.newPage();await share.goto(`${baseUrl}${shareUrl}`);await share.getByText(ISSUED_QUALIFICATION,{exact:true}).waitFor({timeout:15000});await share.close();
 
           await worker.goto(`${baseUrl}/worker/appeals`);await worker.getByLabel("Credential").selectOption(credentialId);await worker.getByLabel("Appeal grounds").fill("The issued competency should be reassessed against the retained qualification evidence after this end-to-end verification.");await worker.locator('input[name="evidenceRecordIds"]').first().check();await worker.getByRole("button",{name:"Submit credential appeal"}).click();await worker.getByText("Appeal submitted for independent review.",{exact:true}).waitFor({timeout:15000});
           // The issuing Admin is denied; the separate real Admin logs in to review.
@@ -707,7 +731,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await login(appealReviewer,baseUrl,credentials.appealAdmin,"admin");
           await appealReviewer.goto(`${baseUrl}/admin/appeals`);let appeal=appealReviewer.locator("article").filter({hasText:credentialId}).first();await appeal.getByLabel("Review status").selectOption("under_review");await appeal.getByLabel("Accepted-outcome action").selectOption("none");await appeal.getByLabel("Reasoned review outcome").fill("Independent review opened against the original issued credential and retained qualification evidence.");await appeal.getByRole("button",{name:"Record appeal review"}).click();await appeal.getByText(/^Status: under review · Version/).waitFor({timeout:15000});await appealReviewer.reload();appeal=appealReviewer.locator("article").filter({hasText:credentialId}).first();await appeal.getByLabel("Review status").selectOption("accepted");await appeal.getByLabel("Accepted-outcome action").selectOption("reassessment");await appeal.getByLabel("Reasoned review outcome").fill("Appeal accepted; competency reassessment is required before returning the Living Record to valid.");await appeal.getByRole("button",{name:"Record appeal review"}).click();await appeal.getByText(/^Status: accepted · Version/).waitFor({timeout:15000});
           await appealContext.close();
-          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText(COMPLETE_REASSESSMENT?/reassessment required · expires \d{4}-\d{2}-\d{2}/i:/reassessment required · no expiry recorded/i).waitFor({timeout:20000});await worker.getByText(/Version 2 · reassessment required/i).waitFor();
+          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText((COMPLETE_REASSESSMENT||COMPANY_CREDENTIAL_TARGET_MODE)?/reassessment required · expires \d{4}-\d{2}-\d{2}/i:/reassessment required · no expiry recorded/i).waitFor({timeout:20000});await worker.getByText(/Version 2 · reassessment required/i).waitFor();
 
           assert.deepEqual(errors.filter(e=>!e.includes("favicon") && !((process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" || process.env.HSE_MASTERPLAN_MCQ_OFFLINE === "true") && e === "Failed to load resource: net::ERR_INTERNET_DISCONNECTED")),[],`Browser errors:\n${errors.join("\n")}\n${output()}`);
           return {credentialId,interviewId,attemptId,originalAttemptId};
@@ -797,7 +821,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await reassessmentApplication.getByText(originalAppealId,{exact:true}).waitFor();
           await reassessmentApplication.getByRole("link",{name:"Continue to available assessments"}).click();
           await worker.waitForURL("**/worker/available-assessments",{timeout:20000});
-          const eligibleHeading=worker.getByRole("region",{name:"Eligible assessment offerings"}).getByRole("heading",{name:"End-to-End Worker Assessment"});
+          const eligibleHeading=worker.getByRole("region",{name:"Eligible assessment offerings"}).getByRole("heading",{name:ISSUED_QUALIFICATION});
           try {
             await eligibleHeading.waitFor({timeout:20000});
           } catch (error) {
@@ -844,7 +868,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${reassessmentCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();try{await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});}catch(error){throw new Error("Final decision failed at actual browser boundary.\nADMIN URL: "+admin.url()+"\nADMIN:\n"+await admin.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
           await worker.goto(baseUrl+"/worker/appeals");
-          const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:"End-to-End Worker Assessment"});
+          const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:ISSUED_QUALIFICATION});
           const credentialId=(await credentialOption.evaluateAll(options=>options.map(option=>option.value))).find(id=>id!==originalCredentialId);
           assert.ok(credentialId?.startsWith("credential_id_"));
           await worker.goto(baseUrl+"/worker/passport");
@@ -873,7 +897,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
       }
     });assert.equal(reassessment.requestedSignal,"SMOKE_COMPLETE");
 
-    } else {
+    } else if(!COMPANY_CREDENTIAL_TARGET_MODE) {
     const reassessment=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/worker/login`,projectRoot:root,environment:env,
       probe:async()=>{const browser=await chromium.launch({headless:true});try{const page=await browser.newPage();await login(page,baseUrl,{email:EMAIL,password:PASSWORD},"worker");await page.goto(`${baseUrl}/worker/assessment-applications`);
         await page.getByRole("button",{name:"Apply — worker pays"}).click();await page.getByText("Application created. Complete the sandbox self-payment confirmation to fund the assessment.",{exact:true}).waitFor({timeout:20000});
@@ -956,6 +980,29 @@ test("Masterplan preserved Worker journey: register to credential, share and app
       }
       assert.ok(journeyCaseId,"Preserved Worker journey did not expose its Assurance Case ID.");
       const c=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0];assert.equal(c.case_status,"Approved");assert.ok(c.decision_reference);assert.ok(c.credential_reference);
+      if(COMPANY_CREDENTIAL_TARGET_MODE) {
+        const produced=(await verify.query(`SELECT orders.credential_target,orders.interview_required,orders.order_status,
+          cases.worker_account_id,cases.permanent_worker_id,issuances.qualification,issuances.worker_id,
+          snapshots.global_policy_version_id,snapshots.effective_value_json,policies.policy_reference,issuances.issued_at,issuances.expires_at
+          FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id
+          JOIN credential_issuances issuances ON issuances.credential_id=cases.credential_reference
+          JOIN assurance_case_policy_snapshots snapshots ON snapshots.case_id=cases.case_id AND snapshots.tenant_id=cases.tenant_id
+          JOIN assurance_policy_packs policies ON policies.policy_id=snapshots.policy_id
+          WHERE cases.case_id=$1 AND orders.order_reference='COMPANY-CREDENTIAL-TARGET-BROWSER'`,[journeyCaseId])).rows;
+        assert.equal(produced.length,1);
+        assert.equal(produced[0].credential_target,ISSUED_QUALIFICATION);
+        assert.equal(produced[0].qualification,ISSUED_QUALIFICATION);
+        assert.equal(produced[0].interview_required,true);
+        assert.equal(produced[0].order_status,"COMPLETED");
+        assert.equal(produced[0].worker_account_id,workerAccountId);
+        assert.equal(produced[0].permanent_worker_id,permanentWorkerId);
+        assert.equal(produced[0].worker_id,permanentWorkerId);
+        assert.equal(produced[0].policy_reference,"E2E-WORKER-POLICY");
+        assert.ok(produced[0].global_policy_version_id);
+        assert.equal(produced[0].effective_value_json.credentialValidityDays,365);
+        assert.equal(new Date(produced[0].expires_at).getTime()-new Date(produced[0].issued_at).getTime(),365*86400000);
+        console.log("ACTUAL_COMPANY_CREDENTIAL_TARGET_DB exact Company target issued to verified permanent Worker, completed order with required interview and immutable policy snapshot");
+      }
       if(process.env.HSE_MASTERPLAN_RECOVERY_MODE === "replacement") {
         const attempts=(await verify.query("SELECT attempt_id,form_id,status FROM assessment_attempts WHERE case_id=$1 ORDER BY started_at",[journeyCaseId])).rows;
         assert.deepEqual(attempts.map(r=>r.status),["REPLACED","SUBMITTED"]);

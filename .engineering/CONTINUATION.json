@@ -2,13 +2,13 @@
   "state": "AUTO_CONTINUE",
   "task": "WORKFLOW-001",
   "status": "TESTING",
-  "verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
-  "last_verified_action": "PR29 accepted after16 exact cohorts/all applicable freshCI/fourQA jobs/independentACCEPT; verified merged0e53eb3 identical tree. Prepared registration dispatch26native/browser/sandbox/type/lint/security/build/preview pass; reviewed hash18cc1dce integrated, new exact candidate pending.",
-  "next_action": "Commit reviewed registration delivery integration; run exact26native/nonSandboxbrowser and regressions/five gates, freshCI and independent acceptance. Then repair real nonSandbox recovery refusal and continue Masterplan.",
+  "verified_sha": null,
+  "last_verified_action": "Scoped evidence/appeal/MFA/question safeguard native and browser checks passed; Company target producer native4/4 and assurance20/20 passed. HEAD7c66519 fullgate deliberately interrupted for Company validation defect; current product edits need clean-SHA verification.",
+  "next_action": "Finish actual Company target browser and independent review; commit reviewed producer repair, then run fresh exact-SHA full release gates.",
   "owner_required": false,
-  "revision": 12,
+  "revision": 13,
   "blocker": null,
-  "updated_at": "2026-10-06T17:27:07.230620+00:00",
+  "updated_at": "2026-10-11T05:24:20.987177+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -16,33 +16,16 @@
   "last_verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
   "resume": {
     "read_first": [
-      ".autopilot/artifacts/NEXT_ACTION.json",
-      ".engineering/state/CURRENT_TASK.json"
+      ".engineering/CONTINUATION.json",
+      ".autopilot/artifacts/20261011-exact-7c66519-interrupted.json"
     ],
-    "avoid_repeating": "Read NEXT_ACTION.json and one current receipt; do not refresh history or retest accepted PR29.",
-    "accepted_pr": 29,
-    "accepted_head": "e139f878a541716a8faf04d5f443d9bf79a3d083",
-    "canonical_sha": "0e53eb31a2f2790d191056ba6b0e02c022ad2186",
-    "coverage": {
-      "passed": 36,
-      "partial": 15,
-      "unverified": 167
-    },
-    "accepted_baseline_coverage": {
-      "passed": 36,
-      "partial": 15,
-      "unverified": 167
-    }
+    "avoid_repeating": "Do not certify interrupted fullgate or historical preview as current candidate. Preserve old dirty checkout."
   },
   "blockers": [],
   "evidence": [
-    ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
-    ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
-    ".autopilot/artifacts/20261006-pr29-merge-verified.json",
-    ".autopilot/artifacts/20261006-registration-provider-red-canonical-0e53eb3.json",
-    ".autopilot/artifacts/20261006-registration-delivery-next-independent-review.json",
-    ".autopilot/artifacts/20261006-registration-delivery-bindings-final.json",
-    ".autopilot/artifacts/20261006-registration-delivery-portable-v2.json"
+    ".autopilot/artifacts/company-target-native-green.json",
+    ".autopilot/artifacts/company-target-assurance-regression.json",
+    ".autopilot/artifacts/20261011-worker-credential-reassessment-finish.log"
   ],
   "unknowns": [
     "167 unverified and15 partial expanded scenarios",
