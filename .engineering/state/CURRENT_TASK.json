@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "Bounded181file review complete; publicorigin/retainedSQLrollback/countdown independentlyaccepted. Actualnative18cases andReactChromiumrefresh PASS; affectedprivacyexecution+interviewpolicy, typecheck andlint allPASS (zeroerrors/fiveexistingwarnings after cleanupofknowninterruptedgeneratedCJSoutput).",
+  "last_verified_action": "Exact05f3d34 native suites/types/lint and independent review, media, Company browsers passed; staff cohort failed stale labels and pre0103 authoring. Actual DOM diagnosis retained. Fixed staff cohort now passes with real Root-invited independent Admin approval and retained DB provenance; final reviewer console-error assertion and both actual staff browsers PASS; lint zero errors/five existing warnings.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -38,9 +38,15 @@
     ".autopilot/artifacts/20261011-current-batch-independent-review.json",
     ".autopilot/artifacts/20261011-approved-break-refresh-independent-green.log",
     ".autopilot/artifacts/20261011-final-batch-preflight.json",
-    ".autopilot/artifacts/20261011-final-batch-preflight-v2.json"
+    ".autopilot/artifacts/20261011-final-batch-preflight-v2.json",
+    ".autopilot/artifacts/20261011-exact-05f3d34.json",
+    ".autopilot/artifacts/20261011-assigned-staff-label-diagnostic-result.json",
+    ".autopilot/artifacts/20261011-staff-browser-provenance-green.log",
+    ".autopilot/artifacts/20261011-staff-browser-final-green.log",
+    ".autopilot/artifacts/20261011-staff-browser-final-lint.log",
+    ".autopilot/artifacts/20261012-staff-fixture-independent-review.json"
   ],
-  "next_action": "Commit reviewedbatch; run new clean exactSHA full release+actualPostgreSQL gates. Only completePASS permits guardedisolatedpush, canonicalQA PR CI and preservedlatestdata standalonepairedworker preview.",
+  "next_action": "Commit independently reviewed staff fixture repairs after final focused browser/lint pass; run fresh clean exact full+PostgreSQL gates, then guarded GitHub push/QA PR CI and data-preserving preview promotion.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -52,7 +58,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-11T15:10:51.537485+00:00",
+  "updated_at": "2026-10-11T20:09:17.784710+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {

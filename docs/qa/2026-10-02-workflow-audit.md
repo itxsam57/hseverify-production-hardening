@@ -230,3 +230,13 @@ The countdown now has a child keyed to its fresh server baseline; emergency-exit
 The `247f9d5` full gate was interrupted before these source repairs and does not certify the new candidate. Affected suites, strict types/lint, a new exact clean-SHA full gate, actual PostgreSQL proofs and hosted CI remain required before promotion. Verifier neutral outcomes/calibration and broader interview/supervisor/public-concern workflow coverage remain open.
 
 Affected privacy-execution and interview-policy suites, strict types and lint pass. Lint initially examined known generated CommonJS output left by the deliberately interrupted public-verification runner; cleanup removed only that Git-ignored build directory. The subsequent source lint passes with zero errors/five existing warnings, without changing rules or excluding source. Both original failure and corrected preflight receipts remain retained. New exact-SHA verification is next.
+### Staff browser fixtures follow current approval and accessible controls
+
+The exact 05f3d34 full run passed native suites, TypeScript/lint, independent Worker review, live interview media and complete Company browsers, then failed both staff fixtures. Its failed receipt is retained; build/preview and PostgreSQL stages were not reached.
+
+Actual scoring-page diagnosis found one reason textarea with its existing persisted value, but exact implicit label matching returned zero because the label text included that value. The textbox role/name matches the real accessible control. The Assessor comments selector also matched a hidden reviewer-comments panel; the exact Scorecard comments textbox resolves that proven collision. Producer actions and final database assertions remain unchanged.
+
+The Root/staff journey still expected direct active question creation. It now provisions a second Admin through the actual Root invitation, enrollment and MFA login flow, submits authored drafts, verifies the author cannot approve, independently approves and publishes, pauses/resumes, and independently approves an immutable revision while preserving the first live version during review. Post-browser database reads assert both retained prompts, distinct authors/reviewers, authored provenance, real transition actors and the exact version-two publication pointer. This repairs browser coverage without bypassing approval or editing production behavior.
+
+
+Final focused staff browser run passes both journeys with provenance and reviewer console-error assertions. Independent source review accepts the exact repaired files; lint passes with zero errors and five existing warnings. The earlier failed full receipt remains failed. A new clean exact-SHA full run is still required before push or preview promotion.
