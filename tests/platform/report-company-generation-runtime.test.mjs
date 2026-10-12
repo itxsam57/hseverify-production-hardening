@@ -88,7 +88,7 @@ test("Real CSV, PDF and print artifacts have integrity hashes and immutable requ
       assert.equal(text.includes(f.credentials.worker.accountId),false);
       if(format==="pdf") {
         const raw=Buffer.from(bytes).toString("ascii");assert.ok(raw.startsWith("%PDF-1.4\n")); assert.match(raw,/\/Type \/Catalog/); assert.match(raw,/xref\n/);
-        await writeFile(".autopilot/artifacts/20261010-report-agent-expanded-proof.pdf",bytes,{mode:0o600});
+        await writeFile(join(f.directory,"report-artifact-proof.pdf"),bytes,{mode:0o600});
       } else if(format==="print") {assert.ok(text.startsWith("<!doctype html>"));assert.match(text,/<table>/);assert.equal(text.includes("<script"),false);}
       else assert.ok(text.startsWith('"Worker ID","Worker link","Worker status","Site ID","Department ID","Company case status"\n'));
       await assert.rejects(f.database.query("UPDATE report_deliveries SET artifact_sha256=$2 WHERE report_id=$1",[delivery.reportId,"f".repeat(64)]),/immutable/);
