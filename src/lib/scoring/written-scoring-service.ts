@@ -68,12 +68,13 @@ export class WrittenScoringService {
     await this.database.query(`INSERT INTO scoring_conflict_declarations(conflict_id,review_id,reviewer_account_id,reason) VALUES($1,$2,$3,$4)`, [createIdentifier("score_conflict"), input.reviewId, input.reviewerAccountId, reason]);
   }
 
-  async finalize(input: {reviewId: string; reviewerAccountId: string; tenantId?: string}) {
+  async finalize(input: {reviewId: string; reviewerAccountId: string; tenantId?: string; assessorVisible?: boolean}) {
     if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
     if (!input.reviewerAccountId.trim()) throw new Error("Missing reviewer scope.");
+    if (input.assessorVisible !== undefined && typeof input.assessorVisible !== "boolean") throw new Error("Invalid comment visibility.");
     await this.requireReviewOwner(input.reviewId, input.reviewerAccountId, input.tenantId);
     const result = await this.database.query(
-      `UPDATE written_score_reviews SET status='FINAL' WHERE review_id=$1 AND reviewer_account_id=$2 AND status='DRAFT' AND NOT EXISTS (SELECT 1 FROM scoring_conflict_declarations WHERE review_id=$1 AND reviewer_account_id=$2) RETURNING review_id`,
+      `UPDATE written_score_reviews SET status='FINAL'${input.assessorVisible === true ? ",assessor_visible=TRUE" : ""} WHERE review_id=$1 AND reviewer_account_id=$2 AND status='DRAFT' AND NOT EXISTS (SELECT 1 FROM scoring_conflict_declarations WHERE review_id=$1 AND reviewer_account_id=$2) RETURNING review_id`,
       [input.reviewId, input.reviewerAccountId]
     );
     if (!result.rows[0]) throw new Error("Review cannot be finalized by this reviewer.");
@@ -122,6 +123,7 @@ export class WrittenScoringService {
     reviewId: string;
     reviewerAccountId: string;
     tenantId?: string;
+    assessorVisible?: boolean;
     now?: Date;
   }) {
     const now = input.now ?? new Date();

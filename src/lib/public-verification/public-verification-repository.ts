@@ -3,6 +3,7 @@ import "server-only";
 import { bindTrustedSystemAuditActor } from "@/lib/audit/audit-domain";
 import { DatabaseAuditRepository } from "@/lib/audit/audit-repository";
 import type { DatabaseClient } from "@/lib/database/database";
+import { credentialAuthentication, credentialFromRow } from "@/lib/credential/credential-issuance-domain";
 import {
   createOutboxJobId,
   deriveOutboxIdempotencyKey
@@ -379,13 +380,15 @@ export class PublicVerificationRepository {
     });
   }
 
-  async findPublicCredentialById(credentialId: string): Promise<PublicCredentialVerificationSource | null> {
+  async findPublicCredentialById(credentialId: string, signingSecrets: readonly string[]): Promise<PublicCredentialVerificationSource | null> {
     const identifier = normalizePublicVerificationIdentifier(credentialId);
     if (!identifier || identifier.kind !== "credential") return null;
     const result = await this.database.query<{
       credential_id: string; qualification: string; status: PublicCredentialVerificationSource["status"];
+      worker_id: string; version: number; public_status_url: string; qr_payload: string; signature: string; pdf_url: string;
       issued_at: string | Date; expires_at: string | Date | null; conditional: boolean;
-    }>(`SELECT credential_id,qualification,status,issued_at,expires_at,
+    }>(`SELECT credential_id,worker_id,qualification,status,issued_at,expires_at,version,
+               public_status_url,qr_payload,signature,pdf_url,
                COALESCE((SELECT decisions.state='CONDITIONALLY_APPROVED'
                   FROM assurance_cases cases JOIN platform_decisions decisions
                     ON decisions.decision_id=cases.decision_reference AND decisions.tenant_id=cases.tenant_id
@@ -395,9 +398,14 @@ export class PublicVerificationRepository {
                          AND records.status='conditionally_approved')) AS conditional
           FROM credential_issuances credentials WHERE credential_id=$1 LIMIT 1`, [identifier.normalizedIdentifier]);
     const row = result.rows[0];
-    return row ? Object.freeze({ credentialId: row.credential_id, qualification: row.qualification,
+    if (!row) return null;
+    const authentication = credentialAuthentication(credentialFromRow(row), signingSecrets);
+    if (authentication !== "authenticated" && authentication !== "legacy_unverified") return null;
+    const schema = await this.database.query<{present:boolean}>("SELECT to_regclass('public.credential_replacements') IS NOT NULL AS present");
+    const replaced = schema.rows[0]?.present ? Boolean((await this.database.query("SELECT 1 FROM credential_replacements WHERE old_credential_id=$1 AND disposition='REPLACED' LIMIT 1",[row.credential_id])).rows[0]) : false;
+    return Object.freeze({ credentialId: row.credential_id, qualification: row.qualification,
       status: row.status, issuedAt: timestamp(row.issued_at), expiresAt: row.expires_at ? timestamp(row.expires_at) : null,
-      conditional: row.conditional }) : null;
+      conditional: row.conditional, authentication, replaced });
   }
 
   async findReceivedConcern(concernReference: string): Promise<Readonly<{

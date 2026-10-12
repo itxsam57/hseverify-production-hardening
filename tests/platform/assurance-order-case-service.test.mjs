@@ -37,13 +37,16 @@ test("M2.01 service exposes draft, target, validate, submit and controlled cance
   assert.match(service, /transaction/i);
 });
 
-test("M2.01 validation fails closed for unbuilt later-brick dependencies instead of faking READY", () => {
+test("Company validation retains policy checks while supported credential targets use final decisions", () => {
   const service = source(files.service);
   const domain = source(files.domain);
   assert.match(service, /assessmentFrameworkReferences/);
   assert.match(service, /interviewRequired/);
-  assert.match(service, /credentialTarget/);
-  assert.match(service, /dependency|not available|not yet available|unavailable/i);
+  assert.match(domain, /credentialTarget/);
+  assert.match(source(files.repository), /credential_target/);
+  assert.match(service, /validateAssurancePolicySelection/);
+  assert.match(service, /pinAssuranceCasePolicySnapshot/);
+  assert.doesNotMatch(service, /Credential target dependency is not yet available/);
   assert.match(domain, /validation/i);
   assert.ok(!/mock.*framework|fake.*fund|assume.*available/i.test(service));
 });

@@ -1,5 +1,10 @@
 import "server-only";
+import { processReportGenerationJob } from "../reports/report-generation-handler";
+import { processReportEmailJob } from "../reports/report-email-handler";
+import { projectAssessmentFundingNotification } from "../notifications/assessment-funding-notification-projector";
+import { projectAssuranceEventNotification } from "../notifications/assurance-event-notification-projector";
 import {processInterviewEmailJob} from "../email-delivery/interview-email-handler";
+import { processAssuranceEventEmailJob } from "../email-delivery/assurance-event-email-handler";
 import {projectInterviewScheduledNotification} from "../notifications/interview-notification-projector";
 
 import { processRegistrationDeliveryJob } from "../auth/registration-delivery-handler";
@@ -33,6 +38,16 @@ type OutboxHandler<T extends OutboxJobType> = (
 
 const HANDLERS: Readonly<Record<OutboxJobType, OutboxHandler<OutboxJobType>>> =
   Object.freeze({
+    "email.assurance.event": async (job, lease, database) =>
+      processAssuranceEventEmailJob(job, lease, database),
+    "email.report.ready": async (job, lease, database) =>
+      processReportEmailJob(job, lease, database),
+    "report.generation": async (job, lease, database) =>
+      processReportGenerationJob(job, lease, database),
+    "notification.assurance.event": async (job, _lease, database) =>
+      projectAssuranceEventNotification(job, database),
+    "notification.assessment.funding": async (job, _lease, database) =>
+      projectAssessmentFundingNotification(job, database),
     "authentication.challenge.delivery": async (job,lease,database) =>
       processRegistrationDeliveryJob(job,lease,database),
     "assessment.attempt.expiry": async (job,lease,database) =>

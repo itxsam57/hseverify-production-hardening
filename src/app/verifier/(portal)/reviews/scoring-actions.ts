@@ -17,6 +17,7 @@ export async function finalizeWrittenScoreAction(form: FormData) {
     reviewId: text(form, "reviewId"),
     reviewerAccountId: actor.accountId,
     tenantId: actor.tenantMembership?.tenantId,
+    assessorVisible: form.get("assessorVisible") === "on",
   });
   revalidatePath("/verifier/reviews");
   revalidatePath("/verifier/reviews/scoring");

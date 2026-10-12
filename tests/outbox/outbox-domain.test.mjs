@@ -39,7 +39,12 @@ test("outbox vocabulary is explicit, fixed and wildcard-free", () => {
     "secure_file.scan",
     "worker_identity.automated_checks",
     "assessment.attempt.expiry",
-    "authentication.challenge.delivery"
+    "authentication.challenge.delivery",
+    "report.generation",
+    "notification.assessment.funding",
+    "email.report.ready",
+    "notification.assurance.event",
+    "email.assurance.event"
   ]);
   assert.deepEqual(outbox.OUTBOX_JOB_STATUSES, [
     "pending",
@@ -388,4 +393,97 @@ test("Interview scheduling and reminder work have sealed recipient-bound event c
    {...payload,membershipRef:"membership_other"},{...payload,eventRef:"<script>"},{...payload,recipientRef:""}
   ])assert.throws(()=>outbox.normalizeOutboxPayload(jobType,value),outbox.OutboxContractError);
  }
+});
+
+test("Report generation accepts only the bounded server report reference", () => {
+  for (const reportRef of ["report_abc", "report_" + "A".repeat(80)]) {
+    assert.deepEqual(outbox.normalizeOutboxPayload("report.generation", { reportRef }), { reportRef });
+  }
+  for (const payload of [
+    {}, { reportRef: "report_ab" }, { reportRef: "report_" + "A".repeat(81) },
+    { reportRef: "report_abc", tenantId: "tenant_other" },
+    { reportRef: "report_abc", objectKey: "private/other" },
+    { reportRef: "report_abc", href: "https://example.test" },
+    { reportRef: "report_abc", format: "pdf" },
+    { reportRef: "report_../private" }, { reportRef: 42 },
+    Object.assign(Object.create({ tenantId: "tenant_other" }), { reportRef: "report_abc" })
+  ]) {
+    assert.throws(() => outbox.normalizeOutboxPayload("report.generation", payload), outbox.OutboxContractError);
+  }
+});
+
+test("Funding notifications accept only an immutable application-event reference", () => {
+  const eventRef = "assessment_application_event_" + "F".repeat(24);
+  assert.deepEqual(outbox.normalizeOutboxPayload("notification.assessment.funding", { eventRef }), { eventRef });
+  for (const payload of [
+    {}, { eventRef: "event_other" }, { eventRef: "assessment_application_event_" + "F".repeat(23) },
+    { eventRef, recipientRef: "account_other" }, { eventRef, membershipRef: "membership_other" },
+    { eventRef, message: "Approve immediately" }, { eventRef, href: "/admin" },
+    { eventRef, tenantId: "tenant_other" }, { eventRef: ["not", "a", "reference"] },
+    Object.assign(Object.create({ tenantId: "tenant_other" }), { eventRef })
+  ]) {
+    assert.throws(() => outbox.normalizeOutboxPayload("notification.assessment.funding", payload), outbox.OutboxContractError);
+  }
+});
+
+test("report email jobs carry only a bound opaque delivery reference", () => {
+  const deliveryRef = "report_email_" + "R".repeat(24);
+  assert.deepEqual(outbox.normalizeOutboxPayload("email.report.ready", { deliveryRef }), { deliveryRef });
+  for (const payload of [
+    { deliveryRef, email: "other@example.com" },
+    { deliveryRef, artifactKey: "private/other" },
+    { deliveryRef, recipientRef: "account_other" },
+    { deliveryRef: "report_email_short" },
+    { deliveryRef: "email_delivery_" + "R".repeat(24) },
+    { reportRef: "report_worker_" + "R".repeat(24) },
+    Object.assign(Object.create({ deliveryRef }), {}),
+  ]) assert.throws(() => outbox.normalizeOutboxPayload("email.report.ready", payload), outbox.OutboxContractError);
+});
+
+const assuranceEvents = [
+  ["evidence.submitted", "audit:audit_event_A"],
+  ["evidence.reviewed", "review:evidence_review_decision_A"],
+  ["evidence.additional.requested", "review:evidence_review_decision_B"],
+  ["decision.recorded", "case:case_timeline_event_A"],
+  ["credential.issued", "issuance:credential_A:1"],
+  ["appeal.submitted", "appeal:appeal_A:1"],
+  ["appeal.updated", "appeal:appeal_A:2"],
+];
+
+test("assurance notice jobs have a fixed source-derived event schema", () => {
+  for (const [eventType, eventRef] of assuranceEvents) {
+    assert.deepEqual(outbox.normalizeOutboxPayload("notification.assurance.event", {eventType,eventRef}), {eventType,eventRef});
+  }
+  for (const payload of [
+    {eventType:"evidence.submitted",eventRef:"review:decision_A"},
+    {eventType:"credential.issued",eventRef:"issuance:credential_A:0"},
+    {eventType:"credential.issued",eventRef:"issuance:credential_A:01"},
+    {eventType:"credential.issued",eventRef:"issuance:credential_A:9007199254740992"},
+    {eventType:"appeal.updated",eventRef:"appeal:appeal_A"},
+    {eventType:"evidence.submitted",eventRef:"audit:../other"},
+    {eventType:"assessment.funding.approved",eventRef:"funding:event_A"},
+    {eventType:"evidence.submitted",eventRef:"audit:event_A",recipientRef:"account_other"},
+    {eventType:"evidence.submitted",eventRef:"audit:"+"A".repeat(161)},
+  ]) assert.throws(() => outbox.normalizeOutboxPayload("notification.assurance.event",payload),outbox.OutboxContractError);
+});
+
+test("assurance emails seal opaque recipient role and membership with the source event", () => {
+  const recipient = {recipientRef:"account_worker_A",recipientRole:"worker",membershipRef:null};
+  for (const [eventType,eventRef] of [...assuranceEvents,["assessment.funding.requested","funding:application_event_A"],["assessment.funding.approved","funding:application_event_B"]]) {
+    const payload={eventType,eventRef,...recipient};
+    assert.deepEqual(outbox.normalizeOutboxPayload("email.assurance.event",payload),payload);
+  }
+  const company={eventType:"decision.recorded",eventRef:"case:event_A",recipientRef:"account_company_A",recipientRole:"company",membershipRef:"membership_A"};
+  assert.deepEqual(outbox.normalizeOutboxPayload("email.assurance.event",company),company);
+  for (const payload of [
+    {...company,membershipRef:null},
+    {...company,recipientRole:"worker"},
+    {...company,recipientRole:"*"},
+    {...company,recipientRef:"https://other.example/account"},
+    {...company,membershipRef:"https://other.example/member"},
+    {...company,email:"other@example.com"},
+    {...company,body:"private case details"},
+    {...company,eventRef:"case:event_A:1"},
+    {...company,membershipRef:undefined},
+  ]) assert.throws(() => outbox.normalizeOutboxPayload("email.assurance.event",payload),outbox.OutboxContractError);
 });

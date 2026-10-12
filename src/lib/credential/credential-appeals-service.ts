@@ -8,6 +8,7 @@ import {
 import { LivingRecordRepository } from "../living-record/living-record-repository";
 import { CredentialIssuanceRepository } from "./credential-issuance-repository";
 import { CredentialLifecycleService } from "./credential-lifecycle-service";
+import { issueAppealRenewal } from "./credential-renewal-service";
 import {
   reviewCredentialAppeal,
   submitCredentialAppeal,
@@ -33,6 +34,7 @@ async function updateLivingRecordForOutcome(input: {
   action: AppealOutcomeAction;
   reviewReason: string;
   reviewedAt: string;
+  replaced?: boolean;
 }): Promise<number> {
   if (input.action === "none") return 0;
   const repository = new LivingRecordRepository(Promise.resolve(input.database));
@@ -52,10 +54,10 @@ async function updateLivingRecordForOutcome(input: {
           reason: null
         };
     const next = appendLivingCompetencyVersion(record, {
-      status: livingStatusForAction(input.action),
+      status: input.replaced ? "revoked" : livingStatusForAction(input.action),
       effectiveAt: input.reviewedAt,
       expiresAt: current.expiresAt,
-      restrictions: current.restrictions,
+      restrictions: input.replaced ? [...current.restrictions,"This issuance has been replaced. Verify the current credential shared by the Worker."] : current.restrictions,
       conditions: current.conditions,
       reassessment
     });
@@ -66,7 +68,7 @@ async function updateLivingRecordForOutcome(input: {
 }
 
 export class CredentialAppealsService {
-  constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()) {}
+  constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient(), private readonly signingSecret?: string) {}
 
   async submit(
     input: {
@@ -92,20 +94,24 @@ export class CredentialAppealsService {
     reviewerId = ""
   ): Promise<CredentialAppeal> {
     const database = await this.clientPromise;
-    const repository = new CredentialAppealsRepository(Promise.resolve(database));
-    const current = await repository.find(appeal.appealId);
-    if (!current) throw new Error("Appeal not found.");
-    if (status === "submitted" || status === "withdrawn") {
-      throw new Error("Appeal review status is invalid.");
-    }
-    const reviewed = reviewCredentialAppeal(current, {
-      status,
-      reviewerId,
-      reason: "Appeal status reviewed.",
-      outcomeAction: "none",
-      reviewedAt: new Date().toISOString()
+    return database.transaction(async (transaction) => {
+      const repository = new CredentialAppealsRepository(Promise.resolve(transaction));
+      const current = await repository.find(appeal.appealId);
+      if (!current) throw new Error("Appeal not found.");
+      if (current.version !== appeal.version) throw new Error("Appeal update conflict.");
+      if (status === "submitted" || status === "withdrawn") {
+        throw new Error("Appeal review status is invalid.");
+      }
+      await repository.assertIndependentReviewer(current, reviewerId);
+      const reviewed = reviewCredentialAppeal(current, {
+        status,
+        reviewerId,
+        reason: "Appeal status reviewed.",
+        outcomeAction: "none",
+        reviewedAt: new Date().toISOString()
+      });
+      return repository.updateStatus(reviewed);
     });
-    return repository.updateStatus(reviewed);
   }
 
   async reviewOutcome(
@@ -124,6 +130,7 @@ export class CredentialAppealsService {
       const current = await appeals.find(appeal.appealId);
       if (!current) throw new Error("Appeal not found.");
       if (current.version !== appeal.version) throw new Error("Appeal update conflict.");
+      await appeals.assertIndependentReviewer(current, input.reviewerId);
 
       const reviewedAt = input.reviewedAt ?? new Date().toISOString();
       const updated = reviewCredentialAppeal(current, {
@@ -137,9 +144,13 @@ export class CredentialAppealsService {
 
       let credentialAction: string | null = null;
       let livingRecordVersionsAdded = 0;
+      let replacement: Awaited<ReturnType<typeof issueAppealRenewal>> | null = null;
       if (persisted.status === "accepted") {
         const action = persisted.outcomeAction ?? "none";
-        if (action === "renew" || action === "suspend" || action === "revoke") {
+        if (action === "renew") {
+          replacement = await issueAppealRenewal(transaction,persisted,this.signingSecret);
+          credentialAction = action;
+        } else if (action === "suspend" || action === "revoke") {
           const credentialRepository = new CredentialIssuanceRepository(Promise.resolve(transaction));
           const credential = await credentialRepository.findPublic(persisted.credentialId);
           if (!credential || credential.workerId !== persisted.workerId) {
@@ -159,7 +170,8 @@ export class CredentialAppealsService {
           appeal: persisted,
           action,
           reviewReason: persisted.reviewReason ?? input.reason,
-          reviewedAt
+          reviewedAt,
+          replaced: Boolean(replacement)
         });
       }
 
@@ -176,6 +188,7 @@ export class CredentialAppealsService {
               ? "unchanged"
               : "pending",
         credentialAction,
+        replacement,
         livingRecordVersionsAdded
       };
     });

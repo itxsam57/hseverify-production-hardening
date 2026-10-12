@@ -197,7 +197,8 @@ async function loadAssessmentSelectionInputs(
        JOIN assessment_question_versions v
          ON v.question_version_id=q.current_version_id
         AND v.question_id=q.question_id
-      WHERE q.question_status='ACTIVE'
+       JOIN question_version_workflow w ON w.question_version_id=v.question_version_id AND w.question_id=q.question_id
+      WHERE q.question_status='ACTIVE' AND w.workflow_state='PUBLISHED'
         AND v.framework_id=$1
       ORDER BY q.question_id,v.question_version_id`,
     [blueprint.framework_id]

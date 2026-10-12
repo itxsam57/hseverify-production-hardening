@@ -186,6 +186,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       {review.status === "DRAFT" ? (
                         <form action={finalizeWrittenScoreAction}>
                           <input type="hidden" name="reviewId" value={review.review_id} />
+                          <label><input type="checkbox" name="assessorVisible" />Share this reason with the assigned Assessor</label>
                           <button type="submit" disabled={!readyToFinalize}>
                             Finalize review
                           </button>

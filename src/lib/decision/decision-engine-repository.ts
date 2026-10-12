@@ -3,7 +3,9 @@ import "server-only";
 import { createIdentifier } from "../auth/auth-domain";
 import { CertificationRecordRepository } from "../credential/certification-record-repository";
 import { issueCredential } from "../credential/credential-issuance-domain";
+import { derivePinnedCredentialValidity } from "../credential/credential-validity-domain";
 import { CredentialIssuanceRepository } from "../credential/credential-issuance-repository";
+import { finalizeExplicitReassessmentReplacement } from "../credential/credential-reassessment-replacement-service";
 import { getDatabaseClient } from "../database/database";
 import { appendLivingCompetencyVersion, createLivingCompetencyRecord } from "../living-record/living-record-domain";
 import { LivingRecordRepository } from "../living-record/living-record-repository";
@@ -76,7 +78,10 @@ function assuranceProjection(state: DecisionState): AssuranceDecisionProjection 
 }
 
 export class DecisionRepository {
-  constructor(private readonly clientPromise = getDatabaseClient()) {}
+  constructor(
+    private readonly clientPromise = getDatabaseClient(),
+    private readonly signingSecret?: string
+  ) {}
 
   private async applyOverrideStateWithClient(client: Awaited<typeof this.clientPromise>, override: ManualDecisionOverride): Promise<void> {
     const result = await client.query(
@@ -163,14 +168,29 @@ export class DecisionRepository {
       throw new Error("Approved credential-target Case is missing a permanent Worker ID.");
     }
 
+    const snapshotResult = await client.query<{ snapshot_id: string; tenant_id: string; global_policy_version_id: string; effective_value_json: unknown }>(
+      `SELECT snapshot_id,tenant_id,global_policy_version_id,effective_value_json
+         FROM assurance_case_policy_snapshots WHERE case_id=$1`,
+      [decision.caseId]
+    );
+    const snapshot = snapshotResult.rows[0];
+    if (snapshot && snapshot.tenant_id !== decision.tenantId) throw new Error("Credential validity policy snapshot is outside the case tenant boundary.");
+    const pinnedValidity = derivePinnedCredentialValidity(snapshot ? {
+      snapshotId: snapshot.snapshot_id, policyVersionId: snapshot.global_policy_version_id, effectiveValue: snapshot.effective_value_json
+    } : null, decision.createdAt);
+    const signingEnvironment = this.signingSecret ? null : (await import("../config/server-environment")).getServerEnvironment();
+    const signingSecret = this.signingSecret ?? signingEnvironment?.credentialSigningSecret;
+    if (!signingSecret) throw new Error("Credential signing key is not configured.");
     const credential = issueCredential(
       {
         workerId: permanentWorkerId,
         qualification: row.credential_target.trim(),
         issuedAt: decision.createdAt,
-        expiresAt: null
+        expiresAt: pinnedValidity.expiresAt,
+        validity: pinnedValidity.validity
       },
-      decision.decisionId
+      decision.decisionId,
+      signingSecret
     );
     await new CredentialIssuanceRepository(Promise.resolve(client)).save(credential);
 
@@ -222,6 +242,8 @@ export class DecisionRepository {
     if (linked.affectedRows !== 1) {
       throw new Error("Credential could not be linked to the Assurance Case.");
     }
+    await finalizeExplicitReassessmentReplacement(client,decision,actorAccountId,credential.credentialId,
+      [signingSecret,...(signingEnvironment?.credentialSigningPreviousSecrets ?? [])]);
     return credential.credentialId;
   }
 
@@ -445,7 +467,6 @@ export class DecisionRepository {
       if (!currentDecision) throw new Error("Decision override could not resolve its current record.");
       await this.issueCredentialForPositiveDecision(transaction, {
         ...currentDecision,
-        createdAt: override.createdAt,
         reason: { code: "manual_override", explanation: override.reason }
       }, override.actorReference);
       const linked = await transaction.query<{ credential_reference: string | null }>(

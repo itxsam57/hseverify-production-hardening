@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
 
+const SIGNING_SECRET = "credential-domain-test-session-secret-more-than-32";
 const { issueCredential, transitionCredential, publicCredentialProjection } = loadTs("src/lib/credential/credential-issuance-domain.ts");
 
 test("credential issuance persists through the service boundary and keeps public lifecycle data bounded", async () => {
@@ -10,7 +11,7 @@ test("credential issuance persists through the service boundary and keeps public
     qualification: "NEBOSH IGC",
     issuedAt: "2026-09-15T00:00:00Z",
     expiresAt: null
-  }, "runtime-test");
+  }, "runtime-test", SIGNING_SECRET);
 
   assert.equal(issued.status, "valid");
   assert.match(issued.qrPayload, /hse_verify_credential/);
@@ -28,7 +29,7 @@ test("public credential projection does not expose worker identity or private is
     qualification: "Safety Certificate",
     issuedAt: "2026-09-15T00:00:00Z",
     expiresAt: null
-  }, "security-test");
+  }, "security-test", SIGNING_SECRET);
 
   const projection = publicCredentialProjection(issued);
 
@@ -44,7 +45,7 @@ test("credential projection keeps an unowned worker credential private", async (
     qualification: "Safety Certificate",
     issuedAt: "2026-09-15T00:00:00Z",
     expiresAt: null
-  }, "isolation-test");
+  }, "isolation-test", SIGNING_SECRET);
 
   const projection = publicCredentialProjection(issued);
 

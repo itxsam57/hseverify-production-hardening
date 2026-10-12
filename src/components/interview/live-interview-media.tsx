@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { InterviewAccommodationSupport } from "./interview-accommodation-support";
 
 type MediaRole = "worker" | "assessor";
 type SignalKind = "offer" | "answer" | "ice" | "leave";
@@ -461,6 +462,7 @@ export function LiveInterviewMedia({
 
   return (
     <div className="interview-media-panel">
+      {enabled ? <InterviewAccommodationSupport interviewRequestId={interviewRequestId} role={role} /> : null}
       <div className="interview-media-status" role="status" aria-live="polite">
         <strong>Live interview media</strong>
         <span>{status}</span>

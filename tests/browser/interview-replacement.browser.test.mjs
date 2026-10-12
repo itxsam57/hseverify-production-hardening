@@ -123,6 +123,8 @@ for(const scenario of [{outcome:"NO_SHOW",eligible:true},{outcome:"TECHNICAL_HOL
     await staleFinalPage.goto(baseUrl+"/assessor/interviews/"+original.interviewRequestId,{waitUntil:"domcontentloaded"});
     for(const field of await staleFinalPage.locator('input[type="number"]').all())await field.fill("3");
     await staleFinalPage.getByLabel("Recommendation",{exact:true}).selectOption("PASS");
+    const staleComments="A complete stale recommendation must be rejected after replacement.";
+    await staleFinalPage.getByRole("textbox",{name:"Scorecard comments",exact:true}).fill(staleComments);
     const stalePage=await page.context().newPage();
      await stalePage.goto(baseUrl+"/assessor/interviews/"+original.interviewRequestId,{waitUntil:"domcontentloaded"});
     const oldSessionId=await stalePage.locator('input[name="interviewSessionId"]').inputValue();
@@ -136,8 +138,15 @@ for(const scenario of [{outcome:"NO_SHOW",eligible:true},{outcome:"TECHNICAL_HOL
     await stalePage.getByRole("alert").filter({hasText:"This interview is closed."}).waitFor();
     await stalePage.close();
     // Adversarial stale submission: bypass only the disabled client control.
+    const finalButton=staleFinalPage.getByRole("button",{name:"Submit final recommendation",exact:true});
+    assert.equal(await finalButton.evaluate(button=>button.form.checkValidity()),true);
+    const finalRequest=staleFinalPage.waitForRequest(request=>request.method()==="POST" && Boolean(request.headers()["next-action"]));
+    const finalResponse=staleFinalPage.waitForResponse(response=>response.request().method()==="POST" && Boolean(response.request().headers()["next-action"]));
     await staleFinalPage.getByRole("button",{name:"Submit final recommendation",exact:true}).evaluate(button=>{button.disabled=false;});
     await staleFinalPage.getByRole("button",{name:"Submit final recommendation",exact:true}).click();
+    const posted=(await finalRequest).postData();
+    for(const value of [original.interviewRequestId,oldSessionId,staleComments,"PASS"])assert(posted.includes(value),"The actual stale final POST must retain "+value);
+    assert((await finalResponse).status()<500);
     await staleFinalPage.waitForURL("**/assessor/interviews/"+original.interviewRequestId+"?consoleError=closed");
     await staleFinalPage.getByRole("alert").filter({hasText:"This interview is closed."}).waitFor();
     await staleFinalPage.close();
@@ -204,6 +213,7 @@ for(const scenario of [{outcome:"NO_SHOW",eligible:true},{outcome:"TECHNICAL_HOL
     assert.equal(draft.length,1);assert.equal(draft[0].notes[0].content,"Original interview observations retained.");
     assert.equal(draft[0].recommendation,null);assert.equal(draft[0].submitted,false);
     assert.equal(draft[0].scorecard.technicalKnowledge,null);
+    assert.equal(draft[0].scorecard.comments,null);
     assert.equal(Number((await db.query("SELECT COUNT(*) AS n FROM interview_console_drafts WHERE interview_request_id=$1",[replacementId])).rows[0].n),0);
     assert.equal((await db.query("SELECT status FROM interview_runtime_sessions WHERE interview_request_id=$1",[original.interviewRequestId])).rows[0].status,scenario.outcome);
     const next=(await db.query("SELECT status,scheduled_at,replaces_interview_request_id FROM interview_requests WHERE interview_request_id=$1",[replacementId])).rows[0];

@@ -353,7 +353,7 @@ h3 { font-size: 1rem; }
 .public-verification-card dl { display: grid; margin: 28px 0; border-top: 1px solid var(--slate-200); }
 .public-verification-card dl > div { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 18px; border-bottom: 1px solid var(--slate-200); padding: 15px 0; }
 .public-verification-card dt { color: var(--slate-500); font-size: .78rem; font-weight: 750; }
-.public-verification-card dd { margin: 0; font-weight: 700; }
+.public-verification-card dd { min-width: 0; margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .public-projection-note { margin-bottom: 0; border-radius: 10px; background: var(--slate-50); padding: 14px; color: var(--slate-600); font-size: .8rem; }
 
 @media (max-width: 1100px) {
@@ -380,7 +380,8 @@ h3 { font-size: 1rem; }
   .auth-security-note { display: none; }
   .auth-card-panel { min-height: 560px; padding: 34px 18px; }
   .portal-content { padding-right: 14px; padding-left: 14px; }
-  .notification-menu .menu-panel { position: fixed; top: 64px; right: 14px; left: 14px; width: auto; max-height: calc(100dvh - 78px); overflow-y: auto; }
+  .notification-menu { position: static; }
+  .notification-menu .menu-panel { position: absolute; top: calc(100% + 10px); right: 14px; left: 14px; width: auto; max-height: 50dvh; overflow-y: auto; }
   .page-heading-row, .worker-identity-banner { display: grid; }
   .section-heading-row { align-items: start; display: grid; grid-template-columns: minmax(0,1fr); }
   .section-heading-row > * { min-width: 0; }

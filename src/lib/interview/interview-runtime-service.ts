@@ -4,6 +4,23 @@ import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
 import { ConsentRecordService } from "@/lib/privacy/consent-record-service";
+import type { InterviewConsole } from "./interview-scheduling-domain";
+import { calculateInterviewActiveTime, InterviewPolicyInputError } from "./interview-policy-domain";
+import { loadPinnedInterviewPolicy } from "./interview-policy-service";
+import { validateInterviewFrozenScorecard } from "./interview-playbook-service";
+
+export function isCompleteInterviewScorecard(value: unknown): value is InterviewConsole["scorecard"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const scorecard = value as Record<string, unknown>;
+  const dimensions = [
+    "technicalKnowledge", "practicalReasoning", "safetyAwareness", "communication",
+    "consistencyWithWrittenAnswers", "confidenceClarity", "tradeJudgment"
+  ];
+  return dimensions.every((field) => {
+    const score = scorecard[field];
+    return typeof score === "number" && Number.isInteger(score) && score >= 0 && score <= 5;
+  }) && typeof scorecard.comments === "string" && scorecard.comments.trim().length > 0;
+}
 
 export type InterviewRuntimeStatus =
   | "CLAIMED"
@@ -579,7 +596,20 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
+      const preliminary = await tx.query<{tenant_id:string;case_id:string;assessor_account_id:string|null}>(
+        "SELECT tenant_id,case_id,assessor_account_id FROM interview_requests WHERE interview_request_id=$1", [interviewRequestId]);
+      const owned = preliminary.rows[0];
+      if (!owned || owned.assessor_account_id !== principal.accountId) throw new InterviewRuntimeAccessError();
+      const currentCase = await tx.query<{case_status:string;interview_reference:string|null}>(
+        "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
+        [owned.case_id,owned.tenant_id]);
       const request = await requestForUpdate(tx, interviewRequestId);
+      if (request.case_id !== owned.case_id || request.tenant_id !== owned.tenant_id ||
+          currentCase.rows[0]?.case_status !== "Interview pending" ||
+          currentCase.rows[0].interview_reference !== interviewRequestId ||
+          !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
+        throw new InterviewRuntimeConflictError("Only the current open interview can be ended.");
+      }
       if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
       const session = await sessionForUpdate(tx, interviewRequestId);
       if (!session || !["ACTIVE","PAUSED","TECHNICAL_HOLD"].includes(session.status)) {
@@ -591,18 +621,33 @@ export class InterviewRuntimeService {
            FROM interview_console_drafts
           WHERE tenant_id=$1 AND interview_request_id=$2
           ORDER BY updated_at DESC
-          LIMIT 1`,
+          LIMIT 1 FOR UPDATE`,
         [request.tenant_id, interviewRequestId]
       );
-      const scorecard = draft.rows[0]?.scorecard as Record<string, unknown> | undefined;
-      const required = [
-        "technicalKnowledge","practicalReasoning","safetyAwareness","communication",
-        "consistencyWithWrittenAnswers","confidenceClarity","tradeJudgment"
-      ];
-      if (!scorecard || required.some((field) => !Number.isInteger(Number(scorecard[field])))) {
+      if (!isCompleteInterviewScorecard(draft.rows[0]?.scorecard)) {
         throw new InterviewRuntimeConflictError(
-          "Complete and save every required scorecard dimension before ending the interview."
+          "Complete and save every required scorecard dimension and comments before ending the interview."
         );
+      }
+
+      try {
+        const frozen = await validateInterviewFrozenScorecard(tx,request.tenant_id,request.case_id,interviewRequestId,draft.rows[0].scorecard,true);
+        if (frozen) {
+          const pinned = await loadPinnedInterviewPolicy(tx,request.tenant_id,request.case_id);
+          const events = await tx.query<{event_type:string;occurred_at:string|Date}>(
+            "SELECT event_type,occurred_at FROM interview_runtime_events WHERE interview_session_id=$1 ORDER BY occurred_at,event_id",
+            [session.interview_session_id]);
+          const active = calculateInterviewActiveTime(events.rows,now);
+          if (active.seconds < (pinned.policy?.minimumActiveSeconds ?? 0)) {
+            throw new InterviewPolicyInputError("Interview minimum active duration has not been reached; pauses and technical holds do not count.");
+          }
+          await tx.query(
+            "UPDATE interview_console_drafts SET scorecard=$3::jsonb WHERE tenant_id=$1 AND interview_request_id=$2 AND submitted=FALSE",
+            [request.tenant_id,interviewRequestId,JSON.stringify({...draft.rows[0].scorecard as Record<string,unknown>,...frozen,activeSeconds:active.seconds})]);
+        }
+      } catch (error) {
+        if (error instanceof InterviewPolicyInputError) throw new InterviewRuntimeConflictError(error.message);
+        throw error;
       }
 
       await tx.query(

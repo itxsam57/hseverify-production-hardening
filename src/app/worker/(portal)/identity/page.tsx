@@ -42,7 +42,7 @@ export default async function WorkerIdentityPage(): Promise<React.JSX.Element> {
   ].join(":");
 
   return (
-    <section className="profile-page" aria-labelledby="worker-identity-heading">
+    <section id={identity.identity.identityId} className="profile-page" aria-labelledby="worker-identity-heading">
       <div className="profile-page-heading">
         <div>
           <p className="section-kicker">Worker assurance</p>

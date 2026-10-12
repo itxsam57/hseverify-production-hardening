@@ -1,3 +1,4 @@
+import {seedPublishedQuestion} from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
@@ -42,7 +43,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function database() {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0073_assessment_option_order_snapshot");
+  await applyMigrationsThrough(db, ENV.releaseSha, "0103_question_approval_lifecycle");
   return db;
 }
 
@@ -175,41 +176,7 @@ async function seedOffering(db, c, workerAccountId) {
     const versionId = oid("question_version", suffix[1] ?? suffix[0]);
     const prompt = `M2.07 pinned prompt ${suffix} requires a safe choice.`;
     const hash = fingerprint(prompt);
-    await db.transaction(async (tx) => {
-      await tx.query(
-        `INSERT INTO assessment_questions(
-           question_id,question_reference,question_status,current_version_id,current_content_fingerprint,
-           created_by_account_id,created_at,updated_at
-         ) VALUES($1,$2,'INACTIVE',NULL,NULL,$3,$4,$4)`,
-        [questionId, `M207-Q-${suffix.toUpperCase()}`, `account_seed_${c}`, NOW]
-      );
-      await tx.query(
-        `INSERT INTO assessment_question_versions(
-           question_version_id,question_id,version_no,question_type,prompt,options_json,
-           answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-           content_fingerprint,created_by_account_id,created_at
-         ) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-                  'Core','MEDIUM',$7::jsonb,$8,$9,$10)`,
-        [
-          versionId,
-          questionId,
-          prompt,
-          JSON.stringify(["Stop work", "Continue carefully", "Ignore"]),
-          JSON.stringify("Stop work"),
-          frameworkId,
-          JSON.stringify(["core"]),
-          hash,
-          `account_seed_${c}`,
-          NOW
-        ]
-      );
-      await tx.query(
-        `UPDATE assessment_questions
-         SET current_version_id=$2,current_content_fingerprint=$3,question_status='ACTIVE',updated_at=$4
-         WHERE question_id=$1`,
-        [questionId, versionId, hash, NOW]
-      );
-    });
+    await seedPublishedQuestion(db,{questionId,versionId,reference:`M207-Q-${suffix.toUpperCase()}`,questionType:"MULTIPLE_CHOICE",prompt,options:["Stop work","Continue carefully","Ignore"],answerKey:"Stop work",frameworkId,domainReference:"Core",difficulty:"MEDIUM",tags:["core"],fingerprint:hash,now:NOW});
   }
 
   await db.query(
@@ -397,7 +364,7 @@ test("M2.07 forced failure after form generation rolls back form, attempt, case 
 test("Timed begin snapshots approved allowance and expiry denies writes without losing committed responses", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db, ENV.releaseSha, "0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db, ENV.releaseSha, "0103_question_approval_lifecycle");
     const worker = await seedAccount(db, "t");
     const foreign = await seedAccount(db, "u");
     const offering = await seedOffering(db, "t", worker.accountId);
@@ -475,7 +442,7 @@ test("Timed begin snapshots approved allowance and expiry denies writes without 
 test("Separate section clock starts only on owned advance and cannot reopen or reset a section", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db, ENV.releaseSha, "0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db, ENV.releaseSha, "0103_question_approval_lifecycle");
     const worker = await seedAccount(db, "v");
     const offering = await seedOffering(db, "v",worker.accountId);
     await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,section_config_json,timing_config_json) VALUES($1,'SECTION_REVIEW',$2::jsonb,'{\"mode\":\"SEPARATE\"}'::jsonb)",
@@ -504,7 +471,7 @@ test("Separate section clock starts only on owned advance and cannot reopen or r
 test("Timed begin rolls back form, clock and case state when required clock persistence fails", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
     const worker=await seedAccount(db,"w"),offering=await seedOffering(db,"w",worker.accountId);
     await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,timing_config_json) VALUES($1,'STRICT','{\"mode\":\"COMBINED\",\"durationSeconds\":60}'::jsonb)",[offering.blueprintVersionId]);
     await db.execute("CREATE FUNCTION fail_native_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'native clock persistence fault'; END $$; CREATE TRIGGER fail_native_clock BEFORE INSERT ON assessment_attempt_clocks FOR EACH ROW EXECUTE FUNCTION fail_native_clock();");
@@ -533,7 +500,7 @@ test("Timer normalization rejects invalid modes, durations and unbounded section
 test("Timed begin schedules durable expiry and the actual worker auto-submits exactly once", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db, ENV.releaseSha, "0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db, ENV.releaseSha, "0103_question_approval_lifecycle");
     const worker = await seedAccount(db, "z");
     const offering = await seedOffering(db, "z", worker.accountId);
     await db.query(
@@ -586,7 +553,7 @@ test("Timed begin schedules durable expiry and the actual worker auto-submits ex
 test("Expiry retries required audit failures and preserves valid saved drafts exactly once", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
     const worker = await seedAccount(db,"k");
     const offering = await seedOffering(db,"k",worker.accountId);
     await db.query(
@@ -642,7 +609,7 @@ for (const late of [false,true]) {
   test(`Separate expiry catches up immutable deadlines without granting fresh time: ${late}`, async () => {
     const db = await database();
     try {
-      await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+      await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
       const worker = await seedAccount(db,"j");
       const offering = await seedOffering(db,"j",worker.accountId);
       await db.query(
@@ -686,7 +653,7 @@ test("A separate real worker process submits the durable attempt after the produ
   const directory = await mkdtemp(join(tmpdir(),"hse-expiry-process-"));
   let db = await openScriptDatabase({...ENV,pgliteDataDir:directory});
   try {
-    await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
     const worker = await seedAccount(db,"p");
     const offering = await seedOffering(db,"p",worker.accountId);
     await db.query(
@@ -718,7 +685,7 @@ test("A separate real worker process submits the durable attempt after the produ
 test("Browser interruption cannot bypass the immutable expiry outcome", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
     const worker = await seedAccount(db,"q");
     const offering = await seedOffering(db,"q",worker.accountId);
     await db.query(
@@ -743,7 +710,8 @@ test("Browser interruption cannot bypass the immutable expiry outcome", async ()
 test("Forward migration reconciles legacy immutable clocks with truthful system expiry intent", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db,ENV.releaseSha,"0083_assessment_timing");
+    // Isolate the owned expiry migration while retaining current publication schema.
+    await db.execute(await readFile("database/migrations/0084_assessment_timeout_submission.down.sql","utf8"));
     const worker = await seedAccount(db,"w");
     const offering = await seedOffering(db,"w",worker.accountId);
     // Persisted legacy fixture: form/attempt from real begin, old immutable clock rows.
@@ -760,7 +728,7 @@ test("Forward migration reconciles legacy immutable clocks with truthful system 
     );
     const deadline = new Date(NOW_DATE.getTime()+60000).toISOString();
     await db.query("INSERT INTO assessment_attempt_clocks(attempt_id,phase_index,started_at,deadline_at) VALUES($1,0,$2,$3)",[first.attempt.attemptId,NOW,deadline]);
-    await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+    await db.execute(await readFile("database/migrations/0084_assessment_timeout_submission.up.sql","utf8"));
     const jobs = (await db.query("SELECT * FROM platform_outbox_jobs WHERE job_type='assessment.attempt.expiry'")).rows;
     assert.equal(jobs.length,1,"Existing timers must receive background expiry work");
     assert.equal(new Date(jobs[0].next_attempt_at).toISOString(),deadline);
@@ -779,7 +747,7 @@ test("Forward migration reconciles legacy immutable clocks with truthful system 
  test("Expiry migration restores empty schemas and rejects missing enqueue origins", async () => {
   const db = await database();
   try {
-    await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+    await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
     const constraint = (await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conname='platform_outbox_enqueue_origin'")).rows[0].definition;
     assert.match(constraint,/enqueued_system_component IS NOT NULL/);
     await assert.rejects(db.query("INSERT INTO platform_outbox_jobs(job_id,job_type,schema_version,idempotency_key,payload,enqueued_by_account_id,enqueued_by_role) VALUES('job_missing_origin','assessment.attempt.expiry',1,$1,'{}'::jsonb,NULL,NULL)",["a".repeat(64)]),/platform_outbox_enqueue_origin/);
@@ -796,7 +764,7 @@ const {WrittenScoringService}=await loadWrittenScoringRuntime();
 test("Assigned review projects all pinned questions including unanswered items",async()=>{
  const db=await database();
  try {
-  await applyMigrationsThrough(db,ENV.releaseSha,"0084_assessment_timeout_submission");
+  await applyMigrationsThrough(db,ENV.releaseSha,"0103_question_approval_lifecycle");
   const worker=await seedAccount(db,"z");const verifier=await seedAccount(db,"z","verifier");
   const offering=await seedOffering(db,"z",worker.accountId);
   await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,timing_config_json) VALUES($1,'CONTROLLED_REVIEW',$2::jsonb)",[offering.blueprintVersionId,JSON.stringify({mode:"COMBINED",durationSeconds:60})]);

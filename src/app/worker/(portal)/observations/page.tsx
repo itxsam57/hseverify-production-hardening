@@ -26,7 +26,7 @@ export default async function WorkerObservationsPage({
         {observations.length === 0 ? <p>No supervisor observations have been submitted for you.</p> : (
           <div className="record-list">
             {observations.map((item) => (
-              <article className="surface-card" key={item.observationId}>
+              <article id={item.observationId} className="surface-card" key={item.observationId}>
                 <h2>{item.competencyReference}</h2>
                 <p>{item.frameworkReference} · {item.taskReference}</p>
                 <p><strong>Supervisor:</strong> {item.supervisorName}</p>

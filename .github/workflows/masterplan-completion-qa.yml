@@ -34,6 +34,8 @@ jobs:
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: memory://
       HSE_RELEASE_SHA: masterplan-completion-qa
@@ -67,6 +69,26 @@ jobs:
         run: node --test tests/auth/recovery-provider-delivery.test.mjs
       - name: Worker OTP cooldown, exhaustion and required-audit rollback
         run: node --test tests/platform/worker-registration-otp-runtime.test.mjs
+      - name: Assessor console case context and private preview boundaries
+        run: npm run test:interview-console-context
+
+      - name: Credential authenticity, reports, funding, privacy execution and pinned interview rules
+        run: |
+          npm run test:credential-authentication
+          npm run test:assessment-eligibility
+          npm run test:report-generation
+          npm run test:funding-notifications
+          npm run test:privacy-execution
+          npm run test:interview-policy
+
+      - name: Cold database and private object business recovery
+        run: npm run test:restore-business-recovery
+
+      - name: Independent question approval and trusted recent decision MFA
+        run: |
+          node scripts/run-question-bank-tests.mjs
+          npm run test:owner-acceptance-regressions
+
       - name: Strict TypeScript
         run: npm run typecheck
 
@@ -179,6 +201,8 @@ jobs:
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: memory://
       HSE_RELEASE_SHA: masterplan-completion-browser
@@ -332,6 +356,18 @@ jobs:
       - name: Five-role recovery-code rotation and authenticator replacement
         run: npm run test:mfa-management-boundaries-browser
 
+      - name: Assessor console live media, Verifier sharing and private evidence
+        run: npm run test:interview-live-media-browser
+
+      - name: Real reports, funding handoff, privacy execution and pinned interview policy journeys
+        run: |
+          npm run test:credential-validity-browser
+          npm run test:assessment-eligibility-browser
+          npm run test:report-generation-browser
+          npm run test:funding-notifications-browser
+          npm run test:privacy-execution-browser
+          npm run test:interview-policy-browser
+
       - name: Actual blueprint timers and approved Worker time delivery
         run: npm run test:assessment-timing-browser
 
@@ -340,6 +376,8 @@ jobs:
     timeout-minutes: 45
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: .data/m3-release-db
       HSE_RELEASE_SHA: ${{ github.sha }}
@@ -386,3 +424,62 @@ jobs:
           name: m3-11-certification-${{ github.sha }}
           path: artifacts/m3-11/certification.json
           if-no-files-found: error
+
+  postgres-json:
+    # Hosted service containers provide an actual PostgreSQL boundary independently
+    # of the PGlite journey suite and the optional self-hosted runner.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hse_test
+          POSTGRES_PASSWORD: disposable-ci-postgres-only
+          POSTGRES_DB: hse_json_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hse_test -d hse_json_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      HSE_APP_ENV: test
+      HSE_POSTGRES_TEST_DATABASE_URL: postgresql://hse_test:disposable-ci-postgres-only@127.0.0.1:5432/hse_json_test
+      HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      HSE_SESSION_SECRET: postgres-json-disposable-ci-session-secret-2026
+      HSE_AUTH_PEPPER: postgres-json-disposable-ci-auth-pepper-2026
+      HSE_CREDENTIAL_SIGNING_SECRET: postgres-json-disposable-ci-signing-secret-2026
+      HSE_ENABLE_AUTH_SANDBOX: "false"
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: PostgreSQL JSON parameters through script and runtime transactions
+        run: npm run test:postgres-json
+
+  consumer-cohorts:
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 60
+    env:
+      HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for actual consumer workflows
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
+      - name: Company, authoring, privacy, all-role controls and handover consumers
+        run: npm run test:consumer-cohorts-browser

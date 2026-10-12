@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
@@ -107,7 +108,7 @@ export default async function WorkerAppealsPage({
       <section className="content-stack" aria-labelledby="appeal-history-heading">
         <h2 id="appeal-history-heading">Appeal history</h2>
         {appeals.length === 0 ? <p>No credential appeals yet.</p> : appeals.map((appeal) => (
-          <article className="panel content-stack" key={appeal.appealId}>
+          <article id={appeal.appealId} className="panel content-stack" key={appeal.appealId}>
             <div>
               <strong>{appeal.credentialId}</strong>
               <p>Status: {appeal.status.replaceAll("_", " ")} · Version {appeal.version}</p>
@@ -116,6 +117,11 @@ export default async function WorkerAppealsPage({
               {appeal.reviewReason ? <p>Review outcome: {appeal.reviewReason}</p> : null}
               {appeal.outcomeAction && appeal.outcomeAction !== "none" ? (
                 <p>Credential/Living Record action: {appeal.outcomeAction.replaceAll("_", " ")}</p>
+              ) : null}
+              {appeal.status==="accepted" && appeal.outcomeAction==="reassessment" ? (
+                <Link className="ds-button ds-button-primary" href={"/worker/assessment-applications?sourceAppealId="+encodeURIComponent(appeal.appealId)}>
+                  Continue reassessment
+                </Link>
               ) : null}
               {appeal.reviewedAt ? <p>Reviewed: {appeal.reviewedAt}</p> : null}
             </div>

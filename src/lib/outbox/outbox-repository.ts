@@ -1,4 +1,7 @@
 import "server-only";
+import { finalizeReportGenerationFailure } from "../reports/report-generation-finalizer";
+import { finalizeReportEmailFailure } from "../reports/report-email-handler";
+import { finalizeAssuranceEventEmailFailure } from "../email-delivery/assurance-event-email-finalizer";
 
 import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
@@ -339,8 +342,11 @@ function parsePayload(value: unknown): unknown {
 
 function jobFromRow(row: JobRow): OutboxJobRecord {
   const system = row.enqueued_system_component ?? null;
+  const credentialIssuanceNotice = system === "outbox-worker" &&
+    (row.job_type === "notification.assurance.event" || row.job_type === "email.assurance.event") &&
+    (parsePayload(row.payload) as {eventType?: unknown} | null)?.eventType === "credential.issued";
   if (system !== null ?
-      (!((system === "outbox-worker" && row.job_type === "assessment.attempt.expiry") ||
+      (!(((system === "outbox-worker" && (row.job_type === "assessment.attempt.expiry" || row.job_type === "email.report.ready")) || credentialIssuanceNotice) ||
          ((system === "registration-verification" || system === "recovery-verification") && row.job_type === "authentication.challenge.delivery")) ||
        row.enqueued_by_account_id !== null || row.enqueued_by_role !== null ||
        row.tenant_id !== null || row.membership_id !== null) :
@@ -700,6 +706,9 @@ export class DatabaseOutboxRepository implements OutboxRepository {
             }
             const terminalJob = jobFromRow(terminalRow);
             await finalizeRegistrationDelivery(transaction,terminalJob);
+            await finalizeReportGenerationFailure(transaction,terminalJob);
+            await finalizeReportEmailFailure(transaction,terminalJob);
+            await finalizeAssuranceEventEmailFailure(transaction,terminalJob);
             await appendLifecycleAudit({
               database: transaction,
               actor: bindTrustedSystemAuditActor("outbox-worker", {
@@ -903,6 +912,9 @@ export class DatabaseOutboxRepository implements OutboxRepository {
       if (!attempt.rows[0]) throw new StaleOutboxLeaseError();
       const job = jobFromRow(row);
       await finalizeRegistrationDelivery(transaction,job);
+      await finalizeReportGenerationFailure(transaction,job);
+      await finalizeReportEmailFailure(transaction,job);
+      await finalizeAssuranceEventEmailFailure(transaction,job);
       await appendLifecycleAudit({
         database: transaction,
         actor: bindTrustedSystemAuditActor("outbox-worker", {

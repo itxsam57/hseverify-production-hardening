@@ -1,3 +1,4 @@
+import {seedPublishedQuestion,revisePublishedFixtureQuestion} from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
@@ -40,7 +41,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0073_assessment_option_order_snapshot");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0103_question_approval_lifecycle");
   return database;
 }
 
@@ -115,77 +116,12 @@ async function makeBlueprint(database, admin, frameworkReference, reference, cou
   );
 }
 
-async function seedQuestion(database, frameworkId, c) {
-  const questionId = oid("assessment_question", c);
-  const questionVersionId = oid("question_version", c);
-  const hash = fingerprint(`question-${c}-v1`);
-  await database.query(
-    `INSERT INTO assessment_questions(
-       question_id,question_reference,question_status,
-       created_by_account_id,created_at,updated_at
-     ) VALUES($1,$2,'INACTIVE',$3,$4,$4)`,
-    [questionId, `GEN-Q-${c}`, `account_seed_${c}`, NOW]
-  );
-  await database.query(
-    `INSERT INTO assessment_question_versions(
-       question_version_id,question_id,version_no,question_type,prompt,options_json,
-       answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-       content_fingerprint,created_by_account_id,created_at
-     ) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-              'General Safety','MEDIUM',$7::jsonb,$8,$9,$10)`,
-    [
-      questionVersionId,
-      questionId,
-      `What is the safe response for generated question ${c}?`,
-      JSON.stringify(["Stop work", "Continue", "Ignore"]),
-      JSON.stringify("Stop work"),
-      frameworkId,
-      JSON.stringify(["core"]),
-      hash,
-      `account_seed_${c}`,
-      NOW
-    ]
-  );
-  await database.query(
-    `UPDATE assessment_questions
-     SET current_version_id=$2,current_content_fingerprint=$3,
-         question_status='ACTIVE',updated_at=$4
-     WHERE question_id=$1`,
-    [questionId, questionVersionId, hash, NOW]
-  );
-  return { questionId, questionVersionId };
+async function seedQuestion(database,frameworkId,c) {
+ return seedPublishedQuestion(database,{questionId:oid("assessment_question",c),versionId:oid("question_version",c),reference:`GEN-Q-${c}`,questionType:"MULTIPLE_CHOICE",prompt:`What is the safe response for generated question ${c}?`,options:["Stop work","Continue","Ignore"],answerKey:"Stop work",frameworkId,domainReference:"General Safety",difficulty:"MEDIUM",tags:["core"],fingerprint:fingerprint(`question-${c}-v1`),now:NOW});
 }
-
-async function reviseQuestion(database, question, frameworkId, c) {
-  const nextVersionId = oid("question_version", c);
-  const hash = fingerprint(`question-${question.questionId}-${c}`);
-  await database.query(
-    `INSERT INTO assessment_question_versions(
-       question_version_id,question_id,version_no,question_type,prompt,options_json,
-       answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-       content_fingerprint,created_by_account_id,created_at
-     ) VALUES($1,$2,2,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-              'General Safety','MEDIUM',$7::jsonb,$8,$9,$10)`,
-    [
-      nextVersionId,
-      question.questionId,
-      `Revised safe response prompt ${c} keeps the same stable question identity`,
-      JSON.stringify(["Stop work", "Continue", "Ignore"]),
-      JSON.stringify("Stop work"),
-      frameworkId,
-      JSON.stringify(["core"]),
-      hash,
-      `account_seed_${c}`,
-      NOW
-    ]
-  );
-  await database.query(
-    `UPDATE assessment_questions
-     SET current_version_id=$2,current_content_fingerprint=$3,updated_at=$4
-     WHERE question_id=$1`,
-    [question.questionId, nextVersionId, hash, NOW]
-  );
-  return nextVersionId;
+async function reviseQuestion(database,question,frameworkId,c) {
+ const framework=(await database.query("SELECT framework_reference FROM assurance_frameworks WHERE framework_id=$1",[frameworkId])).rows[0].framework_reference;
+ return revisePublishedFixtureQuestion(database,question,{questionType:"MULTIPLE_CHOICE",prompt:`Revised safe response prompt ${c} keeps the same stable question identity`,options:["Stop work","Continue","Ignore"],answerKey:"Stop work",frameworkReference:framework,domainReference:"General Safety",difficulty:"MEDIUM",tags:["core"]},NOW);
 }
 
 async function seedCase(database, c, workerAccountId, frameworkId, { snapshot = true } = {}) {

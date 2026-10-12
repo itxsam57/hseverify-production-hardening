@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import {
+  CredentialAppealReviewAuthorizationError,
   APPEAL_OUTCOME_ACTIONS,
   type AppealOutcomeAction
 } from "@/lib/credential/credential-appeals-domain";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
 import { CredentialAppealsService } from "@/lib/credential/credential-appeals-service";
+import { CredentialRenewalInputError } from "@/lib/credential/credential-renewal-service";
 
 function text(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -43,12 +45,18 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
   const appeal = await repository.find(appealId);
   if (!appeal) redirect("/admin/appeals?error=missing");
 
-  await new CredentialAppealsService().reviewOutcome(appeal, {
+  try {
+    await new CredentialAppealsService().reviewOutcome(appeal, {
     status,
     reviewerId: principal.accountId,
     reason,
     outcomeAction
-  });
+    });
+  } catch (error) {
+    if (error instanceof CredentialAppealReviewAuthorizationError) redirect("/admin/appeals?error=independence");
+    if (error instanceof CredentialRenewalInputError) redirect("/admin/appeals?error=renewal");
+    throw error;
+  }
 
   revalidatePath("/admin/appeals");
   revalidatePath("/worker/appeals");
