@@ -1,91 +1,52 @@
-export const PROVIDER_KEYS = [
-  "email",
-  "sms",
-  "payment",
-  "video",
-  "liveness",
-  "malware_scanning"
-] as const;
+import type { RuntimeEnvironment } from "../config/environment";
 
+export const PROVIDER_KEYS = ["email", "sms", "payment", "video", "liveness", "malware_scanning"] as const;
 export type ProviderKey = (typeof PROVIDER_KEYS)[number];
-
+type ProviderConfiguration = Pick<RuntimeEnvironment, "appEnvironment" | "registrationOtpProviders">;
 export type ProviderHealth = Readonly<{
-  provider: ProviderKey;
-  configured: boolean;
-  mode: "local" | "sandbox" | "external_unavailable";
-  status: "ready" | "disabled";
-  reason:
-    | "local_fixture_available"
-    | "built_in_available"
-    | "external_configuration_required";
-  adapter: "local_fixture" | "built_in" | "sandbox" | "external";
-  productionActivation: "enabled" | "requires_configuration";
+ provider: ProviderKey;
+ configured: boolean;
+ mode: "local" | "sandbox" | "external" | "external_unavailable";
+ status: "ready" | "configured" | "disabled";
+ reason: "local_fixture_available" | "built_in_available" | "external_configuration_required" | "configured_not_verified";
+ adapter: "local_fixture" | "built_in" | "external";
+ productionActivation: "enabled" | "configured_unverified" | "requires_configuration";
+ observedAvailability: "not_checked";
 }>;
+export type ProviderAdapterState = Readonly<Pick<ProviderHealth, "provider" | "adapter"> & { enabled: boolean }>;
 
-export type ProviderAdapterState = Readonly<{
-  provider: ProviderKey;
-  adapter: "local_fixture" | "built_in" | "sandbox" | "external";
-  enabled: boolean;
-}>;
-
-const LOCAL_FIXTURE_ADAPTERS = new Set<ProviderKey>(["email", "malware_scanning"]);
-const BUILT_IN_ADAPTERS = new Set<ProviderKey>(["video"]);
-
-function localFixtureEnvironment(): boolean {
-  const explicit = process.env.HSE_APP_ENV?.trim();
-  if (explicit) return explicit === "development" || explicit === "test";
-  return process.env.NODE_ENV !== "production";
+// Consume the same validated environment used by real transports. No provider calls
+// are made here: configuration is not an availability or delivery observation.
+export function getProviderHealth(environment: ProviderConfiguration): readonly ProviderHealth[] {
+ const local = environment.appEnvironment === "development" || environment.appEnvironment === "test";
+ const config = environment.registrationOtpProviders;
+ const emailConfigured = Boolean(config?.emailApiKey && config.emailFrom);
+ const smsConfigured = Boolean(config?.smsAccountSid && config.smsAuthToken && config.smsFrom);
+ return PROVIDER_KEYS.map(provider => {
+  const builtIn = provider === "video";
+  // Preview/production scanner factory always selects ClamAV (default clamscan).
+  // Selection cannot prove the executable or its signature database is available.
+  const externalConfigured = (provider === "email" && emailConfigured) ||
+   (provider === "sms" && smsConfigured) || (provider === "malware_scanning" && !local);
+  const fixture = local && !externalConfigured && (provider === "email" || provider === "malware_scanning");
+  return Object.freeze({
+   provider,
+   configured: builtIn || externalConfigured,
+   mode: builtIn ? "local" : externalConfigured ? "external" : fixture ? "sandbox" : "external_unavailable",
+   status: builtIn || fixture ? "ready" : externalConfigured ? "configured" : "disabled",
+   reason: builtIn ? "built_in_available" : externalConfigured ? "configured_not_verified" : fixture ? "local_fixture_available" : "external_configuration_required",
+   adapter: builtIn ? "built_in" : fixture ? "local_fixture" : "external",
+   productionActivation: builtIn ? "enabled" : externalConfigured ? "configured_unverified" : "requires_configuration",
+   observedAvailability: "not_checked"
+  } satisfies ProviderHealth);
+ });
 }
 
-export function getProviderAdapterState(): readonly ProviderAdapterState[] {
-  const localFixturesEnabled = localFixtureEnvironment();
-  return PROVIDER_KEYS.map((provider) => {
-    const builtIn = BUILT_IN_ADAPTERS.has(provider);
-    const localFixture = LOCAL_FIXTURE_ADAPTERS.has(provider);
-    return Object.freeze({
-      provider,
-      adapter: builtIn
-        ? ("built_in" as const)
-        : localFixture
-          ? ("local_fixture" as const)
-          : ("external" as const),
-      enabled: builtIn || (localFixture && localFixturesEnabled)
-    });
-  });
+export function getProviderAdapterState(environment: ProviderConfiguration): readonly ProviderAdapterState[] {
+ return getProviderHealth(environment).map(row => Object.freeze({provider: row.provider, adapter: row.adapter, enabled: row.status !== "disabled"}));
 }
-
-export function getProviderHealth(): readonly ProviderHealth[] {
-  return getProviderAdapterState().map((state) => {
-    const productionReady = state.adapter === "built_in";
-    const sandboxReady = state.adapter === "local_fixture";
-    return Object.freeze({
-      provider: state.provider,
-      configured: productionReady,
-      mode: productionReady
-        ? ("local" as const)
-        : sandboxReady
-          ? ("sandbox" as const)
-          : ("external_unavailable" as const),
-      status: state.enabled ? ("ready" as const) : ("disabled" as const),
-      adapter: state.adapter,
-      productionActivation: productionReady
-        ? ("enabled" as const)
-        : ("requires_configuration" as const),
-      reason: productionReady
-        ? ("built_in_available" as const)
-        : sandboxReady
-          ? ("local_fixture_available" as const)
-          : ("external_configuration_required" as const)
-    });
-  });
-}
-
-export function getProviderHealthByKey(
-  provider: ProviderKey
-): ProviderHealth {
-  const health = getProviderHealth().find((item) => item.provider === provider);
-  if (!health) {
-    throw new Error(`Unknown provider: ${provider}`);
-  }
-  return health;
+export function getProviderHealthByKey(provider: ProviderKey, environment: ProviderConfiguration): ProviderHealth {
+ const row = getProviderHealth(environment).find(item => item.provider === provider);
+ if (!row) throw new Error(`Unknown provider: ${provider}`);
+ return row;
 }
