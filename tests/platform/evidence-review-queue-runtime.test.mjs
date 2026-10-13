@@ -293,7 +293,7 @@ test("M2.02 history-preserving rollback and repeat-safe reapply keep review rows
 
 for(const outcome of ["UNABLE_TO_VERIFY","ESCALATED"]){
  test("Another task approval preserves the correct next actor for "+outcome,async()=>{
- const database=await db("0105_evidence_review_resolutions");try{
+ const database=await db("0108_review_resolution_notifications");try{
  const x=await queueObservation(database,outcome==="ESCALATED"?"V":"W"),verifier=await seedVerifier(database,"N");
  const secondId=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-SECOND",observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated"},NOW_DATE);
  assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),1);
@@ -310,7 +310,7 @@ for(const outcome of ["UNABLE_TO_VERIFY","ESCALATED"]){
 
 for(const outcome of ["ESCALATED"]){
  test("Another task changes-requested preserves the correct next actor for "+outcome,async()=>{
- const database=await db("0105_evidence_review_resolutions");try{
+ const database=await db("0108_review_resolution_notifications");try{
  const x=await queueObservation(database,outcome==="ESCALATED"?"V":"W"),verifier=await seedVerifier(database,"N");
  const secondId=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-SECOND",observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated"},NOW_DATE);
  assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),1);

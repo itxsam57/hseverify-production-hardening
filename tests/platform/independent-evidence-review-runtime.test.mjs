@@ -606,7 +606,7 @@ test("returned initial identity creates a locked lineage revision; invalid autho
 });
 
 test("Unable-to-verify initial identity becomes revisable more-info without issuing permanent identity",async()=>{
- const db=await database("0105_evidence_review_resolutions");try{
+ const db=await database("0108_review_resolution_notifications");try{
  const worker=await seedAccount(db,{accountId:"account_neutral_identity_worker",email:"neutral-worker@example.test",role:"worker",sessionId:"session_neutral_identity_worker"});
  const verifier=await seedAccount(db,{accountId:"account_neutral_identity_verifier",email:"neutral-verifier@example.test",role:"verifier",sessionId:"session_neutral_identity_verifier"});
  await seedManualReviewIdentity(db,worker.accountId);const service=new EvidenceReviewService(db),task=await service.queueIndependentIdentity(worker,NOW_DATE);await service.claim(verifier,task.taskId,NOW_DATE);
@@ -626,7 +626,7 @@ test("Unable-to-verify initial identity becomes revisable more-info without issu
 });
 
 test("Unable-to-verify identity correction preserves the verified original and permits a new correction request",async()=>{
- const db=await database("0105_evidence_review_resolutions");try{
+ const db=await database("0108_review_resolution_notifications");try{
  const worker=await seedAccount(db,{accountId:"account_neutral_correction_worker",email:"neutral-correction-worker@example.test",role:"worker",sessionId:"session_neutral_correction_worker"});
  const verifier=await seedAccount(db,{accountId:"account_neutral_correction_verifier",email:"neutral-correction-verifier@example.test",role:"verifier",sessionId:"session_neutral_correction_verifier"});
  await seedManualReviewIdentity(db,worker.accountId);const service=new EvidenceReviewService(db);

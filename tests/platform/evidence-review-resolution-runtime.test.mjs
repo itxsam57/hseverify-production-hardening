@@ -14,7 +14,7 @@ async function actor(db,id,role){
  return {accountId:id,sessionId:id+"_session",activeRole:role,accountStatus:"active",email:id+"@example.test",displayName:id,createdAt:NOW,lastSeenAt:NOW,expiresAt:"2099-01-01",tenantMembership:null};
 }
 async function fixture(){
- const db=await openScriptDatabase(ENV);await applyMigrationsThrough(db,ENV.releaseSha,"0105_evidence_review_resolutions");
+ const db=await openScriptDatabase(ENV);await applyMigrationsThrough(db,ENV.releaseSha,"0108_review_resolution_notifications");
  const worker=await actor(db,"draft_worker","worker"),verifier=await actor(db,"draft_verifier","verifier"),other=await actor(db,"draft_other","verifier");
  await db.query("INSERT INTO worker_evidence_records(record_id,worker_account_id,record_kind,lifecycle_status,current_version_id,created_at,updated_at) VALUES('draft_record',$1,'qualification','active',NULL,$2,$2)",[worker.accountId,NOW]);
  await db.query("INSERT INTO worker_evidence_versions(version_id,record_id,version_number,revision,version_status,created_at,updated_at,submitted_at) VALUES('draft_version','draft_record',1,1,'submitted',$1,$1,$1)",[NOW]);
@@ -84,7 +84,7 @@ test("Resolution races have one winner and immutable history survives refused ro
   assert.equal((await f.db.query("SELECT count(*)::int total FROM evidence_review_resolution_events")).rows[0].total,1);
   await assert.rejects(f.db.query("UPDATE evidence_review_resolution_events SET reason='replacement' WHERE task_id=$1",[f.task.taskId]),/immutable|append.only/i);
   await assert.rejects(f.db.query("DELETE FROM evidence_review_resolution_events WHERE task_id=$1",[f.task.taskId]),/immutable|append.only/i);
-  await assert.rejects(f.db.execute(await readFile("database/migrations/0105_evidence_review_resolutions.down.sql","utf8")),/history must be retained/i);
+  await assert.rejects(f.db.execute(await readFile("database/migrations/0105_evidence_review_resolutions.down.sql","utf8")),/Newer calibration or notification contracts depend on review resolution history/i);
   assert.equal((await f.service.findResolutionHistory(f.verifier,f.task.taskId)).length,1);
  }finally{await f.db.close();}
 });
@@ -110,12 +110,15 @@ test("Revoked and demoted Admin sessions cannot list or return escalations",asyn
 test("Empty resolution rollback restores all original constraints and reapplies",async()=>{
  const f=await fixture();try{
   const original=(await f.db.query("SELECT hse_review_resolution_rollback_contract() AS definitions")).rows[0].definitions;
+  await assert.rejects(f.db.execute(await readFile("database/migrations/0105_evidence_review_resolutions.down.sql","utf8")),/Newer calibration or notification contracts/);
+  await f.db.execute(await readFile("database/migrations/0108_review_resolution_notifications.down.sql","utf8"));
   await f.db.execute(await readFile("database/migrations/0105_evidence_review_resolutions.down.sql","utf8"));
   for(const contract of original){
    const restored=(await f.db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[contract.table,contract.constraint])).rows[0].definition;
    assert.equal(restored,contract.definition);
   }
   await f.db.execute(await readFile("database/migrations/0105_evidence_review_resolutions.up.sql","utf8"));
+  await f.db.execute(await readFile("database/migrations/0108_review_resolution_notifications.up.sql","utf8"));
   await f.service.resolveReview(f.verifier,f.task.taskId,escalationInput);
  }finally{await f.db.close();}
 });

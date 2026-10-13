@@ -201,7 +201,7 @@ export function assertEmailDeliveryJob(job:OutboxJobRecord):EmailDeliveryOutboxJ
  if(job.jobType==="email.assurance.event"){
   const payload=normalizeAssuranceEventEmailPayload(job.payload);
   const sourceRole:Readonly<Record<AssuranceEventEmailPayload["eventType"],AuthRole|null>>={
-   "evidence.submitted":"worker","evidence.reviewed":"verifier","evidence.additional.requested":"verifier",
+   "evidence.submitted":"worker","evidence.reviewed":"verifier","evidence.unable":"verifier","evidence.escalated":"verifier","evidence.returned":"admin","evidence.additional.requested":"verifier",
    "decision.recorded":"admin","credential.issued":null,"appeal.submitted":"worker","appeal.updated":"admin",
    "assessment.funding.requested":"worker","assessment.funding.approved":"company"
   };

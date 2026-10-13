@@ -16,7 +16,7 @@ export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
 } as const;
 
 export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES), ...ASSURANCE_EVENT_TYPES] as const;
-export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "worker.assurance.case", "worker.credential.record", "appeal.record"] as const;
+export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -183,6 +183,9 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
       normalized = normalizeAccountSecurityNotificationPayload(value);
       break;
     case "evidence.submitted":
+    case "evidence.unable":
+    case "evidence.escalated":
+    case "evidence.returned":
     case "evidence.reviewed":
     case "evidence.additional.requested":
     case "decision.recorded":
@@ -223,6 +226,9 @@ export const ASSURANCE_EVENT_CONTENT: Readonly<Record<AssuranceEventType,{title:
     "title": "Evidence submitted",
     "body": "Open the record for the current status and next action."
   },
+  "evidence.unable": {title:"Evidence could not be verified",body:"Open the record for the current status and next action."},
+  "evidence.escalated": {title:"Evidence review escalated",body:"Open the record for the current status and next action."},
+  "evidence.returned": {title:"Evidence returned to review",body:"Open the record for the current status and next action."},
   "evidence.reviewed": {
     "title": "Evidence review recorded",
     "body": "Open the record for the current status and next action."
@@ -258,10 +264,11 @@ export function assuranceEventEmailContent(type:AssuranceEventType|AssuranceFund
 
 function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetReference:string|null}):NotificationTarget{
  const roles:Readonly<Record<AssuranceEventType,readonly AuthRole[]>>={
-  "evidence.submitted":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
+  "evidence.submitted":["worker","verifier"],"evidence.unable":["worker"],"evidence.escalated":["worker","admin"],"evidence.returned":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
   "decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"]
  };
  if(!roles[type].includes(context.role))throw new NotificationContractError("Assurance recipient role is invalid.");
+ if(type==="evidence.escalated" && context.role==="admin")return "admin.review.escalation";
  if(type.startsWith("appeal."))return "appeal.record";
  if(type==="decision.recorded")return context.role==="company"?"company.assurance.case":"worker.assurance.case";
  if(type==="credential.issued")return "worker.credential.record";
@@ -279,6 +286,9 @@ export function notificationContent(notificationType: NotificationType, context?
 }> {
   switch (notificationType) {
     case "evidence.submitted":
+    case "evidence.unable":
+    case "evidence.escalated":
+    case "evidence.returned":
     case "evidence.reviewed":
     case "evidence.additional.requested":
     case "decision.recorded":
@@ -409,6 +419,10 @@ export function resolveNotificationHref(input: {
   if(input.target==="worker.observation.record"){
     if(!["worker"].includes(input.role) || !input.targetReference || !/^supervisor_observation_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
     return "/worker/observations#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="admin.review.escalation"){
+    if(input.role!=="admin" || !input.targetReference || !/^evidence_review_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Escalation record target is invalid.");
+    return "/admin/operations/review-escalations#"+encodeURIComponent(input.targetReference);
   }
   if(input.target==="verifier.review.task"){
     if(!["verifier"].includes(input.role) || !input.targetReference || !/^evidence_review_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");

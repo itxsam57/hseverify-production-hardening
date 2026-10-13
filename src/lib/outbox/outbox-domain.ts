@@ -89,7 +89,7 @@ export type ReportGenerationPayload = Readonly<{ reportRef: string }>;
 export type ReportReadyEmailPayload = Readonly<{ deliveryRef: string }>;
 
 export const ASSURANCE_EVENT_TYPES = [
-  "evidence.submitted", "evidence.reviewed", "evidence.additional.requested",
+  "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned",
   "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"
 ] as const;
 export type AssuranceEventType = (typeof ASSURANCE_EVENT_TYPES)[number];
@@ -123,6 +123,7 @@ function normalizeAssuranceSource(input: Record<string, unknown>, email: boolean
   const prefixes: Record<AssuranceEventType | AssuranceFundingEventType, string> = {
     "evidence.submitted": "audit",
     "evidence.reviewed": "review",
+    "evidence.unable": "resolution", "evidence.escalated": "resolution", "evidence.returned": "resolution",
     "evidence.additional.requested": "review",
     "decision.recorded": "case",
     "credential.issued": "issuance",

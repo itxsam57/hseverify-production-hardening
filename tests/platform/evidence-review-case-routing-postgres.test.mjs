@@ -103,7 +103,7 @@ test("Actual PostgreSQL concurrent approval cannot overwrite a newly committed A
  const first=await openScriptDatabase({...ENV,databaseDriver:"postgres",databaseUrl:url.href}),second=await openScriptDatabase({...ENV,databaseDriver:"postgres",databaseUrl:url.href});
  let releaseLock;const waitLock=new Promise(resolve=>{releaseLock=resolve;});let reachedLock;const atLock=new Promise(resolve=>{reachedLock=resolve;});
  try{
- await applyMigrationsThrough(first,ENV.releaseSha,"0105_evidence_review_resolutions");
+ await applyMigrationsThrough(first,ENV.releaseSha,"0108_review_resolution_notifications");
  const x=await queueObservation(first,"R"),approver=await seedVerifier(first,"A"),escalator=await seedVerifier(first,"B");
  const observation=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-RACE-SECOND",observedAt:NOW_DATE,observationText:"A second independent observation supports this competency clearly.",outcome:"demonstrated"},NOW_DATE);await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE);
  const secondTask=(await first.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[observation])).rows[0].task_id;

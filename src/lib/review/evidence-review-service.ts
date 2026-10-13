@@ -368,11 +368,13 @@ export class EvidenceReviewService {
       const last=await database.query<{revision:number}>("SELECT revision FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
       if((last.rows[0]?.revision??0)!==input.expectedRevision)throw new EvidenceReviewConflictError("Review history changed; reload before recording an outcome.");
       const revision=(last.rows[0]?.revision??0)+1;
+      const resolutionEventId=createIdentifier("review_resolution");
       await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,attempted_methods,limitations,destination,occurred_at)
-        VALUES($1,$2,$3,$4,$5,'verifier',$6,$7,$8,$9,$10,$11)`,[createIdentifier("review_resolution"),taskId,row.source_version_id,revision,principal.accountId,outcome,reason,methods,limitations,outcome==="ESCALATED"?"admin":null,now.toISOString()]);
+        VALUES($1,$2,$3,$4,$5,'verifier',$6,$7,$8,$9,$10,$11)`,[resolutionEventId,taskId,row.source_version_id,revision,principal.accountId,outcome,reason,methods,limitations,outcome==="ESCALATED"?"admin":null,now.toISOString()]);
       await database.query("UPDATE evidence_review_tasks SET task_status=$2,decided_at=$3,updated_at=$3 WHERE task_id=$1",[taskId,outcome,now.toISOString()]);
       if(outcome==="UNABLE_TO_VERIFY" && row.evidence_kind==="identity")await this.applyIndependentDecision(database,row,"UNABLE_TO_VERIFY",now);
       await this.recordResolutionCase(database,principal,row,now);
+      await database.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",[outcome==="ESCALATED"?"evidence.escalated":"evidence.unable","resolution:"+resolutionEventId]);
       await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.resolution.recorded",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision,resolution:outcome,destination:outcome==="ESCALATED"?"admin":null}});
     });
   }
@@ -397,10 +399,12 @@ export class EvidenceReviewService {
       const last=await database.query<{revision:number;outcome:string}>("SELECT revision,outcome FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
       if(last.rows[0]?.revision!==expectedRevision || last.rows[0]?.outcome!=="ESCALATED" || !(await this.sourceIsCurrent(database,row)))throw new EvidenceReviewConflictError();
       const revision=expectedRevision+1;
+      const resolutionEventId=createIdentifier("review_resolution");
       await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,occurred_at)
-        VALUES($1,$2,$3,$4,$5,'admin','RETURNED_TO_QUEUE',$6,$7)`,[createIdentifier("review_resolution"),taskId,row.source_version_id,revision,principal.accountId,reason,now.toISOString()]);
+        VALUES($1,$2,$3,$4,$5,'admin','RETURNED_TO_QUEUE',$6,$7)`,[resolutionEventId,taskId,row.source_version_id,revision,principal.accountId,reason,now.toISOString()]);
       await database.query("UPDATE evidence_review_tasks SET task_status='QUEUED',assigned_verifier_account_id=NULL,claimed_at=NULL,decided_at=NULL,updated_at=$2 WHERE task_id=$1",[taskId,now.toISOString()]);
       await this.recordResolutionCase(database,principal,row,now);
+      await database.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["evidence.returned","resolution:"+resolutionEventId]);
       await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.escalation.returned",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision}});
     });
   }
