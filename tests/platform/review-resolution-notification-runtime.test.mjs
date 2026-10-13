@@ -3,6 +3,7 @@ import test from "node:test";
 import {readFile} from "node:fs/promises";
 import {openScriptDatabase} from "../../scripts/lib/database.mjs";
 import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
+import {authorizeReviewFixture} from "../helpers/evidence-review-calibration-fixture.mjs";
 import {loadWorkerRegistrationTs,setWorkerRegistrationRuntimeEnvironment} from "../helpers/worker-registration-runtime-loader.mjs";
 const {EvidenceReviewService}=loadWorkerRegistrationTs("src/lib/review/evidence-review-service.ts");
 const ENV={appEnvironment:"test",databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:"memory://",releaseSha:"review-draft-test",sessionSecret:"review-draft-session-secret-2026-00000000000000",authPepper:"review-draft-auth-pepper-2026-00000000000000",authSandboxEnabled:false,authSandboxAccessKey:null,demoAuthEnabled:false,demoDataEnabled:false};
@@ -19,7 +20,7 @@ async function fixture(){
  await db.query("INSERT INTO worker_evidence_records(record_id,worker_account_id,record_kind,lifecycle_status,current_version_id,created_at,updated_at) VALUES('evidence_record_0123456789abcdef0123456789abcdef',$1,'qualification','active',NULL,$2,$2)",[worker.accountId,NOW]);
  await db.query("INSERT INTO worker_evidence_versions(version_id,record_id,version_number,revision,version_status,created_at,updated_at,submitted_at) VALUES('draft_version','evidence_record_0123456789abcdef0123456789abcdef',1,1,'submitted',$1,$1,$1)",[NOW]);
  await db.query("UPDATE worker_evidence_records SET current_version_id='draft_version' WHERE record_id='evidence_record_0123456789abcdef0123456789abcdef'");
- const service=new EvidenceReviewService(db),task=await service.queueIndependentWorkerEvidence(worker,"evidence_record_0123456789abcdef0123456789abcdef");await service.claim(verifier,task.taskId);
+ const service=new EvidenceReviewService(db),task=await service.queueIndependentWorkerEvidence(worker,"evidence_record_0123456789abcdef0123456789abcdef");await authorizeReviewFixture(db,{taskId:task.taskId,verifiers:[verifier,other],at:new Date(NOW)});await service.claim(verifier,task.taskId);
  return {db,worker,verifier,other,service,task};
 }
 const {DatabaseOutboxRepository}=loadWorkerRegistrationTs("src/lib/outbox/outbox-repository.ts");

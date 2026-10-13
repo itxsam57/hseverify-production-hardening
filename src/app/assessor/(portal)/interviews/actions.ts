@@ -237,6 +237,12 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
       actor: { accountId: actor.accountId, role: "assessor" },
       now
     });
+    const eventId = "interview_recommendation_" + crypto.randomUUID().replaceAll("-", "");
+    await transaction.query(
+      "INSERT INTO interview_recommendation_events(event_id,interview_request_id,tenant_id,case_id,assessor_account_id,recommendation) VALUES($1,$2,$3,$4,$5,$6)",
+      [eventId,input.interviewRequestId,request.tenantId,request.caseId,actor.accountId,recommendation]
+    );
+    await transaction.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["interview.recommended","recommendation:"+eventId]);
     });
   } catch (error) {
     consoleActionFailure(error, input.interviewRequestId);

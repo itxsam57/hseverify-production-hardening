@@ -20,6 +20,7 @@ const tests = [
   "tests/browser/verifier-review-search.browser.test.mjs",
   "tests/browser/admin-verification-search.browser.test.mjs",
   "tests/browser/assessor-interview-search.browser.test.mjs",
+  "tests/browser/interview-recommendation-outcomes.browser.test.mjs",
   "tests/browser/root-invitation-search.browser.test.mjs",
   "tests/browser/all-role-notification-workflow.browser.test.mjs",
   "tests/browser/public-navigation.browser.test.mjs",

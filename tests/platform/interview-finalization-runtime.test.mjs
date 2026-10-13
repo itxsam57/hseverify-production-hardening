@@ -1,3 +1,4 @@
+import { attachNotificationCompanyLink } from "../helpers/interview-outcome-fixture.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -27,6 +28,7 @@ async function activeInterview({ createPlaybook = true, start = true, scheduleOf
   let database;
   try {
     database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+    await attachNotificationCompanyLink(database,fixture);
     const principal = await assessorSchedulingPrincipal(database, fixture.credentials.assessor);
     const worker = {
       accountId: fixture.credentials.worker.accountId,
@@ -270,4 +272,81 @@ test("No-show runtime cannot create a missing playbook", async () => {
       { name: "InterviewPlaybookInputError" });
     assert.equal(await x.playbook.getAssigned(x.principal, x.request.interviewRequestId), null);
   } finally { await x.cleanup(); }
+});
+
+
+for (const [recommendation, status, owner, action] of [
+  ["PASS", "Decision pending", "admin", /final Assurance Case decision/],
+  ["CONDITIONAL_PASS", "Decision pending", "admin", /permitted approval conditions/],
+  ["ADDITIONAL_EVIDENCE_REQUIRED", "Evidence pending", "worker", /additional evidence/],
+  ["REASSESSMENT_REQUIRED", "Reassessment required", "worker", /required reassessment/],
+  ["SECOND_INTERVIEW_REQUIRED", "Interview pending", "admin", /eligible Assessor.*second interview/],
+  ["FAIL", "Reassessment required", "worker", /required reassessment/]
+]) {
+  test(`Actual submitted ${recommendation} recommendation persists routing and immutable history`, async () => {
+    const x = await activeInterview();
+    try {
+      await x.save(completeScores());
+      await x.runtime.end(x.principal, x.request.interviewRequestId);
+      const form = recommendationForm(x); form.set("recommendation", recommendation);
+      await interviewActions(x).submitInterviewConsoleAction(form);
+      const result = await storedFinalization(x);
+      assert.equal(result.request[0].status, "COMPLETED");
+      assert.equal(result.draft[0].submitted, true);
+      assert.equal(result.draft[0].recommendation, recommendation);
+      assert.equal(result.case[0].case_status, status);
+      assert.equal(result.case[0].owner_kind, owner);
+      const current = (await x.database.query("SELECT next_action FROM assurance_cases WHERE case_id=$1", [x.request.caseId])).rows[0];
+      assert.match(current.next_action, action);
+      if (recommendation === "SECOND_INTERVIEW_REQUIRED") {
+        assert.notEqual(result.case[0].interview_reference, x.request.interviewRequestId);
+        const followup = (await x.database.query("SELECT status,assessor_account_id FROM interview_requests WHERE interview_request_id=$1", [result.case[0].interview_reference])).rows[0];
+        assert.equal(followup.status,"REQUESTED"); assert.equal(followup.assessor_account_id,null);
+        const decisions=(await x.database.query("SELECT selected,eligibility_json FROM interview_assignment_decisions WHERE interview_request_id=$1",[result.case[0].interview_reference])).rows;
+        assert(decisions.every(row=>row.selected===false),"No ineligible assessor may be assigned silently.");
+      } else assert.equal(result.case[0].interview_reference,x.request.interviewRequestId);
+      const notificationJobs = (await x.database.query("SELECT job_id,payload FROM platform_outbox_jobs WHERE job_type='notification.assurance.event' AND payload->>'eventType'='interview.recommended'")).rows;
+      assert.equal(notificationJobs.length,1,"Actual final submission must enqueue its immutable recommendation notification");
+      const event=(await x.database.query("SELECT * FROM interview_recommendation_events WHERE interview_request_id=$1",[x.request.interviewRequestId])).rows[0];
+      assert.equal(event.recommendation,recommendation);
+      assert.deepEqual(notificationJobs[0].payload,{eventType:"interview.recommended",eventRef:"recommendation:"+event.event_id});
+      const recipients=(await x.database.query("SELECT * FROM platform_assurance_event_recipients($1,$2)",["interview.recommended","recommendation:"+event.event_id])).rows;
+      assert.ok(recipients.some(row=>row.role==="worker"&&row.account_id===x.fixture.credentials.worker.accountId));
+      assert.ok(recipients.some(row=>row.role==="company"&&row.account_id===x.fixture.credentials.company.accountId));
+      assert.equal(recipients.some(row=>row.role==="admin"),owner==="admin");
+      await assert.rejects(x.database.query("UPDATE interview_recommendation_events SET recommendation='FAIL' WHERE event_id=$1",[event.event_id]),/immutable/);
+      await assert.rejects(x.database.query("DELETE FROM interview_recommendation_events WHERE event_id=$1",[event.event_id]),/immutable/);
+      await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/histories must be retained/);
+      await x.database.query("UPDATE auth_accounts SET account_status='disabled' WHERE account_id=$1",[x.fixture.credentials.worker.accountId]);
+      assert.equal((await x.database.query("SELECT 1 FROM platform_assurance_event_recipients($1,$2) WHERE account_id=$3",["interview.recommended","recommendation:"+event.event_id,x.fixture.credentials.worker.accountId])).rows.length,0);
+      await x.database.query("UPDATE auth_accounts SET account_status='active' WHERE account_id=$1",[x.fixture.credentials.worker.accountId]);
+
+      const projection=(await x.database.query("SELECT * FROM platform_project_assurance_event_notification($1)",[notificationJobs[0].job_id])).rows[0];
+      assert.equal(projection.created,recipients.length);
+      const before = await storedFinalization(x);
+      await assert.rejects(interviewActions(x).submitInterviewConsoleAction(form));
+      assert.deepEqual(await storedFinalization(x),before);
+    } finally { await x.cleanup(); }
+  });
+}
+
+test("Empty 0111 rollback restores exact preceding functions and constraints; drift is refused",async()=>{
+ const x=await activeInterview();
+ try{
+  const old=(await x.database.query("SELECT platform_interview_recommendation_notification_rollback_contract() value")).rows[0].value;
+  await x.database.exec("CREATE OR REPLACE FUNCTION platform_assurance_notification_title(p_type text) RETURNS text LANGUAGE sql AS $$ SELECT 'drift'::text $$");
+  await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
+  const original=old.find(row=>row.kind==="function"&&row.reference.startsWith("platform_assurance_notification_title("));
+  const current=original.definition.replace("WHEN 'evidence.reviewed'","WHEN 'interview.recommended' THEN 'Interview recommendation submitted' WHEN 'evidence.reviewed'");
+  await x.database.exec(current);
+  await x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8"));
+  for(const item of old){
+   let rows;
+   if(item.kind==="function")rows=(await x.database.query("SELECT pg_get_functiondef($1::regprocedure) definition",[item.reference])).rows;
+   else if(item.kind==="constraint")rows=(await x.database.query("SELECT pg_get_constraintdef(oid) definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[item.table,item.name])).rows;
+   else if(item.kind==="index")rows=(await x.database.query("SELECT pg_get_indexdef($1::regclass) definition",[item.name])).rows;
+   else rows=(await x.database.query("SELECT pg_get_triggerdef(oid) definition FROM pg_trigger WHERE tgrelid=$1::regclass AND tgname=$2",[item.table,item.name])).rows;
+   assert.equal(rows[0].definition,item.definition);
+  }
+ }finally{await x.cleanup();}
 });

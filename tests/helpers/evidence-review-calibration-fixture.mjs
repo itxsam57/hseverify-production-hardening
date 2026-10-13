@@ -22,5 +22,10 @@ export async function authorizeReviewFixture(database,{taskId,verifiers,at=new D
  const binding=(await database.query("SELECT binding_id FROM evidence_review_framework_bindings WHERE task_id=$1 ORDER BY binding_sequence DESC LIMIT 1",[taskId])).rows[0];
  if(!binding)await frameworks.bind(admin,{taskId,frameworkVersionId:revision.framework_version_id,reason:"Explicit approved applicability for the representative test journey.",expectedBindingId:null},at);
  for(const verifier of verifiers)await new StaffCalibrationService(Promise.resolve(database)).record(admin,{accountId:verifier.accountId,role:"verifier",frameworkReference:revision.framework_reference,frameworkVersionId:revision.framework_version_id,status:"CURRENT",validFrom:new Date(revision.effective_from),validUntil:until,note:"Observed benchmark calibration against this exact authoritative revision."});
- return {admin,frameworkId,frameworkVersionId:revision.framework_version_id};
+ // The fixture Admin exists only to exercise the real authorized producers above.
+ // Remove its live operational authority so unrelated recipient-routing tests do not
+ // gain an extra Admin simply because calibration setup was required.
+ await database.query("DELETE FROM auth_account_roles WHERE account_id=$1 AND role='admin'",[admin.accountId]);
+ await database.query("UPDATE auth_sessions SET revoked_at=$2,revocation_reason='Calibration fixture setup complete' WHERE session_id=$1",[admin.sessionId,at.toISOString()]);
+ return {admin:{...admin,accountStatus:"inactive"},frameworkId,frameworkVersionId:revision.framework_version_id};
 }

@@ -151,7 +151,7 @@ FROM platform_notifications
 WHERE recipient_account_id = $1
   AND recipient_role = $2
   AND read_at IS NULL
-  AND notification_type IN ('assessment.funding.requested','assessment.funding.approved','interview.scheduled','interview.reminder','evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated')
+  AND notification_type IN ('assessment.funding.requested','assessment.funding.approved','interview.scheduled','interview.reminder','evidence.submitted','evidence.reviewed','evidence.additional.requested','interview.recommended','decision.recorded','credential.issued','appeal.submitted','appeal.updated')
   AND (
     ($2 = 'company' AND tenant_id = $3 AND membership_id = $4)
     OR ($2 <> 'company' AND tenant_id IS NULL AND membership_id IS NULL)

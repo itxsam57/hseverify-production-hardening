@@ -201,8 +201,13 @@ export function assertEmailDeliveryJob(job:OutboxJobRecord):EmailDeliveryOutboxJ
  if(job.jobType==="email.assurance.event"){
   const payload=normalizeAssuranceEventEmailPayload(job.payload);
   const sourceRole:Readonly<Record<AssuranceEventEmailPayload["eventType"],AuthRole|null>>={
+<<<<<<< ours
    "evidence.submitted":"worker","evidence.reviewed":"verifier","evidence.unable":"verifier","evidence.escalated":"verifier","evidence.returned":"admin","evidence.additional.requested":"verifier",
    "decision.recorded":"admin","credential.issued":null,"appeal.submitted":"worker","appeal.updated":"admin",
+=======
+   "evidence.submitted":"worker","evidence.reviewed":"verifier","evidence.additional.requested":"verifier",
+   "interview.recommended":"assessor","decision.recorded":"admin","credential.issued":null,"appeal.submitted":"worker","appeal.updated":"admin",
+>>>>>>> theirs
    "assessment.funding.requested":"worker","assessment.funding.approved":"company"
   };
   const sealed=payload.eventType==="credential.issued" && job.enqueuedBySystemComponent==="outbox-worker" && job.enqueuedByAccountId===null && job.enqueuedByRole===null && job.tenantId===null && job.membershipId===null;
