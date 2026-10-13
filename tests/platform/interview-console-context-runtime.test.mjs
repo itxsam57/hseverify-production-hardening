@@ -19,6 +19,7 @@ const { AuthAccessRepository } = loadWorkerRegistrationTs("src/lib/auth/auth-acc
 const { InterviewSchedulingService } = loadWorkerRegistrationTs("src/lib/interview/interview-scheduling-service.ts");
 const { AssessmentAttemptService } = loadWorkerRegistrationTs("src/lib/assessment-attempt/assessment-attempt-service.ts");
 const { WrittenScoringService } = loadWorkerRegistrationTs("src/lib/scoring/written-scoring-service.ts");
+const { StaffCalibrationService } = loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");
 const { createRuntimePrivateObjectStorage } = loadWorkerRegistrationTs("src/lib/secure-files/private-object-storage.ts");
 const hash = value => createHash("sha256").update(value).digest("hex");
 const id = (prefix,value) => prefix+"_"+hash(value).slice(0,24);
@@ -125,6 +126,10 @@ test("Console reads submitted pinned assessment topics and latest written revisi
       {questionType:"LONG_TEXT",prompt:"Explain the stop-work decision."}
     ]);
     await x.db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode) VALUES($1,'CONTROLLED_REVIEW')",[attempt.blueprintVersionId]);
+    const pinnedFramework=(await x.db.query("SELECT framework_id FROM assessment_blueprint_versions WHERE blueprint_version_id=$1",[attempt.blueprintVersionId])).rows[0].framework_id;
+    await x.db.query(`INSERT INTO assurance_case_policy_snapshots(snapshot_id,case_id,tenant_id,framework_id,policy_id,global_policy_version_id,policy_source,effective_value_json,reference_time)
+      VALUES($1,$2,$3,$4,$5,$6,'GLOBAL','{\"pass_mark\":80}'::jsonb,$7)`,
+      [id("policy_snapshot","console-assessment"),attempt.caseId,attempt.tenantId,pinnedFramework,id("policy","console-assessment"),id("policy_version","console-assessment"),ATTEMPT_NOW_DATE.toISOString()]);
     const assessment=new AssessmentAttemptService(x.db,requestTime=>requestTime);
     const now=ATTEMPT_NOW_DATE;
     await assessment.submitCurrentAnswer(worker,{attemptId:attempt.attemptId,position:1,answer:"Bravo"},now);
@@ -151,9 +156,16 @@ test("Console reads submitted pinned assessment topics and latest written revisi
     assert(!JSON.stringify(context).includes("privateDetectorDetail"));
     const review=(await x.db.query("SELECT review_id,reviewer_account_id FROM written_score_reviews WHERE attempt_id=$1 AND status='DRAFT'",[attempt.attemptId])).rows[0];
     assert(review);
-    const scoring=new WrittenScoringService(x.db);
-    await scoring.saveDraftDecision({reviewId:review.review_id,reviewerAccountId:review.reviewer_account_id,score:80,decision:"PASS",reason:"Explicitly shared final written assessment reason."});
-    await scoring.finalize({reviewId:review.review_id,reviewerAccountId:review.reviewer_account_id,assessorVisible:true});
+    const reviewer=await principal(x.db,x.credentials.verifier,"verifier");
+    assert.equal(reviewer.accountId,review.reviewer_account_id);
+    const admin=await principal(x.db,x.credentials.admin,"admin");
+    const framework=(await x.db.query("SELECT frameworks.framework_reference FROM assessment_blueprint_versions versions JOIN assurance_frameworks frameworks ON frameworks.framework_id=versions.framework_id WHERE versions.blueprint_version_id=$1",[attempt.blueprintVersionId])).rows[0];
+    await new StaffCalibrationService(Promise.resolve(x.db)).record(admin,{accountId:reviewer.accountId,role:"verifier",frameworkReference:framework.framework_reference,status:"CURRENT",validFrom:ATTEMPT_NOW_DATE,validUntil:new Date("2099-01-01T00:00:00.000Z"),note:"Current calibration for the exact pinned written assessment framework."});
+    const scoring=new WrittenScoringService(x.db,reviewer);
+    await scoring.addRubricMark({reviewId:review.review_id,reviewerAccountId:reviewer.accountId,tenantId:attempt.tenantId,criterion:"Q2:C0",mark:80,reason:"Isolation controls meet the pinned rubric criterion.",expectedRevision:0});
+    await scoring.addRubricMark({reviewId:review.review_id,reviewerAccountId:reviewer.accountId,tenantId:attempt.tenantId,criterion:"Q3:C0",mark:80,reason:"Stop-work reasoning meets the pinned rubric criterion.",expectedRevision:1});
+    await scoring.saveDraftDecision({reviewId:review.review_id,reviewerAccountId:reviewer.accountId,tenantId:attempt.tenantId,expectedRevision:2,decision:"PASS",reason:"Explicitly shared final written assessment reason."});
+    await scoring.finalize({reviewId:review.review_id,reviewerAccountId:reviewer.accountId,tenantId:attempt.tenantId,assessorVisible:true});
     assert((await x.service.load(x.actor,request.interviewRequestId)).comments.some(c=>c.reason==="Explicitly shared final written assessment reason."));
   } finally {await x.close();}
 });
