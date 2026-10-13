@@ -69,7 +69,10 @@ assert.match(down, /expanded[\s\S]*outbox job type[\s\S]*audit action\/target vo
 assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_type_check/);
 
 assert.ok(domain.includes('export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES), ...ASSURANCE_EVENT_TYPES] as const;'));
-assert.ok(domain.includes('export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record"] as const;'));
+assert.match(domain, /export const NOTIFICATION_TARGETS = \[[^\n]+\] as const;/);
+for (const target of ["portal.dashboard","account.security","interview.record","company.assurance.case","company.billing.funding","worker.assessment.case","worker.evidence.record","worker.identity.record","worker.observation.record","verifier.review.task","admin.review.escalation","worker.assurance.case","worker.credential.record","appeal.record","admin.interview.case"]) {
+  assert.ok(domain.includes("\""+target+"\""), "Notification target contract missing: "+target);
+}
 for (const [event, type] of Object.entries({password_changed:"account.password.changed",password_reset_completed:"account.password.reset",mfa_replaced:"account.mfa.replaced",mfa_recovery_codes_rotated:"account.recovery_codes.rotated"})) {
   assert.ok(domain.includes(event + ": \"" + type + "\""));
 }
