@@ -9,7 +9,7 @@ const outbox = await import(
 );
 
 test("email delivery vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(email.EMAIL_DELIVERY_TYPES, ["platform.foundation.email", "interview.scheduled", "interview.reminder", "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated", "assessment.funding.requested", "assessment.funding.approved"]);
+  assert.deepEqual(email.EMAIL_DELIVERY_TYPES, ["platform.foundation.email", "interview.scheduled", "interview.reminder", "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated", "assessment.funding.requested", "assessment.funding.approved"]);
   assert.deepEqual(email.EMAIL_DELIVERY_STATUSES, [
     "queued",
     "processing",
