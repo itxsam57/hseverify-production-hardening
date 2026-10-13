@@ -70,7 +70,7 @@ test("Appeal services reject owner, original decision actor and unauthorized acc
    const response=await route.POST(new Request("https://example.test/api/credentials/appeals/"+appeal.appealId,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({status:"accepted",reason:"Must reject independent conflict",outcomeAction:"reassessment"})}),{params:Promise.resolve({appealId:appeal.appealId})});
    assert.equal(response.status,403);
    assert.deepEqual(await response.json(),{error:"appeal_review_forbidden"});
-   const form=new FormData();for(const [key,value] of Object.entries({appealId:appeal.appealId,status:"accepted",reason:"Must reject independent conflict",outcomeAction:"reassessment"}))form.set(key,value);
+   const form=new FormData();for(const [key,value] of Object.entries({appealId:appeal.appealId,expectedVersion:String(appeal.version),status:"accepted",reason:"Must reject independent conflict",outcomeAction:"reassessment"}))form.set(key,value);
    await assert.rejects(action.reviewCredentialAppealAction(form),error=>error.location==="/admin/appeals?error=independence");
    assert.equal(await snapshot(),before,id+" route/action must have no side effects");
 
