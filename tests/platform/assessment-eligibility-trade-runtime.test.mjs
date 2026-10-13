@@ -3,6 +3,7 @@ import test from "node:test";
 import { assessmentEligibilityWaitingFixture } from "../helpers/assessment-eligibility-policy-fixture.mjs";
 import { seedEligibilityTradeEvidence, produceEligibilityTradeSkill, assessmentEligibilityTradeFixture } from "../helpers/assessment-eligibility-trade-fixture.mjs";
 import { fundingPrincipal, assessmentFundingFixture } from "../helpers/assessment-funding-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
 const {EffectivePolicyService}=loadWorkerRegistrationTs("src/lib/policy/effective-policy-service.ts");
@@ -23,6 +24,7 @@ test("Published verified trade requirement denies an old generic approval of the
   const submitted=await evidence.submit(fixture.worker,saved.recordId,saved.currentVersion.revision);
   const reviews=new EvidenceReviewService(database),task=await reviews.queueIndependentWorkerEvidence(fixture.worker,saved.recordId,now);
   const verifier=await fundingPrincipal(database,fixture.credentials.verifier,"verifier");
+  await authorizeReviewFixture(database,{taskId:task.taskId,verifiers:[verifier],at:now});
   await reviews.claim(verifier,task.taskId,now);
   await reviews.decide(verifier,task.taskId,"APPROVED","Evidence was approved without separate trade confirmation.",now);
   assert.equal(submitted.currentVersion.details.assuranceStatus,"self_declared");

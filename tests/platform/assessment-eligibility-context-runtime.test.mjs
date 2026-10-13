@@ -4,6 +4,7 @@ import { assessmentEligibilityQualificationFixture } from "../helpers/assessment
 import { seedEligibilityCertificate } from "../helpers/assessment-eligibility-certificate-fixture.mjs";
 import { seedEligibilityResidenceIdentity } from "../helpers/assessment-eligibility-residence-fixture.mjs";
 import { fundingPrincipal } from "../helpers/assessment-funding-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { assessmentEligibilityWaitingFixture } from "../helpers/assessment-eligibility-policy-fixture.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
@@ -33,6 +34,7 @@ async function produceEvidence(database,fixture,kind,details,now,approve=true) {
  const submitted=await evidence.submit(fixture.worker,draft.recordId,saved.currentVersion.revision);
  const reviews=new EvidenceReviewService(database), task=await reviews.queueIndependentWorkerEvidence(fixture.worker,draft.recordId,now);
  const verifier=await fundingPrincipal(database,fixture.credentials.verifier,"verifier");
+ await authorizeReviewFixture(database,{taskId:task.taskId,verifiers:[verifier],at:now});
  if(approve){await reviews.claim(verifier,task.taskId,now);await reviews.decide(verifier,task.taskId,"APPROVED","Current evidence version and attributable facts were verified.",now);}
  return {evidence,submitted,task,verifier,reviews};
 }
@@ -120,6 +122,7 @@ test("Published residence requirements use verified frozen identity details and 
   const decision=()=>evaluateWorkerAssessmentHistory(database,{workerAccountId:worker.accountId,frameworkId:framework,policyValues:values,now});
   assert.equal((await decision()).eligibilityStatus,"JURISDICTION_REQUIRED","Submitted personal details alone are not verified authority");
   const reviews=new EvidenceReviewService(database),task=await reviews.queueIndependentIdentity(worker,now);
+  await authorizeReviewFixture(database,{taskId:task.taskId,verifiers:[verifier],at:now});
   await reviews.claim(verifier,task.taskId,now);
   await reviews.decide(verifier,task.taskId,"APPROVED","Submitted frozen identity and country of residence were verified.",now);
   assert.equal((await applications.listOfferings(worker,now)).find(row=>row.catalogueVersionId===fixture.catalogue).eligibilityStatus,"AVAILABLE");
@@ -139,6 +142,7 @@ test("An actual terminal producer between offering read and Worker application t
  const database=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:fixture.environment.HSE_PGLITE_DATA_DIR});
  try{
   const now=new Date(),reviews=new EvidenceReviewService(database),verifier=await fundingPrincipal(database,fixture.credentials.verifier,"verifier");
+  await authorizeReviewFixture(database,{taskId:fixture.qualificationTaskId,verifiers:[verifier],at:now});
   await reviews.claim(verifier,fixture.qualificationTaskId,now);
   await reviews.decide(verifier,fixture.qualificationTaskId,"APPROVED","Current framework qualification was verified.",now);
   assert.equal((await new WorkerAssessmentApplicationService(database).listOfferings(fixture.worker,now)).find(row=>row.catalogueVersionId===fixture.qualificationCatalogue).eligibilityStatus,"AVAILABLE","Original offering is eligible before the actual terminal producer interleaves");

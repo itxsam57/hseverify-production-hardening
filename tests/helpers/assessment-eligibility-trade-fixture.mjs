@@ -22,6 +22,7 @@ export async function seedEligibilityTradeEvidence(database,worker,record,now) {
 
 import { assessmentEligibilityWaitingFixture } from "./assessment-eligibility-policy-fixture.mjs";
 import { fundingPrincipal } from "./assessment-funding-fixture.mjs";
+import { authorizeReviewFixture } from "./evidence-review-calibration-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { loadWorkerRegistrationTs } from "./worker-registration-runtime-loader.mjs";
 const {WorkerEvidenceService}=loadWorkerRegistrationTs("src/lib/worker-evidence/worker-evidence-service.ts");
@@ -37,6 +38,7 @@ export async function produceEligibilityTradeSkill(database,fixture,now,{related
  const submitted=await evidence.submit(fixture.worker,saved.recordId,saved.currentVersion.revision);
  const reviews=new EvidenceReviewService(database),task=await reviews.queueIndependentWorkerEvidence(fixture.worker,saved.recordId,now);
  const verifier=await fundingPrincipal(database,fixture.credentials.verifier,"verifier");
+ await authorizeReviewFixture(database,{taskId:task.taskId,verifiers:[verifier],at:now});
  if(approve){await reviews.claim(verifier,task.taskId,now);await reviews.decide(verifier,task.taskId,"APPROVED",
   "The exact submitted skill trade mapping was checked against its attached evidence.",now,{confirmTrade});}
  return {evidence,submitted,reviews,task,verifier,fileId};

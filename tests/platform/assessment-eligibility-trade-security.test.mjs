@@ -3,6 +3,7 @@ import test from "node:test";
 import { createHash } from "node:crypto";
 import { assessmentEligibilityTradeFixture, produceEligibilityTradeSkill } from "../helpers/assessment-eligibility-trade-fixture.mjs";
 import { fundingPrincipal } from "../helpers/assessment-funding-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
 const {EvidenceReviewService}=loadWorkerRegistrationTs("src/lib/review/evidence-review-service.ts");
@@ -24,7 +25,7 @@ test("Explicit trade confirmation rejects forged ownership, assignment, source a
   await assert.rejects(()=>reviews.findAssignedSkill(fixture.worker,fixture.tradeTaskId),{name:"EvidenceReviewAccessError"});
   await database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'verifier')",[fixture.credentials.admin.accountId]);
   const foreign=await fundingPrincipal(database,fixture.credentials.admin,"verifier");
-  assert.equal(await reviews.findAssignedSkill(foreign,fixture.tradeTaskId),null);
+  await assert.rejects(()=>reviews.findAssignedSkill(foreign,fixture.tradeTaskId),{name:"EvidenceReviewAccessError"});
   await assert.rejects(()=>reviews.decide(foreign,fixture.tradeTaskId,"APPROVED","Foreign assignee must not confirm the owned task.",now,{confirmTrade:true}),{name:"EvidenceReviewAccessError"});
   const sql=`INSERT INTO evidence_review_decisions(decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at,
     verified_trade,verification_method,verification_source_file_id) VALUES($1,$2,$3,$4,'APPROVED',$5,$6,$7,$8,$9)`;
@@ -43,9 +44,10 @@ test("Explicit trade confirmation rejects forged ownership, assignment, source a
   // A Worker with a valid separate Verifier role still cannot verify their own trade evidence.
   await database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'verifier')",[fixture.worker.accountId]);
   const self=await fundingPrincipal(database,fixture.credentials.worker,"verifier");
-  await reviews.claim(self,another.task.taskId,now);
-  assert.equal(await reviews.findAssignedSkill(self,another.task.taskId),null);
-  await assert.rejects(()=>reviews.decide(self,another.task.taskId,"APPROVED","Self review must not establish verified trade authority.",now,{confirmTrade:true}),/explicit trade/i);
+  await authorizeReviewFixture(database,{taskId:another.task.taskId,verifiers:[self],at:now});
+  await assert.rejects(()=>reviews.claim(self,another.task.taskId,now),{name:"EvidenceReviewAccessError"});
+  await assert.rejects(()=>reviews.findAssignedSkill(self,another.task.taskId),{name:"EvidenceReviewAccessError"});
+  await assert.rejects(()=>reviews.decide(self,another.task.taskId,"APPROVED","Self review must not establish verified trade authority.",now,{confirmTrade:true}),{name:"EvidenceReviewAccessError"});
   const stale=await produceEligibilityTradeSkill(database,fixture,now);
   await reviews.claim(verifier,stale.task.taskId,now);
   await stale.evidence.startRevision(fixture.worker,stale.submitted.recordId,stale.submitted.currentVersion.revision);
