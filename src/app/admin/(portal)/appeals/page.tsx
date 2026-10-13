@@ -17,7 +17,9 @@ export default async function AdminCredentialAppealsPage({
   const appeals = await new CredentialAppealsRepository().listAll();
   const message = params.status === "updated" ? "Appeal review recorded." : null;
   const error =
-    params.error === "status"
+    params.error === "conflict"
+      ? "Appeal history changed. Reload the appeal before recording a review."
+      : params.error === "status"
       ? "Select a valid appeal review status."
       : params.error === "reason"
         ? "A reasoned review outcome of at least 10 characters is required."
@@ -71,6 +73,7 @@ export default async function AdminCredentialAppealsPage({
               {appeal.status === "submitted" || appeal.status === "under_review" ? (
                 <form action={reviewCredentialAppealAction} className="form-grid" aria-label={"Review " + appeal.appealId}>
                   <input type="hidden" name="appealId" value={appeal.appealId} />
+                  <input type="hidden" name="expectedVersion" value={appeal.version} />
                   <label>
                     Review status
                     <select name="status" defaultValue={appeal.status === "submitted" ? "under_review" : "accepted"}>

@@ -25,6 +25,11 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
   });
   const appealId = text(formData, "appealId");
   const status = text(formData, "status");
+  const versionText = text(formData, "expectedVersion");
+  const expectedVersion = Number(versionText);
+  if (!/^[1-9]\d*$/.test(versionText) || !Number.isSafeInteger(expectedVersion) || expectedVersion > 2147483647) {
+    redirect("/admin/appeals?error=conflict");
+  }
   const reason = text(formData, "reason");
   const outcomeAction = text(formData, "outcomeAction") as AppealOutcomeAction;
 
@@ -44,6 +49,9 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
   const repository = new CredentialAppealsRepository();
   const appeal = await repository.find(appealId);
   if (!appeal) redirect("/admin/appeals?error=missing");
+  if (appeal.version !== expectedVersion || (appeal.status !== "submitted" && appeal.status !== "under_review")) {
+    redirect("/admin/appeals?error=conflict");
+  }
 
   try {
     await new CredentialAppealsService().reviewOutcome(appeal, {
@@ -54,6 +62,7 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
     });
   } catch (error) {
     if (error instanceof CredentialAppealReviewAuthorizationError) redirect("/admin/appeals?error=independence");
+    if (error instanceof Error && error.message === "Appeal update conflict.") redirect("/admin/appeals?error=conflict");
     if (error instanceof CredentialRenewalInputError) redirect("/admin/appeals?error=renewal");
     throw error;
   }
