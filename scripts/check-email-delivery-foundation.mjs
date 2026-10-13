@@ -184,7 +184,7 @@ console.log(
   "Durable email queue, lease-safe attempt history, real local/test delivery path and scoped read contracts passed."
 );
 
-const assuranceTypes = ["evidence.submitted","evidence.reviewed","evidence.additional.requested","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
+const assuranceTypes = ["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
 const currentOutboxDomain = await readFile(resolve("src/lib/outbox/outbox-domain.ts"),"utf8");
 const assuranceTypeMatch=/ASSURANCE_EVENT_TYPES = \[([\s\S]*?)\] as const/.exec(currentOutboxDomain);
 assert.ok(assuranceTypeMatch);
