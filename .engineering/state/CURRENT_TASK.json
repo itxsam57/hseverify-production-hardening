@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "task_id": "WORKFLOW-001",
-  "stage": "Live-media timer fixture repair verification",
+  "task_id": "VERIFIER-013",
+  "stage": "BUILDING_AND_REVIEWING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "branch": "qa/interview-email-20261007",
-  "worktree": "/home/ubuntu/work/hseverify-current-audit",
+  "branch": "build/verifier-completion-20261012",
+  "worktree": "/home/ubuntu/work/hseverify-verifier-completion-20261012",
   "last_verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
   "canonical_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "requirements": [
@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "Exact f237 full FAIL preserved (fixed1100ms active timer unchanged); no PG/CI/publication/promotion. Actual Chromium diagnostic confirms running/resumed advance after hydration. Narrow bounded numeric timer fixture repair passes entire real WebRTC/private evidence/draft/history journey1/1 and lint; independent review scoped ACCEPT with matching source hash. Full candidate remains unverified.",
+  "last_verified_action": "Private draft native5/5 plus current combined review24/24 passed; independent Worker->Verifier browser with draft saves passed; actual qualification neutral and experience escalation/Admin return browser passed. Release candidate7a7e675 full gate still running in separate worktree.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -59,14 +59,14 @@
     ".autopilot/artifacts/20261012-live-media-timer-repair.json",
     ".autopilot/artifacts/20261012-live-media-timer-independent-review.json"
   ],
-  "next_action": "Run fresh clean exact-SHA full verification plus both actual PostgreSQL gates after normal guarded timer-fixture commit; publish QA branch/PR only on complete exact gates PASS, inspect hosted CI, then data-preserving preview promotion.",
+  "next_action": "Finish neutral notifications/replay/protected identity correction browser, re-review and verify; integrate isolated calibration and concern builder results after accepted evidence",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
-    "167 unverified and15 partial expanded scenarios",
-    "Live provider delivery/realPG contention remain unverified",
-    "NonSandbox recovery returns token without flow/challenge; actual nextRED preserved",
-    "Broader privacy/materialhandoffs/deployment workflow breadth"
+    "Calibration binding builder active",
+    "Concern resolution builder active",
+    "Neutral notification projection still missing",
+    "Broader Masterplan ledger reconciliation and live provider configuration remain unverified"
   ],
   "awaiting_owner": false,
   "auto_resume": true,

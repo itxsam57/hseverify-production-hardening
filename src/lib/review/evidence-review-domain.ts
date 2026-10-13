@@ -3,7 +3,7 @@ import type { AuthorizationPrincipal } from "../authorization/authorization-cont
 
 export const EVIDENCE_REVIEW_KINDS=["identity","qualification","experience","employment","skill","supervisor_observation"] as const;
 export const EVIDENCE_REVIEW_OUTCOMES=["APPROVED","REJECTED","CHANGES_REQUESTED"] as const;
-export const EVIDENCE_REVIEW_STATUSES=["QUEUED","ASSIGNED","APPROVED","REJECTED","CHANGES_REQUESTED","SUPERSEDED","CANCELLED"] as const;
+export const EVIDENCE_REVIEW_STATUSES=["QUEUED","ASSIGNED","APPROVED","REJECTED","CHANGES_REQUESTED","SUPERSEDED","CANCELLED","UNABLE_TO_VERIFY","ESCALATED"] as const;
 export const EVIDENCE_REVIEW_READ_PERMISSION="verification.assigned.read" as const;
 export const EVIDENCE_REVIEW_DECIDE_PERMISSION="verification.assigned.decide" as const;
 export type EvidenceReviewKind=(typeof EVIDENCE_REVIEW_KINDS)[number];

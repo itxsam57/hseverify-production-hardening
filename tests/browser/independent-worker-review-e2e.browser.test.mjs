@@ -171,10 +171,28 @@ async function decideQueueItem(page, baseUrl, kind, outcome, reason) {
   await page.getByRole("heading", { name: "Evidence review" }).waitFor();
   await page.getByRole("button", { name: "Claim review" }).click();
   await page.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
-  await page.getByLabel("Decision").selectOption(outcome);
-  await page.getByLabel("Reason", { exact: true }).fill(reason);
-  await page.getByRole("button", { name: "Finalize review" }).click();
-  await page.getByText(outcome, { exact: true }).waitFor({ timeout: 15_000 });
+  const privateNotes=`Private checks for ${kind}: issuer response is being verified.`;
+  await page.getByLabel("Private draft notes",{exact:true}).fill(privateNotes);
+  await Promise.all([
+    page.waitForResponse(response=>response.request().method()==="POST"&&response.url().includes("/verifier/reviews/")),
+    page.getByRole("button",{name:"Save draft notes",exact:true}).click()
+  ]);
+  await page.reload({waitUntil:"domcontentloaded"});
+  assert.equal(await page.getByLabel("Private draft notes",{exact:true}).inputValue(),privateNotes);
+  assert.equal(await page.locator('input[name="draftRevision"]').inputValue(),"1");
+  await page.getByText("ASSIGNED",{exact:true}).waitFor();
+  if(outcome==="UNABLE_TO_VERIFY"){
+    await page.getByLabel("Unable to verify reason",{exact:true}).fill(reason);
+    await page.getByLabel("Attempted verification methods",{exact:true}).fill("Contacted the issuing authority and checked available original records.");
+    await page.getByLabel("Verification limitations",{exact:true}).fill("The issuer could not confirm the proposed details at this time.");
+    await page.getByRole("button",{name:"Record unable to verify",exact:true}).click();
+    await page.getByRole("heading",{name:"UNABLE TO VERIFY",exact:true}).waitFor();
+  }else{
+    await page.getByLabel("Decision").selectOption(outcome);
+    await page.getByLabel("Reason", { exact: true }).fill(reason);
+    await page.getByRole("button", { name: "Finalize review" }).click();
+    await page.getByText(outcome, { exact: true }).waitFor({ timeout: 15_000 });
+  }
 }
 
 test(
@@ -452,7 +470,7 @@ test(
             await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
 
 
-            for (const outcome of ["REJECTED", "CHANGES_REQUESTED"]) {
+            for (const outcome of ["REJECTED", "CHANGES_REQUESTED", "UNABLE_TO_VERIFY"]) {
               console.log("SCENARIO: identity correction -> " + outcome + " preserves verified parent");
               await worker.getByLabel("Reason for correction").fill("Request another correction for independent review while retaining the approved identity.");
               await worker.getByRole("button", {name:"Start correction version"}).click();
@@ -464,7 +482,7 @@ test(
               await worker.getByText("Verified", {exact:true}).first().waitFor();
               assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
               await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
-              await worker.getByText("Latest correction: rejected", {exact:true}).waitFor();
+              await worker.getByText(outcome==="UNABLE_TO_VERIFY"?"Latest correction: unable to verify":"Latest correction: rejected", {exact:true}).waitFor();
             }
             await worker.goto(`${baseUrl}/worker/evidence`);
 
@@ -573,7 +591,7 @@ test(
           accumulator.set(row.evidence_kind, current);
           return accumulator;
         }, new Map());
-        assert.deepEqual([...statusesByKind.get("identity")].sort(), (process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true" ? ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "CHANGES_REQUESTED", "REJECTED"] : ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "REJECTED"]));
+        assert.deepEqual([...statusesByKind.get("identity")].sort(), (process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true" ? ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "CHANGES_REQUESTED", "REJECTED", "UNABLE_TO_VERIFY"] : ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "REJECTED", "UNABLE_TO_VERIFY"]));
         for (const kind of ["qualification", "experience", "skill", "employment"]) {
           const statuses = statusesByKind.get(kind);
           for (const outcome of ["APPROVED", "REJECTED", "CHANGES_REQUESTED"]) assert.ok(statuses.includes(outcome), kind + " missing " + outcome);

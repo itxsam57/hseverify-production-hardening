@@ -44,6 +44,7 @@ export default async function AdminOperationsPage({
       <nav aria-label="Admin operational areas">
         <ul>
           <li><a href="/admin/staff">Users</a></li>
+          <li><Link href="/admin/operations/review-escalations">Evidence review escalations</Link></li>
           <li><Link href="/admin/company-verifications">Companies and cases</Link></li>
           <li><a href="/admin/frameworks">Rules and policy</a></li>
           <li><a href="/admin/question-bank">Calibration inputs</a></li>

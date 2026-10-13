@@ -13,6 +13,9 @@ import {
 } from "../authorization/authorization-domain";
 
 export const AUDIT_ACTIONS = [
+  "verification.draft.saved",
+  "verification.resolution.recorded",
+  "verification.escalation.returned",
   "public_inquiry.received",
   "authentication.registration.started",
   "authentication.otp.issued",

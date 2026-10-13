@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { createIdentifier } from "../auth/auth-domain";
+import { evaluatePlatformPermission } from "../authorization/authorization-domain";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import {
   deriveTrustedTenantScope,
@@ -270,6 +271,140 @@ export class EvidenceReviewService {
     });
   }
 
+  private async draftTask(database: DatabaseClient, principal: AuthorizationPrincipal, taskId: string, writing: boolean): Promise<TaskRow> {
+    await liveVerifier(database, principal);
+    const result = await database.query<TaskRow>(
+      `SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE task_id=$1
+       AND assigned_verifier_account_id=$2 AND worker_account_id<>$2 FOR UPDATE`,
+      [taskId, principal.accountId]
+    );
+    const row=result.rows[0];
+    if(!row) throw new EvidenceReviewAccessError();
+    const conflict=await database.query("SELECT 1 FROM evidence_review_conflicts WHERE task_id=$1 AND verifier_account_id=$2",[taskId,principal.accountId]);
+    if(conflict.rows[0]) throw new EvidenceReviewAccessError();
+    if(writing && (row.task_status!=="ASSIGNED" || !(await this.sourceIsCurrent(database,row)))) throw new EvidenceReviewConflictError();
+    return row;
+  }
+
+  async findDraftNotes(principal: AuthorizationPrincipal, taskId: string): Promise<Readonly<{revision:number;notes:string;savedAt:string}>|null> {
+    return this.database.transaction(async database=>{
+      await this.draftTask(database,principal,taskId,false);
+      const result=await database.query<{revision:number;notes:string;saved_at:string|Date}>(
+        "SELECT revision,notes,saved_at FROM evidence_review_draft_revisions WHERE task_id=$1 AND verifier_account_id=$2 ORDER BY revision DESC LIMIT 1",[taskId,principal.accountId]);
+      const row=result.rows[0];return row?Object.freeze({revision:row.revision,notes:row.notes,savedAt:iso(row.saved_at)}):null;
+    });
+  }
+
+  async saveDraftNotes(principal: AuthorizationPrincipal, taskId: string, notesValue: unknown, expectedRevision: unknown, now=new Date()): Promise<Readonly<{revision:number;notes:string;savedAt:string}>> {
+    if(typeof notesValue!=="string" || notesValue.trim().length<5 || notesValue.trim().length>4000 ||
+      typeof expectedRevision!=="number" || !Number.isSafeInteger(expectedRevision) || expectedRevision<0 || expectedRevision>=2147483647) throw new EvidenceReviewInputError();
+    const notes=notesValue.trim();
+    return this.database.transaction(async database=>{
+      await this.draftTask(database,principal,taskId,true);
+      const current=await database.query<{revision:number}>("SELECT revision FROM evidence_review_draft_revisions WHERE task_id=$1 AND verifier_account_id=$2 ORDER BY revision DESC LIMIT 1",[taskId,principal.accountId]);
+      if((current.rows[0]?.revision??0)!==expectedRevision) throw new EvidenceReviewConflictError("Draft notes changed; reload before saving.");
+      const revision=expectedRevision+1;
+      await database.query("INSERT INTO evidence_review_draft_revisions(task_id,verifier_account_id,revision,notes,saved_at) VALUES($1,$2,$3,$4,$5)",[taskId,principal.accountId,revision,notes,now.toISOString()]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{
+        action:"verification.draft.saved",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision}
+      });
+      return Object.freeze({revision,notes,savedAt:now.toISOString()});
+    });
+  }
+
+  private async liveEscalationAdmin(database:DatabaseClient,principal:AuthorizationPrincipal):Promise<void>{
+    if(principal.activeRole!=="admin" || principal.accountStatus!=="active" || principal.tenantMembership!==null ||
+      !evaluatePlatformPermission({role:principal.activeRole,permission:"platform.operations.manage"}).allowed) throw new EvidenceReviewAccessError();
+    const result=await database.query(`SELECT 1 FROM auth_sessions sessions JOIN auth_accounts accounts ON accounts.account_id=sessions.account_id
+      JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role='admin'
+      WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role='admin' AND sessions.revoked_at IS NULL
+      AND sessions.expires_at>CURRENT_TIMESTAMP AND accounts.account_status='active' FOR UPDATE OF sessions,accounts`,[principal.sessionId,principal.accountId]);
+    if(!result.rows[0]) throw new EvidenceReviewAccessError();
+  }
+
+  async findResolutionHistory(principal:AuthorizationPrincipal,taskId:string):Promise<readonly Readonly<{revision:number;outcome:string;reason:string;attemptedMethods:string|null;limitations:string|null;destination:string|null}>[]>{
+    return this.database.transaction(async database=>{
+      await this.draftTask(database,principal,taskId,false);
+      const result=await database.query<{revision:number;outcome:string;reason:string;attempted_methods:string|null;limitations:string|null;destination:string|null}>("SELECT revision,outcome,reason,attempted_methods,limitations,destination FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision",[taskId]);
+      return Object.freeze(result.rows.map(row=>Object.freeze({revision:row.revision,outcome:row.outcome,reason:row.reason,attemptedMethods:row.attempted_methods,limitations:row.limitations,destination:row.destination})));
+    });
+  }
+
+  private async reviewBlocker(database:DatabaseClient,caseId:string):Promise<TaskRow|null>{
+    const result=await database.query<TaskRow>(`SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE case_id=$1 AND task_status NOT IN ('APPROVED','SUPERSEDED','CANCELLED')
+      ORDER BY CASE task_status WHEN 'REJECTED' THEN 0 WHEN 'ESCALATED' THEN 1 WHEN 'UNABLE_TO_VERIFY' THEN 2 WHEN 'CHANGES_REQUESTED' THEN 2 ELSE 3 END,created_at,task_id`,[caseId]);
+    for(const candidate of result.rows)if(await this.sourceIsCurrent(database,candidate))return candidate;
+    return null;
+  }
+
+  private reviewBlockerRoute(row:TaskRow):{status:string;owner:string|null;nextAction:string|null}{
+    if(row.task_status==="REJECTED")return {status:"Rejected",owner:null,nextAction:null};
+    if(row.task_status==="ESCALATED")return {status:"Review pending",owner:"admin",nextAction:"Admin must review the reasoned evidence escalation."};
+    if(row.task_status==="UNABLE_TO_VERIFY")return {status:"Evidence pending",owner:"worker",nextAction:"The evidence could not be verified; provide further supporting evidence."};
+    if(row.task_status==="CHANGES_REQUESTED")return {status:"Evidence pending",owner:"worker",nextAction:"Correct the reviewed evidence and submit a new version."};
+    return {status:"Review pending",owner:"reviewer",nextAction:"Wait for the remaining evidence review tasks."};
+  }
+
+  private async recordResolutionCase(database:DatabaseClient,principal:AuthorizationPrincipal,row:TaskRow,now:Date):Promise<void>{
+    if(!row.case_id||!row.tenant_id)return;
+    const old=await database.query<{case_status:string}>("SELECT case_status FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 AND worker_account_id=$3 FOR UPDATE",[row.case_id,row.tenant_id,row.worker_account_id]);
+    if(!old.rows[0])throw new EvidenceReviewAccessError();
+    const blocker=await this.reviewBlocker(database,row.case_id);
+    const route=blocker?this.reviewBlockerRoute(blocker):{status:"Review pending",owner:"reviewer",nextAction:"Review the returned evidence escalation."};
+    await database.query("UPDATE assurance_cases SET case_status=$3,owner_kind=$4,next_action=$5,updated_at=$6,closed_at=CASE WHEN $3='Rejected' THEN COALESCE(closed_at,$6) ELSE closed_at END WHERE case_id=$1 AND tenant_id=$2",[row.case_id,row.tenant_id,route.status,route.owner,route.nextAction,now.toISOString()]);
+    await database.query(`INSERT INTO assurance_case_timeline_events(timeline_event_id,tenant_id,order_id,case_id,event_type,from_status,to_status,owner_kind,next_action,actor_account_id,actor_role,occurred_at)
+      SELECT $1,tenant_id,order_id,case_id,'evidence_review_resolution',$2,$3,$4,$5,$6,$7,$8 FROM assurance_cases WHERE case_id=$9`,[createIdentifier("assurance_event"),old.rows[0].case_status,route.status,route.owner,route.nextAction,principal.accountId,principal.activeRole,now.toISOString(),row.case_id]);
+  }
+
+  async resolveReview(principal:AuthorizationPrincipal,taskId:string,input:{expectedRevision:unknown;outcome:unknown;reason:unknown;attemptedMethods?:unknown;limitations?:unknown;destination?:unknown},now=new Date()):Promise<void>{
+    if(input.outcome!=="UNABLE_TO_VERIFY" && input.outcome!=="ESCALATED") throw new EvidenceReviewInputError();
+    if(typeof input.expectedRevision!=="number" || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision<0 || input.expectedRevision>=2147483647)throw new EvidenceReviewInputError();
+    const outcome=input.outcome,reason=normalizeReason(input.reason);
+    const methods=outcome==="UNABLE_TO_VERIFY"?normalizeReason(input.attemptedMethods):null;
+    const limitations=outcome==="UNABLE_TO_VERIFY"?normalizeReason(input.limitations):null;
+    if(outcome==="ESCALATED" && input.destination!=="admin") throw new EvidenceReviewInputError("Choose the authorized Admin destination.");
+    await this.database.transaction(async database=>{
+      const row=await this.draftTask(database,principal,taskId,true);
+      const last=await database.query<{revision:number}>("SELECT revision FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
+      if((last.rows[0]?.revision??0)!==input.expectedRevision)throw new EvidenceReviewConflictError("Review history changed; reload before recording an outcome.");
+      const revision=(last.rows[0]?.revision??0)+1;
+      await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,attempted_methods,limitations,destination,occurred_at)
+        VALUES($1,$2,$3,$4,$5,'verifier',$6,$7,$8,$9,$10,$11)`,[createIdentifier("review_resolution"),taskId,row.source_version_id,revision,principal.accountId,outcome,reason,methods,limitations,outcome==="ESCALATED"?"admin":null,now.toISOString()]);
+      await database.query("UPDATE evidence_review_tasks SET task_status=$2,decided_at=$3,updated_at=$3 WHERE task_id=$1",[taskId,outcome,now.toISOString()]);
+      if(outcome==="UNABLE_TO_VERIFY" && row.evidence_kind==="identity")await this.applyIndependentDecision(database,row,"UNABLE_TO_VERIFY",now);
+      await this.recordResolutionCase(database,principal,row,now);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.resolution.recorded",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision,resolution:outcome,destination:outcome==="ESCALATED"?"admin":null}});
+    });
+  }
+
+  async listEscalations(principal:AuthorizationPrincipal):Promise<readonly Readonly<EvidenceReviewTask&{reason:string;revision:number}>[]>{
+    return this.database.transaction(async database=>{
+      await this.liveEscalationAdmin(database,principal);
+      const result=await database.query<TaskRow&{reason:string;revision:number}>(`SELECT tasks.*,latest.reason,latest.revision FROM evidence_review_tasks tasks
+        JOIN LATERAL(SELECT reason,revision FROM evidence_review_resolution_events WHERE task_id=tasks.task_id AND outcome='ESCALATED' ORDER BY revision DESC LIMIT 1)latest ON TRUE
+        WHERE tasks.task_status='ESCALATED' ORDER BY tasks.updated_at,tasks.task_id LIMIT 250`);
+      return Object.freeze(result.rows.map(row=>Object.freeze({...task(row),reason:row.reason,revision:row.revision})));
+    });
+  }
+
+  async returnEscalation(principal:AuthorizationPrincipal,taskId:string,expectedRevision:unknown,reasonValue:unknown,now=new Date()):Promise<void>{
+    if(typeof expectedRevision!=="number" || !Number.isSafeInteger(expectedRevision) || expectedRevision<1) throw new EvidenceReviewInputError();
+    const reason=normalizeReason(reasonValue);
+    await this.database.transaction(async database=>{
+      await this.liveEscalationAdmin(database,principal);
+      const found=await database.query<TaskRow>(`SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE task_id=$1 AND task_status='ESCALATED' FOR UPDATE`,[taskId]);
+      const row=found.rows[0];if(!row)throw new EvidenceReviewConflictError();
+      const last=await database.query<{revision:number;outcome:string}>("SELECT revision,outcome FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
+      if(last.rows[0]?.revision!==expectedRevision || last.rows[0]?.outcome!=="ESCALATED" || !(await this.sourceIsCurrent(database,row)))throw new EvidenceReviewConflictError();
+      const revision=expectedRevision+1;
+      await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,occurred_at)
+        VALUES($1,$2,$3,$4,$5,'admin','RETURNED_TO_QUEUE',$6,$7)`,[createIdentifier("review_resolution"),taskId,row.source_version_id,revision,principal.accountId,reason,now.toISOString()]);
+      await database.query("UPDATE evidence_review_tasks SET task_status='QUEUED',assigned_verifier_account_id=NULL,claimed_at=NULL,decided_at=NULL,updated_at=$2 WHERE task_id=$1",[taskId,now.toISOString()]);
+      await this.recordResolutionCase(database,principal,row,now);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.escalation.returned",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision}});
+    });
+  }
+
   async declareConflict(
     principal: AuthorizationPrincipal,
     taskId: string,
@@ -328,10 +463,12 @@ export class EvidenceReviewService {
     outcomeValue: unknown,
     reasonValue: unknown,
     now = new Date(),
-    options: { assessorVisible?: boolean; confirmTrade?: boolean } = {}
+    options: { assessorVisible?: boolean; confirmTrade?: boolean; expectedResolutionRevision?: number } = {}
   ): Promise<void> {
     if (options.assessorVisible !== undefined && typeof options.assessorVisible !== "boolean") throw new EvidenceReviewInputError();
     if (options.confirmTrade !== undefined && typeof options.confirmTrade !== "boolean") throw new EvidenceReviewInputError();
+    const expectedResolutionRevision=options.expectedResolutionRevision===undefined?0:options.expectedResolutionRevision;
+    if(!Number.isSafeInteger(expectedResolutionRevision)||expectedResolutionRevision<0||expectedResolutionRevision>2147483647)throw new EvidenceReviewInputError();
     const outcome = normalizeOutcome(outcomeValue);
     const reason = normalizeReason(reasonValue);
 
@@ -369,6 +506,12 @@ export class EvidenceReviewService {
         );
       }
 
+      const historyContract=await database.query<{relation:string|null;contract:string|null}>("SELECT to_regclass('evidence_review_resolution_events') AS relation,to_regprocedure('hse_review_resolution_rollback_contract()') AS contract");
+      if(!historyContract.rows[0]?.relation&&historyContract.rows[0]?.contract)throw new EvidenceReviewConflictError("Review history contract is unavailable; finalization is blocked.");
+      const historyRevision=historyContract.rows[0]?.relation
+        ?(await database.query<{revision:number}>("SELECT COALESCE(MAX(revision),0)::INTEGER AS revision FROM evidence_review_resolution_events WHERE task_id=$1",[taskId])).rows[0]?.revision
+        :0;
+      if(historyRevision!==expectedResolutionRevision)throw new EvidenceReviewConflictError("Review history changed; reload before finalizing this task.");
       const tradeContext = options.confirmTrade === true ? await this.assignedSkillContext(database,principal,taskId) : null;
       if (options.confirmTrade === true && (outcome !== "APPROVED" || !tradeContext?.relatedTrade ||
           !tradeContext.evidenceAvailable || !tradeContext.secureFileId)) {
@@ -634,7 +777,7 @@ export class EvidenceReviewService {
   private async applyIndependentDecision(
     database: DatabaseClient,
     row: TaskRow,
-    outcome: EvidenceReviewOutcome,
+    outcome: EvidenceReviewOutcome | "UNABLE_TO_VERIFY",
     now: Date
   ): Promise<void> {
     if (row.evidence_kind !== "identity") return;
@@ -663,7 +806,7 @@ export class EvidenceReviewService {
     const lifecycleStatus =
       outcome === "APPROVED"
         ? "verified"
-        : outcome === "CHANGES_REQUESTED"
+        : outcome === "CHANGES_REQUESTED" || outcome === "UNABLE_TO_VERIFY"
           ? "more_info"
           : "rejected";
 
@@ -698,7 +841,7 @@ export class EvidenceReviewService {
   private async advanceCase(
     database: DatabaseClient,
     row: TaskRow,
-    outcome: EvidenceReviewOutcome,
+    _outcome: EvidenceReviewOutcome,
     now: Date,
     principal: AuthorizationPrincipal
   ): Promise<void> {
@@ -708,31 +851,20 @@ export class EvidenceReviewService {
     let owner: string | null;
     let nextAction: string | null;
 
-    if (outcome === "CHANGES_REQUESTED") {
-      status = "Evidence pending";
-      owner = "worker";
-      nextAction = "Correct the reviewed evidence and submit a new version.";
-    } else if (outcome === "REJECTED") {
-      status = "Rejected";
-      owner = null;
-      nextAction = null;
+    const old = await database.query<{ case_status: string }>(
+      `SELECT case_status
+         FROM assurance_cases
+        WHERE case_id=$1 AND tenant_id=$2
+        FOR UPDATE`,
+      [row.case_id, row.tenant_id]
+    );
+    if (!old.rows[0]) throw new EvidenceReviewAccessError();
+
+    const pending = await this.reviewBlocker(database,row.case_id);
+    if (pending) {
+      const route=this.reviewBlockerRoute(pending);
+      status=route.status;owner=route.owner;nextAction=route.nextAction;
     } else {
-      const pending = await database.query(
-        `SELECT 1
-           FROM evidence_review_tasks
-          WHERE case_id=$1
-            AND task_id<>$2
-            AND task_status NOT IN (
-              'APPROVED','REJECTED','CHANGES_REQUESTED','SUPERSEDED','CANCELLED'
-            )
-          LIMIT 1`,
-        [row.case_id, row.task_id]
-      );
-      if (pending.rows[0]) {
-        status = "Review pending";
-        owner = "reviewer";
-        nextAction = "Wait for the remaining evidence review tasks.";
-      } else {
         const requirementResult = await database.query<{
           interview_required: boolean;
           assessment_framework_references: unknown;
@@ -800,17 +932,7 @@ export class EvidenceReviewService {
           owner = "background_job";
           nextAction = "Await framework and effective-policy evaluation.";
         }
-      }
     }
-
-    const old = await database.query<{ case_status: string }>(
-      `SELECT case_status
-         FROM assurance_cases
-        WHERE case_id=$1 AND tenant_id=$2
-        FOR UPDATE`,
-      [row.case_id, row.tenant_id]
-    );
-    if (!old.rows[0]) throw new EvidenceReviewAccessError();
 
     await database.query(
       `UPDATE assurance_cases
@@ -1106,7 +1228,7 @@ export class EvidenceReviewService {
           AND evidence_kind=$2
           AND source_record_id=$3
           AND source_version_id<>$4
-          AND task_status IN ('QUEUED','ASSIGNED')`,
+          AND task_status IN ('QUEUED','ASSIGNED','UNABLE_TO_VERIFY','ESCALATED')`,
       [
         workerAccountId,
         kind,

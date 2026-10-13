@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createIdentifier } from "../auth/auth-domain";
+import { evaluatePlatformPermission } from "../authorization/authorization-domain";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 
@@ -79,6 +80,18 @@ export class CaseReplayService {
 
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
+      if(principal.tenantMembership!==null || !evaluatePlatformPermission({role:principal.activeRole,permission:"platform.security.read"}).allowed)throw new CaseReplayAccessError();
+      const authorize=async()=>{
+        const access=await tx.query(`SELECT 1 FROM auth_sessions sessions
+          JOIN auth_accounts accounts ON accounts.account_id=sessions.account_id
+          JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role=$3
+          WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role=$3
+            AND sessions.revoked_at IS NULL AND sessions.expires_at>clock_timestamp()
+            AND accounts.account_status='active' FOR UPDATE OF sessions,accounts,roles`,
+          [principal.sessionId,principal.accountId,principal.activeRole]);
+        if(!access.rows[0])throw new CaseReplayAccessError();
+      };
+      await authorize();
       const caseRows = await rows(
         tx,
         `SELECT cases.*,orders.order_name,orders.order_reference,orders.interview_required,
@@ -92,7 +105,7 @@ export class CaseReplayService {
       if (caseRows.length !== 1) throw new CaseReplayAccessError("Case Replay case was not found.");
 
       const [
-        timeline, policy, accommodations, evidenceTasks, evidenceDecisions, prechecks, attempts,
+        timeline, policy, accommodations, evidenceTasks, evidenceDecisions, evidenceResolutions, prechecks, attempts,
         questions, answers, revisions, interruptions, recovery, integritySessions, integrityEvents,
         scoringReviews, scoringMarks, scoringAssistance, interviews, interviewQuestionSets,
         interviewDrafts, interviewRuntime, interviewEvents, recordings, decisions, overrides,
@@ -104,6 +117,7 @@ export class CaseReplayService {
         rows(tx, "SELECT * FROM assurance_case_accommodation_overlays WHERE case_id=$1 ORDER BY approved_at,overlay_id", caseId),
         rows(tx, "SELECT * FROM evidence_review_tasks WHERE case_id=$1 ORDER BY created_at,task_id", caseId),
         rows(tx, `SELECT decisions.* FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id=$1 ORDER BY decisions.decided_at,decisions.decision_id`, caseId),
+        rows(tx, `SELECT resolutions.* FROM evidence_review_resolution_events resolutions JOIN evidence_review_tasks tasks ON tasks.task_id=resolutions.task_id WHERE tasks.case_id=$1 ORDER BY resolutions.occurred_at,resolutions.revision`, caseId),
         rows(tx, "SELECT * FROM assessment_precheck_records WHERE case_id=$1 ORDER BY created_at,precheck_id", caseId),
         rows(tx, "SELECT * FROM assessment_attempts WHERE case_id=$1 ORDER BY created_at,attempt_id", caseId),
         rows(tx, `SELECT items.form_id,items.form_item_id,items.position,items.question_id,
@@ -144,6 +158,7 @@ export class CaseReplayService {
         rows(tx, `SELECT living.*,competencies.worker_id,competencies.title,competencies.created_at,competencies.source_credential_id FROM living_record_versions living JOIN living_record_competencies competencies ON competencies.competency_id=living.competency_id JOIN assurance_cases cases ON cases.credential_reference=competencies.source_credential_id WHERE cases.case_id=$1 ORDER BY living.competency_id,living.version`, caseId)
       ]);
 
+      await authorize();
       await tx.query(
         `INSERT INTO case_replay_access_events(
            replay_event_id,case_id,actor_account_id,actor_role,purpose,accessed_at
@@ -155,7 +170,7 @@ export class CaseReplayService {
         caseId,
         generatedAt: now.toISOString(),
         sections: Object.freeze({
-          case: caseRows,timeline,policy,accommodations,evidenceTasks,evidenceDecisions,
+          case: caseRows,timeline,policy,accommodations,evidenceTasks,evidenceDecisions,evidenceResolutions,
           assessmentPrechecks: prechecks,assessmentAttempts: attempts,assessmentQuestions: questions,
           assessmentAnswers: answers,assessmentAnswerRevisions: revisions,
           assessmentInterruptions: interruptions,assessmentRecovery: recovery,integritySessions,

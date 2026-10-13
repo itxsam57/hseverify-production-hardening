@@ -107,7 +107,9 @@ if (process.env.HSE_EVIDENCE_REVIEW_PREPARE_ONLY === "1") {
 const tests = spawnSync(process.execPath, [
   "--test",
   resolve("tests", "platform", "evidence-review-queue-runtime.test.mjs"),
-  resolve("tests", "platform", "independent-evidence-review-runtime.test.mjs")
+  resolve("tests", "platform", "independent-evidence-review-runtime.test.mjs"),
+  resolve("tests", "platform", "evidence-review-draft-runtime.test.mjs"),
+  resolve("tests", "platform", "evidence-review-resolution-runtime.test.mjs")
 ], {
   stdio: "inherit",
   env: { ...process.env, HSE_EVIDENCE_REVIEW_RUNTIME_DIST: outputDirectory }
