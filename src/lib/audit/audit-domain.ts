@@ -116,6 +116,8 @@ export const AUDIT_ACTIONS = [
   "worker_evidence.leaving_letter.attached",
   "worker_evidence.leaving_letter.replaced",
   "public_verification.concern.received",
+  "public_verification.concern.reviewed",
+  "public_verification.concern.evidence.served",
   "assurance_order.created",
   "assurance_order.updated",
   "assurance_order.validated",

@@ -388,6 +388,7 @@ export class PublicVerificationService {
       const concern = await this.repository.createConcernWithAudit({
         concernId: createPublicConcernId(),
         subjectReferenceHash,
+        subjectBinding: { kind: capability.identifierKind, identifier: capability.normalizedIdentifier },
         category,
         description,
         contactName,
