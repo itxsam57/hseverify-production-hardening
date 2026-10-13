@@ -1,3 +1,4 @@
+import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
 import { getDatabaseClient } from "@/lib/database/database";
@@ -6,6 +7,7 @@ import {
   WrittenScoringAssistanceService
 } from "@/lib/scoring/written-scoring-assistance-service";
 import {
+  resolveIntegrityReviewAction,
   addWrittenScoreRubricMarkAction,
   finalizeWrittenScoreAction,
   generateWrittenScoringAssistanceAction,
@@ -25,6 +27,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
     new WrittenScoringAssistanceService().listForReviewer(actor.accountId),
     Promise.resolve(getScoringAiProviderStatus())
   ]);
+  const integrityReviews=await new IntegrityReviewService(await getDatabaseClient()).list(actor);
   const typedReviews = reviews;
 
   return (
@@ -54,16 +57,29 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
             </thead>
             <tbody>
               {typedReviews.map((review) => {
+                const integrity=integrityReviews.find(item=>item.review_id===review.review_id);
                 const readyToFinalize =
                   review.status === "DRAFT" && review.canReview &&
                   review.score !== null &&
-                  review.decision !== null;
+                  review.decision !== null && (!integrity || integrity.disposition==="CLEAR");
                 const reviewAssistance = assistance.filter((item) => item.reviewId === review.review_id);
                 const latestAssistance = reviewAssistance[0] ?? null;
                 return (
                   <tr key={review.review_id}>
                     <td>
                       {review.case_id}
+                      {integrity ? <section className="content-stack" aria-label={"Integrity review "+review.review_id}>
+                        <h2>Integrity concern</h2>
+                        <p>{String(integrity.event_count)} retained signals require a reasoned human disposition before progression.</p>
+                        {integrity.disposition ? <><strong>{integrity.disposition}</strong><p>{integrity.reason}</p></> : <form action={resolveIntegrityReviewAction} className="content-stack">
+                          <input type="hidden" name="reviewId" value={review.review_id}/>
+                          <input type="hidden" name="integrityEventCount" value={String(integrity.event_count)}/>
+                          <label>Integrity disposition<select name="integrityDisposition" required><option value="">Select disposition</option><option value="CLEAR">Clear</option><option value="CONCERN_CONFIRMED">Concern confirmed</option><option value="UNABLE">Unable to determine</option><option value="ESCALATE">Escalate to Admin</option></select></label>
+                          <label>Integrity reason<textarea name="integrityReason" minLength={5} maxLength={4000} required/></label>
+                          <button type="submit">Record integrity disposition</button>
+                        </form>}
+                      </section> : null}
+
                       <br />
                       <strong>{review.status}</strong>
                       {review.unavailableReason ? <p role="status">{review.unavailableReason}</p> : null}

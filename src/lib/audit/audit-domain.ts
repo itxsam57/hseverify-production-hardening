@@ -13,6 +13,9 @@ import {
 } from "../authorization/authorization-domain";
 
 export const AUDIT_ACTIONS = [
+  "evidence_review.framework.bound",
+  "staff.calibration.recorded",
+  "framework.revision.recorded",
   "verification.draft.saved",
   "verification.resolution.recorded",
   "verification.escalation.returned",

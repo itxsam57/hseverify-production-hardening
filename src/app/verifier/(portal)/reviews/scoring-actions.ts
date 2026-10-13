@@ -1,5 +1,6 @@
 "use server";
 
+import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
 import { revalidatePath } from "next/cache";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
@@ -80,4 +81,13 @@ export async function reviewWrittenScoringAssistanceAction(form: FormData) {
     reason: text(form, "guidanceReason")
   });
   revalidatePath("/verifier/reviews/scoring");
+}
+
+export async function resolveIntegrityReviewAction(form: FormData) {
+ const actor=await requirePlatformPermission({expectedRole:"verifier",permission:"verification.assigned.decide"});
+ const count=text(form,"integrityEventCount");
+ if (!/^[1-9][0-9]*$/.test(count)) throw new Error("Integrity history reference is invalid.");
+ await new IntegrityReviewService(await getDatabaseClient()).resolve(actor,{reviewId:text(form,"reviewId"),disposition:text(form,"integrityDisposition"),reason:text(form,"integrityReason"),expectedEventCount:Number(count)});
+ revalidatePath("/verifier/reviews/scoring");
+ revalidatePath("/admin/operations");
 }

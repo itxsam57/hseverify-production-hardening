@@ -1,4 +1,5 @@
 import "server-only";
+import { assessmentRequiresIntegrityReview } from "../integrity/integrity-review-service";
 
 import { createIdentifier } from "../auth/auth-domain";
 import {
@@ -239,7 +240,9 @@ export async function completeSubmittedAssessment(
   );
   const passMark = await effectivePassMark(database, input.caseId);
 
-  if (hasWritten || passMark === null) {
+  const requiresIntegrityReview = await assessmentRequiresIntegrityReview(database, input.attemptId);
+
+  if (hasWritten || passMark === null || requiresIntegrityReview) {
     await queueHumanReview(database, input);
     return;
   }
