@@ -7,11 +7,13 @@ import { seedConsoleFile, seedConsoleIdentity } from "../helpers/interview-conso
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { assessorInterviewSearchFixture } from "../helpers/assessor-interview-search-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { assessorSchedulingPrincipal } from "../helpers/assessor-scheduling-native-principal.mjs";
 import { seedInProgressAttempt, ATTEMPT_NOW_DATE } from "../helpers/assessment-attempt-fixture.mjs";
 import { loadWorkerRegistrationTs, setWorkerRegistrationRuntimeEnvironment } from "../helpers/worker-registration-runtime-loader.mjs";
 
 const { InterviewConsoleContextService } = loadWorkerRegistrationTs("src/lib/interview/interview-console-context-service.ts");
+const { SupervisorObservationService } = loadWorkerRegistrationTs("src/lib/review/supervisor-observation-service.ts");
 const { EvidenceReviewService } = loadWorkerRegistrationTs("src/lib/review/evidence-review-service.ts");
 const { AuthAccessRepository } = loadWorkerRegistrationTs("src/lib/auth/auth-access-repository.ts");
 const { InterviewSchedulingService } = loadWorkerRegistrationTs("src/lib/interview/interview-scheduling-service.ts");
@@ -55,6 +57,7 @@ async function approved(x) {
   assert.equal(await review.queueCaseEvidence(await company(x),x.requests.Alpha.caseId),2);
   const tasks=(await x.db.query("SELECT task_id,evidence_kind FROM evidence_review_tasks WHERE case_id=$1 ORDER BY evidence_kind",[x.requests.Alpha.caseId])).rows;
   for(const task of tasks) {
+    await authorizeReviewFixture(x.db,{taskId:task.task_id,verifiers:[verifier],at:new Date()});
     await review.claim(verifier,task.task_id);
     await review.decide(verifier,task.task_id,"APPROVED",task.evidence_kind==="employment"?"Explicitly shared employment verification.":"Private reviewer reason must stay private.",new Date(),{assessorVisible:task.evidence_kind==="employment"});
   }
@@ -169,6 +172,7 @@ test("Assessor and Verifier preview current owned evidence through production fi
     const review=new EvidenceReviewService(x.db),verifier=await principal(x.db,x.credentials.verifier,"verifier");
     assert.equal(await review.queueCaseEvidence(await company(x),x.requests.Alpha.caseId),1);
     const task=(await x.db.query("SELECT task_id FROM evidence_review_tasks WHERE case_id=$1",[x.requests.Alpha.caseId])).rows[0];
+    await authorizeReviewFixture(x.db,{taskId:task.task_id,verifiers:[verifier],at:new Date()});
     await review.claim(verifier,task.task_id);
     setWorkerRegistrationRuntimeEnvironment({appEnvironment:"production",sessionSecret:x.environment.HSE_SESSION_SECRET});
     const verifierContent=await review.preview(verifier,task.task_id);
@@ -195,7 +199,7 @@ test("Assessor and Verifier preview current owned evidence through production fi
 });
 
 test("Console shares only opted-in current identity review, verified profile photo and approved supervisor observation",async()=>{
-  const x=await fixture({identityChecks:["document"]}),directory=await mkdtemp(join(tmpdir(),"hse-console-photo-"));
+  const x=await fixture({identityChecks:["document"],frameworkReferences:["SUPERVISOR-CONSOLE-PROOF"]}),directory=await mkdtemp(join(tmpdir(),"hse-console-photo-"));
   const oldRoot=process.env.HSE_PRIVATE_OBJECT_STORAGE_ROOT;
   process.env.HSE_PRIVATE_OBJECT_STORAGE_ROOT=join(directory,"objects");
   try {
@@ -203,12 +207,17 @@ test("Console shares only opted-in current identity review, verified profile pho
     const storage=createRuntimePrivateObjectStorage("production");
     for(const file of [identity.profile_photo,identity.selfie,identity.identity_document])await storage.put(file.objectKey,file.bytes);
     const review=new EvidenceReviewService(x.db),companyActor=await company(x),verifier=await principal(x.db,x.credentials.verifier,"verifier");
-    const observationId=await review.addSupervisorObservation(companyActor,{
-      caseId:x.requests.Alpha.caseId,competencyReference:"Safe isolation",observedAt:new Date(),
+    const observations=new SupervisorObservationService(Promise.resolve(x.db));
+    const observationId=await observations.create(companyActor,{
+      caseId:x.requests.Alpha.caseId,observerMembershipId:x.credentials.company.membershipId,
+      frameworkReference:"SUPERVISOR-CONSOLE-PROOF",competencyReference:"Safe isolation",taskReference:"Safe isolation task",
+      checklist:[],supervisorDeclaration:"I personally observed the Worker isolate safely.",observedAt:new Date(),
       observationText:"Observed the Worker isolate and verify the circuit safely.",outcome:"demonstrated"
     });
-    assert.equal(await review.queueCaseEvidence(companyActor,x.requests.Alpha.caseId),2);
+    await observations.acknowledge(await principal(x.db,x.credentials.worker,"worker"),observationId,"I saw this observation.");
+    assert.equal(await review.queueCaseEvidence(companyActor,x.requests.Alpha.caseId),1);
     for(const task of (await x.db.query("SELECT task_id,evidence_kind FROM evidence_review_tasks WHERE case_id=$1",[x.requests.Alpha.caseId])).rows) {
+      await authorizeReviewFixture(x.db,{taskId:task.task_id,verifiers:[verifier],at:new Date()});
       await review.claim(verifier,task.task_id);
       await review.decide(verifier,task.task_id,"APPROVED",task.evidence_kind==="identity"?"Explicit identity review comment.":"Private supervisor review reason.",new Date(),{assessorVisible:task.evidence_kind==="identity"});
     }

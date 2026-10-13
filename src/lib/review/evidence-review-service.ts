@@ -37,7 +37,6 @@ import {
   createReviewConflictId,
   createReviewDecisionId,
   createReviewTaskId,
-  createSupervisorObservationId,
   normalizeOutcome,
   normalizeReason,
   type EvidenceReviewKind,
@@ -740,6 +739,63 @@ export class EvidenceReviewService {
     });
   }
 
+  private async reviewBlocker(database:DatabaseClient,caseId:string):Promise<TaskRow|null>{
+    const result=await database.query<TaskRow>(`SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE case_id=$1 AND task_status NOT IN ('APPROVED','SUPERSEDED','CANCELLED')
+      ORDER BY CASE task_status WHEN 'REJECTED' THEN 0 WHEN 'ESCALATED' THEN 1 WHEN 'UNABLE_TO_VERIFY' THEN 2 WHEN 'CHANGES_REQUESTED' THEN 2 ELSE 3 END,created_at,task_id`,[caseId]);
+    for(const candidate of result.rows)if(await this.sourceIsCurrent(database,candidate))return candidate;
+    return null;
+  }
+
+  private reviewBlockerRoute(row:TaskRow):{status:string;owner:string|null;nextAction:string|null}{
+    if(row.task_status==="REJECTED")return {status:"Rejected",owner:null,nextAction:null};
+    if(row.task_status==="ESCALATED")return {status:"Review pending",owner:"admin",nextAction:"Admin must review the reasoned evidence escalation."};
+    if(row.task_status==="UNABLE_TO_VERIFY")return {status:"Evidence pending",owner:"worker",nextAction:"The evidence could not be verified; provide further supporting evidence."};
+    if(row.task_status==="CHANGES_REQUESTED")return {status:"Evidence pending",owner:"worker",nextAction:"Correct the reviewed evidence and submit a new version."};
+    return {status:"Review pending",owner:"reviewer",nextAction:"Wait for the remaining evidence review tasks."};
+  }
+
+  // Internal producer handoff. Caller keeps acknowledgement and queue insertion
+  // in this same transaction; this method independently binds the live Worker,
+  // signed acknowledged source and active case before deriving shared blockers.
+  async routePendingCaseReview(principal: AuthorizationPrincipal, caseId: string, tenantId: string,
+    workerAccountId: string, observationId: string, now: Date): Promise<void> {
+    if (principal.activeRole !== "worker" || principal.accountStatus !== "active" ||
+        principal.accountId !== workerAccountId || principal.tenantMembership !== null) throw new EvidenceReviewAccessError();
+    const database = this.database;
+    const live = await database.query(`SELECT 1 FROM auth_sessions sessions
+      JOIN auth_accounts accounts ON accounts.account_id=sessions.account_id
+      JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role='worker'
+      WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role='worker'
+        AND sessions.revoked_at IS NULL AND sessions.expires_at>clock_timestamp() AND accounts.account_status='active'
+      FOR UPDATE OF sessions,accounts,roles`,[principal.sessionId,workerAccountId]);
+    if(!live.rows[0])throw new EvidenceReviewAccessError();
+    const current = await database.query<{case_status:string}>(`SELECT case_status FROM assurance_cases
+      WHERE case_id=$1 AND tenant_id=$2 AND worker_account_id=$3 AND closed_at IS NULL
+        AND case_status NOT IN ('Closed','Rejected','Issued') FOR UPDATE`,[caseId,tenantId,workerAccountId]);
+    if(!current.rows[0])throw new EvidenceReviewAccessError();
+    const source=await database.query(`SELECT 1 FROM supervisor_observations observations
+      JOIN supervisor_observation_details details ON details.observation_id=observations.observation_id
+        AND details.supervisor_signed_at IS NOT NULL AND details.worker_acknowledged_at IS NOT NULL
+      JOIN evidence_review_tasks tasks ON tasks.source_record_id=observations.observation_id
+        AND tasks.source_version_id=observations.observation_id AND tasks.evidence_kind='supervisor_observation'
+        AND tasks.case_id=observations.case_id AND tasks.worker_account_id=observations.worker_account_id
+        AND tasks.task_status='QUEUED'
+      WHERE observations.observation_id=$1 AND observations.case_id=$2 AND observations.tenant_id=$3
+        AND observations.worker_account_id=$4 AND observations.observation_status='submitted'`,
+      [observationId,caseId,tenantId,workerAccountId]);
+    if(!source.rows[0])throw new EvidenceReviewAccessError();
+    const blocker=await this.reviewBlocker(database,caseId);
+    if(!blocker)throw new EvidenceReviewConflictError("Acknowledged evidence must retain a current review task.");
+    const route=this.reviewBlockerRoute(blocker);
+    const stillLive=await database.query("SELECT 1 FROM auth_sessions WHERE session_id=$1 AND account_id=$2 AND revoked_at IS NULL AND expires_at>clock_timestamp()",[principal.sessionId,workerAccountId]);
+    if(!stillLive.rows[0])throw new EvidenceReviewAccessError();
+    await database.query("UPDATE assurance_cases SET case_status=$3,owner_kind=$4,next_action=$5,updated_at=$6 WHERE case_id=$1 AND tenant_id=$2",
+      [caseId,tenantId,route.status,route.owner,route.nextAction,now.toISOString()]);
+    await database.query(`INSERT INTO assurance_case_timeline_events(timeline_event_id,tenant_id,order_id,case_id,event_type,from_status,to_status,owner_kind,next_action,actor_account_id,actor_role,occurred_at)
+      SELECT $1,tenant_id,order_id,case_id,'supervisor_observation_acknowledged',$2,$3,$4,$5,$6,'worker',$7 FROM assurance_cases WHERE case_id=$8 AND tenant_id=$9`,
+      [createIdentifier("assurance_event"),current.rows[0].case_status,route.status,route.owner,route.nextAction,workerAccountId,now.toISOString(),caseId,tenantId]);
+  }
+
   private async sourceIsCurrent(
     database: DatabaseClient,
     row: TaskRow
@@ -763,8 +819,9 @@ export class EvidenceReviewService {
       if (!row.case_id) return false;
       const result = await database.query(
         `SELECT 1
-           FROM supervisor_observations
-          WHERE observation_id=$1
+           FROM supervisor_observations observations
+           JOIN supervisor_observation_details details ON details.observation_id=observations.observation_id AND details.worker_acknowledged_at IS NOT NULL
+          WHERE observations.observation_id=$1
             AND case_id=$2
             AND worker_account_id=$3
             AND observation_status='submitted'`,
@@ -1127,8 +1184,9 @@ export class EvidenceReviewService {
         observation_id: string;
         competency_reference: string;
       }>(
-        `SELECT observation_id,competency_reference
-           FROM supervisor_observations
+        `SELECT observations.observation_id,observations.competency_reference
+           FROM supervisor_observations observations
+           JOIN supervisor_observation_details details ON details.observation_id=observations.observation_id AND details.worker_acknowledged_at IS NOT NULL
           WHERE tenant_id=$1
             AND case_id=$2
             AND worker_account_id=$3
@@ -1302,65 +1360,6 @@ export class EvidenceReviewService {
       );
     }
     return task(existing.rows[0]);
-  }
-
-  async addSupervisorObservation(
-    principal: TenantPermissionPrincipal<"company.orders.manage">,
-    input: {
-      caseId: string;
-      competencyReference: string;
-      observedAt: Date;
-      observationText: string;
-      outcome: string;
-    },
-    now = new Date()
-  ): Promise<string> {
-    const scope = deriveTrustedTenantScope(principal);
-    const competency = input.competencyReference.trim();
-    const observationText = input.observationText.trim();
-    if (
-      competency.length < 2 ||
-      competency.length > 160 ||
-      observationText.length < 20 ||
-      observationText.length > 6000 ||
-      !["demonstrated", "partially_demonstrated", "not_demonstrated"].includes(
-        input.outcome
-      )
-    ) {
-      throw new EvidenceReviewInputError();
-    }
-
-    return this.database.transaction(async (database) => {
-      const assuranceCase = await database.query<{ worker_account_id: string }>(
-        `SELECT worker_account_id
-           FROM assurance_cases
-          WHERE case_id=$1 AND tenant_id=$2`,
-        [input.caseId, scope.tenantId]
-      );
-      if (!assuranceCase.rows[0]) throw new EvidenceReviewAccessError();
-
-      const id = createSupervisorObservationId();
-      await database.query(
-        `INSERT INTO supervisor_observations(
-           observation_id,tenant_id,case_id,worker_account_id,
-           competency_reference,observer_membership_id,observed_at,
-           observation_text,outcome,created_at
-         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [
-          id,
-          scope.tenantId,
-          input.caseId,
-          assuranceCase.rows[0].worker_account_id,
-          competency,
-          scope.membershipId,
-          input.observedAt.toISOString(),
-          observationText,
-          input.outcome,
-          now.toISOString()
-        ]
-      );
-      return id;
-    });
   }
 
   async preview(

@@ -33,8 +33,12 @@ export default async function WorkerObservationsPage({
                 <p><strong>Observed:</strong> {new Date(item.observedAt).toLocaleString()}</p>
                 <p><strong>Outcome:</strong> {item.outcome.replaceAll("_", " ")}</p>
                 <p>{item.observationText}</p>
+                {item.checklist.length ? <ul>{item.checklist.map((check,index) => <li key={index}>{check}</li>)}</ul> : null}
+                {item.supervisorDeclaration ? <p>Signed declaration: {item.supervisorDeclaration}</p> : null}
                 {item.restrictions ? <p><strong>Restrictions:</strong> {item.restrictions}</p> : null}
-                {item.workerAcknowledgedAt ? (
+                {item.reviewStatus ? <p><strong>Independent review:</strong> {item.reviewStatus.replaceAll("_", " ")}</p> : null}
+                {item.reviewReason ? <p><strong>Verifier feedback:</strong> {item.reviewReason}</p> : null}
+                {!item.supervisorSignedAt ? <p role="status">Legacy unsigned observation: unavailable for acknowledgement or independent review.</p> : item.workerAcknowledgedAt ? (
                   <p className="status-banner status-success">Acknowledged {new Date(item.workerAcknowledgedAt).toLocaleString()}{item.workerComment ? ` · ${item.workerComment}` : ""}</p>
                 ) : (
                   <form action={acknowledgeObservationAction} className="form-grid">

@@ -7,6 +7,8 @@ import { pathToFileURL } from "node:url";
 import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
+const { SupervisorObservationService }=loadWorkerRegistrationTs("src/lib/review/supervisor-observation-service.ts");
 import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
