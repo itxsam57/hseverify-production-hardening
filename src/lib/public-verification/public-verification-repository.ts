@@ -63,6 +63,7 @@ export type PublicVerificationConcernCategory =
 export type CreatePublicVerificationConcernInput = Readonly<{
   concernId: string;
   subjectReferenceHash: string;
+  subjectBinding?: Readonly<{kind: "worker" | "credential"; identifier: string}>;
   category: PublicVerificationConcernCategory;
   description: string;
   contactName: string | null;
@@ -867,6 +868,15 @@ export class PublicVerificationRepository {
         throw new Error("Public verification concern could not be resolved.");
       }
 
+      if (created && input.subjectBinding) {
+        const identifier = normalizePublicVerificationIdentifier(input.subjectBinding.identifier);
+        if (!identifier || identifier.kind !== input.subjectBinding.kind) throw new Error("Concern subject binding is invalid.");
+        const source = identifier.kind === "credential"
+          ? await transaction.query<{worker_reference:string}>("SELECT worker_id AS worker_reference FROM credential_issuances WHERE credential_id=$1 FOR SHARE", [identifier.normalizedIdentifier])
+          : await transaction.query<{worker_reference:string}>("SELECT ids.permanent_worker_id AS worker_reference FROM worker_identity_worker_ids ids JOIN worker_identities identities ON identities.identity_id=ids.identity_id WHERE ids.permanent_worker_id=$1 FOR SHARE OF ids, identities", [identifier.normalizedIdentifier]);
+        if (!source.rows[0]) throw new Error("Concern subject is unavailable.");
+        await transaction.query("INSERT INTO public_verification_concern_subjects(concern_id,subject_kind,subject_identifier,worker_reference) VALUES($1,$2,$3,$4)", [concernId, identifier.kind, identifier.normalizedIdentifier, source.rows[0].worker_reference]);
+      }
       if (created) {
         const audit = new DatabaseAuditRepository(Promise.resolve(transaction));
         await audit.append(

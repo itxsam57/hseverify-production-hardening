@@ -237,6 +237,8 @@ h3 { font-size: 1rem; }
 .role-chip { display: inline-flex; border: 1px solid #c5dae8; border-radius: 999px; background: var(--blue-100); padding: 5px 10px; color: var(--blue-700); font-size: .75rem; font-weight: 800; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .header-menu { position: relative; }
+/* Explicitly remove closed menu panels from layout, including absolutely positioned content. */
+.header-menu:not([open]) > .menu-panel, .mobile-nav-menu:not([open]) > .mobile-nav-panel { display: none; }
 .header-menu > summary { display: flex; min-height: 44px; align-items: center; gap: 10px; border: 1px solid transparent; border-radius: 10px; padding: 4px 8px; cursor: pointer; list-style: none; }
 .header-menu > summary::-webkit-details-marker { display: none; }
 .header-menu > summary:hover, .header-menu[open] > summary { border-color: var(--slate-200); background: var(--slate-50); }
@@ -448,3 +450,31 @@ fieldset.field-group input { width: 18px; min-height: 18px; }
   .button-row > .button, .button-row > form { width: 100%; }
   .button-row > form .button { width: 100%; }
 }
+/* The shared portal menu keeps its navigation outside the narrow header row. */
+.mobile-nav-menu { display: none; }
+@media (max-width: 860px) {
+  .mobile-nav-menu { display: block; }
+  .mobile-nav-panel {
+    position: absolute;
+    top: 100%;
+    right: 16px;
+    left: 16px;
+    max-height: 70dvh;
+    overflow-y: auto;
+    border-radius: 12px;
+    background: var(--navy-950);
+    padding: 16px;
+    box-shadow: var(--shadow-md);
+  }
+  .mobile-nav-panel .portal-nav { grid-template-columns: minmax(0, 1fr); }
+  .mobile-nav-panel .nav-link { min-width: 0; }
+  .mobile-nav-panel .nav-link > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+  .mobile-nav-panel .nav-icon { flex-shrink: 0; }
+}
+@media (max-width: 680px) {
+  .portal-header { flex-wrap: wrap; gap: 8px; }
+  .header-actions { margin-left: auto; }
+}
+
+/* Concern identifiers and reporter text must remain readable on narrow screens. */
+.credential-concern-detail { min-width: 0; overflow-wrap: anywhere; }
