@@ -739,21 +739,6 @@ export class EvidenceReviewService {
     });
   }
 
-  private async reviewBlocker(database:DatabaseClient,caseId:string):Promise<TaskRow|null>{
-    const result=await database.query<TaskRow>(`SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE case_id=$1 AND task_status NOT IN ('APPROVED','SUPERSEDED','CANCELLED')
-      ORDER BY CASE task_status WHEN 'REJECTED' THEN 0 WHEN 'ESCALATED' THEN 1 WHEN 'UNABLE_TO_VERIFY' THEN 2 WHEN 'CHANGES_REQUESTED' THEN 2 ELSE 3 END,created_at,task_id`,[caseId]);
-    for(const candidate of result.rows)if(await this.sourceIsCurrent(database,candidate))return candidate;
-    return null;
-  }
-
-  private reviewBlockerRoute(row:TaskRow):{status:string;owner:string|null;nextAction:string|null}{
-    if(row.task_status==="REJECTED")return {status:"Rejected",owner:null,nextAction:null};
-    if(row.task_status==="ESCALATED")return {status:"Review pending",owner:"admin",nextAction:"Admin must review the reasoned evidence escalation."};
-    if(row.task_status==="UNABLE_TO_VERIFY")return {status:"Evidence pending",owner:"worker",nextAction:"The evidence could not be verified; provide further supporting evidence."};
-    if(row.task_status==="CHANGES_REQUESTED")return {status:"Evidence pending",owner:"worker",nextAction:"Correct the reviewed evidence and submit a new version."};
-    return {status:"Review pending",owner:"reviewer",nextAction:"Wait for the remaining evidence review tasks."};
-  }
-
   // Internal producer handoff. Caller keeps acknowledgement and queue insertion
   // in this same transaction; this method independently binds the live Worker,
   // signed acknowledged source and active case before deriving shared blockers.
