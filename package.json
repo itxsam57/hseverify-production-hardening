@@ -181,7 +181,8 @@
     "test:approved-break-refresh-browser": "node --test tests/browser/approved-break-refresh.browser.test.mjs",
     "test:review-resolution-browser": "node --test tests/browser/evidence-review-resolution.browser.test.mjs",
     "test:review-resolution-notification-browser": "node --test tests/browser/review-resolution-notification.browser.test.mjs",
-    "test:credential-concern-browser": "node --test --test-concurrency=1 tests/browser/credential-concern-review.browser.test.mjs tests/browser/portal-navigation-responsive.browser.test.mjs"
+    "test:credential-concern-browser": "node --test --test-concurrency=1 tests/browser/credential-concern-review.browser.test.mjs tests/browser/portal-navigation-responsive.browser.test.mjs",
+    "test:review-calibration-browser": "node --test tests/browser/evidence-review-calibration.browser.test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

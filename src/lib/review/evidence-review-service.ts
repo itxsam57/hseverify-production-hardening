@@ -1,5 +1,8 @@
 import "server-only";
 
+import { EvidenceReviewEligibilityService } from "./evidence-review-eligibility-service";
+import { requireLiveReviewActor } from "./review-calibration-authority";
+
 import { createHash } from "node:crypto";
 
 import { createIdentifier } from "../auth/auth-domain";
@@ -160,11 +163,11 @@ export class EvidenceReviewService {
     principal: AuthorizationPrincipal,
     query = ""
   ): Promise<readonly EvidenceReviewTask[]> {
-    assertVerifierPrincipal(principal);
+    await requireLiveReviewActor(this.database,principal,"verifier");
     const result = await this.database.query<TaskRow>(
       `SELECT ${TASK_COLUMNS}
          FROM evidence_review_tasks
-        WHERE (task_status='QUEUED' OR assigned_verifier_account_id=$1)
+        WHERE worker_account_id<>$1 AND (task_status='QUEUED' OR assigned_verifier_account_id=$1)
           AND ($2='' OR strpos(lower(concat_ws(' ',task_id,case_id,worker_account_id,
             source_version_id,evidence_kind,task_status,replace(task_status,'_',' '))),lower($2))>0)
         ORDER BY
@@ -174,14 +177,17 @@ export class EvidenceReviewService {
         LIMIT 250`,
       [principal.accountId, query.trim().slice(0, 160)]
     );
-    return Object.freeze(result.rows.map(task));
+    const eligibility = new EvidenceReviewEligibilityService(Promise.resolve(this.database));
+    return Object.freeze(await Promise.all(result.rows.map(async row => Object.freeze({
+      ...task(row), eligibility: await eligibility.evaluate(principal,row.task_id)
+    }))));
   }
 
   async findTask(
     principal: AuthorizationPrincipal,
     taskId: string
   ): Promise<EvidenceReviewTask | null> {
-    assertVerifierPrincipal(principal);
+    await requireLiveReviewActor(this.database,principal,"verifier");
     const result = await this.database.query<TaskRow>(
       `SELECT ${TASK_COLUMNS}
          FROM evidence_review_tasks
@@ -189,7 +195,8 @@ export class EvidenceReviewService {
           AND (task_status='QUEUED' OR assigned_verifier_account_id=$2)`,
       [taskId, principal.accountId]
     );
-    return result.rows[0] ? task(result.rows[0]) : null;
+    if (!result.rows[0]) return null;
+    return Object.freeze({...task(result.rows[0]), eligibility: await new EvidenceReviewEligibilityService(Promise.resolve(this.database)).evaluate(principal,taskId)});
   }
 
   private async assignedSkillContext(
@@ -228,6 +235,7 @@ export class EvidenceReviewService {
   async findAssignedSkill(principal: AuthorizationPrincipal, taskId: string): Promise<EvidenceReviewSkillContext | null> {
     return this.database.transaction(async database => {
       await liveVerifier(database,principal);
+      await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,new Date(),true);
       return this.assignedSkillContext(database,principal,taskId);
     });
   }
@@ -239,6 +247,7 @@ export class EvidenceReviewService {
   ): Promise<EvidenceReviewTask> {
     return this.database.transaction(async (database) => {
       await liveVerifier(database, principal);
+      await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,now,true);
       const conflict = await database.query(
         `SELECT 1
            FROM evidence_review_conflicts
@@ -491,6 +500,7 @@ export class EvidenceReviewService {
       );
       const row = result.rows[0];
       if (!row) throw new EvidenceReviewAccessError();
+      await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,now,true);
 
       const conflict = await database.query(
         `SELECT 1
@@ -1392,6 +1402,7 @@ export class EvidenceReviewService {
     return {
       findForPrincipal: async (principal, fileId) => this.database.transaction(async database => {
         await liveVerifier(database, principal);
+        await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,reviewTask.taskId,new Date(),true);
         if (fileId !== reviewTask.secureFileId) return null;
         const result = await database.query<SecureFileRow>(
           `SELECT files.*

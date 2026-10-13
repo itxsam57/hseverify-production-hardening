@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
 const runtime = process.env.HSE_EVIDENCE_REVIEW_RUNTIME_DIST ?? ".evidence-review-runtime-test-dist";
@@ -22,7 +23,7 @@ const serviceModule = await import(pathToFileURL(join(runtime, "review", "eviden
 const { EvidenceReviewAccessError, EvidenceReviewConflictError } = domainModule;
 const { EvidenceReviewService } = serviceModule;
 
-const MIGRATION = "0034_evidence_verification_queues";
+const MIGRATION = "0107_review_calibration_audit";
 const NOW_DATE = new Date("2026-08-18T01:00:00.000Z");
 const NOW = NOW_DATE.toISOString();
 const FUTURE = "2099-01-01T00:00:00.000Z";
@@ -77,6 +78,8 @@ async function seedVerifier(database, c) {
     (session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at)
     VALUES ($1,$2,'verifier',$3,$4,$5,$5,$6)`,
     [verifier.sessionId,verifier.accountId,`m202-token-${c}`,`m202-csrf-${c}`,NOW,FUTURE]);
+  const tasks=await database.query("SELECT task_id FROM evidence_review_tasks WHERE task_status='QUEUED'");
+  for(const task of tasks.rows)await authorizeReviewFixture(database,{taskId:task.task_id,verifiers:[verifier],at:NOW_DATE});
   return Object.freeze({
     ...verifier, activeRole:"verifier", accountStatus:"active", createdAt:NOW,
     lastSeenAt:NOW, expiresAt:FUTURE, tenantMembership:null
@@ -298,6 +301,7 @@ for(const outcome of ["UNABLE_TO_VERIFY","ESCALATED"]){
  const secondId=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-SECOND",observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated"},NOW_DATE);
  assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),1);
  const second=(await database.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[secondId])).rows[0].task_id;
+ await authorizeReviewFixture(database,{taskId:second,verifiers:[verifier],at:NOW_DATE});
  await x.service.claim(verifier,x.taskId,NOW_DATE);await x.service.claim(verifier,second,NOW_DATE);
  await x.service.resolveReview(verifier,x.taskId,{expectedRevision:0,outcome,reason:"The evidence remains unresolved and needs the correct next actor.",destination:outcome==="ESCALATED"?"admin":undefined,attemptedMethods:"Contacted the supervisor and checked the available observation records.",limitations:"The records do not independently confirm this observation."},NOW_DATE);
  await x.service.decide(verifier,second,"APPROVED","The second observation was independently verified against its source.",NOW_DATE);
@@ -315,6 +319,7 @@ for(const outcome of ["ESCALATED"]){
  const secondId=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-SECOND",observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated"},NOW_DATE);
  assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),1);
  const second=(await database.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[secondId])).rows[0].task_id;
+ await authorizeReviewFixture(database,{taskId:second,verifiers:[verifier],at:NOW_DATE});
  await x.service.claim(verifier,x.taskId,NOW_DATE);await x.service.claim(verifier,second,NOW_DATE);
  await x.service.resolveReview(verifier,x.taskId,{expectedRevision:0,outcome,reason:"The evidence remains unresolved and needs the correct next actor.",destination:outcome==="ESCALATED"?"admin":undefined,attemptedMethods:"Contacted the supervisor and checked the available observation records.",limitations:"The records do not independently confirm this observation."},NOW_DATE);
  await x.service.decide(verifier,second,"CHANGES_REQUESTED","The second observation was independently verified against its source.",NOW_DATE);

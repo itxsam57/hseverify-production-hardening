@@ -3,6 +3,7 @@ import test from "node:test";
 import {readFile} from "node:fs/promises";
 import {openScriptDatabase} from "../../scripts/lib/database.mjs";
 import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
+import {authorizeReviewFixture} from "../helpers/evidence-review-calibration-fixture.mjs";
 import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
 const {EvidenceReviewService}=loadWorkerRegistrationTs("src/lib/review/evidence-review-service.ts");
 const ENV={appEnvironment:"test",databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:"memory://",releaseSha:"review-draft-test",sessionSecret:"review-draft-session-secret-2026-00000000000000",authPepper:"review-draft-auth-pepper-2026-00000000000000",authSandboxEnabled:false,authSandboxAccessKey:null,demoAuthEnabled:false,demoDataEnabled:false};
@@ -14,12 +15,12 @@ async function actor(db,id,role){
  return {accountId:id,sessionId:id+"_session",activeRole:role,accountStatus:"active",email:id+"@example.test",displayName:id,createdAt:NOW,lastSeenAt:NOW,expiresAt:"2099-01-01",tenantMembership:null};
 }
 async function fixture(){
- const db=await openScriptDatabase(ENV);await applyMigrationsThrough(db,ENV.releaseSha,"0104_evidence_review_drafts");
+ const db=await openScriptDatabase(ENV);await applyMigrationsThrough(db,ENV.releaseSha,"0104_evidence_review_drafts");await db.execute(await readFile("database/migrations/0106_evidence_review_calibration_binding.up.sql","utf8"));await db.execute(await readFile("database/migrations/0107_review_calibration_audit.up.sql","utf8"));
  const worker=await actor(db,"draft_worker","worker"),verifier=await actor(db,"draft_verifier","verifier"),other=await actor(db,"draft_other","verifier");
  await db.query("INSERT INTO worker_evidence_records(record_id,worker_account_id,record_kind,lifecycle_status,current_version_id,created_at,updated_at) VALUES('draft_record',$1,'qualification','active',NULL,$2,$2)",[worker.accountId,NOW]);
  await db.query("INSERT INTO worker_evidence_versions(version_id,record_id,version_number,revision,version_status,created_at,updated_at,submitted_at) VALUES('draft_version','draft_record',1,1,'submitted',$1,$1,$1)",[NOW]);
  await db.query("UPDATE worker_evidence_records SET current_version_id='draft_version' WHERE record_id='draft_record'");
- const service=new EvidenceReviewService(db),task=await service.queueIndependentWorkerEvidence(worker,"draft_record");await service.claim(verifier,task.taskId);
+ const service=new EvidenceReviewService(db),task=await service.queueIndependentWorkerEvidence(worker,"draft_record");await authorizeReviewFixture(db,{taskId:task.taskId,verifiers:[verifier],at:new Date(NOW)});await service.claim(verifier,task.taskId);
  return {db,worker,verifier,other,service,task};
 }
 test("Reviewer drafts reload privately, retain revisions and reject stale concurrent saves",async()=>{
@@ -75,13 +76,13 @@ test("Changed evidence version cannot receive a draft and audit failure rolls ba
  assert.equal((await f.db.query("SELECT count(*)::int total FROM evidence_review_draft_revisions")).rows[0].total,0);
  }finally{await f.db.close();}
 });
-test("Empty draft migration rollback restores the exact audit constraint and reapplies cleanly",async()=>{
+test("Lower draft rollback cannot erase a live calibration/audit contract",async()=>{
  const f=await fixture();try{
- const original=(await f.db.query("SELECT hse_review_draft_rollback_constraint() AS definition")).rows[0].definition;
- await f.db.execute(await readFile("database/migrations/0104_evidence_review_drafts.down.sql","utf8"));
- const restored=(await f.db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='platform_audit_events'::regclass AND conname='platform_audit_events_action_key_check'")).rows[0].definition;
- assert.equal(restored,original);
- await f.db.execute(await readFile("database/migrations/0104_evidence_review_drafts.up.sql","utf8"));
- assert.equal((await f.service.saveDraftNotes(f.verifier,f.task.taskId,"Draft saves work after safe empty rollback and reapply.",0)).revision,1);
+ const before=(await f.db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='platform_audit_events'::regclass AND conname='platform_audit_events_action_key_check'")).rows[0].definition;
+ await assert.rejects(f.db.execute(await readFile("database/migrations/0104_evidence_review_drafts.down.sql","utf8")));
+ assert.equal((await f.db.query("SELECT to_regclass('public.evidence_review_draft_revisions') AS relation")).rows[0].relation,"evidence_review_draft_revisions");
+ const after=(await f.db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='platform_audit_events'::regclass AND conname='platform_audit_events_action_key_check'")).rows[0].definition;
+ assert.equal(after,before);
+ assert.equal((await f.service.saveDraftNotes(f.verifier,f.task.taskId,"Draft saves remain available after refused lower rollback.",0)).revision,1);
  }finally{await f.db.close();}
 });
