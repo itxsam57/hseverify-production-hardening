@@ -1,6 +1,8 @@
+import Link from "next/link";
+import { CredentialAppealFollowupService } from "@/lib/credential/credential-appeal-followup-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
-import { reviewCredentialAppealAction } from "./actions";
+import { reviewCredentialAppealAction, requestCredentialAppealFollowupAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +11,18 @@ export default async function AdminCredentialAppealsPage({
 }: {
   searchParams: Promise<{ status?: string; error?: string }>;
 }): Promise<React.JSX.Element> {
-  await requirePlatformPermission({
+  const principal = await requirePlatformPermission({
     expectedRole: "admin",
     permission: "platform.operations.manage"
   });
   const params = await searchParams;
   const appeals = await new CredentialAppealsRepository().listAll();
+  const followups = new Map(await Promise.all(appeals.map(async appeal=>[appeal.appealId,await new CredentialAppealFollowupService().list(principal,appeal.appealId)] as const)));
   const message = params.status === "updated" ? "Appeal review recorded." : null;
   const error =
-    params.error === "conflict"
+    params.error === "followup"
+      ? "Complete the requested evidence or interview before finalizing the appeal."
+      : params.error === "conflict"
       ? "Appeal history changed. Reload the appeal before recording a review."
       : params.error === "status"
       ? "Select a valid appeal review status."
@@ -70,6 +75,24 @@ export default async function AdminCredentialAppealsPage({
                 {appeal.outcomeAction ? <p>Outcome action: {appeal.outcomeAction.replaceAll("_", " ")}</p> : null}
               </div>
 
+              <div className="content-stack" aria-label="Appeal followup history">
+                {(followups.get(appeal.appealId)??[]).map(request=><section key={request.requestId}>
+                  <p>Further {request.kind}: {request.reason}</p>
+                  <p>{request.responded?"Response received":"Response required"}</p>
+                  {request.responseReason?<p>Response: {request.responseReason}</p>:null}
+                  {request.recommendation?<p>Assessor recommendation: {request.recommendation.replaceAll("_"," ")}</p>:null}
+                  {request.interviewRequestId?<Link href="/admin/assessor-matching">Review eligible interview assignment</Link>:null}
+                </section>)}
+              </div>
+              {(appeal.status==="submitted"||appeal.status==="under_review") && !(followups.get(appeal.appealId)??[]).some(request=>!request.responded)?(
+                <form action={requestCredentialAppealFollowupAction} className="form-grid" aria-label={"Request followup "+appeal.appealId}>
+                  <input type="hidden" name="appealId" value={appeal.appealId}/>
+                  <input type="hidden" name="expectedVersion" value={appeal.version}/>
+                  <label>Required followup<select name="kind"><option value="evidence">Further evidence</option><option value="interview">Further interview</option></select></label>
+                  <label>Reason for followup<textarea name="reason" minLength={10} maxLength={4000} required rows={4}/></label>
+                  <button type="submit">Request appeal followup</button>
+                </form>
+              ):null}
               {appeal.status === "submitted" || appeal.status === "under_review" ? (
                 <form action={reviewCredentialAppealAction} className="form-grid" aria-label={"Review " + appeal.appealId}>
                   <input type="hidden" name="appealId" value={appeal.appealId} />

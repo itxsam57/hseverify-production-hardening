@@ -45,6 +45,11 @@ test("Appeal services reject owner, original decision actor and unauthorized acc
     if(specifier==="@/lib/credential/credential-appeals-service")return {CredentialAppealsService:BoundService};
     if(specifier==="@/lib/credential/credential-appeals-repository")return {CredentialAppealsRepository:BoundRepository};
     if(specifier==="@/lib/credential/credential-appeals-domain")return appealsDomain;
+    if(specifier==="@/lib/credential/credential-appeal-followup-service")return {
+      AppealFollowupAccessError:class AppealFollowupAccessError extends Error{},
+      AppealFollowupConflictError:class AppealFollowupConflictError extends Error{},
+      CredentialAppealFollowupService:class CredentialAppealFollowupService{}
+    };
     if(specifier==="@/lib/credential/credential-renewal-service")return loadTs("src/lib/credential/credential-renewal-service.ts");
     if(specifier==="@/lib/auth/auth-session-service")return {requireRoleSession:async()=>({accountId:authenticatedReviewer})};
     if(specifier==="@/lib/authorization/authorization-service")return {requirePlatformPermission:async()=>({accountId:authenticatedReviewer})};

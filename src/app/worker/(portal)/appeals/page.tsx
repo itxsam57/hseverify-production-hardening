@@ -1,3 +1,4 @@
+import { CredentialAppealFollowupService } from "@/lib/credential/credential-appeal-followup-service";
 import Link from "next/link";
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
@@ -7,6 +8,7 @@ import { getDatabaseClient } from "@/lib/database/database";
 import { WorkerEvidenceService } from "@/lib/worker-evidence/worker-evidence-service";
 import {
   submitCredentialAppealAction,
+  respondCredentialAppealEvidenceAction,
   withdrawCredentialAppealAction
 } from "./actions";
 
@@ -28,14 +30,15 @@ export default async function WorkerAppealsPage({
     new WorkerEvidenceService(getDatabaseClient()).listCurrent(principal)
   ]);
 
+  const followups = new Map(await Promise.all(appeals.map(async appeal=>[appeal.appealId,await new CredentialAppealFollowupService().list(principal,appeal.appealId)] as const)));
   const message =
-    params.status === "submitted"
+    params.status === "response" ? "Further evidence submitted for independent appeal review." : params.status === "submitted"
       ? "Appeal submitted for independent review."
       : params.status === "withdrawn"
         ? "Appeal withdrawn. Its history remains preserved."
         : null;
   const error =
-    params.error === "reason"
+    params.error === "conflict" ? "Appeal history changed. Reload before responding." : params.error === "reason"
       ? "Provide at least 10 characters explaining the appeal grounds."
       : params.error === "credential"
         ? "That credential is not owned by this Worker."
@@ -124,6 +127,23 @@ export default async function WorkerAppealsPage({
                 </Link>
               ) : null}
               {appeal.reviewedAt ? <p>Reviewed: {appeal.reviewedAt}</p> : null}
+            </div>
+            <div className="content-stack" aria-label="Required appeal followups">
+              {(followups.get(appeal.appealId)??[]).map(request=><section key={request.requestId}>
+                <h3>Further {request.kind}</h3><p>{request.reason}</p>
+                <p>{request.responded?"Response received":"Response required"}</p>
+                {request.responseReason?<p>Response: {request.responseReason}</p>:null}
+                {request.recommendation?<p>Assessor recommendation: {request.recommendation.replaceAll("_"," ")}</p>:null}
+                {request.interviewRequestId?<Link href={"/worker/interviews/"+encodeURIComponent(request.interviewRequestId)}>Open requested appeal interview</Link>:null}
+                {!request.responded&&request.kind==="evidence"&&(appeal.status==="submitted"||appeal.status==="under_review")?(
+                  <form action={respondCredentialAppealEvidenceAction} className="form-grid" aria-label={"Respond to "+request.requestId}>
+                    <input type="hidden" name="appealId" value={appeal.appealId}/><input type="hidden" name="requestId" value={request.requestId}/><input type="hidden" name="expectedVersion" value={appeal.version}/>
+                    <p>Select current submitted records with scanned available attachments. <Link href="/worker/qualifications">Add or update qualification evidence</Link></p>
+                    <fieldset><legend>Further supporting evidence</legend>{evidence.filter(record=>record.currentVersion.status==="submitted").map(record=><label key={record.recordId}><input type="checkbox" name="evidenceVersionReferences" value={JSON.stringify({recordId:record.recordId,versionId:record.currentVersion.versionId})}/>{record.kind.replaceAll("_"," ")} · {record.recordId}</label>)}</fieldset>
+                    <label>Response explanation<textarea name="reason" minLength={10} maxLength={4000} rows={4} required/></label><button type="submit">Submit further appeal evidence</button>
+                  </form>
+                ):null}
+              </section>)}
             </div>
             {appeal.status === "submitted" || appeal.status === "under_review" ? (
               <form action={withdrawCredentialAppealAction}>

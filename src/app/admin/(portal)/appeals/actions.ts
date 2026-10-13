@@ -9,6 +9,7 @@ import {
   APPEAL_OUTCOME_ACTIONS,
   type AppealOutcomeAction
 } from "@/lib/credential/credential-appeals-domain";
+import { AppealFollowupAccessError, AppealFollowupConflictError, CredentialAppealFollowupService } from "@/lib/credential/credential-appeal-followup-service";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
 import { CredentialAppealsService } from "@/lib/credential/credential-appeals-service";
 import { CredentialRenewalInputError } from "@/lib/credential/credential-renewal-service";
@@ -63,6 +64,7 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
   } catch (error) {
     if (error instanceof CredentialAppealReviewAuthorizationError) redirect("/admin/appeals?error=independence");
     if (error instanceof Error && error.message === "Appeal update conflict.") redirect("/admin/appeals?error=conflict");
+    if (error instanceof Error && error.message.includes("Required appeal followup")) redirect("/admin/appeals?error=followup");
     if (error instanceof CredentialRenewalInputError) redirect("/admin/appeals?error=renewal");
     throw error;
   }
@@ -72,4 +74,18 @@ export async function reviewCredentialAppealAction(formData: FormData): Promise<
   revalidatePath("/worker/passport");
   revalidatePath("/worker/dashboard");
   redirect("/admin/appeals?status=updated");
+}
+export async function requestCredentialAppealFollowupAction(formData:FormData):Promise<void>{
+ const principal=await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});
+ const appealId=text(formData,"appealId"),raw=text(formData,"expectedVersion"),expectedVersion=Number(raw),kind=text(formData,"kind");
+ if(!/^[1-9]\d*$/.test(raw)||!Number.isSafeInteger(expectedVersion)||expectedVersion>2147483646)redirect("/admin/appeals?error=conflict");
+ if(kind!=="evidence"&&kind!=="interview")redirect("/admin/appeals?error=action");
+ const reason=text(formData,"reason");if(reason.length<10||reason.length>4000)redirect("/admin/appeals?error=reason");
+ try{await new CredentialAppealFollowupService().request({principal,appealId,expectedVersion,kind,reason});}
+ catch(error){
+  if(error instanceof AppealFollowupConflictError)redirect("/admin/appeals?error=conflict");
+  if(error instanceof AppealFollowupAccessError || error instanceof CredentialAppealReviewAuthorizationError)redirect("/admin/appeals?error=independence");
+  throw error;
+ }
+ revalidatePath("/admin/appeals");revalidatePath("/worker/appeals");revalidatePath("/worker/interviews");revalidatePath("/admin/assessor-matching");redirect("/admin/appeals?status=updated");
 }
