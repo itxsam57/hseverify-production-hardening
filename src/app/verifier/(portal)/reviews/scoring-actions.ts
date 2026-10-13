@@ -13,7 +13,7 @@ function text(form: FormData, key: string) {
 
 export async function finalizeWrittenScoreAction(form: FormData) {
   const actor = await requirePlatformPermission({ expectedRole: "verifier", permission: "verification.assigned.decide" });
-  await new WrittenScoringService(await getDatabaseClient()).finalizeAndAdvance({
+  await new WrittenScoringService(await getDatabaseClient(),actor).finalizeAndAdvance({
     reviewId: text(form, "reviewId"),
     reviewerAccountId: actor.accountId,
     tenantId: actor.tenantMembership?.tenantId,
@@ -25,7 +25,7 @@ export async function finalizeWrittenScoreAction(form: FormData) {
 
 export async function addWrittenScoreRubricMarkAction(form: FormData) {
   const actor = await requirePlatformPermission({ expectedRole: "verifier", permission: "verification.assigned.decide" });
-  await new WrittenScoringService(await getDatabaseClient()).addRubricMark({
+  await new WrittenScoringService(await getDatabaseClient(),actor).addRubricMark({
     reviewId: text(form, "reviewId"),
     criterion: text(form, "criterion"),
     mark: Number(text(form, "mark")),
@@ -40,7 +40,7 @@ export async function saveWrittenScoreDecisionAction(form: FormData) {
     expectedRole: "verifier",
     permission: "verification.assigned.decide"
   });
-  await new WrittenScoringService(await getDatabaseClient()).saveDraftDecision({
+  await new WrittenScoringService(await getDatabaseClient(),actor).saveDraftDecision({
     reviewId: text(form, "reviewId"),
     reviewerAccountId: actor.accountId,
     tenantId: actor.tenantMembership?.tenantId,

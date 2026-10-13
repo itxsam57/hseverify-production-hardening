@@ -18,7 +18,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
     expectedRole: "verifier",
     permission: "verification.assigned.read"
   });
-  const reviews = await new WrittenScoringService(await getDatabaseClient()).listReviewQueue({
+  const reviews = await new WrittenScoringService(await getDatabaseClient(),actor).listReviewQueue({
     reviewerAccountId: actor.accountId
   });
   const [assistance, aiProvider] = await Promise.all([
@@ -55,7 +55,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
             <tbody>
               {typedReviews.map((review) => {
                 const readyToFinalize =
-                  review.status === "DRAFT" &&
+                  review.status === "DRAFT" && review.canReview &&
                   review.score !== null &&
                   review.decision !== null;
                 const reviewAssistance = assistance.filter((item) => item.reviewId === review.review_id);
@@ -66,6 +66,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       {review.case_id}
                       <br />
                       <strong>{review.status}</strong>
+                      {review.unavailableReason ? <p role="status">{review.unavailableReason}</p> : null}
                       <section className="content-stack" aria-label={"Assessment evidence " + review.review_id}>
                         {review.questions.map(question => (
                           <article key={question.position} className="content-stack">
@@ -85,7 +86,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       <section className="content-stack" aria-label={"AI scoring guidance " + review.review_id}>
                         <strong>AI guidance</strong>
                         <p className="muted-copy">{aiProvider.reason}</p>
-                        {review.status === "DRAFT" && aiProvider.available ? (
+                        {review.status === "DRAFT" && review.canReview && aiProvider.available ? (
                           <form action={generateWrittenScoringAssistanceAction}>
                             <input type="hidden" name="reviewId" value={review.review_id} />
                             <button type="submit">Generate sandbox AI suggestion</button>
@@ -129,7 +130,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                           </div>
                         ) : null}
                       </section>
-                      {review.status === "DRAFT" ? (
+                      {review.status === "DRAFT" && review.canReview ? (
                         <form action={saveWrittenScoreDecisionAction} className="content-stack">
                           <input type="hidden" name="reviewId" value={review.review_id} />
                           <label>
@@ -171,7 +172,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       )}
                     </td>
                     <td>
-                      {review.status === "DRAFT" ? (
+                      {review.status === "DRAFT" && review.canReview ? (
                         <form action={addWrittenScoreRubricMarkAction}>
                           <input type="hidden" name="reviewId" value={review.review_id} />
                           <input name="criterion" placeholder="Criterion" required />
@@ -183,7 +184,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       )}
                     </td>
                     <td>
-                      {review.status === "DRAFT" ? (
+                      {review.status === "DRAFT" && review.canReview ? (
                         <form action={finalizeWrittenScoreAction}>
                           <input type="hidden" name="reviewId" value={review.review_id} />
                           <label><input type="checkbox" name="assessorVisible" />Share this reason with the assigned Assessor</label>
