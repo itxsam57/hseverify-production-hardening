@@ -10,12 +10,14 @@ permissions:
 
 jobs:
   compliance:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify fail-closed compliance range selection
+        run: node --test tests/engineering/autopilot-compliance-range.test.mjs
       - name: Verify guarded commits
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -23,13 +25,22 @@ jobs:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_SHA: ${{ github.sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          CANONICAL_BRANCH: qa/masterplan-completion-20260926
         run: |
           base="$BEFORE_SHA"
           head="$HEAD_SHA"
           if [ "$EVENT_NAME" = "pull_request" ]; then base="$PR_BASE_SHA"; head="$PR_HEAD_SHA"; fi
           if [ "$base" = "0000000000000000000000000000000000000000" ]; then
-            candidate="$(git merge-base "origin/$DEFAULT_BRANCH" "$head" 2>/dev/null || true)"
+            candidate="$(git merge-base "origin/$CANONICAL_BRANCH" "$head" 2>/dev/null || true)"
             if [ -n "$candidate" ] && [ "$candidate" != "$head" ]; then base="$candidate"; fi
+          fi
+          # Imported canonical history is already established; check every candidate addition.
+          # Both ancestry checks are mandatory, and canonical HEAD itself is never excluded.
+          canonical="$(git rev-parse --verify "refs/remotes/origin/$CANONICAL_BRANCH" 2>/dev/null || true)"
+          if [ "$EVENT_NAME" = "push" ] && [ "$base" != "0000000000000000000000000000000000000000" ] &&
+             [ -n "$canonical" ] && [ "$canonical" != "$head" ] &&
+             git merge-base --is-ancestor "$base" "$canonical" &&
+             git merge-base --is-ancestor "$canonical" "$head"; then
+            base="$canonical"
           fi
           python .autopilot/guard.py ci --root . --base-sha "$base" --head-sha "$head"
