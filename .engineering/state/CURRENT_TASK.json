@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "task_id": "WORKFLOW-001",
-  "stage": "Live-media timer fixture repair verification",
+  "task_id": "VERIFIER-013",
+  "stage": "INTEGRATING_AND_VERIFYING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "branch": "qa/interview-email-20261007",
-  "worktree": "/home/ubuntu/work/hseverify-current-audit",
-  "last_verified_sha": "e139f878a541716a8faf04d5f443d9bf79a3d083",
+  "branch": "build/verifier-completion-20261012",
+  "worktree": "/home/ubuntu/work/hseverify-verifier-completion-20261012",
+  "last_verified_sha": "e7f4a1cb03e4bad769b5fc4b15556228bc813925",
   "canonical_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "requirements": [
     "M1.03.02",
@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "Exact f237 full FAIL preserved (fixed1100ms active timer unchanged); no PG/CI/publication/promotion. Actual Chromium diagnostic confirms running/resumed advance after hydration. Narrow bounded numeric timer fixture repair passes entire real WebRTC/private evidence/draft/history journey1/1 and lint; independent review scoped ACCEPT with matching source hash. Full candidate remains unverified.",
+  "last_verified_action": "Clean verifier core seven scoped gates passed and independently accepted. Notification integration eight frozen working-tree gates passed and independently accepted; a9f83d9 full release failed at outdated notification exact-vocabulary contract after test environment recovery. Exact-vocabulary checks now reconciled and focused checks/lint pass; combined release remains unverified.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -59,19 +59,25 @@
     ".autopilot/artifacts/20261012-live-media-timer-repair.json",
     ".autopilot/artifacts/20261012-live-media-timer-independent-review.json"
   ],
-  "next_action": "Run fresh clean exact-SHA full verification plus both actual PostgreSQL gates after normal guarded timer-fixture commit; publish QA branch/PR only on complete exact gates PASS, inspect hosted CI, then data-preserving preview promotion.",
+  "next_action": "Commit notification foundation contract reconciliation; finish calibration producer/UI integration and supervisor mixed-task routing, then combine independently accepted slices and run one clean candidate full/PG/CI/preview gate.",
   "revision_attempt": 0,
-  "blockers": [],
+  "blockers": [
+    "Full a9f83d9 release gate FAIL; superseded exact-vocabulary contract repair has only focused passes until new full run."
+  ],
   "unknowns": [
-    "167 unverified and15 partial expanded scenarios",
-    "Live provider delivery/realPG contention remain unverified",
-    "NonSandbox recovery returns token without flow/challenge; actual nextRED preserved",
-    "Broader privacy/materialhandoffs/deployment workflow breadth"
+    "Combined release and deployment remain unverified",
+    "Calibration case snapshot producer and broad fixtures in progress",
+    "Supervisor mixed-task case routing review blocker",
+    "Written scoring live authorization and immutable amendments in progress",
+    "Integrity human disposition and unresolved concern blocking in progress",
+    "Appeal follow-up producers in progress",
+    "Company registration-code and multiple employer browser boundaries pending",
+    "Live provider delivery and physical-device/network receipts unavailable"
   ],
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-11T21:52:47.833175+00:00",
+  "updated_at": "2026-10-13T18:16:38.318800+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -92,9 +98,11 @@
       "passed": 36,
       "partial": 15,
       "unverified": 167
-    }
+    },
+    "coverage_status": "Historical 218-row counts are stale and cannot establish current readiness."
   },
   "blocker": null,
   "owner_required": false,
-  "current_candidate_base_sha": "f23714a9c487e8a3e78a4e115fb7d284780ee9c2"
+  "current_candidate_base_sha": "a9f83d9493d18b38c6853cfc347452e348ab0ae3",
+  "whole_project_complete": false
 }

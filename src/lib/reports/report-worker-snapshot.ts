@@ -43,7 +43,7 @@ export async function captureWorkerReportSnapshot(database:DatabaseClient,accoun
    qualification.qualification_title AS "Title",qualification.qualification_level AS "Level",qualification.issuing_organization AS "Institution",
    qualification.issue_date AS "Awarded date",versions.version_status||
     CASE WHEN review.outcome IS NOT NULL THEN ' / '||review.outcome
-     WHEN review.task_status IN ('QUEUED','ASSIGNED') THEN ' / Pending review' ELSE '' END AS "Status",'qualification-evidence' AS source_type,
+     WHEN review.task_status IN ('QUEUED','ASSIGNED') THEN ' / Pending review' WHEN review.task_status='UNABLE_TO_VERIFY' THEN ' / Unable to verify' WHEN review.task_status='ESCALATED' THEN ' / Escalated' ELSE '' END AS "Status",'qualification-evidence' AS source_type,
    records.record_id AS source_ref,versions.version_number::text||':'||versions.revision::text||':'||coalesce(review.decision_id,review.task_id,'unreviewed') AS source_version
    FROM worker_evidence_records records JOIN worker_evidence_versions versions
     ON versions.version_id=records.current_version_id AND versions.record_id=records.record_id
@@ -53,7 +53,7 @@ export async function captureWorkerReportSnapshot(database:DatabaseClient,accoun
      ON decisions.task_id=tasks.task_id AND decisions.source_version_id=versions.version_id AND decisions.outcome=tasks.task_status
     WHERE tasks.worker_account_id=records.worker_account_id AND tasks.evidence_kind='qualification'
      AND tasks.source_record_id=records.record_id AND tasks.source_version_id=versions.version_id
-     AND tasks.task_status IN ('QUEUED','ASSIGNED','APPROVED','REJECTED','CHANGES_REQUESTED')
+     AND tasks.task_status IN ('QUEUED','ASSIGNED','APPROVED','REJECTED','CHANGES_REQUESTED','UNABLE_TO_VERIFY','ESCALATED')
     ORDER BY coalesce(decisions.decided_at,tasks.updated_at) DESC,tasks.task_id DESC LIMIT 1) review ON TRUE
    WHERE records.worker_account_id=$1 AND records.record_kind='qualification' AND ${range("versions.created_at")}
    ORDER BY records.record_id LIMIT 10001`,parameters);

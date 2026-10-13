@@ -613,7 +613,7 @@ function VerificationResult({
       <strong>Independent verification: {label}.</strong>
       {record.verificationReason ? <> {record.verificationReason}</> : null}
       {record.verificationDecidedAt
-        ? <> Decision recorded {formatUtc(record.verificationDecidedAt)}.</>
+        ? <> {status==="UNABLE_TO_VERIFY"||status==="ESCALATED"||status==="QUEUED"?"Review update recorded":"Decision recorded"} {formatUtc(record.verificationDecidedAt)}.</>
         : null}
     </Alert>
   );

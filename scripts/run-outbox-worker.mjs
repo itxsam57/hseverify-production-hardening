@@ -43,5 +43,8 @@ try {
   console.error("Outbox worker stopped after a runtime failure.");
   process.exitCode = 1;
 } finally {
+  // PGlite runtime shutdown can overwrite Node exitCode; retain the job outcome.
+  const outcomeExitCode = process.exitCode;
   await database?.close();
+  if (outcomeExitCode !== undefined) process.exitCode = outcomeExitCode;
 }

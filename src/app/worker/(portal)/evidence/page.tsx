@@ -42,11 +42,12 @@ export default async function WorkerEvidencePage(): Promise<React.JSX.Element> {
           decided_at: string | Date | null;
         }>(
           `SELECT tasks.task_status,
-                  decisions.reason,
-                  decisions.decided_at
+                  COALESCE(decisions.reason,resolution.reason) AS reason,
+                  COALESCE(decisions.decided_at,resolution.occurred_at) AS decided_at
              FROM evidence_review_tasks AS tasks
              LEFT JOIN evidence_review_decisions AS decisions
                ON decisions.task_id=tasks.task_id
+             LEFT JOIN LATERAL(SELECT reason,occurred_at FROM evidence_review_resolution_events WHERE task_id=tasks.task_id ORDER BY revision DESC LIMIT 1) resolution ON TRUE
             WHERE tasks.worker_account_id=$1
               AND tasks.source_version_id=$2
             ORDER BY tasks.updated_at DESC, tasks.task_id DESC

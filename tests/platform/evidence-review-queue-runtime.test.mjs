@@ -36,9 +36,9 @@ const ENV = {
 };
 const oid = (prefix, c) => `${prefix}_${c.repeat(24)}`;
 
-async function db() {
+async function db(ceiling=MIGRATION) {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, MIGRATION);
+  await applyMigrationsThrough(database, ENV.releaseSha, ceiling);
   return database;
 }
 
@@ -290,3 +290,37 @@ test("M2.02 history-preserving rollback and repeat-safe reapply keep review rows
     assert.equal(retainedAfter.rows[0].source_version_id,x.observationId);
   } finally { await database.close(); }
 });
+
+for(const outcome of ["UNABLE_TO_VERIFY","ESCALATED"]){
+ test("Another task approval preserves the correct next actor for "+outcome,async()=>{
+ const database=await db("0108_review_resolution_notifications");try{
+ const x=await queueObservation(database,outcome==="ESCALATED"?"V":"W"),verifier=await seedVerifier(database,"N");
+ const secondId=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-SECOND",observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated"},NOW_DATE);
+ assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),1);
+ const second=(await database.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[secondId])).rows[0].task_id;
+ await x.service.claim(verifier,x.taskId,NOW_DATE);await x.service.claim(verifier,second,NOW_DATE);
+ await x.service.resolveReview(verifier,x.taskId,{expectedRevision:0,outcome,reason:"The evidence remains unresolved and needs the correct next actor.",destination:outcome==="ESCALATED"?"admin":undefined,attemptedMethods:"Contacted the supervisor and checked the available observation records.",limitations:"The records do not independently confirm this observation."},NOW_DATE);
+ await x.service.decide(verifier,second,"APPROVED","The second observation was independently verified against its source.",NOW_DATE);
+ const row=(await database.query("SELECT case_status,owner_kind,next_action FROM assurance_cases WHERE case_id=$1",[x.caseId])).rows[0];
+ assert.equal(row.owner_kind,outcome==="ESCALATED"?"admin":"worker");assert.equal(row.case_status,outcome==="ESCALATED"?"Review pending":"Evidence pending");
+ assert.match(row.next_action,outcome==="ESCALATED"?/Admin/:/supporting evidence/);
+ }finally{await database.close();}
+ });
+}
+
+for(const outcome of ["ESCALATED"]){
+ test("Another task changes-requested preserves the correct next actor for "+outcome,async()=>{
+ const database=await db("0108_review_resolution_notifications");try{
+ const x=await queueObservation(database,outcome==="ESCALATED"?"V":"W"),verifier=await seedVerifier(database,"N");
+ const secondId=await x.service.addSupervisorObservation(x.company,{caseId:x.caseId,competencyReference:"COMP-SECOND",observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated"},NOW_DATE);
+ assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),1);
+ const second=(await database.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[secondId])).rows[0].task_id;
+ await x.service.claim(verifier,x.taskId,NOW_DATE);await x.service.claim(verifier,second,NOW_DATE);
+ await x.service.resolveReview(verifier,x.taskId,{expectedRevision:0,outcome,reason:"The evidence remains unresolved and needs the correct next actor.",destination:outcome==="ESCALATED"?"admin":undefined,attemptedMethods:"Contacted the supervisor and checked the available observation records.",limitations:"The records do not independently confirm this observation."},NOW_DATE);
+ await x.service.decide(verifier,second,"CHANGES_REQUESTED","The second observation was independently verified against its source.",NOW_DATE);
+ const row=(await database.query("SELECT case_status,owner_kind,next_action FROM assurance_cases WHERE case_id=$1",[x.caseId])).rows[0];
+ assert.equal(row.owner_kind,outcome==="ESCALATED"?"admin":"worker");assert.equal(row.case_status,outcome==="ESCALATED"?"Review pending":"Evidence pending");
+ assert.match(row.next_action,outcome==="ESCALATED"?/Admin/:/supporting evidence/);
+ }finally{await database.close();}
+ });
+}
