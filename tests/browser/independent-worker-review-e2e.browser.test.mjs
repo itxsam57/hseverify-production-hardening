@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { prepareReviewCalibrationFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const PNG_FILE = {
   name: "proof.png",
@@ -162,12 +163,33 @@ async function reviseEvidence(page, baseUrl, kind, label, value) {
   await card.getByText("active · submitted", { exact: true }).waitFor();
 }
 
-async function decideQueueItem(page, baseUrl, kind, outcome, reason) {
+async function bindQueuedReview(admin, baseUrl, taskId) {
+  await admin.goto(`${baseUrl}/admin/review-frameworks`, { waitUntil: "domcontentloaded" });
+  const card = admin.locator(`section[aria-label="Framework for ${taskId}"]`);
+  await card.waitFor();
+  if (!(await card.getByText("Framework unresolved", { exact: true }).count())) return;
+  const revision = card.locator('select[name="frameworkVersionId"]');
+  const options = await revision.locator("option").evaluateAll(items =>
+    items.map(option => ({ value: option.value, text: option.textContent ?? "" })).filter(item => item.value && item.text.includes("INDEPENDENT-REVIEW")));
+  assert.equal(options.length, 1, "Expected one authoritative review framework revision.");
+  await revision.selectOption(options[0].value);
+  await card.locator('textarea[name="reason"]').fill("This browser journey uses the explicit independent review standard for the submitted source.");
+  await card.getByRole("button", { name: "Bind review framework", exact: true }).click();
+  await admin.getByText("Review framework binding recorded.", { exact: true }).waitFor();
+}
+
+async function decideQueueItem(page, adminPage, baseUrl, kind, outcome, reason) {
   await page.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
   const row = page.locator("tbody tr").filter({
     has: page.locator("td", { hasText: kind })
   }).filter({ hasText: "QUEUED" }).first();
-  await row.getByRole("link", { name: "Review" }).click();
+  const reviewLink = row.getByRole("link", { name: "Review" });
+  const href = await reviewLink.getAttribute("href");
+  assert.ok(href, "Queued review did not expose its fixed review link.");
+  const taskId = href.split("/").filter(Boolean).at(-1);
+  assert.ok(taskId?.startsWith("evidence_review_"), "Queued review link did not contain an opaque task id.");
+  await bindQueuedReview(adminPage, baseUrl, taskId);
+  await page.goto(`${baseUrl}${href}`, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Evidence review" }).waitFor();
   await page.getByRole("button", { name: "Claim review" }).click();
   await page.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
@@ -232,6 +254,16 @@ test(
       const credentials = JSON.parse(
         await readFile("/tmp/independent-audit-credentials.json", "utf8")
       );
+      const authorityDatabase = new PGlite(databaseDirectory);
+      try {
+        await prepareReviewCalibrationFixture(authorityDatabase, {
+          verifiers: [{ accountId: credentials.verifier.accountId }],
+          reference: "INDEPENDENT-REVIEW",
+          at: new Date()
+        });
+      } finally {
+        await authorityDatabase.close();
+      }
 
       if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
         const faultDatabase = new PGlite(databaseDirectory);
@@ -262,9 +294,12 @@ test(
           const worker = await workerContext.newPage();
           const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const verifier = await verifierContext.newPage();
+          const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const admin = await adminContext.newPage();
 
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
+            await login(admin, baseUrl, credentials.admin, "admin");
 
             await worker.goto(`${baseUrl}/worker/identity`, { waitUntil: "domcontentloaded" });
             await worker.getByLabel("Legal first name").fill("Independent");
@@ -338,7 +373,7 @@ test(
 
             if(process.env.HSE_INITIAL_IDENTITY_REJECTION === "true") {
               console.log("SCENARIO: initial identity rejection remains terminal and issues no Worker ID");
-              await decideQueueItem(verifier,baseUrl,"identity","REJECTED","The supplied identity evidence cannot establish the claimed legal identity.");
+              await decideQueueItem(verifier,admin,baseUrl,"identity","REJECTED","The supplied identity evidence cannot establish the claimed legal identity.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("Rejected",{exact:true}).first().waitFor();
               await worker.getByText("The supplied identity evidence cannot establish the claimed legal identity.",{exact:true}).waitFor();
@@ -349,7 +384,7 @@ test(
             }
             if(process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true") {
               console.log("SCENARIO: initial identity changes requested -> revised submission -> approval");
-              await decideQueueItem(verifier,baseUrl,"identity","CHANGES_REQUESTED","The document photograph needs correction before the initial identity can be verified.");
+              await decideQueueItem(verifier,admin,baseUrl,"identity","CHANGES_REQUESTED","The document photograph needs correction before the initial identity can be verified.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("More information required",{exact:true}).first().waitFor({timeout:15000});
               await worker.getByText("The document photograph needs correction before the initial identity can be verified.",{exact:true}).waitFor({timeout:10000});
@@ -364,6 +399,7 @@ test(
             }
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "identity",
               "APPROVED",
@@ -371,6 +407,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "qualification",
               "APPROVED",
@@ -378,6 +415,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "experience",
               "REJECTED",
@@ -385,6 +423,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "skill",
               "CHANGES_REQUESTED",
@@ -392,6 +431,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "employment",
               "APPROVED",
@@ -420,7 +460,7 @@ test(
             for (const [kind,label,value] of [["experience","Duties / experience detail","Corrected experience supported by attributable site records."],["skill","Proficiency claim","Evidence verified practical proficiency"]]) {
               console.log("SCENARIO: correct and resubmit " + kind);
               await reviseEvidence(worker, baseUrl, kind, label, value);
-              await decideQueueItem(verifier, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
+              await decideQueueItem(verifier, admin, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
               await worker.goto(`${baseUrl}/worker/evidence`);
               await worker.locator("article").filter({hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record`}).first().getByText(/Independent verification: approved/).waitFor();
             }
@@ -430,7 +470,7 @@ test(
               for (const outcome of ["REJECTED","CHANGES_REQUESTED","APPROVED"]) {
                 console.log("SCENARIO: " + kind + " revision -> " + outcome);
                 await reviseEvidence(worker, baseUrl, kind, label, kind === "qualification" ? "NEBOSH International General Certificate" : "Versioned evidence supports the claimed work and requires independent review.");
-                await decideQueueItem(verifier, baseUrl, kind, outcome, "Reasoned " + outcome.toLowerCase() + " decision against the exact revised source and retained prior evidence.");
+                await decideQueueItem(verifier, admin, baseUrl, kind, outcome, "Reasoned " + outcome.toLowerCase() + " decision against the exact revised source and retained prior evidence.");
                 await worker.goto(`${baseUrl}/worker/evidence`);
                 const card = worker.locator("article").filter({hasText:`${kind[0].toUpperCase()}${kind.slice(1)} record`}).first();
                 await card.getByText("Independent verification: " + outcome.toLowerCase().replaceAll("_"," ") + ".",{exact:true}).waitFor();
@@ -463,7 +503,7 @@ test(
             await worker.getByText("Awaiting authorized decision", {exact:true}).waitFor();
             await verifier.goto(`${baseUrl}/verifier/reviews`);
             await verifier.locator("tbody tr").filter({hasText:"identity"}).filter({hasText:"QUEUED"}).first().waitFor({timeout:15000});
-            await decideQueueItem(verifier, baseUrl, "identity", "APPROVED", "Corrected legal spelling verified against new document and original identity history.");
+            await decideQueueItem(verifier, admin, baseUrl, "identity", "APPROVED", "Corrected legal spelling verified against new document and original identity history.");
             await worker.goto(`${baseUrl}/worker/identity`);
             await worker.getByText("Verified", {exact:true}).first().waitFor();
             assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
@@ -477,7 +517,7 @@ test(
               await worker.getByRole("button", {name:"Submit correction"}).waitFor();
               await worker.getByRole("button", {name:"Submit correction"}).click();
               await worker.getByText("Awaiting authorized decision", {exact:true}).waitFor();
-              await decideQueueItem(verifier, baseUrl, "identity", outcome, "Proposed correction cannot be accepted; original verified identity and permanent identifier remain valid.");
+              await decideQueueItem(verifier, admin, baseUrl, "identity", outcome, "Proposed correction cannot be accepted; original verified identity and permanent identifier remain valid.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("Verified", {exact:true}).first().waitFor();
               assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
@@ -524,6 +564,7 @@ test(
           } finally {
             await workerContext.close();
             await verifierContext.close();
+            await adminContext.close();
             await browser.close();
           }
         }
@@ -547,16 +588,21 @@ test(
               const worker = await browser.newPage();
               const verifierContext = await browser.newContext({storageState:recoveryVerifierState});
               const verifier = await verifierContext.newPage();
+              const adminContext = await browser.newContext();
+              const admin = await adminContext.newPage();
               await login(worker,baseUrl,credentials.worker,"worker");
+              await login(admin,baseUrl,credentials.admin,"admin");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByRole("button",{name:"Submit correction",exact:true}).click();
               await worker.getByText("Awaiting authorized decision",{exact:true}).waitFor();
               await verifier.goto(`${baseUrl}/verifier/reviews`);
-              await decideQueueItem(verifier,baseUrl,"identity","APPROVED","Recovered queue successfully delivered the original corrected identity for independent review.");
+              await decideQueueItem(verifier,admin,baseUrl,"identity","APPROVED","Recovered queue successfully delivered the original corrected identity for independent review.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("Verified",{exact:true}).first().waitFor();
               assert.equal(await worker.getByLabel("Legal first name").inputValue(),"Independent Corrected");
               console.log("SCENARIO: queue failure -> preserved draft -> retry -> Verifier approval");
+              await verifierContext.close();
+              await adminContext.close();
             } finally { await browser.close(); }
           }
         });
