@@ -1,4 +1,6 @@
 import "server-only";
+import {assertIntegrityDispositionClear} from "../integrity/integrity-review-service";
+import {objectiveAssessmentResult} from "../assessment-attempt/assessment-submission-progression-service";
 import type {AuthorizationPrincipal} from "../authorization/authorization-context-domain";
 import {requireLiveWrittenReviewer,requireWrittenAttemptEligibility,WrittenScoringAccessError} from "./written-scoring-authority";
 import { loadAssignedReviewQuestions } from "./assessment-review-source";
@@ -20,13 +22,17 @@ export class WrittenScoringService {
 
   private async requireReviewOwner(reviewId:string,reviewerAccountId:string,tenantId?:string) {
     await requireLiveWrittenReviewer(this.database,this.actor,reviewerAccountId);
-    const result=await this.database.query<{review_id:string;attempt_id:string;case_id:string;tenant_id:string;rubric_version:string;draft_revision:number}>(`SELECT review_id,attempt_id,case_id,tenant_id,rubric_version,draft_revision FROM written_score_reviews WHERE review_id=$1 AND reviewer_account_id=$2 AND ($3::text IS NULL OR tenant_id=$3) FOR UPDATE`,[reviewId,reviewerAccountId,tenantId??null]);
+    const result=await this.database.query<{review_id:string;attempt_id:string;case_id:string;tenant_id:string;rubric_version:string;draft_revision:number}>(`SELECT review_id,attempt_id,case_id,tenant_id,rubric_version,draft_revision FROM written_score_reviews WHERE review_id=$1 AND reviewer_account_id=$2 AND ($3::text IS NULL OR tenant_id=$3)`,[reviewId,reviewerAccountId,tenantId??null]);
     const row=result.rows[0];if(!row)throw new WrittenScoringAccessError("Reviewer does not own this scoring review.");
     await requireWrittenAttemptEligibility(this.database,reviewerAccountId,row.attempt_id,row.case_id,row.tenant_id);
+    const locked=await this.database.query<typeof row>(`SELECT review_id,attempt_id,case_id,tenant_id,rubric_version,draft_revision FROM written_score_reviews WHERE review_id=$1 AND reviewer_account_id=$2 AND ($3::text IS NULL OR tenant_id=$3) FOR UPDATE`,[reviewId,reviewerAccountId,tenantId??null]);
+    const current=locked.rows[0];
+    if(!current || current.attempt_id!==row.attempt_id || current.case_id!==row.case_id || current.tenant_id!==row.tenant_id || current.rubric_version!==row.rubric_version)throw new WrittenScoringAccessError("Scoring source changed during review.");
+
     const pinned=await this.database.query(`SELECT 1 FROM assessment_attempts WHERE attempt_id=$1 AND blueprint_version_id=$2`,[row.attempt_id,row.rubric_version]);
     if(!pinned.rows[0])throw new WrittenScoringAccessError("Written scoring rubric source is unavailable.");
     await requireLiveWrittenReviewer(this.database,this.actor,reviewerAccountId);
-    return row;
+    return current;
   }
 
   private validateIdentity(input: {tenantId: string; caseId: string; attemptId: string; reviewerAccountId: string}) {
@@ -104,7 +110,13 @@ export class WrittenScoringService {
     if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
     if (!input.reviewerAccountId.trim()) throw new Error("Missing reviewer scope.");
     if (input.assessorVisible !== undefined && typeof input.assessorVisible !== "boolean") throw new Error("Invalid comment visibility.");
-    await this.requireReviewOwner(input.reviewId, input.reviewerAccountId, input.tenantId);
+    const owner=await this.requireReviewOwner(input.reviewId, input.reviewerAccountId, input.tenantId);
+    await assertIntegrityDispositionClear(this.database,owner.attempt_id);
+    const objective=await objectiveAssessmentResult(this.database,owner.attempt_id,owner.case_id);
+    if(objective){
+      const saved=await this.database.query<{score:number|null;decision:string|null}>(`SELECT score,decision FROM written_score_reviews WHERE review_id=$1`,[input.reviewId]);
+      if(saved.rows[0]?.score!==objective.score || saved.rows[0]?.decision!==objective.decision)throw new Error("Objective score must match pinned answers and the published pass mark.");
+    }
     const result = await this.database.query(
       `UPDATE written_score_reviews SET status='FINAL'${input.assessorVisible === true ? ",assessor_visible=TRUE" : ""} WHERE review_id=$1 AND reviewer_account_id=$2 AND status='DRAFT' AND NOT EXISTS (SELECT 1 FROM scoring_conflict_declarations WHERE review_id=$1 AND reviewer_account_id=$2) RETURNING review_id`,
       [input.reviewId, input.reviewerAccountId]
@@ -233,6 +245,9 @@ export class WrittenScoringService {
       let unavailableReason:string|null=null;
       try{await this.requireReviewOwner(review.review_id,reviewerAccountId,review.tenant_id);}catch(error){if(!(error instanceof WrittenScoringAccessError))throw error;unavailableReason=error.message;}
       const questions=unavailableReason?[]:(await loadAssignedReviewQuestions(this.database,reviewerAccountId,[review.review_id])).get(review.review_id)??[];
+      if(!unavailableReason && questions.length>0 && questions.every(question=>question.questionType!=="SHORT_TEXT" && question.questionType!=="LONG_TEXT") && !(await objectiveAssessmentResult(this.database,review.attempt_id,review.case_id))){
+        unavailableReason="Published pass mark is unavailable for this objective assessment. Admin must resolve the case policy before finalization.";
+      }
       const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 ORDER BY criterion,mark_sequence DESC`,[review.review_id,reviewerAccountId]);
       const rubricMarks=Object.freeze(marks.rows.map(mark=>Object.freeze({criterion:mark.criterion,mark:Number(mark.mark),reason:mark.mark_reason})));
       rows.push({...review,questions,rubricMarks,canReview:unavailableReason===null,unavailableReason});

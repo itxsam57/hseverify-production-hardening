@@ -1,3 +1,4 @@
+import {IntegrityReviewForm} from "@/components/review/integrity-review-form";
 import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
@@ -64,23 +65,20 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                 const readyToFinalize =
                   review.status === "DRAFT" && review.canReview &&
                   review.score !== null &&
-                  review.decision !== null && (!integrity || integrity.disposition==="CLEAR");
+                  review.decision !== null && (!integrity || (integrity.disposition==="CLEAR" && Number(integrity.reviewed_event_count)===Number(integrity.event_count)));
                 const reviewAssistance = assistance.filter((item) => item.reviewId === review.review_id);
                 const latestAssistance = reviewAssistance[0] ?? null;
                 return (
-                  <tr key={review.review_id}>
+                  <tr key={review.review_id} id={review.review_id}>
                     <td>
                       {review.case_id}
                       {integrity ? <section className="content-stack" aria-label={"Integrity review "+review.review_id}>
                         <h2>Integrity concern</h2>
                         <p>{String(integrity.event_count)} retained signals require a reasoned human disposition before progression.</p>
-                        {integrity.disposition ? <><strong>{integrity.disposition}</strong><p>{integrity.reason}</p></> : <form action={resolveIntegrityReviewAction} className="content-stack">
-                          <input type="hidden" name="reviewId" value={review.review_id}/>
-                          <input type="hidden" name="integrityEventCount" value={String(integrity.event_count)}/>
-                          <label>Integrity disposition<select name="integrityDisposition" required><option value="">Select disposition</option><option value="CLEAR">Clear</option><option value="CONCERN_CONFIRMED">Concern confirmed</option><option value="UNABLE">Unable to determine</option><option value="ESCALATE">Escalate to Admin</option></select></label>
-                          <label>Integrity reason<textarea name="integrityReason" minLength={5} maxLength={4000} required/></label>
-                          <button type="submit">Record integrity disposition</button>
-                        </form>}
+                        <ul aria-label="Retained integrity signals">{integrity.events.map((event,index)=><li key={index}>{event.at} — {event.type} — {event.classification} — {event.state} — Provider: {event.providerState??"Not supplied"}</li>)}</ul>
+                        {integrity.history?.length ? <ol aria-label="Integrity decision history">{integrity.history.map(item=><li key={item.revision}>Revision {item.revision}: {item.disposition} ({item.role}) — {item.reason}</li>)}</ol> : null}
+                        {integrity.disposition ? <><strong>{integrity.disposition}</strong><p>{integrity.reason}</p></> : null}
+                        {review.status==="DRAFT" && review.canReview && (!integrity.disposition || integrity.disposition==="REVIEW_REQUIRED" || (integrity.disposition==="CLEAR" && Number(integrity.reviewed_event_count)<Number(integrity.event_count))) ? <IntegrityReviewForm action={resolveIntegrityReviewAction} reviewId={review.review_id} revision={integrity.revision??0} eventCount={Number(integrity.event_count)}/> : null}
                       </section> : null}
 
                       <br />
@@ -149,7 +147,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                           </div>
                         ) : null}
                       </section>
-                      {review.status === "DRAFT" && review.canReview ? (
+                      {review.status === "DRAFT" && review.canReview && criterionKeys.length>0 ? (
                         <form action={saveWrittenScoreDecisionAction} className="content-stack">
                           <input type="hidden" name="reviewId" value={review.review_id} />
                           <input type="hidden" name="expectedRevision" value={review.draft_revision} />

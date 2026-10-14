@@ -7,6 +7,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 import { assessmentEligibilityQualificationFixture } from "../helpers/assessment-eligibility-context-fixture.mjs";
 import { assessmentEligibilityWaitingFixture } from "../helpers/assessment-eligibility-policy-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function decode32(value) {
@@ -114,6 +115,8 @@ test("Actual Worker waiting/date, forged apply and Company submit denial become 
 
 test("Configured qualification gates Worker and Company until original Verifier approval, then self-payment pins and starts the exact case", {timeout:180000},async()=>{
  const fixture=await assessmentEligibilityQualificationFixture(),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
+ const authorityDb=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+ try{await authorizeReviewFixture(authorityDb,{taskId:fixture.qualificationTaskId,verifiers:[{accountId:fixture.credentials.verifier.accountId}],at:new Date()});}finally{await authorityDb.close();}
  const browser=await chromium.launch({headless:true}),workerContext=await browser.newContext({viewport:{width:390,height:844}}),
   companyContext=await browser.newContext({viewport:{width:1440,height:1000}}),verifierContext=await browser.newContext({viewport:{width:1440,height:1000}});
  const workerPage=await workerContext.newPage(),companyPage=await companyContext.newPage(),verifierPage=await verifierContext.newPage(),errors=[];

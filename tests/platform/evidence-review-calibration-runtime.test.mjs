@@ -121,12 +121,11 @@ test("actual case producer binding respects snapshot framework revision at refer
  const x=await setup();try {
   const tenant=id("tenant","T"),caseId=id("assurance_case","C"),order=id("assurance_order","C"),target=id("assurance_target","C"),membership=id("membership","C"),link=id("company_worker_link","C");
   const company={...x.worker,activeRole:"company",authorizedTenantPermission:"company.orders.manage",tenantMembership:{tenantId:tenant,tenantStatus:"active",membershipId:membership,role:"owner",status:"active",overrides:[]}};
-  await x.db.query(`INSERT INTO assurance_orders(order_id,tenant_id,created_by_membership_id,order_name,order_reference,requested_identity_checks,requested_evidence_checks,assessment_framework_references,interview_required,order_status,submitted_at,created_at,updated_at) VALUES($1,$2,$3,'Pinned calibration order','PIN-CAL','[]','[]','["CAL-B"]',FALSE,'SUBMITTED',$4,$4,$4)`,[order,tenant,membership,NOW.toISOString()]);
+  await x.db.query(`INSERT INTO assurance_orders(order_id,tenant_id,created_by_membership_id,order_name,order_reference,requested_identity_checks,requested_evidence_checks,assessment_framework_references,interview_required,order_status,submitted_at,created_at,updated_at) VALUES($1,$2,$3,'Pinned calibration order','PIN-CAL','[]','["experience"]','["CAL-B"]',FALSE,'SUBMITTED',$4,$4,$4)`,[order,tenant,membership,NOW.toISOString()]);
   await x.db.query(`INSERT INTO assurance_order_workers(target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,target_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'worker','submitted',$6,$6)`,[target,order,tenant,link,x.worker.accountId,NOW.toISOString()]);
   await x.db.query(`INSERT INTO assurance_cases(case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,case_status,owner_kind,next_action,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,'Evidence pending','worker','Submit evidence.',$7,$7)`,[caseId,order,target,tenant,link,x.worker.accountId,NOW.toISOString()]);
   const policy=new EffectivePolicyService(x.db);await policy.publishPolicyVersion(x.admin,{frameworkReference:"CAL-B",policyReference:"PIN-CAL",title:"Pinned case rules",effectiveFrom:before,effectiveTo:null,policyValues:{pass_mark:80},overrideAllowedFields:[],overrideDirections:{}},NOW);
   await pinAssuranceCasePolicySnapshot(x.db,{caseId,tenantId:tenant,frameworkReferences:["CAL-B"],policyReference:"PIN-CAL",referenceTime:NOW,actorAccountId:x.admin.accountId,actorPrincipal:x.admin});
-  await x.review.addSupervisorObservation(company,{caseId,competencyReference:"CAL-COMP",observedAt:NOW,observationText:"Observed independent demonstration of safe evidence handling.",outcome:"demonstrated"},NOW);
   await x.review.queueCaseEvidence(company,caseId,NOW);
   const task=(await x.db.query("SELECT task_id FROM evidence_review_tasks WHERE case_id=$1",[caseId])).rows[0].task_id;
   const service=new EvidenceReviewFrameworkService(Promise.resolve(x.db));const revision=(await service.listFrameworks(x.admin)).find(r=>r.frameworkId===x.frameworkId).frameworkVersionId;
@@ -157,5 +156,33 @@ test("concurrent binding attempts have one audited winner; assigned binding cann
   await x.record("CURRENT");await x.review.claim(x.verifier,x.task.taskId,NOW);
   await assert.rejects(service.bind(x.admin,{taskId:x.task.taskId,frameworkVersionId:version,reason:"Assigned binding mutation must be refused.",expectedBindingId:results.find(r=>r.status==="fulfilled").value},NOW),/unclaimed/i);
   assert.equal((await new EvidenceReviewEligibilityService(Promise.resolve(x.db)).evaluate(x.verifier,x.task.taskId,new Date(future.getTime()+1000))).reason,"CALIBRATION_NOT_CURRENT");
+ }finally{await x.db.close();}
+});
+
+test("failed calibration after claim blocks material Unable to Verify but permits safe escalation",async()=>{
+ const x=await setup();try{
+  await bind(x);await x.record("CURRENT");await x.review.claim(x.verifier,x.task.taskId,NOW);
+  await x.record("FAILED",new Date(NOW.getTime()-1000));
+  await assert.rejects(x.review.resolveReview(x.verifier,x.task.taskId,{expectedRevision:0,outcome:"UNABLE_TO_VERIFY",reason:"Issuer cannot confirm submitted evidence",attemptedMethods:"Contacted issuer and checked reference",limitations:"Issuer did not reply to checks"},NOW),/calibration/i);
+  assert.equal((await x.db.query("SELECT COUNT(*)::integer n FROM evidence_review_resolution_events")).rows[0].n,0);
+  await x.review.resolveReview(x.verifier,x.task.taskId,{expectedRevision:0,outcome:"ESCALATED",destination:"admin",reason:"Calibration unavailable; reassignment or independent review required"},NOW);
+  assert.equal((await x.db.query("SELECT task_status FROM evidence_review_tasks WHERE task_id=$1",[x.task.taskId])).rows[0].task_status,"ESCALATED");
+ }finally{await x.db.close();}
+});
+test("Admin recovers policyless case with explicit published policy and matching calibration",async()=>{
+ const x=await setup();try {
+  const tenant=id("tenant","T"),caseId=id("assurance_case","C"),order=id("assurance_order","C"),target=id("assurance_target","C"),membership=id("membership","C"),link=id("company_worker_link","C");
+  const company={...x.worker,activeRole:"company",authorizedTenantPermission:"company.orders.manage",tenantMembership:{tenantId:tenant,tenantStatus:"active",membershipId:membership,role:"owner",status:"active",overrides:[]}};
+  await x.db.query(`INSERT INTO assurance_orders(order_id,tenant_id,created_by_membership_id,order_name,order_reference,requested_identity_checks,requested_evidence_checks,assessment_framework_references,interview_required,order_status,submitted_at,created_at,updated_at) VALUES($1,$2,$3,'Pinned calibration order','PIN-CAL','[]','["experience"]','["CAL-B"]',FALSE,'SUBMITTED',$4,$4,$4)`,[order,tenant,membership,NOW.toISOString()]);
+  await x.db.query(`INSERT INTO assurance_order_workers(target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,target_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'worker','submitted',$6,$6)`,[target,order,tenant,link,x.worker.accountId,NOW.toISOString()]);
+  await x.db.query(`INSERT INTO assurance_cases(case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,case_status,owner_kind,next_action,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,'Evidence pending','worker','Submit evidence.',$7,$7)`,[caseId,order,target,tenant,link,x.worker.accountId,NOW.toISOString()]);
+  const policy=new EffectivePolicyService(x.db);await policy.publishPolicyVersion(x.admin,{frameworkReference:"CAL-B",policyReference:"PIN-CAL",title:"Pinned case rules",effectiveFrom:before,effectiveTo:null,policyValues:{pass_mark:80},overrideAllowedFields:[],overrideDirections:{}},NOW);
+
+  await x.review.queueCaseEvidence(company,caseId,NOW);
+  const task=(await x.db.query("SELECT task_id FROM evidence_review_tasks WHERE case_id=$1",[caseId])).rows[0].task_id;
+  const service=new EvidenceReviewFrameworkService(Promise.resolve(x.db));const revision=(await service.listFrameworks(x.admin)).find(r=>r.frameworkId===x.frameworkId).frameworkVersionId;
+  await service.bind(x.admin,{taskId:task,frameworkVersionId:revision,reason:"Explicit missing case policy resolution.",expectedBindingId:null,policyReference:"PIN-CAL"},NOW);
+  await x.record("CURRENT");assert.equal((await new EvidenceReviewEligibilityService(Promise.resolve(x.db)).evaluate(x.verifier,task,NOW)).eligible,true);
+  await x.review.claim(x.verifier,task,NOW);
  }finally{await x.db.close();}
 });

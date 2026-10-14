@@ -1,3 +1,5 @@
+> Recovery checkpoint (2026-10-14): canonical destination remains `qa/masterplan-completion-20260926`; combined candidate is `qa/masterplan-final-20261014`. [Current consolidation and validation](qa/2026-10-14-consolidation-recovery.md). Use the active .autopilot state for the next executable action; earlier brick-only status below is historical. Whole-project release acceptance remains incomplete.
+
 > Current authority (2026-10-02): use `itxsam57/hseverify-production-hardening` / `qa/masterplan-completion-20260926`. See [workflow audit](qa/2026-10-02-workflow-audit.md). Earlier gate/branch entries below are historical; they are not current production acceptance.
 
 # Next Build Unit

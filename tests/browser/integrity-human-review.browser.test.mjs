@@ -73,14 +73,40 @@ test("Worker browser signal and submitted answer reach reasoned Verifier integri
      const integrity=verifier.getByRole("region",{name:/Integrity review/});
      await integrity.getByLabel("Integrity disposition",{exact:true}).selectOption(disposition);
      await integrity.getByLabel("Integrity reason",{exact:true}).fill("Reviewed browser signal chronology and retained responses.");
+     assert.match(await integrity.getByRole("list",{name:"Retained integrity signals"}).innerText(),/COPY_PASTE_DETECTED/);
+     if(disposition==="CLEAR"){
+      await integrity.locator('input[name="integrityRevision"]').evaluate(input=>input.value="99");
+      await integrity.getByRole("button",{name:"Record integrity disposition",exact:true}).click();
+      await integrity.getByRole("alert").filter({hasText:"Reload before deciding"}).waitFor();
+      assert.equal(await integrity.getByLabel("Integrity reason",{exact:true}).inputValue(),"Reviewed browser signal chronology and retained responses.");
+      assert.equal(await integrity.getByLabel("Integrity disposition",{exact:true}).inputValue(),"CLEAR","Recoverable server denial must preserve the selected disposition");
+      await integrity.locator('input[name="integrityRevision"]').evaluate(input=>input.value="0");
+     }
      await integrity.getByRole("button",{name:"Record integrity disposition",exact:true}).click();
      await integrity.getByText(disposition,{exact:true}).waitFor();await verifier.reload();
      await verifier.getByText(disposition,{exact:true}).waitFor();
+     if(disposition==="CLEAR"){
+      await verifier.getByRole("button",{name:"Finalize review",exact:true}).click();
+      await verifier.getByRole("button",{name:"Finalize review",exact:true}).waitFor({state:"detached"});
+     }
+     if(disposition==="ESCALATE"){
+      const admin=await(await browser.newContext()).newPage();
+      await login(admin,baseUrl,x.credentials.admin,"admin");
+      await admin.goto(baseUrl+"/admin/operations/integrity-reviews");
+      await admin.getByLabel("Review and return reason",{exact:true}).fill("Retained signal context needs a new independent calibrated review.");
+      await admin.getByRole("button",{name:"Return integrity to Verifier",exact:true}).click();
+      await admin.getByRole("status").filter({hasText:"Integrity escalation returned"}).waitFor();
+      await verifier.reload();
+      await integrity.getByLabel("Integrity disposition",{exact:true}).selectOption("CLEAR");
+      await integrity.getByLabel("Integrity reason",{exact:true}).fill("Additional context independently reviewed and signal cleared.");
+      await integrity.getByRole("button",{name:"Record integrity disposition",exact:true}).click();
+      await integrity.getByText("CLEAR",{exact:true}).waitFor();
+     }
     }finally{await browser.close();}
    }});
    const database=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:x.environment.HSE_PGLITE_DATA_DIR});try{
-    const rows=await database.query("SELECT disposition,reason,reviewed_event_count FROM assessment_integrity_dispositions WHERE attempt_id=$1",[x.attemptId]);assert.equal(rows.rows.length,1);assert.equal(rows.rows[0].disposition,disposition);
-    const row=(await database.query("SELECT owner_kind,case_status FROM assurance_cases WHERE case_id=$1",[x.sourceCase.case_id])).rows[0];assert.equal(row.case_status,"Review pending");if(disposition!=="CLEAR")assert.equal(row.owner_kind,"admin");
+    const rows=await database.query("SELECT disposition,reason,reviewed_event_count FROM assessment_integrity_dispositions WHERE attempt_id=$1 ORDER BY revision",[x.attemptId]);assert.equal(rows.rows.length,disposition==="ESCALATE"?3:1);assert.equal(rows.rows[0].disposition,disposition);if(disposition==="ESCALATE")assert.deepEqual(rows.rows.map(row=>row.disposition),["ESCALATE","REVIEW_REQUIRED","CLEAR"]);
+    const row=(await database.query("SELECT owner_kind,case_status FROM assurance_cases WHERE case_id=$1",[x.sourceCase.case_id])).rows[0];assert.equal(row.case_status,disposition==="CLEAR"?"Interview pending":"Review pending");if(disposition!=="CLEAR"&&disposition!=="ESCALATE")assert.equal(row.owner_kind,"admin");if(disposition==="ESCALATE")assert.equal(row.owner_kind,"reviewer");
    }finally{await database.close();}
   }finally{await x.cleanup();}
  }

@@ -11,6 +11,8 @@ export async function requireLiveWrittenReviewer(database:DatabaseClient,actor:A
 }
 
 export async function requireWrittenAttemptEligibility(database:DatabaseClient,accountId:string,attemptId:string,caseId:string,tenantId:string):Promise<void>{
+ await database.query("SELECT case_id FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",[caseId,tenantId]);
+ await database.query("SELECT attempt_id FROM assessment_attempts WHERE attempt_id=$1 AND case_id=$2 FOR UPDATE",[attemptId,caseId]);
  const source=await database.query<{framework_id:string;reference_time:string|Date}>(`SELECT snapshots.framework_id,snapshots.reference_time
  FROM assurance_cases cases JOIN assessment_attempts attempts ON attempts.attempt_id=cases.assessment_reference AND attempts.case_id=cases.case_id AND attempts.worker_account_id=cases.worker_account_id
  JOIN generated_assessment_forms forms ON forms.form_id=attempts.form_id AND forms.case_id=cases.case_id AND forms.worker_account_id=cases.worker_account_id AND forms.blueprint_version_id=attempts.blueprint_version_id

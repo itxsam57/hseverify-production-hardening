@@ -52,7 +52,7 @@ test("notification registry permits only fixed authenticated dashboard, security
     "company.assurance.case", "company.billing.funding", "worker.assessment.case",
     "worker.evidence.record", "worker.identity.record", "worker.observation.record",
     "verifier.review.task", "admin.review.escalation", "worker.assurance.case",
-    "worker.credential.record", "appeal.record", "admin.interview.case"
+    "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review"
   ]);
   assert.match(notificationDomain, /case "account\.security":\s*return "\/account\/security"/);
   assert.match(notificationDomain, /ROLE_HOME_PATHS\[input\.role\]/);

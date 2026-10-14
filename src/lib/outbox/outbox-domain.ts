@@ -90,7 +90,7 @@ export type ReportReadyEmailPayload = Readonly<{ deliveryRef: string }>;
 
 export const ASSURANCE_EVENT_TYPES = [
   "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned",
-  "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"
+  "integrity.escalated", "integrity.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"
 ] as const;
 export type AssuranceEventType = (typeof ASSURANCE_EVENT_TYPES)[number];
 export type AssuranceFundingEventType = "assessment.funding.requested" | "assessment.funding.approved";
@@ -125,6 +125,7 @@ function normalizeAssuranceSource(input: Record<string, unknown>, email: boolean
     "evidence.reviewed": "review",
     "evidence.unable": "resolution", "evidence.escalated": "resolution", "evidence.returned": "resolution",
     "evidence.additional.requested": "review",
+    "integrity.escalated": "integrity", "integrity.returned": "integrity",
     "interview.recommended": "recommendation",
     "decision.recorded": "case",
     "credential.issued": "issuance",

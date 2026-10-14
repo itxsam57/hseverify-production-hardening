@@ -104,6 +104,10 @@ export class CaseReplayService {
       );
       if (caseRows.length !== 1) throw new CaseReplayAccessError("Case Replay case was not found.");
 
+      const integrityTable=await tx.query<{name:string|null}>("SELECT to_regclass('assessment_integrity_dispositions')::text AS name");
+      const integrityDispositions=integrityTable.rows[0]?.name
+        ? await rows(tx,"SELECT * FROM assessment_integrity_dispositions WHERE case_id=$1 ORDER BY attempt_id,revision",caseId)
+        : Object.freeze([]);
       const [
         timeline, policy, accommodations, evidenceTasks, evidenceDecisions, evidenceResolutions, prechecks, attempts,
         questions, answers, revisions, interruptions, recovery, integritySessions, integrityEvents,
@@ -174,7 +178,7 @@ export class CaseReplayService {
           assessmentPrechecks: prechecks,assessmentAttempts: attempts,assessmentQuestions: questions,
           assessmentAnswers: answers,assessmentAnswerRevisions: revisions,
           assessmentInterruptions: interruptions,assessmentRecovery: recovery,integritySessions,
-          integrityEvents,scoringReviews,scoringMarks,scoringAssistance,interviews,
+          integrityEvents,integrityDispositions,scoringReviews,scoringMarks,scoringAssistance,interviews,
           interviewQuestionSets,interviewDrafts,interviewRuntime,interviewEvents,recordings,
           decisions,decisionOverrides: overrides,credentials,credentialHistory,appeals,
           appealHistory,certifications,certificationEvents,livingRecords

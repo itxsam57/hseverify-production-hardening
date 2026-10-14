@@ -1,6 +1,7 @@
 "use server";
 
-import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
+import type {IntegrityFormState} from "@/components/review/integrity-review-form";
+import { IntegrityReviewService,IntegrityReviewInputError,IntegrityReviewConflictError } from "@/lib/integrity/integrity-review-service";
 import { revalidatePath } from "next/cache";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
@@ -92,11 +93,14 @@ export async function reviewWrittenScoringAssistanceAction(form: FormData) {
   revalidatePath("/verifier/reviews/scoring");
 }
 
-export async function resolveIntegrityReviewAction(form: FormData) {
+export async function resolveIntegrityReviewAction(previous:IntegrityFormState,form: FormData):Promise<IntegrityFormState> {
+ void previous;
  const actor=await requirePlatformPermission({expectedRole:"verifier",permission:"verification.assigned.decide"});
  const count=text(form,"integrityEventCount");
- if (!/^[1-9][0-9]*$/.test(count)) throw new Error("Integrity history reference is invalid.");
- await new IntegrityReviewService(await getDatabaseClient()).resolve(actor,{reviewId:text(form,"reviewId"),disposition:text(form,"integrityDisposition"),reason:text(form,"integrityReason"),expectedEventCount:Number(count)});
+ if (!/^[1-9][0-9]*$/.test(count) || !/^(0|[1-9][0-9]*)$/.test(text(form,"integrityRevision"))) return {error:"Integrity history reference is invalid. Reload this review."};
+ try{await new IntegrityReviewService(await getDatabaseClient()).resolve(actor,{reviewId:text(form,"reviewId"),disposition:text(form,"integrityDisposition"),reason:text(form,"integrityReason"),expectedEventCount:Number(count),expectedRevision:integer(form,"integrityRevision")});}
+ catch(error){if(error instanceof IntegrityReviewConflictError || error instanceof IntegrityReviewInputError)return {error:error.message};throw error;}
  revalidatePath("/verifier/reviews/scoring");
  revalidatePath("/admin/operations");
+ return {error:null};
 }

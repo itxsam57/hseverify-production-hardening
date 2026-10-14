@@ -155,6 +155,15 @@ async function effectivePassMark(
     : null;
 }
 
+
+export async function objectiveAssessmentResult(database:DatabaseClient,attemptId:string,caseId:string):Promise<Readonly<{score:number;decision:"PASS"|"FAIL";passMark:number}>|null>{
+ const rows=await pinnedFormAnswerRows(database,attemptId);
+ if(rows.length===0 || rows.some(row=>row.question_type==="SHORT_TEXT" || row.question_type==="LONG_TEXT"))return null;
+ const passMark=await effectivePassMark(database,caseId);if(passMark===null)return null;
+ const score=Math.round(rows.filter(objectiveAnswerCorrect).length/rows.length*100);
+ return {score,decision:score>=passMark?"PASS":"FAIL",passMark};
+}
+
 async function caseTenant(
   database: DatabaseClient,
   caseId: string

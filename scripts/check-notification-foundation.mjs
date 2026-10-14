@@ -70,7 +70,7 @@ assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_ty
 
 assert.ok(domain.includes('export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES), ...ASSURANCE_EVENT_TYPES] as const;'));
 assert.match(domain, /export const NOTIFICATION_TARGETS = \[[^\n]+\] as const;/);
-for (const target of ["portal.dashboard","account.security","interview.record","company.assurance.case","company.billing.funding","worker.assessment.case","worker.evidence.record","worker.identity.record","worker.observation.record","verifier.review.task","admin.review.escalation","worker.assurance.case","worker.credential.record","appeal.record","admin.interview.case"]) {
+for (const target of ["portal.dashboard","account.security","interview.record","company.assurance.case","company.billing.funding","worker.assessment.case","worker.evidence.record","worker.identity.record","worker.observation.record","verifier.review.task","admin.review.escalation","worker.assurance.case","worker.credential.record","appeal.record","admin.interview.case", "admin.integrity.review", "verifier.integrity.review"]) {
   assert.ok(domain.includes("\""+target+"\""), "Notification target contract missing: "+target);
 }
 for (const [event, type] of Object.entries({password_changed:"account.password.changed",password_reset_completed:"account.password.reset",mfa_replaced:"account.mfa.replaced",mfa_recovery_codes_rotated:"account.recovery_codes.rotated"})) {
@@ -154,7 +154,7 @@ assert.match(packageJson.scripts.check, /test:notification-platform/);
 
 console.log("Persisted notification, role-safe deep-link and shared-shell source contracts passed.");
 
-const assuranceTypes = ["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","interview.recommended","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
+const assuranceTypes = ["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","integrity.escalated","integrity.returned","interview.recommended","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
 const currentOutboxDomain = await readFile(resolve("src/lib/outbox/outbox-domain.ts"),"utf8");
 const assuranceTypeMatch=/ASSURANCE_EVENT_TYPES = \[([\s\S]*?)\] as const/.exec(currentOutboxDomain);
 assert.ok(assuranceTypeMatch);

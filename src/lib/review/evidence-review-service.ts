@@ -373,6 +373,7 @@ export class EvidenceReviewService {
     if(outcome==="ESCALATED" && input.destination!=="admin") throw new EvidenceReviewInputError("Choose the authorized Admin destination.");
     await this.database.transaction(async database=>{
       const row=await this.draftTask(database,principal,taskId,true);
+      if(outcome==="UNABLE_TO_VERIFY")await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,now,true);
       const last=await database.query<{revision:number}>("SELECT revision FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
       if((last.rows[0]?.revision??0)!==input.expectedRevision)throw new EvidenceReviewConflictError("Review history changed; reload before recording an outcome.");
       const revision=(last.rows[0]?.revision??0)+1;

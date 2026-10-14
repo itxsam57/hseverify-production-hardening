@@ -7,7 +7,7 @@ import { EvidenceReviewConflictError, EvidenceReviewInputError } from "@/lib/rev
 const value=(form:FormData,key:string)=>{const item=form.get(key);return typeof item==="string"?item:"";};
 export async function bindReviewFrameworkAction(form:FormData):Promise<void>{
  const principal=await requirePortalAuthorization("admin");
- try{await getEvidenceReviewFrameworkService().bind(principal,{taskId:value(form,"taskId"),frameworkVersionId:value(form,"frameworkVersionId"),reason:value(form,"reason"),expectedBindingId:value(form,"expectedBindingId")||null});}
+ try{await getEvidenceReviewFrameworkService().bind(principal,{taskId:value(form,"taskId"),frameworkVersionId:value(form,"frameworkVersionId"),reason:value(form,"reason"),expectedBindingId:value(form,"expectedBindingId")||null,policyReference:value(form,"policyReference")||null});}
  catch(error){const message=error instanceof EvidenceReviewConflictError||error instanceof EvidenceReviewInputError?error.message:"Framework applicability could not be resolved.";redirect(`/admin/review-frameworks?error=${encodeURIComponent(message)}`);}
  redirect("/admin/review-frameworks?result=bound");
 }

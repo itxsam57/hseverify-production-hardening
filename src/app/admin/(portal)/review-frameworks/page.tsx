@@ -5,7 +5,7 @@ import { bindReviewFrameworkAction, recordFrameworkRevisionAction } from "./acti
 
 export default async function ReviewFrameworksPage({searchParams}:{searchParams:Promise<{result?:string;error?:string}>}):Promise<React.JSX.Element>{
  const principal=await requirePortalAuthorization("admin"),params=await searchParams,service=getEvidenceReviewFrameworkService();
- const [frameworks,tasks]=await Promise.all([service.listFrameworks(principal),service.listTasks(principal)]);
+ const [frameworks,tasks,policies]=await Promise.all([service.listFrameworks(principal),service.listTasks(principal),service.listPolicies(principal)]);
  return <div className="dashboard-page">
   <header className="page-heading-row"><div><p className="eyebrow">Review quality</p><h1>Review framework applicability</h1><p className="page-intro">Resolve each queued task against an authoritative framework revision. A case with a pinned policy must keep its original framework. Unresolved tasks cannot be claimed or decided.</p></div></header>
   <p><Link href="/admin/calibrations">Staff calibration</Link> · <Link href="/admin/frameworks">Frameworks and policies</Link></p>
@@ -18,7 +18,8 @@ export default async function ReviewFrameworksPage({searchParams}:{searchParams:
     <p>{task.binding_id?`${task.framework_reference} · version ${task.version_no}`:"Framework unresolved"}</p>
     {task.task_status==="QUEUED"?<form action={bindReviewFrameworkAction} className="form-grid">
      <input type="hidden" name="taskId" value={task.task_id}/><input type="hidden" name="expectedBindingId" value={task.binding_id??""}/>
-     <label>Review framework revision<select name="frameworkVersionId" required defaultValue={task.framework_version_id??""}><option value="" disabled>Select authoritative revision</option>{frameworks.map(item=><option key={item.frameworkVersionId} value={item.frameworkVersionId}>{item.frameworkReference} · version {item.versionNo} · {item.title}</option>)}</select></label>
+     <label>Review framework revision<select name="frameworkVersionId" required defaultValue={task.framework_version_id??""}><option value="" disabled>Select authoritative revision</option>{frameworks.filter(item=>!task.pinned_framework_version_id || item.frameworkVersionId===task.pinned_framework_version_id).map(item=><option key={item.frameworkVersionId} value={item.frameworkVersionId}>{item.frameworkReference} · version {item.versionNo} · {item.title}</option>)}</select></label>
+     {task.case_id&&!task.pinned_framework_version_id?<><p>This case has no resolved policy snapshot. Select its applicable published policy to establish an immutable review context. Existing assessment eligibility requirements still apply.</p><label>Applicable published policy<select name="policyReference" required defaultValue=""><option value="" disabled>Select published policy</option>{policies.map(policy=><option key={policy.policy_reference} value={policy.policy_reference}>{policy.policy_reference} · {policy.framework_reference}</option>)}</select></label></>:null}
      <label>Applicability reason<textarea name="reason" required minLength={5} maxLength={2000} rows={3}/></label><button type="submit" className="button button-primary">Bind review framework</button>
     </form>:<p>Assigned tasks retain their binding. Return the task to the queue before changing applicability.</p>}
    </section>)}

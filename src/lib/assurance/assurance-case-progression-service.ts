@@ -392,3 +392,9 @@ export async function advanceAfterInterviewRecommendation(
     now: input.now
   });
 }
+
+export async function transitionIntegrityReviewCase(database:DatabaseClient,input:Readonly<{caseId:string;tenantId:string;owner:"admin"|"reviewer";nextAction:string;actor:ProgressionActor;now:Date}>):Promise<void>{
+ const row=await loadCase(database,input.caseId,input.tenantId);
+ if(row.case_status!=="Review pending")throw new Error("Integrity review no longer matches the Assurance Case state.");
+ await transitionCase(database,{caseId:row.case_id,tenantId:row.tenant_id,status:"Review pending",owner:input.owner,nextAction:input.nextAction,eventType:input.owner==="admin"?"integrity_review_escalated":"integrity_review_returned",actor:input.actor,now:input.now});
+}
