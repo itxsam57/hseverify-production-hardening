@@ -4,6 +4,7 @@ import {readFile} from "node:fs/promises";
 import { policyInterview } from "../helpers/interview-policy-fixture.mjs";
 import { fundingPrincipal, assessmentFundingFixture } from "../helpers/assessment-funding-fixture.mjs";
 import { seedPermanentWorkerId } from "../helpers/permanent-worker-id-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { loadWorkerRegistrationTs, setWorkerRegistrationRuntimeEnvironment } from "../helpers/worker-registration-runtime-loader.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
@@ -71,6 +72,7 @@ test("Actual additional-evidence review outcome retains its authorized Worker de
     const {worker,record}=await submittedExperience(x), service=new EvidenceReviewService(x.database);
     const task=await service.queueIndependentWorkerEvidence(worker,record.recordId);
     const verifier=await fundingPrincipal(x.database,x.fixture.credentials.verifier,"verifier");
+    await authorizeReviewFixture(x.database,{taskId:task.taskId,verifiers:[verifier],at:new Date()});
     await service.claim(verifier,task.taskId);
     await service.decide(verifier,task.taskId,"CHANGES_REQUESTED","Please provide the missing retained employment dates.");
     const source=(await x.database.query("SELECT decision_id,outcome FROM evidence_review_decisions WHERE task_id=$1",[task.taskId])).rows[0];

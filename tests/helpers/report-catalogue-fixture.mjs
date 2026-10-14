@@ -8,6 +8,7 @@ import {openScriptDatabase} from "../../scripts/lib/database.mjs";
 import {reportCompanyFixture,reportAddSite,reportAddDepartment} from "./report-company-fixture.mjs";
 import {assessorSchedulingPrincipal} from "./assessor-scheduling-native-principal.mjs";
 import {seedPermanentWorkerId} from "./permanent-worker-id-fixture.mjs";
+import {authorizeReviewFixture} from "./evidence-review-calibration-fixture.mjs";
 import {loadWorkerRegistrationTs,setWorkerRegistrationRuntimeEnvironment} from "./worker-registration-runtime-loader.mjs";
 const {AuthAccessRepository}=loadWorkerRegistrationTs("src/lib/auth/auth-access-repository.ts");
 const {SecureFileService}=loadWorkerRegistrationTs("src/lib/secure-files/secure-file-service.ts");
@@ -26,6 +27,7 @@ const {BillingService}=loadWorkerRegistrationTs("src/lib/billing/billing-service
 const {WorkerAssessmentApplicationService}=loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
 const {AssessmentAttemptService}=loadWorkerRegistrationTs("src/lib/assessment-attempt/assessment-attempt-service.ts");
 const {WrittenScoringService}=loadWorkerRegistrationTs("src/lib/scoring/written-scoring-service.ts");
+const {StaffCalibrationService}=loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");
 const {DecisionRepository}=loadWorkerRegistrationTs("src/lib/decision/decision-engine-repository.ts");
 const {createDecision}=loadWorkerRegistrationTs("src/lib/decision/decision-engine-domain.ts");
 const {WorkerEvidenceService}=loadWorkerRegistrationTs("src/lib/worker-evidence/worker-evidence-service.ts");
@@ -73,8 +75,20 @@ export async function reportCatalogueFixture(){
   const attempts=new AssessmentAttemptService(database),begun=await attempts.begin(fixture.worker,{caseId:source.case_id,catalogueVersionId:version},new Date());
   const submitted=await attempts.submitCurrentAnswer(fixture.worker,{attemptId:begun.attempt.attemptId,position:1,answer:"Stop and assess"},new Date(),null);
   assert.equal(submitted.submitted,true);
-  const scoring=new WrittenScoringService(database);
-  await scoring.publish({tenantId:source.tenant_id,caseId:source.case_id,attemptId:begun.attempt.attemptId,reviewerAccountId:admin,rubricVersion:"report-summary-v1",
+  const verifierSession="report-verifier-"+randomUUID(),verifierNow=new Date().toISOString();
+  await new AuthAccessRepository(database).authentication.insertSession({sessionId:verifierSession,accountId:fixture.credentials.verifier.accountId,activeRole:"verifier",
+   tokenHash:createHash("sha256").update(verifierSession).digest("hex"),csrfTokenHash:createHash("sha256").update("csrf:"+verifierSession).digest("hex"),
+   userAgentHash:null,ipAddressHash:null,createdAt:verifierNow,lastSeenAt:verifierNow,expiresAt:new Date(Date.now()+3600000).toISOString()});
+  const verifier={accountId:fixture.credentials.verifier.accountId,sessionId:verifierSession,activeRole:"verifier",accountStatus:"active",tenantMembership:null};
+  const adminSession="report-admin-"+randomUUID(),adminNow=new Date().toISOString();
+  await new AuthAccessRepository(database).authentication.insertSession({sessionId:adminSession,accountId:admin,activeRole:"admin",
+   tokenHash:createHash("sha256").update(adminSession).digest("hex"),csrfTokenHash:createHash("sha256").update("csrf:"+adminSession).digest("hex"),
+   userAgentHash:null,ipAddressHash:null,createdAt:adminNow,lastSeenAt:adminNow,expiresAt:new Date(Date.now()+3600000).toISOString()});
+  const adminPrincipal={accountId:admin,sessionId:adminSession,activeRole:"admin",accountStatus:"active",tenantMembership:null};
+  await new StaffCalibrationService(Promise.resolve(database)).record(adminPrincipal,{accountId:verifier.accountId,role:"verifier",frameworkReference:"REPORT-CATALOGUE",
+   status:"CURRENT",validFrom:new Date(now),validUntil:new Date("2099-01-01T00:00:00.000Z"),note:"Current calibration for the pinned report assessment framework."});
+  const scoring=new WrittenScoringService(database,verifier);
+  await scoring.publish({tenantId:source.tenant_id,caseId:source.case_id,attemptId:begun.attempt.attemptId,reviewerAccountId:verifier.accountId,rubricVersion:blueprint,
    score:91,decision:"PASS",reason:"private-score-comment-marker"});
   const review=(await database.query("SELECT review_id FROM written_score_reviews WHERE attempt_id=$1",[begun.attempt.attemptId])).rows[0];
   assert.ok(review.review_id);
@@ -163,11 +177,7 @@ export async function reportCatalogueFixture(){
   qualification=await evidence.findCurrent(fixture.worker,qualification.recordId);
   qualification=await evidence.submit(fixture.worker,qualification.recordId,qualification.currentVersion.revision);
   const reviews=new EvidenceReviewService(database),task=await reviews.queueIndependentWorkerEvidence(fixture.worker,qualification.recordId,new Date());
-  const verifierSession="report-verifier-"+randomUUID(),verifierNow=new Date().toISOString();
-  await new AuthAccessRepository(database).authentication.insertSession({sessionId:verifierSession,accountId:fixture.credentials.verifier.accountId,activeRole:"verifier",
-   tokenHash:createHash("sha256").update(verifierSession).digest("hex"),csrfTokenHash:createHash("sha256").update("csrf:"+verifierSession).digest("hex"),
-   userAgentHash:null,ipAddressHash:null,createdAt:verifierNow,lastSeenAt:verifierNow,expiresAt:new Date(Date.now()+3600000).toISOString()});
-  const verifier={accountId:fixture.credentials.verifier.accountId,sessionId:verifierSession,activeRole:"verifier",accountStatus:"active",tenantMembership:null};
+  await authorizeReviewFixture(database,{taskId:task.taskId,verifiers:[verifier],at:new Date()});
   await reviews.claim(verifier,task.taskId,new Date());
   await reviews.decide(verifier,task.taskId,"APPROVED","private-qualification-review-comment-marker",new Date());
 
