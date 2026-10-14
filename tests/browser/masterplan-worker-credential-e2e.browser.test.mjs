@@ -11,6 +11,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 import { configuredPolicy } from "../helpers/interview-policy-config.mjs";
+import { prepareReviewCalibrationFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const EMAIL="masterplan.worker.e2e@example.test";
 const PHONE="+923001234567";
@@ -32,6 +33,7 @@ const REPLACED_RESTRICTION="This issuance has been replaced. Verify the current 
 const CONTENT_MODE=process.env.HSE_MASTERPLAN_CONTENT_MODE ?? "COMBINED";
 const DELIVERY_MODE=process.env.HSE_MASTERPLAN_DELIVERY_MODE ?? "STRICT";
 const WRITTEN_PROMPT="Explain the next safe action after isolating an uncontrolled hazard.";
+const INITIAL_REVIEW_FRAMEWORK="MASTERPLAN-INITIAL-REVIEW";
 
 function stableId(prefix,seed){return `${prefix}_${createHash("sha256").update(seed).digest("hex").slice(0,24)}`;}
 function decodeBase32(value){const clean=value.toUpperCase().replace(/=+$/g,"");let bits="";for(const c of clean)bits+=B32.indexOf(c).toString(2).padStart(5,"0");const bytes=[];for(let i=0;i+8<=bits.length;i+=8)bytes.push(Number.parseInt(bits.slice(i,i+8),2));return Buffer.from(bytes);}
@@ -48,8 +50,51 @@ async function freePort(){return new Promise((resolve,reject)=>{const s=createSe
 async function login(page,baseUrl,credential,role){await page.goto(`${baseUrl}/${role}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("Email address").fill(credential.email);await page.getByLabel("Password").fill(credential.password);if(credential.totpSecret)await page.getByLabel("Authenticator code").fill(await freshTotp(credential.email,credential.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL(`**/${role}/dashboard`,{timeout:30000});}
 async function sandboxCode(page,baseUrl,channel,destination){await page.goto(`${baseUrl}/worker/register/sandbox`,{waitUntil:"domcontentloaded"});await page.getByLabel("Delivery channel").selectOption(channel);await page.getByLabel("Delivery destination").fill(destination);await page.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await page.getByRole("button",{name:"Open latest sandbox delivery"}).click();const status=page.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor({timeout:15000});return (await status.locator("strong").innerText()).trim();}
 async function uploadIdentity(page,heading,name,document=false){const card=page.getByRole("region",{name:heading,exact:true});if(document){await card.getByLabel("Document type").selectOption("passport");await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");await card.getByLabel("Issue date").fill("2025-01-01");await card.getByLabel("Expiry date").fill("2035-01-01");}await card.getByLabel("Choose file").setInputFiles({...PNG,name});await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/identity")),card.getByRole("button",{name:"Upload evidence"}).click()]);}
-async function approveReview(page,baseUrl,kind,reason){await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});const row=page.locator("tbody tr").filter({hasText:kind}).first();await row.getByRole("link",{name:"Review"}).click();await page.getByRole("button",{name:"Claim review"}).click();await page.getByText("ASSIGNED",{exact:true}).waitFor({timeout:15000});await page.getByLabel("Decision").selectOption("APPROVED");await page.getByLabel("Reason", { exact: true }).fill(reason);await page.getByRole("button",{name:"Finalize review"}).click();await page.getByText("APPROVED",{exact:true}).waitFor({timeout:15000});}
+async function approveReview(page,adminPage,baseUrl,kind,reason){
+  await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});
+  const row=page.locator("tbody tr").filter({hasText:kind}).filter({hasText:"QUEUED"}).first();
+  const href=await row.getByRole("link",{name:"Review"}).getAttribute("href");assert.ok(href);
+  const taskId=href.split("/").filter(Boolean).at(-1);assert.ok(taskId);
+  await adminPage.goto(`${baseUrl}/admin/review-frameworks`,{waitUntil:"domcontentloaded"});
+  const card=adminPage.locator(`section[aria-label="Framework for ${taskId}"]`);await card.waitFor();
+  if(await card.getByText("Framework unresolved",{exact:true}).count()){
+    const select=card.locator('select[name="frameworkVersionId"]');
+    const options=await select.locator("option").evaluateAll((items,reference)=>items.map(x=>({value:x.value,text:x.textContent??""})).filter(x=>x.value&&x.text.includes(reference)),INITIAL_REVIEW_FRAMEWORK);
+    assert.equal(options.length,1,"Initial review framework revision was not uniquely available.");
+    await select.selectOption(options[0].value);
+    await card.locator('textarea[name="reason"]').fill("Masterplan end-to-end review uses the explicit authoritative initial verification standard.");
+    await card.getByRole("button",{name:"Bind review framework",exact:true}).click();
+    await adminPage.getByText("Review framework binding recorded.",{exact:true}).waitFor();
+  }
+  await page.goto(baseUrl+href,{waitUntil:"domcontentloaded"});
+  await page.getByRole("button",{name:"Claim review",exact:true}).click();
+  await page.getByText("ASSIGNED",{exact:true}).waitFor({timeout:15000});
+  await page.getByLabel("Decision").selectOption("APPROVED");
+  await page.getByLabel("Reason",{exact:true}).fill(reason);
+  await page.getByRole("button",{name:"Finalize review"}).click();
+  await page.getByText("APPROVED",{exact:true}).waitFor({timeout:15000});
+}
 
+async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,markReason}){
+  await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
+  let row=page.locator("tbody tr").filter({hasText:caseId}).first();await row.waitFor({timeout:20000});
+  const rubricForm=row.locator('form[aria-label^="Rubric mark "]').first();
+  await rubricForm.getByLabel("Criterion mark").fill(String(mark));
+  await rubricForm.getByLabel("Mark reason").fill(markReason);
+  await rubricForm.getByRole("button",{name:"Save mark",exact:true}).click();
+  await page.reload({waitUntil:"domcontentloaded"});
+  row=page.locator("tbody tr").filter({hasText:caseId}).first();
+  const scoringForm=row.locator("form").filter({hasText:"Save scoring decision"}).first();
+  await scoringForm.getByLabel("Decision").selectOption(decision);
+  await scoringForm.getByRole("textbox",{name:"Reason",exact:true}).fill(reason);
+  await scoringForm.getByRole("button",{name:"Save scoring decision",exact:true}).click();
+  await page.reload({waitUntil:"domcontentloaded"});
+  row=page.locator("tbody tr").filter({hasText:caseId}).first();
+  await row.getByRole("button",{name:"Finalize review",exact:true}).click();
+  await page.reload({waitUntil:"domcontentloaded"});
+  row=page.locator("tbody tr").filter({hasText:caseId}).first();
+  await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
+}
 async function publishInterviewPolicy(page,baseUrl,credential) {
   await login(page,baseUrl,credential,"admin");
   await page.goto(`${baseUrl}/admin/frameworks`);
@@ -161,8 +206,10 @@ async function phaseOne(baseUrl,environment,credentials){
       const browser=await chromium.launch({headless:true});
       const workerContext=await browser.newContext({viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
       const verifierContext=await browser.newContext({viewport:{width:1440,height:1000}});
-      const worker=await workerContext.newPage(), verifier=await verifierContext.newPage();
+      const adminContext=await browser.newContext({viewport:{width:1440,height:1000}});
+      const worker=await workerContext.newPage(), verifier=await verifierContext.newPage(), admin=await adminContext.newPage();
       try{
+        await login(admin,baseUrl,credentials.admin,"admin");
         await worker.goto(`${baseUrl}/worker/register`,{waitUntil:"domcontentloaded"});
         await worker.getByLabel("Full name").fill("Masterplan Worker");
         await worker.getByLabel("Email address").fill(EMAIL);await worker.getByLabel("Mobile phone").fill(PHONE);
@@ -203,13 +250,13 @@ async function phaseOne(baseUrl,environment,credentials){
         const q=worker.locator("article").filter({hasText:"Qualification record"}).first();await q.getByLabel("Primary certificate file").setInputFiles({...PNG,name:"certificate.png"});await q.getByRole("button",{name:"Upload file"}).click();await worker.reload();await worker.locator("article").filter({hasText:"Qualification record"}).first().getByRole("button",{name:"Submit this version"}).click();
 
         await login(verifier,baseUrl,credentials.verifier,"verifier");
-        await approveReview(verifier,baseUrl,"identity","Identity evidence and submitted details are consistent.");
-        await approveReview(verifier,baseUrl,"qualification","Qualification evidence is attributable and verified.");
+        await approveReview(verifier,admin,baseUrl,"identity","Identity evidence and submitted details are consistent.");
+        await approveReview(verifier,admin,baseUrl,"qualification","Qualification evidence is attributable and verified.");
         await worker.goto(`${baseUrl}/worker/identity`);await worker.getByText("Verified",{exact:true}).first().waitFor({timeout:15000});
         const permanentWorkerId=(await worker.locator("main").getByText(/^worker_id_[A-Za-z0-9_-]{24}$/).first().innerText()).trim();
         assert.match(permanentWorkerId,/^worker_id_/);
         return {permanentWorkerId};
-      } finally {await workerContext.close();await verifierContext.close();await browser.close();}
+      } finally {await workerContext.close();await verifierContext.close();await adminContext.close();await browser.close();}
     }
   });
 }
@@ -244,6 +291,7 @@ async function seedAssessment(database,credentials){
   const frameworkId=stableId("framework","masterplan-worker-e2e"), blueprintId=stableId("assessment_blueprint","masterplan-worker-e2e"), blueprintVersionId=stableId("blueprint_version","masterplan-worker-e2e"), catalogueId=stableId("assessment_catalogue","masterplan-worker-e2e"), catalogueVersionId=stableId("catalogue_version","masterplan-worker-e2e");
   const policyId=stableId("policy","masterplan-worker-e2e"),policyVersionId=stableId("policy_version","masterplan-worker-e2e");
   await database.query(`INSERT INTO assurance_frameworks(framework_id,framework_reference,title,framework_status,created_by_account_id,created_at,updated_at) VALUES($1,'E2E-WORKER','End-to-End Worker Framework','ACTIVE',$2,$3,$3)`,[frameworkId,admin,now]);
+  const frameworkRevision=(await database.query("SELECT framework_version_id,framework_reference FROM assurance_framework_revisions WHERE framework_id=$1 ORDER BY version_no DESC LIMIT 1",[frameworkId])).rows[0];assert.ok(frameworkRevision);
   if (!INTERVIEW_POLICY) {
   await database.query(`INSERT INTO assurance_policy_packs(policy_id,framework_id,policy_reference,title,policy_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'E2E-WORKER-POLICY','End-to-End Worker Policy','ACTIVE',$3,$4,$4)`,[policyId,frameworkId,admin,now]);
   await database.query(`INSERT INTO assurance_policy_versions(policy_version_id,policy_id,version_no,version_status,effective_from,effective_to,policy_values,override_allowed_fields,override_directions,created_by_account_id,created_at) VALUES($1,$2,1,'PUBLISHED','2026-01-01T00:00:00Z',NULL,$3::jsonb,'[]'::jsonb,'{}'::jsonb,$4,$5)`,[policyVersionId,policyId,JSON.stringify({pass_mark:70,...(COMPLETE_REASSESSMENT?{credentialValidityDays:60}:COMPANY_CREDENTIAL_TARGET_MODE?{credentialValidityDays:365}:{})}),admin,now]);
@@ -268,7 +316,8 @@ async function seedAssessment(database,credentials){
   }
   await database.query("UPDATE assessor_assignment_profiles SET profile_status='PAUSED' WHERE assessor_account_id<>$1",[assessor]);
   await database.query(`INSERT INTO assessor_assignment_profiles(assessor_account_id,trade_scopes,qualification_scopes,languages,jurisdictions,risk_levels,availability_json,max_active_interviews,profile_status,updated_at) VALUES($1,'["*"]'::jsonb,'["*"]'::jsonb,'["*"]'::jsonb,'["*"]'::jsonb,'["*"]'::jsonb,'{}'::jsonb,8,'ACTIVE',$2) ON CONFLICT(assessor_account_id) DO UPDATE SET profile_status='ACTIVE',trade_scopes='["*"]'::jsonb,qualification_scopes='["*"]'::jsonb,languages='["*"]'::jsonb,jurisdictions='["*"]'::jsonb,risk_levels='["*"]'::jsonb,updated_at=$2`,[assessor,now]);
-  await database.query(`INSERT INTO staff_calibrations(calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,note,recorded_by_account_id,created_at) VALUES($1,$2,'assessor','E2E-WORKER','CURRENT','2026-01-01T00:00:00Z','2027-12-31T00:00:00Z','Current framework calibration for preserved E2E interview matching.',$3,$4)`,[stableId("staff_calibration","masterplan-worker-e2e"),assessor,admin,now]);
+  await database.query(`INSERT INTO staff_calibrations(calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,note,recorded_by_account_id,created_at,framework_id,framework_version_id) VALUES($1,$2,\'assessor\',$3,\'CURRENT\',$4,\'2027-12-31T00:00:00Z\',\'Current framework calibration for preserved E2E interview matching.\',$5,$4,$6,$7)`,[stableId("staff_calibration","masterplan-worker-e2e-assessor"),assessor,frameworkRevision.framework_reference,now,admin,frameworkId,frameworkRevision.framework_version_id]);
+  await database.query(`INSERT INTO staff_calibrations(calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,note,recorded_by_account_id,created_at,framework_id,framework_version_id) VALUES($1,$2,\'verifier\',$3,\'CURRENT\',$4,\'2027-12-31T00:00:00Z\',\'Current exact framework calibration for authoritative written scoring.\',$5,$4,$6,$7)`,[stableId("staff_calibration","masterplan-worker-e2e-verifier"),credentials.verifier.accountId,frameworkRevision.framework_reference,now,admin,frameworkId,frameworkRevision.framework_version_id]);
   return {catalogueVersionId};
 }
 
@@ -369,6 +418,9 @@ test("Masterplan preserved Worker journey: register to credential, share and app
     const migration=spawnSync(process.execPath,["scripts/db-migrate.mjs"],{cwd:root,env,encoding:"utf8"});assert.equal(migration.status,0,migration.stderr||migration.stdout);
     const seed=spawnSync(process.execPath,["scripts/independent-audit-seed.mjs"],{cwd:root,env,encoding:"utf8"});assert.equal(seed.status,0,seed.stderr||seed.stdout);
     const credentials=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
+    const initialReviewDb=new PGlite(dbDir);
+    try{await prepareReviewCalibrationFixture(initialReviewDb,{verifiers:[{accountId:credentials.verifier.accountId}],reference:INITIAL_REVIEW_FRAMEWORK,at:new Date()});}
+    finally{await initialReviewDb.close();}
     const phase1=await phaseOne(baseUrl,env,credentials);console.log("JOURNEY: identity and evidence verified");assert.equal(phase1.requestedSignal,"SMOKE_COMPLETE");
     const db=new PGlite(dbDir);
     let workerAccountId,permanentWorkerId,companyTenantId;
@@ -508,17 +560,11 @@ test("Masterplan preserved Worker journey: register to credential, share and app
               await review.getByText(MCQ_ANSWER,{exact:true}).waitFor();
               assert.equal(await review.locator("article").count(),2);
             }
-            await review.locator('input[name="score"]').fill("0");
-            await review.locator('select[name="decision"]').selectOption("FAIL");
-            await review.locator('textarea[name="reason"]').fill(CONTENT_MODE === "WRITTEN_ONLY" ? "The retained written response does not demonstrate the required hazard control reasoning." : "The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.");
-            await review.getByRole("button",{name:"Save scoring decision"}).click();
-            await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
-            await review.getByPlaceholder("Criterion").fill(CONTENT_MODE === "WRITTEN_ONLY" ? "Insufficient hazard control reasoning" : "Unanswered hazard control reasoning");
-            await review.locator('input[name="mark"]').fill("0");
-            await review.getByRole("button",{name:"Save mark"}).click();
-            await verifier.reload();review=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();
-            await review.getByRole("button",{name:"Finalize review"}).click();
-            await verifier.reload();await review.getByText("FINAL",{exact:true}).waitFor();
+            await finalizeWrittenReview(verifier,baseUrl,journeyCaseId,{
+              mark:0,decision:"FAIL",
+              reason:CONTENT_MODE === "WRITTEN_ONLY" ? "The retained written response does not demonstrate the required hazard control reasoning." : "The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.",
+              markReason:CONTENT_MODE === "WRITTEN_ONLY" ? "Insufficient hazard control reasoning in the retained written response." : "The required written response was omitted at the natural deadline."
+            });
             console.log("ACTUAL_WRITTEN_REVIEW_BROWSER pinned questions and omitted response reviewed by assigned Verifier; human FAIL finalized");
             return {attemptId};
           }
@@ -683,7 +729,8 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await assertReviewUnavailable(workerContext,baseUrl,attemptId,CONTENT_MODE==="COMBINED" ? 2 : 1);
 
           if(CONTENT_MODE!=="MCQ_ONLY") {
-          if(!["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE)) await login(verifier,baseUrl,credentials.verifier,"verifier");await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);let scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.waitFor({timeout:20000});await scoreRow.locator('input[name="score"]').fill("92");await scoreRow.locator('select[name="decision"]').selectOption("PASS");await scoreRow.locator('textarea[name="reason"]').fill("Written response demonstrates correct hazard isolation and verification sequence.");await scoreRow.getByRole("button",{name:"Save scoring decision"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.getByPlaceholder("Criterion").fill("Hazard control reasoning");await scoreRow.locator('input[name="mark"]').fill("92");await scoreRow.getByRole("button",{name:"Save mark"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:journeyCaseId}).first();await scoreRow.getByRole("button",{name:"Finalize review"}).click();
+          if(!["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE)) await login(verifier,baseUrl,credentials.verifier,"verifier");
+          await finalizeWrittenReview(verifier,baseUrl,journeyCaseId,{mark:92,decision:"PASS",reason:"Written response demonstrates correct hazard isolation and verification sequence.",markReason:"The response identifies isolation, controlled verification and safe restart conditions against the pinned rubric."});
 
           }
           if(process.env.HSE_MASTERPLAN_TIMING !== "true" && !INTERVIEW_POLICY) await login(admin,baseUrl,credentials.admin,"admin");
@@ -839,7 +886,8 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await worker.getByRole("button",{name:"Submit assessment",exact:true}).click();
           await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:20000});
           if(CONTENT_MODE!=="MCQ_ONLY") {
-          await login(verifier,baseUrl,credentials.verifier,"verifier");await verifier.goto(`${baseUrl}/verifier/reviews/scoring`);let scoreRow=verifier.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await scoreRow.waitFor({timeout:20000});await scoreRow.locator('input[name="score"]').fill("92");await scoreRow.locator('select[name="decision"]').selectOption("PASS");await scoreRow.locator('textarea[name="reason"]').fill("Written response demonstrates correct hazard isolation and verification sequence.");await scoreRow.getByRole("button",{name:"Save scoring decision"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await scoreRow.getByPlaceholder("Criterion").fill("Hazard control reasoning");await scoreRow.locator('input[name="mark"]').fill("92");await scoreRow.getByRole("button",{name:"Save mark"}).click();await verifier.reload();scoreRow=verifier.locator("tbody tr").filter({hasText:reassessmentCaseId}).first();await scoreRow.getByRole("button",{name:"Finalize review"}).click();
+          await login(verifier,baseUrl,credentials.verifier,"verifier");
+          await finalizeWrittenReview(verifier,baseUrl,reassessmentCaseId,{mark:92,decision:"PASS",reason:"Written response demonstrates correct hazard isolation and verification sequence.",markReason:"Fresh reassessment response meets the pinned hazard-control rubric with complete isolation and restart reasoning."});
 
           }
           await login(admin,baseUrl,credentials.admin,"admin");
