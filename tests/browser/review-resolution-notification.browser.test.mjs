@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { prepareReviewCalibrationFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const PNG_FILE = {
   name: "proof.png",
@@ -129,6 +130,9 @@ test("Actual resolution forms reach native CLI, role bells and guarded record li
  try{
  for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs","scripts/build-outbox-worker.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
  const credentials=JSON.parse(await readFile(credentialPath,"utf8"));
+ const authorityDb=await PGlite.create(environment.HSE_PGLITE_DATA_DIR);
+ try{await prepareReviewCalibrationFixture(authorityDb,{verifiers:[{accountId:credentials.verifier.accountId}],reference:"REVIEW-NOTIFY",at:new Date()});}
+ finally{await authorityDb.close();}
  browser=await chromium.launch({headless:true});
  const wp=await(await browser.newContext({viewport:{width:390,height:844}})).newPage(),vp=await(await browser.newContext({viewport:{width:1440,height:1000}})).newPage(),ap=await(await browser.newContext({viewport:{width:1440,height:1000}})).newPage();
  const errors=[];for(const page of [wp,vp,ap]){page.on("pageerror",error=>errors.push(error.message));page.on("response",response=>{if(response.status()>=500)errors.push(response.status()+" "+new URL(response.url()).pathname);});}
@@ -148,9 +152,27 @@ test("Actual resolution forms reach native CLI, role bells and guarded record li
  let taskId;
  await server(async()=>{
   await login(wp,baseUrl,credentials.worker,"worker");
+  await login(ap,baseUrl,credentials.admin,"admin");
   await createEvidence(wp,baseUrl,"qualification",{inputs:[["Qualification title","Notification source review certificate"],["Category","Safety"],["Issuing organization","Example Issuer"],["Certificate / candidate number","REVIEW-NOTIFY-001"],["Level","Level 3"],["Issue date","2025-02-01"],["Country","Pakistan"]],checks:["I confirm these qualification details"]});
   await login(vp,baseUrl,credentials.verifier,"verifier");
-  async function claim(kind){await vp.goto(baseUrl+"/verifier/reviews");const row=vp.locator("tbody tr").filter({has:vp.locator("td",{hasText:kind})}).filter({hasText:"QUEUED"}).first();await row.getByRole("link",{name:"Review"}).click();await vp.getByRole("button",{name:"Claim review",exact:true}).click();await vp.getByText("ASSIGNED",{exact:true}).waitFor();}
+  async function claim(kind){
+   await vp.goto(baseUrl+"/verifier/reviews");
+   const row=vp.locator("tbody tr").filter({has:vp.locator("td",{hasText:kind})}).filter({hasText:"QUEUED"}).first();
+   const href=await row.getByRole("link",{name:"Review"}).getAttribute("href");assert.ok(href);
+   const currentTaskId=href.split("/").filter(Boolean).at(-1);assert.ok(currentTaskId);
+   await ap.goto(baseUrl+"/admin/review-frameworks",{waitUntil:"domcontentloaded"});
+   const card=ap.locator(`section[aria-label="Framework for ${currentTaskId}"]`);await card.waitFor();
+   if(await card.getByText("Framework unresolved",{exact:true}).count()){
+    const select=card.locator('select[name="frameworkVersionId"]');
+    const options=await select.locator("option").evaluateAll(items=>items.map(x=>({value:x.value,text:x.textContent??""})).filter(x=>x.value&&x.text.includes("REVIEW-NOTIFY")));
+    assert.equal(options.length,1);await select.selectOption(options[0].value);
+    await card.locator('textarea[name="reason"]').fill("Notification browser journey uses the explicit authoritative review standard.");
+    await card.getByRole("button",{name:"Bind review framework",exact:true}).click();
+    await ap.getByText("Review framework binding recorded.",{exact:true}).waitFor();
+   }
+   await vp.goto(baseUrl+href,{waitUntil:"domcontentloaded"});
+   await vp.getByRole("button",{name:"Claim review",exact:true}).click();await vp.getByText("ASSIGNED",{exact:true}).waitFor();
+  }
   await claim("qualification");
   await vp.getByLabel("Unable to verify reason",{exact:true}).fill("Private issuer detail belongs only in the authorized record.");
   await vp.getByLabel("Attempted verification methods",{exact:true}).fill("Contacted the issuer using the retained directory.");
@@ -166,7 +188,7 @@ test("Actual resolution forms reach native CLI, role bells and guarded record li
   await wp.goto(baseUrl+"/worker/notifications");const unable=wp.locator(".notification-center-item").filter({hasText:"Evidence could not be verified"});await unable.waitFor();
   assert.ok(!(await unable.innerText()).includes("Private"));await unable.getByRole("button",{name:"Open",exact:true}).click();await wp.waitForURL("**/worker/evidence#*");
   await wp.getByText(/Private issuer detail belongs only/).waitFor();
-  await login(ap,baseUrl,credentials.admin,"admin");await ap.goto(baseUrl+"/admin/notifications");
+  await ap.goto(baseUrl+"/admin/notifications");
   const escalated=ap.locator(".notification-center-item").filter({hasText:"Evidence review escalated"});await escalated.waitFor();assert.ok(!(await escalated.innerText()).includes("Private"));
   await escalated.getByRole("button",{name:"Open",exact:true}).click();await ap.waitForURL("**/admin/operations/review-escalations#"+taskId);
   const article=ap.locator("article").filter({hasText:"Private employer discrepancy"});await article.waitFor();
