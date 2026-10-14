@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { prepareReviewCalibrationFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const PNG_FILE = {
   name: "proof.png",
@@ -127,13 +128,35 @@ test("Worker evidence resolves without approval and escalation returns through t
  try{
  for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
  const credentials=JSON.parse(await readFile(credentialPath,"utf8"));
+ const authorityDb=await PGlite.create(environment.HSE_PGLITE_DATA_DIR);
+ try{await prepareReviewCalibrationFixture(authorityDb,{verifiers:[{accountId:credentials.verifier.accountId}],reference:"REVIEW-RESOLUTION",at:new Date()});}
+ finally{await authorityDb.close();}
  await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:root,environment,probe:async()=>{
  const browser=await chromium.launch({headless:true});try{
  const wp=await(await browser.newContext()).newPage(),vp=await(await browser.newContext()).newPage(),ap=await(await browser.newContext()).newPage();
  await login(wp,baseUrl,credentials.worker,"worker");
+ await login(ap,baseUrl,credentials.admin,"admin");
  await createEvidence(wp,baseUrl,"qualification",{inputs:[["Qualification title","Independent source review certificate"],["Category","Safety"],["Issuing organization","Example Issuer"],["Certificate / candidate number","REVIEW-NEUTRAL-001"],["Level","Level 3"],["Issue date","2025-02-01"],["Country","Pakistan"]],checks:["I confirm these qualification details"]});
  await login(vp,baseUrl,credentials.verifier,"verifier");
- async function claim(kind){await vp.goto(baseUrl+"/verifier/reviews");const row=vp.locator("tbody tr").filter({has:vp.locator("td",{hasText:kind})}).filter({hasText:"QUEUED"}).first();await row.getByRole("link",{name:"Review"}).click();await vp.getByRole("button",{name:"Claim review",exact:true}).click();await vp.getByText("ASSIGNED",{exact:true}).waitFor();}
+ async function claim(kind){
+  await vp.goto(baseUrl+"/verifier/reviews");
+  const row=vp.locator("tbody tr").filter({has:vp.locator("td",{hasText:kind})}).filter({hasText:"QUEUED"}).first();
+  const href=await row.getByRole("link",{name:"Review"}).getAttribute("href");assert.ok(href);
+  const taskId=href.split("/").filter(Boolean).at(-1);assert.ok(taskId);
+  await ap.goto(baseUrl+"/admin/review-frameworks",{waitUntil:"domcontentloaded"});
+  const card=ap.locator(`section[aria-label="Framework for ${taskId}"]`);await card.waitFor();
+  if(await card.getByText("Framework unresolved",{exact:true}).count()){
+   const select=card.locator('select[name="frameworkVersionId"]');
+   const options=await select.locator("option").evaluateAll(items=>items.map(x=>({value:x.value,text:x.textContent??""})).filter(x=>x.value&&x.text.includes("REVIEW-RESOLUTION")));
+   assert.equal(options.length,1);await select.selectOption(options[0].value);
+   await card.locator('textarea[name="reason"]').fill("Resolution browser journey uses the explicit authoritative review standard.");
+   await card.getByRole("button",{name:"Bind review framework",exact:true}).click();
+   await ap.getByText("Review framework binding recorded.",{exact:true}).waitFor();
+  }
+  await vp.goto(baseUrl+href,{waitUntil:"domcontentloaded"});
+  await vp.getByRole("button",{name:"Claim review",exact:true}).click();
+  await vp.getByText("ASSIGNED",{exact:true}).waitFor();
+ }
  await claim("qualification");
  await vp.getByLabel("Unable to verify reason",{exact:true}).fill("The issuer could not independently confirm this certificate.");
  await vp.getByLabel("Attempted verification methods",{exact:true}).fill("Contacted the issuer and searched their public registration directory.");
@@ -147,7 +170,7 @@ test("Worker evidence resolves without approval and escalation returns through t
  await vp.getByLabel("Escalation reason",{exact:true}).fill("Issuer information is inconsistent; an Admin review is required.");await vp.getByLabel("Escalation destination",{exact:true}).selectOption("admin");
  await vp.getByRole("button",{name:"Escalate review",exact:true}).click();await vp.getByRole("heading",{name:"ESCALATED",exact:true}).waitFor();assert.equal(await vp.getByRole("link",{name:"Preview evidence",exact:true}).count(),0,"Escalated review must not expose a predictably denied preview link");
  await wp.goto(baseUrl+"/worker/evidence");await wp.getByText(/Independent verification: escalated/).waitFor();
- await login(ap,baseUrl,credentials.admin,"admin");await ap.goto(baseUrl+"/admin/operations");await ap.getByRole("link",{name:"Evidence review escalations",exact:true}).click();
+ await ap.goto(baseUrl+"/admin/operations");await ap.getByRole("link",{name:"Evidence review escalations",exact:true}).click();
  await ap.getByRole("heading",{name:"Evidence review escalations",exact:true}).waitFor();
  const article=ap.locator("article").filter({hasText:"Issuer information is inconsistent"});await article.waitFor();assert.equal(await article.count(),1);
  await article.getByLabel("Review and return reason",{exact:true}).fill("Independent records are available; return this evidence to a Verifier.");await article.getByRole("button",{name:"Return to Verifier queue",exact:true}).click();await ap.getByText("Escalation reviewed and returned to the Verifier queue.",{exact:true}).waitFor();
