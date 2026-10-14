@@ -11,6 +11,13 @@ function text(form: FormData, key: string) {
   const value = form.get(key);
   return typeof value === "string" ? value : "";
 }
+function integer(form: FormData, key: string): number {
+  const value=text(form,key);
+  if(!/^(0|[1-9][0-9]*)$/.test(value)) throw new Error("Scoring revision is invalid.");
+  const parsed=Number(value);
+  if(!Number.isSafeInteger(parsed)) throw new Error("Scoring revision is invalid.");
+  return parsed;
+}
 
 export async function finalizeWrittenScoreAction(form: FormData) {
   const actor = await requirePlatformPermission({ expectedRole: "verifier", permission: "verification.assigned.decide" });
@@ -30,7 +37,9 @@ export async function addWrittenScoreRubricMarkAction(form: FormData) {
     reviewId: text(form, "reviewId"),
     criterion: text(form, "criterion"),
     mark: Number(text(form, "mark")),
+    reason: text(form, "markReason"),
     reviewerAccountId: actor.accountId,
+    expectedRevision: integer(form,"expectedRevision"),
   });
   revalidatePath("/verifier/reviews/scoring");
 }
@@ -45,7 +54,7 @@ export async function saveWrittenScoreDecisionAction(form: FormData) {
     reviewId: text(form, "reviewId"),
     reviewerAccountId: actor.accountId,
     tenantId: actor.tenantMembership?.tenantId,
-    score: Number(text(form, "score")),
+    expectedRevision: integer(form,"expectedRevision"),
     decision: text(form, "decision"),
     reason: text(form, "reason")
   });

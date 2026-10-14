@@ -58,6 +58,9 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
             <tbody>
               {typedReviews.map((review) => {
                 const integrity=integrityReviews.find(item=>item.review_id===review.review_id);
+                const criterionKeys=review.questions.flatMap(question=>question.rubricCriteria.map((_,index)=>`Q${question.position}:C${index}`));
+                const markedCriteria=new Set(review.rubricMarks.map(mark=>mark.criterion));
+                const allCriteriaMarked=criterionKeys.length>0&&criterionKeys.every(key=>markedCriteria.has(key));
                 const readyToFinalize =
                   review.status === "DRAFT" && review.canReview &&
                   review.score !== null &&
@@ -149,17 +152,8 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       {review.status === "DRAFT" && review.canReview ? (
                         <form action={saveWrittenScoreDecisionAction} className="content-stack">
                           <input type="hidden" name="reviewId" value={review.review_id} />
-                          <label>
-                            Score
-                            <input
-                              name="score"
-                              type="number"
-                              min="0"
-                              max="100"
-                              required
-                              defaultValue={review.score ?? ""}
-                            />
-                          </label>
+                          <input type="hidden" name="expectedRevision" value={review.draft_revision} />
+                          <p><strong>Overall score:</strong> {review.score ?? (allCriteriaMarked ? "Ready to calculate from rubric marks" : "Save every rubric criterion first")}</p>
                           <label>
                             Decision
                             <select name="decision" required defaultValue={review.decision ?? ""}>
@@ -179,7 +173,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                               defaultValue={review.reason}
                             />
                           </label>
-                          <button type="submit">Save scoring decision</button>
+                          <button type="submit" disabled={!allCriteriaMarked}>Save scoring decision</button>
                         </form>
                       ) : (
                         <>
@@ -189,12 +183,23 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                     </td>
                     <td>
                       {review.status === "DRAFT" && review.canReview ? (
-                        <form action={addWrittenScoreRubricMarkAction}>
-                          <input type="hidden" name="reviewId" value={review.review_id} />
-                          <input name="criterion" placeholder="Criterion" required />
-                          <input name="mark" type="number" min="0" max="100" required />
-                          <button type="submit">Save mark</button>
-                        </form>
+                        <div className="content-stack">
+                          {review.questions.flatMap(question=>question.rubricCriteria.map((criterion,index)=>{
+                            const key=`Q${question.position}:C${index}`;
+                            const current=review.rubricMarks.find(mark=>mark.criterion===key);
+                            return <form action={addWrittenScoreRubricMarkAction} className="content-stack" aria-label={`Rubric mark ${key}`} key={key}>
+                              <input type="hidden" name="reviewId" value={review.review_id} />
+                              <input type="hidden" name="criterion" value={key} />
+                              <input type="hidden" name="expectedRevision" value={review.draft_revision} />
+                              <strong>{key} · {criterion.description} ({criterion.points} points)</strong>
+                              <label>Criterion mark<input name="mark" type="number" min="0" max="100" required defaultValue={current?.mark ?? ""} /></label>
+                              <label>Mark reason<textarea name="markReason" minLength={5} maxLength={4000} required defaultValue={current?.reason ?? ""} /></label>
+                              <button type="submit">Save mark</button>
+                            </form>;
+                          }))}
+                        </div>
+                      ) : review.rubricMarks.length>0 ? (
+                        <ul>{review.rubricMarks.map(mark=><li key={mark.criterion}>{mark.criterion}: {mark.mark}% — {mark.reason}</li>)}</ul>
                       ) : (
                         "Locked"
                       )}

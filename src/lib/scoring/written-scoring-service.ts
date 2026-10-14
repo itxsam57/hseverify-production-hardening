@@ -222,7 +222,7 @@ export class WrittenScoringService {
     return result.rows[0] ?? null;
   }
 
-  async listReviewQueue(input:{tenantId?:string;reviewerAccountId?:string}):Promise<(ScoringReviewRow & {questions:readonly import("./assessment-review-source").AssessmentReviewQuestion[];canReview:boolean;unavailableReason:string|null})[]> {
+  async listReviewQueue(input:{tenantId?:string;reviewerAccountId?:string}):Promise<(ScoringReviewRow & {questions:readonly import("./assessment-review-source").AssessmentReviewQuestion[];rubricMarks:readonly Readonly<{criterion:string;mark:number;reason:string}>[];canReview:boolean;unavailableReason:string|null})[]> {
     if(!this.insideTransaction)return this.database.transaction(database=>new WrittenScoringService(database,this.actor,true).listReviewQueue(input));
     const reviewerAccountId=input.reviewerAccountId;
     if(!reviewerAccountId)throw new WrittenScoringAccessError("Actual reviewer scope is required.");
@@ -233,7 +233,9 @@ export class WrittenScoringService {
       let unavailableReason:string|null=null;
       try{await this.requireReviewOwner(review.review_id,reviewerAccountId,review.tenant_id);}catch(error){if(!(error instanceof WrittenScoringAccessError))throw error;unavailableReason=error.message;}
       const questions=unavailableReason?[]:(await loadAssignedReviewQuestions(this.database,reviewerAccountId,[review.review_id])).get(review.review_id)??[];
-      rows.push({...review,questions,canReview:unavailableReason===null,unavailableReason});
+      const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 ORDER BY criterion,mark_sequence DESC`,[review.review_id,reviewerAccountId]);
+      const rubricMarks=Object.freeze(marks.rows.map(mark=>Object.freeze({criterion:mark.criterion,mark:Number(mark.mark),reason:mark.mark_reason})));
+      rows.push({...review,questions,rubricMarks,canReview:unavailableReason===null,unavailableReason});
     }
     await requireLiveWrittenReviewer(this.database,this.actor,reviewerAccountId);
     return rows;
