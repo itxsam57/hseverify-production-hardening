@@ -10,6 +10,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 import { seedConsoleFile, seedConsoleEvidence, seedConsoleIdentity } from "../helpers/interview-console-file-fixture.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { loadWorkerRegistrationTs, setWorkerRegistrationRuntimeEnvironment } from "../helpers/worker-registration-runtime-loader.mjs";
 const { EvidenceReviewService } = loadWorkerRegistrationTs("src/lib/review/evidence-review-service.ts");
 const { AuthAccessRepository } = loadWorkerRegistrationTs("src/lib/auth/auth-access-repository.ts");
@@ -190,6 +191,9 @@ test(
           tenantMembership:{tenantId:credentials.company.tenantId,tenantStatus:"active",membershipId:credentials.company.membershipId,role:"owner",status:"active",overrides:[]}
         },caseId),2);
         queuedEvidence=(await seedDatabase.query("SELECT task_id,evidence_kind FROM evidence_review_tasks WHERE case_id=$1 ORDER BY evidence_kind",[caseId])).rows;
+        for (const task of queuedEvidence) {
+          await authorizeReviewFixture(seedDatabase,{taskId:task.task_id,verifiers:[{accountId:credentials.verifier.accountId}],at:new Date()});
+        }
 
       } finally {
         await seedDatabase.close();
