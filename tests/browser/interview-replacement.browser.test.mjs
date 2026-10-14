@@ -68,15 +68,23 @@ import {assessorInterviewSearchFixture} from "../../tests/helpers/assessor-inter
 import {loadWorkerRegistrationTs} from "../../tests/helpers/worker-registration-runtime-loader.mjs";
 const {InterviewAssignmentService}=loadWorkerRegistrationTs("src/lib/interview/interview-assignment-service.ts");
 const {StaffCalibrationService}=loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");
+const {AuthAccessRepository}=loadWorkerRegistrationTs("src/lib/auth/auth-access-repository.ts");
 const {formatDateTime}=loadWorkerRegistrationTs("src/lib/format.ts");
+async function liveAdmin(db,fixture){
+ const sessionId="replacement-browser-admin-session",now=new Date().toISOString();
+ const principal={accountId:fixture.credentials.admin.accountId,sessionId,activeRole:"admin",accountStatus:"active",tenantMembership:null};
+ const exists=await db.query("SELECT 1 FROM auth_sessions WHERE session_id=$1",[sessionId]);
+ if(!exists.rows[0])await new AuthAccessRepository(db).authentication.insertSession({sessionId,accountId:principal.accountId,activeRole:"admin",tokenHash:"replacement-browser-admin-hash",csrfTokenHash:"replacement-browser-csrf-hash",userAgentHash:null,ipAddressHash:null,createdAt:now,lastSeenAt:now,expiresAt:new Date(Date.now()+3600000).toISOString()});
+ return principal;
+}
 async function recoveryContext(fixture,eligible){
  const db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
  try{
-  const admin={accountId:fixture.credentials.admin.accountId,activeRole:"admin",accountStatus:"active",tenantMembership:null},matching=new InterviewAssignmentService(db);
+  const admin=await liveAdmin(db,fixture),matching=new InterviewAssignmentService(db);
   for(const p of await matching.listProfiles(admin))await matching.upsertProfile(admin,{...p,status:"PAUSED"});
   if(eligible){
    await matching.upsertProfile(admin,{assessorAccountId:fixture.credentials.assessor.accountId,tradeScopes:["*"],qualificationScopes:["*"],languages:["*"],jurisdictions:["*"],riskLevels:["*"],availability:{},maxActiveInterviews:8,status:"ACTIVE"});
-   await new StaffCalibrationService(Promise.resolve(db)).record(admin,{accountId:fixture.credentials.assessor.accountId,role:"assessor",frameworkReference:"SEARCH-WORKER",status:"CURRENT",validFrom:new Date(Date.now()-86400000),validUntil:new Date(Date.now()+86400000),note:"Current calibration created by the actual producer for browser recovery."});
+   await new StaffCalibrationService(Promise.resolve(db)).record(admin,{accountId:fixture.credentials.assessor.accountId,role:"assessor",frameworkReference:"SEARCH-WORKER",status:"CURRENT",validFrom:new Date(),validUntil:new Date(Date.now()+86400000),note:"Current calibration created by the actual producer for browser recovery."});
   }
   // Schema-valid owned case context; this fixture does not certify order funding/progression.
   const original=fixture.requests.Alpha;

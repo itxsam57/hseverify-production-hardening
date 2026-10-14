@@ -90,7 +90,7 @@ test("Actual Admin operations exposes required scheduling email health from pers
   }});
   const build=spawnSync(process.execPath,["scripts/build-outbox-worker.mjs"],{encoding:"utf8"});assert.equal(build.status,0,build.stderr);
   for(let i=0;i<6;i++) {
-   const job=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});assert.equal(job.status,0,job.stderr);
+   const job=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});assert.equal(job.status,i<3?0:1,job.stderr||job.stdout);
    assert.match(job.stdout,i<3?/"status":"succeeded"/:/"status":"retry_wait"/);
   }
   const detail=async(label)=>(await page.getByText(label,{exact:true}).locator("..").locator("dd").textContent()).trim();
@@ -125,4 +125,3 @@ test("Actual Admin operations exposes required scheduling email health from pers
   console.log("ACTUAL_ADMIN_EMAIL_HEALTH_BROWSER real producer and CLI queued3 -> retry3/100%attemptfailure -> Sent3/50%; configured is not provider health or confirmed delivery; 390px no overflow");
  }finally{await browser.close();await fixture.cleanup();await rm(temporary,{recursive:true,force:true});}
 });
-
