@@ -1,4 +1,6 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "./interview-calibration-authority";
+import {findAppealInterviewContext} from "../credential/appeal-interview-context";
 
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
@@ -118,11 +120,13 @@ async function openAssignedRequestForUpdate(
     throw new InterviewPlaybookAccessError();
   }
 
+  if(!await interviewCalibrationCurrent(database,principal.accountId,interviewRequestId))throw new InterviewPlaybookAccessError();
   // Match recommendation/replacement case-first locking, then recheck ownership.
   const cases = await database.query<{ case_status: string; interview_reference: string | null }>(
     "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
     [owned.case_id, owned.tenant_id]
   );
+  const appealContext=await findAppealInterviewContext(database,interviewRequestId,true);
   const requests = await database.query<PlaybookRequestRow>(
     `SELECT interview_request_id,tenant_id,case_id,worker_account_id,
             assessor_account_id,trade_scope,qualification_scope,risk_level,language,jurisdiction,status
@@ -136,8 +140,8 @@ async function openAssignedRequestForUpdate(
   if (
     request.tenant_id !== owned.tenant_id || request.case_id !== owned.case_id ||
     !["ASSIGNED", "WAITING_ROOM"].includes(request.status) ||
-    cases.rows[0]?.case_status !== "Interview pending" ||
-    cases.rows[0].interview_reference !== interviewRequestId
+    (!appealContext && (cases.rows[0]?.case_status !== "Interview pending" ||
+    cases.rows[0].interview_reference !== interviewRequestId))
   ) {
     throw new InterviewPlaybookInputError("Interview is closed.");
   }
@@ -276,6 +280,7 @@ export class InterviewPlaybookService {
     if (!row || row.assessor_account_id !== principal.accountId) {
       throw new InterviewPlaybookAccessError();
     }
+    if(!await interviewCalibrationCurrent(database,principal.accountId,interviewRequestId))throw new InterviewPlaybookAccessError();
     return latestSet(database, row.tenant_id, interviewRequestId);
   }
 

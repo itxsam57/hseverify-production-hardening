@@ -1,4 +1,5 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "./interview-calibration-authority";
 
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
@@ -217,20 +218,7 @@ export class InterviewAssignmentService {
               profiles.jurisdictions,profiles.risk_levels,profiles.availability_json,
               profiles.max_active_interviews,
               COUNT(active_requests.interview_request_id)::int AS active_interviews,
-              EXISTS(
-                SELECT 1
-                  FROM staff_calibrations AS calibrations
-                 WHERE calibrations.account_id=accounts.account_id
-                   AND calibrations.role='assessor'
-                   AND calibrations.status='CURRENT'
-                   AND calibrations.valid_from<=$2
-                   AND calibrations.valid_until>$2
-                   AND (
-                     $3::text IS NULL OR
-                     calibrations.framework_reference=$3 OR
-                     calibrations.framework_reference='*'
-                   )
-              ) AS calibrated,
+              FALSE AS calibrated,
               EXISTS(
                 SELECT 1
                   FROM interview_assignment_conflicts AS conflicts
@@ -252,9 +240,10 @@ export class InterviewAssignmentService {
                  profiles.trade_scopes,profiles.qualification_scopes,profiles.languages,
                  profiles.jurisdictions,profiles.risk_levels,profiles.availability_json,
                  profiles.max_active_interviews`,
-      [request.worker_account_id, now.toISOString(), request.framework_reference]
+      [request.worker_account_id]
     );
 
+    for(const candidate of candidates.rows)candidate.calibrated=await interviewCalibrationCurrent(this.database,candidate.account_id,requestId);
     const evaluated = candidates.rows.map((row): InterviewAssignmentCandidate => {
       const trades = array(row.trade_scopes);
       const qualifications = array(row.qualification_scopes);

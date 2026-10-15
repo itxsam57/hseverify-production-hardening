@@ -1,4 +1,6 @@
 import "server-only";
+import {findAppealInterviewContext} from "../credential/appeal-interview-context";
+import {interviewCalibrationCurrent} from "../interview/interview-calibration-authority";
 import { createIdentifier } from "../auth/auth-domain";
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 import { CaseAccommodationService } from "./case-accommodation-service";
@@ -40,10 +42,15 @@ async function authorize(db: DatabaseClient, actor: SupportActor, id: string, no
   "SELECT sessions.session_id FROM auth_sessions sessions JOIN auth_accounts accounts ON accounts.account_id=sessions.account_id JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role=sessions.active_role WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role=$3 AND sessions.revoked_at IS NULL AND sessions.expires_at>$4 AND accounts.account_status='active' FOR SHARE OF sessions,accounts,roles",
   [actor.sessionId,actor.accountId,actor.activeRole,now.toISOString()]);
  if (!live.rows[0]) throw new InterviewSupportError("The current interview support session is unavailable.",401);
+ const preliminary=(await db.query<{case_id:string;tenant_id:string}>("SELECT case_id,tenant_id FROM interview_requests WHERE interview_request_id=$1",[id])).rows[0];
+ if(!preliminary)throw new InterviewSupportError("Interview support access is unavailable.");
+ await db.query("SELECT case_id FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",[preliminary.case_id,preliminary.tenant_id]);
+ const appealContext=await findAppealInterviewContext(db,id,true);
  const request = (await db.query<RequestRow>(
   "SELECT r.interview_request_id,r.tenant_id,r.case_id,r.worker_account_id,r.assessor_account_id,r.status,r.language,c.worker_account_id AS case_worker,c.tenant_id AS case_tenant,c.interview_reference AS case_interview_reference,c.case_status FROM interview_requests r JOIN assurance_cases c ON c.case_id=r.case_id WHERE r.interview_request_id=$1 FOR UPDATE OF r,c",[id])).rows[0];
- if (!request || request.case_worker !== request.worker_account_id || request.case_tenant !== request.tenant_id || request.case_interview_reference !== id || request.case_status !== 'Interview pending' ||
+ if (!request || request.case_worker !== request.worker_account_id || request.case_tenant !== request.tenant_id || (!appealContext&&(request.case_interview_reference !== id || request.case_status !== 'Interview pending')) ||
   (actor.activeRole === "worker" ? request.worker_account_id !== actor.accountId : request.assessor_account_id !== actor.accountId)) throw new InterviewSupportError("Interview support ownership or assignment is unavailable.");
+ if(!request.assessor_account_id||!await interviewCalibrationCurrent(db,request.assessor_account_id,id))throw new InterviewSupportError("Current calibration for the pinned interview framework is required.");
  const runtime = (await db.query<RuntimeRow>("SELECT interview_session_id,status,started_at FROM interview_runtime_sessions WHERE interview_request_id=$1 FOR UPDATE",[id])).rows[0] ?? null;
  const snapshot = runtime ? (await db.query<SnapshotRow>("SELECT * FROM interview_accommodation_support_snapshots WHERE interview_session_id=$1",[runtime.interview_session_id])).rows[0] ?? null : null;
  if (snapshot && (snapshot.interview_request_id !== id || snapshot.case_id !== request.case_id || snapshot.tenant_id !== request.tenant_id || snapshot.worker_account_id !== request.worker_account_id || snapshot.assessor_account_id !== request.assessor_account_id)) throw new InterviewSupportError("The frozen interview support assignment changed.",409);

@@ -121,7 +121,7 @@ test("Replacement copies matching and recording policy, preserves history, denie
   assert.deepEqual((await x.db.query("SELECT * FROM interview_runtime_events WHERE interview_session_id=$1 ORDER BY event_id",[history.interviewSessionId])).rows,events);
   assert.deepEqual((await x.db.query("SELECT * FROM interview_console_drafts WHERE interview_request_id=$1",[x.first.interviewRequestId])).rows,draft);
   assert.deepEqual((await x.db.query("SELECT * FROM platform_audit_events WHERE audit_event_id=ANY($1::text[]) ORDER BY audit_sequence",[audits.map(a=>a.audit_event_id)])).rows,audits);
-  const {publishInterviewMediaSignal}=await import("../../src/lib/interview/interview-media-service.ts");
+  const {publishInterviewMediaSignal}=loadWorkerRegistrationTs("src/lib/interview/interview-media-service.ts");
   const session={accountId:x.principal.accountId,role:"assessor"};
   await assert.rejects(publishInterviewMediaSignal(x.db,session,x.first.interviewRequestId,{kind:"leave",payload:{connectionId:"recovery_connection_123456"}}),{name:"InterviewMediaAccessError"});
   const scheduled=await x.service.scheduleInterview({principal:x.principal,tenantId:x.fixture.credentials.company.tenantId,request:next,scheduledAt:new Date(Date.now()+86400000).toISOString()});

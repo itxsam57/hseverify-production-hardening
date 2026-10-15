@@ -1,4 +1,6 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "./interview-calibration-authority";
+import {findAppealInterviewContext,isAppealInterviewLinked} from "../credential/appeal-interview-context";
 
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
@@ -114,8 +116,15 @@ function reason(value: string, label: string, min = 5, max = 2000): string {
 
 async function requestForUpdate(
   database: DatabaseClient,
-  interviewRequestId: string
+  interviewRequestId: string,
+  mutation=false
 ): Promise<RequestRow> {
+  if(mutation&&await isAppealInterviewLinked(database,interviewRequestId)){
+    const scope=(await database.query<{case_id:string;tenant_id:string}>("SELECT case_id,tenant_id FROM interview_requests WHERE interview_request_id=$1",[interviewRequestId])).rows[0];
+    if(!scope)throw new InterviewRuntimeAccessError();
+    await database.query("SELECT case_id FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",[scope.case_id,scope.tenant_id]);
+    if(!await findAppealInterviewContext(database,interviewRequestId,true))throw new InterviewRuntimeConflictError("The appeal interview is closed or replaced.");
+  }
   const result = await database.query<RequestRow>(
     `SELECT interview_request_id,tenant_id,case_id,worker_account_id,assessor_account_id,
             status,scheduled_at,recording_policy,recording_retention_days,
@@ -145,11 +154,12 @@ async function sessionForUpdate(
   return result.rows[0] ?? null;
 }
 
-function assertParticipant(principal: AuthorizationPrincipal, request: RequestRow, readOnly = false): "worker" | "assessor" {
+async function assertParticipant(database:DatabaseClient,principal: AuthorizationPrincipal, request: RequestRow, readOnly = false): Promise<"worker" | "assessor"> {
   if (principal.accountStatus !== "active") throw new InterviewRuntimeAccessError();
   const participant = principal.activeRole === "worker" && principal.accountId === request.worker_account_id
     ? "worker" : principal.activeRole === "assessor" && principal.accountId === request.assessor_account_id ? "assessor" : null;
   if (!participant) throw new InterviewRuntimeAccessError();
+  if(participant==="assessor"&&!await interviewCalibrationCurrent(database,principal.accountId,request.interview_request_id))throw new InterviewRuntimeAccessError("Current calibration for the pinned interview framework is required.");
   if (!readOnly && request.status === "CANCELLED") throw new InterviewRuntimeConflictError("Interview is closed.");
   return participant;
 }
@@ -293,7 +303,7 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     const request = await requestForUpdate(database, interviewRequestId);
-    assertParticipant(principal, request, true);
+    await assertParticipant(database,principal, request, true);
     return readView(database, interviewRequestId);
   }
 
@@ -304,8 +314,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "worker") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "worker") throw new InterviewRuntimeAccessError();
       if (!request.scheduled_at || !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
         throw new InterviewRuntimeConflictError("This interview is not ready for the waiting room.");
       }
@@ -334,8 +344,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "worker") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "worker") throw new InterviewRuntimeAccessError();
       if (!input.cameraReady || !input.microphoneReady || !input.connectionReady || !input.identityConfirmed) {
         throw new InterviewRuntimeInputError("Camera, microphone, connection and identity checks must pass before Ready.");
       }
@@ -395,8 +405,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       if (!["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
         throw new InterviewRuntimeConflictError("Interview cannot be claimed in its current state.");
       }
@@ -423,8 +433,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       const session = await sessionForUpdate(tx, interviewRequestId);
       if (!session?.claimed_at || session.status !== "READY") {
         throw new InterviewRuntimeConflictError("The assigned Worker must be Ready before admission.");
@@ -446,8 +456,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       if (request.recording_consent_required && !request.recording_consented_at) {
         throw new InterviewRuntimeConflictError("Required interview recording consent has not been recorded.");
       }
@@ -474,8 +484,8 @@ export class InterviewRuntimeService {
     const normalized = reason(pauseReason, "Pause reason");
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       const session = await sessionForUpdate(tx, interviewRequestId);
       if (!session || session.status !== "ACTIVE") {
         throw new InterviewRuntimeConflictError("Only an active interview can be paused.");
@@ -496,8 +506,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       const session = await sessionForUpdate(tx, interviewRequestId);
       if (!session || !["PAUSED","TECHNICAL_HOLD"].includes(session.status)) {
         throw new InterviewRuntimeConflictError("Interview is not paused or on technical hold.");
@@ -524,8 +534,8 @@ export class InterviewRuntimeService {
     const issue = reason(issueInput, "Technical issue");
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      const participant = assertParticipant(principal, request);
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      const participant = await assertParticipant(tx,principal, request);
       const existing = await sessionForUpdate(tx, interviewRequestId);
       let runtimeTime = now;
       if (participant === "worker") {
@@ -565,8 +575,8 @@ export class InterviewRuntimeService {
   ): Promise<InterviewRuntimeView> {
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const request = await requestForUpdate(tx, interviewRequestId);
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      const request = await requestForUpdate(tx, interviewRequestId,true);
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       if (!request.scheduled_at) throw new InterviewRuntimeConflictError("Interview has no scheduled time.");
       const scheduled = new Date(request.scheduled_at).getTime();
       if (now.getTime() < scheduled + 15 * 60 * 1000) {
@@ -603,14 +613,15 @@ export class InterviewRuntimeService {
       const currentCase = await tx.query<{case_status:string;interview_reference:string|null}>(
         "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
         [owned.case_id,owned.tenant_id]);
-      const request = await requestForUpdate(tx, interviewRequestId);
+      const appealContext=await findAppealInterviewContext(tx,interviewRequestId,true);
+      const request = await requestForUpdate(tx, interviewRequestId,true);
       if (request.case_id !== owned.case_id || request.tenant_id !== owned.tenant_id ||
-          currentCase.rows[0]?.case_status !== "Interview pending" ||
-          currentCase.rows[0].interview_reference !== interviewRequestId ||
+          (!appealContext && (currentCase.rows[0]?.case_status !== "Interview pending" ||
+          currentCase.rows[0].interview_reference !== interviewRequestId)) ||
           !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
         throw new InterviewRuntimeConflictError("Only the current open interview can be ended.");
       }
-      if (assertParticipant(principal, request) !== "assessor") throw new InterviewRuntimeAccessError();
+      if ((await assertParticipant(tx,principal, request)) !== "assessor") throw new InterviewRuntimeAccessError();
       const session = await sessionForUpdate(tx, interviewRequestId);
       if (!session || !["ACTIVE","PAUSED","TECHNICAL_HOLD"].includes(session.status)) {
         throw new InterviewRuntimeConflictError("Only a started interview can be ended.");

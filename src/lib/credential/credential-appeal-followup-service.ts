@@ -1,4 +1,5 @@
 import "server-only";
+import {findAppealInterviewContext} from "./appeal-interview-context";
 import { randomBytes } from "node:crypto";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
@@ -83,13 +84,30 @@ export class CredentialAppealFollowupService {
    await append(transaction,{appeal,principal:input.principal,kind:"evidence",reason:text,requestId:input.requestId,evidence:bindings});await check();
   });
  }
+ async respondInterview(input:{principal:AuthorizationPrincipal;interviewRequestId:string;recommendationEventId:string}):Promise<void>{
+  const db=await this.clientPromise;return db.transaction(async transaction=>{
+   const check=await live(transaction,input.principal,"assessor");
+   const preliminary=await findAppealInterviewContext(transaction,input.interviewRequestId);if(!preliminary)throw new AppealFollowupConflictError();
+   await transaction.query("SELECT case_id FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",[preliminary.case_id,preliminary.tenant_id]);
+   const context=await findAppealInterviewContext(transaction,input.interviewRequestId,true);if(!context)throw new AppealFollowupConflictError();
+   const appeal=await lockedAppeal(transaction,context.appeal_id,Number(context.appeal_version));
+   const result=await transaction.query<{recommendation:string;scorecard:Record<string,unknown>}>(`SELECT event.recommendation,draft.scorecard FROM interview_recommendation_events event
+    JOIN interview_requests request ON request.interview_request_id=event.interview_request_id AND request.assessor_account_id=event.assessor_account_id AND request.status='COMPLETED'
+    JOIN interview_runtime_sessions runtime ON runtime.interview_request_id=request.interview_request_id AND runtime.status='ENDED'
+    JOIN interview_console_drafts draft ON draft.interview_request_id=request.interview_request_id AND draft.submitted=TRUE AND draft.recommendation=event.recommendation
+    WHERE event.event_id=$1 AND event.interview_request_id=$2 AND event.assessor_account_id=$3 AND event.case_id=$4 AND event.tenant_id=$5 FOR SHARE OF event,request,runtime,draft`,[input.recommendationEventId,input.interviewRequestId,input.principal.accountId,context.case_id,context.tenant_id]);
+   if(result.rows.length!==1)throw new AppealFollowupAccessError();
+   const outcome=result.rows[0],comments=typeof outcome.scorecard.comments==="string"?outcome.scorecard.comments.trim():"",text=reason(comments.length<10?"Assessor response: "+comments:comments);
+   await append(transaction,{appeal,principal:input.principal,kind:"interview",reason:text,requestId:context.followup_request_id,interviewRequestId:input.interviewRequestId,recommendation:outcome.recommendation});await check();
+  });
+ }
  async list(principal:AuthorizationPrincipal,appealId:string):Promise<AppealFollowup[]>{
   const db=await this.clientPromise;return db.transaction(async transaction=>{
    if(principal.activeRole!=="admin" && principal.activeRole!=="worker")throw new AppealFollowupAccessError();
    const check=await live(transaction,principal,principal.activeRole);
    const owned=await transaction.query(`SELECT 1 FROM credential_appeals appeal JOIN assurance_cases cases ON cases.credential_reference=appeal.credential_id AND cases.permanent_worker_id=appeal.worker_id WHERE appeal.appeal_id=$1 AND ($2='admin' OR cases.worker_account_id=$3)`,[appealId,principal.activeRole,principal.accountId]);
    if(owned.rows.length!==1)throw new AppealFollowupAccessError();
-   const rows=await transaction.query<{event_id:string;appeal_version:number;kind:"evidence"|"interview";reason:string;interview_request_id:string|null;response_reason:string|null;recommendation:string|null;responded:boolean}>(`SELECT request.event_id,request.appeal_version,request.kind,request.reason,request.interview_request_id,response.reason AS response_reason,response.recommendation,response.event_id IS NOT NULL AS responded FROM credential_appeal_followup_events request LEFT JOIN credential_appeal_followup_events response ON response.request_id=request.event_id WHERE request.appeal_id=$1 AND request.event_type='requested' ORDER BY request.appeal_version`,[appealId]);await check();
+   const rows=await transaction.query<{event_id:string;appeal_version:number;kind:"evidence"|"interview";reason:string;interview_request_id:string|null;response_reason:string|null;recommendation:string|null;responded:boolean}>(`SELECT request.event_id,request.appeal_version,request.kind,request.reason,COALESCE(response.interview_request_id,current_interview.interview_request_id,request.interview_request_id) AS interview_request_id,response.reason AS response_reason,response.recommendation,response.event_id IS NOT NULL AS responded FROM credential_appeal_followup_events request LEFT JOIN credential_appeal_followup_events response ON response.request_id=request.event_id LEFT JOIN LATERAL(WITH RECURSIVE chain AS(SELECT interview_request_id FROM interview_requests WHERE interview_request_id=request.interview_request_id UNION SELECT successor.interview_request_id FROM interview_requests successor JOIN chain previous ON successor.replaces_interview_request_id=previous.interview_request_id) SELECT chain.interview_request_id FROM chain WHERE NOT EXISTS(SELECT 1 FROM interview_requests successor WHERE successor.replaces_interview_request_id=chain.interview_request_id) LIMIT 1)current_interview ON request.kind='interview' WHERE request.appeal_id=$1 AND request.event_type='requested' ORDER BY request.appeal_version`,[appealId]);await check();
    return rows.rows.map(row=>({requestId:row.event_id,appealId,appealVersion:Number(row.appeal_version),kind:row.kind,reason:row.reason,interviewRequestId:row.interview_request_id,responded:row.responded,responseReason:row.response_reason,recommendation:row.recommendation}));
   });
  }

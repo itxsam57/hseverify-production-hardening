@@ -106,12 +106,12 @@ test("Visibility migration restores private defaults and safely refuses retained
   const x=await fixture();
   try {
     const down=await readFile("database/migrations/0093_assessor_console_visibility.down.sql","utf8"),up=await readFile("database/migrations/0093_assessor_console_visibility.up.sql","utf8");
-    const before=(await x.db.query("SELECT table_name,column_name,column_default,is_nullable FROM information_schema.columns WHERE column_name='assessor_visible' ORDER BY table_name")).rows;
+    const before=(await x.db.query("SELECT table_name,column_name,column_default,is_nullable FROM information_schema.columns WHERE column_name='assessor_visible' AND table_name IN ('evidence_review_decisions','written_score_reviews') ORDER BY table_name")).rows;
     assert.equal(before.length,2);assert(before.every(r=>r.column_default==="false"&&r.is_nullable==="NO"));
     await x.db.exec(down);
-    assert.equal((await x.db.query("SELECT 1 FROM information_schema.columns WHERE column_name='assessor_visible'")).rows.length,0);
+    assert.equal((await x.db.query("SELECT 1 FROM information_schema.columns WHERE column_name='assessor_visible' AND table_name IN ('evidence_review_decisions','written_score_reviews')")).rows.length,0);
     await x.db.exec(up);
-    assert.deepEqual((await x.db.query("SELECT table_name,column_name,column_default,is_nullable FROM information_schema.columns WHERE column_name='assessor_visible' ORDER BY table_name")).rows,before);
+    assert.deepEqual((await x.db.query("SELECT table_name,column_name,column_default,is_nullable FROM information_schema.columns WHERE column_name='assessor_visible' AND table_name IN ('evidence_review_decisions','written_score_reviews') ORDER BY table_name")).rows,before);
   } finally {await x.close();}
 });
 
@@ -134,6 +134,7 @@ test("Console reads submitted pinned assessment topics and latest written revisi
     const admin=await principal(x.db,x.credentials.admin,"admin");
     const framework=(await x.db.query("SELECT frameworks.framework_reference FROM assessment_blueprint_versions versions JOIN assurance_frameworks frameworks ON frameworks.framework_id=versions.framework_id WHERE versions.blueprint_version_id=$1",[attempt.blueprintVersionId])).rows[0];
     await new StaffCalibrationService(Promise.resolve(x.db)).record(admin,{accountId:reviewer.accountId,role:"verifier",frameworkReference:framework.framework_reference,status:"CURRENT",validFrom:ATTEMPT_NOW_DATE,validUntil:new Date("2099-01-01T00:00:00.000Z"),note:"Current calibration for the exact pinned written assessment framework."});
+    await new StaffCalibrationService(Promise.resolve(x.db)).record(admin,{accountId:x.actor.accountId,role:"assessor",frameworkReference:framework.framework_reference,status:"CURRENT",validFrom:ATTEMPT_NOW_DATE,validUntil:new Date("2099-01-01"),note:"Exact framework calibration for the assigned assessment-context interview."});
     const assessment=new AssessmentAttemptService(x.db,requestTime=>requestTime);
     const now=ATTEMPT_NOW_DATE;
     await assessment.submitCurrentAnswer(worker,{attemptId:attempt.attemptId,position:1,answer:"Bravo"},now);

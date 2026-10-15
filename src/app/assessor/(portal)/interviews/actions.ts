@@ -1,4 +1,7 @@
 "use server";
+import {requireLiveReviewActor} from "@/lib/review/review-calibration-authority";
+import {findAppealInterviewContext} from "@/lib/credential/appeal-interview-context";
+import {CredentialAppealFollowupService} from "@/lib/credential/credential-appeal-followup-service";
 
 import { revalidatePath } from "next/cache";
 import { redirect, notFound } from "next/navigation";
@@ -151,11 +154,12 @@ export async function saveInterviewConsoleAction(formData: FormData): Promise<vo
   const currentCase = await transaction.query<{case_status:string;interview_reference:string|null}>(
     "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
     [preliminary.caseId,preliminary.tenantId]);
+  const appealContext=await findAppealInterviewContext(transaction,input.interviewRequestId,true);
   const request = await new InterviewSchedulingRepository(transaction).findByRequestIdForAssessor(input.interviewRequestId,actor.accountId,true);
   if (!request) throw new InterviewAssignmentAccessError();
 
-  if (!["ASSIGNED","WAITING_ROOM"].includes(request.status) || currentCase.rows[0]?.case_status !== "Interview pending" ||
-      currentCase.rows[0].interview_reference !== input.interviewRequestId) throw new InterviewSchedulingInputError("Interview is closed.");
+  if (!["ASSIGNED","WAITING_ROOM"].includes(request.status) || (!appealContext && (currentCase.rows[0]?.case_status !== "Interview pending" ||
+      currentCase.rows[0].interview_reference !== input.interviewRequestId))) throw new InterviewSchedulingInputError("Interview is closed.");
   await service.saveConsoleState({
     tenantId: request.tenantId,
     interviewSessionId: input.interviewSessionId,
@@ -193,6 +197,7 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
   const database = await getDatabaseClient();
   try {
     await database.transaction(async (transaction) => {
+    await requireLiveReviewActor(transaction,actor,"assessor",true);
     const service = new InterviewSchedulingService(transaction);
     const preliminary = await service.getAssignedInterview({
       assessorAccountId: actor.accountId,
@@ -201,9 +206,10 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
     const caseLock = await transaction.query<{case_status:string;interview_reference:string|null}>(
       "SELECT case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
       [preliminary.caseId,preliminary.tenantId]);
+    const appealContext=await findAppealInterviewContext(transaction,input.interviewRequestId,true);
     const request = await new InterviewSchedulingRepository(transaction).findByRequestIdForAssessor(input.interviewRequestId,actor.accountId,true);
-    if (!request || caseLock.rows[0]?.case_status !== "Interview pending" ||
-        caseLock.rows[0].interview_reference !== input.interviewRequestId ||
+    if (!request || (!appealContext && (caseLock.rows[0]?.case_status !== "Interview pending" ||
+        caseLock.rows[0].interview_reference !== input.interviewRequestId)) ||
         !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
       throw new InterviewSchedulingInputError("Only the current open interview can submit a recommendation.");
     }
@@ -230,7 +236,7 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
       request,
       assessorAccountId: actor.accountId
     });
-    await advanceAfterInterviewRecommendation(transaction, {
+    if(!appealContext)await advanceAfterInterviewRecommendation(transaction, {
       caseId: request.caseId,
       tenantId: request.tenantId,
       recommendation,
@@ -242,7 +248,8 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
       "INSERT INTO interview_recommendation_events(event_id,interview_request_id,tenant_id,case_id,assessor_account_id,recommendation) VALUES($1,$2,$3,$4,$5,$6)",
       [eventId,input.interviewRequestId,request.tenantId,request.caseId,actor.accountId,recommendation]
     );
-    await transaction.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["interview.recommended","recommendation:"+eventId]);
+    if(appealContext)await new CredentialAppealFollowupService(Promise.resolve(transaction)).respondInterview({principal:actor,interviewRequestId:input.interviewRequestId,recommendationEventId:eventId});
+    else await transaction.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["interview.recommended","recommendation:"+eventId]);
     });
   } catch (error) {
     consoleActionFailure(error, input.interviewRequestId);

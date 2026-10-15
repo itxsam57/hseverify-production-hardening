@@ -1,5 +1,5 @@
-// @ts-expect-error Runtime tests execute this TypeScript module directly.
-import { createIdentifier } from "../auth/auth-domain.ts";
+import {interviewCalibrationCurrent} from "./interview-calibration-authority";
+import { createIdentifier } from "../auth/auth-domain";
 import type { AuthenticatedSession } from "../auth/auth-session-service";
 import type { DatabaseClient } from "../database/database";
 
@@ -144,6 +144,7 @@ export async function authorizeInterviewMedia(
   if (!row.assessor_account_id) {
     throw new InterviewMediaAccessError("Interview has not been assigned to an Assessor.", 409);
   }
+  if(!await interviewCalibrationCurrent(database,row.assessor_account_id,requestId))throw new InterviewMediaAccessError("Current calibration for the pinned interview framework is required.",403);
   const liveStatus =
     row.status === "ASSIGNED" ||
     row.status === "WAITING_ROOM" ||

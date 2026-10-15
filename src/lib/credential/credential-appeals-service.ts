@@ -200,9 +200,22 @@ export class CredentialAppealsService {
       throw new Error("Completed appeals cannot be withdrawn.");
     }
     const database = await this.clientPromise;
-    const repository = new CredentialAppealsRepository(Promise.resolve(database));
-    const current = await repository.find(appeal.appealId);
-    if (!current || current.workerId !== workerId) throw new Error("Appeal not found.");
-    return repository.updateStatus(transitionCredentialAppeal(current, "withdrawn"));
+    return database.transaction(async transaction=>{
+      // Match followup finalization: original case, appeal, then linked requests.
+      await transaction.query("SELECT case_id FROM assurance_cases WHERE credential_reference=$1 AND permanent_worker_id=$2 FOR UPDATE",[appeal.credentialId,workerId]);
+      await transaction.query("SELECT appeal_id FROM credential_appeals WHERE appeal_id=$1 FOR UPDATE",[appeal.appealId]);
+      const repository = new CredentialAppealsRepository(Promise.resolve(transaction));
+      const current = await repository.find(appeal.appealId);
+      if (!current || current.workerId !== workerId) throw new Error("Appeal not found.");
+      if(current.version!==appeal.version)throw new Error("Appeal update conflict.");
+      if((await transaction.query<{relation:string|null}>("SELECT to_regclass('credential_appeal_followup_events') AS relation")).rows[0]?.relation){
+        await transaction.query(`WITH RECURSIVE chain AS(
+          SELECT interviews.interview_request_id FROM credential_appeal_followup_events request JOIN interview_requests interviews ON interviews.interview_request_id=request.interview_request_id
+          WHERE request.appeal_id=$1 AND request.kind='interview' AND request.event_type='requested' AND NOT EXISTS(SELECT 1 FROM credential_appeal_followup_events response WHERE response.request_id=request.event_id)
+          UNION SELECT successor.interview_request_id FROM interview_requests successor JOIN chain prior ON successor.replaces_interview_request_id=prior.interview_request_id
+        ) UPDATE interview_requests SET status='CANCELLED' WHERE interview_request_id IN(SELECT interview_request_id FROM chain) AND status IN('REQUESTED','ASSIGNED','WAITING_ROOM')`,[appeal.appealId]);
+      }
+      return repository.updateStatus(transitionCredentialAppeal(current, "withdrawn"));
+    });
   }
 }

@@ -1,4 +1,6 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "./interview-calibration-authority";
+import {findAppealInterviewContext} from "../credential/appeal-interview-context";
 import { calculateInterviewActiveTime } from "./interview-policy-domain";
 
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
@@ -89,7 +91,10 @@ export class InterviewConsoleContextService {
       [requestId,actor.sessionId,actor.accountId]
     );
     if (!result.rows[0]) throw new InterviewConsoleContextAccessError();
-    return result.rows[0];
+  if(!await interviewCalibrationCurrent(db,actor.accountId,requestId))throw new InterviewConsoleContextAccessError();
+    const row=result.rows[0];
+    if(!row.current_request && await findAppealInterviewContext(db,requestId))return {...row,current_request:true,case_status:"Appeal interview",next_action:"Complete the independent appeal interview; the original credential and case remain retained."};
+    return row;
   }
 
   async load(actor: AuthorizationPrincipal, requestId: string): Promise<InterviewConsoleContext | null> {

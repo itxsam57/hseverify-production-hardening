@@ -15,7 +15,7 @@ export const dimensions = ["technicalKnowledge", "practicalReasoning", "safetyAw
 export { configuredPolicy } from "./interview-policy-config.mjs";
 import { configuredPolicy } from "./interview-policy-config.mjs";
 export async function policyInterview({ policy = configuredPolicy(), start = true, claim = true, credentialTarget = null } = {}) {
-  const fixture = await assessorInterviewSearchFixture({ credentialTarget });
+  const fixture = await assessorInterviewSearchFixture({ credentialTarget,pinPolicies:false });
   let database;
   try {
     database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);

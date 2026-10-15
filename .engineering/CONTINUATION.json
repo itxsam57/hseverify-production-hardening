@@ -3,12 +3,12 @@
   "task": "WORKFLOW-001",
   "status": "TESTING",
   "verified_sha": null,
-  "last_verified_action": "Committed b7b0a7f scoring/quality controls; fourteen native, actual quality browser, actual PostgreSQL capacity passed. Exact release b7b0a7f deliberately aborted when independent 218-scenario audit found duplicate identity staff recovery and appeal interview followup missing. Duplicate native and four-outcome browser now pass, exact retained comparisons and audited previews included; independent source review accepts. Types/lint pass. Assessment controlled/section/MCQ offline/written offline diagnostic pass; tab mode found missing explicit human clearance in fixture, repaired and rerun active.",
-  "next_action": "Commit duplicate identity consumer slice normally. Complete appeal interview followup response producer/context without changing original credential/case, plus successful owned evidence response. Finish remaining assessment variants and run final exact full/PG/supplemental/CI/deployment before readiness claims.",
+  "last_verified_action": "Committed 65edbf8 duplicate identity recovery. Prepared actual appeal interview and technical replacement response, independent terminal review, withdrawn appointment cancellation; original issued case remains unchanged. Six appeal/calibration native tests, 26 focused integration tests, actual Admin\u2192Worker\u2192Assessor\u2192Admin browser and types/lint pass in diagnostic runs. Broad 108-test sweep found seven fixture/migration-ceiling failures; targeted repairs and rerun active. Independent review identified direct media/recording calibration and appeal support consumers; repaired, new failed/expired assertions included. Fresh clock helper adds no new account locking edge; actual PG lock-delay proof requested.",
+  "next_action": "Finish current targeted native/types/lint and independent real-PG calibration proof; commit appeal-interview/calibration slice normally. Then finish Admin exact retained appeal-evidence preview, owned scanned evidence response and durable response handoffs. Run final clean-SHA full/PG/CI/deployment and reconcile218 scenarios.",
   "owner_required": false,
-  "revision": 18,
+  "revision": 19,
   "blocker": null,
-  "updated_at": "2026-10-15T12:06:46.213597+00:00",
+  "updated_at": "2026-10-15T17:02:43.757723+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -63,10 +63,10 @@
     ".autopilot/artifacts/20261012-live-media-timer-independent-review.json"
   ],
   "unknowns": [
-    "167 unverified and15 partial expanded scenarios",
-    "Live provider delivery/realPG contention remain unverified",
-    "NonSandbox recovery returns token without flow/challenge; actual nextRED preserved",
-    "Broader privacy/materialhandoffs/deployment workflow breadth"
+    "218-scenario historical coverage counts remain stale pending exact-build reconciliation",
+    "Live provider delivery/configuration remains unverified",
+    "Further-evidence appeal Admin scanned-file consumer and response notifications remain open",
+    "Final current-SHA release suite, hosted CI and data-preserving deployment remain pending"
   ],
   "current_candidate_base_sha": "f23714a9c487e8a3e78a4e115fb7d284780ee9c2"
 }
