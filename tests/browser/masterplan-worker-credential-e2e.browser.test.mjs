@@ -78,6 +78,14 @@ async function approveReview(page,adminPage,baseUrl,kind,reason){
 async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,markReason}){
   await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
   let row=page.locator("tbody tr").filter({hasText:caseId}).first();await row.waitFor({timeout:20000});
+  const integrity=row.locator('select[name="integrityDisposition"]');
+  if(await integrity.count()){
+    assert.ok(process.env.HSE_MASTERPLAN_OFFLINE_TABS==="true"||process.env.HSE_MASTERPLAN_OFFLINE_OPENER==="true"||["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE),"Unexpected integrity concern must not be silently cleared by the journey fixture.");
+    assert.equal(await row.getByRole("button",{name:"Finalize review",exact:true}).isDisabled(),true,"Retained recovery signals must block scoring progression before a human disposition.");
+    await integrity.selectOption("CLEAR");await row.getByLabel("Integrity reason",{exact:true}).fill("The retained signals arose from this documented offline multi-tab or approved emergency recovery. I reviewed the current timeline and retained answer history independently before clearing these technical signals.");
+    await row.getByRole("button",{name:"Record integrity disposition",exact:true}).click();await row.getByText("CLEAR",{exact:true}).first().waitFor();
+  }
+
   const rubricForm=row.locator('form[aria-label^="Rubric mark "]').first();
   await rubricForm.getByLabel("Criterion mark").fill(String(mark));
   await rubricForm.getByLabel("Mark reason").fill(markReason);

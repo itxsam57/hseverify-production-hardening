@@ -24,3 +24,5 @@ Current bounded implementation slice (within WORKFLOW-001):
 - Repair proven native loader module-cycle failure without weakening product behavior or tests.
 
 Acceptance requires failing-then-passing focused regression evidence, real controls plus downstream records for each new workflow, independent correctness/security/test review, all required checks on the final exact SHA, fresh hosted CI, and a data-preserving exact-build test deployment. Existing 218 scenario counts are stale and must not be promoted from source presence alone. Live provider activation remains separate from controlled local transport/outage proof.
+
+Additional reproduced consumer gap M1.07.07: provide reasoned Admin duplicate-identity dispositions against current submitted version/latest check/CAS revision, retain actor and reason, continue eligible verified Worker ID issuance, preserve both identities and deny stale/foreign/revoked actions. Worker status must never expose candidate facts. Also audit M3.07.03 appeal interview followup runtime/progression before final release.
