@@ -197,6 +197,8 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "decision.recorded":
     case "credential.issued":
     case "appeal.submitted":
+    case "appeal.evidence.submitted":
+    case "appeal.interview.submitted":
     case "appeal.updated":
       if (!value || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value)!==Object.prototype || Object.keys(value).length!==1 || !Object.hasOwn(value,"eventRef")) throw new NotificationContractError("Assurance notification metadata is invalid.");
       normalized = Object.freeze({eventRef:normalizeAssuranceEventNotificationPayload({eventType:notificationType,eventRef:(value as {eventRef:unknown}).eventRef}).eventRef});
@@ -257,6 +259,8 @@ export const ASSURANCE_EVENT_CONTENT: Readonly<Record<AssuranceEventType,{title:
     "title": "Credential issued",
     "body": "Open the record for the current status and next action."
   },
+  "appeal.evidence.submitted":{title:"Appeal evidence submitted",body:"Open the record for the current status and next action."},
+  "appeal.interview.submitted":{title:"Appeal interview submitted",body:"Open the record for the current status and next action."},
   "appeal.submitted": {
     "title": "Appeal submitted",
     "body": "Open the record for the current status and next action."
@@ -279,7 +283,7 @@ function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetRe
   "assessment.review.conflict":["admin"],"evidence.second_review.requested":["verifier","admin"],
   "assessment.review.assigned":["verifier"],"integrity.escalated":["admin"],"integrity.returned":["verifier"],
   "evidence.submitted":["worker","verifier"],"evidence.unable":["worker"],"evidence.escalated":["worker","admin"],"evidence.returned":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
-  "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"]
+  "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"],"appeal.evidence.submitted":["worker","admin"],"appeal.interview.submitted":["worker","admin"]
  };
  if(!roles[type].includes(context.role))throw new NotificationContractError("Assurance recipient role is invalid.");
  if(type==="assessment.review.conflict")return "admin.scoring.assignment";
@@ -319,6 +323,8 @@ export function notificationContent(notificationType: NotificationType, context?
     case "decision.recorded":
     case "credential.issued":
     case "appeal.submitted":
+    case "appeal.evidence.submitted":
+    case "appeal.interview.submitted":
     case "appeal.updated":
     {
       if(!context)throw new NotificationContractError("Assurance notification target context is required.");

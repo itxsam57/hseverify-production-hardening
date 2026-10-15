@@ -1,4 +1,11 @@
 import "server-only";
+import {getServerEnvironment} from "../config/server-environment";
+import {authorizeSecureFileAccessCore,readSecureFileAccessCore,type SecureFileAccessLookup} from "../secure-files/secure-file-access-core";
+import {createRuntimePrivateObjectStorage} from "../secure-files/private-object-storage";
+import {secureFileFromRow,type SecureFileRow} from "../secure-files/secure-file-repository";
+import {SecureFileAccessDeniedError} from "../secure-files/secure-file-access-domain";
+import {appendSecureFileAccessAudit} from "../secure-files/secure-file-access-audit";
+import {DatabaseAuditRepository} from "../audit/audit-repository";
 import {findAppealInterviewContext} from "./appeal-interview-context";
 import { randomBytes } from "node:crypto";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
@@ -8,10 +15,11 @@ import type { CredentialAppeal } from "./credential-appeals-domain";
 import { InterviewSchedulingService } from "../interview/interview-scheduling-service";
 import { InterviewAssignmentService } from "../interview/interview-assignment-service";
 
+export type AppealEvidence={recordId:string;versionId:string;files:{fileId:string;sha256:string;byteSize:number}[]};
 export type AppealFollowup = {
  requestId: string; appealId: string; appealVersion: number; kind: "evidence"|"interview";
  reason: string; interviewRequestId: string|null; responded: boolean; responseReason: string|null;
- recommendation: string|null;
+ recommendation: string|null; evidence:AppealEvidence[];
 };
 export class AppealFollowupAccessError extends Error { constructor(){super("Appeal followup unavailable or forbidden.");} }
 export class AppealFollowupConflictError extends Error { constructor(){super("Appeal update conflict.");} }
@@ -62,7 +70,7 @@ export class CredentialAppealFollowupService {
     interviewRequestId=interview.interviewRequestId;
    }
    const requestId=await append(transaction,{appeal,principal:input.principal,kind:input.kind,reason:text,interviewRequestId});await check();
-   return {requestId,appealId:appeal.appealId,appealVersion:appeal.version+1,kind:input.kind,reason:text,interviewRequestId,responded:false,responseReason:null,recommendation:null};
+   return {requestId,appealId:appeal.appealId,appealVersion:appeal.version+1,kind:input.kind,reason:text,interviewRequestId,responded:false,responseReason:null,recommendation:null,evidence:[]};
   });
  }
  async respondEvidence(input:{principal:AuthorizationPrincipal;appealId:string;requestId:string;expectedVersion:number;reason:string;evidence:readonly {recordId:string;versionId:string}[]}):Promise<void>{
@@ -101,14 +109,43 @@ export class CredentialAppealFollowupService {
    await append(transaction,{appeal,principal:input.principal,kind:"interview",reason:text,requestId:context.followup_request_id,interviewRequestId:input.interviewRequestId,recommendation:outcome.recommendation});await check();
   });
  }
+ async previewEvidence(principal:AuthorizationPrincipal,appealId:string,requestId:string,fileId:string){
+  const db=await this.clientPromise;
+  const lookup:SecureFileAccessLookup={findForPrincipal:async(actor,ref)=>db.transaction(async transaction=>{
+   const check=await live(transaction,actor,"admin");
+   const appeal=await new CredentialAppealsRepository(Promise.resolve(transaction)).find(appealId);
+   if(!appeal)throw new AppealFollowupAccessError();
+   await new CredentialAppealsRepository(Promise.resolve(transaction)).assertIndependentReviewer(appeal,actor.accountId);
+   const files=await transaction.query<SecureFileRow>(`SELECT DISTINCT files.* FROM credential_appeal_followup_events response
+    JOIN credential_appeal_followup_events request ON request.event_id=response.request_id AND request.appeal_id=response.appeal_id AND request.event_type='requested' AND request.kind='evidence'
+    JOIN credential_appeals appeal ON appeal.appeal_id=response.appeal_id
+    JOIN credential_issuances credential ON credential.credential_id=appeal.credential_id AND credential.worker_id=appeal.worker_id
+    JOIN assurance_cases cases ON cases.credential_reference=credential.credential_id AND cases.permanent_worker_id=credential.worker_id
+    CROSS JOIN LATERAL jsonb_array_elements(response.evidence) binding
+    CROSS JOIN LATERAL jsonb_array_elements(binding->'files') frozen
+    JOIN worker_evidence_records records ON records.record_id=binding->>'recordId' AND records.worker_account_id=cases.worker_account_id
+    JOIN worker_evidence_versions versions ON versions.version_id=binding->>'versionId' AND versions.record_id=records.record_id
+    JOIN worker_evidence_attachments attachments ON attachments.record_id=records.record_id AND attachments.version_id=versions.version_id AND attachments.secure_file_id=frozen->>'fileId'
+    JOIN platform_secure_files files ON files.file_id=attachments.secure_file_id AND files.owner_account_id=cases.worker_account_id AND files.owner_role='worker' AND files.tenant_id IS NULL AND files.membership_id IS NULL AND files.lifecycle_status='available'
+      AND files.content_sha256=frozen->>'sha256' AND files.byte_size::text=frozen->>'byteSize'
+    WHERE response.appeal_id=$1 AND response.request_id=$2 AND response.event_type='evidence_submitted' AND response.actor_account_id=cases.worker_account_id AND files.file_id=$3`,[appealId,requestId,ref]);
+   await check();return files.rows.length===1?secureFileFromRow(files.rows[0]):null;
+  })};
+  const environment=getServerEnvironment(),repository=new DatabaseAuditRepository(Promise.resolve(db));
+  const issued=await authorizeSecureFileAccessCore({principal,fileRef:fileId,purpose:"preview",signingSecret:environment.sessionSecret,repository:lookup});
+  await appendSecureFileAccessAudit({principal,action:"secure_file.access.authorized",fileRef:fileId,purpose:"preview",expiresAt:issued.expiresAt,repository});
+  const content=await readSecureFileAccessCore({principal,token:issued.token,expectedPurpose:"preview",signingSecret:environment.sessionSecret,repository:lookup,storage:createRuntimePrivateObjectStorage(environment.appEnvironment)});
+  if(!await lookup.findForPrincipal(principal,fileId))throw new SecureFileAccessDeniedError();
+  await appendSecureFileAccessAudit({principal,action:"secure_file.access.served",fileRef:fileId,purpose:"preview",byteSize:content.bytes.byteLength,repository});return content;
+ }
  async list(principal:AuthorizationPrincipal,appealId:string):Promise<AppealFollowup[]>{
   const db=await this.clientPromise;return db.transaction(async transaction=>{
    if(principal.activeRole!=="admin" && principal.activeRole!=="worker")throw new AppealFollowupAccessError();
    const check=await live(transaction,principal,principal.activeRole);
    const owned=await transaction.query(`SELECT 1 FROM credential_appeals appeal JOIN assurance_cases cases ON cases.credential_reference=appeal.credential_id AND cases.permanent_worker_id=appeal.worker_id WHERE appeal.appeal_id=$1 AND ($2='admin' OR cases.worker_account_id=$3)`,[appealId,principal.activeRole,principal.accountId]);
    if(owned.rows.length!==1)throw new AppealFollowupAccessError();
-   const rows=await transaction.query<{event_id:string;appeal_version:number;kind:"evidence"|"interview";reason:string;interview_request_id:string|null;response_reason:string|null;recommendation:string|null;responded:boolean}>(`SELECT request.event_id,request.appeal_version,request.kind,request.reason,COALESCE(response.interview_request_id,current_interview.interview_request_id,request.interview_request_id) AS interview_request_id,response.reason AS response_reason,response.recommendation,response.event_id IS NOT NULL AS responded FROM credential_appeal_followup_events request LEFT JOIN credential_appeal_followup_events response ON response.request_id=request.event_id LEFT JOIN LATERAL(WITH RECURSIVE chain AS(SELECT interview_request_id FROM interview_requests WHERE interview_request_id=request.interview_request_id UNION SELECT successor.interview_request_id FROM interview_requests successor JOIN chain previous ON successor.replaces_interview_request_id=previous.interview_request_id) SELECT chain.interview_request_id FROM chain WHERE NOT EXISTS(SELECT 1 FROM interview_requests successor WHERE successor.replaces_interview_request_id=chain.interview_request_id) LIMIT 1)current_interview ON request.kind='interview' WHERE request.appeal_id=$1 AND request.event_type='requested' ORDER BY request.appeal_version`,[appealId]);await check();
-   return rows.rows.map(row=>({requestId:row.event_id,appealId,appealVersion:Number(row.appeal_version),kind:row.kind,reason:row.reason,interviewRequestId:row.interview_request_id,responded:row.responded,responseReason:row.response_reason,recommendation:row.recommendation}));
+   const rows=await transaction.query<{event_id:string;appeal_version:number;kind:"evidence"|"interview";reason:string;interview_request_id:string|null;response_reason:string|null;recommendation:string|null;responded:boolean;evidence:AppealEvidence[]|null}>(`SELECT request.event_id,request.appeal_version,request.kind,request.reason,COALESCE(response.interview_request_id,current_interview.interview_request_id,request.interview_request_id) AS interview_request_id,response.reason AS response_reason,response.recommendation,response.evidence,response.event_id IS NOT NULL AS responded FROM credential_appeal_followup_events request LEFT JOIN credential_appeal_followup_events response ON response.request_id=request.event_id LEFT JOIN LATERAL(WITH RECURSIVE chain AS(SELECT interview_request_id FROM interview_requests WHERE interview_request_id=request.interview_request_id UNION SELECT successor.interview_request_id FROM interview_requests successor JOIN chain previous ON successor.replaces_interview_request_id=previous.interview_request_id) SELECT chain.interview_request_id FROM chain WHERE NOT EXISTS(SELECT 1 FROM interview_requests successor WHERE successor.replaces_interview_request_id=chain.interview_request_id) LIMIT 1)current_interview ON request.kind='interview' WHERE request.appeal_id=$1 AND request.event_type='requested' ORDER BY request.appeal_version`,[appealId]);await check();
+   return rows.rows.map(row=>({requestId:row.event_id,appealId,appealVersion:Number(row.appeal_version),kind:row.kind,reason:row.reason,interviewRequestId:row.interview_request_id,responded:row.responded,responseReason:row.response_reason,recommendation:row.recommendation,evidence:row.evidence??[]}));
   });
  }
 }

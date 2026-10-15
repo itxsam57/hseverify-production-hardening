@@ -80,6 +80,7 @@ export default async function AdminCredentialAppealsPage({
                   <p>Further {request.kind}: {request.reason}</p>
                   <p>{request.responded?"Response received":"Response required"}</p>
                   {request.responseReason?<p>Response: {request.responseReason}</p>:null}
+                  {request.evidence.flatMap(record=>record.files.map(file=><p key={record.versionId+file.fileId}><Link href={"/admin/appeals/"+encodeURIComponent(appeal.appealId)+"/followups/"+encodeURIComponent(request.requestId)+"/files/"+encodeURIComponent(file.fileId)}>Open submitted evidence {record.recordId}</Link> · Retained version {record.versionId}</p>))}
                   {request.recommendation?<p>Assessor recommendation: {request.recommendation.replaceAll("_"," ")}</p>:null}
                   {request.interviewRequestId?<Link href="/admin/assessor-matching">Review eligible interview assignment</Link>:null}
                 </section>)}

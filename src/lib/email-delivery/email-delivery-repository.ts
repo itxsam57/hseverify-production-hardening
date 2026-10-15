@@ -107,7 +107,7 @@ WHERE email_attempts.delivery_id = $1
   AND (outbox_attempts.outcome = 'lease_expired' OR
  (outbox_attempts.outcome IN ('retry_scheduled','terminal_failed') AND EXISTS(
   SELECT 1 FROM platform_email_deliveries deliveries WHERE deliveries.delivery_id=email_attempts.delivery_id
-   AND deliveries.delivery_type IN ('interview.scheduled','interview.reminder','evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved'))))
+   AND deliveries.delivery_type IN ('interview.scheduled','interview.reminder','evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','appeal.evidence.submitted','appeal.interview.submitted','assessment.funding.requested','assessment.funding.approved'))))
 RETURNING email_attempts.*`;
 
 export const EMAIL_RECONCILE_DELIVERY_SQL = `
@@ -241,7 +241,7 @@ WHERE recipient_account_id = $1
       AND membership_id IS NULL
     )
   )
-  AND (platform_email_deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
+  AND (platform_email_deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','appeal.evidence.submitted','appeal.interview.submitted','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
     SELECT 1 FROM platform_outbox_jobs source
     CROSS JOIN LATERAL platform_assurance_event_recipients(source.payload->>'eventType',source.payload->>'eventRef') eligible
     WHERE source.job_id=platform_email_deliveries.source_job_id AND source.job_type='email.assurance.event'
@@ -272,7 +272,7 @@ WHERE delivery_id = $1
       AND membership_id IS NULL
     )
   )
-  AND (platform_email_deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
+  AND (platform_email_deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','appeal.evidence.submitted','appeal.interview.submitted','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
     SELECT 1 FROM platform_outbox_jobs source
     CROSS JOIN LATERAL platform_assurance_event_recipients(source.payload->>'eventType',source.payload->>'eventRef') eligible
     WHERE source.job_id=platform_email_deliveries.source_job_id AND source.job_type='email.assurance.event'
@@ -301,7 +301,7 @@ WHERE deliveries.delivery_id = $1
       AND deliveries.membership_id IS NULL
     )
   )
-  AND (deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
+  AND (deliveries.delivery_type NOT IN ('evidence.submitted','evidence.reviewed','evidence.additional.requested','decision.recorded','credential.issued','appeal.submitted','appeal.updated','appeal.evidence.submitted','appeal.interview.submitted','assessment.funding.requested','assessment.funding.approved') OR EXISTS (
     SELECT 1 FROM platform_outbox_jobs source
     CROSS JOIN LATERAL platform_assurance_event_recipients(source.payload->>'eventType',source.payload->>'eventRef') eligible
     WHERE source.job_id=deliveries.source_job_id AND source.job_type='email.assurance.event'
