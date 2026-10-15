@@ -251,6 +251,14 @@ test("all role portal pages keep usable proportions, navigation and notification
             const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
             const page = await context.newPage();
             await login(page, baseUrl, role, credentials[role]);
+            await page.locator("details.profile-menu > summary").click();
+            await page.getByRole("link", { name: "Language: English", exact: true }).click();
+            await page.waitForURL("**#interface-language");
+            const language = page.getByRole("region", { name: "Interface language", exact: true });
+            await language.getByText("English", { exact: true }).waitFor({ state: "visible" });
+            await language.getByText("This release is available in English.", { exact: true }).waitFor();
+            assert.equal(await page.locator("html").getAttribute("lang"), "en");
+
 
             for (const route of routes) {
               const response = await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });

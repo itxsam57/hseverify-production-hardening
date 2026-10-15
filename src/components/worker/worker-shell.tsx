@@ -86,6 +86,7 @@ export async function WorkerShell({
                 <Link href="/worker/profile">My profile</Link>
                 <Link href="/worker/notifications">Notifications</Link>
                 <Link href="/worker/security">Security</Link>
+                <Link href="/worker/security#interface-language">Language: English</Link>
                 <Link href="/account/sessions">Active sessions</Link>
                 <Link href="/contact">Help and support</Link>
                 <Link href="/">Exit portal</Link>

@@ -64,3 +64,14 @@ Observed working-tree validation (not a combined release certificate):
 - Fresh independent review reproduced the reassignment findings before repair and found no additional concrete blocker after the fixes. That review was source-only; test execution remains separately recorded.
 
 Remaining: complete fresh combined release checks, real PostgreSQL verification of 0118, hosted CI, deployed exact-release verification, and reconciliation of all 218 historical scenario entries against current evidence. Production provider delivery is not established by disposable local tests.
+
+### Follow-up contract and release-fixture checks (15 October)
+
+- Closed notification/email vocabulary checks now include the governed reviewer assignment event and validate its opaque scoring audit reference. Both source checks and all 17 domain tests pass.
+- The actual PostgreSQL concurrent review test now creates signed supervisor observations, obtains real Worker acknowledgement and authenticates exact framework calibration before claiming. It applies migrations through 0118 and proves two independent clients cannot overwrite an already committed Admin escalation.
+- Full gate failures at interview context and historical rollback were retained: calibration must precede automatic review assignment; reversing 0111 must first reverse later installed notification wrappers, while preserving their drift/history guards. Focused reruns are required before the next full candidate.
+- Owner selected **English only** for this release. Account menus explicitly identify English and link to authenticated interface-language information; no unsupported translations are advertised.
+
+Complete release, hosted CI and deployed-candidate proof remain pending.
+
+Focused verification: actual six-role language/menu navigation and desktop/mobile layouts pass; six interview-context tests pass including explicit integrity clearance; the notification reverse-order rollback and remaining finalization assertions pass. Types and lint pass with seven existing warnings. These scoped results do not replace the pending exact full gate.

@@ -333,6 +333,12 @@ for (const [recommendation, status, owner, action] of [
 test("Empty 0111 rollback restores exact preceding functions and constraints; drift is refused",async()=>{
  const x=await activeInterview();
  try{
+   // Later notification wrappers deliberately reject an out-of-order rollback.
+   await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
+   for (const migration of ["0118_scoring_assignment_notifications", "0117_integrity_review_notifications"]) {
+     await x.database.exec(readFileSync("database/migrations/"+migration+".down.sql","utf8"));
+   }
+
   const old=(await x.database.query("SELECT platform_interview_recommendation_notification_rollback_contract() value")).rows[0].value;
   await x.database.exec("CREATE OR REPLACE FUNCTION platform_assurance_notification_title(p_type text) RETURNS text LANGUAGE sql AS $$ SELECT 'drift'::text $$");
   await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
