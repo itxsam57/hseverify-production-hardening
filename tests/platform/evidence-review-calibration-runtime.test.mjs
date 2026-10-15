@@ -11,9 +11,9 @@ const { EffectivePolicyService, pinAssuranceCasePolicySnapshot } = loadWorkerReg
 const NOW = new Date(), before = new Date(NOW.getTime()-3600000), future = new Date(NOW.getTime()+3600000);
 const id = (prefix, char) => `${prefix}_${char.repeat(24)}`;
 const ENV = {appEnvironment:"test",databaseDriver:"pglite",pgliteDataDir:"memory://",releaseSha:"calibration-runtime",databaseUrl:null};
-async function setup() {
+async function setup(maxMigration = Infinity) {
  const db = await openScriptDatabase(ENV);
- for(const name of readdirSync("database/migrations").filter(x=>x.endsWith(".up.sql")).sort()) await db.execute(readFileSync(`database/migrations/${name}`,"utf8"));
+ for(const name of readdirSync("database/migrations").filter(x=>x.endsWith(".up.sql") && Number(x.slice(0,4)) <= maxMigration).sort()) await db.execute(readFileSync(`database/migrations/${name}`,"utf8"));
  async function account(role,char) {
   const accountId=id("account",char),sessionId=id("session",char);
   await db.query(`INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$3,'active','scrypt$16384$8$1$salt$hash',$4,$4,$4,$4)`,[accountId,`${char}@example.test`,role,before.toISOString()]);
@@ -107,7 +107,9 @@ test("binding audit failure rolls back applicability; populated migrations refus
 });
 
 test("empty dependency-ordered rollback restores schema and permits reapply",async()=>{
- const x=await setup();try {
+ // Exercise the 106/107 contract before later migrations add framework revision dependencies.
+ // Operational tests above and below continue to apply every current migration.
+ const x=await setup(107);try {
   await assert.rejects(x.db.execute(readFileSync("database/migrations/0106_evidence_review_calibration_binding.down.sql","utf8")),/audit migration first/i);
   await x.db.execute(readFileSync("database/migrations/0107_review_calibration_audit.down.sql","utf8"));
   await x.db.execute(readFileSync("database/migrations/0106_evidence_review_calibration_binding.down.sql","utf8"));

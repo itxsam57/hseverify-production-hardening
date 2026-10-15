@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { before as beforeAll, after as afterAll } from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
@@ -10,9 +10,21 @@ const { EffectivePolicyService, pinAssuranceCasePolicySnapshot } = loadWorkerReg
 const NOW = new Date(), before = new Date(NOW.getTime()-3600000), future = new Date(NOW.getTime()+3600000);
 let fixtureRun=0;
 const id = (prefix, char) => `${prefix}_${char.repeat(23)}${fixtureRun}`;
-const databaseUrl=process.env.HSE_CALIBRATION_POSTGRES_URL;
-if(!databaseUrl)throw new Error("Set isolated HSE_CALIBRATION_POSTGRES_URL for two-connection lock proof.");
-const ENV={appEnvironment:"test",databaseDriver:"postgres",databaseUrl,releaseSha:"calibration-postgres"};
+const databaseUrl=process.env.HSE_POSTGRES_TEST_DATABASE_URL;
+if(!databaseUrl)throw new Error("Set HSE_POSTGRES_TEST_DATABASE_URL for disposable two-connection lock proof.");
+const ENV={appEnvironment:"test",databaseDriver:"postgres",databaseUrl:null,releaseSha:"calibration-postgres"};
+const disposableName="evidence_calibration_"+Date.now()+"_"+process.pid;
+let adminDatabase,created=false;
+beforeAll(async()=>{
+ const url=new URL(databaseUrl);
+ adminDatabase=await openScriptDatabase({...ENV,databaseUrl:url.href});
+ await adminDatabase.execute('CREATE DATABASE "'+disposableName+'"');created=true;
+ url.pathname="/"+disposableName;ENV.databaseUrl=url.href;
+});
+afterAll(async()=>{
+ try{if(created)await adminDatabase.execute('DROP DATABASE "'+disposableName+'"');}
+ finally{await adminDatabase?.close();}
+});
 let migrated=false;
 async function setup(frameworkReference="CAL-B") {
  fixtureRun++;

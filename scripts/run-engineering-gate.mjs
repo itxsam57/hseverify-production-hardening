@@ -18,6 +18,10 @@ const checks = [
   { name: "M2.07 candidate assessment window contract", command: process.execPath, args: ["scripts/check-assessment-attempt-window.mjs"] },
   { name: "M2.07 candidate assessment runtime tests", command: process.execPath, args: ["scripts/run-assessment-attempt-tests.mjs"] },
   { name: "M2.08 answer recovery", command: process.execPath, args: ["scripts/run-assessment-attempt-tests.mjs", "--m2-08"] },
+  { name: "M3.05 billing ledger and concurrent refunds", command: process.execPath, args: ["scripts/run-billing-tests.mjs"] },
+  { name: "Account recovery atomicity and staff revocation", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/account-security-business-rollback.test.mjs", "tests/platform/account-security-notification-runtime.test.mjs", "tests/platform/auth-recovery-otp-runtime.test.mjs", "tests/platform/account-security-audit-runtime.test.mjs", "tests/platform/staff-invitation-revocation-runtime.test.mjs"] },
+  { name: "Scheduling delivery recovery and private data export", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/interview-scheduling-email-runtime.test.mjs", "tests/platform/worker-privacy-data-runtime.test.mjs"] },
+  { name: "Registration, privacy and notification atomicity", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/notification-bulk-read-runtime.test.mjs", "tests/platform/privacy-sharing-restriction-runtime.test.mjs", "tests/platform/privacy-consent-accommodation-runtime.test.mjs", "tests/platform/privacy-consent-request-runtime.test.mjs", "tests/platform/worker-registration-policy-runtime.test.mjs", "tests/platform/worker-registration-otp-runtime.test.mjs", "tests/platform/company-registration-otp-runtime.test.mjs"] },
   { name: "Complete application gate", command: "npm", args: ["run", "check"] },
   { name: "Deployable preview smoke", command: "npm", args: ["run", "preview:smoke"] },
   { name: "Release evidence manifest", command: "npm", args: ["run", "release:manifest"] }
