@@ -39,3 +39,12 @@ test("PostgreSQL release gate selects disposable evidence calibration contention
   const scripts = JSON.parse(readFileSync("package.json", "utf8")).scripts;
   assert.ok(scripts["test:postgres-json"].includes("tests/platform/evidence-review-calibration-postgres.test.mjs"));
 });
+
+test("release gates retain navigation, conditional credential, format pipeline and PostgreSQL restore regressions", () => {
+  const gate = readFileSync("scripts/run-engineering-gate.mjs", "utf8");
+  for (const file of ["credential-conditional-consumer-runtime", "evidence-file-format-pipeline"]) assert.ok(gate.includes(`"tests/platform/${file}.test.mjs"`));
+  const consumer = readFileSync("scripts/run-consumer-cohort-browser-tests.mjs", "utf8");
+  for (const file of ["unsaved-form-navigation", "form-history-fallback"]) assert.ok(consumer.includes(`"tests/browser/${file}.browser.test.mjs"`));
+  const scripts = JSON.parse(readFileSync("package.json", "utf8")).scripts;
+  assert.ok(scripts["test:postgres-json"].includes("tests/platform/report-snapshot-restore-postgres.test.mjs"));
+});

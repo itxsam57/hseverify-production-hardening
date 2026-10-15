@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { UnsavedChangesGuard } from "@/components/ui/unsaved-changes-guard";
+
 import { signOutWorker } from "@/app/worker/actions";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -19,6 +21,7 @@ export async function WorkerShell({
 
   return (
     <div className="portal-shell">
+      <UnsavedChangesGuard />
       <a className="skip-link" href="#main-content">Skip to main content</a>
 
       <aside className="portal-sidebar" aria-label="Worker Portal navigation">

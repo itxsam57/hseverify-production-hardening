@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {readFile} from "node:fs/promises";
+import {createServer} from "node:http";
+import {chromium} from "playwright";
+import ts from "typescript";
+import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
+const {FORM_HISTORY_TRACKING_SCRIPT}=loadWorkerRegistrationTs("src/components/ui/form-history-tracking.ts");
+test("Fallback history protects Back, Forward and multi-entry traversal without changing Next state or history length",{timeout:30000},async()=>{
+ const server=createServer((_request,response)=>{response.setHeader("content-type","text/html");response.end("<!doctype html><html><body>History guard regression</body></html>");});
+ await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));const base="http://127.0.0.1:"+server.address().port;let browser;
+ try{
+  browser=await chromium.launch({headless:true});const context=await browser.newContext();
+  await context.addInitScript(()=>Object.defineProperty(window,"navigation",{value:undefined,configurable:true}));
+  const page=await context.newPage();let confirmations=0,accept=false;
+  page.on("dialog",async dialog=>{confirmations++;if(accept)await dialog.accept();else await dialog.dismiss();});
+  const waitCount=async expected=>{for(let count=0;count<200&&confirmations<expected;count++)await page.waitForTimeout(10);assert.equal(confirmations,expected);};
+  await page.goto(base);await page.addScriptTag({content:FORM_HISTORY_TRACKING_SCRIPT});
+  const compiled=ts.transpileModule(await readFile("src/components/ui/form-history-guard.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  await page.addScriptTag({content:"window.hseHistoryModule={};((exports)=>{"+compiled+"})(window.hseHistoryModule);window.dirty=false;window.hseHistoryModule.installFormHistoryGuard(()=>window.dirty,()=>window.confirm('Discard unsaved changes?'));"});
+  await page.evaluate(()=>{for(const marker of ["a","b","c"])history.pushState({__NA:true,tree:{retained:[marker]},marker},"","/"+marker);});
+  const original=await page.evaluate(()=>({state:history.state,length:history.length}));
+  await page.evaluate(()=>{window.dirty=true;history.back();});await waitCount(1);await page.waitForFunction(()=>location.pathname==="/c");await page.waitForTimeout(100);
+  assert.equal(confirmations,1);assert.deepEqual(await page.evaluate(()=>history.state),original.state);assert.equal(await page.evaluate(()=>history.length),original.length);
+  accept=true;await page.evaluate(()=>history.back());await waitCount(2);await page.waitForURL("**/b");assert.equal(confirmations,2);
+  await page.evaluate(()=>{window.dirty=false;history.back();});await page.waitForURL("**/a");
+  accept=false;await page.evaluate(()=>{window.dirty=true;history.forward();});await waitCount(3);await page.waitForFunction(()=>location.pathname==="/a");await page.waitForTimeout(100);assert.equal(confirmations,3);
+  accept=true;await page.evaluate(()=>history.forward());await waitCount(4);await page.waitForURL("**/b");assert.equal(confirmations,4);
+  const beforeReplace=await page.evaluate(()=>history.state);
+  await page.evaluate(()=>history.replaceState({...history.state,queryProof:"retained"},"","/b?filter=active"));
+  assert.deepEqual(await page.evaluate(()=>history.state.tree),beforeReplace.tree);assert.equal(await page.evaluate(()=>history.state.__NA),true);
+  accept=false;await page.evaluate(()=>history.go(-2));await waitCount(5);await page.waitForFunction(()=>location.pathname==="/b"&&location.search==="?filter=active");await page.waitForTimeout(100);assert.equal(confirmations,5);
+  assert.equal(await page.evaluate(()=>history.length),original.length);assert.equal(await page.evaluate(()=>history.state.queryProof),"retained");
+  accept=true;await page.evaluate(()=>history.go(-2));await waitCount(6);await page.waitForURL(base+"/");assert.equal(confirmations,6);
+  await page.evaluate(()=>history.go(2));await waitCount(7);await page.waitForURL("**/b?filter=active");assert.equal(confirmations,7);
+  accept=false;await page.evaluate(()=>{history.back();history.back();});
+  await page.waitForTimeout(300);assert.equal(new URL(page.url()).pathname,"/b");assert.equal(new URL(page.url()).search,"?filter=active");
+  assert.equal(await page.evaluate(()=>history.length),original.length);assert.deepEqual(await page.evaluate(()=>history.state.tree),beforeReplace.tree);
+ }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
+});
