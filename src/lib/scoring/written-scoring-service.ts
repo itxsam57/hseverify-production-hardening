@@ -75,7 +75,7 @@ export class WrittenScoringService {
   }
   private async computedScore(reviewId:string,reviewerAccountId:string):Promise<number>{
     const criteria=await this.pinnedCriteria(reviewId,reviewerAccountId);
-    const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string|null}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 ORDER BY criterion,mark_sequence DESC`,[reviewId,reviewerAccountId]);
+    const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string|null}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 AND mark_sequence>COALESCE((SELECT (events.metadata->>'marksBeforeAssignment')::bigint FROM platform_audit_events events WHERE events.action_key='assurance_case.status.changed' AND events.metadata->>'assessmentReviewAssignment'=$1 ORDER BY events.audit_sequence DESC LIMIT 1),0) ORDER BY criterion,mark_sequence DESC`,[reviewId,reviewerAccountId]);
     let earned=0,total=0;
     for(const criterion of criteria){const mark=marks.rows.find(row=>row.criterion===criterion.key);if(!mark?.mark_reason||mark.mark_reason.trim().length<5)throw new Error("Every pinned rubric criterion requires a reasoned mark.");earned+=criterion.points*mark.mark/100;total+=criterion.points;}
     return Math.round(earned/total*100);
@@ -248,7 +248,7 @@ export class WrittenScoringService {
       if(!unavailableReason && questions.length>0 && questions.every(question=>question.questionType!=="SHORT_TEXT" && question.questionType!=="LONG_TEXT") && !(await objectiveAssessmentResult(this.database,review.attempt_id,review.case_id))){
         unavailableReason="Published pass mark is unavailable for this objective assessment. Admin must resolve the case policy before finalization.";
       }
-      const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 ORDER BY criterion,mark_sequence DESC`,[review.review_id,reviewerAccountId]);
+      const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 AND mark_sequence>COALESCE((SELECT (events.metadata->>'marksBeforeAssignment')::bigint FROM platform_audit_events events WHERE events.action_key='assurance_case.status.changed' AND events.metadata->>'assessmentReviewAssignment'=$1 ORDER BY events.audit_sequence DESC LIMIT 1),0) ORDER BY criterion,mark_sequence DESC`,[review.review_id,reviewerAccountId]);
       const rubricMarks=Object.freeze(marks.rows.map(mark=>Object.freeze({criterion:mark.criterion,mark:Number(mark.mark),reason:mark.mark_reason})));
       rows.push({...review,questions,rubricMarks,canReview:unavailableReason===null,unavailableReason});
     }

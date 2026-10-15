@@ -186,3 +186,10 @@ test("Admin recovers policyless case with explicit published policy and matching
   await x.review.claim(x.verifier,task,NOW);
  }finally{await x.db.close();}
 });
+
+test("Admin applicability queue renders the actual unresolved task without ambiguous revision joins",async()=>{
+ const x=await setup();try{
+  const rows=await new EvidenceReviewFrameworkService(Promise.resolve(x.db)).listTasks(x.admin);
+  assert.ok(rows.some(row=>row.task_id===x.task.taskId && row.pinned_framework_version_id===null));
+ }finally{await x.db.close();}
+});

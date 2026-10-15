@@ -1,3 +1,4 @@
+import {prepareReviewCalibrationBrowser} from "../helpers/evidence-review-calibration-browser.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHmac } from "node:crypto";
@@ -87,8 +88,10 @@ test("Company signed observation -> Worker acknowledgement -> Verifier outcomes 
  const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:process.cwd(),environment,probe:async()=>{
   const browser=await chromium.launch({headless:true});
   try {
-   const company=await (await browser.newContext()).newPage(),worker=await (await browser.newContext()).newPage(),verifier=await (await browser.newContext()).newPage();
+   const admin=await (await browser.newContext()).newPage(),company=await (await browser.newContext()).newPage(),worker=await (await browser.newContext()).newPage(),verifier=await (await browser.newContext()).newPage();
    await login(company,baseUrl,credentials.company,"company");await login(worker,baseUrl,credentials.worker,"worker");await login(verifier,baseUrl,credentials.verifier,"verifier");
+   await login(admin,baseUrl,credentials.admin,"admin");
+   const bindReview=await prepareReviewCalibrationBrowser(admin,baseUrl,credentials.verifier.email,"SUPERVISOR-PROOF");
    let n=0;
    const scenarios=[...["demonstrated","partially_demonstrated","not_demonstrated"].flatMap(outcome=>["APPROVED","REJECTED","CHANGES_REQUESTED"].map(decision=>[outcome,decision,null])),...["ESCALATED","UNABLE_TO_VERIFY","CHANGES_REQUESTED"].map(blocker=>["demonstrated",null,blocker])];
    for(const [outcome,decision,blockerStatus] of scenarios){
@@ -123,7 +126,9 @@ Safety controls applied`);
       console.log("MIXED ACK preserved "+blockerStatus+" existing owner and route");continue;
     }
     await verifier.goto(baseUrl+"/verifier/reviews?q="+caseId);
-    await verifier.getByRole("link",{name:"Review",exact:true}).click();
+    await verifier.getByRole("link",{name:"Review",exact:true}).click();await verifier.waitForURL("**/verifier/reviews/*");
+    await bindReview(new URL(verifier.url()).pathname.split("/").at(-1));
+    await verifier.reload();
     await verifier.getByRole("button",{name:"Claim review",exact:true}).click();
     const evidence=verifier.getByRole("region",{name:"Signed supervisor observation"});
     await evidence.getByText(competency,{exact:false}).waitFor();

@@ -1,4 +1,5 @@
 import "server-only";
+import {eligibleWrittenReviewers} from "../scoring/written-review-eligibility";
 import { assessmentRequiresIntegrityReview } from "../integrity/integrity-review-service";
 
 import { createIdentifier } from "../auth/auth-domain";
@@ -57,26 +58,6 @@ async function reviewOrchestrationAvailable(
     result.rows.length === 2 &&
     result.rows.every((row) => row.is_nullable === "YES")
   );
-}
-
-async function activeVerifier(
-  database: DatabaseClient
-): Promise<string | null> {
-  const result = await database.query<{ account_id: string }>(
-    `SELECT accounts.account_id
-       FROM auth_accounts AS accounts
-       JOIN auth_account_roles AS roles
-         ON roles.account_id=accounts.account_id
-        AND roles.role='verifier'
-       LEFT JOIN written_score_reviews AS reviews
-         ON reviews.reviewer_account_id=accounts.account_id
-        AND reviews.status='DRAFT'
-      WHERE accounts.account_status='active'
-      GROUP BY accounts.account_id
-      ORDER BY COUNT(reviews.review_id) ASC,accounts.account_id ASC
-      LIMIT 1`
-  );
-  return result.rows[0]?.account_id ?? null;
 }
 
 function objectiveAnswerCorrect(row: ObjectiveAnswerRow): boolean {
@@ -196,7 +177,7 @@ async function queueHumanReview(
   }>
 ): Promise<void> {
   const tenantId = await caseTenant(database, input.caseId);
-  const reviewerAccountId = await activeVerifier(database);
+  const reviewerAccountId = (await eligibleWrittenReviewers(database,input.caseId,input.attemptId))[0]?.accountId??null;
   if (reviewerAccountId) {
     await database.query(
       `INSERT INTO written_score_reviews(

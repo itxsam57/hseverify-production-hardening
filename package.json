@@ -183,8 +183,8 @@
     "test:review-resolution-notification-browser": "node --test tests/browser/review-resolution-notification.browser.test.mjs",
     "test:credential-concern-browser": "node --test --test-concurrency=1 tests/browser/credential-concern-review.browser.test.mjs tests/browser/portal-navigation-responsive.browser.test.mjs",
     "test:review-calibration-browser": "node --test tests/browser/evidence-review-calibration.browser.test.mjs",
-    "test:masterplan-integration": "node --test --test-concurrency=1 tests/platform/integrity-human-review-runtime.test.mjs tests/platform/written-scoring-authority-runtime.test.mjs tests/platform/written-scoring-live-authority.test.mjs tests/platform/supervisor-observation-runtime.test.mjs tests/platform/credential-appeal-followup-runtime.test.mjs tests/platform/evidence-review-calibration-runtime.test.mjs",
-    "test:masterplan-integration-browser": "node --test --test-concurrency=1 tests/browser/integrity-human-review.browser.test.mjs tests/browser/supervisor-observation-journey.browser.test.mjs tests/browser/evidence-review-calibration.browser.test.mjs"
+    "test:masterplan-integration": "node --test --test-concurrency=1 tests/platform/integrity-human-review-runtime.test.mjs tests/platform/written-scoring-authority-runtime.test.mjs tests/platform/written-scoring-live-authority.test.mjs tests/platform/supervisor-observation-runtime.test.mjs tests/platform/credential-appeal-followup-runtime.test.mjs tests/platform/evidence-review-calibration-runtime.test.mjs tests/platform/written-review-assignment-runtime.test.mjs tests/platform/written-review-reassignment-runtime.test.mjs",
+    "test:masterplan-integration-browser": "node --test --test-concurrency=1 tests/browser/integrity-human-review.browser.test.mjs tests/browser/supervisor-observation-journey.browser.test.mjs tests/browser/evidence-review-calibration.browser.test.mjs tests/browser/written-review-assignment.browser.test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

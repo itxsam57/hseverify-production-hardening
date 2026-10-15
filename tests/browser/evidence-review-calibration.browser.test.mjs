@@ -140,9 +140,12 @@ test("Admin resolves authoritative applicability and calibration; failure revoke
     await login(admin,baseUrl,credentials.admin,"admin");await admin.goto(`${baseUrl}/admin/frameworks`);
     const creation=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create framework",exact:true})});
     await creation.getByLabel("Reference",{exact:true}).fill("CAL-BROWSER");await creation.getByLabel("Title",{exact:true}).fill("Observed evidence review standard");await creation.getByRole("button",{name:"Create framework",exact:true}).click();await admin.getByText("Framework created.",{exact:true}).waitFor();
-    await admin.goto(`${baseUrl}/admin/calibrations`);await admin.getByRole("link",{name:"Resolve evidence-review framework bindings"}).click();
-    const binding=admin.locator("form").filter({has:admin.getByRole("button",{name:"Bind review framework",exact:true})}).first();
-    const revision=await binding.locator('select[name="frameworkVersionId"] option').filter({hasText:"CAL-BROWSER"}).getAttribute("value");
+    await admin.goto(`${baseUrl}/admin/calibrations`);await admin.getByRole("link",{name:"Resolve evidence-review framework bindings"}).click();await admin.waitForURL("**/admin/review-frameworks");await admin.getByRole("heading",{name:"Review framework applicability",exact:true}).waitFor();
+    const taskId=new URL(taskUrl).pathname.split("/").at(-1);
+    const binding=admin.locator("form").filter({has:admin.locator('input[name="taskId"][value="'+taskId+'"]')});
+    const options=await binding.locator('select[name="frameworkVersionId"] option').evaluateAll(items=>items.map(item=>({value:item.value,text:item.textContent})));
+    assert.ok(options.some(item=>item.text.includes("CAL-BROWSER")),"Exact task applicability: "+JSON.stringify(options)+"; "+await admin.locator("main").innerText());
+    const revision=options.find(item=>item.text.includes("CAL-BROWSER")).value;
     await binding.getByLabel("Review framework revision").selectOption(revision);await binding.getByLabel("Applicability reason").fill("Explicit standard for this submitted standalone experience.");await binding.getByRole("button",{name:"Bind review framework"}).click();await admin.getByText("Review framework binding recorded.",{exact:true}).waitFor();
     await verifier.reload();await verifier.getByText(/Live review is blocked: calibration missing/).waitFor();
     const started=new Date(Date.now()+60000);await new Promise(resolve=>setTimeout(resolve,1100)); // Framework creation precedes calibration start.

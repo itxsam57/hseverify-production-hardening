@@ -189,6 +189,7 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "evidence.reviewed":
     case "evidence.additional.requested":
     case "integrity.escalated":
+    case "assessment.review.assigned":
     case "integrity.returned":
     case "interview.recommended":
     case "decision.recorded":
@@ -226,6 +227,7 @@ const SECURITY_CONTENT = {
 
 export const ASSURANCE_EVENT_CONTENT: Readonly<Record<AssuranceEventType,{title:string;body:string}>> = Object.freeze({
   "integrity.escalated":{title:"Integrity review escalated",body:"A retained integrity concern needs Admin review."},
+  "assessment.review.assigned":{title:"Assessment review assigned",body:"A submitted assessment is assigned for your independent review."},
   "integrity.returned":{title:"Integrity review returned",body:"Admin returned the retained concern for your independent review."},
   "evidence.submitted": {
     "title": "Evidence submitted",
@@ -270,13 +272,13 @@ export function assuranceEventEmailContent(type:AssuranceEventType|AssuranceFund
 
 function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetReference:string|null}):NotificationTarget{
  const roles:Readonly<Record<AssuranceEventType,readonly AuthRole[]>>={
-  "integrity.escalated":["admin"],"integrity.returned":["verifier"],
+  "assessment.review.assigned":["verifier"],"integrity.escalated":["admin"],"integrity.returned":["verifier"],
   "evidence.submitted":["worker","verifier"],"evidence.unable":["worker"],"evidence.escalated":["worker","admin"],"evidence.returned":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
   "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"]
  };
  if(!roles[type].includes(context.role))throw new NotificationContractError("Assurance recipient role is invalid.");
  if(type==="integrity.escalated")return "admin.integrity.review";
- if(type==="integrity.returned")return "verifier.integrity.review";
+ if(type==="assessment.review.assigned" || type==="integrity.returned")return "verifier.integrity.review";
  if(type==="evidence.escalated" && context.role==="admin")return "admin.review.escalation";
  if(type==="interview.recommended")return context.role==="company"?"company.assurance.case":context.role==="admin"?"admin.interview.case":"worker.assurance.case";
  if(type.startsWith("appeal."))return "appeal.record";
@@ -302,6 +304,7 @@ export function notificationContent(notificationType: NotificationType, context?
     case "evidence.reviewed":
     case "evidence.additional.requested":
     case "integrity.escalated":
+    case "assessment.review.assigned":
     case "integrity.returned":
     case "interview.recommended":
     case "decision.recorded":

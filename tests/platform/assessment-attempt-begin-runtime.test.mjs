@@ -768,14 +768,14 @@ test("Assigned review projects all pinned questions including unanswered items",
   const worker=await seedAccount(db,"z");const verifier=await seedAccount(db,"z","verifier");
   const offering=await seedOffering(db,"z",worker.accountId);
   await db.query("INSERT INTO assessment_blueprint_delivery_settings(blueprint_version_id,progression_mode,timing_config_json) VALUES($1,'CONTROLLED_REVIEW',$2::jsonb)",[offering.blueprintVersionId,JSON.stringify({mode:"COMBINED",durationSeconds:60})]);
-  const service=new AssessmentAttemptService(db,t=>t);
-  const first=await service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},NOW_DATE);
-  await service.saveCurrentDraft(worker,{attemptId:first.attempt.attemptId,position:1,value:first.currentQuestion.options[0],expectedRevision:null,mutationKey:"review-source-draft-before-deadline"},new Date(NOW_DATE.getTime()+10000),null);
-  await service.getOwnedView(worker,first.attempt.attemptId,new Date(NOW_DATE.getTime()+60000));
   await db.query(`INSERT INTO staff_calibrations(calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,note,recorded_by_account_id,framework_id,framework_version_id)
     SELECT $1,$2,'verifier',revision.framework_reference,'CURRENT',$3,$4,'Timed assessment review calibration',$2,revision.framework_id,revision.framework_version_id
     FROM assurance_framework_revisions revision JOIN assessment_blueprint_versions blueprint ON blueprint.framework_id=revision.framework_id
     WHERE blueprint.blueprint_version_id=$5`,[oid("staff_calibration","z"),verifier.accountId,NOW,FUTURE,offering.blueprintVersionId]);
+  const service=new AssessmentAttemptService(db,t=>t);
+  const first=await service.begin(worker,{caseId:offering.caseId,catalogueVersionId:offering.catalogueVersionId},NOW_DATE);
+  await service.saveCurrentDraft(worker,{attemptId:first.attempt.attemptId,position:1,value:first.currentQuestion.options[0],expectedRevision:null,mutationKey:"review-source-draft-before-deadline"},new Date(NOW_DATE.getTime()+10000),null);
+  await service.getOwnedView(worker,first.attempt.attemptId,new Date(NOW_DATE.getTime()+60000));
   const reviews=await new WrittenScoringService(db,verifier).listReviewQueue({reviewerAccountId:verifier.accountId});
   assert.equal(reviews.length,1,"Real timeout producer must queue assigned review");
   assert.equal(reviews[0].questions.length,2,"Assigned review must include all pinned prompts, retained answers and explicit unanswered items");

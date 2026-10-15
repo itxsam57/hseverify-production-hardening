@@ -22,7 +22,7 @@ export class EvidenceReviewFrameworkService {
   const db=await this.databasePromise;await requireLiveReviewActor(db,principal,"admin");
   const result=await db.query<{task_id:string;evidence_kind:string;task_status:string;case_id:string|null;pinned_framework_version_id:string|null;binding_id:string|null;framework_version_id:string|null;framework_reference:string|null;version_no:number|null;reason:string|null}>(`SELECT tasks.task_id,tasks.evidence_kind,tasks.task_status,tasks.case_id,pinned.framework_version_id pinned_framework_version_id,bindings.binding_id,bindings.framework_version_id,revisions.framework_reference,revisions.version_no,bindings.reason
    FROM evidence_review_tasks tasks LEFT JOIN LATERAL(SELECT revisions.framework_version_id FROM assurance_case_policy_snapshots snapshots JOIN LATERAL(SELECT r.framework_version_id FROM assurance_framework_revisions r WHERE r.framework_id=snapshots.framework_id AND r.effective_from<=snapshots.reference_time ORDER BY r.effective_from DESC,r.version_no DESC LIMIT 1) revisions ON TRUE WHERE snapshots.case_id=tasks.case_id AND snapshots.tenant_id=tasks.tenant_id) pinned ON TRUE LEFT JOIN LATERAL(SELECT * FROM evidence_review_framework_bindings WHERE task_id=tasks.task_id ORDER BY binding_sequence DESC LIMIT 1) bindings ON TRUE
-   LEFT JOIN assurance_framework_revisions revisions USING(framework_id,framework_version_id)
+   LEFT JOIN assurance_framework_revisions revisions ON revisions.framework_id=bindings.framework_id AND revisions.framework_version_id=bindings.framework_version_id
    WHERE tasks.task_status IN ('QUEUED','ASSIGNED') ORDER BY (bindings.binding_id IS NULL) DESC,tasks.created_at,tasks.task_id LIMIT 250`);
   return result.rows;
  }
