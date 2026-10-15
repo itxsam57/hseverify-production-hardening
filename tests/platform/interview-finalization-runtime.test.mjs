@@ -335,7 +335,7 @@ test("Empty 0111 rollback restores exact preceding functions and constraints; dr
  try{
    // Later notification wrappers deliberately reject an out-of-order rollback.
    await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
-   for (const migration of ["0118_scoring_assignment_notifications", "0117_integrity_review_notifications"]) {
+   for (const migration of ["0120_review_recovery_notifications", "0118_scoring_assignment_notifications", "0117_integrity_review_notifications"]) {
      await x.database.exec(readFileSync("database/migrations/"+migration+".down.sql","utf8"));
    }
 

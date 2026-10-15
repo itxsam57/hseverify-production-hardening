@@ -153,6 +153,7 @@ async function postPassProgression(
       requestedAt: now.toISOString(),
       timezone: "UTC"
     });
+    if(request.status==="CANCELLED")request=await interviews.requestAdditionalInterview({tenantId:row.tenant_id,caseId:row.case_id,workerAccountId:row.worker_account_id,requestedAt:now.toISOString(),timezone:"UTC"});
     if (!request.assessorAccountId) {
       const assignment = await new InterviewAssignmentService(database)
         .evaluateAndPersist(request.interviewRequestId, now);
@@ -397,4 +398,21 @@ export async function transitionIntegrityReviewCase(database:DatabaseClient,inpu
  const row=await loadCase(database,input.caseId,input.tenantId);
  if(row.case_status!=="Review pending")throw new Error("Integrity review no longer matches the Assurance Case state.");
  await transitionCase(database,{caseId:row.case_id,tenantId:row.tenant_id,status:"Review pending",owner:input.owner,nextAction:input.nextAction,eventType:input.owner==="admin"?"integrity_review_escalated":"integrity_review_returned",actor:input.actor,now:input.now});
+}
+
+// Reopen only the current, unclosed scoring workflow; active interviews and final decisions stay locked.
+export async function returnWrittenScoringCase(database:DatabaseClient,input:Readonly<{caseId:string;tenantId:string;owner:"admin"|"reviewer";nextAction:string;eventType:"assessment_scoring_conflict"|"assessment_scoring_amendment";actor:ProgressionActor;now:Date}>):Promise<void>{
+ const row=await loadCase(database,input.caseId,input.tenantId);
+ const allowed=input.eventType==="assessment_scoring_conflict"?["Review pending"]:["Review pending","Decision pending","Reassessment required","Interview pending"];
+ if(input.eventType==="assessment_scoring_amendment"&&row.case_status==="Interview pending"){
+  const pending=await database.query<{interview_request_id:string}>(`SELECT requests.interview_request_id FROM assurance_cases cases JOIN interview_requests requests ON requests.interview_request_id=cases.interview_reference AND requests.case_id=cases.case_id
+   WHERE cases.case_id=$1 AND requests.status='REQUESTED' AND requests.assessor_account_id IS NULL
+   AND NOT EXISTS(SELECT 1 FROM interview_runtime_sessions sessions WHERE sessions.interview_request_id=requests.interview_request_id) FOR UPDATE OF requests`,[row.case_id]);
+  if(!pending.rows[0])throw new Error("An assigned or started interview must be resolved before scoring can be amended.");
+  await database.query("UPDATE interview_requests SET status='CANCELLED',reschedule_reason=$2 WHERE interview_request_id=$1",[pending.rows[0].interview_request_id,"Written scoring amendment returned the case to review before any Assessor assignment."]);
+  await database.query("UPDATE assurance_cases SET interview_reference=NULL WHERE case_id=$1",[row.case_id]);
+ }
+
+ if(!allowed.includes(row.case_status))throw new Error("The current case cannot return to written scoring during this workflow.");
+ await transitionCase(database,{...input,status:"Review pending"});
 }

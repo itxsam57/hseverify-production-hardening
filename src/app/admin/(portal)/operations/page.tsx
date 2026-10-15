@@ -45,6 +45,7 @@ export default async function AdminOperationsPage({
         <ul>
           <li><a href="/admin/staff">Users</a></li>
           <li><Link href="/admin/operations/integrity-reviews">Integrity review escalations</Link> <Link href="/admin/operations/review-escalations">Evidence review escalations</Link></li>
+          <li><Link href="/admin/operations/review-quality">Review quality and workload</Link></li>
           <li><Link href="/admin/operations/scoring-assignments">Assessment review assignments</Link></li>
           <li><Link href="/admin/company-verifications">Companies and cases</Link></li>
           <li><a href="/admin/frameworks">Rules and policy</a></li>

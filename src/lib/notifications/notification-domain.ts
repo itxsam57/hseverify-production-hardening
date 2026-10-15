@@ -16,7 +16,7 @@ export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
 } as const;
 
 export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES), ...ASSURANCE_EVENT_TYPES] as const;
-export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review"] as const;
+export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review", "admin.scoring.assignment", "admin.review.quality"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -189,6 +189,8 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "evidence.reviewed":
     case "evidence.additional.requested":
     case "integrity.escalated":
+    case "assessment.review.conflict":
+    case "evidence.second_review.requested":
     case "assessment.review.assigned":
     case "integrity.returned":
     case "interview.recommended":
@@ -226,9 +228,11 @@ const SECURITY_CONTENT = {
 
 
 export const ASSURANCE_EVENT_CONTENT: Readonly<Record<AssuranceEventType,{title:string;body:string}>> = Object.freeze({
-  "integrity.escalated":{title:"Integrity review escalated",body:"A retained integrity concern needs Admin review."},
-  "assessment.review.assigned":{title:"Assessment review assigned",body:"A submitted assessment is assigned for your independent review."},
-  "integrity.returned":{title:"Integrity review returned",body:"Admin returned the retained concern for your independent review."},
+  "integrity.escalated":{title:"Integrity review escalated",body:"Open the record for the current status and next action."},
+  "assessment.review.conflict":{title:"Assessment scoring conflict",body:"Open the record for the current status and next action."},
+  "evidence.second_review.requested":{title:"Independent evidence review required",body:"Open the record for the current status and next action."},
+  "assessment.review.assigned":{title:"Assessment review assigned",body:"Open the record for the current status and next action."},
+  "integrity.returned":{title:"Integrity review returned",body:"Open the record for the current status and next action."},
   "evidence.submitted": {
     "title": "Evidence submitted",
     "body": "Open the record for the current status and next action."
@@ -272,11 +276,14 @@ export function assuranceEventEmailContent(type:AssuranceEventType|AssuranceFund
 
 function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetReference:string|null}):NotificationTarget{
  const roles:Readonly<Record<AssuranceEventType,readonly AuthRole[]>>={
+  "assessment.review.conflict":["admin"],"evidence.second_review.requested":["verifier","admin"],
   "assessment.review.assigned":["verifier"],"integrity.escalated":["admin"],"integrity.returned":["verifier"],
   "evidence.submitted":["worker","verifier"],"evidence.unable":["worker"],"evidence.escalated":["worker","admin"],"evidence.returned":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
   "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"]
  };
  if(!roles[type].includes(context.role))throw new NotificationContractError("Assurance recipient role is invalid.");
+ if(type==="assessment.review.conflict")return "admin.scoring.assignment";
+ if(type==="evidence.second_review.requested")return context.role==="admin"?"admin.review.quality":"verifier.review.task";
  if(type==="integrity.escalated")return "admin.integrity.review";
  if(type==="assessment.review.assigned" || type==="integrity.returned")return "verifier.integrity.review";
  if(type==="evidence.escalated" && context.role==="admin")return "admin.review.escalation";
@@ -304,6 +311,8 @@ export function notificationContent(notificationType: NotificationType, context?
     case "evidence.reviewed":
     case "evidence.additional.requested":
     case "integrity.escalated":
+    case "assessment.review.conflict":
+    case "evidence.second_review.requested":
     case "assessment.review.assigned":
     case "integrity.returned":
     case "interview.recommended":
@@ -424,6 +433,13 @@ export function resolveNotificationHref(input: {
     throw new NotificationContractError("Notification target is invalid.");
   }
   const recordReference = /^[A-Za-z0-9_-]{1,200}$/;
+  if(input.target==="admin.scoring.assignment" || input.target==="admin.review.quality"){
+    const scoring=input.target==="admin.scoring.assignment";
+    const pattern=scoring?/^assurance_case_[A-Za-z0-9_-]{24}$/:/^evidence_review_[A-Za-z0-9_-]{24}$/;
+    if(input.role!=="admin"||!input.targetReference||!pattern.test(input.targetReference))throw new NotificationContractError();
+    return (scoring?"/admin/operations/scoring-assignments":"/admin/operations/review-quality")+"#"+encodeURIComponent(input.targetReference);
+  }
+
   if(input.target==="admin.integrity.review" || input.target==="verifier.integrity.review"){
     const role=input.target==="admin.integrity.review"?"admin":"verifier";
     if(input.role!==role || !input.targetReference || !/^written_score_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError();

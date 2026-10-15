@@ -75,3 +75,11 @@ Remaining: complete fresh combined release checks, real PostgreSQL verification 
 Complete release, hosted CI and deployed-candidate proof remain pending.
 
 Focused verification: actual six-role language/menu navigation and desktop/mobile layouts pass; six interview-context tests pass including explicit integrity clearance; the notification reverse-order rollback and remaining finalization assertions pass. Types and lint pass with seven existing warnings. These scoped results do not replace the pending exact full gate.
+
+## 15 October: scoring recovery and independent review controls
+
+The masterplan quality controls now have pinned second-review requirements, retained random sampling, reasoned Admin selection, blind independent rounds, explicit disagreement escalation and separate adjudication. Reviewer capacity is shared by evidence claims, submitted scoring assignments, manual assignments and amendments. Migration 119 preserves quality, capacity and conflict history; migration 120 extends the existing sealed notification/email outbox rather than adding a parallel queue.
+
+Independent review reproduced an amendment capacity bypass and stale handoff revival after conflicts. The amendment regression failed before the lock/check and then passed. The invalidated-primary regression also failed before the current-source predicate and then passed. Actual Chromium proves Admin selection/capacity, first review, native outbox notification and a separate final reviewer with the primary reason hidden. The two scoring recovery Chromium journeys pass. A real PostgreSQL two-client test proves one winner at capacity 1 and availability after completion. These are bounded implementation observations, not final exact-SHA certification.
+
+Assessment variants are now permanently selected by `test:assessment-variants-browser`: controlled review, section review, MCQ-only offline, written-only offline, cross-tab/opener offline recovery, emergency resume/replacement and timed accommodation. An early diagnostic was invalidated because package configuration changed during its protected server run; it is being repeated after configuration freeze. Current release-wide gates, hosted CI, exact-build deployment and the 218-scenario evidence reconciliation remain pending.

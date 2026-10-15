@@ -1,4 +1,5 @@
 import "server-only";
+import {reviewerCapacity} from "../review/reviewer-capacity";
 import {requireRecentSessionMfa,RECENT_MFA_ERROR} from "../auth/recent-mfa-service";
 import {AuthAccessRepository} from "../auth/auth-access-repository";
 import { createIdentifier } from "../auth/auth-domain";
@@ -54,6 +55,8 @@ export class WrittenReviewAssignmentService {
    const lockedReviewer=await database.query("SELECT accounts.account_id FROM auth_accounts accounts JOIN auth_account_roles roles USING(account_id) WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role='verifier' FOR UPDATE OF accounts,roles",[input.reviewerAccountId]);
    if(!lockedReviewer.rows[0])throw new WrittenReviewAssignmentError("Selected reviewer is no longer available.");
    await requireWrittenAttemptEligibility(database,input.reviewerAccountId,row.attempt_id,row.case_id,row.tenant_id);
+   const capacity=await reviewerCapacity(database,input.reviewerAccountId,true);
+   if(capacity&&capacity.open>=capacity.limit)throw new WrittenReviewAssignmentError("The selected reviewer has reached their current workload limit.");
    const reviewId=row.review_id??createIdentifier("written_score");
    const integrity=(await database.query<{disposition:string;reviewed_event_count:number;event_count:number}>(`SELECT disposition,reviewed_event_count,(SELECT COUNT(*)::integer FROM integrity_capture_events WHERE attempt_id=$1) AS event_count FROM assessment_integrity_dispositions WHERE attempt_id=$1 ORDER BY revision DESC LIMIT 1`,[row.attempt_id])).rows[0];
    const cleared=!(await assessmentRequiresIntegrityReview(database,row.attempt_id))||(integrity?.disposition==="CLEAR"&&Number(integrity.reviewed_event_count)===Number(integrity.event_count));

@@ -35,8 +35,8 @@ function job(overrides = {}) {
 }
 
 test("notification vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated", "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned", "assessment.review.assigned", "integrity.escalated", "integrity.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"]);
-  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review"]);
+  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated", "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned", "assessment.review.conflict","evidence.second_review.requested","assessment.review.assigned", "integrity.escalated", "integrity.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"]);
+  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review", "admin.scoring.assignment", "admin.review.quality"]);
   for (const value of [
     ...notification.NOTIFICATION_TYPES,
     ...notification.NOTIFICATION_TARGETS
@@ -209,8 +209,8 @@ test("Funding notices permit only exact role-owned opaque funding or case target
 
 
 test("Assurance record metadata and role links remain closed to arbitrary content, URLs and foreign portal roles",()=>{
- const kinds=["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","assessment.review.assigned","integrity.escalated","integrity.returned","interview.recommended","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
- const refs={"evidence.submitted":"audit:audit_A","evidence.reviewed":"review:review_A","evidence.additional.requested":"review:review_B","evidence.unable":"resolution:resolution_A","evidence.escalated":"resolution:resolution_B","evidence.returned":"resolution:resolution_C","assessment.review.assigned":"scoring:audit_assignment_A","integrity.escalated":"integrity:integrity_A","integrity.returned":"integrity:integrity_B","interview.recommended":"recommendation:recommendation_A","decision.recorded":"case:event_A","credential.issued":"issuance:credential_id_A:1","appeal.submitted":"appeal:appeal_A:1","appeal.updated":"appeal:appeal_A:2"};
+ const kinds=["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","assessment.review.conflict","evidence.second_review.requested","assessment.review.assigned","integrity.escalated","integrity.returned","interview.recommended","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
+ const refs={"evidence.submitted":"audit:audit_A","evidence.reviewed":"review:review_A","evidence.additional.requested":"review:review_B","evidence.unable":"resolution:resolution_A","evidence.escalated":"resolution:resolution_B","evidence.returned":"resolution:resolution_C","assessment.review.conflict":"review_recovery:audit_conflict_A","evidence.second_review.requested":"review_recovery:audit_quality_A","assessment.review.assigned":"scoring:audit_assignment_A","integrity.escalated":"integrity:integrity_A","integrity.returned":"integrity:integrity_B","interview.recommended":"recommendation:recommendation_A","decision.recorded":"case:event_A","credential.issued":"issuance:credential_id_A:1","appeal.submitted":"appeal:appeal_A:1","appeal.updated":"appeal:appeal_A:2"};
  for(const type of kinds){
   assert.deepEqual(notification.normalizeNotificationMetadata(type,{eventRef:refs[type]}),{eventRef:refs[type]});
   for(const extra of ["href","recipientRef","body","email","token"])assert.throws(()=>notification.normalizeNotificationMetadata(type,{eventRef:refs[type],[extra]:"arbitrary"}));
@@ -223,6 +223,8 @@ test("Assurance record metadata and role links remain closed to arbitrary conten
   ["verifier","verifier.review.task","evidence_review_"+"A".repeat(24),"/verifier/reviews/"],
   ["worker","worker.assurance.case","assurance_case_"+"A".repeat(24),"/worker/assurance-cases/"],
   ["worker","worker.credential.record","credential_id_decision_A","/worker/passport#"],
+  ["admin","admin.scoring.assignment","assurance_case_"+"A".repeat(24),"/admin/operations/scoring-assignments#"],
+  ["admin","admin.review.quality","evidence_review_"+"A".repeat(24),"/admin/operations/review-quality#"],
   ["admin","appeal.record","appeal_A","/admin/appeals#"]
  ]){
   assert.equal(notification.resolveNotificationHref({role,target,targetReference:ref}),path+ref);

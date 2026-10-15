@@ -4,7 +4,8 @@ import type {IntegrityFormState} from "@/components/review/integrity-review-form
 import { IntegrityReviewService,IntegrityReviewInputError,IntegrityReviewConflictError } from "@/lib/integrity/integrity-review-service";
 import { revalidatePath } from "next/cache";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
-import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
+import {WrittenScoringAccessError} from "@/lib/scoring/written-scoring-authority";
+import { ScoringRecoveryError, WrittenScoringService } from "@/lib/scoring/written-scoring-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { WrittenScoringAssistanceService } from "@/lib/scoring/written-scoring-assistance-service";
 
@@ -103,4 +104,29 @@ export async function resolveIntegrityReviewAction(previous:IntegrityFormState,f
  revalidatePath("/verifier/reviews/scoring");
  revalidatePath("/admin/operations");
  return {error:null};
+}
+
+export async function declareWrittenScoringConflictAction(previous:import("@/components/review/scoring-recovery-form").ScoringRecoveryState,form:FormData):Promise<import("@/components/review/scoring-recovery-form").ScoringRecoveryState>{
+ return scoringRecovery(previous,form,"conflict");
+}
+export async function beginWrittenScoringAmendmentAction(previous:import("@/components/review/scoring-recovery-form").ScoringRecoveryState,form:FormData):Promise<import("@/components/review/scoring-recovery-form").ScoringRecoveryState>{
+ return scoringRecovery(previous,form,"amendment");
+}
+async function scoringRecovery(previous:import("@/components/review/scoring-recovery-form").ScoringRecoveryState,form:FormData,mode:"conflict"|"amendment"):Promise<import("@/components/review/scoring-recovery-form").ScoringRecoveryState>{
+ void previous;
+ const actor=await requirePlatformPermission({expectedRole:"verifier",permission:"verification.assigned.decide"});
+ const reason=text(form,"reason").trim();
+ if(reason.length<5||reason.length>4000)return {error:"Enter a reason between 5 and 4000 characters.",message:null};
+ const service=new WrittenScoringService(await getDatabaseClient(),actor);
+ try{
+  const input={reviewId:text(form,"reviewId"),reviewerAccountId:actor.accountId,reason};
+  if(mode==="conflict")await service.recordConflict({...input,expectedRevision:integer(form,"expectedRevision")});
+  else await service.beginAmendment(input);
+ }catch(error){
+  if(error instanceof ScoringRecoveryError)return {error:error.message,message:null};
+  if(error instanceof WrittenScoringAccessError)return {error:"This review is unavailable to your current reviewer session. Reload before continuing.",message:null};
+  throw error;
+ }
+ revalidatePath("/verifier/reviews/scoring");revalidatePath("/admin/operations/scoring-assignments");revalidatePath("/company/action-centre");
+ return {error:null,message:mode==="conflict"?"Conflict recorded. Admin must assign an independent reviewer.":"Amendment started. Save every rubric mark and explicitly finalize the new decision."};
 }

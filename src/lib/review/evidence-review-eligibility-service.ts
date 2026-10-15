@@ -3,11 +3,13 @@ import "server-only";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 import { EvidenceReviewAccessError, EvidenceReviewConflictError } from "./evidence-review-domain";
+import {qualitySchema} from "./review-quality-service";
+import {reviewerCapacity} from "./reviewer-capacity";
 import { latestEffectiveCalibration, requireLiveReviewActor } from "./review-calibration-authority";
 
 export type EvidenceReviewEligibility = Readonly<{
  eligible: boolean;
- reason: "ELIGIBLE"|"FRAMEWORK_UNRESOLVED"|"FRAMEWORK_UNAVAILABLE"|"PINNED_FRAMEWORK_MISMATCH"|"CALIBRATION_MISSING"|"CALIBRATION_NOT_CURRENT"|"CONFLICT_DECLARED";
+ reason: "ELIGIBLE"|"FRAMEWORK_UNRESOLVED"|"FRAMEWORK_UNAVAILABLE"|"PINNED_FRAMEWORK_MISMATCH"|"CALIBRATION_MISSING"|"CALIBRATION_NOT_CURRENT"|"CONFLICT_DECLARED"|"SECOND_REVIEW_INDEPENDENCE"|"REVIEWER_CAPACITY_REACHED"|"QUALITY_SCOPE_CHANGED";
  frameworkId: string|null;
  frameworkVersionId: string|null;
  bindingId: string|null;
@@ -47,6 +49,16 @@ export class EvidenceReviewEligibilityService {
   const calibration=await latestEffectiveCalibration(db,principal.accountId,"verifier",binding.framework_id,binding.framework_version_id,at);
   if(!calibration)return result("CALIBRATION_MISSING");
   if(calibration.status!=="CURRENT" || new Date(calibration.valid_until)<=at)return result("CALIBRATION_NOT_CURRENT",calibration.calibration_id);
+  if(await qualitySchema(db)){
+   const prior=await db.query("SELECT 1 FROM evidence_review_quality_rounds WHERE task_id=$1 AND verifier_account_id=$2",[taskId,principal.accountId]);
+   if(prior.rows[0])return result("SECOND_REVIEW_INDEPENDENCE",calibration.calibration_id);
+   const selection=(await db.query<{framework_version_id:string;policy_snapshot_id:string|null}>("SELECT framework_version_id,policy_snapshot_id FROM evidence_review_quality_selections WHERE task_id=$1",[taskId])).rows[0];
+   if(selection&&(selection.framework_version_id!==binding.framework_version_id||selection.policy_snapshot_id!==binding.case_snapshot_id))return result("QUALITY_SCOPE_CHANGED",calibration.calibration_id);
+   if(row.task_status==="QUEUED"){
+    const capacity=await reviewerCapacity(db,principal.accountId,lock);
+    if(capacity&&capacity.open>=capacity.limit)return result("REVIEWER_CAPACITY_REACHED",calibration.calibration_id);
+   }
+  }
   return result("ELIGIBLE",calibration.calibration_id);
  }
  async assertEligible(principal: AuthorizationPrincipal, taskId: string, at = new Date(), lock = false): Promise<EvidenceReviewEligibility> {

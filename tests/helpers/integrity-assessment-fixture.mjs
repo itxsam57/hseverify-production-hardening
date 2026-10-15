@@ -12,7 +12,7 @@ const {BillingService}=loadWorkerRegistrationTs("src/lib/billing/billing-service
 const {WorkerAssessmentApplicationService}=loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
 const {AssessmentAttemptService}=loadWorkerRegistrationTs("src/lib/assessment-attempt/assessment-attempt-service.ts");
 const id=(prefix,seed)=>prefix+"_"+createHash("sha256").update(seed).digest("hex").slice(0,24);
-export async function integrityAssessmentFixture(){
+export async function integrityAssessmentFixture({written=false}={}){
  const fixture=await reportCompanyFixture();await fixture.database.close();
  let databaseReleased=false;
  const database=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:fixture.environment.HSE_PGLITE_DATA_DIR});fixture.database=database;
@@ -31,7 +31,7 @@ export async function integrityAssessmentFixture(){
   const revision=(await database.query("SELECT framework_version_id,effective_from FROM assurance_framework_revisions WHERE framework_id=$1 ORDER BY version_no DESC LIMIT 1",[framework])).rows[0];
   for(const account of (await database.query("SELECT account_id FROM auth_account_roles WHERE role='verifier'")).rows)await new StaffCalibrationService(Promise.resolve(database)).record(adminPrincipal,{accountId:account.account_id,role:"verifier",frameworkReference:"REPORT-CATALOGUE",frameworkVersionId:revision.framework_version_id,status:"CURRENT",validFrom:new Date(revision.effective_from),validUntil:new Date("2099-01-01T00:00:00Z"),note:"Observed exact revision benchmark for integrity review fixture."});
   await database.query("INSERT INTO assessment_blueprints(blueprint_id,blueprint_reference,blueprint_status,current_version_id,created_by_account_id,created_at,updated_at) VALUES($1,'REPORT-CATALOGUE','INACTIVE',NULL,$2,$3,$3)",[blueprintId,admin,now]);
-  await database.query("INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'Report blueprint',$4::jsonb,$5,$6)",[blueprint,blueprintId,framework,JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:[]}]),admin,now]);
+  await database.query("INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'Report blueprint',$4::jsonb,$5,$6)",[blueprint,blueprintId,framework,JSON.stringify([{count:1,questionType:written?"LONG_TEXT":"MULTIPLE_CHOICE",tagsAll:[]}]),admin,now]);
   await database.query("UPDATE assessment_blueprints SET current_version_id=$2,blueprint_status='ACTIVE' WHERE blueprint_id=$1",[blueprintId,blueprint]);
     const policyId = id("policy", "report-catalogue"), policyVersionId = id("policy_version", "report-catalogue");
     await database.query("INSERT INTO assurance_policy_packs(policy_id,framework_id,policy_reference,title,policy_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'REPORT-CATALOGUE','Funding policy','ACTIVE',$3,$4,$4)", [policyId, framework, admin, now]);
@@ -41,7 +41,7 @@ export async function integrityAssessmentFixture(){
     await database.query("INSERT INTO assessment_catalogue_versions(catalogue_version_id,catalogue_entry_id,version_no,title,description,framework_id,blueprint_version_id,minimum_verified_qualifications,created_by_account_id,created_at) VALUES($1,$2,1,'Owned safety assessment','Funding workflow fixture',$3,$4,0,$5,$6)", [version, entry, framework, blueprint, admin, now]);
     await database.query("UPDATE assessment_catalogue_entries SET current_version_id=$2,catalogue_status='ACTIVE' WHERE catalogue_entry_id=$1", [entry, version]);
     const question = id("assessment_question", "report-catalogue"), questionVersion = id("question_version", "report-catalogue"), fingerprint = createHash("sha256").update("funding question").digest("hex");
-    await seedPublishedQuestion(database,{questionId:question,versionId:questionVersion,reference:"REPORT-CATALOGUE-Q",questionType:"MULTIPLE_CHOICE",prompt:"private-question-prompt-marker",options:["Stop and assess","Ignore the hazard"],answerKey:"Stop and assess",frameworkId:framework,fingerprint,authorAccountId:admin,now});
+    await seedPublishedQuestion(database,{questionId:question,versionId:questionVersion,reference:"REPORT-CATALOGUE-Q",questionType:written?"LONG_TEXT":"MULTIPLE_CHOICE",prompt:"private-question-prompt-marker",options:written?null:["Stop and assess","Ignore the hazard"],answerKey:written?null:"Stop and assess",rubric:written?{maxScore:10,criteria:[{description:"Safe isolation reasoning",points:10}]}:null,frameworkId:framework,fingerprint,authorAccountId:admin,now});
 
   const company={...fixture.principal,authorizedTenantPermission:"company.billing.manage"},billing=new BillingService(database);
   const checkout=await billing.createCreditCheckout(company,{idempotencyKey:"report-catalogue-"+randomUUID(),creditUnits:3,amountMinor:300,currency:"USD"});

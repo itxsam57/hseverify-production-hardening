@@ -1,3 +1,4 @@
+import {ScoringRecoveryForm} from "@/components/review/scoring-recovery-form";
 import {IntegrityReviewForm} from "@/components/review/integrity-review-form";
 import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
@@ -8,6 +9,8 @@ import {
   WrittenScoringAssistanceService
 } from "@/lib/scoring/written-scoring-assistance-service";
 import {
+  declareWrittenScoringConflictAction,
+  beginWrittenScoringAmendmentAction,
   resolveIntegrityReviewAction,
   addWrittenScoreRubricMarkAction,
   finalizeWrittenScoreAction,
@@ -84,6 +87,9 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       <br />
                       <strong>{review.status}</strong>
                       {review.unavailableReason ? <p role="status">{review.unavailableReason}</p> : null}
+                      {review.status==="SUPERSEDED"?<p>Original finalized scoring evidence retained in amendment history.</p>:null}
+                      {review.status==="DRAFT"&&review.canReview?<ScoringRecoveryForm action={declareWrittenScoringConflictAction} reviewId={review.review_id} revision={review.draft_revision} mode="conflict"/>:null}
+                      {review.canAmend?<ScoringRecoveryForm action={beginWrittenScoringAmendmentAction} reviewId={review.review_id} revision={review.draft_revision} mode="amendment"/>:null}
                       <section className="content-stack" aria-label={"Assessment evidence " + review.review_id}>
                         {review.questions.map(question => (
                           <article key={question.position} className="content-stack">

@@ -1,4 +1,5 @@
 import "server-only";
+import {ensureQualitySelection,secondReviewRequired,reviewQualityView} from "./review-quality-service";
 
 import { EvidenceReviewEligibilityService } from "./evidence-review-eligibility-service";
 import { requireLiveReviewActor } from "./review-calibration-authority";
@@ -178,7 +179,7 @@ export class EvidenceReviewService {
     );
     const eligibility = new EvidenceReviewEligibilityService(Promise.resolve(this.database));
     return Object.freeze(await Promise.all(result.rows.map(async row => Object.freeze({
-      ...task(row), eligibility: await eligibility.evaluate(principal,row.task_id)
+      ...task(row), qualityReview:await reviewQualityView(this.database,row.task_id),eligibility: await eligibility.evaluate(principal,row.task_id)
     }))));
   }
 
@@ -195,7 +196,7 @@ export class EvidenceReviewService {
       [taskId, principal.accountId]
     );
     if (!result.rows[0]) return null;
-    return Object.freeze({...task(result.rows[0]), eligibility: await new EvidenceReviewEligibilityService(Promise.resolve(this.database)).evaluate(principal,taskId)});
+    return Object.freeze({...task(result.rows[0]),qualityReview:await reviewQualityView(this.database,taskId), eligibility: await new EvidenceReviewEligibilityService(Promise.resolve(this.database)).evaluate(principal,taskId)});
   }
 
   private async assignedSkillContext(
@@ -259,6 +260,7 @@ export class EvidenceReviewService {
         );
       }
 
+      await ensureQualitySelection(database,taskId);
       const result = await database.query<TaskRow>(
         `UPDATE evidence_review_tasks
             SET task_status='ASSIGNED',
@@ -470,6 +472,40 @@ export class EvidenceReviewService {
     });
   }
 
+  private async recordQualityRound(database:DatabaseClient,principal:AuthorizationPrincipal,row:TaskRow,outcome:"APPROVED"|"REJECTED"|"CHANGES_REQUESTED",reason:string,now:Date,options:{assessorVisible?:boolean;confirmTrade?:boolean},resolutionRevision:number):Promise<boolean>{
+    const selection=await ensureQualitySelection(database,row.task_id);
+    if(!selection||!(await secondReviewRequired(database,selection)))return false;
+    const rounds=(await database.query<{quality_review_id:string;outcome:string;confirm_trade:boolean;verifier_account_id:string}>(`SELECT rounds.quality_review_id,rounds.outcome,rounds.confirm_trade,rounds.verifier_account_id FROM evidence_review_quality_rounds rounds
+     WHERE rounds.task_id=$1 AND NOT EXISTS(SELECT 1 FROM evidence_review_conflicts conflicts WHERE conflicts.task_id=rounds.task_id AND conflicts.verifier_account_id=rounds.verifier_account_id) ORDER BY round_no`,[row.task_id])).rows;
+    if(rounds.some(round=>round.verifier_account_id===principal.accountId))throw new EvidenceReviewConflictError("Independent second verification requires another reviewer.");
+    if(rounds.length>=2){
+      const returned=(await database.query<{outcome:string;actor_role:string}>("SELECT outcome,actor_role FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[row.task_id])).rows[0];
+      if(returned?.outcome!=="RETURNED_TO_QUEUE"||returned.actor_role!=="admin")throw new EvidenceReviewConflictError("Admin must authorize independent adjudication after a disagreement.");
+    }
+    const roundNo=(await database.query<{next:number}>("SELECT COALESCE(MAX(round_no),0)::integer+1 AS next FROM evidence_review_quality_rounds WHERE task_id=$1",[row.task_id])).rows[0].next;
+    const id=createIdentifier("quality_review");
+    await database.query(`INSERT INTO evidence_review_quality_rounds(quality_review_id,task_id,source_version_id,framework_version_id,round_no,verifier_account_id,outcome,reason,confirm_trade,assessor_visible,submitted_at)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[id,row.task_id,row.source_version_id,selection.framework_version_id,roundNo,principal.accountId,outcome,reason,options.confirmTrade===true,options.assessorVisible===true,now.toISOString()]);
+    if(rounds.length===0){
+      await database.query("UPDATE evidence_review_tasks SET task_status='QUEUED',assigned_verifier_account_id=NULL,claimed_at=NULL,updated_at=$2 WHERE task_id=$1",[row.task_id,now.toISOString()]);
+      await this.recordResolutionCase(database,principal,row,now);
+      if(row.case_id)await database.query("UPDATE assurance_cases SET next_action='A separate calibrated Verifier must complete the required independent second review.' WHERE case_id=$1 AND owner_kind='reviewer' AND case_status='Review pending'",[row.case_id]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"assurance_case.status.changed",outcome:"succeeded",target:{type:"resource",reference:row.task_id},metadata:{qualityReviewPrimaryId:id,qualityTaskId:row.task_id}});
+      return true;
+    }
+    if(rounds.length===1&&(rounds[0].outcome!==outcome||rounds[0].confirm_trade!==(options.confirmTrade===true))){
+      const eventId=createIdentifier("review_resolution"),disagreement="Independent evidence reviews disagree. Admin must authorize a new independent adjudicator or request corrected evidence.";
+      await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,destination,occurred_at) VALUES($1,$2,$3,$4,$5,'verifier','ESCALATED',$6,'admin',$7)`,[eventId,row.task_id,row.source_version_id,resolutionRevision+1,principal.accountId,disagreement,now.toISOString()]);
+      await database.query("UPDATE evidence_review_tasks SET task_status='ESCALATED',decided_at=$2,updated_at=$2 WHERE task_id=$1",[row.task_id,now.toISOString()]);
+      await this.recordResolutionCase(database,principal,row,now);
+      await database.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["evidence.escalated","resolution:"+eventId]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.resolution.recorded",outcome:"succeeded",target:{type:"resource",reference:row.task_id},metadata:{qualityReviewRoundId:id,revision:resolutionRevision+1,resolution:"ESCALATED",destination:"admin"}});
+      return true;
+    }
+    await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"assurance_case.status.changed",outcome:"succeeded",target:{type:"resource",reference:row.task_id},metadata:{qualityReviewRoundId:id,priorQualityReviewIds:rounds.map(round=>round.quality_review_id)}});
+    return false;
+  }
+
   async decide(
     principal: AuthorizationPrincipal,
     taskId: string,
@@ -531,6 +567,7 @@ export class EvidenceReviewService {
           !tradeContext.evidenceAvailable || !tradeContext.secureFileId)) {
         throw new EvidenceReviewConflictError("Explicit trade confirmation requires the assigned current skill and available evidence.");
       }
+      if(await this.recordQualityRound(database,principal,row,outcome,reason,now,options,expectedResolutionRevision))return;
       const inserted = await database.query(
         tradeContext
           ? `INSERT INTO evidence_review_decisions(

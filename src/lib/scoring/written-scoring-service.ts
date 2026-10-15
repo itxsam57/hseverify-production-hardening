@@ -1,4 +1,5 @@
 import "server-only";
+import {reviewerCapacity} from "../review/reviewer-capacity";
 import {assertIntegrityDispositionClear} from "../integrity/integrity-review-service";
 import {objectiveAssessmentResult} from "../assessment-attempt/assessment-submission-progression-service";
 import type {AuthorizationPrincipal} from "../authorization/authorization-context-domain";
@@ -6,7 +7,9 @@ import {requireLiveWrittenReviewer,requireWrittenAttemptEligibility,WrittenScori
 import { loadAssignedReviewQuestions } from "./assessment-review-source";
 import { createIdentifier } from "../auth/auth-domain";
 import type { DatabaseClient } from "../database/database";
-import { advanceAfterAssessmentReview } from "../assurance/assurance-case-progression-service";
+import {bindTrustedAuditActor} from "../audit/audit-domain";
+import {DatabaseAuditRepository} from "../audit/audit-repository";
+import { returnWrittenScoringCase, advanceAfterAssessmentReview } from "../assurance/assurance-case-progression-service";
 import { normalizeWrittenScore, normalizeWrittenScoreDecision } from "./written-scoring-domain";
 
 type ScoringReviewRow = {
@@ -17,6 +20,8 @@ type ScoringReviewRow = {
   created_at:string|Date;
 };
 
+export class ScoringRecoveryError extends Error {}
+
 export class WrittenScoringService {
   constructor(private readonly database: DatabaseClient,private readonly actor?:AuthorizationPrincipal,private readonly insideTransaction=false) {}
 
@@ -24,6 +29,8 @@ export class WrittenScoringService {
     await requireLiveWrittenReviewer(this.database,this.actor,reviewerAccountId);
     const result=await this.database.query<{review_id:string;attempt_id:string;case_id:string;tenant_id:string;rubric_version:string;draft_revision:number}>(`SELECT review_id,attempt_id,case_id,tenant_id,rubric_version,draft_revision FROM written_score_reviews WHERE review_id=$1 AND reviewer_account_id=$2 AND ($3::text IS NULL OR tenant_id=$3)`,[reviewId,reviewerAccountId,tenantId??null]);
     const row=result.rows[0];if(!row)throw new WrittenScoringAccessError("Reviewer does not own this scoring review.");
+    const conflict=await this.database.query("SELECT 1 FROM scoring_conflict_declarations WHERE review_id=$1 AND reviewer_account_id=$2",[reviewId,reviewerAccountId]);
+    if(conflict.rows[0])throw new WrittenScoringAccessError("A declared conflict removes written scoring authority.");
     await requireWrittenAttemptEligibility(this.database,reviewerAccountId,row.attempt_id,row.case_id,row.tenant_id);
     const locked=await this.database.query<typeof row>(`SELECT review_id,attempt_id,case_id,tenant_id,rubric_version,draft_revision FROM written_score_reviews WHERE review_id=$1 AND reviewer_account_id=$2 AND ($3::text IS NULL OR tenant_id=$3) FOR UPDATE`,[reviewId,reviewerAccountId,tenantId??null]);
     const current=locked.rows[0];
@@ -96,13 +103,44 @@ export class WrittenScoringService {
     });
   }
 
-  async recordConflict(input: {reviewId:string;reviewerAccountId:string;tenantId:string;reason:string}): Promise<void> {
+  async recordConflict(input: {reviewId:string;reviewerAccountId:string;tenantId?:string;reason:string;expectedRevision?:number}): Promise<void> {
     if(!this.insideTransaction)return this.database.transaction(database=>new WrittenScoringService(database,this.actor,true).recordConflict(input));
-    if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
-    const reason = input.reason.trim();
-    if (!input.reviewerAccountId.trim() || reason.length < 5 || reason.length > 4000) throw new Error("Invalid conflict declaration.");
-    await this.requireReviewOwner(input.reviewId, input.reviewerAccountId, input.tenantId);
-    await this.database.query(`INSERT INTO scoring_conflict_declarations(conflict_id,review_id,reviewer_account_id,reason) VALUES($1,$2,$3,$4)`, [createIdentifier("score_conflict"), input.reviewId, input.reviewerAccountId, reason]);
+    const reason=input.reason.trim();
+    if(!input.reviewId.startsWith("written_score_")||reason.length<5||reason.length>4000)throw new ScoringRecoveryError("A valid conflict reason is required.");
+    const owner=await this.requireReviewOwner(input.reviewId,input.reviewerAccountId,input.tenantId);
+    const row=(await this.database.query<{status:string;case_status:string}>("SELECT review.status,cases.case_status FROM written_score_reviews review JOIN assurance_cases cases ON cases.case_id=review.case_id WHERE review.review_id=$1",[input.reviewId])).rows[0];
+    if(row?.status!=="DRAFT"||row.case_status!=="Review pending"||owner.draft_revision!==this.revision(input.expectedRevision))throw new ScoringRecoveryError("Scoring history changed; only the current draft may declare a conflict.");
+    const conflictId=createIdentifier("score_conflict");
+    await this.database.query("INSERT INTO scoring_conflict_declarations(conflict_id,review_id,reviewer_account_id,reason) VALUES($1,$2,$3,$4)",[conflictId,input.reviewId,input.reviewerAccountId,reason]);
+    await this.database.query("UPDATE written_score_reviews SET draft_revision=draft_revision+1 WHERE review_id=$1",[input.reviewId]);
+    await returnWrittenScoringCase(this.database,{caseId:owner.case_id,tenantId:owner.tenant_id,owner:"admin",nextAction:"Admin must assign an independent calibrated Verifier after the declared scoring conflict and resolve any retained concerns.",eventType:"assessment_scoring_conflict",actor:{accountId:input.reviewerAccountId,role:"verifier"},now:new Date()});
+    await new DatabaseAuditRepository(Promise.resolve(this.database)).append(bindTrustedAuditActor(this.actor!),{action:"assurance_case.status.changed",outcome:"succeeded",target:{type:"resource",reference:owner.case_id},metadata:{scoringConflictId:conflictId,reviewId:input.reviewId,reason}});
+  }
+
+  async beginAmendment(input:{reviewId:string;reviewerAccountId:string;tenantId?:string;reason:string}):Promise<{originalReviewId:string;replacementReviewId:string}>{
+    if(!this.insideTransaction)return this.database.transaction(database=>new WrittenScoringService(database,this.actor,true).beginAmendment(input));
+    const reason=input.reason.trim();
+    if(reason.length<5||reason.length>4000)throw new ScoringRecoveryError("An amendment reason is required.");
+    const owner=await this.requireReviewOwner(input.reviewId,input.reviewerAccountId,input.tenantId);
+    try{await assertIntegrityDispositionClear(this.database,owner.attempt_id);}catch(error){
+      if(error instanceof Error && error.message==="Integrity concerns require a current reasoned human clearance before this attempt can advance.")throw new ScoringRecoveryError(error.message);
+      throw error;
+    }
+    const row=(await this.database.query<{status:string;case_status:string}>("SELECT review.status,cases.case_status FROM written_score_reviews review JOIN assurance_cases cases ON cases.case_id=review.case_id WHERE review.review_id=$1",[input.reviewId])).rows[0];
+    if(row?.status!=="FINAL"||!["Review pending","Decision pending","Reassessment required","Interview pending"].includes(row.case_status))throw new ScoringRecoveryError("Only the current final written review can start an amendment.");
+    try{await this.pinnedCriteria(input.reviewId,input.reviewerAccountId);}catch(error){
+      if(error instanceof Error && error.message==="Every written question needs an authoritative pinned rubric.")throw new ScoringRecoveryError(error.message);
+      throw error;
+    }
+    const capacity=await reviewerCapacity(this.database,input.reviewerAccountId,true);
+    if(capacity && capacity.open>=capacity.limit)throw new ScoringRecoveryError("The reviewer workload limit is reached. Complete another review before starting an amendment.");
+    await returnWrittenScoringCase(this.database,{caseId:owner.case_id,tenantId:owner.tenant_id,owner:"reviewer",nextAction:"The assigned Verifier must freshly mark every pinned rubric criterion and explicitly finalize the retained scoring amendment.",eventType:"assessment_scoring_amendment",actor:{accountId:input.reviewerAccountId,role:"verifier"},now:new Date()});
+    await this.database.query("UPDATE written_score_reviews SET status='SUPERSEDED' WHERE review_id=$1",[input.reviewId]);
+    const replacementId=createIdentifier("written_score"),amendmentId=createIdentifier("score_amendment");
+    await this.database.query("INSERT INTO written_score_reviews(review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status) VALUES($1,$2,$3,$4,$5,$6,NULL,NULL,$7,'DRAFT')",[replacementId,owner.tenant_id,owner.case_id,owner.attempt_id,input.reviewerAccountId,owner.rubric_version,reason]);
+    await this.database.query("INSERT INTO written_score_amendments(amendment_id,original_review_id,replacement_review_id,reviewer_account_id,reason) VALUES($1,$2,$3,$4,$5)",[amendmentId,input.reviewId,replacementId,input.reviewerAccountId,reason]);
+    await new DatabaseAuditRepository(Promise.resolve(this.database)).append(bindTrustedAuditActor(this.actor!),{action:"assurance_case.status.changed",outcome:"succeeded",target:{type:"resource",reference:owner.case_id},metadata:{scoringAmendmentId:amendmentId,originalReviewId:input.reviewId,replacementReviewId:replacementId,reason}});
+    return {originalReviewId:input.reviewId,replacementReviewId:replacementId};
   }
 
   async finalize(input: {reviewId: string; reviewerAccountId: string; tenantId?: string; assessorVisible?: boolean}): Promise<{review_id:string;status:string}|undefined> {
@@ -234,7 +272,7 @@ export class WrittenScoringService {
     return result.rows[0] ?? null;
   }
 
-  async listReviewQueue(input:{tenantId?:string;reviewerAccountId?:string}):Promise<(ScoringReviewRow & {questions:readonly import("./assessment-review-source").AssessmentReviewQuestion[];rubricMarks:readonly Readonly<{criterion:string;mark:number;reason:string}>[];canReview:boolean;unavailableReason:string|null})[]> {
+  async listReviewQueue(input:{tenantId?:string;reviewerAccountId?:string}):Promise<(ScoringReviewRow & {questions:readonly import("./assessment-review-source").AssessmentReviewQuestion[];rubricMarks:readonly Readonly<{criterion:string;mark:number;reason:string}>[];canReview:boolean;canAmend:boolean;unavailableReason:string|null})[]> {
     if(!this.insideTransaction)return this.database.transaction(database=>new WrittenScoringService(database,this.actor,true).listReviewQueue(input));
     const reviewerAccountId=input.reviewerAccountId;
     if(!reviewerAccountId)throw new WrittenScoringAccessError("Actual reviewer scope is required.");
@@ -250,7 +288,8 @@ export class WrittenScoringService {
       }
       const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 AND mark_sequence>COALESCE((SELECT (events.metadata->>'marksBeforeAssignment')::bigint FROM platform_audit_events events WHERE events.action_key='assurance_case.status.changed' AND events.metadata->>'assessmentReviewAssignment'=$1 ORDER BY events.audit_sequence DESC LIMIT 1),0) ORDER BY criterion,mark_sequence DESC`,[review.review_id,reviewerAccountId]);
       const rubricMarks=Object.freeze(marks.rows.map(mark=>Object.freeze({criterion:mark.criterion,mark:Number(mark.mark),reason:mark.mark_reason})));
-      rows.push({...review,questions,rubricMarks,canReview:unavailableReason===null,unavailableReason});
+      const canAmend=review.status==="FINAL" && unavailableReason===null && questions.some(question=>question.questionType==="SHORT_TEXT"||question.questionType==="LONG_TEXT") && Boolean((await this.database.query(`SELECT 1 FROM assurance_cases cases WHERE cases.case_id=$1 AND cases.closed_at IS NULL AND (cases.case_status IN ('Review pending','Decision pending','Reassessment required') OR (cases.case_status='Interview pending' AND EXISTS(SELECT 1 FROM interview_requests requests WHERE requests.interview_request_id=cases.interview_reference AND requests.case_id=cases.case_id AND requests.status='REQUESTED' AND requests.assessor_account_id IS NULL AND NOT EXISTS(SELECT 1 FROM interview_runtime_sessions sessions WHERE sessions.interview_request_id=requests.interview_request_id))))`,[review.case_id])).rows[0]);
+      rows.push({...review,questions,rubricMarks,canReview:unavailableReason===null,canAmend,unavailableReason});
     }
     await requireLiveWrittenReviewer(this.database,this.actor,reviewerAccountId);
     return rows;

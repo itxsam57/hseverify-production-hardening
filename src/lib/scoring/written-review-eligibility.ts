@@ -1,4 +1,5 @@
 import "server-only";
+import {reviewerCapacity} from "../review/reviewer-capacity";
 import type {DatabaseClient} from "../database/database";
 
 export type WrittenReviewCandidate = { accountId: string; displayName: string };
@@ -24,6 +25,8 @@ export async function eligibleWrittenReviewers(database: DatabaseClient, caseId:
     AND NOT EXISTS(SELECT 1 FROM evidence_review_conflicts conflicts JOIN evidence_review_tasks tasks USING(task_id) WHERE tasks.case_id=cases.case_id AND conflicts.verifier_account_id=accounts.account_id)
   ORDER BY (SELECT COUNT(*) FROM written_score_reviews WHERE reviewer_account_id=accounts.account_id AND status='DRAFT'),accounts.account_id
  `,[caseId,attemptId]);
- return result.rows.map(row=>({accountId:row.account_id,displayName:row.display_name}));
+ const eligible=[];
+ for(const row of result.rows){const capacity=await reviewerCapacity(database,row.account_id);if(!capacity||capacity.open<capacity.limit)eligible.push({accountId:row.account_id,displayName:row.display_name});}
+ return eligible;
 }
 

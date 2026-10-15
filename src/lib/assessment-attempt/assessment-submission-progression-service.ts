@@ -1,4 +1,5 @@
 import "server-only";
+import {reviewerCapacity} from "../review/reviewer-capacity";
 import {eligibleWrittenReviewers} from "../scoring/written-review-eligibility";
 import { assessmentRequiresIntegrityReview } from "../integrity/integrity-review-service";
 
@@ -177,7 +178,11 @@ async function queueHumanReview(
   }>
 ): Promise<void> {
   const tenantId = await caseTenant(database, input.caseId);
-  const reviewerAccountId = (await eligibleWrittenReviewers(database,input.caseId,input.attemptId))[0]?.accountId??null;
+  const candidates=await eligibleWrittenReviewers(database,input.caseId,input.attemptId);
+  // All multi-reviewer capacity locks use one stable order, independent of changing workloads.
+  for(const candidate of [...candidates].sort((left,right)=>left.accountId.localeCompare(right.accountId)))await reviewerCapacity(database,candidate.accountId,true);
+  const protectedAccounts=new Set(candidates.map(candidate=>candidate.accountId));
+  const reviewerAccountId=(await eligibleWrittenReviewers(database,input.caseId,input.attemptId)).find(candidate=>protectedAccounts.has(candidate.accountId))?.accountId??null;
   if (reviewerAccountId) {
     await database.query(
       `INSERT INTO written_score_reviews(

@@ -18,6 +18,7 @@ test("Actual submission skips an active uncalibrated verifier instead of strandi
   await f.database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'verifier')",[id]);
   const review=await submit(f);
   assert.equal(review.reviewer_account_id,f.credentials.verifier.accountId,"The actual submitted attempt must reach the calibrated reviewer");
+  await f.database.execute(readFileSync("database/migrations/0120_review_recovery_notifications.down.sql","utf8"));
   await f.database.execute(readFileSync("database/migrations/0118_scoring_assignment_notifications.down.sql","utf8"));
   await f.database.execute(readFileSync("database/migrations/0118_scoring_assignment_notifications.up.sql","utf8"));
  }finally{await f.cleanup();}
