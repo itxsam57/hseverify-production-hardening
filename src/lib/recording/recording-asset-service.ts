@@ -1,4 +1,5 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "../interview/interview-calibration-authority";
 
 import { createHash } from "node:crypto";
 
@@ -313,6 +314,7 @@ export class RecordingAssetService {
     if (!isWorker && !isAssessor) {
       throw new RecordingAssetAccessError("Interview recording is limited to the assigned Worker and Assessor.");
     }
+    if(!request.assessor_account_id||!await interviewCalibrationCurrent(database,request.assessor_account_id,interviewRequestId))throw new RecordingAssetAccessError("Current calibration for the pinned interview framework is required.");
     if (request.recording_policy === "NOTES_ONLY" || request.recording_policy === "PROHIBITED") {
       throw new RecordingAssetAccessError("This interview policy does not permit recording.");
     }

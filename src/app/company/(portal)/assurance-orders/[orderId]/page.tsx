@@ -5,8 +5,9 @@ import { AssuranceOrderService } from "@/lib/assurance/assurance-order-service";
 import { listAssuranceOrderPolicySnapshots } from "@/lib/policy/effective-policy-read-service";
 import { AssuranceOrderWorkspace } from "@/components/company/assurance-order-workspace";
 
-export default async function AssuranceOrderDetailPage({params}:{params:Promise<{orderId:string}>}):Promise<React.JSX.Element>{
+export default async function AssuranceOrderDetailPage({params,searchParams}:{params:Promise<{orderId:string}>;searchParams:Promise<{error?:string}>}):Promise<React.JSX.Element>{
   const {orderId}=await params;
+  const error=(await searchParams).error;
   const principal=await requireCurrentTenantPermission("company.orders.read");
   const database=await getDatabaseClient();
   const service=new AssuranceOrderService(database);
@@ -17,6 +18,7 @@ export default async function AssuranceOrderDetailPage({params}:{params:Promise<
   const policySnapshots=await listAssuranceOrderPolicySnapshots(database,principal,orderId);
   return <section className="page-stack">
     <div className="page-heading"><div><p className="eyebrow">Company assurance</p><h1>Assurance order</h1><p>{order.orderReference} · {order.orderStatus}</p></div></div>
+    {typeof error==="string"&&error?<p role="alert" className="status-banner status-error">{error.slice(0,500)}</p>:null}
     <AssuranceOrderWorkspace order={order} cases={cases} interviewSchedules={interviewSchedules}/>
     <section aria-labelledby="effective-policy-summary">
       <h2 id="effective-policy-summary">Applied effective policy</h2>

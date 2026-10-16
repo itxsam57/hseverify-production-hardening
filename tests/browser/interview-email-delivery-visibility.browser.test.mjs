@@ -141,7 +141,7 @@ test("Browser email states follow actual worker retries and accepted messages wi
    const foreign=await browser.newContext(),page=await foreign.newPage();
    await login(page,baseUrl,{email:"search.foreign@example.test",password:fixture.credentials.worker.password},"worker");
    await page.goto(baseUrl+"/worker/notifications",{waitUntil:"domcontentloaded"});
-   assert.equal(await page.locator(".email-delivery-item").count(),0);await page.getByText("No interview emails yet.",{exact:true}).waitFor();
+   assert.equal(await page.locator(".email-delivery-item").count(),0);await page.getByText("No email updates yet.",{exact:true}).waitFor();
    const denied=await page.goto(workerLink,{waitUntil:"domcontentloaded"});assert.equal(denied.status(),404);
    assert.equal(await page.getByRole("heading",{name:"Structured competency interview",exact:true}).count(),0);
   });

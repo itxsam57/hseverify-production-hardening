@@ -32,6 +32,11 @@ export function AccountSecurityWorkspace({
 
   return (
     <div className="stack-lg">
+      <section className="surface-card" id="interface-language" aria-labelledby="interface-language-heading">
+        <h2 id="interface-language-heading">Interface language</h2>
+        <p><strong lang="en">English</strong></p>
+        <p>This release is available in English.</p>
+      </section>
       <section className="surface-card" aria-labelledby="password-security-heading">
         <h2 id="password-security-heading">Change password</h2>
         <p>Changing your password revokes every other active session while keeping this session available.</p>

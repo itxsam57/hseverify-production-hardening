@@ -1,3 +1,4 @@
+import { createHash, createHmac } from "node:crypto";
 import nextEnvironmentPackage from "@next/env";
 
 const { loadEnvConfig } = nextEnvironmentPackage;
@@ -23,6 +24,40 @@ function readAppEnvironment(input) {
   return input.NODE_ENV === "production" ? "production" : "development";
 }
 
+function credentialSigningKeyId(secret) {
+  const key = createHmac("sha256", secret).update("hseverify:credential-issuance:signing-key:v1", "utf8").digest();
+  return createHash("sha256").update(key).digest("hex").slice(0, 32);
+}
+
+function readCredentialSigningConfiguration(input, issues) {
+  const credentialSigningSecret = input.HSE_CREDENTIAL_SIGNING_SECRET?.trim() || undefined;
+  let credentialSigningPreviousSecrets = [];
+  const rawPrevious = input.HSE_CREDENTIAL_SIGNING_PREVIOUS_SECRETS;
+  const validSecret = (value) =>
+    typeof value === "string" && value.length >= 32 && value.length <= 512 && !/[\x00-\x1f\x7f]/.test(value);
+  if (credentialSigningSecret && !validSecret(credentialSigningSecret)) {
+    issues.push("HSE_CREDENTIAL_SIGNING_SECRET must contain 32 to 512 characters without control characters.");
+  }
+  if (rawPrevious && rawPrevious.length > 16384) {
+    issues.push("HSE_CREDENTIAL_SIGNING_PREVIOUS_SECRETS must not exceed 16 KB.");
+  } else if (rawPrevious?.trim()) {
+    try {
+      const values = JSON.parse(rawPrevious);
+      if (!Array.isArray(values) || values.length > 8) throw new Error();
+      const normalized = values.map(value => typeof value === "string" ? value.trim() : value);
+      if (!normalized.every(validSecret)) throw new Error();
+      credentialSigningPreviousSecrets = normalized;
+    } catch {
+      issues.push("HSE_CREDENTIAL_SIGNING_PREVIOUS_SECRETS must be a JSON array of at most 8 secrets, each 32 to 512 characters.");
+    }
+  }
+  const keys = [...(credentialSigningSecret ? [credentialSigningSecret] : []), ...credentialSigningPreviousSecrets];
+  if (keys.every(validSecret) && new Set(keys.map(credentialSigningKeyId)).size !== keys.length) {
+    issues.push("HSE_CREDENTIAL_SIGNING secrets must have unique key IDs.");
+  }
+  return { credentialSigningSecret, credentialSigningPreviousSecrets: Object.freeze(credentialSigningPreviousSecrets) };
+}
+
 export function validateScriptEnvironment(input = process.env) {
   const issues = [];
   const appEnvironment = readAppEnvironment(input);
@@ -34,6 +69,7 @@ export function validateScriptEnvironment(input = process.env) {
       : "postgres";
   const sessionSecret = input.HSE_SESSION_SECRET?.trim() ?? "";
   const authPepper = input.HSE_AUTH_PEPPER?.trim() || sessionSecret;
+  const { credentialSigningSecret, credentialSigningPreviousSecrets } = readCredentialSigningConfiguration(input, issues);
   const authSandboxEnabled = readBoolean(input.HSE_ENABLE_AUTH_SANDBOX);
   const authSandboxAccessKey =
     input.HSE_AUTH_SANDBOX_ACCESS_KEY?.trim() || null;
@@ -47,6 +83,9 @@ export function validateScriptEnvironment(input = process.env) {
 
   if (sessionSecret.length < 32) {
     issues.push("HSE_SESSION_SECRET must contain at least 32 characters.");
+  }
+  if (appEnvironment === "production" && !credentialSigningSecret) {
+    issues.push("HSE_CREDENTIAL_SIGNING_SECRET is required in production.");
   }
   if (authPepper.length < 32) {
     issues.push("HSE_AUTH_PEPPER must contain at least 32 characters.");
@@ -105,6 +144,8 @@ export function validateScriptEnvironment(input = process.env) {
     pgliteDataDir: databaseDriver === "pglite" ? pgliteDataDir : null,
     releaseSha,
     sessionSecret,
+    ...(credentialSigningSecret ? { credentialSigningSecret } : {}),
+    credentialSigningPreviousSecrets,
     authPepper,
     authSandboxEnabled,
     authSandboxAccessKey,

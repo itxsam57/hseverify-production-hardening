@@ -266,7 +266,7 @@ test(
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("CHANGES_REQUESTED");
-            await verifier.getByLabel("Reason").last().fill("Correct the certificate number before this Company case can proceed.");
+            await verifier.getByLabel("Reason", { exact: true }).fill("Correct the certificate number before this Company case can proceed.");
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText("CHANGES_REQUESTED", { exact: true }).waitFor({ timeout: 15_000 });
 
@@ -296,7 +296,7 @@ test(
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("APPROVED");
-            await verifier.getByLabel("Reason").last().fill(
+            await verifier.getByLabel("Reason", { exact: true }).fill(
               "Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();

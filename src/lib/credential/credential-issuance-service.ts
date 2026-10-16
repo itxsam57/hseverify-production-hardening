@@ -4,10 +4,15 @@ import { issueCredential, transitionCredential, type CredentialIssueRequest, typ
 import { CredentialIssuanceRepository } from "./credential-issuance-repository";
 
 export class CredentialIssuanceService {
-  constructor(private readonly repository = new CredentialIssuanceRepository()) {}
+  constructor(
+    private readonly repository = new CredentialIssuanceRepository(),
+    private readonly signingSecret?: string
+  ) {}
 
   async issue(request: CredentialIssueRequest, sequence: string) {
-    const credential = issueCredential(request, sequence);
+    const signingSecret = this.signingSecret ?? (await import("../config/server-environment")).getServerEnvironment().credentialSigningSecret;
+    if (!signingSecret) throw new Error("Credential signing key is not configured.");
+    const credential = issueCredential(request, sequence, signingSecret);
     await this.repository.save(credential);
     return credential;
   }

@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-import type { DigitalPassport } from "../living-record/living-record-domain";
+import { buildDigitalPassport, projectLivingCompetencyVersion, type DigitalPassport } from "../living-record/living-record-domain";
 
 export const SCOPED_SHARE_FIELDS = Object.freeze([
   "worker_id",
@@ -157,7 +157,8 @@ function parseToken(token: string, secret: string): TokenPayload | null {
   }
 }
 
-function project(record: ScopedShareLinkRecord, passport: DigitalPassport): ScopedShareProjection {
+function project(record: ScopedShareLinkRecord, passport: DigitalPassport, accessedAt: string): ScopedShareProjection {
+  passport = buildDigitalPassport({ ...passport, generatedAt: accessedAt });
   const fields = new Set(record.fields);
   const projection: {
     purpose: string;
@@ -200,8 +201,7 @@ function project(record: ScopedShareLinkRecord, passport: DigitalPassport): Scop
   if (fields.has("competencies")) {
     projection.competencies = Object.freeze(
       passport.competencies.map((item) => {
-        const current = item.versions.at(-1);
-        if (!current) throw new Error("Living Record must contain a current version.");
+        const current = projectLivingCompetencyVersion(item, accessedAt);
         return Object.freeze({
           competencyId: item.competencyId,
           title: item.title,
@@ -357,7 +357,7 @@ export class ScopedShareLinkManager {
     return Object.freeze({
       kind: "granted",
       shareLinkId: record.shareLinkId,
-      projection: project(record, input.passport)
+      projection: project(record, input.passport, accessedAt)
     });
   }
 

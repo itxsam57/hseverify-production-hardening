@@ -53,7 +53,7 @@ export type CaseAccommodationView = Readonly<{
 export class CaseAccommodationService {
   constructor(private readonly databasePromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
-  async resolveForWorker(caseId: string, workerId: string): Promise<CaseAccommodationView> {
+  async resolveForWorker(caseId: string, workerId: string, asOf?: Date): Promise<CaseAccommodationView> {
     const database = await this.databasePromise;
     const owned = await database.query<{ case_id: string; worker_account_id: string }>(
       "SELECT case_id,worker_account_id FROM assurance_cases WHERE case_id=$1 AND worker_account_id=$2",
@@ -64,9 +64,9 @@ export class CaseAccommodationService {
     const result = await database.query<{ accommodation_id: string; adjustment: unknown }>(
       `SELECT accommodation_id,adjustment
          FROM assurance_case_accommodation_overlays
-        WHERE case_id=$1 AND worker_id=$2
+        WHERE case_id=$1 AND worker_id=$2 AND ($3::timestamptz IS NULL OR approved_at<=$3)
         ORDER BY approved_at,overlay_id`,
-      [caseId, workerId]
+      [caseId, workerId, asOf?.toISOString() ?? null]
     );
     const adjustments = result.rows.map((row) => parseAdjustment(row.adjustment));
     return Object.freeze({

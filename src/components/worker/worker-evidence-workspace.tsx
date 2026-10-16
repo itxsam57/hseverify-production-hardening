@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 import {
   createWorkerEvidenceRecordAction,
@@ -14,6 +14,7 @@ import {
   uploadWorkerLeavingLetterAction
 } from "@/app/worker/(portal)/evidence/actions";
 import { Button } from "@/components/ui/button";
+import { captureFormSnapshot } from "@/components/ui/unsaved-changes-guard";
 import { Alert } from "@/components/ui/feedback";
 import {
   CheckboxField,
@@ -305,9 +306,16 @@ function DraftMetadataForm({
     saveWorkerEvidenceDraftAction,
     INITIAL_WORKER_EVIDENCE_ACTION_STATE
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  const submittedSnapshot = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.status === "success" && submittedSnapshot.current !== null) {
+      formRef.current?.dispatchEvent(new CustomEvent("hse:form-saved", { bubbles: true, detail: submittedSnapshot.current }));
+    }
+  }, [state]);
   const prefix = `evidence-${record.recordId}`;
   return (
-    <form action={action} className="profile-form" noValidate>
+    <form ref={formRef} action={action} className="profile-form" noValidate onReset={event => event.preventDefault()} onSubmit={event => { submittedSnapshot.current = captureFormSnapshot(event.currentTarget); }}>
       <input type="hidden" name="recordId" value={record.recordId} />
       <input type="hidden" name="expectedRevision" value={record.currentVersion.revision} />
       {record.kind === "qualification" ? (
@@ -613,7 +621,7 @@ function VerificationResult({
       <strong>Independent verification: {label}.</strong>
       {record.verificationReason ? <> {record.verificationReason}</> : null}
       {record.verificationDecidedAt
-        ? <> Decision recorded {formatUtc(record.verificationDecidedAt)}.</>
+        ? <> {status==="UNABLE_TO_VERIFY"||status==="ESCALATED"||status==="QUEUED"?"Review update recorded":"Decision recorded"} {formatUtc(record.verificationDecidedAt)}.</>
         : null}
     </Alert>
   );
@@ -625,7 +633,7 @@ function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): Reac
   const canRevise = submitted && record.lifecycleStatus === "active";
 
   return (
-    <article className="panel page-section content-stack">
+    <article id={record.recordId} className="panel page-section content-stack">
       <div className="section-heading-row">
         <div>
           <p className="eyebrow">{record.kind}</p>

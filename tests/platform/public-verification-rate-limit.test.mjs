@@ -371,3 +371,16 @@ test("M1.12 Worker-ID lookup returns only the explicit public source allow-list"
     await database.close();
   }
 });
+test("Real Worker capability concern keeps the public Worker reference consistent with credential concerns",async()=>{
+ const database=await setupDatabase("concern-worker-binding");try{
+ await seedVerifiedWorker(database);
+ await applyMigrationsThrough(database,"concern-worker-binding","0110_credential_concern_review");
+ const {PublicVerificationService}=await import(pathToFileURL(join(runtime,"public-verification","public-verification-service.js")).href);
+ const service=new PublicVerificationService(new PublicVerificationRepository(database),"worker-concern-capability-secret-more-than-thirty-two");
+ const lookup=await service.lookupPublicVerification({rawIdentifier:WORKER_ID,requestFingerprint:"a".repeat(64)});assert.equal(lookup.kind,"redirect");
+ const concern=await service.submitPublicVerificationConcern({publicToken:lookup.publicToken,requestFingerprint:"a".repeat(64),category:"identity_mismatch",description:"The public Worker identity requires an independent check.",contactEmail:"worker-concern@example.test",idempotencyNonce:"concern_nonce_"+"w".repeat(24)});
+ assert.equal(concern.kind,"accepted");
+ const bound=(await database.query("SELECT subject_kind,subject_identifier,worker_reference FROM public_verification_concern_subjects WHERE concern_id=$1",[concern.concernReference])).rows[0];
+ assert.deepEqual(bound,{subject_kind:"worker",subject_identifier:WORKER_ID,worker_reference:WORKER_ID});
+ }finally{await database.close();}
+});

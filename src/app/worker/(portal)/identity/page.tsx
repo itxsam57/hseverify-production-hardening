@@ -26,10 +26,14 @@ export default async function WorkerIdentityPage(): Promise<React.JSX.Element> {
   ]);
 
   const review = await (await getDatabaseClient()).query<{ outcome: string; reason: string }>(
-    `SELECT decisions.outcome,decisions.reason
+    `SELECT outcome,reason FROM(
+       SELECT decisions.outcome,decisions.reason,decisions.decided_at AS occurred_at,decisions.decision_id AS event_id
        FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id
-      WHERE tasks.worker_account_id=$1 AND tasks.evidence_kind='identity'
-      ORDER BY decisions.decided_at DESC,decisions.decision_id DESC LIMIT 1`, [principal.accountId]);
+       WHERE tasks.worker_account_id=$1 AND tasks.evidence_kind='identity'
+       UNION ALL SELECT resolutions.outcome,resolutions.reason,resolutions.occurred_at,resolutions.event_id
+       FROM evidence_review_resolution_events resolutions JOIN evidence_review_tasks tasks ON tasks.task_id=resolutions.task_id
+       WHERE tasks.worker_account_id=$1 AND tasks.evidence_kind='identity'
+      ) history ORDER BY occurred_at DESC,event_id DESC LIMIT 1`, [principal.accountId]);
 
   const workspaceRevision = [
     identity.currentVersion.identityVersionId,
@@ -42,7 +46,7 @@ export default async function WorkerIdentityPage(): Promise<React.JSX.Element> {
   ].join(":");
 
   return (
-    <section className="profile-page" aria-labelledby="worker-identity-heading">
+    <section id={identity.identity.identityId} className="profile-page" aria-labelledby="worker-identity-heading">
       <div className="profile-page-heading">
         <div>
           <p className="section-kicker">Worker assurance</p>

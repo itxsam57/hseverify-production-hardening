@@ -351,6 +351,11 @@ export class WorkerEvidenceAttachmentService {
       throw new WorkerEvidenceNotFoundError();
     }
 
+    // The development/test processor is bounded, so an upload may leave its scan
+    // queued behind unrelated jobs. Resume it only after checking candidate ownership.
+    // Production uses the continuous worker; its settlement callback is a no-op.
+    await this.settleFileScan(worker, candidate.secureFileId);
+
     const scanned = assertExpectedSecureFile(
       await this.secureFiles.findForPrincipal(worker, candidate.secureFileId),
       {

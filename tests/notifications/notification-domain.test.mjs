@@ -35,8 +35,8 @@ function job(overrides = {}) {
 }
 
 test("notification vocabulary is fixed and wildcard-free", () => {
-  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated"]);
-  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security", "interview.record", "company.assurance.case"]);
+  assert.deepEqual(notification.NOTIFICATION_TYPES, ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", "account.password.changed", "account.password.reset", "account.mfa.replaced", "account.recovery_codes.rotated", "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned", "assessment.review.conflict","evidence.second_review.requested","assessment.review.assigned", "integrity.escalated", "integrity.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated"]);
+  assert.deepEqual(notification.NOTIFICATION_TARGETS, ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review", "admin.scoring.assignment", "admin.review.quality"]);
   for (const value of [
     ...notification.NOTIFICATION_TYPES,
     ...notification.NOTIFICATION_TARGETS
@@ -183,4 +183,62 @@ test("Scheduled notices accept only fixed recipient-role record references",()=>
  ])assert.throws(()=>notification.resolveNotificationHref(input),notification.NotificationContractError);
  assert.deepEqual(notification.normalizeNotificationMetadata("interview.scheduled",{eventRef:"audit_abc"}),{eventRef:"audit_abc"});
  assert.throws(()=>notification.normalizeNotificationMetadata("interview.scheduled",{eventRef:"audit_abc",href:"https://example.test"}));
+});
+
+
+test("Funding notices permit only exact role-owned opaque funding or case targets", () => {
+  for (const [role, target, prefix, path] of [
+    ["company", "company.billing.funding", "funding_", "/company/billing#"],
+    ["worker", "worker.assessment.case", "assurance_case_", "/worker/available-assessments#"]
+  ]) {
+    const targetReference = prefix + "A".repeat(24);
+    assert.equal(notification.resolveNotificationHref({ role, target, targetReference }), path + targetReference);
+    for (const otherRole of ["worker", "company", "assessor", "verifier", "admin", "root"].filter(value => value !== role)) {
+      assert.throws(() => notification.resolveNotificationHref({role: otherRole, target, targetReference}), notification.NotificationContractError);
+    }
+    for (const invalid of [null, "", "https://example.test", "../other", prefix + "A".repeat(23), prefix + "A".repeat(25), targetReference + "#other"]) {
+      assert.throws(() => notification.resolveNotificationHref({role, target, targetReference: invalid}), notification.NotificationContractError);
+    }
+  }
+  for (const type of ["assessment.funding.requested", "assessment.funding.approved"]) {
+    assert.deepEqual(notification.normalizeNotificationMetadata(type, {eventRef: "assessment_application_event_" + "A".repeat(24)}),
+      {eventRef: "assessment_application_event_" + "A".repeat(24)});
+    assert.throws(() => notification.normalizeNotificationMetadata(type, {eventRef: "assessment_application_event_" + "A".repeat(24), href: "/company/billing"}));
+  }
+});
+
+
+test("Assurance record metadata and role links remain closed to arbitrary content, URLs and foreign portal roles",()=>{
+ const kinds=["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","assessment.review.conflict","evidence.second_review.requested","assessment.review.assigned","integrity.escalated","integrity.returned","interview.recommended","decision.recorded","credential.issued","appeal.submitted","appeal.updated"];
+ const refs={"evidence.submitted":"audit:audit_A","evidence.reviewed":"review:review_A","evidence.additional.requested":"review:review_B","evidence.unable":"resolution:resolution_A","evidence.escalated":"resolution:resolution_B","evidence.returned":"resolution:resolution_C","assessment.review.conflict":"review_recovery:audit_conflict_A","evidence.second_review.requested":"review_recovery:audit_quality_A","assessment.review.assigned":"scoring:audit_assignment_A","integrity.escalated":"integrity:integrity_A","integrity.returned":"integrity:integrity_B","interview.recommended":"recommendation:recommendation_A","decision.recorded":"case:event_A","credential.issued":"issuance:credential_id_A:1","appeal.submitted":"appeal:appeal_A:1","appeal.updated":"appeal:appeal_A:2"};
+ for(const type of kinds){
+  assert.deepEqual(notification.normalizeNotificationMetadata(type,{eventRef:refs[type]}),{eventRef:refs[type]});
+  for(const extra of ["href","recipientRef","body","email","token"])assert.throws(()=>notification.normalizeNotificationMetadata(type,{eventRef:refs[type],[extra]:"arbitrary"}));
+  if(type!=="evidence.submitted")assert.throws(()=>notification.normalizeNotificationMetadata(type,{eventRef:"audit:unrelated"}));
+ }
+ for(const [role,target,ref,path] of [
+  ["worker","worker.evidence.record","evidence_record_"+"a".repeat(32),"/worker/evidence#"],
+  ["worker","worker.identity.record","worker_identity_"+"A".repeat(24),"/worker/identity#"],
+  ["worker","worker.observation.record","supervisor_observation_"+"A".repeat(24),"/worker/observations#"],
+  ["verifier","verifier.review.task","evidence_review_"+"A".repeat(24),"/verifier/reviews/"],
+  ["worker","worker.assurance.case","assurance_case_"+"A".repeat(24),"/worker/assurance-cases/"],
+  ["worker","worker.credential.record","credential_id_decision_A","/worker/passport#"],
+  ["admin","admin.scoring.assignment","assurance_case_"+"A".repeat(24),"/admin/operations/scoring-assignments#"],
+  ["admin","admin.review.quality","evidence_review_"+"A".repeat(24),"/admin/operations/review-quality#"],
+  ["admin","appeal.record","appeal_A","/admin/appeals#"]
+ ]){
+  assert.equal(notification.resolveNotificationHref({role,target,targetReference:ref}),path+ref);
+  for(const bad of [null,"https://example.test","../other","//example.test",ref+"?owner=other",ref+"%2fother"])assert.throws(()=>notification.resolveNotificationHref({role,target,targetReference:bad}));
+  if(target!=="appeal.record")for(const foreign of ["worker","company","assessor","verifier","admin","root"].filter(r=>r!==role))assert.throws(()=>notification.resolveNotificationHref({role:foreign,target,targetReference:ref}));
+ }
+ assert.throws(()=>notification.resolveNotificationHref({role:"root",target:"appeal.record",targetReference:"appeal_A"}));
+});
+
+test("integrity notices deep-link only to their authorized operational reviewer",()=>{
+ const review="written_score_"+"A".repeat(24);
+ for(const [role,target,path] of [["admin","admin.integrity.review","/admin/operations/integrity-reviews"],["verifier","verifier.integrity.review","/verifier/reviews/scoring"]]){
+  assert.equal(notification.resolveNotificationHref({role,target,targetReference:review}),path+"#"+review);
+  for(const foreign of ["worker","company","root",role==="admin"?"verifier":"admin"]){assert.throws(()=>notification.resolveNotificationHref({role:foreign,target,targetReference:review}),notification.NotificationContractError);}
+  assert.throws(()=>notification.resolveNotificationHref({role,target,targetReference:"https://example.test/"}),notification.NotificationContractError);
+ }
 });

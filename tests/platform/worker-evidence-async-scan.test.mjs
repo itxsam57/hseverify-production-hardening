@@ -364,3 +364,40 @@ test("M1.11 production-style async leaving-letter scan finalizes only after clea
     await database.close();
   }
 });
+
+
+test("M1.11 checking an owned pending candidate resumes deferred scan processing before binding", async () => {
+  const database = await openScriptDatabase(ENV);
+  try {
+    await applyMigrationsThrough(database, ENV.releaseSha, OWNED_MIGRATION);
+    const actor = principal("C");
+    await seedAuditActor(database, actor);
+    const evidence = new WorkerEvidenceService(Promise.resolve(database), () => new Date(NOW));
+    const record = await qualification(evidence, actor);
+    const files = new FakeSecureFiles();
+    let scanReady = false;
+    const service = new WorkerEvidenceAttachmentService(
+      Promise.resolve(database), files, new FakeUploads(files), new FakeScans(files),
+      async (owner, fileId) => {
+        const file = await files.findForPrincipal(owner, fileId);
+        assert.ok(file);
+        if (scanReady) files.update(fileId, { lifecycleStatus: "available", availableAt: NOW });
+      },
+      () => new Date(NOW)
+    );
+    const pending = await service.uploadAndBind(actor, {
+      recordId: record.recordId, versionId: record.currentVersion.versionId,
+      attachmentKind: "primary_certificate", expectedActiveAttachmentId: null,
+      originalFilename: "deferred.pdf", declaredMime: "application/pdf", bytes: PDF_BYTES
+    });
+    assert.equal(pending.scanStatus, "scan_pending");
+    await assert.rejects(service.finalizePendingCandidate(actor, pending.candidateId), WorkerEvidenceAttachmentUnavailableError);
+    assert.equal((await service.listForRecord(actor, record.recordId)).length, 0);
+    scanReady = true;
+    const attached = await service.finalizePendingCandidate(actor, pending.candidateId);
+    assert.equal(attached.secureFileId, pending.secureFileId);
+    assert.equal((await service.listForRecord(actor, record.recordId)).length, 1);
+  } finally {
+    await database.close();
+  }
+});

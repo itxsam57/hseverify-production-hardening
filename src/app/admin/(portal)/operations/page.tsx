@@ -26,8 +26,8 @@ export default async function AdminOperationsPage({
     options: { limit: 10 }
   });
   const health = await getOperationalHealthSnapshot();
-  const providers = getProviderHealth();
   const environment = getServerEnvironment();
+  const providers = getProviderHealth(environment);
   const registrationProviders = environment.registrationOtpProviders;
   const emailConfigured = Boolean(registrationProviders?.emailApiKey && registrationProviders?.emailFrom && environment.publicBaseUrl);
   const emailHealth = await getInterviewEmailHealth(principal);
@@ -44,6 +44,10 @@ export default async function AdminOperationsPage({
       <nav aria-label="Admin operational areas">
         <ul>
           <li><a href="/admin/staff">Users</a></li>
+          <li><Link href="/admin/operations/integrity-reviews">Integrity review escalations</Link> <Link href="/admin/operations/review-escalations">Evidence review escalations</Link></li>
+          <li><Link href="/admin/operations/duplicate-identities">Duplicate identity review</Link></li>
+          <li><Link href="/admin/operations/review-quality">Review quality and workload</Link></li>
+          <li><Link href="/admin/operations/scoring-assignments">Assessment review assignments</Link></li>
           <li><Link href="/admin/company-verifications">Companies and cases</Link></li>
           <li><a href="/admin/frameworks">Rules and policy</a></li>
           <li><a href="/admin/question-bank">Calibration inputs</a></li>
@@ -70,10 +74,12 @@ export default async function AdminOperationsPage({
         ))}
       </ul>
       <h2>Provider integrations</h2>
-      <ul>
+      <p>Configuration and local test adapters do not confirm live availability or delivery. No provider check is performed by this page.</p>
+      <p>Email and SMS configuration covers registration delivery; interview email also requires the public site URL. Foundation email uses a separate local test adapter. Video uses built-in browser calling; camera, microphone and network/TURN connectivity require a separate check. Preview and production scanning selects ClamAV; executable and signature availability require a scan.</p>
+      <ul aria-label="Provider integrations">
         {providers.map((provider) => (
           <li key={provider.provider}>
-            {provider.provider}: {provider.status} ({provider.mode}) — {provider.reason}
+            {provider.provider}: {provider.status} ({provider.mode}) — {provider.reason}. Live availability: not checked.
           </li>
         ))}
       </ul>
@@ -113,8 +119,8 @@ export default async function AdminOperationsPage({
       </section>
       <h2>Registration verification delivery</h2>
       <ul aria-label="Registration delivery configuration">
-        <li>Email: {registrationProviders?.emailApiKey ? "Configured" : "Unavailable"}</li>
-        <li>SMS: {registrationProviders?.smsAccountSid ? "Configured" : "Unavailable"}</li>
+        <li>Email: {registrationProviders?.emailApiKey && registrationProviders.emailFrom ? "Configured" : "Unavailable"}</li>
+        <li>SMS: {registrationProviders?.smsAccountSid && registrationProviders.smsAuthToken && registrationProviders.smsFrom ? "Configured" : "Unavailable"}</li>
       </ul>
       <p>Provider configuration enables queued verification messages. Delivery to a real inbox or phone requires a separate delivery check.</p>
       <h2>Production launch and operational handover</h2>

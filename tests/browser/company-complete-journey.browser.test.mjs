@@ -648,10 +648,32 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           // Report queue.
           await company.goto(`${baseUrl}/company/reports`, { waitUntil: "networkidle" });
-          await company.getByLabel("Report ID").fill("report_company_journey_001");
-          await company.getByLabel("Format").selectOption("csv");
-          await company.getByRole("button", { name: "Queue report delivery" }).click();
-          await company.getByText("report_company_journey_001", { exact: false }).waitFor({ timeout: 15_000 });
+          await company.getByLabel("Report type", { exact: true }).selectOption("workforce-status");
+          await company.getByLabel("Format", { exact: true }).selectOption("csv");
+          await company.getByLabel("Definition name (for saving)", { exact: true }).fill("report_company_journey_001");
+          await company.getByRole("button", { name: "Save report definition", exact: true }).click();
+          await company.waitForURL("**/company/reports?notice=saved");
+          await company.getByRole("status").filter({ hasText: "Your report definition is saved." }).waitFor();
+          const savedReport = company.locator("[data-definition-id]").filter({ hasText: "report_company_journey_001" });
+          assert.equal(await savedReport.count(), 1);
+          const definitionId = await savedReport.getAttribute("data-definition-id");
+          assert.match(definitionId, /^report_definition_[A-Za-z0-9_-]{24}$/);
+          await company.reload({ waitUntil: "domcontentloaded" });
+          const persistedDefinition = company.locator('[data-definition-id="' + definitionId + '"]');
+          await persistedDefinition.getByText("report_company_journey_001", { exact: true }).waitFor();
+          await persistedDefinition.getByRole("button", { name: "Queue saved report", exact: true }).click();
+          await company.waitForURL("**/company/reports?notice=queued");
+          await company.getByRole("status").filter({ hasText: "Your report is queued." }).waitFor();
+          const queuedReport = company.locator("[data-report-id]");
+          assert.equal(await queuedReport.count(), 1);
+          const reportId = await queuedReport.getAttribute("data-report-id");
+          assert.ok(reportId, "The persisted queue must expose its server-assigned report ID.");
+          await company.reload({ waitUntil: "domcontentloaded" });
+          const persistedReport = company.locator('[data-report-id="' + reportId + '"]');
+          await persistedReport.getByText("Workforce status", { exact: true }).waitFor();
+          await persistedReport.getByText("queued", { exact: true }).waitFor();
+          assert.match(await persistedReport.innerText(), /CSV/);
+          assert.match(await persistedReport.innerText(), /Saved definition version 1/);
 
           // Tenant-scope CRUD demonstration.
           await company.goto(`${baseUrl}/company/tenant-scope`, { waitUntil: "networkidle" });
@@ -693,7 +715,14 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
         db.query(`SELECT order_reference,order_status FROM assurance_orders WHERE order_reference LIKE 'JOURNEY-ORDER%'`),
         db.query(`SELECT membership_status,membership_role FROM auth_tenant_memberships WHERE account_id IN (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')`),
         db.query(`SELECT override_values FROM tenant_policy_overrides WHERE tenant_id='tenant_independent-audit-compan'`),
-        db.query(`SELECT report_id,status FROM report_deliveries WHERE tenant_id='tenant_independent-audit-compan'`),
+        db.query(`SELECT delivery.report_id,delivery.status,delivery.format,delivery.report_type,delivery.definition_version,version.name
+                    FROM report_deliveries AS delivery
+                    JOIN report_definitions AS definition ON definition.definition_id=delivery.definition_id
+                         AND definition.tenant_id=delivery.tenant_id AND definition.owner_kind='company'
+                    JOIN report_definition_versions AS version ON version.definition_id=delivery.definition_id
+                         AND version.version=delivery.definition_version
+                   WHERE delivery.tenant_id='tenant_independent-audit-compan'
+                     AND version.name='report_company_journey_001'`),
         db.query(`SELECT i.status,i.refunded_amount_minor,
                          (SELECT COALESCE(SUM(credit_delta),0) FROM billing_credit_ledger WHERE tenant_id=i.tenant_id) AS credit_balance,
                          (SELECT COUNT(*)::int FROM billing_reconciliation_runs WHERE tenant_id=i.tenant_id AND status='CLEAN') AS clean_runs
@@ -756,7 +785,13 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
       console.log("ACTUAL_COMPANY_STAFF_DENIAL_DB revoked membership, same authenticated session, persisted denials with complete audit mirrors");
 
       assert(overrides.rows.length >= 1);
-      assert(reports.rows.some((row) => row.report_id === "report_company_journey_001"));
+      assert.equal(reports.rows.length, 1, "The named saved definition must produce exactly one persisted report request.");
+      assert.ok(reports.rows[0].report_id, "The report request retains its server-assigned ID.");
+      assert.equal(reports.rows[0].name, "report_company_journey_001");
+      assert.equal(reports.rows[0].definition_version, 1);
+      assert.equal(reports.rows[0].report_type, "workforce-status");
+      assert.equal(reports.rows[0].format, "csv");
+      assert.equal(reports.rows[0].status, "queued");
       assert.equal(billing.rows[0]?.status, "REFUNDED");
       assert.equal(Number(billing.rows[0]?.refunded_amount_minor), 5000);
       assert.equal(Number(billing.rows[0]?.credit_balance), 0);

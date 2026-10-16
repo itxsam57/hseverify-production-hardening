@@ -50,11 +50,19 @@ async function assertAttemptAuthority(
   database: DatabaseClient,
   principal: AuthorizationPrincipal,
   attemptId: string,
-  access: AssessmentAccessContext | null
+  access: AssessmentAccessContext | null,
+  lock = false
 ) {
   assertWorker(principal);
   const repository = new AssessmentAttemptRepository(database);
-  const attempt = await repository.findOwned(principal.accountId, attemptId);
+  let attempt = await repository.findOwned(principal.accountId, attemptId);
+  if (lock && attempt) {
+    const live=await database.query(`SELECT 1 FROM auth_sessions s JOIN auth_accounts a ON a.account_id=s.account_id JOIN auth_account_roles r ON r.account_id=a.account_id AND r.role='worker' WHERE s.session_id=$1 AND s.account_id=$2 AND s.active_role='worker' AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND a.account_status='active' FOR UPDATE OF s,a,r`,[principal.sessionId,principal.accountId]);
+    if (!live.rows[0]) throw new AssessmentIntegrityAccessError();
+    const cases=await database.query(`SELECT 1 FROM assurance_cases WHERE case_id=$1 AND worker_account_id=$2 AND assessment_reference=$3 AND case_status='Assessment in progress' FOR UPDATE`,[attempt.caseId,principal.accountId,attemptId]);
+    if (!cases.rows[0]) throw new AssessmentIntegrityAccessError();
+    attempt=await repository.lockOwned(principal.accountId,attemptId);
+  }
   if (!attempt || attempt.status !== "IN_PROGRESS") {
     throw new AssessmentIntegrityAccessError();
   }
@@ -141,7 +149,7 @@ export class AssessmentIntegrityService {
     const providerState = input.providerState ?? "BUILT_IN";
     const database = await this.databasePromise;
     return database.transaction(async (tx) => {
-      const attempt = await assertAttemptAuthority(tx, principal, attemptId, access);
+      const attempt = await assertAttemptAuthority(tx, principal, attemptId, access, true);
       await tx.query(
         `INSERT INTO assessment_integrity_sessions(
            attempt_id,case_id,worker_account_id,monitoring_state,provider_state,
@@ -200,7 +208,7 @@ export class AssessmentIntegrityService {
     const attemptId = normalizeAssessmentAttemptReference(attemptReference);
     const database = await this.databasePromise;
     await database.transaction(async (tx) => {
-      await assertAttemptAuthority(tx, principal, attemptId, access);
+      await assertAttemptAuthority(tx, principal, attemptId, access, true);
       await tx.query(
         `UPDATE assessment_integrity_sessions
             SET monitoring_state='STOPPED',stopped_at=$2,last_event_at=$2

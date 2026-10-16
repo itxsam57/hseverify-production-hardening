@@ -57,6 +57,10 @@ body {
 }
 
 @media (max-width: 860px) {
+  .portal-header {
+    flex-wrap: wrap;
+  }
+
   .portal-sidebar {
     width: auto;
     max-width: none;

@@ -1,8 +1,13 @@
 import "server-only";
+import {ensureQualitySelection,secondReviewRequired,reviewQualityView} from "./review-quality-service";
+
+import { EvidenceReviewEligibilityService } from "./evidence-review-eligibility-service";
+import { requireLiveReviewActor } from "./review-calibration-authority";
 
 import { createHash } from "node:crypto";
 
 import { createIdentifier } from "../auth/auth-domain";
+import { evaluatePlatformPermission } from "../authorization/authorization-domain";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import {
   deriveTrustedTenantScope,
@@ -23,8 +28,8 @@ import {
   readSecureFileAccessCore,
   type SecureFileAccessLookup
 } from "../secure-files/secure-file-access-core";
-import type { SecureFileRecord } from "../secure-files/secure-file-domain";
-import { createLocalTestPrivateObjectStorage } from "../secure-files/private-object-storage";
+import { createRuntimePrivateObjectStorage } from "../secure-files/private-object-storage";
+import { secureFileFromRow, type SecureFileRow } from "../secure-files/secure-file-repository";
 import {
   EvidenceReviewAccessError,
   EvidenceReviewConflictError,
@@ -33,7 +38,6 @@ import {
   createReviewConflictId,
   createReviewDecisionId,
   createReviewTaskId,
-  createSupervisorObservationId,
   normalizeOutcome,
   normalizeReason,
   type EvidenceReviewKind,
@@ -55,31 +59,6 @@ type TaskRow = {
   assigned_verifier_account_id: string | null;
   claimed_at: string | Date | null;
   decided_at: string | Date | null;
-  created_at: string | Date;
-  updated_at: string | Date;
-};
-
-type DelegatedSecureFileRow = {
-  file_sequence: number | string;
-  file_id: string;
-  schema_version: number | string;
-  reservation_key: string;
-  owner_account_id: string;
-  owner_role: SecureFileRecord["ownerRole"];
-  tenant_id: string | null;
-  membership_id: string | null;
-  storage_adapter_key: SecureFileRecord["storageAdapterKey"];
-  object_key: string;
-  display_filename: string;
-  lifecycle_status: SecureFileRecord["lifecycleStatus"];
-  file_extension: SecureFileRecord["fileExtension"];
-  declared_mime: SecureFileRecord["declaredMime"];
-  detected_mime: SecureFileRecord["detectedMime"];
-  byte_size: number | string | null;
-  content_sha256: string | null;
-  quarantined_at: string | Date | null;
-  available_at: string | Date | null;
-  unsafe_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -171,6 +150,12 @@ async function auditCaseDecision(
   );
 }
 
+export type EvidenceReviewSkillContext = Readonly<{
+  skillName: string | null; category: string | null; proficiencyClaim: string | null;
+  experienceMonths: number | null; relatedTrade: string | null; assuranceStatus: string;
+  evidenceAvailable: boolean; secureFileId: string | null;
+}>;
+
 export class EvidenceReviewService {
   constructor(private readonly database: DatabaseClient) {}
 
@@ -178,11 +163,11 @@ export class EvidenceReviewService {
     principal: AuthorizationPrincipal,
     query = ""
   ): Promise<readonly EvidenceReviewTask[]> {
-    assertVerifierPrincipal(principal);
+    await requireLiveReviewActor(this.database,principal,"verifier");
     const result = await this.database.query<TaskRow>(
       `SELECT ${TASK_COLUMNS}
          FROM evidence_review_tasks
-        WHERE (task_status='QUEUED' OR assigned_verifier_account_id=$1)
+        WHERE worker_account_id<>$1 AND (task_status='QUEUED' OR assigned_verifier_account_id=$1)
           AND ($2='' OR strpos(lower(concat_ws(' ',task_id,case_id,worker_account_id,
             source_version_id,evidence_kind,task_status,replace(task_status,'_',' '))),lower($2))>0)
         ORDER BY
@@ -192,14 +177,17 @@ export class EvidenceReviewService {
         LIMIT 250`,
       [principal.accountId, query.trim().slice(0, 160)]
     );
-    return Object.freeze(result.rows.map(task));
+    const eligibility = new EvidenceReviewEligibilityService(Promise.resolve(this.database));
+    return Object.freeze(await Promise.all(result.rows.map(async row => Object.freeze({
+      ...task(row), qualityReview:await reviewQualityView(this.database,row.task_id),eligibility: await eligibility.evaluate(principal,row.task_id)
+    }))));
   }
 
   async findTask(
     principal: AuthorizationPrincipal,
     taskId: string
   ): Promise<EvidenceReviewTask | null> {
-    assertVerifierPrincipal(principal);
+    await requireLiveReviewActor(this.database,principal,"verifier");
     const result = await this.database.query<TaskRow>(
       `SELECT ${TASK_COLUMNS}
          FROM evidence_review_tasks
@@ -207,7 +195,49 @@ export class EvidenceReviewService {
           AND (task_status='QUEUED' OR assigned_verifier_account_id=$2)`,
       [taskId, principal.accountId]
     );
-    return result.rows[0] ? task(result.rows[0]) : null;
+    if (!result.rows[0]) return null;
+    return Object.freeze({...task(result.rows[0]),qualityReview:await reviewQualityView(this.database,taskId), eligibility: await new EvidenceReviewEligibilityService(Promise.resolve(this.database)).evaluate(principal,taskId)});
+  }
+
+  private async assignedSkillContext(
+    database: DatabaseClient, principal: AuthorizationPrincipal, taskId: string
+  ): Promise<EvidenceReviewSkillContext | null> {
+    const result = await database.query<{
+      skill_name: string | null; category: string | null; proficiency_claim: string | null;
+      experience_months: number | null; related_trade: string | null; skill_assurance_status: string;
+      evidence_available: boolean; secure_file_id: string | null;
+    }>(
+      `SELECT skills.skill_name,skills.category,skills.proficiency_claim,skills.experience_months,
+        skills.related_trade,skills.skill_assurance_status,tasks.secure_file_id,
+        EXISTS(SELECT 1 FROM worker_evidence_attachments attachments
+          JOIN platform_secure_files files ON files.file_id=attachments.secure_file_id
+           AND files.owner_account_id=records.worker_account_id AND files.owner_role='worker'
+           AND files.lifecycle_status='available'
+          WHERE attachments.record_id=records.record_id AND attachments.version_id=versions.version_id
+           AND attachments.secure_file_id=tasks.secure_file_id AND attachments.superseded_at IS NULL) AS evidence_available
+       FROM evidence_review_tasks tasks
+       JOIN worker_evidence_records records ON records.record_id=tasks.source_record_id
+        AND records.worker_account_id=tasks.worker_account_id AND records.record_kind='skill'
+        AND records.lifecycle_status='active' AND records.current_version_id=tasks.source_version_id
+       JOIN worker_evidence_versions versions ON versions.version_id=tasks.source_version_id
+        AND versions.record_id=records.record_id AND versions.version_status='submitted'
+       JOIN worker_skill_versions skills ON skills.version_id=versions.version_id
+       WHERE tasks.task_id=$1 AND tasks.assigned_verifier_account_id=$2 AND tasks.evidence_kind='skill'
+        AND tasks.task_status='ASSIGNED' AND tasks.worker_account_id<>$2`,
+      [taskId, principal.accountId]
+    );
+    const row=result.rows[0];
+    return row ? Object.freeze({skillName:row.skill_name,category:row.category,proficiencyClaim:row.proficiency_claim,
+      experienceMonths:row.experience_months,relatedTrade:row.related_trade,assuranceStatus:row.skill_assurance_status,
+      evidenceAvailable:row.evidence_available,secureFileId:row.secure_file_id}) : null;
+  }
+
+  async findAssignedSkill(principal: AuthorizationPrincipal, taskId: string): Promise<EvidenceReviewSkillContext | null> {
+    return this.database.transaction(async database => {
+      await liveVerifier(database,principal);
+      await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,new Date(),true);
+      return this.assignedSkillContext(database,principal,taskId);
+    });
   }
 
   async claim(
@@ -217,6 +247,7 @@ export class EvidenceReviewService {
   ): Promise<EvidenceReviewTask> {
     return this.database.transaction(async (database) => {
       await liveVerifier(database, principal);
+      await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,now,true);
       const conflict = await database.query(
         `SELECT 1
            FROM evidence_review_conflicts
@@ -229,6 +260,7 @@ export class EvidenceReviewService {
         );
       }
 
+      await ensureQualitySelection(database,taskId);
       const result = await database.query<TaskRow>(
         `UPDATE evidence_review_tasks
             SET task_status='ASSIGNED',
@@ -246,6 +278,145 @@ export class EvidenceReviewService {
         );
       }
       return task(result.rows[0]);
+    });
+  }
+
+  private async draftTask(database: DatabaseClient, principal: AuthorizationPrincipal, taskId: string, writing: boolean): Promise<TaskRow> {
+    await liveVerifier(database, principal);
+    const result = await database.query<TaskRow>(
+      `SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE task_id=$1
+       AND assigned_verifier_account_id=$2 AND worker_account_id<>$2 FOR UPDATE`,
+      [taskId, principal.accountId]
+    );
+    const row=result.rows[0];
+    if(!row) throw new EvidenceReviewAccessError();
+    const conflict=await database.query("SELECT 1 FROM evidence_review_conflicts WHERE task_id=$1 AND verifier_account_id=$2",[taskId,principal.accountId]);
+    if(conflict.rows[0]) throw new EvidenceReviewAccessError();
+    if(writing && (row.task_status!=="ASSIGNED" || !(await this.sourceIsCurrent(database,row)))) throw new EvidenceReviewConflictError();
+    return row;
+  }
+
+  async findDraftNotes(principal: AuthorizationPrincipal, taskId: string): Promise<Readonly<{revision:number;notes:string;savedAt:string}>|null> {
+    return this.database.transaction(async database=>{
+      await this.draftTask(database,principal,taskId,false);
+      const result=await database.query<{revision:number;notes:string;saved_at:string|Date}>(
+        "SELECT revision,notes,saved_at FROM evidence_review_draft_revisions WHERE task_id=$1 AND verifier_account_id=$2 ORDER BY revision DESC LIMIT 1",[taskId,principal.accountId]);
+      const row=result.rows[0];return row?Object.freeze({revision:row.revision,notes:row.notes,savedAt:iso(row.saved_at)}):null;
+    });
+  }
+
+  async saveDraftNotes(principal: AuthorizationPrincipal, taskId: string, notesValue: unknown, expectedRevision: unknown, now=new Date()): Promise<Readonly<{revision:number;notes:string;savedAt:string}>> {
+    if(typeof notesValue!=="string" || notesValue.trim().length<5 || notesValue.trim().length>4000 ||
+      typeof expectedRevision!=="number" || !Number.isSafeInteger(expectedRevision) || expectedRevision<0 || expectedRevision>=2147483647) throw new EvidenceReviewInputError();
+    const notes=notesValue.trim();
+    return this.database.transaction(async database=>{
+      await this.draftTask(database,principal,taskId,true);
+      const current=await database.query<{revision:number}>("SELECT revision FROM evidence_review_draft_revisions WHERE task_id=$1 AND verifier_account_id=$2 ORDER BY revision DESC LIMIT 1",[taskId,principal.accountId]);
+      if((current.rows[0]?.revision??0)!==expectedRevision) throw new EvidenceReviewConflictError("Draft notes changed; reload before saving.");
+      const revision=expectedRevision+1;
+      await database.query("INSERT INTO evidence_review_draft_revisions(task_id,verifier_account_id,revision,notes,saved_at) VALUES($1,$2,$3,$4,$5)",[taskId,principal.accountId,revision,notes,now.toISOString()]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{
+        action:"verification.draft.saved",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision}
+      });
+      return Object.freeze({revision,notes,savedAt:now.toISOString()});
+    });
+  }
+
+  private async liveEscalationAdmin(database:DatabaseClient,principal:AuthorizationPrincipal):Promise<void>{
+    if(principal.activeRole!=="admin" || principal.accountStatus!=="active" || principal.tenantMembership!==null ||
+      !evaluatePlatformPermission({role:principal.activeRole,permission:"platform.operations.manage"}).allowed) throw new EvidenceReviewAccessError();
+    const result=await database.query(`SELECT 1 FROM auth_sessions sessions JOIN auth_accounts accounts ON accounts.account_id=sessions.account_id
+      JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role='admin'
+      WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role='admin' AND sessions.revoked_at IS NULL
+      AND sessions.expires_at>CURRENT_TIMESTAMP AND accounts.account_status='active' FOR UPDATE OF sessions,accounts`,[principal.sessionId,principal.accountId]);
+    if(!result.rows[0]) throw new EvidenceReviewAccessError();
+  }
+
+  async findResolutionHistory(principal:AuthorizationPrincipal,taskId:string):Promise<readonly Readonly<{revision:number;outcome:string;reason:string;attemptedMethods:string|null;limitations:string|null;destination:string|null}>[]>{
+    return this.database.transaction(async database=>{
+      await this.draftTask(database,principal,taskId,false);
+      const result=await database.query<{revision:number;outcome:string;reason:string;attempted_methods:string|null;limitations:string|null;destination:string|null}>("SELECT revision,outcome,reason,attempted_methods,limitations,destination FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision",[taskId]);
+      return Object.freeze(result.rows.map(row=>Object.freeze({revision:row.revision,outcome:row.outcome,reason:row.reason,attemptedMethods:row.attempted_methods,limitations:row.limitations,destination:row.destination})));
+    });
+  }
+
+  private async reviewBlocker(database:DatabaseClient,caseId:string):Promise<TaskRow|null>{
+    const result=await database.query<TaskRow>(`SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE case_id=$1 AND task_status NOT IN ('APPROVED','SUPERSEDED','CANCELLED')
+      ORDER BY CASE task_status WHEN 'REJECTED' THEN 0 WHEN 'ESCALATED' THEN 1 WHEN 'UNABLE_TO_VERIFY' THEN 2 WHEN 'CHANGES_REQUESTED' THEN 2 ELSE 3 END,created_at,task_id`,[caseId]);
+    for(const candidate of result.rows)if(await this.sourceIsCurrent(database,candidate))return candidate;
+    return null;
+  }
+
+  private reviewBlockerRoute(row:TaskRow):{status:string;owner:string|null;nextAction:string|null}{
+    if(row.task_status==="REJECTED")return {status:"Rejected",owner:null,nextAction:null};
+    if(row.task_status==="ESCALATED")return {status:"Review pending",owner:"admin",nextAction:"Admin must review the reasoned evidence escalation."};
+    if(row.task_status==="UNABLE_TO_VERIFY")return {status:"Evidence pending",owner:"worker",nextAction:"The evidence could not be verified; provide further supporting evidence."};
+    if(row.task_status==="CHANGES_REQUESTED")return {status:"Evidence pending",owner:"worker",nextAction:"Correct the reviewed evidence and submit a new version."};
+    return {status:"Review pending",owner:"reviewer",nextAction:"Wait for the remaining evidence review tasks."};
+  }
+
+  private async recordResolutionCase(database:DatabaseClient,principal:AuthorizationPrincipal,row:TaskRow,now:Date):Promise<void>{
+    if(!row.case_id||!row.tenant_id)return;
+    const old=await database.query<{case_status:string}>("SELECT case_status FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 AND worker_account_id=$3 FOR UPDATE",[row.case_id,row.tenant_id,row.worker_account_id]);
+    if(!old.rows[0])throw new EvidenceReviewAccessError();
+    const blocker=await this.reviewBlocker(database,row.case_id);
+    const route=blocker?this.reviewBlockerRoute(blocker):{status:"Review pending",owner:"reviewer",nextAction:"Review the returned evidence escalation."};
+    await database.query("UPDATE assurance_cases SET case_status=$3,owner_kind=$4,next_action=$5,updated_at=$6,closed_at=CASE WHEN $3='Rejected' THEN COALESCE(closed_at,$6) ELSE closed_at END WHERE case_id=$1 AND tenant_id=$2",[row.case_id,row.tenant_id,route.status,route.owner,route.nextAction,now.toISOString()]);
+    await database.query(`INSERT INTO assurance_case_timeline_events(timeline_event_id,tenant_id,order_id,case_id,event_type,from_status,to_status,owner_kind,next_action,actor_account_id,actor_role,occurred_at)
+      SELECT $1,tenant_id,order_id,case_id,'evidence_review_resolution',$2,$3,$4,$5,$6,$7,$8 FROM assurance_cases WHERE case_id=$9`,[createIdentifier("assurance_event"),old.rows[0].case_status,route.status,route.owner,route.nextAction,principal.accountId,principal.activeRole,now.toISOString(),row.case_id]);
+  }
+
+  async resolveReview(principal:AuthorizationPrincipal,taskId:string,input:{expectedRevision:unknown;outcome:unknown;reason:unknown;attemptedMethods?:unknown;limitations?:unknown;destination?:unknown},now=new Date()):Promise<void>{
+    if(input.outcome!=="UNABLE_TO_VERIFY" && input.outcome!=="ESCALATED") throw new EvidenceReviewInputError();
+    if(typeof input.expectedRevision!=="number" || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision<0 || input.expectedRevision>=2147483647)throw new EvidenceReviewInputError();
+    const outcome=input.outcome,reason=normalizeReason(input.reason);
+    const methods=outcome==="UNABLE_TO_VERIFY"?normalizeReason(input.attemptedMethods):null;
+    const limitations=outcome==="UNABLE_TO_VERIFY"?normalizeReason(input.limitations):null;
+    if(outcome==="ESCALATED" && input.destination!=="admin") throw new EvidenceReviewInputError("Choose the authorized Admin destination.");
+    await this.database.transaction(async database=>{
+      const row=await this.draftTask(database,principal,taskId,true);
+      if(outcome==="UNABLE_TO_VERIFY")await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,now,true);
+      const last=await database.query<{revision:number}>("SELECT revision FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
+      if((last.rows[0]?.revision??0)!==input.expectedRevision)throw new EvidenceReviewConflictError("Review history changed; reload before recording an outcome.");
+      const revision=(last.rows[0]?.revision??0)+1;
+      const resolutionEventId=createIdentifier("review_resolution");
+      await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,attempted_methods,limitations,destination,occurred_at)
+        VALUES($1,$2,$3,$4,$5,'verifier',$6,$7,$8,$9,$10,$11)`,[resolutionEventId,taskId,row.source_version_id,revision,principal.accountId,outcome,reason,methods,limitations,outcome==="ESCALATED"?"admin":null,now.toISOString()]);
+      await database.query("UPDATE evidence_review_tasks SET task_status=$2,decided_at=$3,updated_at=$3 WHERE task_id=$1",[taskId,outcome,now.toISOString()]);
+      if(outcome==="UNABLE_TO_VERIFY" && row.evidence_kind==="identity")await this.applyIndependentDecision(database,row,"UNABLE_TO_VERIFY",now);
+      await this.recordResolutionCase(database,principal,row,now);
+      await database.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",[outcome==="ESCALATED"?"evidence.escalated":"evidence.unable","resolution:"+resolutionEventId]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.resolution.recorded",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision,resolution:outcome,destination:outcome==="ESCALATED"?"admin":null}});
+    });
+  }
+
+  async listEscalations(principal:AuthorizationPrincipal):Promise<readonly Readonly<EvidenceReviewTask&{reason:string;revision:number}>[]>{
+    return this.database.transaction(async database=>{
+      await this.liveEscalationAdmin(database,principal);
+      const result=await database.query<TaskRow&{reason:string;revision:number}>(`SELECT tasks.*,latest.reason,latest.revision FROM evidence_review_tasks tasks
+        JOIN LATERAL(SELECT reason,revision FROM evidence_review_resolution_events WHERE task_id=tasks.task_id AND outcome='ESCALATED' ORDER BY revision DESC LIMIT 1)latest ON TRUE
+        WHERE tasks.task_status='ESCALATED' ORDER BY tasks.updated_at,tasks.task_id LIMIT 250`);
+      return Object.freeze(result.rows.map(row=>Object.freeze({...task(row),reason:row.reason,revision:row.revision})));
+    });
+  }
+
+  async returnEscalation(principal:AuthorizationPrincipal,taskId:string,expectedRevision:unknown,reasonValue:unknown,now=new Date()):Promise<void>{
+    if(typeof expectedRevision!=="number" || !Number.isSafeInteger(expectedRevision) || expectedRevision<1) throw new EvidenceReviewInputError();
+    const reason=normalizeReason(reasonValue);
+    await this.database.transaction(async database=>{
+      await this.liveEscalationAdmin(database,principal);
+      const found=await database.query<TaskRow>(`SELECT ${TASK_COLUMNS} FROM evidence_review_tasks WHERE task_id=$1 AND task_status='ESCALATED' FOR UPDATE`,[taskId]);
+      const row=found.rows[0];if(!row)throw new EvidenceReviewConflictError();
+      const last=await database.query<{revision:number;outcome:string}>("SELECT revision,outcome FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[taskId]);
+      if(last.rows[0]?.revision!==expectedRevision || last.rows[0]?.outcome!=="ESCALATED" || !(await this.sourceIsCurrent(database,row)))throw new EvidenceReviewConflictError();
+      const revision=expectedRevision+1;
+      const resolutionEventId=createIdentifier("review_resolution");
+      await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,occurred_at)
+        VALUES($1,$2,$3,$4,$5,'admin','RETURNED_TO_QUEUE',$6,$7)`,[resolutionEventId,taskId,row.source_version_id,revision,principal.accountId,reason,now.toISOString()]);
+      await database.query("UPDATE evidence_review_tasks SET task_status='QUEUED',assigned_verifier_account_id=NULL,claimed_at=NULL,decided_at=NULL,updated_at=$2 WHERE task_id=$1",[taskId,now.toISOString()]);
+      await this.recordResolutionCase(database,principal,row,now);
+      await database.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["evidence.returned","resolution:"+resolutionEventId]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.escalation.returned",outcome:"succeeded",target:{type:"resource",reference:taskId},metadata:{revision}});
     });
   }
 
@@ -301,13 +472,52 @@ export class EvidenceReviewService {
     });
   }
 
+  private async recordQualityRound(database:DatabaseClient,principal:AuthorizationPrincipal,row:TaskRow,outcome:"APPROVED"|"REJECTED"|"CHANGES_REQUESTED",reason:string,now:Date,options:{assessorVisible?:boolean;confirmTrade?:boolean},resolutionRevision:number):Promise<boolean>{
+    const selection=await ensureQualitySelection(database,row.task_id);
+    if(!selection||!(await secondReviewRequired(database,selection)))return false;
+    const rounds=(await database.query<{quality_review_id:string;outcome:string;confirm_trade:boolean;verifier_account_id:string}>(`SELECT rounds.quality_review_id,rounds.outcome,rounds.confirm_trade,rounds.verifier_account_id FROM evidence_review_quality_rounds rounds
+     WHERE rounds.task_id=$1 AND NOT EXISTS(SELECT 1 FROM evidence_review_conflicts conflicts WHERE conflicts.task_id=rounds.task_id AND conflicts.verifier_account_id=rounds.verifier_account_id) ORDER BY round_no`,[row.task_id])).rows;
+    if(rounds.some(round=>round.verifier_account_id===principal.accountId))throw new EvidenceReviewConflictError("Independent second verification requires another reviewer.");
+    if(rounds.length>=2){
+      const returned=(await database.query<{outcome:string;actor_role:string}>("SELECT outcome,actor_role FROM evidence_review_resolution_events WHERE task_id=$1 ORDER BY revision DESC LIMIT 1",[row.task_id])).rows[0];
+      if(returned?.outcome!=="RETURNED_TO_QUEUE"||returned.actor_role!=="admin")throw new EvidenceReviewConflictError("Admin must authorize independent adjudication after a disagreement.");
+    }
+    const roundNo=(await database.query<{next:number}>("SELECT COALESCE(MAX(round_no),0)::integer+1 AS next FROM evidence_review_quality_rounds WHERE task_id=$1",[row.task_id])).rows[0].next;
+    const id=createIdentifier("quality_review");
+    await database.query(`INSERT INTO evidence_review_quality_rounds(quality_review_id,task_id,source_version_id,framework_version_id,round_no,verifier_account_id,outcome,reason,confirm_trade,assessor_visible,submitted_at)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[id,row.task_id,row.source_version_id,selection.framework_version_id,roundNo,principal.accountId,outcome,reason,options.confirmTrade===true,options.assessorVisible===true,now.toISOString()]);
+    if(rounds.length===0){
+      await database.query("UPDATE evidence_review_tasks SET task_status='QUEUED',assigned_verifier_account_id=NULL,claimed_at=NULL,updated_at=$2 WHERE task_id=$1",[row.task_id,now.toISOString()]);
+      await this.recordResolutionCase(database,principal,row,now);
+      if(row.case_id)await database.query("UPDATE assurance_cases SET next_action='A separate calibrated Verifier must complete the required independent second review.' WHERE case_id=$1 AND owner_kind='reviewer' AND case_status='Review pending'",[row.case_id]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"assurance_case.status.changed",outcome:"succeeded",target:{type:"resource",reference:row.task_id},metadata:{qualityReviewPrimaryId:id,qualityTaskId:row.task_id}});
+      return true;
+    }
+    if(rounds.length===1&&(rounds[0].outcome!==outcome||rounds[0].confirm_trade!==(options.confirmTrade===true))){
+      const eventId=createIdentifier("review_resolution"),disagreement="Independent evidence reviews disagree. Admin must authorize a new independent adjudicator or request corrected evidence.";
+      await database.query(`INSERT INTO evidence_review_resolution_events(event_id,task_id,source_version_id,revision,actor_account_id,actor_role,outcome,reason,destination,occurred_at) VALUES($1,$2,$3,$4,$5,'verifier','ESCALATED',$6,'admin',$7)`,[eventId,row.task_id,row.source_version_id,resolutionRevision+1,principal.accountId,disagreement,now.toISOString()]);
+      await database.query("UPDATE evidence_review_tasks SET task_status='ESCALATED',decided_at=$2,updated_at=$2 WHERE task_id=$1",[row.task_id,now.toISOString()]);
+      await this.recordResolutionCase(database,principal,row,now);
+      await database.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["evidence.escalated","resolution:"+eventId]);
+      await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"verification.resolution.recorded",outcome:"succeeded",target:{type:"resource",reference:row.task_id},metadata:{qualityReviewRoundId:id,revision:resolutionRevision+1,resolution:"ESCALATED",destination:"admin"}});
+      return true;
+    }
+    await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action:"assurance_case.status.changed",outcome:"succeeded",target:{type:"resource",reference:row.task_id},metadata:{qualityReviewRoundId:id,priorQualityReviewIds:rounds.map(round=>round.quality_review_id)}});
+    return false;
+  }
+
   async decide(
     principal: AuthorizationPrincipal,
     taskId: string,
     outcomeValue: unknown,
     reasonValue: unknown,
-    now = new Date()
+    now = new Date(),
+    options: { assessorVisible?: boolean; confirmTrade?: boolean; expectedResolutionRevision?: number } = {}
   ): Promise<void> {
+    if (options.assessorVisible !== undefined && typeof options.assessorVisible !== "boolean") throw new EvidenceReviewInputError();
+    if (options.confirmTrade !== undefined && typeof options.confirmTrade !== "boolean") throw new EvidenceReviewInputError();
+    const expectedResolutionRevision=options.expectedResolutionRevision===undefined?0:options.expectedResolutionRevision;
+    if(!Number.isSafeInteger(expectedResolutionRevision)||expectedResolutionRevision<0||expectedResolutionRevision>2147483647)throw new EvidenceReviewInputError();
     const outcome = normalizeOutcome(outcomeValue);
     const reason = normalizeReason(reasonValue);
 
@@ -326,6 +536,7 @@ export class EvidenceReviewService {
       );
       const row = result.rows[0];
       if (!row) throw new EvidenceReviewAccessError();
+      await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,taskId,now,true);
 
       const conflict = await database.query(
         `SELECT 1
@@ -345,11 +556,31 @@ export class EvidenceReviewService {
         );
       }
 
+      const historyContract=await database.query<{relation:string|null;contract:string|null}>("SELECT to_regclass('evidence_review_resolution_events') AS relation,to_regprocedure('hse_review_resolution_rollback_contract()') AS contract");
+      if(!historyContract.rows[0]?.relation&&historyContract.rows[0]?.contract)throw new EvidenceReviewConflictError("Review history contract is unavailable; finalization is blocked.");
+      const historyRevision=historyContract.rows[0]?.relation
+        ?(await database.query<{revision:number}>("SELECT COALESCE(MAX(revision),0)::INTEGER AS revision FROM evidence_review_resolution_events WHERE task_id=$1",[taskId])).rows[0]?.revision
+        :0;
+      if(historyRevision!==expectedResolutionRevision)throw new EvidenceReviewConflictError("Review history changed; reload before finalizing this task.");
+      const tradeContext = options.confirmTrade === true ? await this.assignedSkillContext(database,principal,taskId) : null;
+      if (options.confirmTrade === true && (outcome !== "APPROVED" || !tradeContext?.relatedTrade ||
+          !tradeContext.evidenceAvailable || !tradeContext.secureFileId)) {
+        throw new EvidenceReviewConflictError("Explicit trade confirmation requires the assigned current skill and available evidence.");
+      }
+      if(await this.recordQualityRound(database,principal,row,outcome,reason,now,options,expectedResolutionRevision))return;
       const inserted = await database.query(
-        `INSERT INTO evidence_review_decisions(
-           decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at
-         ) VALUES($1,$2,$3,$4,$5,$6,$7)
-         ON CONFLICT(task_id) DO NOTHING`,
+        tradeContext
+          ? `INSERT INTO evidence_review_decisions(
+               decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at,assessor_visible,
+               verified_trade,verification_method,verification_source_file_id
+             ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'evidence_review',$10) ON CONFLICT(task_id) DO NOTHING`
+          : options.assessorVisible === true
+          ? `INSERT INTO evidence_review_decisions(
+               decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at,assessor_visible
+             ) VALUES($1,$2,$3,$4,$5,$6,$7,TRUE) ON CONFLICT(task_id) DO NOTHING`
+          : `INSERT INTO evidence_review_decisions(
+               decision_id,task_id,source_version_id,verifier_account_id,outcome,reason,decided_at
+             ) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(task_id) DO NOTHING`,
         [
           createReviewDecisionId(),
           taskId,
@@ -357,7 +588,8 @@ export class EvidenceReviewService {
           principal.accountId,
           outcome,
           reason,
-          now.toISOString()
+          now.toISOString(),
+          ...(tradeContext ? [options.assessorVisible === true, tradeContext.relatedTrade, tradeContext.secureFileId] : [])
         ]
       );
       if (inserted.affectedRows !== 1) {
@@ -545,6 +777,48 @@ export class EvidenceReviewService {
     });
   }
 
+  // Internal producer handoff. Caller keeps acknowledgement and queue insertion
+  // in this same transaction; this method independently binds the live Worker,
+  // signed acknowledged source and active case before deriving shared blockers.
+  async routePendingCaseReview(principal: AuthorizationPrincipal, caseId: string, tenantId: string,
+    workerAccountId: string, observationId: string, now: Date): Promise<void> {
+    if (principal.activeRole !== "worker" || principal.accountStatus !== "active" ||
+        principal.accountId !== workerAccountId || principal.tenantMembership !== null) throw new EvidenceReviewAccessError();
+    const database = this.database;
+    const live = await database.query(`SELECT 1 FROM auth_sessions sessions
+      JOIN auth_accounts accounts ON accounts.account_id=sessions.account_id
+      JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role='worker'
+      WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role='worker'
+        AND sessions.revoked_at IS NULL AND sessions.expires_at>clock_timestamp() AND accounts.account_status='active'
+      FOR UPDATE OF sessions,accounts,roles`,[principal.sessionId,workerAccountId]);
+    if(!live.rows[0])throw new EvidenceReviewAccessError();
+    const current = await database.query<{case_status:string}>(`SELECT case_status FROM assurance_cases
+      WHERE case_id=$1 AND tenant_id=$2 AND worker_account_id=$3 AND closed_at IS NULL
+        AND case_status NOT IN ('Closed','Rejected','Issued') FOR UPDATE`,[caseId,tenantId,workerAccountId]);
+    if(!current.rows[0])throw new EvidenceReviewAccessError();
+    const source=await database.query(`SELECT 1 FROM supervisor_observations observations
+      JOIN supervisor_observation_details details ON details.observation_id=observations.observation_id
+        AND details.supervisor_signed_at IS NOT NULL AND details.worker_acknowledged_at IS NOT NULL
+      JOIN evidence_review_tasks tasks ON tasks.source_record_id=observations.observation_id
+        AND tasks.source_version_id=observations.observation_id AND tasks.evidence_kind='supervisor_observation'
+        AND tasks.case_id=observations.case_id AND tasks.worker_account_id=observations.worker_account_id
+        AND tasks.task_status='QUEUED'
+      WHERE observations.observation_id=$1 AND observations.case_id=$2 AND observations.tenant_id=$3
+        AND observations.worker_account_id=$4 AND observations.observation_status='submitted'`,
+      [observationId,caseId,tenantId,workerAccountId]);
+    if(!source.rows[0])throw new EvidenceReviewAccessError();
+    const blocker=await this.reviewBlocker(database,caseId);
+    if(!blocker)throw new EvidenceReviewConflictError("Acknowledged evidence must retain a current review task.");
+    const route=this.reviewBlockerRoute(blocker);
+    const stillLive=await database.query("SELECT 1 FROM auth_sessions WHERE session_id=$1 AND account_id=$2 AND revoked_at IS NULL AND expires_at>clock_timestamp()",[principal.sessionId,workerAccountId]);
+    if(!stillLive.rows[0])throw new EvidenceReviewAccessError();
+    await database.query("UPDATE assurance_cases SET case_status=$3,owner_kind=$4,next_action=$5,updated_at=$6 WHERE case_id=$1 AND tenant_id=$2",
+      [caseId,tenantId,route.status,route.owner,route.nextAction,now.toISOString()]);
+    await database.query(`INSERT INTO assurance_case_timeline_events(timeline_event_id,tenant_id,order_id,case_id,event_type,from_status,to_status,owner_kind,next_action,actor_account_id,actor_role,occurred_at)
+      SELECT $1,tenant_id,order_id,case_id,'supervisor_observation_acknowledged',$2,$3,$4,$5,$6,'worker',$7 FROM assurance_cases WHERE case_id=$8 AND tenant_id=$9`,
+      [createIdentifier("assurance_event"),current.rows[0].case_status,route.status,route.owner,route.nextAction,workerAccountId,now.toISOString(),caseId,tenantId]);
+  }
+
   private async sourceIsCurrent(
     database: DatabaseClient,
     row: TaskRow
@@ -568,8 +842,9 @@ export class EvidenceReviewService {
       if (!row.case_id) return false;
       const result = await database.query(
         `SELECT 1
-           FROM supervisor_observations
-          WHERE observation_id=$1
+           FROM supervisor_observations observations
+           JOIN supervisor_observation_details details ON details.observation_id=observations.observation_id AND details.worker_acknowledged_at IS NOT NULL
+          WHERE observations.observation_id=$1
             AND case_id=$2
             AND worker_account_id=$3
             AND observation_status='submitted'`,
@@ -596,7 +871,7 @@ export class EvidenceReviewService {
   private async applyIndependentDecision(
     database: DatabaseClient,
     row: TaskRow,
-    outcome: EvidenceReviewOutcome,
+    outcome: EvidenceReviewOutcome | "UNABLE_TO_VERIFY",
     now: Date
   ): Promise<void> {
     if (row.evidence_kind !== "identity") return;
@@ -625,7 +900,7 @@ export class EvidenceReviewService {
     const lifecycleStatus =
       outcome === "APPROVED"
         ? "verified"
-        : outcome === "CHANGES_REQUESTED"
+        : outcome === "CHANGES_REQUESTED" || outcome === "UNABLE_TO_VERIFY"
           ? "more_info"
           : "rejected";
 
@@ -660,7 +935,7 @@ export class EvidenceReviewService {
   private async advanceCase(
     database: DatabaseClient,
     row: TaskRow,
-    outcome: EvidenceReviewOutcome,
+    _outcome: EvidenceReviewOutcome,
     now: Date,
     principal: AuthorizationPrincipal
   ): Promise<void> {
@@ -670,31 +945,20 @@ export class EvidenceReviewService {
     let owner: string | null;
     let nextAction: string | null;
 
-    if (outcome === "CHANGES_REQUESTED") {
-      status = "Evidence pending";
-      owner = "worker";
-      nextAction = "Correct the reviewed evidence and submit a new version.";
-    } else if (outcome === "REJECTED") {
-      status = "Rejected";
-      owner = null;
-      nextAction = null;
+    const old = await database.query<{ case_status: string }>(
+      `SELECT case_status
+         FROM assurance_cases
+        WHERE case_id=$1 AND tenant_id=$2
+        FOR UPDATE`,
+      [row.case_id, row.tenant_id]
+    );
+    if (!old.rows[0]) throw new EvidenceReviewAccessError();
+
+    const pending = await this.reviewBlocker(database,row.case_id);
+    if (pending) {
+      const route=this.reviewBlockerRoute(pending);
+      status=route.status;owner=route.owner;nextAction=route.nextAction;
     } else {
-      const pending = await database.query(
-        `SELECT 1
-           FROM evidence_review_tasks
-          WHERE case_id=$1
-            AND task_id<>$2
-            AND task_status NOT IN (
-              'APPROVED','REJECTED','CHANGES_REQUESTED','SUPERSEDED','CANCELLED'
-            )
-          LIMIT 1`,
-        [row.case_id, row.task_id]
-      );
-      if (pending.rows[0]) {
-        status = "Review pending";
-        owner = "reviewer";
-        nextAction = "Wait for the remaining evidence review tasks.";
-      } else {
         const requirementResult = await database.query<{
           interview_required: boolean;
           assessment_framework_references: unknown;
@@ -762,17 +1026,7 @@ export class EvidenceReviewService {
           owner = "background_job";
           nextAction = "Await framework and effective-policy evaluation.";
         }
-      }
     }
-
-    const old = await database.query<{ case_status: string }>(
-      `SELECT case_status
-         FROM assurance_cases
-        WHERE case_id=$1 AND tenant_id=$2
-        FOR UPDATE`,
-      [row.case_id, row.tenant_id]
-    );
-    if (!old.rows[0]) throw new EvidenceReviewAccessError();
 
     await database.query(
       `UPDATE assurance_cases
@@ -953,8 +1207,9 @@ export class EvidenceReviewService {
         observation_id: string;
         competency_reference: string;
       }>(
-        `SELECT observation_id,competency_reference
-           FROM supervisor_observations
+        `SELECT observations.observation_id,observations.competency_reference
+           FROM supervisor_observations observations
+           JOIN supervisor_observation_details details ON details.observation_id=observations.observation_id AND details.worker_acknowledged_at IS NOT NULL
           WHERE tenant_id=$1
             AND case_id=$2
             AND worker_account_id=$3
@@ -1068,7 +1323,7 @@ export class EvidenceReviewService {
           AND evidence_kind=$2
           AND source_record_id=$3
           AND source_version_id<>$4
-          AND task_status IN ('QUEUED','ASSIGNED')`,
+          AND task_status IN ('QUEUED','ASSIGNED','UNABLE_TO_VERIFY','ESCALATED')`,
       [
         workerAccountId,
         kind,
@@ -1130,65 +1385,6 @@ export class EvidenceReviewService {
     return task(existing.rows[0]);
   }
 
-  async addSupervisorObservation(
-    principal: TenantPermissionPrincipal<"company.orders.manage">,
-    input: {
-      caseId: string;
-      competencyReference: string;
-      observedAt: Date;
-      observationText: string;
-      outcome: string;
-    },
-    now = new Date()
-  ): Promise<string> {
-    const scope = deriveTrustedTenantScope(principal);
-    const competency = input.competencyReference.trim();
-    const observationText = input.observationText.trim();
-    if (
-      competency.length < 2 ||
-      competency.length > 160 ||
-      observationText.length < 20 ||
-      observationText.length > 6000 ||
-      !["demonstrated", "partially_demonstrated", "not_demonstrated"].includes(
-        input.outcome
-      )
-    ) {
-      throw new EvidenceReviewInputError();
-    }
-
-    return this.database.transaction(async (database) => {
-      const assuranceCase = await database.query<{ worker_account_id: string }>(
-        `SELECT worker_account_id
-           FROM assurance_cases
-          WHERE case_id=$1 AND tenant_id=$2`,
-        [input.caseId, scope.tenantId]
-      );
-      if (!assuranceCase.rows[0]) throw new EvidenceReviewAccessError();
-
-      const id = createSupervisorObservationId();
-      await database.query(
-        `INSERT INTO supervisor_observations(
-           observation_id,tenant_id,case_id,worker_account_id,
-           competency_reference,observer_membership_id,observed_at,
-           observation_text,outcome,created_at
-         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [
-          id,
-          scope.tenantId,
-          input.caseId,
-          assuranceCase.rows[0].worker_account_id,
-          competency,
-          scope.membershipId,
-          input.observedAt.toISOString(),
-          observationText,
-          input.outcome,
-          now.toISOString()
-        ]
-      );
-      return id;
-    });
-  }
-
   async preview(
     principal: AuthorizationPrincipal,
     taskId: string,
@@ -1204,13 +1400,6 @@ export class EvidenceReviewService {
       throw new EvidenceReviewAccessError();
     }
     const environment = getServerEnvironment();
-    if (
-      environment.appEnvironment !== "development" &&
-      environment.appEnvironment !== "test"
-    ) {
-      throw new EvidenceReviewAccessError();
-    }
-
     const lookup = this.delegatedLookup(reviewTask);
     const issued = await authorizeSecureFileAccessCore({
       principal,
@@ -1226,54 +1415,55 @@ export class EvidenceReviewService {
       expectedPurpose: "preview",
       signingSecret: environment.sessionSecret,
       repository: lookup,
-      storage: createLocalTestPrivateObjectStorage(environment.appEnvironment),
+      storage: createRuntimePrivateObjectStorage(environment.appEnvironment),
       now
     });
   }
 
   private delegatedLookup(reviewTask: EvidenceReviewTask): SecureFileAccessLookup {
     return {
-      findForPrincipal: async (principal, fileId) => {
-        assertVerifierPrincipal(principal);
-        if (
-          principal.accountId !== reviewTask.assignedVerifierAccountId ||
-          fileId !== reviewTask.secureFileId
-        ) {
-          return null;
-        }
-        const result = await this.database.query<DelegatedSecureFileRow>(
-          `SELECT *
-             FROM platform_secure_files
-            WHERE file_id=$1 AND lifecycle_status='available'`,
-          [fileId]
+      findForPrincipal: async (principal, fileId) => this.database.transaction(async database => {
+        await liveVerifier(database, principal);
+        await new EvidenceReviewEligibilityService(Promise.resolve(database)).assertEligible(principal,reviewTask.taskId,new Date(),true);
+        if (fileId !== reviewTask.secureFileId) return null;
+        const result = await database.query<SecureFileRow>(
+          `SELECT files.*
+             FROM evidence_review_tasks tasks
+             JOIN platform_secure_files files ON files.file_id=tasks.secure_file_id
+               AND files.owner_account_id=tasks.worker_account_id AND files.owner_role='worker'
+               AND files.lifecycle_status='available'
+            WHERE tasks.task_id=$1 AND tasks.assigned_verifier_account_id=$2
+              AND files.file_id=$3 AND tasks.task_status IN ('ASSIGNED','APPROVED','REJECTED','CHANGES_REQUESTED')
+              AND ((tasks.tenant_id IS NULL AND tasks.case_id IS NULL)
+                OR EXISTS(SELECT 1 FROM assurance_cases cases WHERE cases.case_id=tasks.case_id
+                  AND cases.tenant_id=tasks.tenant_id AND cases.worker_account_id=tasks.worker_account_id))
+              AND (
+                (tasks.evidence_kind='identity' AND EXISTS(
+                  SELECT 1 FROM worker_identities identities
+                  JOIN worker_identity_versions versions ON versions.identity_id=identities.identity_id
+                    AND versions.version_number=identities.current_version_number AND versions.version_status='submitted'
+                  JOIN worker_identity_evidence_bindings bindings ON bindings.identity_version_id=versions.identity_version_id
+                    AND bindings.worker_account_id=identities.worker_account_id AND bindings.purpose='identity_document'
+                    AND bindings.binding_status='active' AND bindings.secure_file_id=files.file_id
+                  WHERE identities.identity_id=tasks.source_record_id AND versions.identity_version_id=tasks.source_version_id
+                    AND identities.worker_account_id=tasks.worker_account_id))
+                OR (tasks.evidence_kind IN ('qualification','experience','employment','skill') AND EXISTS(
+                  SELECT 1 FROM worker_evidence_records records
+                  JOIN worker_evidence_versions versions ON versions.record_id=records.record_id
+                    AND versions.version_id=records.current_version_id AND versions.version_status='submitted'
+                  WHERE records.record_id=tasks.source_record_id AND records.worker_account_id=tasks.worker_account_id
+                    AND records.record_kind=tasks.evidence_kind AND versions.version_id=tasks.source_version_id
+                    AND (EXISTS(SELECT 1 FROM worker_evidence_attachments attachments
+                      WHERE attachments.record_id=records.record_id AND attachments.version_id=versions.version_id
+                        AND attachments.secure_file_id=files.file_id AND attachments.superseded_at IS NULL)
+                      OR EXISTS(SELECT 1 FROM worker_employment_leaving_letters letters
+                        WHERE letters.employment_record_id=records.record_id AND letters.employment_version_id=versions.version_id
+                          AND letters.secure_file_id=files.file_id AND letters.status='active'))))
+              )`,
+          [reviewTask.taskId, principal.accountId, fileId]
         );
-        const row = result.rows[0];
-        if (!row) return null;
-        return Object.freeze({
-          sequence: Number(row.file_sequence),
-          fileId: row.file_id,
-          schemaVersion: Number(row.schema_version),
-          reservationKey: row.reservation_key,
-          ownerAccountId: row.owner_account_id,
-          ownerRole: row.owner_role,
-          tenantId: row.tenant_id,
-          membershipId: row.membership_id,
-          storageAdapterKey: row.storage_adapter_key,
-          objectKey: row.object_key,
-          displayFilename: row.display_filename,
-          lifecycleStatus: row.lifecycle_status,
-          fileExtension: row.file_extension,
-          declaredMime: row.declared_mime,
-          detectedMime: row.detected_mime,
-          byteSize: row.byte_size === null ? null : Number(row.byte_size),
-          contentSha256: row.content_sha256,
-          quarantinedAt: maybe(row.quarantined_at),
-          availableAt: maybe(row.available_at),
-          unsafeAt: maybe(row.unsafe_at),
-          createdAt: iso(row.created_at),
-          updatedAt: iso(row.updated_at)
-        }) as SecureFileRecord;
-      }
+        return result.rows[0] ? secureFileFromRow(result.rows[0]) : null;
+      })
     };
   }
 }

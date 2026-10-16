@@ -7,6 +7,7 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const runtime = process.env.HSE_EVIDENCE_REVIEW_RUNTIME_DIST ?? ".evidence-review-runtime-test-dist";
 if (!existsSync(runtime)) {
@@ -41,10 +42,14 @@ const ENV = {
 
 const oid = (prefix, char) => `${prefix}_${char.repeat(24)}`;
 
-async function database(through = "0062_independent_review_backfill") {
+async function database(through = "0107_review_calibration_audit") {
   const db = await openScriptDatabase(ENV);
   await applyMigrationsThrough(db, ENV.releaseSha, through);
   return db;
+}
+async function authorizeAndClaim(db,service,verifier,taskId,at=NOW_DATE) {
+  await authorizeReviewFixture(db,{taskId,verifiers:[verifier],at});
+  return service.claim(verifier,taskId,at);
 }
 
 async function seedAccount(db, { accountId, email, role, sessionId }) {
@@ -325,7 +330,7 @@ test("independent Worker submissions reach Verifier and approve/reject outcomes 
     );
     assert(queue.every((item) => item.tenantId === null && item.caseId === null));
 
-    await service.claim(verifier, qualificationTask.taskId, NOW_DATE);
+    await authorizeAndClaim(db,service,verifier,qualificationTask.taskId,NOW_DATE);
     await service.decide(
       verifier,
       qualificationTask.taskId,
@@ -334,7 +339,7 @@ test("independent Worker submissions reach Verifier and approve/reject outcomes 
       NOW_DATE
     );
 
-    await service.claim(verifier, experienceTask.taskId, NOW_DATE);
+    await authorizeAndClaim(db,service,verifier,experienceTask.taskId,NOW_DATE);
     await service.decide(
       verifier,
       experienceTask.taskId,
@@ -395,7 +400,7 @@ test("independent identity manual review reaches Verifier and approved outcome v
     assert.equal(task.tenantId, null);
     assert.equal(task.caseId, null);
 
-    await service.claim(verifier, task.taskId, NOW_DATE);
+    await authorizeAndClaim(db,service,verifier,task.taskId,NOW_DATE);
     await service.decide(
       verifier,
       task.taskId,
@@ -436,7 +441,7 @@ test("independent identity manual review reaches Verifier and approved outcome v
       const pending = (await db.query("SELECT lock_version FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
       await corrections.submitOwn(worker, Number(pending.lock_version));
       const correctionTask = await service.queueIndependentIdentity(worker, NOW_DATE);
-      await service.claim(verifier, correctionTask.taskId, NOW_DATE);
+      await authorizeAndClaim(db,service,verifier,correctionTask.taskId,NOW_DATE);
       await service.decide(verifier, correctionTask.taskId, outcome, "Independent correction decision with preserved prior verified identity.", NOW_DATE);
       const after = (await db.query("SELECT lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
       assert.equal(after.lifecycle_status, "verified");
@@ -454,7 +459,7 @@ test("independent identity manual review reaches Verifier and approved outcome v
 
 
 test("approved case review automatically creates and assigns a required interview to an active assessor", async () => {
-  const db = await database("0090_interview_worker_availability");
+  const db = await database("0107_review_calibration_audit");
   try {
     const worker = await seedAccount(db, {
       accountId: "account_interview_worker_01",
@@ -479,7 +484,6 @@ test("approved case review automatically creates and assigns a required intervie
     const orderId = oid("assurance_order", "O");
     const targetId = oid("assurance_target", "G");
     const caseId = oid("assurance_case", "C");
-    const observationId = oid("supervisor_observation", "S");
     const taskId = oid("evidence_review", "R");
 
     await db.query(
@@ -511,26 +515,15 @@ test("approved case review automatically creates and assigns a required intervie
        ) VALUES($1,$2,$3,$4,$5,$6,'Review pending','reviewer','Review assigned evidence.',$7,$7)`,
       [caseId, orderId, targetId, tenantId, oid("company_worker_link", "L"), worker.accountId, NOW]
     );
+    const source=await seedEvidence(db,worker.accountId,"qualification","S");
     await db.query(
-      `INSERT INTO supervisor_observations(
-         observation_id,tenant_id,case_id,worker_account_id,competency_reference,
-         observer_membership_id,observed_at,observation_text,outcome,created_at
-       ) VALUES($1,$2,$3,$4,'COMP-INTERVIEW',$5,$6,
-                'Supervisor observed the worker completing the competency safely and independently.',
-                'demonstrated',$6)`,
-      [observationId, tenantId, caseId, worker.accountId, oid("membership", "M"), NOW]
-    );
-    await db.query(
-      `INSERT INTO evidence_review_tasks(
-         task_id,tenant_id,case_id,worker_account_id,evidence_kind,
-         source_record_id,source_version_id,evidence_label,task_status,created_at,updated_at
-       ) VALUES($1,$2,$3,$4,'supervisor_observation',$5,$5,
-                'Interview integration observation','QUEUED',$6,$6)`,
-      [taskId, tenantId, caseId, worker.accountId, observationId, NOW]
+      `INSERT INTO evidence_review_tasks(task_id,tenant_id,case_id,worker_account_id,evidence_kind,source_record_id,source_version_id,evidence_label,task_status,created_at,updated_at)
+       VALUES($1,$2,$3,$4,'qualification',$5,$6,'Interview integration qualification','QUEUED',$7,$7)`,
+      [taskId,tenantId,caseId,worker.accountId,source.recordId,source.versionId,NOW]
     );
 
     const service = new EvidenceReviewService(db);
-    await service.claim(verifier, taskId, NOW_DATE);
+    await authorizeAndClaim(db,service,verifier,taskId,NOW_DATE);
     await service.decide(
       verifier,
       taskId,
@@ -575,7 +568,7 @@ test("returned initial identity creates a locked lineage revision; invalid autho
     await seedManualReviewIdentity(db,worker.accountId);
     const service=new EvidenceReviewService(db);
     const task=await service.queueIndependentIdentity(worker,NOW_DATE);
-    await service.claim(verifier,task.taskId,NOW_DATE);
+    await authorizeAndClaim(db,service,verifier,task.taskId,NOW_DATE);
     await service.decide(verifier,task.taskId,"CHANGES_REQUESTED","The document photograph must be corrected before initial identity verification.",NOW_DATE);
     const { DatabaseWorkerIdentityRepository }=await import(pathToFileURL(join(runtime,"identity","worker-identity-repository.js")).href);
     const repository=new DatabaseWorkerIdentityRepository(Promise.resolve(db));
@@ -597,10 +590,53 @@ test("returned initial identity creates a locked lineage revision; invalid autho
     await db.query("UPDATE worker_identities SET lifecycle_status='manual_review',lock_version=lock_version+1 WHERE identity_id=$1",[revision.identity.identityId]);
     const revisedTask=await service.queueIndependentIdentity(worker,NOW_DATE);
     assert.notEqual(revisedTask.taskId,task.taskId);
-    await service.claim(verifier,revisedTask.taskId,NOW_DATE);
+    await authorizeAndClaim(db,service,verifier,revisedTask.taskId,NOW_DATE);
     await service.decide(verifier,revisedTask.taskId,"APPROVED","Corrected initial identity evidence was independently verified.",NOW_DATE);
     assert.equal((await repository.loadOwn(worker)).identity.lifecycleStatus,"verified");
     assert.equal((await db.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].count,1);
     await assert.rejects(repository.reviseOwn(worker,(await repository.loadOwn(worker)).identity.lockVersion));
   } finally { await db.close(); }
+});
+
+test("Unable-to-verify initial identity becomes revisable more-info without issuing permanent identity",async()=>{
+ const db=await database("0108_review_resolution_notifications");try{
+ const worker=await seedAccount(db,{accountId:"account_neutral_identity_worker",email:"neutral-worker@example.test",role:"worker",sessionId:"session_neutral_identity_worker"});
+ const verifier=await seedAccount(db,{accountId:"account_neutral_identity_verifier",email:"neutral-verifier@example.test",role:"verifier",sessionId:"session_neutral_identity_verifier"});
+ await seedManualReviewIdentity(db,worker.accountId);const service=new EvidenceReviewService(db),task=await service.queueIndependentIdentity(worker,NOW_DATE);await authorizeAndClaim(db,service,verifier,task.taskId,NOW_DATE);
+ await service.resolveReview(verifier,task.taskId,{expectedRevision:0,outcome:"UNABLE_TO_VERIFY",reason:"The issuer could not confirm the identity record.",attemptedMethods:"Contacted the issuing authority and checked available records.",limitations:"The available records do not establish the submitted identity."},NOW_DATE);
+ assert.equal((await db.query("SELECT lifecycle_status FROM worker_identities WHERE worker_account_id=$1",[worker.accountId])).rows[0].lifecycle_status,"more_info");
+ assert.equal((await db.query("SELECT count(*)::int total FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].total,0);
+ const {DatabaseWorkerIdentityRepository}=await import(pathToFileURL(join(runtime,"identity","worker-identity-repository.js")).href);
+ const repository=new DatabaseWorkerIdentityRepository(Promise.resolve(db)),before=await repository.loadOwn(worker);
+ const revision=await repository.reviseOwn(worker,before.identity.lockVersion);assert.equal(revision.currentVersion.parentVersionId,before.currentVersion.identityVersionId);
+ await repository.submitOwn(worker,revision.identity.lockVersion);
+ await db.query("UPDATE worker_identities SET lifecycle_status='automated_checks',lock_version=lock_version+1 WHERE identity_id=$1",[revision.identity.identityId]);
+ await db.query("UPDATE worker_identities SET lifecycle_status='manual_review',lock_version=lock_version+1 WHERE identity_id=$1",[revision.identity.identityId]);
+ const nextTask=await service.queueIndependentIdentity(worker,NOW_DATE);assert.notEqual(nextTask.taskId,task.taskId);
+ assert.equal((await db.query("SELECT outcome FROM evidence_review_resolution_events WHERE task_id=$1",[task.taskId])).rows[0].outcome,"UNABLE_TO_VERIFY");
+
+ }finally{await db.close();}
+});
+
+test("Unable-to-verify identity correction preserves the verified original and permits a new correction request",async()=>{
+ const db=await database("0108_review_resolution_notifications");try{
+ const worker=await seedAccount(db,{accountId:"account_neutral_correction_worker",email:"neutral-correction-worker@example.test",role:"worker",sessionId:"session_neutral_correction_worker"});
+ const verifier=await seedAccount(db,{accountId:"account_neutral_correction_verifier",email:"neutral-correction-verifier@example.test",role:"verifier",sessionId:"session_neutral_correction_verifier"});
+ await seedManualReviewIdentity(db,worker.accountId);const service=new EvidenceReviewService(db);
+ const initial=await service.queueIndependentIdentity(worker,NOW_DATE);await authorizeAndClaim(db,service,verifier,initial.taskId,NOW_DATE);await service.decide(verifier,initial.taskId,"APPROVED","Original identity evidence was independently verified.",NOW_DATE);
+ const original=(await db.query("SELECT current_version_number,lock_version FROM worker_identities WHERE worker_account_id=$1",[worker.accountId])).rows[0];
+ const permanentId=(await db.query("SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].permanent_worker_id;
+ const {DatabaseWorkerIdentityCorrectionRepository}=await import(pathToFileURL(join(runtime,"identity","worker-identity-correction-repository.js")).href);
+ const corrections=new DatabaseWorkerIdentityCorrectionRepository(Promise.resolve(db));
+ await corrections.requestOwn(worker,{reason:"Correct the spelling against preserved identity records.",expectedLockVersion:Number(original.lock_version)});
+ let state=(await db.query("SELECT lock_version FROM worker_identities WHERE worker_account_id=$1",[worker.accountId])).rows[0];await corrections.submitOwn(worker,Number(state.lock_version));
+ const task=await service.queueIndependentIdentity(worker,NOW_DATE);await authorizeAndClaim(db,service,verifier,task.taskId,NOW_DATE);
+ await service.resolveReview(verifier,task.taskId,{expectedRevision:0,outcome:"UNABLE_TO_VERIFY",reason:"The issuer could not independently confirm the proposed correction.",attemptedMethods:"Checked original identity records and contacted the issuer.",limitations:"Issuer could not confirm the revised spelling at this time."},NOW_DATE);
+ const after=(await db.query("SELECT lifecycle_status,current_version_number,lock_version FROM worker_identities WHERE worker_account_id=$1",[worker.accountId])).rows[0];
+ assert.equal(after.lifecycle_status,"verified");assert.equal(after.current_version_number,original.current_version_number);
+ assert.equal((await db.query("SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].permanent_worker_id,permanentId);
+ const history=await corrections.loadOwn(worker);assert.equal(history.decision,"rejected");
+ assert.equal((await db.query("SELECT count(*)::int total FROM evidence_review_decisions WHERE task_id=$1",[task.taskId])).rows[0].total,0);
+ await corrections.requestOwn(worker,{reason:"Provide additional issuer records for a fresh correction.",expectedLockVersion:Number(after.lock_version)});
+ }finally{await db.close();}
 });

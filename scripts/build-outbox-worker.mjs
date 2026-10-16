@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import ts from "typescript";
 
@@ -47,4 +47,8 @@ function compile(path) {
 }
 compile(resolve(root,"outbox/outbox-worker.ts"));
 compile(resolve(root,"database/database.ts"));
+// Report rendering uses only its bundled licensed font assets in the compiled worker.
+if (seen.has(resolve(root,"reports/report-renderer.ts"))) {
+  cpSync(resolve(root,"reports/fonts"),resolve(out,"reports/fonts"),{recursive:true});
+}
 console.log("Outbox worker compiled from the real server graph.");

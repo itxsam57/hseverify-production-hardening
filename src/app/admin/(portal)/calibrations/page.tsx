@@ -1,4 +1,6 @@
 import { recordStaffCalibrationAction } from "./actions";
+import Link from "next/link";
+import { getEvidenceReviewFrameworkService } from "@/lib/review/evidence-review-framework-service";
 
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { getStaffCalibrationService } from "@/lib/review/staff-calibration-service";
@@ -11,9 +13,10 @@ export default async function AdminCalibrationsPage({
   const params = await searchParams;
   const principal = await requirePortalAuthorization("admin");
   const service = getStaffCalibrationService();
-  const [staff, calibrations] = await Promise.all([
+  const [staff, calibrations, frameworks] = await Promise.all([
     service.listStaff(principal),
-    service.listAll(principal)
+    service.listAll(principal),
+    getEvidenceReviewFrameworkService().listFrameworks(principal)
   ]);
   return (
     <div className="dashboard-page">
@@ -26,6 +29,7 @@ export default async function AdminCalibrationsPage({
       </div></header>
       {params.result === "recorded" ? <p className="status-banner status-success" role="status">Calibration recorded.</p> : null}
       {params.error ? <p className="status-banner status-error" role="alert">{params.error}</p> : null}
+      <p><Link href="/admin/review-frameworks">Resolve evidence-review framework bindings</Link></p>
       <section className="surface-card">
         <h2>Record calibration</h2>
         <form action={recordStaffCalibrationAction} className="form-grid">
@@ -34,7 +38,8 @@ export default async function AdminCalibrationsPage({
             {staff.map((item) => <option key={item.accountId + item.role} value={item.accountId}>{item.displayName} · {item.role} · {item.email}</option>)}
           </select></label>
           <label>Role<select name="role" defaultValue="verifier"><option value="verifier">Verifier</option><option value="assessor">Assessor</option></select></label>
-          <label>Framework reference<input name="frameworkReference" required maxLength={180} /></label>
+          <label>Framework reference<select name="frameworkReference" required defaultValue=""><option value="" disabled>Select authoritative framework</option>{Array.from(new Set(frameworks.map(item=>item.frameworkReference))).map(reference=><option key={reference} value={reference}>{reference}</option>)}</select></label>
+          <label>Framework revision<select name="frameworkVersionId" required defaultValue=""><option value="" disabled>Select revision</option>{frameworks.map(item=><option key={item.frameworkVersionId} value={item.frameworkVersionId}>{item.frameworkReference} · version {item.versionNo} · {item.title}</option>)}</select></label>
           <label>Status<select name="status" defaultValue="CURRENT"><option value="CURRENT">Current</option><option value="FAILED">Failed</option><option value="SUSPENDED">Suspended</option><option value="EXPIRED">Expired</option></select></label>
           <label>Valid from<input name="validFrom" type="datetime-local" required /></label>
           <label>Valid until<input name="validUntil" type="datetime-local" required /></label>
