@@ -64,7 +64,13 @@ export class ReviewQualityService{
   if(!Number.isInteger(input.maxOpenReviews)||input.maxOpenReviews<1||input.maxOpenReviews>250||!Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<0||reason.length<5||reason.length>2000)throw new ReviewQualityInputError("Select a capacity from 1 to 250 and give a reason.");
   await this.database.transaction(async database=>{
    await requireLiveReviewActor(database,principal,"admin",true);
-   const verifier=(await database.query("SELECT 1 FROM auth_account_roles roles JOIN auth_accounts accounts USING(account_id) WHERE roles.account_id=$1 AND roles.role='verifier' AND accounts.account_status='active'",[input.accountId])).rows[0];
+   // Enrollment completion/cancellation holds these rows before touching the account.
+   // Serialize here too so an unfinished identity cannot acquire retained history.
+   await database.query("SELECT flow_id FROM auth_staff_enrollment_flows WHERE account_id=$1 ORDER BY flow_id FOR UPDATE",[input.accountId]);
+   const verifier=(await database.query(`SELECT 1 FROM auth_account_roles roles JOIN auth_accounts accounts USING(account_id)
+    WHERE roles.account_id=$1 AND roles.role='verifier' AND accounts.account_status='active'
+      AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete')
+    FOR NO KEY UPDATE OF accounts,roles`,[input.accountId])).rows[0];
    if(!verifier)throw new EvidenceReviewAccessError();
    const current=await reviewerCapacity(database,input.accountId,true);
    if(!current||current.revision!==input.expectedRevision)throw new EvidenceReviewConflictError("Reviewer capacity changed; reload before saving.");
@@ -81,7 +87,7 @@ export class ReviewQualityService{
    LEFT JOIN evidence_review_quality_selections selections USING(task_id)
    WHERE tasks.task_status IN ('QUEUED','ASSIGNED','ESCALATED') ORDER BY tasks.created_at,tasks.task_id LIMIT 100`)).rows;
   const rounds=(await this.database.query<{task_id:string;round_no:number;outcome:string;reason:string;verifier_account_id:string}>(`SELECT rounds.task_id,rounds.round_no,rounds.outcome,rounds.reason,rounds.verifier_account_id FROM evidence_review_quality_rounds rounds JOIN evidence_review_tasks tasks USING(task_id) WHERE rounds.task_id=ANY($1::text[]) ORDER BY rounds.task_id,rounds.round_no`,[tasks.map(task=>task.task_id)])).rows;
-  const accounts=(await this.database.query<{account_id:string;display_name:string}>(`SELECT accounts.account_id,accounts.display_name FROM auth_accounts accounts JOIN auth_account_roles roles USING(account_id) WHERE accounts.account_status='active' AND roles.role='verifier' ORDER BY accounts.display_name,accounts.account_id`)).rows;
+  const accounts=(await this.database.query<{account_id:string;display_name:string}>(`SELECT accounts.account_id,accounts.display_name FROM auth_accounts accounts JOIN auth_account_roles roles USING(account_id) WHERE accounts.account_status='active' AND roles.role='verifier' AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete') ORDER BY accounts.display_name,accounts.account_id`)).rows;
   const reviewers=[];
   for(const account of accounts)reviewers.push({...account,capacity:await reviewerCapacity(this.database,account.account_id)});
   return {tasks:tasks.map(task=>({...task,rounds:rounds.filter(round=>round.task_id===task.task_id)})),reviewers};

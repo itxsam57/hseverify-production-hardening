@@ -86,7 +86,7 @@
     "test:secure-files-platform": "node --test tests/platform/secure-file-foundation.test.mjs tests/platform/secure-file-concurrency.test.mjs tests/platform/secure-file-migration-stack.test.mjs",
     "test:secure-upload-platform": "node --test tests/platform/secure-file-upload-quarantine.test.mjs tests/platform/secure-file-upload-concurrency.test.mjs tests/platform/secure-file-upload-migration-stack.test.mjs",
     "test:secure-scan-platform": "node --test tests/platform/secure-file-scan-migration-stack.test.mjs",
-    "test:registration-platform": "node --test tests/platform/worker-registration-foundation.test.mjs tests/platform/worker-registration-concurrency.test.mjs tests/platform/worker-registration-routes.test.mjs tests/platform/worker-registration-flow-sql.test.mjs",
+    "test:registration-platform": "node --test tests/platform/worker-registration-foundation.test.mjs tests/platform/worker-registration-concurrency.test.mjs tests/platform/worker-registration-routes.test.mjs tests/platform/worker-registration-flow-sql.test.mjs tests/platform/reviewer-capacity-account-lifecycle.test.mjs tests/platform/reviewer-capacity-staff-enrollment.test.mjs",
     "test:registration-owner-repair": "node --test tests/platform/worker-registration-owner-repair.test.mjs",
     "test:auth-completion": "node --test tests/platform/authentication-completion.test.mjs tests/platform/authentication-invitation-expiry.test.mjs tests/platform/authentication-portal-isolation.test.mjs tests/platform/authentication-signed-out-proxy.test.mjs tests/platform/authentication-failure-state-sql.test.mjs",
     "test:profile-overflow": "node --test tests/platform/profile-overflow-contract.test.mjs",

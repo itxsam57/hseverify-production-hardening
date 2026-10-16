@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {openScriptDatabase} from "../../scripts/lib/database.mjs";
-import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
+import {applyPendingMigrations} from "../../scripts/lib/migrations.mjs";
+import {assertRegistrationCapacityLifecycle} from "../helpers/registration-capacity-lifecycle.mjs";
+import {assertStaffCapacityLifecycle} from "../helpers/staff-capacity-lifecycle.mjs";
 import {reviewQualityFixture} from "../helpers/review-quality-fixture.mjs";
 import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
 const {ReviewQualityService}=loadWorkerRegistrationTs("src/lib/review/review-quality-service.ts");
@@ -13,9 +15,29 @@ test("Actual PostgreSQL two-client reviewer capacity admits one claim and preser
  const environment={databaseDriver:"postgres",databaseUrl:url.href};const admin=await openScriptDatabase(environment);await admin.execute('CREATE DATABASE "'+name+'"');url.pathname="/"+name;
  const first=await openScriptDatabase({...environment,databaseUrl:url.href}),second=await openScriptDatabase({...environment,databaseUrl:url.href});
  try{
-  await applyMigrationsThrough(first,"postgres-review-capacity","0120_review_recovery_notifications");
+  await applyPendingMigrations(first,"postgres-review-capacity");
+  await assertRegistrationCapacityLifecycle(first);
+  await assertStaffCapacityLifecycle(first,second);
   const f=await reviewQualityFixture({database:first}),a=await f.queue("CAPACITY-A"),b=await f.queue("CAPACITY-B"),reviewer=f.verifiers[0];
   await new ReviewQualityService(first).setCapacity(f.admin,{accountId:reviewer.accountId,maxOpenReviews:1,expectedRevision:0,reason:"One open review is the explicit two-client contention limit."});
+  // A producer holds capacity before inserting its account FK. Settings must not
+  // block that FK while waiting for the same mutex (account/mutex inversion).
+  let settings;
+  const expectedRevision=(await first.query("SELECT capacity_sequence::int AS revision FROM reviewer_capacity_revisions WHERE account_id=$1 ORDER BY capacity_sequence DESC LIMIT 1",[reviewer.accountId])).rows[0].revision;
+  await first.transaction(async tx=>{
+   await tx.query("SELECT account_id FROM reviewer_capacity_locks WHERE account_id=$1 FOR UPDATE",[reviewer.accountId]);
+   settings=new ReviewQualityService(second).setCapacity(f.admin,{accountId:reviewer.accountId,maxOpenReviews:1,expectedRevision,reason:"Keep the verified single review limit without blocking producer foreign keys."}).then(()=>({ok:true}),error=>({error}));
+   let waiting=false;
+   for(let i=0;i<100;i++){
+    await tx.query("SELECT pg_stat_clear_snapshot()");
+    waiting=Boolean((await tx.query("SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE 'SELECT account_id FROM reviewer_capacity_locks%' ")).rows[0]);
+    if(waiting)break;
+    await new Promise(resolve=>setTimeout(resolve,20));
+   }
+   assert.equal(waiting,true,"settings must reach and wait at the producer-held mutex");
+   await tx.query("SELECT account_id FROM auth_accounts WHERE account_id=$1 FOR KEY SHARE NOWAIT",[reviewer.accountId]);
+  });
+  const settingResult=await settings;assert.equal(settingResult.ok,true,settingResult.error?.message);
   const results=await Promise.allSettled([f.review.claim(reviewer,a.taskId),new EvidenceReviewService(second).claim(reviewer,b.taskId)]);
   assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
   assert.match(results.find(r=>r.status==='rejected').reason.message,/REVIEWER_CAPACITY_REACHED/);
