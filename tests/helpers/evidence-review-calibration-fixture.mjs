@@ -27,7 +27,7 @@ export async function prepareReviewCalibrationFixture(database,{verifiers,refere
  await database.query("UPDATE auth_sessions SET revoked_at=$2,revocation_reason='Calibration fixture setup complete' WHERE session_id=$1",[admin.sessionId,at.toISOString()]);
  return {frameworkId,frameworkVersionId,frameworkReference:reference};
 }
-export async function authorizeReviewFixture(database,{taskId,verifiers,at=new Date()}){
+export async function authorizeReviewFixture(database,{taskId,verifiers,assessors=[],at=new Date()}){
  const suffix=randomBytes(18).toString("base64url"),accountId="account_"+suffix,sessionId="session_"+suffix;
  const from=new Date("2000-01-01T00:00:00.000Z"),until=new Date("2099-01-01T00:00:00.000Z"),reference="TEST-REVIEW-"+suffix;
  await database.query(`INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,'Fixture Calibration Admin','active','scrypt$16384$8$1$salt$hash',$3,$3,$3,$3)`,[accountId,suffix+"@calibration.test",from.toISOString()]);
@@ -45,6 +45,7 @@ export async function authorizeReviewFixture(database,{taskId,verifiers,at=new D
  const binding=(await database.query("SELECT binding_id FROM evidence_review_framework_bindings WHERE task_id=$1 ORDER BY binding_sequence DESC LIMIT 1",[taskId])).rows[0];
  if(!binding)await frameworks.bind(admin,{taskId,frameworkVersionId:revision.framework_version_id,reason:"Explicit approved applicability for the representative test journey.",expectedBindingId:null},at);
  for(const verifier of verifiers)await new StaffCalibrationService(Promise.resolve(database)).record(admin,{accountId:verifier.accountId,role:"verifier",frameworkReference:revision.framework_reference,frameworkVersionId:revision.framework_version_id,status:"CURRENT",validFrom:new Date(revision.effective_from),validUntil:until,note:"Observed benchmark calibration against this exact authoritative revision."});
+ for(const assessor of assessors)await new StaffCalibrationService(Promise.resolve(database)).record(admin,{accountId:assessor.accountId,role:"assessor",frameworkReference:revision.framework_reference,frameworkVersionId:revision.framework_version_id,status:"CURRENT",validFrom:new Date(revision.effective_from),validUntil:until,note:"Observed interview calibration against this exact pinned authoritative revision."});
  // The fixture Admin exists only to exercise the real authorized producers above.
  // Remove its live operational authority so unrelated recipient-routing tests do not
  // gain an extra Admin simply because calibration setup was required.

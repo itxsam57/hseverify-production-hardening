@@ -12,6 +12,7 @@ import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { ATTEMPT_NOW, seedInProgressAttempt, seedWorkerPrincipal, stableId } from "../helpers/assessment-attempt-fixture.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
+const { StaffCalibrationService } = loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");
 const { AssessmentAttemptService } = loadWorkerRegistrationTs("src/lib/assessment-attempt/assessment-attempt-service.ts");
 
 const PASSWORD="AssignedWork!2026", SANDBOX_KEY="assigned-work-browser-key-2026";
@@ -63,11 +64,6 @@ async function seed(dir){
    {questionType:"LONG_TEXT",prompt:"Explain the hazard isolation controls for the assigned task.",rubric:{maxScore:10,criteria:[{description:"Hazard controls",points:10}]}}
   ]);
   await db.query("UPDATE assurance_orders SET interview_required=TRUE WHERE order_id=$1",[scoring.orderId]);
-  const submitted=await new AssessmentAttemptService(db).submitCurrentAnswer(scoringWorker,{
-   attemptId:scoring.attemptId,position:1,answer:"Stop work, isolate every energy source, lock out, tag out and verify zero energy before starting."
-  },new Date(ATTEMPT_NOW),null);
-  assert.equal(submitted.submitted,true);
-  await db.query("UPDATE assurance_cases SET case_status='Review pending',owner_kind='reviewer',next_action='Review written assessment.' WHERE case_id=$1",[scoring.caseId]);
   const framework=(await db.query("SELECT framework_id FROM assessment_blueprint_versions WHERE blueprint_version_id=$1",[scoring.blueprintVersionId])).rows[0].framework_id;
   let revision=(await db.query("SELECT framework_version_id,framework_reference FROM assurance_framework_revisions WHERE framework_id=$1 ORDER BY version_no DESC LIMIT 1",[framework])).rows[0];
   if(!revision){
@@ -79,9 +75,19 @@ async function seed(dir){
   await db.query("INSERT INTO assurance_case_policy_snapshots(snapshot_id,case_id,tenant_id,framework_id,policy_id,global_policy_version_id,policy_source,effective_value_json,reference_time) VALUES($1,$2,$3,$4,$5,$6,'GLOBAL',$7::jsonb,$8)",[
    stableId("policy_snapshot","assigned-staff-scoring"),scoring.caseId,scoring.tenantId,framework,stableId("policy","assigned-staff-scoring"),stableId("policy_version","assigned-staff-scoring"),JSON.stringify({pass_mark:80}),ATTEMPT_NOW
   ]);
-  await db.query("INSERT INTO staff_calibrations(calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,note,recorded_by_account_id,framework_id,framework_version_id) VALUES($1,$2,'verifier',$3,'CURRENT',$4,'2099-01-01T00:00:00.000Z','Current exact pinned scoring calibration.',$2,$5,$6)",[
-   stableId("staff_calibration","assigned-staff-scoring"),by["verifier.assigned@example.test"],revision.framework_reference,ATTEMPT_NOW,framework,revision.framework_version_id
-  ]);
+  const calibrationBase=await seedWorkerPrincipal(db,"assigned-staff-calibration-admin");
+  await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[calibrationBase.accountId]);
+  await db.query("UPDATE auth_sessions SET active_role='admin' WHERE session_id=$1",[calibrationBase.sessionId]);
+  const calibrationAdmin={...calibrationBase,activeRole:"admin"};
+  for(const role of ["verifier","assessor"])await new StaffCalibrationService(Promise.resolve(db)).record(calibrationAdmin,{
+   accountId:by[role+".assigned@example.test"],role,frameworkReference:revision.framework_reference,frameworkVersionId:revision.framework_version_id,
+   status:"CURRENT",validFrom:new Date(),validUntil:new Date("2099-01-01T00:00:00.000Z"),note:"Current staff calibration before the actual assigned assessment submission."
+  });
+  await db.query("DELETE FROM auth_account_roles WHERE account_id=$1 AND role='admin'",[calibrationAdmin.accountId]);
+  const submitted=await new AssessmentAttemptService(db).submitCurrentAnswer(scoringWorker,{
+   attemptId:scoring.attemptId,position:1,answer:"Stop work, isolate every energy source, lock out, tag out and verify zero energy before starting."
+  },new Date(ATTEMPT_NOW),null);
+  assert.equal(submitted.submitted,true);
   const reviewRow=(await db.query("SELECT review_id,reviewer_account_id,rubric_version FROM written_score_reviews WHERE attempt_id=$1 AND status='DRAFT'",[scoring.attemptId])).rows[0];
   assert.ok(reviewRow,"Assessment submission must queue a written scoring review.");
   assert.equal(reviewRow.reviewer_account_id,by["verifier.assigned@example.test"]);

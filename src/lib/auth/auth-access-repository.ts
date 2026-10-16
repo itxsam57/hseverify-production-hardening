@@ -428,6 +428,19 @@ export class AuthAccessRepository {
   async findRecoveryFlowForUpdate(
     tokenHash: string
   ): Promise<RecoveryFlow | null> {
+    // Request invalidation locks account then flow. Match that order before any
+    // reset/resend can retain a flow lock and subsequently update its account.
+    const account = await this.database.query<{ account_id: string }>(
+      `SELECT accounts.account_id
+       FROM auth_accounts accounts
+       WHERE accounts.account_id = (
+         SELECT flows.account_id FROM auth_recovery_flows flows WHERE flows.token_hash = $1
+       )
+       FOR UPDATE OF accounts`,
+      [tokenHash]
+    );
+    if (!account.rows[0]) return null;
+    // Re-read and lock after waiting; callers still validate consumption/expiry.
     const result = await this.database.query<RecoveryFlowRow>(
       `SELECT ${RECOVERY_COLUMNS}
        FROM auth_recovery_flows

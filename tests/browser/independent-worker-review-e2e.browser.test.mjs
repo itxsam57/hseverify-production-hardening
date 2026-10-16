@@ -546,7 +546,17 @@ test(
               ended.getByRole("button", { name: "Upload leaving letter" }).click()
             ]);
             await worker.reload({ waitUntil: "domcontentloaded" });
-            await worker.getByText(/Leaving letter: .* · active/).waitFor({ timeout: 15_000 });
+            const activeLeavingLetter = ended.getByText(/Leaving letter: .* · active/);
+            // Leaving letters share the asynchronous scan queue with evidence files.
+            // Use the same visible recovery control instead of assuming immediate binding.
+            for (let attempt = 0; attempt < 20 && !(await activeLeavingLetter.count()); attempt += 1) {
+              await Promise.all([
+                worker.waitForResponse(response => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
+                ended.getByRole("button", {name:"Check scan status",exact:true}).click()
+              ]);
+              await worker.reload({waitUntil:"domcontentloaded"});
+            }
+            await activeLeavingLetter.waitFor({ timeout: 15_000 });
 
             await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
             await worker.getByRole("heading", { level: 1, name: /Welcome,/ }).waitFor({ timeout: 20_000 });

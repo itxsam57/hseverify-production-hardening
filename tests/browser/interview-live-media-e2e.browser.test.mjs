@@ -192,7 +192,7 @@ test(
         },caseId),2);
         queuedEvidence=(await seedDatabase.query("SELECT task_id,evidence_kind FROM evidence_review_tasks WHERE case_id=$1 ORDER BY evidence_kind",[caseId])).rows;
         for (const task of queuedEvidence) {
-          await authorizeReviewFixture(seedDatabase,{taskId:task.task_id,verifiers:[{accountId:credentials.verifier.accountId}],at:new Date()});
+          await authorizeReviewFixture(seedDatabase,{taskId:task.task_id,verifiers:[{accountId:credentials.verifier.accountId}],assessors:[{accountId:credentials.assessor.accountId}],at:new Date()});
         }
 
       } finally {
@@ -281,10 +281,11 @@ test(
               .getByText(/Ready checks and required consent are recorded/i)
               .waitFor({ timeout: 20_000 });
 
-            await assessor.goto(
+            const assignedDetail = await assessor.goto(
               `${baseUrl}/assessor/interviews/${interviewRequestId}`,
               { waitUntil: "domcontentloaded" }
             );
+            assert.equal(assignedDetail.status(),200,"Calibrated assigned Assessor must reach its real interview detail.");
             await assessor
               .getByRole("button", { name: "Claim interview" })
               .click();

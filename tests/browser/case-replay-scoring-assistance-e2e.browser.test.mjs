@@ -17,6 +17,10 @@ import {
   stableId
 } from "../helpers/assessment-attempt-fixture.mjs";
 
+import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
+const { StaffCalibrationService } = loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");
+const { AssessmentAttemptService } = loadWorkerRegistrationTs("src/lib/assessment-attempt/assessment-attempt-service.ts");
+
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function decode32(value) {
@@ -91,44 +95,34 @@ async function seedWrittenReview(dataDirectory, reviewerAccountId) {
         }
       }]
     );
-    const item = fixture.items[0];
-    await db.query(
-      `INSERT INTO assessment_attempt_answers(
-         answer_id,attempt_id,form_id,form_item_id,position,question_id,question_version_id,
-         question_type,text_value,boolean_value,numeric_value,committed_at
-       ) VALUES($1,$2,$3,$4,1,$5,$6,'LONG_TEXT',$7,NULL,NULL,$8)`,
-      [
-        stableId("assessment_answer", "browser-ai-replay-answer"),
-        fixture.attemptId,
-        fixture.formId,
-        item.formItemId,
-        item.questionId,
-        item.questionVersionId,
-        "Stop the job, identify all hazardous energy, isolate and lock out each source, then test for zero energy before maintenance starts.",
-        ATTEMPT_NOW
-      ]
-    );
-    await db.query(
-      `UPDATE assessment_attempts
-          SET status='SUBMITTED',current_position=question_count,submitted_at=$2,updated_at=$2
-        WHERE attempt_id=$1`,
-      [fixture.attemptId, ATTEMPT_NOW]
-    );
-    const reviewId = stableId("written_score", "browser-ai-replay-review");
-    await db.query(
-      `INSERT INTO written_score_reviews(
-         review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,
-         score,decision,reason,status,created_at
-       ) VALUES($1,$2,$3,$4,$5,'rubric-v1',NULL,NULL,'Awaiting human review.','DRAFT',$6)`,
-      [
-        reviewId,
-        fixture.tenantId,
-        fixture.caseId,
-        fixture.attemptId,
-        reviewerAccountId,
-        ATTEMPT_NOW
-      ]
-    );
+    const framework=(await db.query("SELECT framework_id FROM assessment_blueprint_versions WHERE blueprint_version_id=$1",[fixture.blueprintVersionId])).rows[0].framework_id;
+    let revision=(await db.query("SELECT framework_version_id,framework_reference FROM assurance_framework_revisions WHERE framework_id=$1 ORDER BY version_no DESC LIMIT 1",[framework])).rows[0];
+    if(!revision){
+      const meta=(await db.query("SELECT framework_reference,title FROM assurance_frameworks WHERE framework_id=$1",[framework])).rows[0];
+      const frameworkVersionId=stableId("framework_revision","browser-ai-replay-case");
+      await db.query("INSERT INTO assurance_framework_revisions(framework_version_id,framework_id,version_no,framework_reference,title,effective_from,recorded_by_account_id,created_at) VALUES($1,$2,1,$3,$4,$5,$6,$5)",[frameworkVersionId,framework,meta.framework_reference,meta.title,ATTEMPT_NOW,reviewerAccountId]);
+      revision={framework_version_id:frameworkVersionId,framework_reference:meta.framework_reference};
+    }
+    await db.query("INSERT INTO assurance_case_policy_snapshots(snapshot_id,case_id,tenant_id,framework_id,policy_id,global_policy_version_id,policy_source,effective_value_json,reference_time) VALUES($1,$2,$3,$4,$5,$6,'GLOBAL',$7::jsonb,$8)",[
+      stableId("policy_snapshot","browser-ai-replay-case"),fixture.caseId,fixture.tenantId,framework,stableId("policy","browser-ai-replay-case"),stableId("policy_version","browser-ai-replay-case"),JSON.stringify({pass_mark:80}),ATTEMPT_NOW
+    ]);
+    const calibrationBase=await seedWorkerPrincipal(db,"browser-ai-replay-calibration-admin");
+    await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[calibrationBase.accountId]);
+    await db.query("UPDATE auth_sessions SET active_role='admin' WHERE session_id=$1",[calibrationBase.sessionId]);
+    await new StaffCalibrationService(Promise.resolve(db)).record({...calibrationBase,activeRole:"admin"},{
+      accountId:reviewerAccountId,role:"verifier",frameworkReference:revision.framework_reference,frameworkVersionId:revision.framework_version_id,
+      status:"CURRENT",validFrom:new Date(),validUntil:new Date("2099-01-01T00:00:00.000Z"),note:"Current exact framework calibration before actual assessment submission."
+    });
+    await db.query("DELETE FROM auth_account_roles WHERE account_id=$1 AND role='admin'",[calibrationBase.accountId]);
+    const submitted=await new AssessmentAttemptService(db).submitCurrentAnswer(worker,{
+      attemptId:fixture.attemptId,position:1,answer:"Stop the job, identify all hazardous energy, isolate and lock out each source, then test for zero energy before maintenance starts."
+    },new Date(ATTEMPT_NOW),null);
+    assert.equal(submitted.submitted,true);
+    const review=(await db.query("SELECT review_id,reviewer_account_id,rubric_version FROM written_score_reviews WHERE attempt_id=$1 AND status='DRAFT'",[fixture.attemptId])).rows[0];
+    assert.ok(review,"Actual submission must create the written scoring assignment.");
+    assert.equal(review.reviewer_account_id,reviewerAccountId);
+    assert.equal(review.rubric_version,fixture.blueprintVersionId);
+    const reviewId=review.review_id;
     return { ...fixture, reviewId };
   } finally {
     await db.close();
@@ -208,29 +202,45 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           }
           await row.waitFor({ state: "visible", timeout: 15_000 });
 
-          const scoreInput = row.getByRole("spinbutton", { name: "Score", exact: true });
-          assert.equal(await scoreInput.inputValue(), "");
+          const criterionInputs = row.getByRole("spinbutton", { name: "Criterion mark", exact: true });
+          assert.equal(await criterionInputs.count(),2);
+          assert.deepEqual(await criterionInputs.evaluateAll(inputs=>inputs.map(input=>input.value)),["",""]);
+          await row.getByText("Overall score: Save every rubric criterion first",{exact:true}).waitFor();
           await row.getByRole("button", { name: "Generate sandbox AI suggestion" }).click();
           await row.getByText(/SANDBOX · GENERATED/).waitFor({ timeout: 15_000 });
           await row.getByText(/Suggested overall: .*guidance only/).waitFor();
-          assert.equal(await scoreInput.inputValue(), "");
+          assert.deepEqual(await criterionInputs.evaluateAll(inputs=>inputs.map(input=>input.value)),["",""]);
+          await row.getByText("Overall score: Save every rubric criterion first",{exact:true}).waitFor();
 
           await row.getByLabel("Guidance review reason").fill(
             "Useful comparison point, but the human rubric decision remains authoritative."
           );
           await row.getByRole("button", { name: "Record AI guidance review" }).click();
           await row.getByText(/SANDBOX · ACCEPTED AS GUIDANCE/).waitFor({ timeout: 15_000 });
-          assert.equal(await row.getByRole("spinbutton", { name: "Score", exact: true }).inputValue(), "");
+          assert.deepEqual(await criterionInputs.evaluateAll(inputs=>inputs.map(input=>input.value)),["",""]);
+          await row.getByText("Overall score: Save every rubric criterion first",{exact:true}).waitFor();
 
-          await row.getByRole("spinbutton", { name: "Score", exact: true }).fill("84");
+          for(const criterion of ["Q1:C0","Q1:C1"]){
+            const markForm=row.getByRole("form",{name:"Rubric mark "+criterion,exact:true});
+            await markForm.getByLabel("Criterion mark").fill("84");
+            await markForm.getByLabel("Mark reason").fill("Human reviewer confirms the retained answer meets this pinned rubric criterion.");
+            const saved=verifier.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]));
+            await markForm.getByRole("button",{name:"Save mark",exact:true}).click();
+            await (await saved).finished();
+            await verifier.reload({waitUntil:"domcontentloaded"});
+          }
           await row.getByRole("combobox", { name: "Decision", exact: true }).selectOption("PASS");
           await row.getByRole("textbox", { name: "Reason", exact: true }).fill(
             "Human reviewer confirms the written answer meets the locked rubric requirements."
           );
+          const savedDecision=verifier.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]));
           await row.getByRole("button", { name: "Save scoring decision" }).click();
+          await (await savedDecision).finished();
+          await verifier.reload({waitUntil:"domcontentloaded"});
           const refreshed = verifier.locator("tbody tr").filter({ hasText: fixture.caseId }).first();
           await refreshed.waitFor({ state: "visible", timeout: 15_000 });
-          assert.equal(await refreshed.getByRole("spinbutton", { name: "Score", exact: true }).inputValue(), "84");
+          assert.deepEqual(await refreshed.getByRole("spinbutton",{name:"Criterion mark",exact:true}).evaluateAll(inputs=>inputs.map(input=>input.value)),["84","84"]);
+          await refreshed.getByText("Overall score: 84",{exact:true}).waitFor();
           assert.equal(await refreshed.getByRole("combobox", { name: "Decision", exact: true }).inputValue(), "PASS");
 
           await login(admin, baseUrl, credentials.admin, "admin");
@@ -270,6 +280,9 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
       assert.equal(Number(review.rows[0]?.score), 84);
       assert.equal(review.rows[0]?.decision, "PASS");
       assert.equal(review.rows[0]?.status, "DRAFT");
+
+      const marks=await db.query("SELECT criterion,mark FROM written_score_rubric_marks WHERE review_id=$1 ORDER BY criterion",[fixture.reviewId]);
+      assert.deepEqual(marks.rows.map(mark=>[mark.criterion,Number(mark.mark)]),[["Q1:C0",84],["Q1:C1",84]]);
 
       const assistance = await db.query(
         "SELECT status,provider_key FROM written_scoring_assistance WHERE review_id=$1",

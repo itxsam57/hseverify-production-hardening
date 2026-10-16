@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "task_id": "VERIFIER-013",
+  "task_id": "WORKFLOW-001",
   "stage": "INTEGRATING_AND_VERIFYING",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "branch": "build/verifier-completion-20261012",
-  "worktree": "/home/ubuntu/work/hseverify-verifier-completion-20261012",
+  "branch": "qa/masterplan-release-20261016",
+  "worktree": "/home/ubuntu/work/hseverify-masterplan-final-20261014",
   "last_verified_sha": "e7f4a1cb03e4bad769b5fc4b15556228bc813925",
   "canonical_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "requirements": [
@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "Clean verifier core seven scoped gates passed and independently accepted. Notification integration eight frozen working-tree gates passed and independently accepted; a9f83d9 full release failed at outdated notification exact-vocabulary contract after test environment recovery. Exact-vocabulary checks now reconciled and focused checks/lint pass; combined release remains unverified.",
+  "last_verified_action": "All scoped preparedbrowser/focused regressions PASS and independently reviewed. Final frozenv9 PASS4 incl10integrationtests. ActualM2.02 runner including permanent live-session search regression, selectionassert, lint and diffcheck allPASS. Committing candidate for fresh cleanSHA verification; no fullreleasePASS.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -57,27 +57,33 @@
     ".autopilot/artifacts/20261012-f23714a-hosted-ci.json",
     ".autopilot/artifacts/20261012-live-media-timer-diagnostic.log",
     ".autopilot/artifacts/20261012-live-media-timer-repair.json",
-    ".autopilot/artifacts/20261012-live-media-timer-independent-review.json"
+    ".autopilot/artifacts/20261012-live-media-timer-independent-review.json",
+    ".autopilot/artifacts/20261016-replacement-forgery-green.json",
+    ".autopilot/artifacts/20261016-critical-browser-remaining-v4-preflight.json",
+    ".autopilot/artifacts/20261016-critical-browser-remaining-v6-preflight.json",
+    ".autopilot/artifacts/20261016-recovery-contention-suite-red-v2.json",
+    ".autopilot/artifacts/20261016-recovery-contention-green.json",
+    ".autopilot/artifacts/20261016-consumer-tail-v9-preflight.json",
+    ".autopilot/artifacts/20261016-case-replay-rubric-green-v2.json",
+    ".autopilot/artifacts/20261016-verifier-search-calibration-green.json",
+    ".autopilot/artifacts/20261016-verifier-search-native-v2.json",
+    ".autopilot/artifacts/20261016-final-dirty-batch-independent-review.json"
   ],
-  "next_action": "Commit notification foundation contract reconciliation; finish calibration producer/UI integration and supervisor mixed-task routing, then combine independently accepted slices and run one clean candidate full/PG/CI/preview gate.",
+  "next_action": "Run fresh exactcommittedSHA full4command/PG/supplement browser driver, push isolated draftPR37 for14freshhostedchecks; then retaineddata restore/security and immutable-bound actualpublicpreview. Stop/fix any actualfailure.",
   "revision_attempt": 0,
   "blockers": [
-    "Full a9f83d9 release gate FAIL; superseded exact-vocabulary contract repair has only focused passes until new full run."
+    "Fresh cleanSHA full4/PG/14CI/security/exactbuild preserveddata preview and ownerverification pending"
   ],
   "unknowns": [
-    "Combined release and deployment remain unverified",
-    "Calibration case snapshot producer and broad fixtures in progress",
-    "Supervisor mixed-task case routing review blocker",
-    "Written scoring live authorization and immutable amendments in progress",
-    "Integrity human disposition and unresolved concern blocking in progress",
-    "Appeal follow-up producers in progress",
-    "Company registration-code and multiple employer browser boundaries pending",
-    "Live provider delivery and physical-device/network receipts unavailable"
+    "Current exact-SHA full37brick/218scenario evidence reconciliation",
+    "Fresh expected14 hostedCI checks",
+    "Data-preserving bound-build public preview and owner verification",
+    "Live provider activation/physical device network and production operational acceptance deferred"
   ],
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-13T18:16:38.318800+00:00",
+  "updated_at": "2026-10-16T20:50:07.128841+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -103,6 +109,7 @@
   },
   "blocker": null,
   "owner_required": false,
-  "current_candidate_base_sha": "a9f83d9493d18b38c6853cfc347452e348ab0ae3",
-  "whole_project_complete": false
+  "current_candidate_base_sha": "1a5f6beb66ef9f6bf911d90e1e26d99fe3738097",
+  "whole_project_complete": false,
+  "current_candidate_base_sha_qualification": "Committed base only; prepared source is dirty and not release-certified"
 }

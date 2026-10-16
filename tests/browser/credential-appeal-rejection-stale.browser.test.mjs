@@ -1,16 +1,17 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { join } from "node:path";
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { seedCredentialDecisionFixture } from "../helpers/credential-decision-fixture.mjs";
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -73,6 +74,8 @@ test(
       HSE_APP_ENV: "development",
       HSE_DATABASE_DRIVER: "pglite",
       HSE_PGLITE_DATA_DIR: databaseDirectory,
+      HSE_AUDIT_CREDENTIALS_PATH: join(databaseDirectory,"browser-credentials.json"),
+      HSE_CREDENTIAL_SIGNING_SECRET: randomBytes(32).toString("hex"),
       HSE_RELEASE_SHA: "credential-appeal-operational-browser",
       HSE_SESSION_SECRET: "credential-appeal-browser-session-secret-2026-000000000",
       HSE_AUTH_PEPPER: "credential-appeal-browser-auth-pepper-2026-00000000000",
@@ -96,7 +99,7 @@ test(
       });
       assert.equal(seed.status, 0, seed.stderr || seed.stdout);
       const credentials = JSON.parse(
-        await readFile("/tmp/independent-audit-credentials.json", "utf8")
+        await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH, "utf8")
       );
 
       const workerId = "HSE-REG-INDEPENDENTAUDIT";
@@ -107,13 +110,12 @@ test(
       const issuedAt = "2026-09-20T10:00:00.000Z";
 
       // Real decision producer creates signed issuance, case provenance and Living Record.
-      let fixtureSource=await readFile("tests/helpers/credential-decision-fixture.mjs","utf8");
-      fixtureSource=fixtureSource.replace('pgliteDataDir:"memory://"','pgliteDataDir:'+JSON.stringify(databaseDirectory));
-      fixtureSource=fixtureSource.replace("0067_assessment_review_orchestration","0108_review_resolution_notifications");
-      fixtureSource=fixtureSource.replaceAll("worker_account_validity",credentials.worker.accountId).replaceAll("worker_id_validity_000001",workerId);
-      fixtureSource=fixtureSource.replace(/from "([^"]+)"/g,(_,specifier)=>"from "+JSON.stringify(pathToFileURL(resolve("tests/helpers",specifier)).href));
-      const {credentialDecisionFixture}=await import("data:text/javascript;base64,"+Buffer.from(fixtureSource).toString("base64"));
-      const originalFixture=await credentialDecisionFixture({qualification:"HSE Operational Assurance",policy:{credentialValidity:"no_expiry"}});
+      const fixtureDatabase=await openScriptDatabase({appEnvironment:"test",databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:databaseDirectory,releaseSha:environment.HSE_RELEASE_SHA});
+      const originalFixture=await seedCredentialDecisionFixture(fixtureDatabase,{
+        qualification:"HSE Operational Assurance",policy:{credentialValidity:"no_expiry"},
+        workerAccountId:credentials.worker.accountId,permanentWorkerId:workerId,
+        signingSecret:environment.HSE_CREDENTIAL_SIGNING_SECRET
+      });
       try {
         const originalActor="account_original_appeal_browser_admin";
         await originalFixture.database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'original-appeal-browser@example.test','Original decision admin','active','test-only',$2,$2,$2,$2)",[originalActor,issuedAt]);

@@ -165,7 +165,9 @@ for(const scenario of [{outcome:"NO_SHOW",eligible:true},{outcome:"TECHNICAL_HOL
      const forgedPage=await page.context().newPage();
      await forgedPage.goto(baseUrl+"/assessor/interviews/"+replacementId,{waitUntil:"domcontentloaded"});
      await forgedPage.getByLabel("Notes",{exact:true}).fill("A forged old session must not alter archived notes.");
-     await forgedPage.locator('input[name="interviewSessionId"]').evaluate((input,value)=>{input.value=value;},oldSessionId);
+     await forgedPage.getByRole("button",{name:"Save draft",exact:true}).evaluate((button,value)=>{
+      button.form.addEventListener("formdata",event=>{event.formData.set("interviewSessionId",value);},{once:true});
+     },oldSessionId);
      const forgedRequest=forgedPage.waitForRequest(request=>request.method()==="POST" && Boolean(request.headers()["next-action"]));
      await forgedPage.getByRole("button",{name:"Save draft",exact:true}).click();
      assert((await forgedRequest).postData().includes(oldSessionId),"The actual forged POST must contain the archived session ID.");

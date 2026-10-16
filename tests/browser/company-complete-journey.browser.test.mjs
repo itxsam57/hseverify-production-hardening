@@ -489,8 +489,15 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await companyAction.getByRole("button", { name: "Assign owner" }).click();
           await company.reload({ waitUntil: "networkidle" });
           companyAction = company.locator("article").filter({ hasText: "Company follow-up action for browser acceptance." }).first();
-          await companyAction.getByLabel("Until").fill("2026-10-15T10:00");
+          const pastSnooze = new Date(Date.now()-86400000).toISOString().slice(0,16);
+          await companyAction.getByLabel("Until").fill(pastSnooze);
           await companyAction.getByLabel("Reason").fill("Deferred until scheduled internal follow-up.");
+          await companyAction.getByRole("button", { name: "Snooze" }).click();
+          await companyAction.getByRole("alert").filter({hasText:"Snooze requires a future date and a reason."}).waitFor();
+          assert.equal(await companyAction.getByLabel("Until").inputValue(),pastSnooze);
+          assert.equal(await companyAction.getByLabel("Reason").inputValue(),"Deferred until scheduled internal follow-up.");
+          assert.equal(await companyAction.getByText(/status: snoozed/i).count(),0);
+          await companyAction.getByLabel("Until").fill(new Date(Date.now()+86400000).toISOString().slice(0,16));
           await companyAction.getByRole("button", { name: "Snooze" }).click();
           await companyAction.getByText(/status: snoozed/i).waitFor({ timeout: 15_000 });
           await companyAction.getByRole("button", { name: "Mark internally acknowledged" }).click();
