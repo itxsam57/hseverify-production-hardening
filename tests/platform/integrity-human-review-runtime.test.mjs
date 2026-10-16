@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {openScriptDatabase} from "../../scripts/lib/database.mjs";
+import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
+import {seedWorkerPrincipal,seedInProgressAttempt} from "../helpers/assessment-attempt-fixture.mjs";
 import {integrityAssessmentFixture} from "../helpers/integrity-assessment-fixture.mjs";
 import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
 const {AssessmentIntegrityService}=loadWorkerRegistrationTs("src/lib/integrity/assessment-integrity-service.ts");
@@ -120,14 +123,21 @@ test("Admin returns escalated integrity for calibrated independent review with r
 });
 
 test("empty integrity notification rollback restores the prior contract and reapplies without losing history",async()=>{
- const x=await integrityAssessmentFixture();try{
+ // A historical rollback must run before later migrations extend its contract.
+ const database=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:"memory://"});
+ try{
+  await applyMigrationsThrough(database,"integrity-notification-rollback","0117_integrity_review_notifications");
+  const worker=await seedWorkerPrincipal(database,"integrity-rollback");
+  const {attemptId}=await seedInProgressAttempt(database,worker,"integrity-rollback",[{questionType:"MULTIPLE_CHOICE"}]);
+  const before=(await database.query("SELECT * FROM assessment_attempts WHERE attempt_id=$1",[attemptId])).rows;
   const {readFile}=await import("node:fs/promises");
-  await x.database.execute(await readFile("database/migrations/0117_integrity_review_notifications.down.sql","utf8"));
-  assert.equal((await x.database.query("SELECT to_regprocedure('platform_integrity_installed_contract()') name")).rows[0].name,null);
-  await x.database.execute(await readFile("database/migrations/0117_integrity_review_notifications.up.sql","utf8"));
-  assert.ok((await x.database.query("SELECT to_regprocedure('platform_integrity_installed_contract()') name")).rows[0].name);
-  assert.equal((await x.database.query("SELECT COUNT(*)::integer n FROM assessment_attempts WHERE attempt_id=$1",[x.attemptId])).rows[0].n,1);
- }finally{await x.cleanup();}
+  await database.execute(await readFile("database/migrations/0117_integrity_review_notifications.down.sql","utf8"));
+  assert.equal((await database.query("SELECT to_regprocedure('platform_integrity_installed_contract()') name")).rows[0].name,null);
+  assert.deepEqual((await database.query("SELECT * FROM assessment_attempts WHERE attempt_id=$1",[attemptId])).rows,before);
+  await database.execute(await readFile("database/migrations/0117_integrity_review_notifications.up.sql","utf8"));
+  assert.ok((await database.query("SELECT to_regprocedure('platform_integrity_installed_contract()') name")).rows[0].name);
+  assert.deepEqual((await database.query("SELECT * FROM assessment_attempts WHERE attempt_id=$1",[attemptId])).rows,before);
+ }finally{await database.close();}
 });
 
 test("scoring acquires case and attempt before review to match integrity resolution",async()=>{

@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "All scoped preparedbrowser/focused regressions PASS and independently reviewed. Final frozenv9 PASS4 incl10integrationtests. ActualM2.02 runner including permanent live-session search regression, selectionassert, lint and diffcheck allPASS. Committing candidate for fresh cleanSHA verification; no fullreleasePASS.",
+  "last_verified_action": "All77 native Masterplan integration tests PASS after historical117 fixture repair; all12 integrity tests, engineering static/tests/lint, diffcheck and bounded independent review PASS. Cache-only8 workflow change validated all otherbytes unchanged.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -69,7 +69,7 @@
     ".autopilot/artifacts/20261016-verifier-search-native-v2.json",
     ".autopilot/artifacts/20261016-final-dirty-batch-independent-review.json"
   ],
-  "next_action": "Run fresh exactcommittedSHA full4command/PG/supplement browser driver, push isolated draftPR37 for14freshhostedchecks; then retaineddata restore/security and immutable-bound actualpublicpreview. Stop/fix any actualfailure.",
+  "next_action": "Normal guarded commit/push reviewed repair and launch fresh cleanSHA full4 and14hostedCI; exact candidate restore/security/manifest and publicpreview remain gated.",
   "revision_attempt": 0,
   "blockers": [
     "Fresh cleanSHA full4/PG/14CI/security/exactbuild preserveddata preview and ownerverification pending"
@@ -83,7 +83,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-16T20:50:07.128841+00:00",
+  "updated_at": "2026-10-16T21:25:57.844605+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -107,7 +107,7 @@
     },
     "coverage_status": "Historical 218-row counts are stale and cannot establish current readiness."
   },
-  "blocker": null,
+  "blocker": "Exact712 full failed; repaired preparedsource needs broader and fresh committed verification",
   "owner_required": false,
   "current_candidate_base_sha": "1a5f6beb66ef9f6bf911d90e1e26d99fe3738097",
   "whole_project_complete": false,

@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
 
       - name: Independently invalid production configurations are rejected
@@ -218,7 +218,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
@@ -393,7 +393,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
 
       - name: M3.11 execute load security and recovery certification
@@ -459,7 +459,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
       - name: PostgreSQL JSON parameters through script and runtime transactions
         run: npm run test:postgres-json
@@ -477,7 +477,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium for actual consumer workflows
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium

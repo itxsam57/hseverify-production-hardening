@@ -202,3 +202,11 @@ The final frozen v9 preflight passed its four commands: strict engineering, the 
 The changed native Verifier search test was missing from permanent release selection. An explicit selection check failed before adding it to the existing evidence-review runner; no engineering stage names/counts changed. Actual whole-runner, scoped lint and diff checks precede the guarded candidate commit. Fresh exact-candidate full/PG/hostedCI, secret scan, retained-data restore and bound public preview proof remain mandatory. Earlier failed/aborted full runs remain failed/aborted.
 
 Final prepared runner verification completed: the actual M2.02 evidence-review runner including native search, its selector check, scoped lint and git diff whitespace checks all exit0. Independent review accepted the selector and complete current batch. The next guarded commit starts a fresh exact-SHA release attempt; this paragraph certifies only prepared checks, not the project or full release.
+
+## Historical notification rollback repair after712f8a6
+
+The exact712f8a6 full gate failed after1486.71seconds: the117 rollback test used a latest123 schema with later notification contract extensions. The drift guard correctly rejected this ordering. The historical test now uses the existing migration-ceiling helper on its own disposable database through117, preserving the same rollback/reapply assertions and strengthening unrelated-history checks to whole assessment-row equality after each transition. Operational integrity fixtures remain at latest migrations; no migration or product guard changed. Focused original failure reproduced, then all12 integrity native tests passed. Engineering checks/tests, affected lint and independent review passed. Fresh full candidate gates remain required.
+
+Eight active workflow files only replace setup-node remote npm caching with explicit package-manager-cache:false. Public M2.01 timing showed a602second restore versus5second npm ci. Node24, lockfile, installation and test commands are unchanged; future actual CI timings must verify the improvement. No test or release gate was removed.
+
+Broader native Masterplan integration preflight subsequently passed77/77 with zero skips in240.22seconds (`20261016-masterplan-native-after-rollback.json`). This prepared-source result does not substitute for fresh committed full verification.
