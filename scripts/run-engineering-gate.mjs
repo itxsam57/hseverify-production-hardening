@@ -8,6 +8,7 @@ const resultPath = resolve(outputDirectory, "verification-result.json");
 const checks = [
   { name: "Release gate coverage", command: process.execPath, args: ["--test", "tests/engineering/release-gate-coverage.test.mjs"] },
   { name: "Assessment runtime runner isolation", command: process.execPath, args: ["--test", "tests/engineering/assessment-attempt-runner-isolation.test.mjs"] },
+  { name: "Complete application gate", command: "npm", args: ["run", "check"] },
   { name: "M2.01 assurance source contract", command: process.execPath, args: ["scripts/check-assurance-order-case-engine.mjs"] },
   { name: "M2.01 assurance static and runtime hard tests", command: process.execPath, args: ["scripts/run-assurance-order-case-tests.mjs"] },
   { name: "M2.02 evidence verification queues", command: process.execPath, args: ["scripts/run-evidence-review-tests.mjs"] },
@@ -23,7 +24,6 @@ const checks = [
   { name: "Scheduling delivery recovery and private data export", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/interview-scheduling-email-runtime.test.mjs", "tests/platform/worker-privacy-data-runtime.test.mjs"] },
   { name: "Registration, privacy and notification atomicity", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/notification-bulk-read-runtime.test.mjs", "tests/platform/privacy-sharing-restriction-runtime.test.mjs", "tests/platform/privacy-consent-accommodation-runtime.test.mjs", "tests/platform/privacy-consent-request-runtime.test.mjs", "tests/platform/worker-registration-policy-runtime.test.mjs", "tests/platform/worker-registration-otp-runtime.test.mjs", "tests/platform/company-registration-otp-runtime.test.mjs"] },
   { name: "Conditional credential and evidence file consumer pipelines", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/credential-conditional-consumer-runtime.test.mjs", "tests/platform/evidence-file-format-pipeline.test.mjs"] },
-  { name: "Complete application gate", command: "npm", args: ["run", "check"] },
   { name: "Assessment browser delivery variants", command: "npm", args: ["run", "test:assessment-variants-browser"] },
   { name: "Deployable preview smoke", command: "npm", args: ["run", "preview:smoke"] },
   { name: "Release evidence manifest", command: "npm", args: ["run", "release:manifest"] }
