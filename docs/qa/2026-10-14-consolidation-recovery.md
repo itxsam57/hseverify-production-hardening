@@ -160,3 +160,7 @@ The same actual-service red/green closure covers Assessor matching-profile confi
 Focused completion evidence: `.autopilot/artifacts/20261016-staff-profile-lifecycle-final.json` and `20261016-staff-lifecycle-consumers.json` show all selected commands exit0, including actual PostgreSQL races, affected interview replacement/accommodation services, typecheck and strict engineering checks. These are scoped prepared-source checks; they do not replace the new clean-SHA full release gate.
 
 Final independent source review found no blocking issue and no further reachable unfinished-staff retained-target writer among inspected production callers. Its direct-profile race coverage note was closed by the actual PostgreSQL Assessor-profile cancellation race; capacity, calibration and profile races plus native lifecycle and lint all pass in `20261016-staff-all-producer-races.json`.
+
+### Report catalogue fixture calibration (16 October)
+
+The `a576ff2` full gate ran for 953.94 seconds and failed the populated catalogue test at actual interview scheduling: its fixture recorded Verifier calibration for `REPORT-CATALOGUE` but left the Assessor with unrelated framework calibration. A focused isolated test reproduced the denial. Independent review confirmed the missing fixture producer; the application correctly enforced the pinned framework. The fixture now records Assessor calibration through `StaffCalibrationService` with the existing owned live Admin. All report assertions and application authorization checks remain intact. A fresh clean-SHA full gate is required.

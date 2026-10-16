@@ -96,6 +96,8 @@ export async function reportCatalogueFixture(){
   assert.equal(objective.reviewer_account_id,"system:auto-score");assert.equal(Number(objective.score),100);assert.equal(objective.decision,"PASS");
   await database.query("UPDATE assurance_cases SET case_status='Interview pending',owner_kind='assessor' WHERE case_id=$1",[source.case_id]);
   const assessor=await assessorSchedulingPrincipal(database,fixture.credentials.assessor),interviewNow=new Date();
+  await new StaffCalibrationService(Promise.resolve(database)).record(adminPrincipal,{accountId:assessor.accountId,role:"assessor",frameworkReference:"REPORT-CATALOGUE",
+   status:"CURRENT",validFrom:new Date(now),validUntil:new Date("2099-01-01T00:00:00.000Z"),note:"Current calibration for the pinned report interview framework."});
   const scheduling=new InterviewSchedulingService(database),runtime=new InterviewRuntimeService(Promise.resolve(database)),playbook=new InterviewPlaybookService(Promise.resolve(database));
   const original=await scheduling.requestAdditionalInterview({tenantId:source.tenant_id,caseId:source.case_id,workerAccountId:fixture.worker.accountId,requestedAt:interviewNow.toISOString()});
   await database.query("UPDATE assurance_cases SET interview_reference=$2 WHERE case_id=$1",[source.case_id,original.interviewRequestId]);
