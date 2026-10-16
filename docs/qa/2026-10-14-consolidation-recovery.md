@@ -150,3 +150,13 @@ Independent review also identified unfinished staff enrollment becoming an activ
 Focused evidence is not a full release pass. The `5431d0d` release remains failed; a new clean candidate must run all release, PostgreSQL, browser, hosted CI and preserved-data preview gates. Live provider activation remains deferred.
 
 Final focused proof: `20261016-capacity-lifecycle-final.json`, `20261016-staff-capacity-final-v2.json`, `20261016-staff-capacity-fk-lock-final.log` and `20261016-lifecycle-engineering.log` under `.autopilot/artifacts`. Account/role locks use `FOR NO KEY UPDATE`; the actual PostgreSQL test confirms producer FK key-share compatibility while settings wait for the held capacity mutex. Independent review found no remaining concrete issue in this scoped diff.
+
+### Calibration producer closure (16 October)
+
+A further actual-service regression on `875ce9b` showed unfinished staff could also acquire immutable calibration history. That full run was explicitly aborted, not certified. Calibration staff listing and recording now use the same completed-enrollment guard and deterministic flow-before-account locking, preserving legacy accounts and history restrictions. Permanent lifecycle proof covers Verifier and Assessor rejection without audit/history changes, actual cancellation/revocation, eligibility after TOTP completion, and real PostgreSQL lock serialization. A fresh exact-commit full run remains required.
+
+The same actual-service red/green closure covers Assessor matching-profile configuration: its live Admin authorization, enrollment eligibility check and upsert now share one transaction and enrollment lock order. Stale direct submissions cannot bypass the completed-enrollment selector. The permanent lifecycle helper tests profile rejection with no retained row, acceptance after TOTP completion and rejection of a revoked Admin session without changing the profile.
+
+Focused completion evidence: `.autopilot/artifacts/20261016-staff-profile-lifecycle-final.json` and `20261016-staff-lifecycle-consumers.json` show all selected commands exit0, including actual PostgreSQL races, affected interview replacement/accommodation services, typecheck and strict engineering checks. These are scoped prepared-source checks; they do not replace the new clean-SHA full release gate.
+
+Final independent source review found no blocking issue and no further reachable unfinished-staff retained-target writer among inspected production callers. Its direct-profile race coverage note was closed by the actual PostgreSQL Assessor-profile cancellation race; capacity, calibration and profile races plus native lifecycle and lint all pass in `20261016-staff-all-producer-races.json`.

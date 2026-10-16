@@ -51,6 +51,7 @@ export class StaffCalibrationService {
          FROM auth_accounts AS accounts
          JOIN auth_account_roles AS roles ON roles.account_id=accounts.account_id
         WHERE accounts.account_status='active' AND roles.role IN ('verifier','assessor')
+          AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete')
         ORDER BY roles.role,accounts.display_name,accounts.account_id`
     );
     return Object.freeze(result.rows.map((row) => Object.freeze({
@@ -103,11 +104,15 @@ export class StaffCalibrationService {
          ORDER BY revisions.effective_from DESC,revisions.version_no DESC LIMIT 1 FOR SHARE OF frameworks`,
         [frameworkReference,input.validFrom.toISOString(),input.frameworkVersionId??null]);
       if(!framework.rows[0]) throw new StaffCalibrationInputError("Select an authoritative framework revision effective at calibration start.");
+      // Enrollment terminal transitions lock flows before touching the account.
+      await tx.query("SELECT flow_id FROM auth_staff_enrollment_flows WHERE account_id=$1 ORDER BY flow_id FOR UPDATE",[input.accountId]);
       const role = await tx.query<{ role: string }>(
         `SELECT roles.role
            FROM auth_accounts AS accounts
            JOIN auth_account_roles AS roles ON roles.account_id=accounts.account_id
-          WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role=$2 FOR UPDATE OF accounts,roles`,
+          WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role=$2
+            AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete')
+          FOR NO KEY UPDATE OF accounts,roles`,
         [input.accountId, input.role]
       );
       if (!role.rows[0]) throw new StaffCalibrationInputError("Selected staff account does not hold that role.");

@@ -1,4 +1,5 @@
 import "server-only";
+import {requireLiveReviewActor} from "../review/review-calibration-authority";
 import {interviewCalibrationCurrent} from "./interview-calibration-authority";
 
 import { createIdentifier } from "@/lib/auth/auth-domain";
@@ -530,16 +531,21 @@ export class InterviewAssignmentService {
     }
     const normalizeList = (values: readonly string[]) =>
       [...new Set(values.map((v) => v.trim()).filter(Boolean).map((v) => v.slice(0, 160)))].slice(0, 100);
-    const role = await this.database.query(
+    await this.database.transaction(async database=>{
+     await requireLiveReviewActor(database,principal,"admin",true);
+     await database.query("SELECT flow_id FROM auth_staff_enrollment_flows WHERE account_id=$1 ORDER BY flow_id FOR UPDATE",[input.assessorAccountId]);
+    const role = await database.query(
       `SELECT 1
          FROM auth_accounts AS accounts
          JOIN auth_account_roles AS roles ON roles.account_id=accounts.account_id
-        WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role='assessor'`,
+        WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role='assessor'
+          AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete')
+        FOR NO KEY UPDATE OF accounts,roles`,
       [input.assessorAccountId]
     );
     if (!role.rows[0]) throw new InterviewAssignmentInputError("Selected account is not an active Assessor.");
 
-    await this.database.query(
+    await database.query(
       `INSERT INTO assessor_assignment_profiles(
          assessor_account_id,trade_scopes,qualification_scopes,languages,jurisdictions,
          risk_levels,availability_json,max_active_interviews,profile_status,updated_at
@@ -568,6 +574,7 @@ export class InterviewAssignmentService {
         now.toISOString()
       ]
     );
+    });
   }
 
   async listProfiles(principal: AuthorizationPrincipal): Promise<readonly AssessorMatchingProfileView[]> {
