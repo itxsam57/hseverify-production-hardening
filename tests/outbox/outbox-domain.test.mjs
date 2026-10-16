@@ -448,6 +448,8 @@ const assuranceEvents = [
   ["credential.issued", "issuance:credential_A:1"],
   ["appeal.submitted", "appeal:appeal_A:1"],
   ["appeal.updated", "appeal:appeal_A:2"],
+  ["appeal.evidence.submitted", "appeal_followup:audit_evidence_A"],
+  ["appeal.interview.submitted", "appeal_followup:audit_interview_A"],
 ];
 
 test("assurance notice jobs have a fixed source-derived event schema", () => {
@@ -460,6 +462,8 @@ test("assurance notice jobs have a fixed source-derived event schema", () => {
     {eventType:"credential.issued",eventRef:"issuance:credential_A:01"},
     {eventType:"credential.issued",eventRef:"issuance:credential_A:9007199254740992"},
     {eventType:"appeal.updated",eventRef:"appeal:appeal_A"},
+    {eventType:"appeal.evidence.submitted",eventRef:"appeal:appeal_A:2"},
+    {eventType:"appeal.interview.submitted",eventRef:"appeal_followup:audit_A:2"},
     {eventType:"evidence.submitted",eventRef:"audit:../other"},
     {eventType:"assessment.funding.approved",eventRef:"funding:event_A"},
     {eventType:"evidence.submitted",eventRef:"audit:event_A",recipientRef:"account_other"},
