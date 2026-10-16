@@ -125,3 +125,7 @@ Additive0122 pins only the report validator's lookup context to pg_catalog/publi
 Additional permanent consumers exercise actual current completed assessment/interview conditional issuance through certification, Living Record conditions, authenticated public projection and parsed PDF; public outputs retain generic conditional disclosure without private decision reasoning. Genuine generated PDF and decodable JPEG bytes traverse actual quarantine, leased local/test scanner, exact-version binding, owned byte retrieval and submission, with foreign-owner denial. Local/test scanning is not live malware-provider certification.
 
 Full release, actual PostgreSQL cohort, hosted CI and preserved-data exact-build deployment must run again against the next clean SHA.
+
+### Full-suite orchestration contract repair
+
+The581ee1e run passed all17 leading workflow stages, then stopped at the complete application gate's strict engineering preflight. Assessment variants had been appended outside the required verify:full orchestrator. They now run as an explicit fail-closed orchestrator stage before preview smoke and release manifest; the strict checker is unchanged. Coverage regression failed before the repair and passes8/8 afterwards; check:engineering passes. This repairs selection/reporting, and does not certify the remaining application tests or prior failed full run.

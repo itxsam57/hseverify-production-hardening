@@ -48,3 +48,10 @@ test("release gates retain navigation, conditional credential, format pipeline a
   const scripts = JSON.parse(readFileSync("package.json", "utf8")).scripts;
   assert.ok(scripts["test:postgres-json"].includes("tests/platform/report-snapshot-restore-postgres.test.mjs"));
 });
+
+test("assessment variants run inside the fail-closed full orchestrator", () => {
+  const scripts = JSON.parse(readFileSync("package.json", "utf8")).scripts;
+  assert.equal(scripts["verify:full"], "node scripts/run-engineering-gate.mjs");
+  const gate = readFileSync("scripts/run-engineering-gate.mjs", "utf8");
+  assert.ok(gate.includes('args: ["run", "test:assessment-variants-browser"]'));
+});

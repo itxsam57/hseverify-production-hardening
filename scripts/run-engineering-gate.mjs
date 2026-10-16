@@ -24,6 +24,7 @@ const checks = [
   { name: "Registration, privacy and notification atomicity", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/notification-bulk-read-runtime.test.mjs", "tests/platform/privacy-sharing-restriction-runtime.test.mjs", "tests/platform/privacy-consent-accommodation-runtime.test.mjs", "tests/platform/privacy-consent-request-runtime.test.mjs", "tests/platform/worker-registration-policy-runtime.test.mjs", "tests/platform/worker-registration-otp-runtime.test.mjs", "tests/platform/company-registration-otp-runtime.test.mjs"] },
   { name: "Conditional credential and evidence file consumer pipelines", command: process.execPath, args: ["--test", "--test-concurrency=1", "tests/platform/credential-conditional-consumer-runtime.test.mjs", "tests/platform/evidence-file-format-pipeline.test.mjs"] },
   { name: "Complete application gate", command: "npm", args: ["run", "check"] },
+  { name: "Assessment browser delivery variants", command: "npm", args: ["run", "test:assessment-variants-browser"] },
   { name: "Deployable preview smoke", command: "npm", args: ["run", "preview:smoke"] },
   { name: "Release evidence manifest", command: "npm", args: ["run", "release:manifest"] }
 ];
