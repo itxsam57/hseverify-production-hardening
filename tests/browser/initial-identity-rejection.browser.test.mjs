@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { prepareReviewCalibrationFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const EMAIL="masterplan.worker.e2e@example.test";
 const PHONE="+923001234567";
@@ -24,7 +25,8 @@ async function freePort(){return new Promise((resolve,reject)=>{const s=createSe
 async function login(page,baseUrl,credential,role){await page.goto(`${baseUrl}/${role}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("Email address").fill(credential.email);await page.getByLabel("Password").fill(credential.password);if(credential.totpSecret)await page.getByLabel("Authenticator code").fill(await freshTotp(credential.email,credential.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL(`**/${role}/dashboard`,{timeout:30000});}
 async function sandboxCode(page,baseUrl,channel,destination){await page.goto(`${baseUrl}/worker/register/sandbox`,{waitUntil:"domcontentloaded"});await page.getByLabel("Delivery channel").selectOption(channel);await page.getByLabel("Delivery destination").fill(destination);await page.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await page.getByRole("button",{name:"Open latest sandbox delivery"}).click();const status=page.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor({timeout:15000});return (await status.locator("strong").innerText()).trim();}
 async function uploadIdentity(page,heading,name,document=false){const card=page.getByRole("region",{name:heading,exact:true});if(document){await card.getByLabel("Document type").selectOption("passport");await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");await card.getByLabel("Issue date").fill("2025-01-01");await card.getByLabel("Expiry date").fill("2035-01-01");}await card.getByLabel("Choose file").setInputFiles({...PNG,name});await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/identity")),card.getByRole("button",{name:"Upload evidence"}).click()]);}
-async function rejectReview(page,baseUrl,kind,reason){await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});const row=page.locator("tbody tr").filter({hasText:kind}).first();await row.getByRole("link",{name:"Review"}).click();await page.getByRole("button",{name:"Claim review"}).click();await page.getByText("ASSIGNED",{exact:true}).waitFor({timeout:15000});await page.getByLabel("Decision").selectOption("REJECTED");await page.getByLabel("Reason", { exact: true }).fill(reason);await page.getByRole("button",{name:"Finalize review"}).click();await page.getByText("REJECTED",{exact:true}).waitFor({timeout:15000});}
+async function bindQueuedReview(admin,baseUrl,taskId){await admin.goto(`${baseUrl}/admin/review-frameworks`,{waitUntil:"domcontentloaded"});const card=admin.locator(`section[aria-label="Framework for ${taskId}"]`);await card.waitFor();if(!(await card.getByText("Framework unresolved",{exact:true}).count()))return;const revision=card.locator('select[name="frameworkVersionId"]');const options=await revision.locator("option").evaluateAll(items=>items.map(option=>({value:option.value,text:option.textContent??""})).filter(item=>item.value&&item.text.includes("INDEPENDENT-REVIEW")));assert.equal(options.length,1,"Expected one authoritative review framework revision.");await revision.selectOption(options[0].value);await card.locator('textarea[name="reason"]').fill("This browser journey uses the explicit independent review standard for the submitted identity.");await card.getByRole("button",{name:"Bind review framework",exact:true}).click();await admin.getByText("Review framework binding recorded.",{exact:true}).waitFor();}
+async function rejectReview(page,admin,baseUrl,kind,reason){await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});const row=page.locator("tbody tr").filter({hasText:kind}).first();const reviewLink=row.getByRole("link",{name:"Review"});const href=await reviewLink.getAttribute("href");assert.ok(href,"Queued identity review did not expose its fixed review link.");const taskId=href.split("/").filter(Boolean).at(-1);assert.ok(taskId?.startsWith("evidence_review_"),"Queued identity review link did not contain an opaque task id.");await bindQueuedReview(admin,baseUrl,taskId);await page.goto(`${baseUrl}${href}`,{waitUntil:"domcontentloaded"});await page.getByRole("button",{name:"Claim review"}).click();await page.getByText("ASSIGNED",{exact:true}).waitFor({timeout:15000});await page.getByLabel("Decision").selectOption("REJECTED");await page.getByLabel("Reason",{exact:true}).fill(reason);await page.getByRole("button",{name:"Finalize review"}).click();await page.getByText("REJECTED",{exact:true}).waitFor({timeout:15000});}
 
 async function phaseOne(baseUrl,environment,credentials){
   return runDevelopmentServer({
@@ -33,7 +35,8 @@ async function phaseOne(baseUrl,environment,credentials){
       const browser=await chromium.launch({headless:true});
       const workerContext=await browser.newContext({viewport:{width:1440,height:1000},permissions:["clipboard-read","clipboard-write"]});
       const verifierContext=await browser.newContext({viewport:{width:1440,height:1000}});
-      const worker=await workerContext.newPage(), verifier=await verifierContext.newPage();
+      const adminContext=await browser.newContext({viewport:{width:1440,height:1000}});
+      const worker=await workerContext.newPage(), verifier=await verifierContext.newPage(), admin=await adminContext.newPage();
       try{
         await worker.goto(`${baseUrl}/worker/register`,{waitUntil:"domcontentloaded"});
         await worker.getByLabel("Full name").fill("Masterplan Worker");
@@ -70,9 +73,10 @@ async function phaseOne(baseUrl,environment,credentials){
         await worker.goto(`${baseUrl}/worker/identity`);await worker.getByLabel("Legal first name").fill("Masterplan");await worker.getByLabel("Legal last name").fill("Worker");await worker.getByLabel("Date of birth").fill("1990-01-15");await worker.getByLabel("Nationality").fill("Pakistani");await worker.getByLabel("Country of residence").fill("Pakistan");await worker.getByRole("button",{name:"Save identity details"}).click();await worker.reload();
         await uploadIdentity(worker,"Identity document","passport.png",true);await uploadIdentity(worker,"Profile photo","profile.png");await uploadIdentity(worker,"Selfie evidence","selfie.png");await worker.reload();await worker.getByRole("button",{name:"Submit identity"}).click();await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:15000});
 
+        await login(admin,baseUrl,credentials.admin,"admin");
         await login(verifier,baseUrl,credentials.verifier,"verifier");
         const reason="The submitted identity document does not establish the claimed identity; initial verification is rejected.";
-        await rejectReview(verifier,baseUrl,"identity",reason);
+        await rejectReview(verifier,admin,baseUrl,"identity",reason);
         await worker.goto(`${baseUrl}/worker/identity`);
         await worker.getByRole("heading",{name:"Rejected",exact:true}).waitFor();
         await worker.getByRole("region",{name:"Latest identity review",exact:true}).getByText(reason,{exact:true}).waitFor();
@@ -81,7 +85,7 @@ async function phaseOne(baseUrl,environment,credentials){
         await worker.reload();await worker.getByRole("heading",{name:"Rejected",exact:true}).waitFor();
         await worker.getByRole("region",{name:"Latest identity review",exact:true}).getByText(reason,{exact:true}).waitFor();
         console.log("ACTUAL_INITIAL_IDENTITY_REJECTION retained rejected state/reason, no invented correction/submit route");
-      } finally {await workerContext.close();await verifierContext.close();await browser.close();}
+      } finally {await workerContext.close();await verifierContext.close();await adminContext.close();await browser.close();}
     }
   });
 }
@@ -92,7 +96,7 @@ test("Initial identity rejection preserves submitted version, reason and termina
  const env={...process.env,HSE_APP_ENV:'development',HSE_DATABASE_DRIVER:'pglite',HSE_PGLITE_DATA_DIR:dbDir,HSE_AUDIT_CREDENTIALS_PATH:join(dbDir,'audit-credentials.json'),HSE_RELEASE_SHA:'initial-identity-rejection',HSE_SESSION_SECRET:'initial-identity-rejection-session-secret-more-than-thirty-two',HSE_AUTH_PEPPER:'initial-identity-rejection-auth-pepper-more-than-thirty-two',HSE_ENABLE_AUTH_SANDBOX:'true',HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:'false',HSE_USE_WORKER_DEMO_DATA:'false'};
  try{
   for(const script of ['scripts/db-migrate.mjs','scripts/independent-audit-seed.mjs']){const r=spawnSync(process.execPath,[script],{cwd:root,env,encoding:'utf8'});assert.equal(r.status,0,r.stderr||r.stdout);}
-  const credentials=JSON.parse(await readFile(env.HSE_AUDIT_CREDENTIALS_PATH,'utf8'));const result=await phaseOne(baseUrl,env,credentials);assert.equal(result.requestedSignal,'SMOKE_COMPLETE');
+  const credentials=JSON.parse(await readFile(env.HSE_AUDIT_CREDENTIALS_PATH,'utf8'));const authorityDb=new PGlite(dbDir);try{await prepareReviewCalibrationFixture(authorityDb,{verifiers:[{accountId:credentials.verifier.accountId}],reference:"INDEPENDENT-REVIEW",at:new Date()});}finally{await authorityDb.close();}const result=await phaseOne(baseUrl,env,credentials);assert.equal(result.requestedSignal,'SMOKE_COMPLETE');
   const db=new PGlite(dbDir);try{
    const account=(await db.query('SELECT account_id FROM auth_accounts WHERE email_normalized=$1',[EMAIL])).rows[0];
    const identity=(await db.query('SELECT * FROM worker_identities WHERE worker_account_id=$1',[account.account_id])).rows[0];assert.equal(identity.lifecycle_status,'rejected');assert.equal(identity.current_version_number,1);
