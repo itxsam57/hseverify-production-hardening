@@ -1,4 +1,3 @@
-
 import assert from "node:assert/strict";
 import test from "node:test";
 import {readFile,mkdtemp,writeFile,rm} from "node:fs/promises";
@@ -6,6 +5,8 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {spawnSync} from "node:child_process";
 import {PGlite} from "@electric-sql/pglite";
+import {openScriptDatabase} from "../../scripts/lib/database.mjs";
+import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
 import {assessorInterviewSearchFixture} from "../helpers/assessor-interview-search-fixture.mjs";
 import {assessorSchedulingPrincipal} from "../helpers/assessor-scheduling-native-principal.mjs";
 import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
@@ -30,20 +31,21 @@ test("Actual compiled CLI sends three scheduling emails with controlled transpor
  }finally{await db?.close();await fixture.cleanup();await rm(temporary,{recursive:true,force:true});}
 });
 test("Empty email migration rollback restores exact seven constraints and two attempt functions",{timeout:120000},async()=>{
- const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+ const db=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:"memory://"});
  try{
+  await applyMigrationsThrough(db,"interview-email-rollback","0090_interview_worker_availability");
   const constraints=(await db.query("SELECT platform_interview_email_rollback_constraints() AS originals")).rows[0].originals;
   const functions=(await db.query("SELECT platform_interview_email_rollback_functions() AS originals")).rows[0].originals;
   assert.equal(constraints.length,7);assert.equal(functions.length,2);
-  const availabilityDown=await readFile("database/migrations/0090_interview_worker_availability.down.sql","utf8");await db.transaction(tx=>tx.exec(availabilityDown));
-  const down=await readFile("database/migrations/0089_interview_scheduling_email.down.sql","utf8");await db.exec("BEGIN;"+down+"COMMIT;");
+  const availabilityDown=await readFile("database/migrations/0090_interview_worker_availability.down.sql","utf8");await db.transaction(tx=>tx.execute(availabilityDown));
+  const down=await readFile("database/migrations/0089_interview_scheduling_email.down.sql","utf8");await db.transaction(tx=>tx.execute(down));
   for(const original of constraints){
    const actual=(await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[original.table,original.constraint])).rows[0];
    assert.equal(actual.definition,original.definition);
   }
   const restored=(await db.query("SELECT pg_get_functiondef('platform_email_attempt_validate_insert()'::regprocedure) AS definition UNION ALL SELECT pg_get_functiondef('platform_email_attempt_guard_update()'::regprocedure)")).rows;
   assert.deepEqual(restored.map(row=>row.definition).sort(),functions.map(row=>row.definition).sort());
- }finally{await db.close();await fixture.cleanup();}
+ }finally{await db.close();}
 });
 test("Retained scheduling email history refuses rollback without deleting business history",{timeout:120000},async()=>{
  const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
