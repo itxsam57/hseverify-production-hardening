@@ -8,13 +8,20 @@ export async function runWorkerReportCommand<Result>(
 ):Promise<Result>{
  if(principal.activeRole!=="worker" || principal.tenantMembership || !principal.accountId || !principal.sessionId)throw new ReportAccessError();
  return database.transaction(async locked=>{
-  const found=await locked.query(`SELECT accounts.account_id FROM auth_accounts accounts
-   JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role='worker'
-   JOIN auth_sessions sessions ON sessions.account_id=accounts.account_id AND sessions.session_id=$2 AND sessions.active_role='worker'
-   WHERE accounts.account_id=$1 AND accounts.account_status='active' AND accounts.email_verified_at IS NOT NULL
-    AND sessions.revoked_at IS NULL AND sessions.expires_at>clock_timestamp()
-   FOR UPDATE OF accounts,roles,sessions`,[principal.accountId,principal.sessionId]);
-  if(found.rows.length!==1)throw new ReportAccessError();
+  // Acquire the live-owner locks in one deterministic order. The portal shell
+  // reads notifications concurrently with report actions; mixed multi-table
+  // FOR UPDATE joins can let PostgreSQL lock session/account rows in opposite
+  // orders and deadlock the user action.
+  const account=await locked.query(`SELECT account_id FROM auth_accounts
+   WHERE account_id=$1 AND account_status='active' AND email_verified_at IS NOT NULL FOR UPDATE`,[principal.accountId]);
+  if(account.rows.length!==1)throw new ReportAccessError();
+  const role=await locked.query(`SELECT account_id FROM auth_account_roles
+   WHERE account_id=$1 AND role='worker' FOR UPDATE`,[principal.accountId]);
+  if(role.rows.length!==1)throw new ReportAccessError();
+  const session=await locked.query(`SELECT session_id FROM auth_sessions
+   WHERE account_id=$1 AND session_id=$2 AND active_role='worker'
+    AND revoked_at IS NULL AND expires_at>clock_timestamp() FOR UPDATE`,[principal.accountId,principal.sessionId]);
+  if(session.rows.length!==1)throw new ReportAccessError();
   return operation(locked);
  });
 }

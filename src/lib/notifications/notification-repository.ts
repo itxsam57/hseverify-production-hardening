@@ -78,21 +78,25 @@ SELECT *
 FROM platform_notifications
 WHERE projection_key = $1`;
 
+export const NOTIFICATION_ACCOUNT_GUARD_SQL = `
+SELECT account_id
+FROM auth_accounts
+WHERE account_id = $1
+  AND account_status = 'active'
+FOR UPDATE`;
+
 export const NOTIFICATION_SESSION_GUARD_SQL = `
 SELECT sessions.session_id
 FROM auth_sessions AS sessions
-JOIN auth_accounts AS accounts
-  ON accounts.account_id = sessions.account_id
 JOIN auth_account_roles AS roles
   ON roles.account_id = sessions.account_id
  AND roles.role = sessions.active_role
 WHERE sessions.session_id = $1
   AND sessions.account_id = $2
   AND sessions.active_role = $3
-  AND accounts.account_status = 'active'
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > CURRENT_TIMESTAMP
-FOR UPDATE OF sessions, accounts`;
+FOR UPDATE OF sessions`;
 
 export const NOTIFICATION_COMPANY_SCOPE_GUARD_SQL = `
 SELECT memberships.membership_id
@@ -294,6 +298,16 @@ async function assertLivePrincipal(
   database: DatabaseClient,
   principal: AuthorizationPrincipal
 ): Promise<void> {
+  // Match other account-sensitive commands: account first, session second.
+  // This prevents concurrent portal notification reads and report actions from
+  // acquiring the same two rows in opposite orders.
+  const account = await database.query<{ account_id: string }>(
+    NOTIFICATION_ACCOUNT_GUARD_SQL,
+    [principal.accountId]
+  );
+  if (account.rows[0]?.account_id !== principal.accountId) {
+    throw new NotificationAccessDeniedError();
+  }
   const session = await database.query<{ session_id: string }>(
     NOTIFICATION_SESSION_GUARD_SQL,
     [principal.sessionId, principal.accountId, principal.activeRole]
