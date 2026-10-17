@@ -210,3 +210,9 @@ The exact712f8a6 full gate failed after1486.71seconds: the117 rollback test used
 Eight active workflow files only replace setup-node remote npm caching with explicit package-manager-cache:false. Public M2.01 timing showed a602second restore versus5second npm ci. Node24, lockfile, installation and test commands are unchanged; future actual CI timings must verify the improvement. No test or release gate was removed.
 
 Broader native Masterplan integration preflight subsequently passed77/77 with zero skips in240.22seconds (`20261016-masterplan-native-after-rollback.json`). This prepared-source result does not substitute for fresh committed full verification.
+
+## MFA browser counter scheduling afterf8a98b7
+
+The exactf8a98b7 full run passed the former117rollback failure and all completed native/static and earlier browser groups, then failed at2612.72seconds in initialRoot login in the MFA-management browser. The test generated current-minus-one TOTP; crossing a30second boundary before verification invalidates that code. A deterministic check using the real verifier reproduced that boundary behavior while confirming current-code acceptance and consumed-counter rejection. The test now uses explicit submitted counters, selects an unused counter, and waits at most one counter window for its acceptance. Original old-factor, recovery-code replay, immutableaudit, session and notification assertions remain unchanged; product authentication was not altered.
+
+Focused five-role MFA browser passed213seconds; affected lint, native security tests and independent review passed. All13 remaining critical browser commands then passed against a frozen source fingerprint, including the complete consumer cohort and10connected integration tests. These prepared-source results do not replace fresh committed full verification. The failed candidate observer stopped without publishing a preview.

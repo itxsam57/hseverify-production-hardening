@@ -32,12 +32,26 @@ function decode32(value) {
   }
   return Buffer.from(bytes);
 }
-function totp(secret, stepOffset = 0) {
+function totpAtCounter(secret, counter) {
   const message = Buffer.alloc(8);
-  message.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000) + stepOffset));
+  message.writeBigUInt64BE(BigInt(counter));
   const digest = createHmac("sha1", decode32(secret)).update(message).digest();
   const offset = digest.at(-1) & 15;
   return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
+}
+function totp(secret, stepOffset = 0) {
+  return totpAtCounter(secret, Math.floor(Date.now() / 30_000) + stepOffset);
+}
+async function nextUnusedTotp(secret, lastCounter) {
+  const deadline = Date.now() + 35_000;
+  for (;;) {
+    const current = Math.floor(Date.now() / 30_000);
+    const counter = Math.max(current, lastCounter + 1);
+    if (counter <= current + 1) return { code: totpAtCounter(secret, counter), counter };
+    const wait = (counter - 1) * 30_000 - Date.now() + 20;
+    assert.ok(wait > 0 && Date.now() + wait <= deadline, "Next unused authenticator counter must enter the real acceptance window within one step.");
+    await new Promise(resolve => setTimeout(resolve, wait));
+  }
 }
 async function freePort() {
   return new Promise((resolve, reject) => {
@@ -59,7 +73,7 @@ test("Five MFA-protected roles rotate recovery codes and replace authenticators 
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"hse-mfa-security-")),port=await freePort(),baseUrl="http://127.0.0.1:"+port;
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"mfa-security-browser",HSE_SESSION_SECRET:"mfa-security-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"mfa-security-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
  const roles=["company","assessor","verifier","admin","root"],generated={},secrets={},oldCounters={},oldHashes={},notificationCookies={},preRecoverySessions={};let browser;
- async function signIn(page,identity,role,secret,offset){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(identity.password);await page.getByLabel("Authenticator code").fill(totp(secret,offset));await page.getByRole("button",{name:"Sign in",exact:true}).click();}
+ async function signIn(page,identity,role,secret,offset=0){await page.goto(baseUrl+"/"+role+"/login");await page.getByLabel("Email address").fill(identity.email);await page.getByLabel("Password",{exact:true}).fill(identity.password);const counter=Math.floor(Date.now()/30000)+offset;await page.getByLabel("Authenticator code").fill(totpAtCounter(secret,counter));await page.getByRole("button",{name:"Sign in",exact:true}).click();return counter;}
  try{
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);}
   const credentials=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8"));
@@ -77,15 +91,16 @@ test("Five MFA-protected roles rotate recovery codes and replace authenticators 
    browser=await chromium.launch({headless:true});
    for(const role of roles){
     const identity=credentials[role],context=await browser.newContext(),page=await context.newPage();
-    await signIn(page,identity,role,identity.totpSecret,-1);await page.waitForURL("**/"+role+"/dashboard");await page.goto(baseUrl+"/account/security");
+    let lastCounter=await signIn(page,identity,role,identity.totpSecret);await page.waitForURL("**/"+role+"/dashboard");await page.goto(baseUrl+"/account/security");
     const recovery=page.locator("details").filter({has:page.locator("summary").getByText("Rotate recovery codes",{exact:true})});
-    await recovery.locator("summary").click();await recovery.getByLabel("Current password").fill(identity.password);await recovery.getByLabel("Current authenticator code").fill(totp(identity.totpSecret));
+    await recovery.locator("summary").click();await recovery.getByLabel("Current password").fill(identity.password);const rotation=await nextUnusedTotp(identity.totpSecret,lastCounter);await recovery.getByLabel("Current authenticator code").fill(rotation.code);
     await recovery.getByRole("button",{name:"Generate new recovery codes",exact:true}).click();
     await recovery.getByText("Recovery codes rotated. Save these codes now; they are shown once.",{exact:true}).waitFor();
+    lastCounter=rotation.counter;
     generated[role]=await recovery.locator("li code").allInnerTexts();assert.equal(generated[role].length,10);assert.equal(new Set(generated[role]).size,10);assert.ok(generated[role].every(c=>/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(c)));
     const replacement=page.locator("details").filter({has:page.locator("summary").getByText("Replace authenticator",{exact:true})});
-    await replacement.locator("summary").click();await replacement.getByLabel("Current password").fill(identity.password);await replacement.getByLabel("Current authenticator code").fill(totp(identity.totpSecret,1));
-    await replacement.getByRole("button",{name:"Start authenticator replacement",exact:true}).click();oldCounters[role]=Math.floor(Date.now()/30000)+1;
+    await replacement.locator("summary").click();await replacement.getByLabel("Current password").fill(identity.password);const replacing=await nextUnusedTotp(identity.totpSecret,lastCounter);await replacement.getByLabel("Current authenticator code").fill(replacing.code);
+    await replacement.getByRole("button",{name:"Start authenticator replacement",exact:true}).click();oldCounters[role]=replacing.counter;
     await replacement.getByText("Add the new secret to your authenticator, then confirm one code.",{exact:true}).waitFor();
     secrets[role]=(await replacement.locator("code").first().innerText()).trim();
     await replacement.getByLabel("Code from new authenticator").fill(totp(secrets[role]));
