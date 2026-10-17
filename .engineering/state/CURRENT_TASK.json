@@ -14,7 +14,7 @@
     "M1.05.04",
     "M3.12.01"
   ],
-  "last_verified_action": "f8 full failed2612.72s at initialRoot previous-window TOTP login in MFA browser; real verifier fixedtime proof confirms boundary rejection and replaydenial. Test now tracks explicit unused current counters with bounded wait. Focused5roleMFA PASS213s, lint/native and independent reviewPASS; frozen remaining13browsercommandsPASS including fullconsumercohort and10integrations.",
+  "last_verified_action": "Exact83connectedCI failed: emailvisibility assertedexit0 whileexpectingretry_wait. Unchangedfocusedred reproduced; safediagnostic3success/exit0 thenretry_wait/exit1. One-line testexitexpectationfixed, workerunchanged. Fullfile2browser testsPASS40.34s includingconfiguredcontrolledacceptance/privateURLs; lint/native and independentreviewPASS. CLIassertioninventoryfoundnoadditionalconflicts. PriorfullABORTED ownedtreegone beforeedit.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -69,7 +69,7 @@
     ".autopilot/artifacts/20261016-verifier-search-native-v2.json",
     ".autopilot/artifacts/20261016-final-dirty-batch-independent-review.json"
   ],
-  "next_action": "Normal guarded commit/push reviewed test-only MFA timing repair; launch fresh rawcleanSHA full4command+14hostedCI, newcandidate restore/security and bound publicpreview gates.",
+  "next_action": "Normalguarded commit/push minimalemailtestcontractfix; freshrawcleanSHA full4+14CI, ownrestore/security/proofbindings then actualpublicpreview onlyafterPASS.",
   "revision_attempt": 0,
   "blockers": [
     "Fresh cleanSHA full4/PG/14CI/security/exactbuild preserveddata preview and ownerverification pending"
@@ -83,7 +83,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-17T01:38:22.426063+00:00",
+  "updated_at": "2026-10-17T02:07:27.888148+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -107,7 +107,7 @@
     },
     "coverage_status": "Historical 218-row counts are stale and cannot establish current readiness."
   },
-  "blocker": "Fresh committed full verification pending",
+  "blocker": "Freshcommittedfull/CI pending",
   "owner_required": false,
   "current_candidate_base_sha": "1a5f6beb66ef9f6bf911d90e1e26d99fe3738097",
   "whole_project_complete": false,
