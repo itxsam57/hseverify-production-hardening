@@ -44,15 +44,28 @@ export function normalizeRecordingDeletion(value: unknown): RecordingDeletion {
 }
 export async function assertPrivacyAdmin(tx: DatabaseClient, input: PrivacyExecutionAuthority) {
  if (!input.reviewerSessionId) throw new Error("Privacy execution requires a fresh authorized Admin session.");
- const result=await tx.query(
-  `SELECT accounts.account_id FROM auth_accounts accounts
-   JOIN auth_account_roles roles ON roles.account_id=accounts.account_id AND roles.role='admin'
-   JOIN auth_sessions sessions ON sessions.account_id=accounts.account_id AND sessions.session_id=$2
-   WHERE accounts.account_id=$1 AND accounts.account_status='active' AND sessions.active_role='admin'
-    AND sessions.revoked_at IS NULL AND sessions.expires_at>$3::timestamptz
-   FOR SHARE OF accounts,roles,sessions`,
+ // Keep lock acquisition consistent with notification and Worker report guards:
+ // account -> role -> session. A multi-table FOR SHARE join can lock the session
+ // before the account, deadlocking a concurrent notification read.
+ const account = await tx.query(
+  `SELECT account_id FROM auth_accounts
+   WHERE account_id=$1 AND account_status='active'
+   FOR SHARE`,
+  [input.reviewerAccountId]);
+ if (account.rows.length!==1) throw new Error("Privacy execution requires a fresh authorized Admin session.");
+ const role = await tx.query(
+  `SELECT account_id FROM auth_account_roles
+   WHERE account_id=$1 AND role='admin'
+   FOR SHARE`,
+  [input.reviewerAccountId]);
+ if (role.rows.length!==1) throw new Error("Privacy execution requires a fresh authorized Admin session.");
+ const session = await tx.query(
+  `SELECT session_id FROM auth_sessions
+   WHERE account_id=$1 AND session_id=$2 AND active_role='admin'
+    AND revoked_at IS NULL AND expires_at>$3::timestamptz
+   FOR SHARE`,
   [input.reviewerAccountId,input.reviewerSessionId,input.now]);
- if (result.rows.length!==1) throw new Error("Privacy execution requires a fresh authorized Admin session.");
+ if (session.rows.length!==1) throw new Error("Privacy execution requires a fresh authorized Admin session.");
 }
 async function event(tx: DatabaseClient, subject: Subject, authority: PrivacyExecutionAuthority,
  eventType:"APPROVED"|"EXECUTED",before:Record<string,unknown>,after:Record<string,unknown>) {

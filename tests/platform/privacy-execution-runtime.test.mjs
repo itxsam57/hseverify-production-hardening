@@ -10,6 +10,7 @@ import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
 
 const { PrivacyOperationsService } = loadTs("src/lib/privacy/privacy-operations-service.ts");
 const { PrivacyOperationsRepository } = loadTs("src/lib/privacy/privacy-operations-repository.ts");
+const { assertPrivacyAdmin } = loadTs("src/lib/privacy/privacy-execution.ts");
 const { FilesystemPrivateObjectStorage } = loadTs("src/lib/secure-files/private-object-storage-core.ts");
 const { createEmptyWorkerProfile } = loadTs("src/lib/worker/profile-domain.ts");
 const id = (prefix, seed) => prefix+"_"+createHash("sha256").update(seed).digest("hex").slice(0,24);
@@ -41,6 +42,28 @@ async function recording(c,seed="allowed",options={}) {
  await c.db.query("INSERT INTO recording_assets(recording_asset_id,purpose,interview_request_id,case_id,tenant_id,worker_account_id,captured_by_account_id,source,mime_type,object_key,ingest_key_hash,byte_size,content_sha256,status,started_at,ended_at,retention_until,legal_hold,created_at) VALUES($1,'INTERVIEW',$2,$3,$4,$5,$6,'AUDIO_ONLY','audio/webm',$7,$8,$9,$10,'AVAILABLE',$11,$11,$12,$13,$14)",[asset,request.interviewRequestId,caseId,c.fixture.credentials.company.tenantId,options.worker??c.worker,c.admin,key,createHash("sha256").update("ingest-"+seed).digest("hex"),bytes.length,hash,"2026-01-01T00:00:00Z",options.future?new Date(Date.now()+86400000).toISOString():"2026-02-01T00:00:00Z",options.hold??false,"2026-01-01T00:00:00Z"]);
  return {asset,key,caseId};
 }
+test("Privacy execution Admin authority locks account, role, then session in deterministic order",async()=>{
+ const calls=[];
+ const tx={query:async(sql,params)=>{
+  calls.push({sql:String(sql),params});
+  if(String(sql).includes("FROM auth_accounts"))return {rows:[{account_id:"admin_account"}]};
+  if(String(sql).includes("FROM auth_account_roles"))return {rows:[{account_id:"admin_account"}]};
+  if(String(sql).includes("FROM auth_sessions"))return {rows:[{session_id:"admin_session"}]};
+  throw new Error("Unexpected Admin authority query.");
+ }};
+ const input={reviewerAccountId:"admin_account",reviewerSessionId:"admin_session",now:"2026-10-17T00:00:00.000Z",
+  reason:"Approved exact operation under policy."};
+ await assertPrivacyAdmin(tx,input);
+ assert.equal(calls.length,3);
+ assert.match(calls[0].sql,/FROM auth_accounts[\s\S]*account_status='active'[\s\S]*FOR SHARE/);
+ assert.match(calls[1].sql,/FROM auth_account_roles[\s\S]*role='admin'[\s\S]*FOR SHARE/);
+ assert.match(calls[2].sql,/FROM auth_sessions[\s\S]*session_id=\$2[\s\S]*active_role='admin'[\s\S]*revoked_at IS NULL[\s\S]*expires_at>\$3::timestamptz[\s\S]*FOR SHARE/);
+ assert.deepEqual(calls.map(call=>call.params),[
+  ["admin_account"],["admin_account"],["admin_account","admin_session",input.now]
+ ]);
+ assert.doesNotMatch(calls.map(call=>call.sql).join("\n"),/JOIN auth_accounts|FOR SHARE OF accounts,roles,sessions/);
+});
+
 test("Worker typed correction -> exact Admin approval -> profile consumer with immutable before/after amendment",async()=>{
  const c=await context();
  try {
