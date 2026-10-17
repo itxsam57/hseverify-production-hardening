@@ -54,6 +54,7 @@ export type AssessmentAttemptClientDraft = Readonly<{
 }>;
 
 export type AssessmentAttemptClientView = Readonly<{
+  accommodationBreak?: import("./assessment-accommodation-break").AssessmentBreakView | null;
   timing?: import("./assessment-attempt-timing").AssessmentTimingView | null;
   attemptId: string;
   currentQuestion: AssessmentCandidateQuestion | null;

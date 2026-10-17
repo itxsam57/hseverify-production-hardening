@@ -62,8 +62,9 @@ export class CredentialIssuanceRepository {
     } : null;
   }
 
-  async updateStatus(credentialId: string, status: CredentialRecord["status"], version: number, currentStatus?: CredentialRecord["status"]): Promise<CredentialRecord | null> {
+  async updateStatus(credentialId: string, status: CredentialRecord["status"], version: number, currentStatus?: CredentialRecord["status"], changedAt?: string): Promise<CredentialRecord | null> {
     const client = await this.clientPromise;
+    const eventTime = changedAt ?? new Date().toISOString();
     return client.transaction(async (transaction) => {
       const result = await transaction.query(
         `UPDATE credential_issuances
@@ -75,8 +76,8 @@ export class CredentialIssuanceRepository {
       const updated = result.rows[0] ? credentialFromRow(result.rows[0] as Record<string, unknown>) : null;
       if (updated) {
         await transaction.query(
-        `INSERT INTO credential_lifecycle_events (credential_id, status, version, changed_at) VALUES ($1,$2,$3,now())`,
-        [updated.credentialId, updated.status, updated.version]
+        `INSERT INTO credential_lifecycle_events (credential_id, status, version, changed_at) VALUES ($1,$2,$3,$4::timestamptz)`,
+        [updated.credentialId, updated.status, updated.version, eventTime]
         );
         await transaction.query(
         `INSERT INTO credential_issuance_events (credential_id, version, status, changed_at) VALUES ($1,$2,$3,now()) ON CONFLICT DO NOTHING`,

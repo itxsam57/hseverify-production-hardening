@@ -1,12 +1,10 @@
 import { spawnSync } from "node:child_process";
 import {
-  mkdirSync,
-  readFileSync,
   rmSync,
   writeFileSync
 } from "node:fs";
-import { dirname, resolve } from "node:path";
-import ts from "typescript";
+import { resolve } from "node:path";
+import { compileRuntimeImportClosure } from "./lib/runtime-import-closure.mjs";
 
 const outputDirectory = resolve(".secure-scan-handler-runtime-test-dist");
 const sourceRoot = resolve("src", "lib");
@@ -31,38 +29,10 @@ const SOURCE_FILES = Object.freeze([
   "database/database.ts"
 ]);
 
-function runtimeSource(sourcePath) {
-  return readFileSync(sourcePath, "utf8").replace(/^import "server-only";\r?\n\r?\n?/, "");
-}
-
-function compileRuntimeModule(relativePath) {
-  const sourcePath = resolve(sourceRoot, relativePath);
-  const compiled = ts.transpileModule(runtimeSource(sourcePath), {
-    fileName: sourcePath,
-    reportDiagnostics: true,
-    compilerOptions: {
-      target: ts.ScriptTarget.ES2022,
-      module: ts.ModuleKind.CommonJS,
-      esModuleInterop: true,
-      strict: true,
-      removeComments: false
-    }
-  });
-  const errors = (compiled.diagnostics ?? []).filter(
-    (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error
-  );
-  if (errors.length > 0) {
-    for (const diagnostic of errors) {
-      console.error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
-    }
-    process.exit(1);
-  }
-  const destination = resolve(outputDirectory, relativePath.replace(/\.ts$/, ".js"));
-  mkdirSync(dirname(destination), { recursive: true });
-  writeFileSync(destination, compiled.outputText, "utf8");
-}
-
-for (const file of SOURCE_FILES) compileRuntimeModule(file);
+compileRuntimeImportClosure({
+  sourceRoot, outputDirectory, entryFiles: SOURCE_FILES,
+  sourceTransform: source => source.replace(/^import "server-only";\r?\n\r?\n?/, "")
+});
 
 writeFileSync(
   resolve(outputDirectory, "database", "database.js"),

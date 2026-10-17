@@ -78,7 +78,7 @@ export default async function CompanyBillingPage({searchParams}: {searchParams: 
               </thead>
               <tbody>
                 {workerFundingRequests.map((request) => (
-                  <tr key={request.fundingRequestId}>
+                  <tr id={request.fundingRequestId} key={request.fundingRequestId}>
                     <td><code>{request.workerAccountId}</code></td>
                     <td>{request.catalogueTitle}</td>
                     <td>{request.creditUnits}</td>

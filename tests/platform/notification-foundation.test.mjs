@@ -42,6 +42,7 @@ async function contracts() {
   return {
     insert: extractSql(source, "NOTIFICATION_INSERT_SQL"),
     findProjection: extractSql(source, "NOTIFICATION_FIND_PROJECTION_SQL"),
+    accountGuard: extractSql(source, "NOTIFICATION_ACCOUNT_GUARD_SQL"),
     sessionGuard: extractSql(source, "NOTIFICATION_SESSION_GUARD_SQL"),
     companyGuard: extractSql(source, "NOTIFICATION_COMPANY_SCOPE_GUARD_SQL"),
     list: extractSql(source, "NOTIFICATION_LIST_SQL"),
@@ -236,6 +237,8 @@ test("notification projection is outbox-bound, idempotent, immutable and one-way
     ]);
     assert.equal(duplicate.rows.length, 0);
 
+    const accountGuard = await database.query(sql.accountGuard, [worker.accountId]);
+    assert.equal(accountGuard.rows.length, 1);
     const guard = await database.query(sql.sessionGuard, [
       sessionId,
       worker.accountId,
@@ -325,6 +328,20 @@ test("notification projection is outbox-bound, idempotent, immutable and one-way
   } finally {
     await database.close();
   }
+});
+
+test("notification and Worker report guards use deterministic account-first locking", async () => {
+  const sql = await contracts();
+  assert.match(sql.accountGuard, /FROM auth_accounts[\s\S]*FOR UPDATE/);
+  assert.doesNotMatch(sql.sessionGuard, /JOIN auth_accounts/);
+  assert.doesNotMatch(sql.sessionGuard, /FOR UPDATE OF sessions,\s*accounts/);
+  const reportOwner = await readFile(resolve("src/lib/reports/report-owner-access.ts"), "utf8");
+  const accountLock = reportOwner.indexOf("SELECT account_id FROM auth_accounts");
+  const roleLock = reportOwner.indexOf("SELECT account_id FROM auth_account_roles");
+  const sessionLock = reportOwner.indexOf("SELECT session_id FROM auth_sessions");
+  assert.ok(accountLock >= 0 && accountLock < roleLock && roleLock < sessionLock,
+    "Worker reports must lock account, role, then session in that order.");
+  assert.doesNotMatch(reportOwner, /FOR UPDATE OF accounts,roles,sessions/);
 });
 
 test("recipient role and Company tenant scope are direct SQL boundaries and revoked scope disappears without deleting history", async () => {

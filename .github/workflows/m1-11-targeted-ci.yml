@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
       - name: M1.11 static architecture contract
         continue-on-error: true

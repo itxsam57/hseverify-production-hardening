@@ -1,6 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { PrivacyOperationsService } from "@/lib/privacy/privacy-operations-service";
@@ -14,16 +15,28 @@ export async function submitPrivacyRequestAction(formData: FormData) {
   if (!PRIVACY_REQUEST_TYPES.includes(type as PrivacyRequestType)) {
     throw new Error("invalid privacy request");
   }
+  const generalDescription=String(formData.get("requestDescription")??"").trim();
+  if(generalDescription.length>2000) throw new Error("Privacy request description is too long.");
+  let details:Record<string,unknown>=generalDescription?{description:generalDescription}:{};
+  if(type==="correction" && formData.get("correctionScope")==="profile_contact_city") {
+    details={correction:{scope:"profile_contact_city",city:String(formData.get("correctionCity")??""),
+      expectedProfileVersion:Number(formData.get("profileVersion"))}};
+  } else if(type==="deletion" && formData.get("deletionScope")==="expired_recording") {
+    details={deletion:{scope:"expired_recording",recordingAssetId:String(formData.get("recordingAssetId")??"")}};
+  } else if(type==="restriction") details={purpose:"optional_sharing"};
+  else if(type==="share_link_revocation" && String(formData.get("shareLinkId")??"").trim()) details={shareLinkId:String(formData.get("shareLinkId")).trim()};
+  else if(type==="consent_withdrawal" && String(formData.get("consentId")??"").trim()) details={consentId:String(formData.get("consentId")).trim()};
+  try {
   await service.request({
     requestId: randomUUID(),
     tenantId: principal.tenantMembership?.tenantId ?? null,
     workerId: principal.accountId,
     type: type as PrivacyRequestType,
-    details: type === "restriction" ? { purpose: "optional_sharing" } : type === "share_link_revocation" && typeof formData.get("shareLinkId") === "string" && String(formData.get("shareLinkId")).trim()
-      ? { shareLinkId: String(formData.get("shareLinkId")).trim() }
-      : type === "consent_withdrawal" && typeof formData.get("consentId") === "string" && String(formData.get("consentId")).trim()
-        ? { consentId: String(formData.get("consentId")).trim() } : {}
+    details
   });
+  } catch {
+    redirect("/worker/privacy?privacyError=invalid_request");
+  }
   revalidatePath("/worker/privacy");
   revalidatePath("/worker/accessibility");
 }

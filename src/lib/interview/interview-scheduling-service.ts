@@ -1,4 +1,6 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "./interview-calibration-authority";
+import {findAppealInterviewContext,isAppealInterviewLinked} from "../credential/appeal-interview-context";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
@@ -22,8 +24,8 @@ import {
 import { InterviewSchedulingRepository } from "./interview-scheduling-repository";
 
 export class InterviewAssignmentAccessError extends Error {
-  constructor() {
-    super("Interview assignment was not found.");
+  constructor(message="Interview assignment was not found.") {
+    super(message);
     this.name = "InterviewAssignmentAccessError";
   }
 }
@@ -39,10 +41,9 @@ export class InterviewSchedulingService {
   constructor(private readonly database: DatabaseClient) {}
 
   async getAssessorAssignments(input: { assessorAccountId:string; query?:string }) {
-    return new InterviewSchedulingRepository(this.database).findAssignedToAssessorAccount(
-      input.assessorAccountId,
-      input.query
-    );
+    const requests=await new InterviewSchedulingRepository(this.database).findAssignedToAssessorAccount(input.assessorAccountId,input.query);
+    const eligibility=await Promise.all(requests.map(request=>interviewCalibrationCurrent(this.database,input.assessorAccountId,request.interviewRequestId)));
+    return requests.filter((_,index)=>eligibility[index]);
   }
 
   async getAssignedInterview(input: { assessorAccountId:string; interviewRequestId:string }) {
@@ -52,6 +53,7 @@ export class InterviewSchedulingService {
     );
     if (!request) throw new InterviewAssignmentAccessError();
     assertInterviewAssessorAccess(request, input.assessorAccountId);
+    if(!await interviewCalibrationCurrent(this.database,input.assessorAccountId,input.interviewRequestId))throw new InterviewAssignmentAccessError("Current calibration for the pinned interview framework is required.");
     return request;
   }
 
@@ -158,6 +160,7 @@ export class InterviewSchedulingService {
       const repository = new InterviewSchedulingRepository(transaction);
       const current = await repository.findByRequestIdForAssessor(input.request.interviewRequestId,actor.accountId,true);
       if (!current || current.tenantId !== input.tenantId) throw new InterviewAssignmentAccessError();
+      if(!await interviewCalibrationCurrent(transaction,actor.accountId,current.interviewRequestId))throw new InterviewAssignmentAccessError("Current calibration for the pinned interview framework is required.");
       const clock = await transaction.query<{now:string|Date}>("SELECT clock_timestamp() AS now");
       const session=live.rows[0],now=clock.rows[0]?.now;
       if (!session || session.active_role !== "assessor" || session.revoked_at !== null || !now ||
@@ -232,10 +235,14 @@ export class InterviewSchedulingService {
       const repository=new InterviewSchedulingRepository(transaction);
       const preliminary=await repository.findByRequestIdForAssessor(requestId,actor.accountId);
       if(!preliminary)throw new InterviewAssignmentAccessError();
+      if(!await interviewCalibrationCurrent(transaction,actor.accountId,requestId))throw new InterviewAssignmentAccessError("Current calibration for the pinned interview framework is required.");
       // Case-first order matches progression; recheck the owned request after taking the case lock.
       const cases=await transaction.query<{case_id:string;order_id:string;tenant_id:string;worker_account_id:string;case_status:string;interview_reference:string|null}>(
         "SELECT case_id,order_id,tenant_id,worker_account_id,case_status,interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",
         [preliminary.caseId,preliminary.tenantId]);
+      const existing=await transaction.query<{interview_request_id:string}>("SELECT interview_request_id FROM interview_requests WHERE replaces_interview_request_id=$1",[requestId]);
+      const linked=await isAppealInterviewLinked(transaction,requestId),appealContext=linked?await findAppealInterviewContext(transaction,existing.rows[0]?.interview_request_id??requestId,true):null;
+      if(linked&&!appealContext)throw new InterviewSchedulingInputError("The appeal interview is closed or already replaced.");
       const current=await repository.findByRequestIdForAssessor(requestId,actor.accountId,true),caseRow=cases.rows[0];
       if(!current || !caseRow || current.caseId!==caseRow.case_id || current.tenantId!==caseRow.tenant_id || current.workerAccountId!==caseRow.worker_account_id)throw new InterviewAssignmentAccessError();
       const runtime=await transaction.query<{interview_session_id:string;status:string}>(
@@ -247,16 +254,15 @@ export class InterviewSchedulingService {
         return now;
       };
       const now=await requireLiveSession(),history=runtime.rows[0];
-      if(caseRow.case_status!=="Interview pending" || !history || !["NO_SHOW","TECHNICAL_HOLD"].includes(history.status))throw new InterviewSchedulingInputError("Only the current interrupted interview can request a replacement.");
-      const existing=await transaction.query<{interview_request_id:string}>(
-        "SELECT interview_request_id FROM interview_requests WHERE replaces_interview_request_id=$1",[requestId]);
+      if((!appealContext&&caseRow.case_status!=="Interview pending") || !history || !["NO_SHOW","TECHNICAL_HOLD"].includes(history.status))throw new InterviewSchedulingInputError("Only the current interrupted interview can request a replacement.");
+
       if(existing.rows[0]){
-        if(current.status!=="CANCELLED" || caseRow.interview_reference!==existing.rows[0].interview_request_id)throw new InterviewSchedulingInputError("The case has already moved to another interview.");
+        if(current.status!=="CANCELLED" || (!appealContext&&caseRow.interview_reference!==existing.rows[0].interview_request_id))throw new InterviewSchedulingInputError("The case has already moved to another interview.");
         const replacement=await repository.findByRequestId(current.tenantId,existing.rows[0].interview_request_id);
         if(!replacement)throw new InterviewAssignmentAccessError();
         await requireLiveSession();return replacement;
       }
-      if(!["ASSIGNED","WAITING_ROOM"].includes(current.status) || caseRow.interview_reference!==requestId)throw new InterviewSchedulingInputError("Only the current interrupted interview can request a replacement.");
+      if(!["ASSIGNED","WAITING_ROOM"].includes(current.status) || (!appealContext&&caseRow.interview_reference!==requestId))throw new InterviewSchedulingInputError("Only the current interrupted interview can request a replacement.");
       await repository.update(current.tenantId,{...current,status:"CANCELLED"});
       const interviews=new InterviewSchedulingService(transaction);
       let replacement=await interviews.requestAdditionalInterview({tenantId:current.tenantId,caseId:current.caseId,workerAccountId:current.workerAccountId,requestedAt:now.toISOString(),timezone:current.timezone});
@@ -272,6 +278,7 @@ export class InterviewSchedulingService {
         [replacement.interviewRequestId,requestId,now.toISOString()]);
       const assignment=await new InterviewAssignmentService(transaction).evaluateAndPersist(replacement.interviewRequestId,now);
       if(assignment.selectedAssessorAccountId)replacement=await interviews.assignInterview({tenantId:current.tenantId,request:replacement,assessorAccountId:assignment.selectedAssessorAccountId});
+      if(!appealContext){
       const owner=replacement.assessorAccountId ? "assessor" as const : "admin" as const;
       const nextAction=replacement.assessorAccountId ? "Assigned Assessor must schedule the replacement interview." : "Assign an eligible Assessor to the replacement interview.";
       await transaction.query("UPDATE assurance_cases SET interview_reference=$3,owner_kind=$4,next_action=$5,updated_at=$6 WHERE case_id=$1 AND tenant_id=$2",
@@ -281,8 +288,9 @@ export class InterviewSchedulingService {
       await transaction.query("UPDATE assurance_action_items SET action_status='resolved',updated_at=$2 WHERE case_id=$1 AND action_status<>'resolved'",[current.caseId,now.toISOString()]);
       const action=await orders.insertAction({actionId:createAssuranceActionId(),tenantId:current.tenantId,orderId:caseRow.order_id,caseId:current.caseId,workerAccountId:current.workerAccountId,severity:"warning",reason:nextAction,dueAt:null,owner,allowedAction:"open_case",deepLink:replacement.assessorAccountId ? "/assessor/interviews/"+replacement.interviewRequestId : "/admin/assessor-matching",statutory:false,now:now.toISOString()});
       if(!action)throw new Error("Replacement interview action could not be persisted.");
+      }
       await new DatabaseAuditRepository(Promise.resolve(transaction)).append(actor,{action:"interview.replacement.requested",outcome:"succeeded",target:{type:"resource",reference:requestId},
-        metadata:{tenantRef:current.tenantId,caseRef:current.caseId,workerRef:current.workerAccountId,replacementInterviewRequestId:replacement.interviewRequestId,previousRuntimeSessionId:history.interview_session_id,previousRuntimeStatus:history.status,previousScheduledAt:current.scheduledAt,reason}});
+        metadata:{...(appealContext?{appealId:appealContext.appeal_id}:{}),tenantRef:current.tenantId,caseRef:current.caseId,workerRef:current.workerAccountId,replacementInterviewRequestId:replacement.interviewRequestId,previousRuntimeSessionId:history.interview_session_id,previousRuntimeStatus:history.status,previousScheduledAt:current.scheduledAt,reason}});
       await requireLiveSession();return replacement;
     });
   }

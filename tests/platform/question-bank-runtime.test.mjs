@@ -1,3 +1,4 @@
+import { seedQuestionFixtureAdmin } from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -44,7 +45,7 @@ async function db() {
   await applyMigrationsThrough(
     database,
     ENV.releaseSha,
-    "0038_m2_04_audit_action_constraint_fix"
+    "0103_question_approval_lifecycle"
   );
   return database;
 }
@@ -116,6 +117,16 @@ const common = (frameworkReference, prompt, questionType, extra = {}) => ({
   ...extra
 });
 
+async function transition(service, actor, item, action, reason) {
+  return service.transitionQuestion(actor, {questionId:item.question.questionId,expectedAuthoringVersionId:item.question.authoringVersionId,expectedWorkflowState:item.workflow.state,expectedRevisionNo:item.workflow.revisionNo,action,reason}, NOW_DATE);
+}
+async function publish(database, service, author, item) {
+  const reviewer = await seedQuestionFixtureAdmin(database, "question_runtime_reviewer_"+author.accountId, NOW);
+  const submitted=await transition(service,author,item,"SUBMIT");
+  const approved=await transition(service,reviewer,submitted,"APPROVE");
+  return transition(service,reviewer,approved,"PUBLISH");
+}
+
 const rubric = {
   maxScore: 10,
   criteria: [
@@ -157,7 +168,10 @@ test("M2.04 accepts all six canonical types and round-trips immutable current ve
         },
         NOW_DATE
       );
-      assert.equal(made.question.questionStatus, "ACTIVE");
+      assert.equal(made.question.questionStatus, "INACTIVE");
+      assert.equal(made.workflow.state,"DRAFT");
+      assert.equal(await new QuestionDeliveryService(database).findActiveVersion(made.version.questionVersionId),null);
+      await publish(database,service,admin,made);
       assert.equal(made.version.questionType, type);
       assert.equal(made.version.versionNo, 1);
       if (Object.hasOwn(extra, "answerKey")) {
@@ -237,15 +251,16 @@ test("M2.04 rejects duplicate active semantic content even under a different ref
       "MULTIPLE_CHOICE",
       { options: ["Stop work", "Notify supervisor", "Walk away"], answerKey: "Stop work" }
     );
-    await service.createQuestion(admin, { questionReference: "DUP-1", version: first }, NOW_DATE);
+    const original=await service.createQuestion(admin, { questionReference: "DUP-1", version: first }, NOW_DATE);
+    await publish(database,service,admin,original);
     const duplicate = common(
       framework.frameworkReference,
-      "Which immediate action is correct after finding an uncontrolled hazard?",
+      "  Which   immediate action is correct after finding an uncontrolled hazard?  ",
       "MULTIPLE_CHOICE",
       { options: ["Walk away", "Stop work", "Notify supervisor"], answerKey: "Stop work" }
     );
     await assert.rejects(
-      service.createQuestion(admin, { questionReference: "DUP-2", version: duplicate }, NOW_DATE),
+      (async()=>{const made=await service.createQuestion(admin,{questionReference:"DUP-2",version:duplicate},NOW_DATE);await publish(database,service,admin,made);})(),
       QuestionBankConflictError
     );
   } finally {
@@ -275,6 +290,7 @@ test("M2.04 revoked admin cannot mutate and live admin mutations emit dedicated 
       { questionReference: "AUDIT", version },
       NOW_DATE
     );
+    await publish(database,service,live,made);
     await service.setStatus(live, made.question.questionId, "INACTIVE", NOW_DATE);
     const events = await database.query(
       `SELECT action_key FROM platform_audit_events WHERE target_reference=$1 ORDER BY audit_sequence`,
@@ -282,6 +298,9 @@ test("M2.04 revoked admin cannot mutate and live admin mutations emit dedicated 
     );
     assert.deepEqual(events.rows.map((row) => row.action_key), [
       "assessment.question.created",
+      "assessment.question.status.changed",
+      "assessment.question.status.changed",
+      "assessment.question.status.changed",
       "assessment.question.status.changed"
     ]);
   } finally {
@@ -383,6 +402,8 @@ test("M2.04 delivery projection exposes no hidden answer or scoring material", a
       },
       NOW_DATE
     );
+    assert.equal(await delivery.findActiveVersion(made.version.questionVersionId),null);
+    await publish(database,service,admin,made);
     const publicVersion = await delivery.findActiveVersion(made.question.currentVersionId);
     assert.ok(publicVersion);
     assert.deepEqual(
@@ -488,4 +509,55 @@ test("M2.04 history-preserving down/reapply retains questions and versions", asy
   } finally {
     await database.close();
   }
+});
+
+test("Question independent approval retains old live publication through changes, CAS races and terminal archival", async()=>{
+ const database=await db();try{
+  const author=await seedAdmin(database,"Z"),reviewer=await seedAdmin(database,"Y"),revoked=await seedAdmin(database,"X",{revoked:true});
+  const framework=await seedFramework(database,"Z"),service=new QuestionBankService(database),delivery=new QuestionDeliveryService(database);
+  const input=common(framework.frameworkReference,"Approval lifecycle original safe isolation question","TRUE_FALSE",{answerKey:true});
+  let item=await service.createQuestion(author,{questionReference:"LIFECYCLE",version:input},NOW_DATE);
+  const v1=item.version.questionVersionId;
+  assert.equal(item.workflow.state,"DRAFT");assert.equal(item.liveVersion,null);assert.equal(await delivery.findActiveVersion(v1),null);
+  await assert.rejects(database.query("UPDATE assessment_questions SET question_status='ACTIVE' WHERE question_id=$1",[item.question.questionId]),e=>e.code==="23514");
+  await assert.rejects(service.setStatus(author,item.question.questionId,"ACTIVE",NOW_DATE),QuestionBankConflictError);
+  await assert.rejects(transition(service,reviewer,item,"SUBMIT"),QuestionBankAccessError);
+  const submissions=await Promise.allSettled(Array.from({length:8},()=>transition(service,author,item,"SUBMIT")));
+  assert.equal(submissions.filter(x=>x.status==="fulfilled").length,1);
+  assert.equal(submissions.filter(x=>x.status==="rejected").length,7);
+  item=submissions.find(x=>x.status==="fulfilled").value;
+  await assert.rejects(transition(service,author,item,"APPROVE"),QuestionBankAccessError);
+  await assert.rejects(transition(service,revoked,item,"APPROVE"),QuestionBankAccessError);
+  await assert.rejects(transition(service,reviewer,item,"REQUEST_CHANGES",""),QuestionBankInputError);
+  await assert.rejects(database.query("UPDATE question_version_workflow SET workflow_state='APPROVED',approved_by_account_id=$2,approved_at=$3,transition_actor_account_id=$2,transition_session_id=$4 WHERE question_version_id=$1",[v1,author.accountId,NOW,author.sessionId]),e=>["23514","42501"].includes(e.code));
+  const reviews=await Promise.allSettled(Array.from({length:8},()=>transition(service,reviewer,item,"APPROVE")));
+  assert.equal(reviews.filter(x=>x.status==="fulfilled").length,1);assert.equal(reviews.filter(x=>x.status==="rejected").length,7);
+  item=reviews.find(x=>x.status==="fulfilled").value;
+  assert.equal(item.workflow.approvedByAccountId,reviewer.accountId);
+  await assert.rejects(database.query("UPDATE question_version_workflow SET approved_by_account_id=$2 WHERE question_version_id=$1",[v1,revoked.accountId]),e=>e.code==="55000");
+  const publications=await Promise.allSettled(Array.from({length:8},()=>transition(service,reviewer,item,"PUBLISH")));
+  assert.equal(publications.filter(x=>x.status==="fulfilled").length,1);assert.equal(publications.filter(x=>x.status==="rejected").length,7);
+  item=publications.find(x=>x.status==="fulfilled").value;assert.ok(await delivery.findActiveVersion(v1));
+  item=await service.reviseQuestion(author,{questionId:item.question.questionId,expectedAuthoringVersionId:v1,version:{...input,prompt:"Approval lifecycle draft replacement safe isolation question"}},NOW_DATE);
+  const v2=item.version.questionVersionId;assert.equal(item.question.currentVersionId,v1);assert.equal(item.workflow.state,"DRAFT");assert.ok(await delivery.findActiveVersion(v1));assert.equal(await delivery.findActiveVersion(v2),null);
+  await assert.rejects(service.transitionQuestion(reviewer,{questionId:item.question.questionId,expectedAuthoringVersionId:v1,expectedWorkflowState:"APPROVED",expectedRevisionNo:2,action:"PUBLISH"},NOW_DATE),QuestionBankConflictError);
+  item=await transition(service,author,item,"SUBMIT");item=await transition(service,reviewer,item,"REQUEST_CHANGES","Clarify the isolation sequence.");
+  assert.equal(item.workflow.state,"CHANGES_REQUESTED");assert.ok(await delivery.findActiveVersion(v1));
+  item=await service.reviseQuestion(author,{questionId:item.question.questionId,expectedAuthoringVersionId:v2,version:{...input,prompt:"Approval lifecycle corrected final safe isolation question"}},NOW_DATE);
+  const v3=item.version.questionVersionId;item=await transition(service,author,item,"SUBMIT");item=await transition(service,reviewer,item,"APPROVE");item=await transition(service,reviewer,item,"PUBLISH");
+  assert.equal(item.question.currentVersionId,v3);assert.equal(await delivery.findActiveVersion(v1),null);assert.ok(await delivery.findActiveVersion(v3));
+  const old=(await database.query("SELECT workflow_state FROM question_version_workflow WHERE question_version_id=$1",[v1])).rows[0];assert.equal(old.workflow_state,"PAUSED");
+  item=await transition(service,author,item,"PAUSE");const stalePaused=item;assert.equal(await delivery.findActiveVersion(v3),null);item=await transition(service,author,item,"RESUME");assert.ok(await delivery.findActiveVersion(v3));
+  item=await transition(service,author,item,"PAUSE");await assert.rejects(transition(service,author,stalePaused,"RESUME"),QuestionBankConflictError);item=await transition(service,author,item,"RESUME");
+  await assert.rejects(transition(service,author,item,"RETIRE"),QuestionBankInputError);
+  item=await transition(service,author,item,"RETIRE","Replaced by a revised curriculum.");assert.equal(await delivery.findActiveVersion(v3),null);
+  item=await transition(service,author,item,"ARCHIVE");assert.equal(item.workflow.state,"ARCHIVED");
+  await assert.rejects(transition(service,author,item,"RESUME"),QuestionBankConflictError);
+  const events=await database.query("SELECT event_id,from_state,to_state,actor_account_id FROM question_version_workflow_events WHERE question_version_id=$1 ORDER BY revision_no",[v3]);
+  assert.deepEqual(events.rows.map(x=>x.to_state),["DRAFT","UNDER_REVIEW","APPROVED","PUBLISHED","PAUSED","PUBLISHED","PAUSED","PUBLISHED","RETIRED","ARCHIVED"]);
+  await assert.rejects(database.query("UPDATE question_version_workflow_events SET reason='tamper' WHERE event_id=$1",[events.rows[0].event_id]),e=>e.code==="55000");
+  await assert.rejects(database.query("DELETE FROM question_version_workflow_events WHERE event_id=$1",[events.rows[0].event_id]),e=>e.code==="55000");
+  await assert.rejects(database.execute(readFileSync("database/migrations/0103_question_approval_lifecycle.down.sql","utf8")),e=>e.code==="55000");
+  console.log("ACTUAL_QUESTION_LIFECYCLE_SQL two live Admin accounts, submit/review/publish races, self review denied, requested changes, draft/live separation, pause/resume/retire/archive, event tamper denied");
+ }finally{await database.close();}
 });

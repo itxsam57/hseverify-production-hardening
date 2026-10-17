@@ -8,6 +8,7 @@ import type { AssessmentDeliverySettings } from "../assessment-generation/assess
 import type { AssessmentAttemptRecord } from "./assessment-attempt-domain";
 import { AssessmentAttemptConflictError } from "./assessment-attempt-domain";
 import { CaseAccommodationService } from "../privacy/case-accommodation-service";
+import { snapshotAssessmentBreakAllowance,readAssessmentBreakState } from "./assessment-accommodation-break";
 
 export type AssessmentTimingView = Readonly<{
   mode: "COMBINED" | "SEPARATE";
@@ -24,8 +25,9 @@ export async function snapshotAssessmentClock(
   now: Date,
   actor: TrustedUserAuditActor
 ): Promise<void> {
+  const approved=await snapshotAssessmentBreakAllowance(database,attempt,now);
   if (!delivery.timing) return;
-  const { adjustment } = await new CaseAccommodationService(Promise.resolve(database))
+  const { adjustment } = approved ?? await new CaseAccommodationService(Promise.resolve(database))
     .resolveForWorker(attempt.caseId, attempt.workerAccountId);
   const durations = delivery.timing.mode === "COMBINED"
     ? [delivery.timing.durationSeconds]
@@ -59,7 +61,13 @@ export async function startAssessmentPhaseClock(
     "SELECT deadline_at FROM assessment_attempt_clocks WHERE attempt_id=$1 AND phase_index=$2",
     [attemptId,phaseIndex]
   );
-  let deadline = new Date(clock.rows[0].deadline_at);
+  await scheduleAssessmentExpiryFromDeadline(database,attemptId,phaseIndex,new Date(clock.rows[0].deadline_at).toISOString(),actor);
+}
+export async function scheduleAssessmentExpiryFromDeadline(database:DatabaseClient,attemptId:string,phaseIndex:number,deadlineAtInput:string,actor?:TrustedUserAuditActor):Promise<void>{
+ const policy=(await database.query<{timing_mode:string;phase_durations_json:unknown}>("SELECT timing_mode,phase_durations_json FROM assessment_attempt_time_policies WHERE attempt_id=$1",[attemptId])).rows[0];
+ if(!policy)throw new AssessmentAttemptConflictError("Assessment timing policy is unavailable.");
+ const durations=(typeof policy.phase_durations_json==="string"?JSON.parse(policy.phase_durations_json):policy.phase_durations_json) as number[];
+  let deadline = new Date(deadlineAtInput);
   // Begin/manual advance schedules all remaining phases. System catch-up uses those
   // durable intents and starts the next clock at the preceding immutable deadline.
   const phases = policy.timing_mode === "COMBINED" ? [0] :
@@ -103,11 +111,12 @@ export async function readAssessmentClock(
   if (!row || row.timing_mode !== delivery.timing.mode) {
     throw new AssessmentAttemptConflictError("Assessment clock is unavailable; request controlled recovery.");
   }
-  const deadline = new Date(row.deadline_at);
+  const breaks=await readAssessmentBreakState(database,attempt,now,phaseIndex);
+  const deadline=new Date(new Date(row.deadline_at).getTime()+breaks.phaseExtensionSeconds*1000);
   if (!Number.isFinite(deadline.getTime())) throw new AssessmentAttemptConflictError("Assessment deadline is invalid.");
   return Object.freeze({
     mode: delivery.timing.mode, phaseIndex, deadlineAt: deadline.toISOString(),
-    remainingSeconds: Math.max(0, Math.ceil((deadline.getTime() - now.getTime()) / 1000)),
+    remainingSeconds: Math.max(0, Math.ceil((deadline.getTime() - now.getTime()) / 1000)-breaks.activeRemainingSeconds),
     expired: now.getTime() >= deadline.getTime()
   });
 }
@@ -118,5 +127,7 @@ export async function assertAssessmentTimeAvailable(
   const { AssessmentDeliverySettingsService } = await import("../assessment-generation/assessment-delivery-settings-service");
   const delivery = await new AssessmentDeliverySettingsService(Promise.resolve(database)).get(attempt.blueprintVersionId);
   const timing = await readAssessmentClock(database, attempt, delivery, now);
+  const breaks=await readAssessmentBreakState(database,attempt,now);
+  if(breaks.view?.active)throw new AssessmentAttemptConflictError("An approved break is active. Questions and answer changes resume when it ends.");
   if (timing?.expired) throw new AssessmentAttemptConflictError("Assessment time has expired. Previously saved responses are retained; use controlled recovery.");
 }

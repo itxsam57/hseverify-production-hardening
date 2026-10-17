@@ -2,6 +2,7 @@ import "server-only";
 
 import { getDatabaseClient } from "../database/database";
 import type { DatabaseClient } from "../database/database";
+import { CredentialAppealReviewAuthorizationError } from "./credential-appeals-domain";
 import type { AppealOutcomeAction, CredentialAppeal } from "./credential-appeals-domain";
 
 type AppealRow = {
@@ -57,6 +58,49 @@ const SELECT = `SELECT appeal_id,credential_id,worker_id,reason,evidence,status,
 
 export class CredentialAppealsRepository {
   constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()) {}
+
+  // Account IDs and permanent Worker IDs are different namespaces. Resolve both
+  // ownership and decision provenance at the persisted boundary before review.
+  async assertIndependentReviewer(appeal: CredentialAppeal, reviewerId: string): Promise<void> {
+    const client = await this.clientPromise;
+    if (!reviewerId || reviewerId !== reviewerId.trim()) {
+      throw new CredentialAppealReviewAuthorizationError("An authenticated independent reviewer is required.");
+    }
+    const account = await client.query<{ worker_reference: string | null }>(
+      `SELECT account.worker_reference FROM auth_accounts account
+        WHERE account.account_id=$1 AND account.account_status='active'
+          AND EXISTS (SELECT 1 FROM auth_account_roles role
+                       WHERE role.account_id=account.account_id AND role.role='admin')
+        FOR SHARE OF account`,
+      [reviewerId]
+    );
+    if (account.rows.length !== 1) throw new CredentialAppealReviewAuthorizationError("An authorized authenticated reviewer is required.");
+    if (reviewerId === appeal.workerId || account.rows[0].worker_reference === appeal.workerId) {
+      throw new CredentialAppealReviewAuthorizationError("Appeal requires an independent reviewer of its own credential.");
+    }
+    const source = await client.query<{ worker_account_id: string; permanent_worker_id: string }>(
+      `SELECT cases.worker_account_id,cases.permanent_worker_id
+         FROM assurance_cases cases JOIN credential_issuances credential
+           ON credential.credential_id=cases.credential_reference
+          AND credential.worker_id=cases.permanent_worker_id
+        WHERE cases.credential_reference=$1 AND credential.worker_id=$2
+        FOR SHARE OF cases,credential`,
+      [appeal.credentialId, appeal.workerId]
+    );
+    if (source.rows.length !== 1) throw new CredentialAppealReviewAuthorizationError("Independent review requires valid credential ownership provenance.");
+    if (source.rows[0].worker_account_id === reviewerId) {
+      throw new CredentialAppealReviewAuthorizationError("Appeal requires an independent reviewer of its own credential.");
+    }
+    const conflict = await client.query(
+      `SELECT 1 FROM assurance_case_timeline_events event JOIN assurance_cases cases
+           ON cases.case_id=event.case_id AND cases.tenant_id=event.tenant_id
+        WHERE cases.credential_reference=$1 AND event.actor_account_id=$2
+          AND event.event_type IN ('decision_recorded','decision_override_applied')
+        LIMIT 1`,
+      [appeal.credentialId, reviewerId]
+    );
+    if (conflict.rows.length) throw new CredentialAppealReviewAuthorizationError("Appeal requires an independent reviewer outside the original decision.");
+  }
 
   async save(appeal: CredentialAppeal) {
     const client = await this.clientPromise;

@@ -5,3 +5,5 @@ Approved accommodation is displayed at precheck/interview; actual adjusted timin
 Production runtime heartbeat, preview/owner verification and live adapter evidence are not certified.
 
 Recovery request/reset PostgreSQL concurrency remains UNKNOWN: source review found request locks account then invalidates recovery flows while successful reset locks flow then updates account. Sequential PGlite browser/runtime evidence does not certify concurrent transaction ordering. Track a real PostgreSQL concurrency reproduction and compatible ordering before any concurrency/readiness claim. No change to this broader concern in the bounded wrong-code persistence repair.
+
+16 October: the above recovery lock-order concern was reproduced on current actual PostgreSQL for reset and resend, then repaired by centralized account-before-flow locking. Permanent selected3case contention/native13OTP/affected browser tests pass on prepared source. Final exact-SHA execution is pending; historical debt/status counts above remain historical, not current release findings.

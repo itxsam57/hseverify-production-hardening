@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
-import { AssuranceOrderInputError, type AssuranceFundingMethod } from "@/lib/assurance/assurance-order-domain";
+import { AssuranceOrderInputError, AssuranceOrderConflictError, normalizeAssuranceReference, type AssuranceFundingMethod } from "@/lib/assurance/assurance-order-domain";
 import { AssuranceOrderService } from "@/lib/assurance/assurance-order-service";
 import { EvidenceReviewService } from "@/lib/review/evidence-review-service";
 
@@ -33,7 +33,17 @@ export async function saveAssuranceOrderDraftAction(formData:FormData):Promise<v
 export async function addAssuranceOrderWorkerAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const fundingRaw=text(formData,"fundingMethod"); if(fundingRaw!=="company"&&fundingRaw!=="worker") throw new AssuranceOrderInputError("Choose Company or Worker funding."); const orderId=text(formData,"orderId"); await (await service()).addWorkerTarget(principal,orderId,text(formData,"workerLinkId"),fundingRaw); refresh(orderId); }
 export async function removeAssuranceOrderWorkerAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).removeWorkerTarget(principal,orderId,text(formData,"targetId")); refresh(orderId); }
 export async function validateAssuranceOrderAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).validateOrder(principal,orderId); refresh(orderId); }
-export async function submitAssuranceOrderAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).submitOrder(principal,orderId); refresh(orderId); }
+export async function submitAssuranceOrderAction(formData:FormData):Promise<void>{
+  const principal=await requireCurrentTenantPermission("company.orders.manage");
+  const orderId=normalizeAssuranceReference(text(formData,"orderId"),"assurance_order");
+  if(!orderId)throw new AssuranceOrderInputError("Assurance Order reference is invalid.");
+  try {await (await service()).submitOrder(principal,orderId);}
+  catch(error){
+    if(!(error instanceof AssuranceOrderConflictError))throw error;
+    redirect("/company/assurance-orders/"+orderId+"?error="+encodeURIComponent(error.message));
+  }
+  refresh(orderId);
+}
 export async function queueAssuranceCaseEvidenceAction(formData:FormData):Promise<void>{
   const principal=await requireCurrentTenantPermission("company.orders.manage");
   const caseId=text(formData,"caseId");

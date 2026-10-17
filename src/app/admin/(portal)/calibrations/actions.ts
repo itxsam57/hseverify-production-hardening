@@ -26,6 +26,7 @@ export async function recordStaffCalibrationAction(formData: FormData): Promise<
       accountId: value(formData, "accountId"),
       role: value(formData, "role") as "verifier" | "assessor",
       frameworkReference: value(formData, "frameworkReference"),
+      frameworkVersionId: value(formData, "frameworkVersionId") || undefined,
       status: value(formData, "status") as StaffCalibrationStatus,
       validFrom,
       validUntil,

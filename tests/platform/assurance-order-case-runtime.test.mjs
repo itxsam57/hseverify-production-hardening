@@ -232,6 +232,9 @@ test("M2.01 Action Centre blocks unsafe assignment and snoozing of live worker o
     const actionRow=await database.query(`SELECT action_id FROM assurance_action_items WHERE order_id=$1 LIMIT 1`,[order.orderId]);
     const actionId=actionRow.rows[0]?.action_id; assert.ok(actionId);
     const actionService=new AssuranceActionCentreService(database);
+    const beforeInvalid=(await database.query("SELECT * FROM assurance_action_items WHERE action_id=$1",[actionId])).rows;
+    await assert.rejects(actionService.snooze(principal,actionId,new Date("invalid"),"Invalid date must be rejected safely.",NOW_DATE),error=>error.name==="AssuranceOrderInputError");
+    assert.deepEqual((await database.query("SELECT * FROM assurance_action_items WHERE action_id=$1",[actionId])).rows,beforeInvalid);
     await assert.rejects(actionService.assignOwner(principal,actionId,company.membershipId,NOW_DATE),AssuranceOrderConflictError);
     await assert.rejects(actionService.snooze(principal,actionId,new Date("2026-08-20T00:00:00.000Z"),"not appropriate",NOW_DATE),AssuranceOrderConflictError);
     await actionService.acknowledge(principal,actionId,NOW_DATE);

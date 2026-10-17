@@ -291,11 +291,11 @@ requireMarkers("src/lib/database/database.ts", [
 ]);
 
 const nextConfig = source("next.config.ts");
-if (!nextConfig.includes('serverExternalPackages: ["@electric-sql/pglite"]')) {
+if (!/serverExternalPackages:\s*\[[^\]]*"@electric-sql\/pglite"[^\]]*\]/u.test(nextConfig)) {
   console.error("PGlite must remain external to the Next.js server bundle.");
   process.exit(1);
 }
-if (nextConfig.includes('transpilePackages: ["@electric-sql/pglite"]')) {
+if (/transpilePackages:\s*\[[^\]]*"@electric-sql\/pglite"[^\]]*\]/u.test(nextConfig)) {
   console.error("PGlite must not be transpiled into the Turbopack server bundle.");
   process.exit(1);
 }

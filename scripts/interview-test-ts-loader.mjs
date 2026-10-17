@@ -7,10 +7,13 @@ const require = createRequire(import.meta.url);
 const compiled = new Map();
 
 export function loadTs(path) {
+  path = resolve(path);
   if (compiled.has(path)) return compiled.get(path);
   const source = require("node:fs").readFileSync(path, "utf8");
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const moduleRecord = { exports: {} };
+  // Match CommonJS: publish the partial exports before evaluating cyclic dependencies.
+  compiled.set(path, moduleRecord.exports);
   const localRequire = (request) => {
     if (request === "../auth/auth-domain") return loadTs("src/lib/auth/auth-domain.ts");
     if (request === "./interview-scheduling-domain") return loadTs("src/lib/interview/interview-scheduling-domain.ts");
@@ -31,7 +34,12 @@ export function loadTs(path) {
     return require(request);
   };
   const factory = new Function("exports", "require", "module", "__filename", "__dirname", output);
-  factory(moduleRecord.exports, localRequire, moduleRecord, path, ".");
+  try {
+    factory(moduleRecord.exports, localRequire, moduleRecord, path, dirname(path));
+  } catch (error) {
+    compiled.delete(path);
+    throw error;
+  }
   compiled.set(path, moduleRecord.exports);
   return moduleRecord.exports;
 }

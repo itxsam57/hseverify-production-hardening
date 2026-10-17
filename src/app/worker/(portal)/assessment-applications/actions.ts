@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import {
   getWorkerAssessmentApplicationService,
+  AssessmentReassessmentSourceAccessError,
   WorkerAssessmentApplicationAccessError,
   WorkerAssessmentApplicationConflictError
 } from "@/lib/assessment-catalogue/worker-assessment-application-service";
@@ -17,6 +18,7 @@ function text(formData: FormData, key: string): string {
 
 function errorPath(error: unknown): string {
   const message =
+    error instanceof AssessmentReassessmentSourceAccessError ||
     error instanceof WorkerAssessmentApplicationAccessError ||
     error instanceof WorkerAssessmentApplicationConflictError
       ? error.message
@@ -36,7 +38,9 @@ export async function applyWorkerPayAction(formData: FormData): Promise<void> {
   try {
     await (await getWorkerAssessmentApplicationService()).applyWorkerPay(
       principal,
-      text(formData, "catalogueVersionId")
+      text(formData, "catalogueVersionId"),
+      new Date(),
+      { sourceAppealId: text(formData, "sourceAppealId") || undefined }
     );
   } catch (error) {
     redirect(errorPath(error));

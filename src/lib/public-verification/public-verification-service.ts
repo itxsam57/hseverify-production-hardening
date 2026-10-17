@@ -51,7 +51,7 @@ export interface PublicVerificationRepositoryPort {
   findPublicWorkerByPermanentId(
     workerId: string
   ): Promise<PublicWorkerVerificationSource | null>;
-  findPublicCredentialById?(credentialId: string): Promise<PublicCredentialVerificationSource | null>;
+  findPublicCredentialById?(credentialId: string, signingSecrets: readonly string[]): Promise<PublicCredentialVerificationSource | null>;
   createConcernWithAudit(
     input: CreatePublicVerificationConcernInput
   ): Promise<CreatePublicVerificationConcernResult>;
@@ -147,7 +147,8 @@ function rateInput(
 export class PublicVerificationService {
   constructor(
     private readonly repository: PublicVerificationRepositoryPort,
-    private readonly secret: string
+    private readonly secret: string,
+    private readonly credentialSigningSecrets: readonly string[] = []
   ) {
     if (typeof secret !== "string" || secret.length < 32) {
       throw new Error("Public verification service secret is invalid.");
@@ -213,7 +214,7 @@ export class PublicVerificationService {
 
     if (identifier.kind === "credential") {
       try {
-        const source = await this.repository.findPublicCredentialById?.(identifier.normalizedIdentifier);
+        const source = await this.repository.findPublicCredentialById?.(identifier.normalizedIdentifier, this.credentialSigningSecrets);
         if (!source) return SAFE_MISS;
         return { kind: "redirect", publicToken: mintPublicVerificationCapability({
           identifierKind: "credential", normalizedIdentifier: identifier.normalizedIdentifier
@@ -275,7 +276,7 @@ export class PublicVerificationService {
     if (!capability) return SAFE_MISS;
     if (capability.identifierKind === "credential") {
       try {
-        const source = await this.repository.findPublicCredentialById?.(capability.normalizedIdentifier);
+        const source = await this.repository.findPublicCredentialById?.(capability.normalizedIdentifier, this.credentialSigningSecrets);
         return source ? { kind: "projection", projection: projectPublicCredentialVerification(source, now.toISOString()) } : SAFE_MISS;
       } catch { return TEMPORARILY_UNAVAILABLE; }
     }
@@ -365,7 +366,7 @@ export class PublicVerificationService {
 
     try {
       if (capability.identifierKind === "credential") {
-        if (!await this.repository.findPublicCredentialById?.(capability.normalizedIdentifier)) return SAFE_MISS;
+        if (!await this.repository.findPublicCredentialById?.(capability.normalizedIdentifier, this.credentialSigningSecrets)) return SAFE_MISS;
       } else {
         const source = await this.repository.findPublicWorkerByPermanentId(capability.normalizedIdentifier);
         if (!source || mapWorkerIdentityStatusToPublicStatus(source.lifecycleStatus) === "not_found_or_invalid") return SAFE_MISS;
@@ -387,6 +388,7 @@ export class PublicVerificationService {
       const concern = await this.repository.createConcernWithAudit({
         concernId: createPublicConcernId(),
         subjectReferenceHash,
+        subjectBinding: { kind: capability.identifierKind, identifier: capability.normalizedIdentifier },
         category,
         description,
         contactName,
