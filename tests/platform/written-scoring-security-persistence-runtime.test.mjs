@@ -1,43 +1,60 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { loadWrittenScoringRuntime } from "../helpers/written-scoring-runtime-loader.mjs";
 
-const { WrittenScoringService } = await loadWrittenScoringRuntime();
+import { fixture } from "../helpers/written-scoring-authority-fixture.mjs";
 
 test("written scoring security runtime preserves persisted tenant boundaries during workflow", async () => {
-  const reviews = new Map();
-  const database = {
-    async query(sql, params) {
-      if (sql.includes("INSERT INTO written_score_reviews")) {
-        reviews.set(params[0], { id: params[0], tenant: params[1], reviewer: params[4], status: "DRAFT" });
-        return { rows: [] };
-      }
-      if (sql.includes("SELECT review_id FROM written_score_reviews")) {
-        const review = reviews.get(params[0]);
-        return { rows: review && review.tenant === params[2] && review.reviewer === params[1] ? [{ review_id: review.id }] : [] };
-      }
-      if (sql.includes("UPDATE written_score_reviews SET status='FINAL'")) {
-        reviews.get(params[0]).status = "FINAL";
-        return { rows: [{ review_id: params[0] }] };
-      }
-      if (sql.includes("SELECT review_id,status FROM written_score_reviews")) {
-        const review = reviews.get(params[0]);
-        return { rows: review ? [{ review_id: review.id, status: review.status }] : [] };
-      }
-      throw new Error(`Unexpected runtime query: ${sql}`);
-    }
-  };
+  const x = await fixture("security-persistence");
+  try {
+    await assert.rejects(
+      () => x.service.finalize({
+        reviewId: x.reviewId,
+        reviewerAccountId: x.actor.accountId,
+        tenantId: "tenant_foreign_persistence"
+      }),
+      /Reviewer does not own this scoring review\./
+    );
 
-  const service = new WrittenScoringService(database);
-  await service.publish({ tenantId: "tenant_alpha", caseId: "assurance_case_1", attemptId: "attempt_1", reviewerAccountId: "reviewer_alpha", rubricVersion: "v1", score: 85, decision: "PASS", reason: "Runtime persisted review" });
-  const reviewId = [...reviews.keys()][0];
+    await x.service.addRubricMark({
+      reviewId: x.reviewId,
+      criterion: "Q1:C0",
+      mark: 100,
+      reason: "Isolation criterion remains tenant bound.",
+      reviewerAccountId: x.actor.accountId,
+      tenantId: x.tenantId,
+      expectedRevision: 0
+    });
+    await x.service.addRubricMark({
+      reviewId: x.reviewId,
+      criterion: "Q1:C1",
+      mark: 75,
+      reason: "Second criterion remains tenant bound.",
+      reviewerAccountId: x.actor.accountId,
+      tenantId: x.tenantId,
+      expectedRevision: 1
+    });
+    await x.service.saveDraftDecision({
+      reviewId: x.reviewId,
+      reviewerAccountId: x.actor.accountId,
+      tenantId: x.tenantId,
+      expectedRevision: 2,
+      decision: "PASS",
+      reason: "Persisted tenant-bound written review is complete."
+    });
+    const result = await x.service.finalize({
+      reviewId: x.reviewId,
+      reviewerAccountId: x.actor.accountId,
+      tenantId: x.tenantId
+    });
+    assert.equal(result?.status, "FINAL");
 
-  await assert.rejects(
-    service.finalize({ reviewId, reviewerAccountId: "reviewer_alpha", tenantId: "tenant_other" }),
-    /Reviewer does not own this scoring review\./
-  );
-
-  const result = await service.finalize({ reviewId, reviewerAccountId: "reviewer_alpha", tenantId: "tenant_alpha" });
-  assert.equal(result.status, "FINAL");
-  assert.equal(reviews.get(reviewId).tenant, "tenant_alpha");
+    const row = (await x.db.query(
+      "SELECT tenant_id,status FROM written_score_reviews WHERE review_id=$1",
+      [x.reviewId]
+    )).rows[0];
+    assert.equal(row.tenant_id, x.tenantId);
+    assert.equal(row.status, "FINAL");
+  } finally {
+    await x.db.close();
+  }
 });
