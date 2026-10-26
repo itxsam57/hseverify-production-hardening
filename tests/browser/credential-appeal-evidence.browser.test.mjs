@@ -68,7 +68,7 @@ async function createEvidence(page, baseUrl, kind, fields) {
   await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("Record type").selectOption(kind);
   await Promise.all([
-    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")).then(response=>response.finished()),
+    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
     page.getByRole("button", { name: "Create draft" }).click()
   ]);
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -89,7 +89,7 @@ async function createEvidence(page, baseUrl, kind, fields) {
     await article.getByLabel(label).check();
   }
   await Promise.all([
-    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")).then(response=>response.finished()),
+    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
     article.getByRole("button", { name: "Save metadata" }).click()
   ]);
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -101,7 +101,7 @@ async function createEvidence(page, baseUrl, kind, fields) {
     name: `${kind}-proof.png`
   });
   await Promise.all([
-    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")).then(response=>response.finished()),
+    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
     updated.getByRole("button", { name: "Upload file" }).click()
   ]);
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -109,12 +109,12 @@ async function createEvidence(page, baseUrl, kind, fields) {
   const ready = page.locator("article").filter({ hasText: title }).first();
   const attached=ready.getByText(`${kind}-proof.png · ${kind === "qualification" ? "primary certificate" : `${kind} evidence`} · active`,{exact:true});
   for(let attempt=0;attempt<20&&!(await attached.count());attempt++){
-    await Promise.all([page.waitForResponse(response=>response.request().method()==="POST"&&response.url().includes("/worker/evidence")).then(response=>response.finished()),ready.getByRole("button",{name:"Check scan status",exact:true}).click()]);
+    await Promise.all([page.waitForResponse(response=>response.request().method()==="POST"&&response.url().includes("/worker/evidence")),ready.getByRole("button",{name:"Check scan status",exact:true}).click()]);
     await page.reload({waitUntil:"domcontentloaded"});
   }
   await attached.waitFor();
   await Promise.all([
-    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")).then(response=>response.finished()),
+    page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
     ready.getByRole("button", { name: "Submit this version" }).click()
   ]);
   await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
