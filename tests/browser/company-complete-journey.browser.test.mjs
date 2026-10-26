@@ -300,7 +300,8 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await codeSection.getByLabel("Site default").selectOption({label:"Journey Site Updated"});
           await codeSection.getByLabel("Department default").selectOption({label:"Journey Department Updated"});
           await codeSection.getByLabel("Usage limit").fill("1");
-          await codeSection.getByLabel("Expiry").fill("2026-10-20T12:00");
+          const registrationExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+          await codeSection.getByLabel("Expiry").fill(registrationExpiry);
           await codeSection.getByRole("button", { name: "Create Company registration code" }).click();
           await codeSection.getByText(/Company registration code created/).waitFor({ timeout: 15_000 });
           const registrationCode = (await codeSection.locator("p strong").last().innerText()).trim();

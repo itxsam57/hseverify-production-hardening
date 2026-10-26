@@ -88,7 +88,16 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
   await database.close();
   browser=await chromium.launch({headless:true});
   const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[],failed=[];
-  page.on("pageerror",error=>errors.push(error.message));page.on("requestfailed",request=>failed.push(request.url()));
+  page.on("pageerror",error=>errors.push(error.message));
+  page.on("requestfailed",request=>{
+   const url=request.url();
+   const failure=request.failure();
+   // Chromium/Next may abort an in-flight document or speculative RSC fetch when
+   // the test immediately redirects/reloads. Preserve every real network failure.
+   if(failure?.errorText === "net::ERR_ABORTED") return;
+   if(new URL(url).searchParams.has("_rsc")) return;
+   failed.push(`${failure?.errorText ?? "request failed"} ${url}`);
+  });
   const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/verify",projectRoot:process.cwd(),environment:{...fixture.environment,HSE_CREDENTIAL_SIGNING_SECRET:KEY},probe:async()=>{
    await page.goto(baseUrl+"/staff/invite/"+reviewerInvitation.token,{waitUntil:"domcontentloaded"});
    await page.getByText("Create account credentials",{exact:false}).waitFor();

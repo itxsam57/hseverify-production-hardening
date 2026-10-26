@@ -41,8 +41,8 @@ export default async function AdminCalibrationsPage({
           <label>Framework reference<select name="frameworkReference" required defaultValue=""><option value="" disabled>Select authoritative framework</option>{Array.from(new Set(frameworks.map(item=>item.frameworkReference))).map(reference=><option key={reference} value={reference}>{reference}</option>)}</select></label>
           <label>Framework revision<select name="frameworkVersionId" required defaultValue=""><option value="" disabled>Select revision</option>{frameworks.map(item=><option key={item.frameworkVersionId} value={item.frameworkVersionId}>{item.frameworkReference} · version {item.versionNo} · {item.title}</option>)}</select></label>
           <label>Status<select name="status" defaultValue="CURRENT"><option value="CURRENT">Current</option><option value="FAILED">Failed</option><option value="SUSPENDED">Suspended</option><option value="EXPIRED">Expired</option></select></label>
-          <label>Valid from<input name="validFrom" type="datetime-local" required /></label>
-          <label>Valid until<input name="validUntil" type="datetime-local" required /></label>
+          <label>Valid from<input name="validFrom" type="datetime-local" step="1" required /></label>
+          <label>Valid until<input name="validUntil" type="datetime-local" step="1" required /></label>
           <label>Calibration evidence / note<textarea name="note" minLength={5} maxLength={2000} rows={4} required /></label>
           <button className="button button-primary" type="submit">Record calibration</button>
         </form>

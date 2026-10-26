@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { bindGovernedReviewTask, createGovernedReviewSetup } from "../helpers/review-governance-browser-helper.mjs";
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const PNG_FILE = {
@@ -72,6 +73,7 @@ async function login(page, baseUrl, identity, role) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
+
 
 async function submitQualification(page, baseUrl) {
   await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
@@ -161,7 +163,8 @@ test(
           const worker = await workerContext.newPage();
           const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const verifier = await verifierContext.newPage();
-
+          const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const admin = await adminContext.newPage();
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
             await submitQualification(worker, baseUrl);
@@ -263,7 +266,22 @@ test(
               .filter({ has: verifier.locator("td", { hasText: "qualification" }) })
               .last();
             await caseReviewRow.getByRole("link", { name: "Review", exact: true }).click();
-            await verifier.getByRole("button", { name: "Claim review" }).click();
+            await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
+            const taskId = new URL(verifier.url()).pathname.split("/").filter(Boolean).at(-1);
+            assert(taskId?.startsWith("evidence_review_"), "Queued evidence review must expose its task id.");
+            await login(admin, baseUrl, credentials.admin, "admin");
+            const reviewRevision = await createGovernedReviewSetup(admin, baseUrl, {
+              taskId,
+              verifierEmails: [credentials.verifier.email],
+              frameworkReference: "COMPANY-ASSURANCE-REVIEW",
+              policyReference: "COMPANY-ASSURANCE-POLICY",
+              frameworkTitle: "Company assurance review standard",
+              policyTitle: "Company assurance review policy"
+            });
+            await verifier.reload({ waitUntil: "domcontentloaded" });
+            const claimButton = verifier.getByRole("button", { name: "Claim review" });
+            if (!(await claimButton.count())) throw new Error(`Claim review unavailable after explicit governance setup: ${await verifier.locator("main").innerText()}`);
+            await claimButton.click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("CHANGES_REQUESTED");
             await verifier.getByLabel("Reason", { exact: true }).fill("Correct the certificate number before this Company case can proceed.");
@@ -293,6 +311,16 @@ test(
               .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
               .filter({ has: verifier.locator("td", { hasText: "qualification" }) }).last();
             await correctedReview.getByRole("link", { name: "Review", exact: true }).click();
+            await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
+            const correctedTaskId = new URL(verifier.url()).pathname.split("/").filter(Boolean).at(-1);
+            assert(correctedTaskId?.startsWith("evidence_review_"), "Corrected review must expose its task id.");
+            await bindGovernedReviewTask(admin, baseUrl, {
+              taskId: correctedTaskId,
+              frameworkReference: "COMPANY-ASSURANCE-REVIEW",
+              policyReference: "COMPANY-ASSURANCE-POLICY",
+              revisionValue: reviewRevision
+            });
+            await verifier.reload({ waitUntil: "domcontentloaded" });
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("APPROVED");
@@ -313,6 +341,7 @@ test(
             await companyContext.close();
             await workerContext.close();
             await verifierContext.close();
+            await adminContext.close();
             await browser.close();
           }
         }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 
 import { installFormHistoryGuard } from "./form-history-guard";
@@ -22,9 +22,25 @@ export function captureFormSnapshot(form: HTMLFormElement): string {
   }));
 }
 
+function captureInitialFormSnapshot(form: HTMLFormElement): string {
+  return JSON.stringify(Array.from(form.elements).flatMap<readonly [string, unknown]>((control) => {
+    if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement || control instanceof HTMLSelectElement)
+      || !control.name || control.disabled) return [];
+    if (control instanceof HTMLInputElement) {
+      if (["hidden", "submit", "button", "reset"].includes(control.type)) return [];
+      if (["checkbox", "radio"].includes(control.type)) return [[control.name, control.defaultChecked]];
+      if (control.type === "file") return [[control.name, []]];
+      return [[control.name, control.defaultValue]];
+    }
+    if (control instanceof HTMLTextAreaElement) return [[control.name, control.defaultValue]];
+    if (control.multiple) return [[control.name, Array.from(control.options).filter(option => option.defaultSelected).map(option => option.value)]];
+    return [[control.name, Array.from(control.options).find(option => option.defaultSelected)?.value ?? control.value]];
+  }));
+}
+
 export function UnsavedChangesGuard(): null {
   const pathname = usePathname();
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Assessment workspaces own durable answer saving and interruption handling.
     if (pathname.startsWith("/worker/assessments/")) return;
     const main = document.querySelector("main");
@@ -35,7 +51,7 @@ export function UnsavedChangesGuard(): null {
       && !form.closest('[data-unsaved-changes="ignore"]');
     const register = () => {
       for (const form of main.querySelectorAll("form")) {
-        if (eligible(form) && !baselines.has(form)) baselines.set(form, captureFormSnapshot(form));
+        if (eligible(form) && !baselines.has(form)) baselines.set(form, captureInitialFormSnapshot(form));
       }
       for (const form of baselines.keys()) if (!form.isConnected) baselines.delete(form);
     };
