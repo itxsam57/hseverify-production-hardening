@@ -92,8 +92,15 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
    assert.equal(await page.locator("article").filter({hasText:"Qualification record"}).first().getByLabel("Qualification title",{exact:true}).inputValue(),"Saved qualification title");
    const invalid=page.locator("article").filter({hasText:"Qualification record"}).first();
    await invalid.getByLabel("Qualification title",{exact:true}).fill("Retain invalid draft");
-   await invalid.getByLabel("Verification URL",{exact:false}).fill("not-a-valid-url");
-   await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")).then(r=>r.finished()),invalid.getByRole("button",{name:"Save metadata",exact:true}).click()]);
+   const invalidUrl=invalid.getByLabel("Verification URL",{exact:false});
+   await invalidUrl.fill("not-a-valid-url");
+   assert.equal(await invalidUrl.evaluate(input=>input.validity.valid),false,"Malformed verification URL must remain visibly invalid even though server validation is authoritative");
+   const [invalidResponse]=await Promise.all([
+    page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")),
+    invalid.getByRole("button",{name:"Save metadata",exact:true}).click()
+   ]);
+   assert.ok(invalidResponse.status()<500,"Invalid metadata must return a handled Server Action response");
+   await invalid.getByText("Verification URL must use HTTP or HTTPS.",{exact:true}).waitFor({timeout:10_000});
    assert.equal(await invalid.getByLabel("Qualification title",{exact:true}).inputValue(),"Retain invalid draft","Rejected metadata must retain user input");
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    assert.equal(new URL(page.url()).pathname,"/worker/evidence");assert.equal(dialogs,3,"Rejected save remains dirty and protected");
