@@ -802,7 +802,40 @@ test(SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and d
             }
           } else {
             await worker.getByRole("button",{name:"Save and exit"}).click();await worker.waitForURL(`${baseUrl}/worker/available-assessments`,{timeout:20000});await worker.getByRole("link",{name:"Resume assessment"}).click();
-          }await worker.getByLabel("Your answer").waitFor();assert.match(await worker.getByLabel("Your answer").inputValue(),process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" ? /^Offline retained response: stop work, isolate the hazard, verify controls/ : /verify the isolated hazard/);await worker.getByRole("button",{name:DELIVERY_MODE==="STRICT" ? "Submit assessment" : "Save final answer for review",exact:true}).click();
+          }
+          await worker.getByLabel("Your answer").waitFor();
+          assert.match(await worker.getByLabel("Your answer").inputValue(),process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true" ? /^Offline retained response: stop work, isolate the hazard, verify controls/ : /verify the isolated hazard/);
+          const finalAction=worker.getByRole("button",{name:DELIVERY_MODE==="STRICT" ? "Submit assessment" : "Save final answer for review",exact:true});
+          if (SCREEN_ERRORS && DELIVERY_MODE==="STRICT") {
+            let delayed=false;
+            let resolveDelayedRoute;
+            const delayedRouteFinished=new Promise(resolve=>{resolveDelayedRoute=resolve;});
+            const delayOneSubmit=async route=>{
+              const shouldDelay=route.request().method()==="POST" && !delayed;
+              if(shouldDelay) delayed=true;
+              try {
+                if(shouldDelay) await new Promise(resolve=>setTimeout(resolve,1500));
+                await route.continue();
+              } finally {
+                if(shouldDelay) resolveDelayedRoute();
+              }
+            };
+            await worker.route("**/worker/assessments/**",delayOneSubmit);
+            try {
+              const submitClick=finalAction.click();
+              const pendingButton=worker.getByRole("button",{name:"Saving…",exact:true});
+              await pendingButton.waitFor({timeout:15000});
+              assert.equal(await pendingButton.isDisabled(),true,"Delayed final submission left a second click enabled");
+              await submitClick;
+              assert.equal(delayed,true,"Actual final action was not delayed");
+              await delayedRouteFinished;
+            } finally {
+              await worker.unroute("**/worker/assessments/**",delayOneSubmit);
+            }
+            console.log("ACTUAL_A12_BROWSER slow final POST retains pending disabled state then commits once");
+          } else {
+            await finalAction.click();
+          }
           if(DELIVERY_MODE!=="STRICT") {
             await reviseCommittedAnswer(worker,baseUrl,attemptId,2);
             await worker.getByRole("button",{name:"Submit assessment",exact:true}).click();
