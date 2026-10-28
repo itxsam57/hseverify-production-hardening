@@ -585,7 +585,11 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
               await unbound.getByRole("heading",{name:"The requested record could not be shown.",exact:true}).waitFor();
               assert.equal((await unbound.locator("main").innerText()).includes(MCQ_PROMPT),false,"Unbound exam content appeared after the streaming denial completed");
               assert.equal(await unbound.getByLabel(MCQ_ANSWER).count(),0,"Unbound answer controls appeared after the streaming denial completed");
-              assert.ok([200,404].includes(denied?.status()),"Unbound attempt returned an unexpected HTTP response");
+              assert.equal(denied?.status(),404,"Unbound assessment must deny with an actual HTTP 404, not a streamed HTTP 200");
+              const deniedReview=await unbound.goto(baseUrl+"/worker/assessments/"+attemptId+"/review/1",{waitUntil:"domcontentloaded"});
+              assert.equal(deniedReview?.status(),404,"Unbound review question must also return HTTP 404");
+              await unbound.getByRole("heading",{name:"The requested record could not be shown.",exact:true}).waitFor();
+              assert.equal((await unbound.locator("main").innerText()).includes(MCQ_PROMPT),false,"Review denial leaked exam content");
               await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();
               console.log("ACTUAL_A13_BROWSER unbound fresh authenticated Worker context sees only generic denial; original bound session retains its question");
             } finally {

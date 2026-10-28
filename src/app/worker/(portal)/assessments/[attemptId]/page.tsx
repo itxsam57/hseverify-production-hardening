@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { AssessmentIntegrityBoundary } from "@/components/worker/assessment-integrity-boundary";
 import { AssessmentWorkspace } from "@/components/worker/assessment-workspace";
 import { toAssessmentAttemptClientView } from "@/lib/assessment-attempt/assessment-attempt-client-view";
 import {
@@ -41,5 +42,9 @@ export default async function AssessmentPage({
   }
 
   const clientView = toAssessmentAttemptClientView(view);
-  return <AssessmentWorkspace view={clientView} />;
+  return (
+    <AssessmentIntegrityBoundary attemptId={attemptId}>
+      <AssessmentWorkspace view={clientView} />
+    </AssessmentIntegrityBoundary>
+  );
 }
