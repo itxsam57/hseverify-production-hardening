@@ -43,7 +43,7 @@ async function login(page,base,credential) {
 }
 
 test("A14 real Worker browser enforces media permission denial, partial acquisition cleanup, BLOCK and REVIEW policies",{timeout:240000},async()=>{
-  for(const mode of process.env.HSE_A14_SCENARIO ? [process.env.HSE_A14_SCENARIO] : ["BLOCK","REVIEW","PARTIAL_BLOCK","STOPPED_SCREEN_BLOCK"]) {
+  for(const mode of process.env.HSE_A14_SCENARIO ? [process.env.HSE_A14_SCENARIO] : ["BLOCK","REVIEW","PARTIAL_BLOCK","STOPPED_SCREEN_BLOCK","POLICY_OUTAGE"]) {
     const fixture=await integrityAssessmentFixture();
     try {
       const attempt=(await fixture.database.query("SELECT blueprint_version_id FROM assessment_attempts WHERE attempt_id=$1",[fixture.attemptId])).rows[0];
@@ -55,7 +55,7 @@ test("A14 real Worker browser enforces media permission denial, partial acquisit
         "VALUES($1,'STRICT','[]'::jsonb,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,$2,FALSE,FALSE,FALSE) "+
         "ON CONFLICT(blueprint_version_id) DO UPDATE SET require_camera=TRUE,require_microphone=TRUE,require_screen_share=TRUE,"+
         "record_camera=FALSE,record_microphone=FALSE,record_screen=FALSE,integrity_failure_mode=EXCLUDED.integrity_failure_mode,require_fullscreen=FALSE",
-        [attempt.blueprint_version_id,mode.endsWith("_BLOCK") ? "BLOCK" : mode]
+        [attempt.blueprint_version_id,mode.endsWith("_BLOCK") || mode==="POLICY_OUTAGE" ? "BLOCK" : mode]
       );
       await fixture.releaseDatabase();
       const p=await freePort();
@@ -91,8 +91,27 @@ test("A14 real Worker browser enforces media permission denial, partial acquisit
             const errors=[];
             page.on("pageerror",e=>errors.push(e.message));
             await login(page,base,fixture.credentials.worker);
+            if(mode==="POLICY_OUTAGE"){
+              await page.route("**/api/worker/assessments/**/integrity",route=>
+                route.request().method()==="GET"
+                  ? route.fulfill({status:503,contentType:"application/json",body:'{"error":"synthetic policy outage"}'})
+                  : route.continue()
+              );
+            }
             const query=mode==="PARTIAL_BLOCK" ? "?partial-media=1" : mode==="STOPPED_SCREEN_BLOCK" ? "?screen-ends=1" : "";
             await page.goto(base+"/worker/assessments/"+fixture.attemptId+query,{waitUntil:"domcontentloaded"});
+            if(mode==="POLICY_OUTAGE"){
+              await page.getByText("Assessment monitoring policy could not be verified. Reload when connectivity returns.",{exact:true}).waitFor({timeout:20000});
+              await page.getByRole("button",{name:"Retry monitoring policy"}).waitFor();
+              assert.equal(await page.getByText("private-question-prompt-marker").count(),0,
+                "The exam became visible despite a failed required-monitoring policy request");
+              assert.equal(await page.getByLabel("Stop and assess").count(),0);
+              await page.unroute("**/api/worker/assessments/**/integrity");
+              await page.getByRole("button",{name:"Retry monitoring policy"}).click();
+              await page.getByRole("button",{name:"Start required monitoring"}).waitFor({timeout:20000});
+              assert.equal(await page.getByText("private-question-prompt-marker").count(),0,
+                "A restored policy must still require monitoring before revealing the question");
+            }else {
             await page.getByRole("button",{name:"Start required monitoring"}).waitFor({timeout:20000});
             assert.equal(await page.getByText("private-question-prompt-marker").count(),0);
             await page.getByRole("button",{name:"Start required monitoring"}).click();
@@ -119,6 +138,7 @@ test("A14 real Worker browser enforces media permission denial, partial acquisit
               await page.getByText("Monitoring is degraded (camera, microphone, screen). The assessment may continue but requires human integrity review.",{exact:true}).waitFor({timeout:20000});
               await page.getByText("private-question-prompt-marker",{exact:true}).waitFor();
             }
+            }
             assert.deepEqual(errors,[]);
             await page.goto(base+"/worker/dashboard",{waitUntil:"domcontentloaded"});
             await context.close();
@@ -129,7 +149,7 @@ test("A14 real Worker browser enforces media permission denial, partial acquisit
       const db=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:fixture.environment.HSE_PGLITE_DATA_DIR});
       try {
         const events=(await db.query("SELECT event_type FROM integrity_capture_events WHERE attempt_id=$1",[fixture.attemptId])).rows.map(item=>item.event_type);
-        const expected=mode==="STOPPED_SCREEN_BLOCK"
+        const expected=mode==="POLICY_OUTAGE" ? [] : mode==="STOPPED_SCREEN_BLOCK"
           ? ["SCREEN_UNAVAILABLE","BROWSER_RESUMED"]
           : mode==="PARTIAL_BLOCK"
             ? ["SCREEN_UNAVAILABLE","MONITORING_PROVIDER_DEGRADED"]
@@ -137,11 +157,53 @@ test("A14 real Worker browser enforces media permission denial, partial acquisit
         for(const key of expected)
           assert.ok(events.includes(key),mode+" missing "+key+": "+events.join(","));
         const state=(await db.query("SELECT monitoring_state,provider_state FROM assessment_integrity_sessions WHERE attempt_id=$1",[fixture.attemptId])).rows[0];
-        assert.equal(state.monitoring_state,"DEGRADED");
-        assert.equal(state.provider_state,"DEGRADED");
+        if(mode==="POLICY_OUTAGE") assert.equal(state,undefined,"Policy outage must not fabricate an integrity session");
+        else {
+          assert.equal(state.monitoring_state,"DEGRADED");
+          assert.equal(state.provider_state,"DEGRADED");
+        }
         assert.equal((await db.query("SELECT status FROM assessment_attempts WHERE attempt_id=$1",[fixture.attemptId])).rows[0].status,"IN_PROGRESS");
       }finally{await db.close();}
       console.log("ACTUAL_A14_BROWSER "+mode+" synthetic permission rejection; retained four signals; attempt IN_PROGRESS");
     }finally{await fixture.cleanup();}
   }
+});
+
+test("A14 submitted Worker assessment receipt does not demand monitoring after a validated submission",{timeout:180000},async()=>{
+  const fixture=await integrityAssessmentFixture();
+  try{
+    const submitted=await fixture.attempts.submitCurrentAnswer(fixture.worker,{
+      attemptId:fixture.attemptId,position:1,answer:"Stop and assess"
+    });
+    assert.equal(submitted.submitted,true);
+    await fixture.releaseDatabase();
+    const p=await freePort(),base="http://127.0.0.1:"+p;
+    const result=await runDevelopmentServer({
+      args:["--hostname","127.0.0.1","--port",String(p)],
+      probeUrl:base+"/worker/login",
+      environment:fixture.environment,
+      probe:async()=>{
+        const browser=await chromium.launch({headless:true});
+        try{
+          const page=await browser.newPage();
+          await login(page,base,fixture.credentials.worker);
+          const policyResponse=await page.request.get(base+"/api/worker/assessments/"+fixture.attemptId+"/integrity");
+          assert.equal(policyResponse.status(),200,"Submitted receipt could not read its no-monitoring policy");
+          const {policy}=await policyResponse.json();
+          assert.equal(policy.requireCamera,false);
+          assert.equal(policy.requireMicrophone,false);
+          assert.equal(policy.requireScreenShare,false);
+          assert.equal(policy.requireFullscreen,false);
+          await page.goto(base+"/worker/assessments/"+fixture.attemptId,{waitUntil:"domcontentloaded"});
+          await page.getByText("Submission received. You may leave this page safely.",{exact:true}).waitFor({timeout:20000});
+          assert.equal(await page.getByRole("button",{name:"Start required monitoring"}).count(),0);
+          assert.equal(await page.getByRole("button",{name:"Retry monitoring policy"}).count(),0);
+          await page.reload({waitUntil:"domcontentloaded"});
+          await page.getByText("Submission received. You may leave this page safely.",{exact:true}).waitFor({timeout:20000});
+          console.log("ACTUAL_A14_BROWSER submitted receipt served with owner-bound no-monitoring policy after reload");
+        } finally {await browser.close();}
+      }
+    });
+    assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
+  } finally {await fixture.cleanup();}
 });

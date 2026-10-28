@@ -15,7 +15,7 @@ type IntegrityPolicy = Readonly<{
   requireFullscreen: boolean;
 }>;
 
-type BoundaryState = "loading" | "ready" | "needs-start" | "starting" | "degraded" | "blocked";
+type BoundaryState = "loading" | "ready" | "needs-start" | "starting" | "degraded" | "blocked" | "policy-unavailable";
 
 function requiresLiveMedia(policy: IntegrityPolicy): boolean {
   return (
@@ -185,10 +185,9 @@ export function AssessmentIntegrityBoundary({
       })
       .catch(() => {
         if (cancelled) return;
-        // A submitted receipt or an already-closed attempt no longer has an active
-        // integrity policy. The protected page itself remains the authority.
-        setState("ready");
-        setMessage("Active monitoring is not required on this assessment state.");
+        // Never expose an active question when its required monitoring policy is unknown.
+        setState("policy-unavailable");
+        setMessage("Assessment monitoring policy could not be verified. Reload when connectivity returns.");
       });
 
     return () => {
@@ -361,7 +360,11 @@ export function AssessmentIntegrityBoundary({
       <section className="status-banner" aria-label="Assessment integrity status">
         <strong>Assessment monitoring</strong>
         <p>{message}</p>
-        {(state === "needs-start" || state === "blocked") ? (
+        {state === "policy-unavailable" ? (
+          <button className="button button-primary" type="button" onClick={() => window.location.reload()}>
+            Retry monitoring policy
+          </button>
+        ) : (state === "needs-start" || state === "blocked") ? (
           <button className="button button-primary" type="button" onClick={() => void startMonitoring()}>
             {state === "blocked" ? "Retry required monitoring" : "Start required monitoring"}
           </button>
