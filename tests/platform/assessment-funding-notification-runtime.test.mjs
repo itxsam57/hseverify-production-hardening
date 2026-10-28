@@ -123,3 +123,31 @@ test("Notification projection failure retries independently after funding commit
     assert.equal(after.cases.length, 1);
   } finally { await database.close(); await fixture.cleanup(); }
 });
+
+test("Company approval rejects exhausted credits without changing pending funding or creating cases", async () => {
+  const fixture = await assessmentFundingFixture(), database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+  try {
+    const service = new WorkerAssessmentApplicationService(database);
+    const application = await service.requestCompanyFunding(fixture.worker, fixture.fundingInput);
+    const tenant = fixture.fundingInput.tenantId;
+    const balance = (await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1", [tenant])).rows[0].n;
+    assert.equal(balance, 3, "Fixture starts with exactly three legitimate purchased credits.");
+    // Preload a fully reserved budget without altering the immutable credit ledger.
+    await database.query(
+      `INSERT INTO funding_requests (funding_request_id,tenant_id,worker_link_id,requested_by_account_id,status,credit_units,reserved_credit_units,idempotency_key,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,'APPROVED',3,3,$5,clock_timestamp(),clock_timestamp())`,
+      ["funding_request_budget_exhausted",tenant,fixture.fundingInput.workerLinkId,fixture.worker.accountId,"reserved-budget-exhaustion"]
+    );
+    const before = (await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE worker_account_id=$1",[fixture.worker.accountId])).rows[0].n;
+    await assert.rejects(
+      () => service.decideCompanyFunding(fixture.company,{fundingRequestId:application.fundingRequestId,approved:true}),
+      /enough unreserved assessment credits/i
+    );
+    const funding = (await database.query("SELECT status,reserved_credit_units FROM funding_requests WHERE funding_request_id=$1",[application.fundingRequestId])).rows[0];
+    assert.equal(funding.status,"REQUESTED");
+    assert.equal(funding.reserved_credit_units,0);
+    const pending = (await database.query("SELECT application_status FROM worker_assessment_applications WHERE application_id=$1",[application.applicationId])).rows[0];
+    assert.equal(pending.application_status,"FUNDING_REQUESTED");
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE worker_account_id=$1",[fixture.worker.accountId])).rows[0].n,before);
+  } finally { await database.close(); await fixture.cleanup(); }
+});
