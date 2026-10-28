@@ -26,6 +26,7 @@ const INTERVIEW_POLICY = process.env.HSE_MASTERPLAN_INTERVIEW_POLICY === "true";
 const INTERVIEW_POLICY_MIN_ACTIVE_SECONDS = 15;
 const configuredActiveSince = new WeakMap();
 const EXPIRY_MODE=process.env.HSE_MASTERPLAN_EXPIRY === "true";
+const SCREEN_ERRORS=process.env.HSE_MASTERPLAN_A12_SCREEN_ERRORS === "true";
 const COMPANY_CREDENTIAL_TARGET_MODE=process.env.HSE_MASTERPLAN_COMPANY_CREDENTIAL_TARGET === "true";
 const ISSUED_QUALIFICATION=COMPANY_CREDENTIAL_TARGET_MODE ? "Company Issued Safety Competency" : "End-to-End Worker Assessment";
 const COMPLETE_REASSESSMENT=process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true";
@@ -451,7 +452,7 @@ async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env
  console.log("ACTUAL_ASSURANCE_NOTIFICATION_BROWSER original retained sources, registered worker, owned Open/read and foreign denial passed");
 }
 
-test("Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
+test(SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
   const companyFunded=process.env.HSE_MASTERPLAN_FUNDING_MODE === "company" || COMPANY_CREDENTIAL_TARGET_MODE;
   const root=process.cwd(),dbDir=await mkdtemp(join(tmpdir(),"hse-masterplan-worker-e2e-")),port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
   const env={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dbDir,HSE_RELEASE_SHA:"masterplan-worker-e2e",HSE_CREDENTIAL_SIGNING_SECRET:"synthetic-masterplan-worker-signing-secret-2026",HSE_SESSION_SECRET:"masterplan-worker-e2e-session-secret-2026-more-than-32",HSE_AUTH_PEPPER:"masterplan-worker-e2e-auth-pepper-2026-more-than-32",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
@@ -613,6 +614,13 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           }
 
           if(CONTENT_MODE!=="WRITTEN_ONLY") { await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();await assertCandidateQuestionBoundary(worker);
+          if (SCREEN_ERRORS) {
+            await worker.getByRole("button",{name:/^(Next|Save answer)$/}).click();
+            await worker.getByText("Enter a valid answer before continuing.",{exact:true}).waitFor({timeout:20000});
+            await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();
+            assert.equal(await worker.getByLabel(MCQ_ANSWER).isChecked(),false);
+            console.log("ACTUAL_A12_BROWSER empty MCQ rejected without advancing");
+          }
           let mcqOffline = process.env.HSE_MASTERPLAN_MCQ_OFFLINE === "true";
           if (mcqOffline) await workerContext.route("**/worker/assessments/**", route => route.request().method() === "POST" && mcqOffline ? route.abort("internetdisconnected") : route.continue());
           await worker.getByLabel(MCQ_ANSWER).check();
@@ -640,7 +648,39 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           }
           } }
           if(CONTENT_MODE!=="MCQ_ONLY") {
-          await worker.getByText(WRITTEN_PROMPT,{exact:false}).waitFor();await worker.getByLabel("Your answer").fill("Stop work, verify the isolated hazard is controlled, and only restart after confirming the area is safe.");if(process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true") {
+          await worker.getByText(WRITTEN_PROMPT,{exact:false}).waitFor();
+          if (SCREEN_ERRORS) {
+            const submit=worker.getByRole("button",{name:"Submit assessment",exact:true});
+            await submit.click();
+            await worker.getByText("Enter a valid answer before continuing.",{exact:true}).waitFor({timeout:20000});
+            await worker.getByText(WRITTEN_PROMPT,{exact:false}).waitFor();
+            const confirmedAnswer="Stop work, isolate the hazard, verify controls, and document safe authorization before restart.";
+            await worker.getByLabel("Your answer").fill(confirmedAnswer);
+            await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:18000});
+            await worker.reload({waitUntil:"domcontentloaded"});
+            await worker.getByLabel("Your answer").waitFor();
+            assert.equal(await worker.getByLabel("Your answer").inputValue(),confirmedAnswer);
+            let dropped=0;
+            const failOneDraft=route=>{
+              if(route.request().method()==="POST" && dropped===0){dropped+=1;return route.abort("internetdisconnected");}
+              return route.continue();
+            };
+            await worker.route("**/worker/assessments/**",failOneDraft);
+            const retriedAnswer="Stop work, isolate the hazard, verify controls and authorize restart after network recovery.";
+            await worker.getByLabel("Your answer").fill(retriedAnswer);
+            try {
+              await worker.getByText("Offline buffered — reconnecting",{exact:true}).waitFor({timeout:18000});
+            } finally {
+              await worker.unroute("**/worker/assessments/**",failOneDraft);
+            }
+            assert.equal(dropped,1,"Exactly one draft transport request was not interrupted");
+            await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:18000});
+            await worker.reload({waitUntil:"domcontentloaded"});
+            await worker.getByLabel("Your answer").waitFor();
+            assert.equal(await worker.getByLabel("Your answer").inputValue(),retriedAnswer);
+            console.log("ACTUAL_A12_BROWSER empty written rejected; saved draft restored; failed autosave retried and restored");
+          }
+          await worker.getByLabel("Your answer").fill("Stop work, verify the isolated hazard is controlled, and only restart after confirming the area is safe.");if(process.env.HSE_MASTERPLAN_OFFLINE_RECOVERY === "true") {
             await worker.getByText("Saved", { exact: true }).first().waitFor({ timeout: 15000 });
             const recoveredAnswer = "Offline retained response: stop work, isolate the hazard, verify controls, and restart only after authorization.";
             let concurrent = null;
@@ -771,6 +811,11 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:20000});
           if (auditTransport) await auditTransport();
           await assertReviewUnavailable(workerContext,baseUrl,attemptId,CONTENT_MODE==="COMBINED" ? 2 : 1);
+          if (SCREEN_ERRORS) {
+            assert.deepEqual(errors.filter(e=>!e.includes("favicon") && e!=="Failed to load resource: net::ERR_INTERNET_DISCONNECTED"),[],errors.join("\n"));
+            console.log("ACTUAL_A12_BROWSER submission verified after failure and retry");
+            return {attemptId,uiErrorsTested:true};
+          }
 
           if(CONTENT_MODE!=="MCQ_ONLY") {
           if(!["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE)) await login(verifier,baseUrl,credentials.verifier,"verifier");
@@ -830,6 +875,18 @@ test("Masterplan preserved Worker journey: register to credential, share and app
       }
     });
     assert.equal(phase2.requestedSignal,"SMOKE_COMPLETE");
+    if (SCREEN_ERRORS) {
+      const verify=new PGlite(dbDir);
+      try {
+        const attempts=(await verify.query("SELECT attempt_id,status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        assert.equal(attempts.length,1);
+        assert.equal(attempts[0].status,"SUBMITTED");
+        const answers=(await verify.query("SELECT position,text_value FROM assessment_attempt_answers WHERE attempt_id=$1 ORDER BY position",[attempts[0].attempt_id])).rows;
+        assert.deepEqual(answers,[{position:1,text_value:MCQ_ANSWER},{position:2,text_value:"Stop work, verify the isolated hazard is controlled, and only restart after confirming the area is safe."}]);
+        console.log("ACTUAL_A12_DB two persisted answers after invalid attempts, transport failure and retries");
+      } finally {await verify.close();}
+      return;
+    }
 
     if(EXPIRY_MODE) {
       const verify=new PGlite(dbDir);
