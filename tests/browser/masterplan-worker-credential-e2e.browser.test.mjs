@@ -40,6 +40,39 @@ function decodeBase32(value){const clean=value.toUpperCase().replace(/=+$/g,"");
 const lastTotpCounter=new Map();
 function totpAt(secret,counter){const buf=Buffer.alloc(8);buf.writeBigUInt64BE(BigInt(counter));const digest=createHmac("sha1",decodeBase32(secret)).update(buf).digest(),offset=digest.at(-1)&15;return String((digest.readUInt32BE(offset)&0x7fffffff)%1_000_000).padStart(6,"0");}
 async function freshTotp(key,secret){let counter=Math.floor(Date.now()/30000);const last=lastTotpCounter.get(key);if(last!==undefined&&counter<=last){await new Promise(resolve=>setTimeout(resolve,Math.max(100,(last+1)*30000-Date.now()+150)));counter=Math.floor(Date.now()/30000);}lastTotpCounter.set(key,counter);return totpAt(secret,counter);}
+
+function auditCandidateAssessmentTransport(page) {
+  const responses = [];
+  const pending = new Set();
+  const capture = (response) => {
+    const pathname = new URL(response.url()).pathname;
+    if (!/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]+(?:\/|$)/.test(pathname)) return;
+    if (response.status() !== 200) return;
+    const contentType = response.headers()["content-type"] ?? "";
+    if (!/(?:text\/html|text\/x-component|application\/json)/i.test(contentType)) return;
+    const job = response.text().then((body) => responses.push({
+      pathname, contentType, method: response.request().method(), body
+    }));
+    pending.add(job);
+    void job.then(() => pending.delete(job), () => pending.delete(job));
+  };
+  page.on("response", capture);
+  return async () => {
+    page.off("response", capture);
+    await Promise.all([...pending]);
+    assert.ok(responses.some((entry) => entry.method === "GET"), "No actual candidate assessment GET payload was captured.");
+    assert.ok(responses.some((entry) => entry.method === "POST"), "No actual candidate assessment server-action POST payload was captured.");
+    for (const entry of responses) {
+      const payload = entry.body.replaceAll('\\\"', '"');
+      const where = entry.method + " " + entry.pathname + " (" + entry.contentType + ")";
+      assert.doesNotMatch(payload, /question_version_[A-Za-z0-9_-]{24}|question_[A-Za-z0-9_-]{24}/i, "Internal question identifier leaked in " + where);
+      assert.doesNotMatch(payload, /["'](?:answerKey|answer_key_json|rubric|rubric_json|correctAnswer|correctOption|scoringKey)["']\s*:/i, "Scoring/answer material leaked in " + where);
+      assert.equal(payload.includes("Identifies controlled verification before restart"), false, "Actual seeded written scoring criterion leaked in " + where);
+    }
+    console.log("ACTUAL_ASSESSMENT_TRANSPORT_BROWSER checked " + responses.length + " Worker GET/POST HTML/RSC/JSON payloads for question IDs, answer keys and grading rubrics");
+  };
+}
+
 async function assertCandidateQuestionBoundary(page) {
   assert.equal(await page.locator('input[name="questionVersionId"]').count(), 0, "Candidate form exposed a bank version ID.");
   assert.equal(/\bMEDIUM\b/.test(await page.locator("main").innerText()), false, "Candidate screen exposed internal difficulty.");
@@ -534,8 +567,10 @@ test("Masterplan preserved Worker journey: register to credential, share and app
             throw new Error("Available-assessments page did not expose the funded case. URL="+worker.url()+"\nBODY:\n"+await worker.locator("body").innerText(),{cause:error});
           }
           await worker.getByRole("button",{name:"Start assessment"}).click();await worker.waitForURL(/\/precheck\?/,{timeout:15000});
-          await worker.getByRole("button",{name:"Run device checks"}).click();await worker.getByText("Device checks completed.",{exact:true}).waitFor({timeout:15000});await worker.getByLabel("I confirm I am the Worker assigned to this assessment.").check();await worker.getByLabel(/I confirm my environment is suitable/).check();await worker.getByLabel(/I consent to the monitoring signals/).check();await worker.getByRole("button",{name:"Begin assessment"}).click();await worker.waitForURL(/\/worker\/assessments\/assessment_attempt_/,{timeout:20000});
+          await worker.getByRole("button",{name:"Run device checks"}).click();await worker.getByText("Device checks completed.",{exact:true}).waitFor({timeout:15000});await worker.getByLabel("I confirm I am the Worker assigned to this assessment.").check();await worker.getByLabel(/I confirm my environment is suitable/).check();await worker.getByLabel(/I consent to the monitoring signals/).check();const auditTransport = process.env.HSE_MASTERPLAN_TRANSPORT_AUDIT === "true" ? auditCandidateAssessmentTransport(worker) : null;
+          await worker.getByRole("button",{name:"Begin assessment"}).click();await worker.waitForURL(/\/worker\/assessments\/assessment_attempt_/,{timeout:20000});
           let attemptId=worker.url().split("/").pop();const originalAttemptId=attemptId;
+          if (auditTransport) await worker.reload({waitUntil:"domcontentloaded"});
           if(process.env.HSE_MASTERPLAN_TIMING === "true") {
             const timer=worker.getByRole("timer",{name:"Assessment time remaining"});
             await timer.waitFor();
@@ -734,6 +769,7 @@ test("Masterplan preserved Worker journey: register to credential, share and app
           }
           }
           await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:20000});
+          if (auditTransport) await auditTransport();
           await assertReviewUnavailable(workerContext,baseUrl,attemptId,CONTENT_MODE==="COMBINED" ? 2 : 1);
 
           if(CONTENT_MODE!=="MCQ_ONLY") {
