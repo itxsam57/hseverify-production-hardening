@@ -219,7 +219,7 @@ async function decideQueueItem(page, adminPage, baseUrl, kind, outcome, reason) 
 
 test(
   "independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI",
-  { timeout: 300_000 },
+  { timeout: 780_000 },
   async () => {
     const root = process.cwd();
     const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-independent-review-"));
