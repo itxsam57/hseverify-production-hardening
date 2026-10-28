@@ -225,3 +225,54 @@ test("bulk invitation keeps row order and returns explicit malformed/duplicate r
     const stored=await database.query(`SELECT email_normalized FROM company_worker_invitations WHERE tenant_id=$1`,[company.tenantId]); assert.deepEqual(stored.rows.map(x=>x.email_normalized),["bulk-one@example.com"]);
   }finally{await database.close();}
 });
+
+
+test("Company relationship termination requires live tenant authority, preserves Worker identity and history", async () => {
+  const database = await db();
+  try {
+    const company = await seedCompany(database, "E");
+    const outsider = await seedCompany(database, "F");
+    const worker = await seedWorker(database, "E");
+    const permanentWorkerId = await seedPermanentWorkerId(database, worker, "E");
+    const service = new CompanyWorkforceService(database, PEPPER, () => new Date(NOW_DATE));
+    const requested = await service.requestPermanentWorkerLink(
+      companyPrincipal(company), permanentWorkerId,
+      { email: worker.email, siteId: null, departmentId: null, paymentResponsibility: "worker", assessmentReference: null }
+    );
+    const accepted = await service.acceptWorkerLink(workerPrincipal(worker), requested.linkId);
+    assert.equal(accepted.status, "active");
+
+    const end = { linkId: accepted.linkId, effectiveDate: "2026-08-16",
+      reason: "Employment ended after the agreed project completion." };
+    await assert.rejects(service.endWorkerRelationship(companyPrincipal(outsider), end), CompanyWorkforceAccessError);
+    await assert.rejects(service.endWorkerRelationship(companyPrincipal(company), {...end, reason: "short"}), domainModule.CompanyWorkforceInputError);
+    await assert.rejects(service.endWorkerRelationship(companyPrincipal(company), {...end, effectiveDate: "2026-08-17"}), domainModule.CompanyWorkforceInputError);
+    await assert.rejects(service.endWorkerRelationship(companyPrincipal(company), {...end, effectiveDate: "2026-02-01"}), domainModule.CompanyWorkforceInputError);
+    const before = await database.query("SELECT link_status FROM company_worker_links WHERE link_id=$1", [accepted.linkId]);
+    assert.equal(before.rows[0].link_status, "active");
+    await service.endWorkerRelationship(companyPrincipal(company), end);
+    const after = await database.query(
+      "SELECT link_status,revoked_at,worker_account_id,permanent_worker_id FROM company_worker_links WHERE link_id=$1",
+      [accepted.linkId]
+    );
+    assert.equal(after.rows[0].link_status, "revoked");
+    assert.ok(after.rows[0].revoked_at);
+    assert.equal(after.rows[0].worker_account_id, worker.accountId);
+    assert.equal(after.rows[0].permanent_worker_id, permanentWorkerId);
+    const untouched = await database.query("SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId]);
+    assert.equal(untouched.rows[0].permanent_worker_id,permanentWorkerId);
+    const events = await database.query(
+      "SELECT actor_account_id,actor_tenant_id,metadata FROM platform_audit_events WHERE action_key='company_workforce.link.revoked' AND target_reference=$1",
+      [accepted.linkId]
+    );
+    assert.equal(events.rows.length,1);
+    assert.equal(events.rows[0].actor_account_id,company.accountId);
+    assert.equal(events.rows[0].actor_tenant_id,company.tenantId);
+    const metadata=typeof events.rows[0].metadata==="string"?JSON.parse(events.rows[0].metadata):events.rows[0].metadata;
+    assert.equal(metadata.reason,end.reason);
+    assert.equal(metadata.effectiveDate,end.effectiveDate);
+    await assert.rejects(service.endWorkerRelationship(companyPrincipal(company),end),CompanyWorkforceConflictError);
+    const eventsAfter = await database.query("SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='company_workforce.link.revoked' AND target_reference=$1",[accepted.linkId]);
+    assert.equal(eventsAfter.rows[0].n,1);
+  } finally { await database.close(); }
+});

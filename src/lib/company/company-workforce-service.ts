@@ -455,6 +455,64 @@ export class CompanyWorkforceService {
     }});}catch(error){if(knownCompanyError(error))throw error;if(isUniqueViolation(error))throw new CompanyWorkforceConflictError();throw new CompanyWorkforceAccessError();}
   }
 
+  async endWorkerRelationship(
+    principal: CompanyWorkforceManagePrincipal,
+    input: Readonly<{ linkId: string; effectiveDate: string; reason: string }>
+  ): Promise<void> {
+    const id = input.linkId.trim();
+    const reason = input.reason.trim();
+    const effectiveDate = input.effectiveDate.trim();
+    const now = this.now();
+    if (!id) throw new CompanyWorkforceInputError("Worker relationship reference is required.");
+    if (reason.length < 10 || reason.length > 1000) {
+      throw new CompanyWorkforceInputError("Provide a reason between 10 and 1,000 characters.");
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveDate)) {
+      throw new CompanyWorkforceInputError("Use a valid effective date.");
+    }
+    const effectiveTime = Date.parse(effectiveDate + "T00:00:00.000Z");
+    if (!Number.isFinite(effectiveTime) ||
+        new Date(effectiveTime).toISOString().slice(0, 10) !== effectiveDate ||
+        effectiveTime > Date.parse(now.toISOString().slice(0, 10) + "T00:00:00.000Z")) {
+      throw new CompanyWorkforceInputError("The effective date must be valid and not in the future.");
+    }
+    try {
+      await runVerifiedCompanyWorkforceCommand({
+        database: this.database, principal, now,
+        operation: async ({ database, tenantId }) => {
+          const result = await database.query<{ link_status: string; activated_at: string | Date | null }>(
+            `SELECT link_status, activated_at FROM company_worker_links
+             WHERE link_id=$1 AND tenant_id=$2 FOR UPDATE`, [id, tenantId]
+          );
+          const link = result.rows[0];
+          if (!link) throw new CompanyWorkforceAccessError();
+          if (link.link_status !== "active" || !link.activated_at) {
+            throw new CompanyWorkforceConflictError("Only an active Worker relationship can be ended.");
+          }
+          const activatedDate = new Date(link.activated_at).toISOString().slice(0, 10);
+          if (effectiveDate < activatedDate) {
+            throw new CompanyWorkforceInputError("The effective date cannot precede the relationship.");
+          }
+          const revokedAt = now.toISOString();
+          const update = await database.query(
+            `UPDATE company_worker_links
+             SET link_status='revoked', revoked_at=$3, updated_at=$3
+             WHERE link_id=$1 AND tenant_id=$2 AND link_status='active'`,
+            [id, tenantId, revokedAt]
+          );
+          if (update.affectedRows !== 1) throw new CompanyWorkforceConflictError();
+          await appendWorkforceAudit(database, principal, {
+            action: "company_workforce.link.revoked", targetReference: id,
+            metadata: { tenantId, effectiveDate, reason }
+          });
+        }
+      });
+    } catch (error) {
+      if (knownCompanyError(error)) throw error;
+      throw new CompanyWorkforceAccessError();
+    }
+  }
+
   async acceptWorkerLink(principal:AuthorizationPrincipal,linkId:string):Promise<CompanyWorkerLinkRecord>{
     const id=linkId.trim();if(!id)throw new CompanyWorkforceAccessError();const now=this.now();
     try{return await runWorkerCommand({database:this.database,principal,now,operation:async({database,workerAccountId})=>{
