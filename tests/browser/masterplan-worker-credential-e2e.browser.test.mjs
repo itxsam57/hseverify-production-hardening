@@ -909,6 +909,19 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
           const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);const pdfBody=await pdf.body();assert.ok(pdfBody.subarray(0,8).toString().startsWith("%PDF-1.4"));if(COMPANY_CREDENTIAL_TARGET_MODE){const text=extractCredentialPdf(pdfBody);assert.ok(text.includes(ISSUED_QUALIFICATION));assert.ok(text.includes("Expiry: "+publicCredential.expiresAt));}await publicPage.close();
 
           await worker.goto(`${baseUrl}/worker/share-links`);await worker.getByLabel("Competencies", { exact: true }).check();await worker.getByLabel("Purpose").fill("Masterplan end-to-end verification");await worker.getByLabel("Recipient or employer (optional)").fill("E2E Employer");await worker.getByLabel("Link expiry").selectOption("7");await worker.getByRole("button",{name:"Create secure link"}).click();await worker.getByText("Share link created.",{exact:false}).waitFor({timeout:15000});const shareUrl=await worker.getByRole("link",{name:"Open secure share link"}).getAttribute("href");assert.ok(shareUrl);const share=await workerContext.newPage();await share.goto(`${baseUrl}${shareUrl}`);await share.getByText(ISSUED_QUALIFICATION,{exact:true}).waitFor({timeout:15000});await share.close();
+          // Revoke from the actual Worker UI and prove the previously captured public
+          // capability can no longer disclose the approved competency.
+          const ownedShare=worker.locator("article.record-row").filter({hasText:"Masterplan end-to-end verification"}).first();
+          await ownedShare.getByRole("button",{name:"Revoke",exact:true}).click();
+          await worker.getByText("Share link revoked. Existing access is now blocked.",{exact:true}).waitFor({timeout:15000});
+          await worker.reload({waitUntil:"domcontentloaded"});
+          await worker.locator("article.record-row").filter({hasText:"Masterplan end-to-end verification"}).getByText("Revoked",{exact:true}).waitFor({timeout:15000});
+          const revokedShare=await workerContext.newPage();
+          await revokedShare.goto(baseUrl+shareUrl,{waitUntil:"domcontentloaded"});
+          await revokedShare.getByRole("heading",{name:"Share link unavailable",exact:true}).waitFor({timeout:15000});
+          assert.equal((await revokedShare.locator("main").innerText()).includes(ISSUED_QUALIFICATION),false,"Revoked share exposed a private competency");
+          await revokedShare.close();
+          console.log("ACTUAL_A17_SCOPED_SHARE_BROWSER Worker creates, opens, revokes; revoked capability denied after reload");
 
           await worker.goto(`${baseUrl}/worker/appeals`);await worker.getByLabel("Credential").selectOption(credentialId);await worker.getByLabel("Appeal grounds").fill("The issued competency should be reassessed against the retained qualification evidence after this end-to-end verification.");await worker.locator('input[name="evidenceRecordIds"]').first().check();await worker.getByRole("button",{name:"Submit credential appeal"}).click();await worker.getByText("Appeal submitted for independent review.",{exact:true}).waitFor({timeout:15000});
           // The issuing Admin is denied; the separate real Admin logs in to review.

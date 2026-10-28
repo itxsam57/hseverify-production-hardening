@@ -17,6 +17,7 @@ function loadDecisionRuntime() {
     "src/lib/decision/decision-engine-repository.ts",
     "src/lib/decision/decision-engine-service.ts",
     "src/lib/auth/auth-domain.ts",
+    "src/lib/auth/recent-mfa-service.ts",
     "src/lib/audit/audit-repository.ts"
   ];
   for (const sourceFile of files) {
@@ -27,6 +28,7 @@ function loadDecisionRuntime() {
         , 'const bindTrustedSystemAuditActor = () => ({ actor: "runtime-test" });'
       );
       source = source.replace('import { getAuditRepository } from "../audit/audit-repository";', 'const getAuditRepository = () => ({ append: async () => {} });');
+      source = source.replace('import { DecisionRepository } from "./decision-engine-repository";', 'class DecisionRepository {}');
     }
     const output = ts.transpileModule(source, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
@@ -38,6 +40,8 @@ function loadDecisionRuntime() {
   const dbTarget = resolve(out, "lib/database/database.js");
   mkdirSync(dirname(dbTarget), { recursive: true });
   writeFileSync(dbTarget, "module.exports={getDatabaseClient:async()=>{throw new Error('runtime injects repository')}};");
+  const authTarget=resolve(out, "lib/auth/auth-access-repository.js");
+  writeFileSync(authTarget, "module.exports={getAuthAccessRepository:async()=>{throw new Error('MFA repository is never used by createAndRecord')}};");
   return import(`file://${resolve(out, "lib/decision/decision-engine-service.js")}`);
 }
 
