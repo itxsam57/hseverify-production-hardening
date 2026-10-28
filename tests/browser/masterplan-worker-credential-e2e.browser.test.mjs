@@ -27,6 +27,7 @@ const INTERVIEW_POLICY_MIN_ACTIVE_SECONDS = 15;
 const configuredActiveSince = new WeakMap();
 const EXPIRY_MODE=process.env.HSE_MASTERPLAN_EXPIRY === "true";
 const SCREEN_ERRORS=process.env.HSE_MASTERPLAN_A12_SCREEN_ERRORS === "true";
+const DEVICE_DENIAL=process.env.HSE_MASTERPLAN_DEVICE_DENIAL === "true";
 const COMPANY_CREDENTIAL_TARGET_MODE=process.env.HSE_MASTERPLAN_COMPANY_CREDENTIAL_TARGET === "true";
 const ISSUED_QUALIFICATION=COMPANY_CREDENTIAL_TARGET_MODE ? "Company Issued Safety Competency" : "End-to-End Worker Assessment";
 const COMPLETE_REASSESSMENT=process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true";
@@ -452,7 +453,7 @@ async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env
  console.log("ACTUAL_ASSURANCE_NOTIFICATION_BROWSER original retained sources, registered worker, owned Open/read and foreign denial passed");
 }
 
-test(SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
+test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an active Worker exam" : SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
   const companyFunded=process.env.HSE_MASTERPLAN_FUNDING_MODE === "company" || COMPANY_CREDENTIAL_TARGET_MODE;
   const root=process.cwd(),dbDir=await mkdtemp(join(tmpdir(),"hse-masterplan-worker-e2e-")),port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
   const env={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dbDir,HSE_RELEASE_SHA:"masterplan-worker-e2e",HSE_CREDENTIAL_SIGNING_SECRET:"synthetic-masterplan-worker-signing-secret-2026",HSE_SESSION_SECRET:"masterplan-worker-e2e-session-secret-2026-more-than-32",HSE_AUTH_PEPPER:"masterplan-worker-e2e-auth-pepper-2026-more-than-32",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
@@ -571,6 +572,27 @@ test(SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and d
           await worker.getByRole("button",{name:"Run device checks"}).click();await worker.getByText("Device checks completed.",{exact:true}).waitFor({timeout:15000});await worker.getByLabel("I confirm I am the Worker assigned to this assessment.").check();await worker.getByLabel(/I confirm my environment is suitable/).check();await worker.getByLabel(/I consent to the monitoring signals/).check();const auditTransport = process.env.HSE_MASTERPLAN_TRANSPORT_AUDIT === "true" ? auditCandidateAssessmentTransport(worker) : null;
           await worker.getByRole("button",{name:"Begin assessment"}).click();await worker.waitForURL(/\/worker\/assessments\/assessment_attempt_/,{timeout:20000});
           let attemptId=worker.url().split("/").pop();const originalAttemptId=attemptId;
+          if (DEVICE_DENIAL) {
+            const unboundContext=await browser.newContext({viewport:{width:1280,height:900}});
+            const unbound=await unboundContext.newPage();
+            try {
+              await login(unbound,baseUrl,{email:EMAIL,password:PASSWORD},"worker");
+              const denied=await unbound.goto(baseUrl+"/worker/assessments/"+attemptId,{waitUntil:"domcontentloaded"});
+              const unboundBody=await unbound.locator("main").innerText();
+              console.log("ACTUAL_A13_DEVICE_DENIAL_DIAGNOSTIC",JSON.stringify({httpStatus:denied?.status(),questionVisible:unboundBody.includes(MCQ_PROMPT),excerpt:unboundBody.slice(0,320)}));
+              assert.equal(unboundBody.includes(MCQ_PROMPT),false,"Same Worker from unbound context saw an exam question");
+              assert.equal(await unbound.getByLabel(MCQ_ANSWER).count(),0,"Same Worker from unbound context saw answer controls");
+              await unbound.getByRole("heading",{name:"The requested record could not be shown.",exact:true}).waitFor();
+              assert.equal((await unbound.locator("main").innerText()).includes(MCQ_PROMPT),false,"Unbound exam content appeared after the streaming denial completed");
+              assert.equal(await unbound.getByLabel(MCQ_ANSWER).count(),0,"Unbound answer controls appeared after the streaming denial completed");
+              assert.ok([200,404].includes(denied?.status()),"Unbound attempt returned an unexpected HTTP response");
+              await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();
+              console.log("ACTUAL_A13_BROWSER unbound fresh authenticated Worker context sees only generic denial; original bound session retains its question");
+            } finally {
+              await unboundContext.close();
+            }
+            return {attemptId,deviceDenialTested:true};
+          }
           if (auditTransport) await worker.reload({waitUntil:"domcontentloaded"});
           if(process.env.HSE_MASTERPLAN_TIMING === "true") {
             const timer=worker.getByRole("timer",{name:"Assessment time remaining"});
@@ -908,6 +930,15 @@ test(SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and d
       }
     });
     assert.equal(phase2.requestedSignal,"SMOKE_COMPLETE");
+    if (DEVICE_DENIAL) {
+      const verify=new PGlite(dbDir);
+      try {
+        const rows=(await verify.query("SELECT status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        assert.deepEqual(rows.map(row=>row.status),["IN_PROGRESS"]);
+        console.log("ACTUAL_A13_DB denied cross-device read left original attempt IN_PROGRESS");
+      } finally {await verify.close();}
+      return;
+    }
     if (SCREEN_ERRORS) {
       const verify=new PGlite(dbDir);
       try {
