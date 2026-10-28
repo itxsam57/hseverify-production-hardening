@@ -276,3 +276,36 @@ test("Company relationship termination requires live tenant authority, preserves
     assert.equal(eventsAfter.rows[0].n,1);
   } finally { await database.close(); }
 });
+
+test("Company transfer after termination creates only a new consented link, retaining the previous employer history", async () => {
+  const database = await db();
+  try {
+    const oldCompany = await seedCompany(database, "G");
+    const newCompany = await seedCompany(database, "H");
+    const worker = await seedWorker(database, "G");
+    const permanentWorkerId = await seedPermanentWorkerId(database, worker, "G");
+    const service = new CompanyWorkforceService(database, PEPPER, () => new Date(NOW_DATE));
+    const defaults = {email:worker.email,siteId:null,departmentId:null,paymentResponsibility:"worker",assessmentReference:null};
+
+    const oldRequested = await service.requestPermanentWorkerLink(companyPrincipal(oldCompany),permanentWorkerId,defaults);
+    const oldLink = await service.acceptWorkerLink(workerPrincipal(worker),oldRequested.linkId);
+    assert.equal(oldLink.status,"active");
+    await service.endWorkerRelationship(companyPrincipal(oldCompany),{
+      linkId:oldLink.linkId,effectiveDate:"2026-08-16",
+      reason:"Worker completed the assignment and moved to a different employer."
+    });
+    const nextRequested = await service.requestPermanentWorkerLink(companyPrincipal(newCompany),permanentWorkerId,defaults);
+    const beforeConsent = await database.query("SELECT link_status FROM company_worker_links WHERE link_id=$1",[nextRequested.linkId]);
+    assert.equal(beforeConsent.rows[0].link_status,"pending_worker_acceptance");
+    assert.notEqual(nextRequested.linkId,oldLink.linkId);
+    const newLink = await service.acceptWorkerLink(workerPrincipal(worker),nextRequested.linkId);
+    assert.equal(newLink.status,"active");
+    const links = await database.query("SELECT tenant_id,link_status,worker_account_id,permanent_worker_id FROM company_worker_links WHERE worker_account_id=$1 ORDER BY tenant_id",[worker.accountId]);
+    assert.deepEqual(links.rows.map(x=>[x.tenant_id,x.link_status]),[
+      [oldCompany.tenantId,"revoked"],[newCompany.tenantId,"active"]
+    ]);
+    assert.ok(links.rows.every(x=>x.worker_account_id===worker.accountId&&x.permanent_worker_id===permanentWorkerId));
+    const oldAudit = await database.query("SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='company_workforce.link.revoked' AND target_reference=$1",[oldLink.linkId]);
+    assert.equal(oldAudit.rows[0].n,1);
+  } finally { await database.close(); }
+});
