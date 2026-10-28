@@ -34,7 +34,7 @@ test("M2.09 integrity capture runtime preserves degraded and recovered states", 
   const baseUrl = `http://127.0.0.1:${port}`;
   await runDevelopmentServer({
     args: ["--port", String(port)],
-    environment: { ...process.env, ...environment },
+    environment: { ...process.env, ...environment, HSE_APP_ENV: "development", HSE_SESSION_SECRET: "integrity-capture-fixture-session-secret-2026-32", HSE_AUTH_PEPPER: "integrity-capture-fixture-auth-pepper-2026-32" },
     probeUrl: `${baseUrl}/api/integrity/snapshot`,
     probe: async () => {
       const degraded = await fetch(`${baseUrl}/api/integrity/snapshot`, {
@@ -60,7 +60,7 @@ test("M2.09 integrity capture classifies prohibited interaction signals", async 
   const baseUrl = `http://127.0.0.1:${port}`;
   await runDevelopmentServer({
     args: ["--port", String(port)],
-    environment: { ...process.env, ...environment },
+    environment: { ...process.env, ...environment, HSE_APP_ENV: "development", HSE_SESSION_SECRET: "integrity-capture-fixture-session-secret-2026-32", HSE_AUTH_PEPPER: "integrity-capture-fixture-auth-pepper-2026-32" },
     probeUrl: `${baseUrl}/api/integrity/snapshot`,
     probe: async () => {
       const response = await fetch(`${baseUrl}/api/integrity/snapshot`, {
@@ -81,7 +81,7 @@ test("M2.09 integrity capture accepts canonical browser and identity signal clas
   const baseUrl = `http://127.0.0.1:${port}`;
   await runDevelopmentServer({
     args: ["--port", String(port)],
-    environment: { ...process.env, ...environment },
+    environment: { ...process.env, ...environment, HSE_APP_ENV: "development", HSE_SESSION_SECRET: "integrity-capture-fixture-session-secret-2026-32", HSE_AUTH_PEPPER: "integrity-capture-fixture-auth-pepper-2026-32" },
     probeUrl: `${baseUrl}/api/integrity/snapshot`,
     probe: async () => {
       const response = await fetch(`${baseUrl}/api/integrity/snapshot`, {

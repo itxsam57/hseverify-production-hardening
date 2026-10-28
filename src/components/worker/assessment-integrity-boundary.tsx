@@ -266,6 +266,7 @@ export function AssessmentIntegrityBoundary({
               const type = track.kind === "video" ? "CAMERA_UNAVAILABLE" : "MIC_UNAVAILABLE";
               void report(type, { reason: "track_ended" }, "DEGRADED");
               if (policy.integrityFailureMode === "BLOCK" && mounted.current) {
+                stopAllMedia();
                 setState("blocked");
                 setMessage("Required monitoring stopped. Recover the device permission before continuing.");
               }
@@ -300,6 +301,7 @@ export function AssessmentIntegrityBoundary({
           track?.addEventListener("ended", () => {
             void report("SCREEN_UNAVAILABLE", { reason: "screen_share_ended" }, "DEGRADED");
             if (policy.integrityFailureMode === "BLOCK" && mounted.current) {
+              stopAllMedia();
               setState("blocked");
               setMessage("Required screen sharing stopped. Restore monitoring before continuing.");
             }
@@ -318,6 +320,7 @@ export function AssessmentIntegrityBoundary({
           "DEGRADED"
         );
         if (policy.integrityFailureMode === "BLOCK") {
+          stopAllMedia();
           setState("blocked");
           setMessage(`Required monitoring is unavailable: ${failures.join(", ")}. Retry before continuing.`);
           return;
@@ -338,6 +341,7 @@ export function AssessmentIntegrityBoundary({
       );
     } catch {
       await report("MONITORING_PROVIDER_DEGRADED", { reason: "monitor_start_failure" }, "DEGRADED");
+      if (policy.integrityFailureMode === "BLOCK") stopAllMedia();
       setState(policy.integrityFailureMode === "BLOCK" ? "blocked" : "degraded");
       setMessage(
         policy.integrityFailureMode === "BLOCK"
