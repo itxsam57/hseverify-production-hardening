@@ -77,6 +77,11 @@ const browserRuns = {
     observedCodeSha: "1a8b0fd792d657527ff831b39140701c987345bd",
     passed: "ℹ pass 4", failed: "ℹ fail 0"
   },
+  mfaAccommodationPrivacy: {
+    file: "20261029-A28-93aab3d-mfa-accommodation-privacy-browser.log",
+    observedCodeSha: "93aab3d661b82362a776a9c1178f8ab6877eac82",
+    passed: "ℹ pass 7", failed: "ℹ fail 0"
+  },
   recommendationStaffScoring: {
     file: "20261029-A28-464abda-review-recommendation-invitations-browser.log",
     observedCodeSha: "464abda9a22eb6a12d594f0d9a60bf693b560856",
@@ -134,7 +139,10 @@ const browserClauseMap = {
   "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
   "M1.03.01": [["worker", "Valid Worker registration succeeds, but negative-field matrix not covered by this run"]],
   "M1.03.03": [["negativeWorkerCompany", "Browser detects three duplicate Worker contact combinations and requires recovery without identity merge"]],
-  "M1.03.08": [["negativeWorkerCompany", "Wrong recovery OTP rejected and audited; valid recovery invalidates old sessions and password without erasing identity; all six-role recovery remains open"]],
+  "M1.03.08": [
+    ["negativeWorkerCompany", "Wrong recovery OTP rejected and audited; valid recovery invalidates old sessions and password without erasing identity; all six-role recovery remains open"],
+    ["mfaAccommodationPrivacy", "Company/Assessor/Verifier/Admin/Root rotate ten unique recovery hashes and replace authenticators, audits persist, fresh old factors and code replay/cross-account/wrong password rejected, new factor succeeds with role security notification"]
+  ],
   "M1.03.05": [["recommendationStaffScoring", "Five Company/Assessor/Verifier/Admin/Root actual staff invitations activate role-locked MFA sign-in; expired fresh/cached, unknown and issuer-revoked fresh/open token denial with no account/session; replay full matrix still open"]],
   "M1.03.02": [
     ["worker", "Worker email and phone OTP activation works with sandbox; real provider delivery open"],
@@ -146,6 +154,7 @@ const browserClauseMap = {
     ["company", "Actual PDF Admin preview has inline PDF bytes; all authorization scopes/expiry not covered"],
     ["appealIntegrityFixed", "Authorized Admin clicked retained PNG evidence and opened real 200-byte image preview in new tab while retaining reasoned appeal form; other scopes and token expiry remain open"]
   ],
+  "M1.07.02": [["mfaAccommodationPrivacy", "Worker qualification draft editable with dirty-state guard on links/Back, rejected malformed URL retains input, successful saved snapshot across navigation, delayed save cannot erase later edits; both native navigation/history fallback browser tests"]],
   "M1.07.03": [["negativeWorkerCompany", "Real initial identity rejection retains submitted version, reason and human review, and issues no permanent ID; approve and changes routes not this test"]],
   "M1.07.06": [
     ["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"],
@@ -178,8 +187,13 @@ const browserClauseMap = {
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
     ["appealIntegrityFixed", "Real Admin requested scanned evidence response and reviewed original PNG bytes in separate private tab; Worker received reasoned rejection, and independent appeal interview path Admin→Worker readiness→Assessor→final appeal executed"]
   ],
-  "M3.09.01": [["supervisorPrivacyAppeal", "Worker optional sharing restriction request reached Admin for reasoned completion; other privacy-request kinds open"]],
+  "M3.09.01": [
+    ["supervisorPrivacyAppeal", "Worker optional sharing restriction request reached Admin for reasoned completion; other privacy-request kinds open"],
+    ["mfaAccommodationPrivacy", "Actual Worker privacy retention inquiry reaches Admin response and returns persisted response/history to original Worker, no deletion/hold or legal-policy certification"]
+  ],
   "M3.09.02": [["supervisorPrivacyAppeal", "Admin fulfilled sharing restriction: old recipient denied, Worker form disabled and new server-side link issuance HTTP403; wider consent/withdrawal still open"]],
+  "M3.09.04": [["mfaAccommodationPrivacy", "Approved human caption and Spanish interpretation typed by assigned Assessor escaped and delivered to Worker across reload; missing exact active language capability truthfully unavailable; ended interview unmounts support; broader approved adjustment activation/real-human staffing unverified"]],
+  "M3.09.06": [["mfaAccommodationPrivacy", "Worker human-support component verified with actual escaped user text on 390px viewport; other keyboard/screen-reader/accessibility paths unverified"]],
   "M2.06.01": [["interviewEligibility", "Worker and Company forged assessment application denied while required qualification unverified; actual Verifier approves source evidence and Worker becomes eligible, other unavailable reasons open"]],
   "M2.06.02": [["interviewEligibility", "After Verifier qualification approval, real Worker self-pay application and confirmation create pinned case and reach precheck; duplicate capture and live merchant not covered"]],
   "M2.06.03": [["notifications", "Actual Worker request reaches Company, approval creates funded case and start-precheck; rejection/retry/self-funded branches open"]],
@@ -223,6 +237,7 @@ const browserClauseMap = {
   "M2.10.02": [["recommendationStaffScoring", "Verifier actual browser saves written rubric scores and final PASS, then starts reasoned amendment and rescores new FINAL FAIL retaining SUPERSEDED 80-point original and source answer"]],
   "M2.10.04": [["recommendationStaffScoring", "Verifier declares independent conflict, loses private scoring authority immediately and case returns to Admin recovery when no calibrated alternative; claim race and stale source remain untested"]],
   "M3.08.06": [["recommendationStaffScoring", "Root/role-bound Company, Assessor, Verifier and Admin staff invitations enroll MFA with correct role portal; expired/revoked cached and unknown denied, operational root permissions and recovery beyond invitation open"]],
+  "M3.11.03": [["mfaAccommodationPrivacy", "Actual Assessor support API rejects HTML XSS execution, foreign Worker/tenant, missing/forged Origin/Host and forwarded headers, oversized 413 and schema extra fields; other upload/CSRF/XSS endpoints open"]],
   "M3.11.01": [["certification", "Local M3.11 certification executes native registration/review concurrency suite and 50 authenticated real-server GETs; full parallel business mutation matrix and staging load not covered"]],
   "M3.11.02": [
     ["adversarial", "Actual Worker forbidden Admin route; duplicate review and preview scope cross-role denied; exhaustive IDOR open"],
