@@ -278,6 +278,9 @@ jobs:
       - name: Company staff existing-session suspension and revocation
         run: node --test tests/browser/company-complete-journey.browser.test.mjs
 
+      - name: M2.05 real Admin blueprint revisions and activation Chromium with persisted DB
+        run: node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs
+
       - name: Root-invited independent Admin Question Bank, policy and staff decision browser
         run: node --test --test-concurrency=1 tests/browser/staff-role-complete-journey.browser.test.mjs
 

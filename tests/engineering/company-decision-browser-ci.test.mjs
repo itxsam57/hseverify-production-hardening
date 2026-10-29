@@ -6,6 +6,7 @@ test("Real staff authoring, Company-funded credential, and trusted-MFA decision 
   const workflow = readFileSync(".github/workflows/masterplan-completion-qa.yml", "utf8");
   const connected = workflow.slice(workflow.indexOf("  connected-browser:"), workflow.indexOf("  release-readiness:"));
   const commands = [
+    "node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/staff-role-complete-journey.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/company-credential-target-e2e.browser.test.mjs",

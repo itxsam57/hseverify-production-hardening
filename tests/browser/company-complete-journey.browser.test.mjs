@@ -692,10 +692,17 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.getByRole("heading", { name: "Journey Tenant Record" }).waitFor({ timeout: 15_000 });
           let demoCard = company.locator("[data-company-scope-record]").filter({ hasText: "Journey Tenant Record" }).first();
           await demoCard.getByLabel("Title").fill("Journey Tenant Record Updated");
+          // The Save button dispatches a React useActionState Server Action.
+          // Never reload before the server confirms its update; that can
+          // abort an in-flight POST on a busy CI runner and falsely report a
+          // missing Company record.
           await demoCard.getByRole("button", { name: "Save demonstration record" }).click();
+          await demoCard.getByText("Demonstration record updated inside the current Company tenant.", { exact: true }).waitFor({ timeout: 20_000 });
+          await demoCard.getByRole("heading", { name: "Journey Tenant Record Updated", exact: true }).waitFor({ timeout: 20_000 });
           await company.reload({ waitUntil: "networkidle" });
           demoCard = company.locator("[data-company-scope-record]").filter({ hasText: "Journey Tenant Record Updated" }).first();
           await demoCard.waitFor({ timeout: 15_000 });
+          console.log("ACTUAL_COMPANY_SCOPE_UPDATE acked Server Action and persisted updated tenant record across reload");
           await demoCard.getByRole("button", { name: "Delete" }).click();
           await company.getByRole("dialog").getByRole("button", { name: "Delete demonstration record" }).click();
           await company.getByText(/deleted from the current Company tenant/i).waitFor({ timeout: 15_000 });
