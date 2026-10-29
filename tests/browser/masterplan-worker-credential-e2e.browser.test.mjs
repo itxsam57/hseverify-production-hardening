@@ -110,6 +110,20 @@ async function approveReview(page,adminPage,baseUrl,kind,reason){
   await page.getByText("APPROVED",{exact:true}).waitFor({timeout:15000});
 }
 
+async function submitScoringAction(page,button,stage){
+  // Browser automation must observe the action actually committing, rather
+  // than clicking and immediately reloading the document (which may cancel
+  // an inflight React Server Action on slower hosted CI runners).
+  const responseReady=page.waitForResponse(response=>
+    response.request().method()==="POST"
+    && new URL(response.url()).pathname==="/verifier/reviews/scoring",
+  {timeout:30000});
+  await button.click();
+  const response=await responseReady;
+  await response.finished();
+  assert.ok(response.ok(),stage+" scoring Server Action did not complete: HTTP "+response.status());
+}
+
 async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,markReason}){
   await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
   let row=page.locator("tbody tr").filter({hasText:caseId}).first();await row.waitFor({timeout:20000});
@@ -124,19 +138,23 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   const rubricForm=row.locator('form[aria-label^="Rubric mark "]').first();
   await rubricForm.getByLabel("Criterion mark").fill(String(mark));
   await rubricForm.getByLabel("Mark reason").fill(markReason);
-  await rubricForm.getByRole("button",{name:"Save mark",exact:true}).click();
+  await submitScoringAction(page,rubricForm.getByRole("button",{name:"Save mark",exact:true}),"Rubric mark");
   await page.reload({waitUntil:"domcontentloaded"});
   row=page.locator("tbody tr").filter({hasText:caseId}).first();
   const scoringForm=row.locator("form").filter({hasText:"Save scoring decision"}).first();
   await scoringForm.getByLabel("Decision").selectOption(decision);
   await scoringForm.getByRole("textbox",{name:"Reason",exact:true}).fill(reason);
-  await scoringForm.getByRole("button",{name:"Save scoring decision",exact:true}).click();
+  await submitScoringAction(page,scoringForm.getByRole("button",{name:"Save scoring decision",exact:true}),"Decision draft");
   await page.reload({waitUntil:"domcontentloaded"});
   row=page.locator("tbody tr").filter({hasText:caseId}).first();
-  await row.getByRole("button",{name:"Finalize review",exact:true}).click();
+  await submitScoringAction(page,row.getByRole("button",{name:"Finalize review",exact:true}),"Final review");
+  // Confirm React's authoritative result first, then a cold reload. This
+  // proves the decision persisted, not merely a transient local UI state.
+  await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   await page.reload({waitUntil:"domcontentloaded"});
   row=page.locator("tbody tr").filter({hasText:caseId}).first();
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
+  console.log("ACTUAL_SCORING_SERVER_ACTIONS mark, decision and final reviewed as completed POSTs; persisted FINAL survives reload");
 }
 async function publishInterviewPolicy(page,baseUrl,credential) {
   await login(page,baseUrl,credential,"admin");
