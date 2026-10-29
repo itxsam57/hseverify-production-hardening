@@ -96,6 +96,26 @@ const browserRuns = {
     file: "20261029-A28-f3d90fd-report-retry-failure-browser.log",
     observedCodeSha: "f3d90fdc193a1a8807c2baccaaf3372b73cd6f9b",
     passed: "ℹ pass 4", failed: "ℹ fail 0"
+  },
+  appealIntegrityFixed: {
+    file: "20261029-A28-394034e-exact-sha-appeal-integrity-browser.log",
+    observedCodeSha: "394034eb88b1e310309bd19512ae34f8e6ecd06c",
+    passed: "ℹ pass 3", failed: "ℹ fail 0"
+  },
+  assessmentFailure: {
+    file: "20261029-A12-394034e-full-emergency-autosave-browser.log",
+    observedCodeSha: "394034eb88b1e310309bd19512ae34f8e6ecd06c",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  emergencyResume: {
+    file: "20261029-A13-394034e-emergency-verifier-resume-browser.log",
+    observedCodeSha: "394034eb88b1e310309bd19512ae34f8e6ecd06c",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  emergencyReplacement: {
+    file: "20261029-A13-acaba9c-exact-sha-replacement-browser.log",
+    observedCodeSha: "acaba9cf8ba1ab227dc9cfb1701c355c427af025",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
   }
 };
 // Curated, exact assertions observed from the individual test source and output.
@@ -113,7 +133,10 @@ const browserClauseMap = {
   ],
   "M1.03.04": [["company", "Company email/MFA activation leads to pending tenant; other edge states still open"]],
   "M1.06.01": [["company", "PDF upload is scanned and bound to Company verification version; other types and production scanner still open"]],
-  "M1.06.05": [["company", "Actual PDF Admin preview has inline PDF bytes; all authorization scopes/expiry not covered"]],
+  "M1.06.05": [
+    ["company", "Actual PDF Admin preview has inline PDF bytes; all authorization scopes/expiry not covered"],
+    ["appealIntegrityFixed", "Authorized Admin clicked retained PNG evidence and opened real 200-byte image preview in new tab while retaining reasoned appeal form; other scopes and token expiry remain open"]
+  ],
   "M1.07.03": [["negativeWorkerCompany", "Real initial identity rejection retains submitted version, reason and human review, and issues no permanent ID; approve and changes routes not this test"]],
   "M1.07.06": [
     ["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"],
@@ -141,7 +164,11 @@ const browserClauseMap = {
   ],
   "M3.06.06": [["reportCredential", "Worker report forged-owner, cross-Worker, Company, anonymous and revoked downloads and stale settings updates denied; CSV formula/path manipulation not exhausted"]],
 
-  "M3.07.03": [["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"]],
+  "M3.07.01": [["appealIntegrityFixed", "Worker attached scanned submitted evidence version to an independently requested appeal follow-up; wrong eligibility/duplicate appeal matrix not completed"]],
+  "M3.07.03": [
+    ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
+    ["appealIntegrityFixed", "Real Admin requested scanned evidence response and reviewed original PNG bytes in separate private tab; Worker received reasoned rejection, and independent appeal interview path Admin→Worker readiness→Assessor→final appeal executed"]
+  ],
   "M3.09.01": [["supervisorPrivacyAppeal", "Worker optional sharing restriction request reached Admin for reasoned completion; other privacy-request kinds open"]],
   "M3.09.02": [["supervisorPrivacyAppeal", "Admin fulfilled sharing restriction: old recipient denied, Worker form disabled and new server-side link issuance HTTP403; wider consent/withdrawal still open"]],
   "M2.06.01": [["interviewEligibility", "Worker and Company forged assessment application denied while required qualification unverified; actual Verifier approves source evidence and Worker becomes eligible, other unavailable reasons open"]],
@@ -164,6 +191,23 @@ const browserClauseMap = {
     ["adversarial", "Real Chromium denies question until monitoring policy and required permission precheck; external device proof open"],
     ["notifications", "Company-funded Worker Start assessment reaches exact case/version precheck; broad device/media matrix open"]
   ],
+  "M2.07.02": [["assessmentFailure", "Actual Worker browser empty MCQ and written answers refused; valid MCQ→Next, written autosave/submit durable; other modes and no-backtracking matrix open"]],
+  "M2.07.06": [
+    ["emergencyResume", "Real Emergency Exit→Worker recovery request→Verifier claim/allow-resume→return to bound exam without trapping Worker"],
+    ["emergencyReplacement", "Real Emergency Exit→Verifier authorizes replacement→Worker starts different assessment form, answers and submits"],
+  ],
+  "M2.07.07": [["appealIntegrityFixed", "Real submitted Worker answers with integrity signals reached independent Verifier reasoned disposition and case routing; complete written-scoring rubric matrix open"]],
+  "M2.08.01": [["assessmentFailure", "Actual Save and exit waits for saved written answer, Worker selects Resume and retained response reappears; emergency requires separate Verifier approval"]],
+  "M2.08.03": [["assessmentFailure", "Browser reload after failed autosave preserved written draft and retried server commit; authoritative timer and crash across devices not completely exercised"]],
+  "M2.08.05": [["emergencyResume", "Real Worker emergency exit, blocked immediate resume, Verifier claim plus reasoned ALLOW_RESUME, same attempt restored and final submitted"]],
+  "M2.08.06": [["emergencyReplacement", "Original attempt retained as REPLACED and new form SUBMITTED after authorized Verifier APPROVE_REPLACEMENT; full case final decision not part of this A12 short test"]],
+  "M2.08.07": [["emergencyReplacement", "Browser and physical PGlite check original exposed question IDs and written draft preserved, distinct replacement form has no repeated exposed questions"]],
+  "M2.08.08": [["assessmentFailure", "Real delayed final submit request left submit disabled until server commit once with exactly two persisted answers; exact lost-response replay and retry idempotency still open"]],
+  "M2.09.01": [["appealIntegrityFixed", "Real Worker paste signal and four distinct Verifier dispositions CLEAR, CONCERN_CONFIRMED, UNABLE, ESCALATE persisted with case/owner routing; real media provider not covered"]],
+  "M2.09.02": [["appealIntegrityFixed", "Actual Worker paste event retained COPY_PASTE_DETECTED in Verifier integrity evidence and versioned reason; fullscreen/tab/network/device event matrix open"]],
+  "M2.09.04": [["appealIntegrityFixed", "Real Verifier reasoned review with stale revision denial, Admin escalation return then re-review and case owner/status update; final decision all outcomes not covered"]],
+  "M2.12.01": [["appealIntegrityFixed", "Admin appeal-requested interview→Worker readiness→Assessor console→retained interview response→independent final appeal; general intake consent/admit cases open"]],
+
   "M2.09.03": [["adversarial", "Camera/mic/screen denial, partial media acquisition cleanup, policy outage and degraded state handled"]],
   "M3.11.01": [["certification", "Local M3.11 certification executes native registration/review concurrency suite and 50 authenticated real-server GETs; full parallel business mutation matrix and staging load not covered"]],
   "M3.11.02": [
