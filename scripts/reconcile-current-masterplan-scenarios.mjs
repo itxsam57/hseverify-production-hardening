@@ -167,6 +167,11 @@ const browserRuns = {
     observedCodeSha: "14d3c75bd3d4296f974dba582c3abd0fcc5c6ac7",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  multiTabConflict: {
+    file: "20261030-A28-9a77ffa-offline-conflict-two-tab-browser.log",
+    observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   controlledReview: {
     file: "20261029-A28-0afd4df-controlled-review-full-browser.log",
     observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
@@ -314,8 +319,14 @@ const browserClauseMap = {
   ],
   "M2.07.07": [["appealIntegrityFixed", "Real submitted Worker answers with integrity signals reached independent Verifier reasoned disposition and case routing; complete written-scoring rubric matrix open"]],
   "M2.08.01": [["assessmentFailure", "Actual Save and exit waits for saved written answer, Worker selects Resume and retained response reappears; emergency requires separate Verifier approval"]],
-  "M2.08.02": [["offlineMCQWritten", "Actual local Chromium simulates disconnected MCQ server POST, selected MCQ survives browser reload, encrypted IndexedDB retains offline written draft without plaintext and with non-extractable key; final submit/edit stay disabled until delayed offline restore, reloaded written answer survives and synchronizes on reconnect; full Worker assessment→human review→credential→sharing→appeal completes. Distinct device, multi-tab conflict and genuine production network outage remain unverified"]],
-  "M2.08.03": [["assessmentFailure", "Browser reload after failed autosave preserved written draft and retried server commit; authoritative timer and crash across devices not completely exercised"]],
+  "M2.08.02": [
+    ["offlineMCQWritten", "Actual Chromium simulated offline MCQ, selected answer survived reload, encrypted IndexedDB recovered written draft without plaintext and with non-extractable key; final submit/edit stayed disabled during delayed restore, recovered answer synced on reconnect, completed credential/share/appeal. This run alone did not exercise a competing tab or genuine external outage"],
+    ["multiTabConflict", "Actual two same-Worker Chromium tabs: tab A holds encrypted written offline draft while tab B commits a newer answer. After reload tab A restores offline draft but final submit is disabled on revision conflict until explicit Replace saved version with this tab, then saves and completes full Worker→Verifier→credential→appeal journey; no distinct physical device or genuine carrier outage tested"]
+  ],
+  "M2.08.03": [
+    ["assessmentFailure", "Browser reload after failed autosave preserved written draft and retried server commit; authoritative timer and crash across devices not completely exercised"],
+    ["multiTabConflict", "Real Chromium tab A reloads during pending IndexedDB draft restoration while tab B has saved newer server answer; tab A blocks editing/submission until recovery and explicit conflict choice. Browser crash, a second physical device and concurrent final POST racing remain open"]
+  ],
   "M2.08.05": [["emergencyResume", "Real Worker emergency exit, blocked immediate resume, Verifier claim plus reasoned ALLOW_RESUME, same attempt restored and final submitted"]],
   "M2.08.06": [["emergencyReplacement", "Original attempt retained as REPLACED and new form SUBMITTED after authorized Verifier APPROVE_REPLACEMENT; full case final decision not part of this A12 short test"]],
   "M2.08.07": [["emergencyReplacement", "Browser and physical PGlite check original exposed question IDs and written draft preserved, distinct replacement form has no repeated exposed questions"]],
