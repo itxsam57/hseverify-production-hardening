@@ -426,9 +426,10 @@ jobs:
           if-no-files-found: error
 
   postgres-json:
-    # Hosted service containers provide an actual PostgreSQL boundary independently
-    # of the PGlite journey suite and the optional self-hosted runner.
-    runs-on: ubuntu-latest
+    # PG16 archive restore requires a same-major client; ubuntu-latest now uses
+    # Ubuntu 26.04, which lacks the postgresql-client-16 apt package.
+    # The service remains PostgreSQL 16; pin only this job's supported runner.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
       postgres:
