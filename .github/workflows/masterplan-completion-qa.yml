@@ -445,6 +445,9 @@ jobs:
     env:
       HSE_APP_ENV: test
       HSE_POSTGRES_TEST_DATABASE_URL: postgresql://hse_test:disposable-ci-postgres-only@127.0.0.1:5432/hse_json_test
+      # Match the PostgreSQL 16 service. Newer pg_restore emits transaction_timeout (PG17+).
+      HSE_POSTGRES_PG_DUMP: /usr/lib/postgresql/16/bin/pg_dump
+      HSE_POSTGRES_PG_RESTORE: /usr/lib/postgresql/16/bin/pg_restore
       HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       HSE_SESSION_SECRET: postgres-json-disposable-ci-session-secret-2026
       HSE_AUTH_PEPPER: postgres-json-disposable-ci-auth-pepper-2026
@@ -461,6 +464,14 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
+      - name: Verify PostgreSQL 16 archive client tools
+        run: |
+          if [ ! -x "$HSE_POSTGRES_PG_DUMP" ] || [ ! -x "$HSE_POSTGRES_PG_RESTORE" ]; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client-16
+          fi
+          "$HSE_POSTGRES_PG_DUMP" --version | grep -Eq '[[:space:]]16\.'
+          "$HSE_POSTGRES_PG_RESTORE" --version | grep -Eq '[[:space:]]16\.'
       - name: PostgreSQL JSON parameters through script and runtime transactions
         run: npm run test:postgres-json
 
