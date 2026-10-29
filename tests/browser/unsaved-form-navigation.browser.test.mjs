@@ -65,7 +65,8 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
   await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",environment:{...f.environment,HSE_CREDENTIAL_SIGNING_SECRET:f.key},projectRoot:process.cwd(),probe:async()=>{
    await login(page,baseUrl,f.credentials.worker,"worker");await page.goto(baseUrl+"/worker/evidence");
    await page.getByLabel("Record type").selectOption("qualification");
-   await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")).then(r=>r.finished()),page.getByRole("button",{name:"Create draft",exact:true}).click()]);
+   await page.getByRole("button",{name:"Create draft",exact:true}).click();
+   await page.getByText("Qualification draft created.",{exact:true}).waitFor({timeout:20000});
    await page.reload({waitUntil:"domcontentloaded"});const article=page.locator("article").filter({hasText:"Qualification record"}).first();
    const title=article.getByLabel("Qualification title",{exact:true});await title.fill("Unsaved protected qualification");
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
@@ -85,7 +86,8 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
    await page.goto(baseUrl+"/worker/evidence");
    const savedTitle=page.locator("article").filter({hasText:"Qualification record"}).first().getByLabel("Qualification title",{exact:true});
    await savedTitle.fill("Saved qualification title");
-   await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")).then(r=>r.finished()),page.locator("article").filter({hasText:"Qualification record"}).first().getByRole("button",{name:"Save metadata",exact:true}).click()]);
+   await page.locator("article").filter({hasText:"Qualification record"}).first().getByRole("button",{name:"Save metadata",exact:true}).click();
+   await page.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor({timeout:20000});
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    await page.waitForURL("**/worker/dashboard");assert.equal(dialogs,2,"Accepted save clears dirty state");
    await page.goto(baseUrl+"/worker/evidence");
@@ -105,16 +107,36 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    assert.equal(new URL(page.url()).pathname,"/worker/evidence");assert.equal(dialogs,3,"Rejected save remains dirty and protected");
    await invalid.getByLabel("Verification URL",{exact:false}).fill("");
-   await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")).then(r=>r.finished()),invalid.getByRole("button",{name:"Save metadata",exact:true}).click()]);
-   let releaseResponse,serverAccepted;
-   const hold=new Promise(resolve=>releaseResponse=resolve),accepted=new Promise(resolve=>serverAccepted=resolve);
-   const delayAction=async route=>{if(route.request().method()!=="POST")return route.continue();const response=await route.fetch();serverAccepted();await hold;await route.fulfill({response});};
-   await page.route("**/worker/evidence",delayAction);
+   await invalid.getByRole("button",{name:"Save metadata",exact:true}).click();
+   await invalid.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor({timeout:20000});
+   // Delay only delivery to React after the real server has accepted the POST.
+   // Playwright route.fetch() of a Next Server Action can hang or abort a live
+   // action request; patching client fetch leaves the network transport intact.
+   await page.evaluate(() => {
+     const nativeFetch = window.fetch.bind(window);
+     let release;
+     const gate = new Promise(resolve => { release = resolve; });
+     window.__hseEvidenceHold = { accepted: false, release: () => release() };
+     window.fetch = async (...args) => {
+       const request = args[0];
+       const method = (args[1]?.method ?? (request instanceof Request ? request.method : "GET")).toUpperCase();
+       const url = new URL(typeof request === "string" ? request : request.url, location.href);
+       if (method !== "POST" || url.pathname !== "/worker/evidence") return nativeFetch(...args);
+       const response = await nativeFetch(...args);
+       window.__hseEvidenceHold.accepted = true;
+       await gate;
+       return response;
+     };
+   });
    await invalid.getByLabel("Qualification title",{exact:true}).fill("Saved request snapshot");
-   await invalid.getByRole("button",{name:"Save metadata",exact:true}).click();await accepted;
-   const finished=page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")).then(r=>r.finished());
-   try{await invalid.getByLabel("Qualification title",{exact:true}).fill("Edited while save pending");}finally{releaseResponse();}
-   await finished;await page.unroute("**/worker/evidence",delayAction);
+   await invalid.getByRole("button",{name:"Save metadata",exact:true}).click();
+   try {
+     await page.waitForFunction(() => window.__hseEvidenceHold?.accepted === true,null,{timeout:20000});
+     await invalid.getByLabel("Qualification title",{exact:true}).fill("Edited while save pending");
+   } finally {
+     await page.evaluate(() => window.__hseEvidenceHold?.release());
+   }
+   await invalid.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor({timeout:20000});
    assert.equal(await invalid.getByLabel("Qualification title",{exact:true}).inputValue(),"Edited while save pending");
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    assert.equal(new URL(page.url()).pathname,"/worker/evidence");assert.equal(dialogs,4,"Later edits remain unsaved after older save completes");
@@ -122,6 +144,12 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
    acceptLeave=true;
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    await page.waitForURL("**/worker/dashboard");assert.equal(dialogs,5,"Accepted leave prompts once");
+   await page.goto(baseUrl+"/worker/evidence");
+   assert.equal(
+     await page.locator("article").filter({hasText:"Qualification record"}).first().getByLabel("Qualification title",{exact:true}).inputValue(),
+     "Saved request snapshot",
+     "The delayed save must persist its submitted snapshot, not the later edit or discarded value"
+   );
 
 
   }});
