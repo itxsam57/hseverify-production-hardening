@@ -127,6 +127,8 @@
     "test:m3-07": "node --test tests/platform/privacy-operations-runtime.test.mjs tests/platform/privacy-operations-migration-stack.test.mjs",
     "test:m3-08": "node --test tests/platform/admin-operational-health-runtime.test.mjs tests/platform/admin-operational-health-security-runtime.test.mjs",
     "test:interview-console-context": "node --test --test-concurrency=1 tests/platform/interview-console-context-runtime.test.mjs tests/platform/interview-finalization-runtime.test.mjs",
+    "test:authenticated-load": "node scripts/run-authenticated-mixed-role-burst.mjs",
+    "audit:current-218-scenarios": "node scripts/reconcile-current-masterplan-scenarios.mjs",
     "test:provider-integrations": "node --test tests/platform/provider-health-runtime.test.mjs tests/platform/provider-execution-gateway-runtime.test.mjs tests/platform/interview-live-media-runtime.test.mjs",
     "test:independent-review-browser": "node --test tests/browser/independent-worker-review-e2e.browser.test.mjs",
     "test:interview-live-media-browser": "node --test tests/browser/interview-live-media-e2e.browser.test.mjs",
