@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  revokedFundingLink: {
+    file: "20261030-A28-53092d2-m206-revoked-link-after-revalidation-browser.log",
+    observedCodeSha: "53092d25d581f8c9dd2798a9ead2541c117309df",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   finalizedCompanyCancellation: {
     file: "20261030-A28-bb567f4-exact-sha-approved-cancel-browser-native.log",
     observedCodeSha: "bb567f48e0459e0141ddb20f528326dc081ce662",
@@ -377,6 +382,7 @@ const browserClauseMap = {
   "M2.06.01": [["interviewEligibility", "Worker and Company forged assessment application denied while required qualification unverified; actual Verifier approves source evidence and Worker becomes eligible, other unavailable reasons open"]],
   "M2.06.02": [["interviewEligibility", "After Verifier qualification approval, real Worker self-pay application and confirmation create pinned case and reach precheck; duplicate capture and live merchant not covered"]],
   "M2.06.03": [["notifications", "Actual Worker request reaches Company, approval creates funded case and start-precheck; rejection/retry/self-funded branches open"]],
+  "M2.06.05": [["revokedFundingLink", "Real authenticated Worker mobile browser requests one assessment credit from linked verified Company, real Company desktop browser ends that relationship while request remains pending, and attempts approval. UI rejects with Worker no longer linked message, pending request stays REQUESTED after reload; exact persisted database has revoked link, zero approved or reserved credit, worker application FUNDING_REQUESTED, null case reference and zero Worker cases. Retried/self-funded branches and production merchant/credits not exercised"]],
   "M2.06.06": [["interviewEligibility", "Browser and forged Worker/Company apply blocked before assessment waiting threshold, then eligible after real clock advances; attempt-limit/credential/reassessment paths open"]],
   "M2.11.02": [["interviewEligibility", "Worker UTC availability persists on refresh, visible to Assessor; outside window blocked, inside scheduled, UTC independent of NY process timezone, 390px no overflow"]],
   "M2.11.03": [["interviewEligibility", "Assessor reasoned reschedule updates actual Worker/Company/Assessor appointment and real compiled outbox CLI: old events suppressed and new scoped notices/email accepted, private reason excluded"]],
