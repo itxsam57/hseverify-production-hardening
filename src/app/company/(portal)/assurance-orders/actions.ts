@@ -53,4 +53,14 @@ export async function queueAssuranceCaseEvidenceAction(formData:FormData):Promis
   refresh(text(formData,"orderId")||undefined);
 }
 export async function cancelAssuranceOrderDraftAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).cancelDraft(principal,orderId); refresh(orderId); }
-export async function cancelSubmittedAssuranceOrderAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).cancelSubmittedOrder(principal,orderId); refresh(orderId); }
+export async function cancelSubmittedAssuranceOrderAction(formData:FormData):Promise<void>{
+  const principal=await requireCurrentTenantPermission("company.orders.manage");
+  const orderId=normalizeAssuranceReference(text(formData,"orderId"),"assurance_order");
+  if(!orderId) throw new AssuranceOrderInputError("Assurance Order reference is invalid.");
+  try {await (await service()).cancelSubmittedOrder(principal,orderId);}
+  catch(error){
+    if(!(error instanceof AssuranceOrderConflictError)) throw error;
+    redirect("/company/assurance-orders/"+orderId+"?error="+encodeURIComponent(error.message));
+  }
+  refresh(orderId);
+}

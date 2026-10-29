@@ -284,6 +284,9 @@ jobs:
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
         run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
 
+      - name: Partly finalized Company order cancellation preserves approved Worker decisions
+        run: node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs
+
       - name: Company-funded assurance order through final Worker credential and appeal
         run: node --test --test-concurrency=1 tests/browser/company-credential-target-e2e.browser.test.mjs
 

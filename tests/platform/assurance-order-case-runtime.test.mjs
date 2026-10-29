@@ -222,6 +222,60 @@ test("M2.01 submitted cancellation closes cases, resolves actions and preserves 
   } finally { await database.close(); }
 });
 
+test("M2.01 partial completed order cannot cancel already-approved Worker outcome",async()=>{
+  const database=await db();
+  try {
+    const company=await seedCompany(database,"P");
+    const workers=[await seedWorkerLink(database,company,"Q"),await seedWorkerLink(database,company,"R")];
+    const {service,principal,order}=await readyOrder(database,company,workers,"RUNTIME-CANCEL-AFTER-DECISION");
+    const cases=await service.submitOrder(principal,order.orderId,NOW_DATE);
+    assert.equal(cases.length,2);
+    // A real final decision can precede the other Worker's assessment.
+    // The parent is still ACTIVE and the second case retains an obligation.
+    await database.query("UPDATE assurance_orders SET order_status='ACTIVE' WHERE order_id=$1",[order.orderId]);
+    await database.query("UPDATE assurance_cases SET case_status='Approved', owner_kind=NULL, next_action=NULL, decision_reference='decision_approved_first_worker' WHERE case_id=$1",[cases[0].caseId]);
+    const before=(await database.query("SELECT case_id,case_status,decision_reference FROM assurance_cases WHERE order_id=$1 ORDER BY case_id",[order.orderId])).rows;
+    const eventsBefore=(await database.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1",[order.orderId])).rows[0].n;
+    await assert.rejects(
+      service.cancelSubmittedOrder(principal,order.orderId,new Date("2026-08-18T01:00:00.000Z")),
+      AssuranceOrderConflictError,
+      "Company must not silently close a finalized Worker decision or its pending sibling"
+    );
+    assert.equal((await database.query("SELECT order_status FROM assurance_orders WHERE order_id=$1",[order.orderId])).rows[0].order_status,"ACTIVE");
+    assert.deepEqual((await database.query("SELECT case_id,case_status,decision_reference FROM assurance_cases WHERE order_id=$1 ORDER BY case_id",[order.orderId])).rows,before);
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1",[order.orderId])).rows[0].n,eventsBefore);
+  } finally { await database.close(); }
+});
+
+test("M2.01 cancellation fails closed for conditional, rejected and referenced credentials",async()=>{
+  for(const scenario of [
+    {company:"S",worker:"T",caseStatus:"Conditionally approved",reference:null},
+    {company:"U",worker:"V",caseStatus:"Rejected",reference:null},
+    {company:"W",worker:"X",caseStatus:"Assessment pending",reference:"credential_legacy_reference"}
+  ]) {
+    const database=await db();
+    try {
+      const company=await seedCompany(database,scenario.company);
+      const worker=await seedWorkerLink(database,company,scenario.worker);
+      const {service,principal,order}=await readyOrder(database,company,[worker],"RUNTIME-FINAL-CANCEL-"+scenario.company);
+      const [created]=await service.submitOrder(principal,order.orderId,NOW_DATE);
+      await database.query(
+        `UPDATE assurance_cases SET case_status=$2,owner_kind=$3,next_action=$4,credential_reference=$5 WHERE case_id=$1`,
+        [created.caseId,scenario.caseStatus,["Conditionally approved","Rejected"].includes(scenario.caseStatus)?null:"worker",["Conditionally approved","Rejected"].includes(scenario.caseStatus)?null:"Complete assessment",scenario.reference]
+      );
+      await assert.rejects(
+        service.cancelSubmittedOrder(principal,order.orderId,new Date("2026-08-18T01:00:00.000Z")),
+        AssuranceOrderConflictError
+      );
+      assert.equal((await database.query("SELECT order_status FROM assurance_orders WHERE order_id=$1",[order.orderId])).rows[0].order_status,"SUBMITTED");
+      const kept=(await database.query("SELECT case_status,credential_reference FROM assurance_cases WHERE case_id=$1",[created.caseId])).rows[0];
+      assert.equal(kept.case_status,scenario.caseStatus);
+      assert.equal(kept.credential_reference,scenario.reference);
+      assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_cancelled'",[order.orderId])).rows[0].n,0);
+    } finally {await database.close();}
+  }
+});
+
 test("M2.01 Action Centre blocks unsafe assignment and snoozing of live worker obligations",async()=>{
   const database=await db();
   try {
