@@ -152,6 +152,11 @@ const browserRuns = {
     observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  wrongWorkerInvite: {
+    file: "20261029-A28-a8df2a1-exact-sha-forged-invitation-browser.log",
+    observedCodeSha: "a8df2a1ba51168f5c51d5e05c23b77a05545e5d1",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   controlledReview: {
     file: "20261029-A28-0afd4df-controlled-review-full-browser.log",
     observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
@@ -234,6 +239,7 @@ const browserClauseMap = {
     ["company", "Company invitation created, resend cooldown and revoke"],
     ["companyWorkerSecurity", "Actual Worker invitation single/create, resend cooldown/revoke plus Company code Worker redeem; link accept through code only, expired/replayed email-link matrix open"]
   ],
+  "M1.10.04": [["wrongWorkerInvite", "Real Chromium two separate authenticated Worker accounts each sees only own fixture-seeded pending Company link; attacker changes actual hidden server-action linkId to other Worker's pending invitation and receives neutral refusal; both rightful Workers then accept their own link, persisted records/audit show exactly one legitimate acceptance each. This tests account-bound consent, not external email-invitation token replay or unlinked new signup"]],
   "M1.10.05": [["negativeWorkerCompany", "Real Company form ends exact active relationship with reason; Worker loses active Company access while keeping account and historical link"]],
   "M1.10.06": [["dualEmployer", "Two independently authenticated Company owners and one Worker saw two active tenant links, each Company foreign link returned HTTP404, reasoned Company B end retained A active and B historical, exact DB tenant-bound audit verified; both link fixtures preseeded so invitation enrollment/consent itself was not proven by this browser run"]],
   "M2.07.03": [["controlledReview", "Actual Worker Controlled Review revises and flags MCQ and written answer before submission, completes separate Verifier scoring, interview, signed credential, share and appeal; additional stale answer tab/device and real proctor hardware unverified"]],
