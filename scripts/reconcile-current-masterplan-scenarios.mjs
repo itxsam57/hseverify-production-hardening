@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  finalizedCompanyCancellation: {
+    file: "20261030-A28-bb567f4-exact-sha-approved-cancel-browser-native.log",
+    observedCodeSha: "bb567f48e0459e0141ddb20f528326dc081ce662",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   workerEligibility: {
     file: "20261030-A28-f16e8e1-real-pinned-policy-waiting-verifier-eligibility-browser.log",
     observedCodeSha: "f16e8e1adce3ab722abfc8c9851f27e3b205f070",
@@ -242,6 +247,7 @@ const browserClauseMap = {
   "M2.10.06": [["humanAiCaseReplay", "Real Verifier Chromium generates sandbox AI guidance and accepts it as advisory; two criterion marks remain empty and save is blocked until human assigns each mark and final PASS. Reload preserves authoritative human 84 marks, decision and Admin Case Replay. External AI timeout/unavailable fallback not exercised"]],
   "M2.01.01": [["companyFundedCredential", "Real Company browser selects verified linked Worker, creates single credential-target order, retains correct immutable framework policy, draft→READY→submit transitions and new linked Worker assurance case. Additional Workers, edits and invalid draft paths not exercised"]],
   "M2.01.05": [["companyFundedCredential", "Real Company-funded linked Worker case progresses through assessment, independent human review/interview, signed credential and appeal; Worker-funded, mixed-method and competing reservations are not part of this run"]],
+  "M2.01.07": [["finalizedCompanyCancellation", "Real authenticated Company Chromium tries to cancel ACTIVE two-Worker order with one already Approved decision and one Assessment pending. UI shows explicit reason, exact persisted order stays ACTIVE, original approval and pending sibling preserved, zero cancellation timeline events; same exact SHA native eight-case runtime gate verifies ordinary pending cancellation and rejects conditional/rejected statuses or credential references. Paid cancellations, refunds and races with concurrent final decisions remain unverified"]],
   "M2.01.08": [["companyFundedCredential", "Actual Company order becomes COMPLETED only after its real final decision; stored immutable policy version and Worker credential issued for exact target confirmed from database. Report generation and multi-case readiness remain unverified"]],
   "M2.13.02": [["privilegedMfaDecision", "Admin browser creates PENDING_ADDITIONAL_REVIEW decision on a real persisted decision-pending assurance case with responsible Admin action; route via UI, full next-actor notifications and interview-pending branch not exercised"]],
   "M2.13.05": [["privilegedMfaDecision", "Real Admin MFA login creates pending decision; after trusted MFA event is aged out, authenticated browser forged fresh MFA timestamp fails without any decision, case, timeline or audit mutation; fresh completed recovery-code MFA login permits reason+evidence REJECTED override. Database confirms trusted MFA timestamp, original decision audit, new override, single case timeline event and actor. Distinct production identity and every override target still open"]],
