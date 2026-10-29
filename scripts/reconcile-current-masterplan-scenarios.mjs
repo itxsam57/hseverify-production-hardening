@@ -157,6 +157,11 @@ const browserRuns = {
     observedCodeSha: "a8df2a1ba51168f5c51d5e05c23b77a05545e5d1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  naturalExpiry: {
+    file: "20261029-A28-90340c9-natural-90s-auto-submit-browser.log",
+    observedCodeSha: "90340c9fe1498455ce64c2bc4a62f5c3207c4d97",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   controlledReview: {
     file: "20261029-A28-0afd4df-controlled-review-full-browser.log",
     observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
@@ -244,6 +249,7 @@ const browserClauseMap = {
   "M1.10.06": [["dualEmployer", "Two independently authenticated Company owners and one Worker saw two active tenant links, each Company foreign link returned HTTP404, reasoned Company B end retained A active and B historical, exact DB tenant-bound audit verified; both link fixtures preseeded so invitation enrollment/consent itself was not proven by this browser run"]],
   "M2.07.03": [["controlledReview", "Actual Worker Controlled Review revises and flags MCQ and written answer before submission, completes separate Verifier scoring, interview, signed credential, share and appeal; additional stale answer tab/device and real proctor hardware unverified"]],
   "M2.07.04": [["sectionReview", "Real Section Review revises and flags MCQ in section 1, locks it, denies Worker direct review of locked section, revises and flags written section 2 and reaches credential, share and appeal; real proctoring and multi-device race still open"]],
+  "M2.07.05": [["naturalExpiry", "Real Worker Chromium 90-second natural adjusted timer (approved human 1.5x accommodation, original 60s) persists through refresh; saved MCQ is system auto-submitted at actual deadline, no invented unanswered written answer, original attempt status AUTO_SUBMITTED, exactly one actor-null system audit, independent Verifier human FINAL FAIL rubric review and retained reassessment requirement. Does not prove real-device proctor, dual-tab submit races or production clock drift"]],
   "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
   "M1.11.07": [["supervisorPrivacyAppeal", "Actual Company signed observation→Worker acknowledgement→Verifier APPROVED/REJECTED/CHANGES_REQUESTED and Worker/Company persisted feedback, including mixed status routing"]],
   "M3.01.01": [["reportCredential", "Decision-pinned credential issue/expiry reflected consistently in actual browser, public API and real PDF; signing/issuance policy beyond this test not reverified"]],
