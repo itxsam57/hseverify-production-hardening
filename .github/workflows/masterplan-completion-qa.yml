@@ -410,6 +410,11 @@ jobs:
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
 
+      # The M3.11 concurrency drill itself launches a real authenticated Chromium
+      # 50-request burst. The browser must exist before the certification step.
+      - name: Install Chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
+
       - name: M3.11 execute load security and recovery certification
         run: node scripts/run-m3-11-certification.mjs
 
@@ -421,9 +426,6 @@ jobs:
 
       - name: Seed Admin browser identity
         run: node scripts/independent-audit-seed.mjs
-
-      - name: Install Chromium
-        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
       - name: M3.11 persisted certification Admin browser
         run: node --test tests/browser/m3-11-certification.browser.test.mjs
