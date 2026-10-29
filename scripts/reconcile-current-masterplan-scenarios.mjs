@@ -146,6 +146,21 @@ const browserRuns = {
     file: "20261029-A28-eeca501-second-browser-device-denial.log",
     observedCodeSha: "eeca5011f1b4e4e3d38302a38b5ab2e502eb9ce4",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  dualEmployer: {
+    file: "20261029-A28-0afd4df-dual-company-browser-final.log",
+    observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  controlledReview: {
+    file: "20261029-A28-0afd4df-controlled-review-full-browser.log",
+    observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  sectionReview: {
+    file: "20261029-A28-0afd4df-section-review-stable-config-browser.log",
+    observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
   }
 };
 // Curated, exact assertions observed from the individual test source and output.
@@ -220,6 +235,9 @@ const browserClauseMap = {
     ["companyWorkerSecurity", "Actual Worker invitation single/create, resend cooldown/revoke plus Company code Worker redeem; link accept through code only, expired/replayed email-link matrix open"]
   ],
   "M1.10.05": [["negativeWorkerCompany", "Real Company form ends exact active relationship with reason; Worker loses active Company access while keeping account and historical link"]],
+  "M1.10.06": [["dualEmployer", "Two independently authenticated Company owners and one Worker saw two active tenant links, each Company foreign link returned HTTP404, reasoned Company B end retained A active and B historical, exact DB tenant-bound audit verified; both link fixtures preseeded so invitation enrollment/consent itself was not proven by this browser run"]],
+  "M2.07.03": [["controlledReview", "Actual Worker Controlled Review revises and flags MCQ and written answer before submission, completes separate Verifier scoring, interview, signed credential, share and appeal; additional stale answer tab/device and real proctor hardware unverified"]],
+  "M2.07.04": [["sectionReview", "Real Section Review revises and flags MCQ in section 1, locks it, denies Worker direct review of locked section, revises and flags written section 2 and reaches credential, share and appeal; real proctoring and multi-device race still open"]],
   "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
   "M1.11.07": [["supervisorPrivacyAppeal", "Actual Company signed observation→Worker acknowledgement→Verifier APPROVED/REJECTED/CHANGES_REQUESTED and Worker/Company persisted feedback, including mixed status routing"]],
   "M3.01.01": [["reportCredential", "Decision-pinned credential issue/expiry reflected consistently in actual browser, public API and real PDF; signing/issuance policy beyond this test not reverified"]],
