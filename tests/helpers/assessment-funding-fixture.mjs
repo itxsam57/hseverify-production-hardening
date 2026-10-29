@@ -28,7 +28,8 @@ export async function fundingPrincipal(database, identity, role = "worker") {
     ...(role === "company" ? { authorizedTenantPermission: "company.billing.manage" } : {}) };
 }
 
-export async function assessmentFundingFixture({policyValues={pass_mark:70}}={}) {
+export async function assessmentFundingFixture({policyValues={pass_mark:70},startingCreditUnits=3}={}) {
+  assert(Number.isSafeInteger(startingCreditUnits) && startingCreditUnits>=0,"Fixture credit quantity must be a non-negative integer");
   const fixture = await workerAssessmentSearchFixture();
   const database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
   try {
@@ -49,9 +50,11 @@ export async function assessmentFundingFixture({policyValues={pass_mark:70}}={})
     await database.query("INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,payment_responsibility,requested_by_membership_id,worker_accepted_at,activated_at,created_at,updated_at) VALUES($1,$2,$3,$4,'permanent_worker_id','active','company',$5,$6,$6,$6,$6)", [workerLinkId, company.tenantId, fixture.credentials.worker.accountId, workerId, company.membershipId, now]);
     const worker = await fundingPrincipal(database, fixture.credentials.worker), companyPrincipal = await fundingPrincipal(database, company, "company");
     const billing = new BillingService(database);
-    const checkout = await billing.createCreditCheckout(companyPrincipal, { idempotencyKey: "assessment-funding-fixture", creditUnits: 3, amountMinor: 300, currency: "USD" });
-    await billing.completeSandboxCheckout(companyPrincipal, checkout.checkoutId);
-    assert.equal((await database.query("SELECT SUM(credit_delta)::int AS credits FROM billing_credit_ledger WHERE tenant_id=$1", [company.tenantId])).rows[0].credits, 3);
+    if (startingCreditUnits > 0) {
+      const checkout = await billing.createCreditCheckout(companyPrincipal, { idempotencyKey: "assessment-funding-fixture", creditUnits: startingCreditUnits, amountMinor: startingCreditUnits*100, currency: "USD" });
+      await billing.completeSandboxCheckout(companyPrincipal, checkout.checkoutId);
+    }
+    assert.equal(Number((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS credits FROM billing_credit_ledger WHERE tenant_id=$1", [company.tenantId])).rows[0].credits), startingCreditUnits);
     return { ...fixture, worker, company: companyPrincipal, fundingInput: { catalogueVersionId: version, tenantId: company.tenantId, workerLinkId } };
   } catch (error) { await fixture.cleanup(); throw error; }
   finally { await database.close(); }
