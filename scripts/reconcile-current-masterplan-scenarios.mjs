@@ -76,6 +76,11 @@ const browserRuns = {
     file: "20261029-A28-1a8b0fd-supervisor-privacy-appeal-browser.log",
     observedCodeSha: "1a8b0fd792d657527ff831b39140701c987345bd",
     passed: "ℹ pass 4", failed: "ℹ fail 0"
+  },
+  certification: {
+    file: "20261029-A28-fe9bc28-m3-11-certification-real-browser.log",
+    observedCodeSha: "fe9bc28b2afa428321afdc141f89021a053f2278",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
   }
 };
 // Curated, exact assertions observed from the individual test source and output.
@@ -124,12 +129,24 @@ const browserClauseMap = {
     ["notifications", "Company-funded Worker Start assessment reaches exact case/version precheck; broad device/media matrix open"]
   ],
   "M2.09.03": [["adversarial", "Camera/mic/screen denial, partial media acquisition cleanup, policy outage and degraded state handled"]],
+  "M3.11.01": [["certification", "Local M3.11 certification executes native registration/review concurrency suite and 50 authenticated real-server GETs; full parallel business mutation matrix and staging load not covered"]],
   "M3.11.02": [
     ["adversarial", "Actual Worker forbidden Admin route; duplicate review and preview scope cross-role denied; exhaustive IDOR open"],
-    ["notifications", "Unrelated Worker does not receive Company-funded assessment notification, exact actor and tenant delivery asserted"]
-  ]
+    ["notifications", "Unrelated Worker does not receive Company-funded assessment notification, exact actor and tenant delivery asserted"],
+    ["certification", "Executed tenant isolation regression in disposable M3.11 certification; exhaustive staging endpoint attack matrix open"]
+  ],
+  "M3.11.04": [["certification", "M3.11 physical isolated database dump/restore and incident regression were executed with four persisted Admin drill results; deployed database/object provider restore and incident rehearsal remain open"]],
+  "M3.11.05": [["certification", "Actual 50 parallel authenticated local five-role HTTP200 GETs (10 per role) in M3.11 certification; active answer preservation under concurrent mutation and production saturation open"]]
 };
 for (const [name, run] of Object.entries(browserRuns)) {
+  if (name === "certification") {
+    const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
+    assert(existsSync(fixtureProof), "Missing isolated M3.11 full-drill receipt");
+    const receipt = JSON.parse(readFileSync(fixtureProof, "utf8"));
+    assert(receipt.status === "certified" && receipt.drills?.length === 4 &&
+      receipt.drills.every(drill => drill.status === "passed"),
+      "M3.11 isolated certification did not persist all four passing drills");
+  }
   const pathname = resolve(".autopilot/artifacts", run.file);
   assert(existsSync(pathname), "Missing exact-candidate Chromium evidence: " + pathname);
   const log = readFileSync(pathname, "utf8");
