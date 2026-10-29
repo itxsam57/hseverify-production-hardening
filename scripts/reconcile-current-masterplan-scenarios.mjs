@@ -136,6 +136,16 @@ const browserRuns = {
     file: "20261029-A13-acaba9c-exact-sha-replacement-browser.log",
     observedCodeSha: "acaba9cf8ba1ab227dc9cfb1701c355c427af025",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  companyAction: {
+    file: "20261029-A28-eeca501-company-action-centre-full-browser.log",
+    observedCodeSha: "eeca5011f1b4e4e3d38302a38b5ab2e502eb9ce4",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  secondDevice: {
+    file: "20261029-A28-eeca501-second-browser-device-denial.log",
+    observedCodeSha: "eeca5011f1b4e4e3d38302a38b5ab2e502eb9ce4",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
   }
 };
 // Curated, exact assertions observed from the individual test source and output.
@@ -157,6 +167,9 @@ const browserClauseMap = {
   "M1.11.04": [["workerReviewWorkforce", "Actual Worker employment revision independently reviewed REJECTED, CHANGES_REQUESTED and APPROVED with Worker-side status; multiple-employment unlink histories open"]],
   "M3.04.01": [["companyWorkerSecurity", "Actual Company filtered workforce pagination across 26 active matches, Previous/Next/refresh and mobile/desktop header search; revoked/foreign Workers excluded, forged scope denied, permission removal disables search"]],
   "M3.04.02": [["companyWorkerSecurity", "Company-created registration code creates specific Worker link, archived unit removes active placement while keeping immutable history and Worker state synced; moving between two employers unverified"]],
+  "M3.04.03": [["companyAction", "Company submits actual Assurance Order, sees Worker identity follow-up in Action Centre, opens exact source case link and observes Order cancellation; full evidence/assessment/interview/decision next-action matrix is not tested here"]],
+  "M3.04.04": [["companyAction", "Company browser assigns internal owner then verifies persistence on reload, rejects invalid past-dated snooze while preserving entered values, accepts future snooze, acknowledges action and follows exact case deep link; external reminders and other action kinds remain unverified"]],
+  "M2.08.04": [["secondDevice", "Fresh separately authenticated browser of same Worker is denied active bound exam question and answer-control read with HTTP404; original session preserves exam and persisted IN_PROGRESS state; independent forged-write/session-switch mutation tests remain open"]],
   "M3.05.01": [["companyWorkerSecurity", "Actual sandbox Company checkout captured once, exact 10-credit balance despite capture replay, new provider-pending checkout grants no unpaid credit; live merchant not tested"]],
   "M3.05.04": [["companyWorkerSecurity", "Real Company sandbox billing applied partial then remaining full refund, balance zero and ledger has original capture plus two retained refund records; live processor settlement open"]],
   "M3.05.06": [["companyWorkerSecurity", "Actual invalid signed checkout callback and altered signed replay refused, exact same replay idempotent with no double credit or refund; provider live webhook unverified"]],
