@@ -23,16 +23,17 @@ test("retrospective performance runner measures every high-risk completed concur
   assert.match(runner, /not a production latency or Internet-scale throughput SLA/i);
 });
 
-test("retrospective audit permanently executes the authenticated 50-request mixed-role real-server burst", () => {
+test("retrospective CI runs the 50-request browser burst separately without overstating native runner evidence", () => {
   const burstStep = new RegExp(
     "Run 50-request authenticated mixed-role real-server burst[\\s\\S]*?node scripts/hard-browser-mixed-role-burst\\.mjs"
   );
+  assert.match(browserWorkflow, /mixed-role-http-burst:/);
   assert.match(
     browserWorkflow,
     burstStep,
-    "retrospective browser gate must execute the permanent mixed-role HTTP burst"
+    "the independent CI browser job must still execute the authenticated HTTP burst"
   );
-  assert.match(runner, /pendingHttpBurst:\s*false/);
-  assert.doesNotMatch(runner, /pendingHttpBurst:\s*true/);
-  assert.match(runner, /50-request authenticated mixed-role real-server burst/);
+  assert.match(runner, /pendingHttpBurst:\s*true/);
+  assert.doesNotMatch(runner, /pendingHttpBurst:\s*false/);
+  assert.match(runner, /native suite does not run the HTTP burst/i);
 });
