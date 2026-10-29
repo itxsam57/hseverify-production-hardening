@@ -2,7 +2,11 @@ import "server-only";
 
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { getServerEnvironment } from "../config/server-environment";
-import { createLocalTestPrivateObjectStorage } from "./private-object-storage";
+import {
+  createRuntimePrivateObjectStorage,
+  PrivateObjectStorageError,
+  type PrivateObjectStorage
+} from "./private-object-storage";
 import { appendSecureFileAccessAudit } from "./secure-file-access-audit";
 import {
   authorizeSecureFileAccessCore,
@@ -18,17 +22,17 @@ import {
 } from "./secure-file-access-domain";
 import { getSecureFileRepository } from "./secure-file-repository";
 
-function requireLocalTestStorageEnvironment(
-  value: string
-): "development" | "test" {
-  // M1.06 has a complete local/test private-storage adapter only. Preview and
-  // production must fail closed until a later real private provider exists;
-  // never mint a broken authorization or reinterpret server filesystem paths
-  // as production object storage.
-  if (value !== "development" && value !== "test") {
-    throw new SecureFileAccessDeniedError();
+function requireConfiguredPrivateStorage(
+  appEnvironment: "development" | "test" | "preview" | "production"
+): PrivateObjectStorage {
+  try {
+    return createRuntimePrivateObjectStorage(appEnvironment);
+  } catch (error) {
+    // No private storage means no usable capability. Do not issue a signed
+    // access token or disclose filesystem/provider configuration to clients.
+    if (error instanceof PrivateObjectStorageError) throw new SecureFileAccessDeniedError();
+    throw error;
   }
-  return value;
 }
 
 export async function authorizeSecureFileAccess(input: {
@@ -38,7 +42,7 @@ export async function authorizeSecureFileAccess(input: {
 }): Promise<IssuedSecureFileAccess> {
   const request = normalizeSecureFileAccessRequest(input.request);
   const environment = getServerEnvironment();
-  requireLocalTestStorageEnvironment(environment.appEnvironment);
+  requireConfiguredPrivateStorage(environment.appEnvironment);
   const issued = await authorizeSecureFileAccessCore({
     principal: input.principal,
     fileRef: request.fileRef,
@@ -65,9 +69,7 @@ export async function readSecureFileAccess(input: {
 }): Promise<SecureFileAccessContent> {
   const expectedPurpose = normalizeSecureFileAccessPurpose(input.expectedPurpose);
   const environment = getServerEnvironment();
-  const storageEnvironment = requireLocalTestStorageEnvironment(
-    environment.appEnvironment
-  );
+  const storage = requireConfiguredPrivateStorage(environment.appEnvironment);
 
   const content = await readSecureFileAccessCore({
     principal: input.principal,
@@ -75,7 +77,7 @@ export async function readSecureFileAccess(input: {
     expectedPurpose,
     signingSecret: environment.sessionSecret,
     repository: getSecureFileRepository(),
-    storage: createLocalTestPrivateObjectStorage(storageEnvironment),
+    storage,
     now: input.now
   });
   await appendSecureFileAccessAudit({
