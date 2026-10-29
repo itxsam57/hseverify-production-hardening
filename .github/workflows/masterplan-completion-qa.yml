@@ -278,6 +278,9 @@ jobs:
       - name: Company staff existing-session suspension and revocation
         run: node --test tests/browser/company-complete-journey.browser.test.mjs
 
+      - name: Root-invited independent Admin Question Bank, policy and staff decision browser
+        run: node --test --test-concurrency=1 tests/browser/staff-role-complete-journey.browser.test.mjs
+
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
         run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
 

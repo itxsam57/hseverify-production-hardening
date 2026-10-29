@@ -172,6 +172,16 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  workerEligibility: {
+    file: "20261030-A28-f16e8e1-real-pinned-policy-waiting-verifier-eligibility-browser.log",
+    observedCodeSha: "f16e8e1adce3ab722abfc8c9851f27e3b205f070",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
+  staffAuthoring: {
+    file: "20261030-A28-f16e8e1-five-staff-roles-admin-authoring-decision-browser.log",
+    observedCodeSha: "f16e8e1adce3ab722abfc8c9851f27e3b205f070",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   repeatedDecision: {
     file: "20261030-A28-83669bc-repeated-trusted-mfa-decision-browser.log",
     observedCodeSha: "83669bc2523f09f7744ee4fbac691d78fcbecc4d",
@@ -221,6 +231,13 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.01.02": [["workerEligibility", "Real Worker account with configured qualification prerequisite cannot apply, including forged enabled client button; Company READY submission also denied before original Verifier claim/approval, then Worker can self-pay and enter exact pinned case. Missing credit and unknown Worker IDs not tested"]],
+  "M2.03.04": [["workerEligibility", "Actual mobile Worker and Company desktop attempt during published assessment waiting period: disabled Worker action, forged browser submit and Company READY submit all denied server-side; real server clock reaches persisted eligibility boundary and permits start/precheck. Independent credential qualification Verifier approval also gates eligibility. Attempt-count, jurisdiction and risk rules not exhausted"]],
+  "M2.03.01": [["staffAuthoring", "Real Root-invited staff browser Admin creates a framework with effective policy, publishes immutable policy version, reloads and reads retained reference. Weaker Company overrides and live existing-case policy pin under later publication not proven by this run"]],
+  "M2.04.01": [["staffAuthoring", "Actual Admin authors valid question with explicit versioned JSON answer/rubric and stable reference; independently authenticated reviewer and current published pointer retained in DB. Malformed answer or invalid rubric rejection matrix not exercised"]],
+  "M2.04.02": [["staffAuthoring", "Two distinct Root-invited MFA Admin accounts exercise question draft→submit for review→independent approval→publish via actual UI, with published state and DB pointer; changes-requested/rejection not exercised"]],
+  "M2.04.03": [["staffAuthoring", "Actual published question receives new immutable draft revision while original published version and independent reviewer decision persist; DB proves two retained authored versions with current published pointer. Detailed before/after rubric semantic equivalence and future exam delivery not exercised"]],
+  "M2.04.04": [["staffAuthoring", "Real Admin pauses then resumes Question Bank publication; separate blueprint and catalogue deactivate/reactivate and publish immutable revisions in browser. Retire/archive and generated future form exclusion not tested"]],
   "M2.10.01": [["humanAiCaseReplay", "Actual authenticated Verifier scoring worklist shows original case and its pinned two criterion mark inputs; initially both blank, saved original human marks remain after reload and Admin Case Replay retrieves original case. Unauthorized Verifier, cross-tenant and other rubric versions not tested"]],
   "M2.10.06": [["humanAiCaseReplay", "Real Verifier Chromium generates sandbox AI guidance and accepts it as advisory; two criterion marks remain empty and save is blocked until human assigns each mark and final PASS. Reload preserves authoritative human 84 marks, decision and Admin Case Replay. External AI timeout/unavailable fallback not exercised"]],
   "M2.01.01": [["companyFundedCredential", "Real Company browser selects verified linked Worker, creates single credential-target order, retains correct immutable framework policy, draft→READY→submit transitions and new linked Worker assurance case. Additional Workers, edits and invalid draft paths not exercised"]],
