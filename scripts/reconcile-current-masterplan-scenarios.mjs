@@ -81,6 +81,21 @@ const browserRuns = {
     file: "20261029-A28-fe9bc28-m3-11-certification-real-browser.log",
     observedCodeSha: "fe9bc28b2afa428321afdc141f89021a053f2278",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  interviewEligibility: {
+    file: "20261029-A28-f3d90fd-interview-eligibility-browser.log",
+    observedCodeSha: "f3d90fdc193a1a8807c2baccaaf3372b73cd6f9b",
+    passed: "ℹ pass 6", failed: "ℹ fail 0"
+  },
+  reportCredential: {
+    file: "20261029-A28-f3d90fd-report-and-credential-browser.log",
+    observedCodeSha: "f3d90fdc193a1a8807c2baccaaf3372b73cd6f9b",
+    passed: "ℹ pass 3", failed: "ℹ fail 0"
+  },
+  reportFailure: {
+    file: "20261029-A28-f3d90fd-report-retry-failure-browser.log",
+    observedCodeSha: "f3d90fdc193a1a8807c2baccaaf3372b73cd6f9b",
+    passed: "ℹ pass 4", failed: "ℹ fail 0"
   }
 };
 // Curated, exact assertions observed from the individual test source and output.
@@ -113,11 +128,32 @@ const browserClauseMap = {
   "M1.10.05": [["negativeWorkerCompany", "Real Company form ends exact active relationship with reason; Worker loses active Company access while keeping account and historical link"]],
   "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
   "M1.11.07": [["supervisorPrivacyAppeal", "Actual Company signed observation→Worker acknowledgement→Verifier APPROVED/REJECTED/CHANGES_REQUESTED and Worker/Company persisted feedback, including mixed status routing"]],
+  "M3.01.01": [["reportCredential", "Decision-pinned credential issue/expiry reflected consistently in actual browser, public API and real PDF; signing/issuance policy beyond this test not reverified"]],
+  "M3.01.03": [["reportCredential", "Actual browser, public status and signed credential PDF preserve pinned expiry and lifecycle display; exhaustive suspended/revoked/conditional states still open"]],
+  "M3.02.02": [["reportCredential", "Credential version/current lifecycle with policy-pinned expiry inspected across browser/API/PDF; all restrictions and prior versions open"]],
   "M3.03.04": [["supervisorPrivacyAppeal", "Actual earlier share link retained then independently revoked; old recipient denied while new active share recipient still accesses"]],
+  "M3.06.01": [["reportCredential", "Worker report UI captures owned qualification and versioned settings, real private CSV/PDF/print produced; all worker report variants open"]],
+  "M3.06.02": [["reportCredential", "Actual Company generated scoped CSV/PDF/print via authenticated UI; all workforce/readiness/billing report categories unverified"]],
+  "M3.06.03": [["reportCredential", "Actual Worker and Company report generation and owned private CSV/PDF/print download; Worker unrelated/anonymous/revoked principals denied; full filter matrix open"]],
+  "M3.06.04": [
+    ["reportCredential", "Real Worker and Company queued work generated actual private downloadable CSV/PDF bytes"],
+    ["reportFailure", "Company/Worker browser refused pre-artifact export, distinguished retry/terminal failure, bounded real owner recovery, exhausted request starts new job; staging worker and long-term file retention open"]
+  ],
+  "M3.06.06": [["reportCredential", "Worker report forged-owner, cross-Worker, Company, anonymous and revoked downloads and stale settings updates denied; CSV formula/path manipulation not exhausted"]],
+
   "M3.07.03": [["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"]],
   "M3.09.01": [["supervisorPrivacyAppeal", "Worker optional sharing restriction request reached Admin for reasoned completion; other privacy-request kinds open"]],
   "M3.09.02": [["supervisorPrivacyAppeal", "Admin fulfilled sharing restriction: old recipient denied, Worker form disabled and new server-side link issuance HTTP403; wider consent/withdrawal still open"]],
+  "M2.06.01": [["interviewEligibility", "Worker and Company forged assessment application denied while required qualification unverified; actual Verifier approves source evidence and Worker becomes eligible, other unavailable reasons open"]],
+  "M2.06.02": [["interviewEligibility", "After Verifier qualification approval, real Worker self-pay application and confirmation create pinned case and reach precheck; duplicate capture and live merchant not covered"]],
   "M2.06.03": [["notifications", "Actual Worker request reaches Company, approval creates funded case and start-precheck; rejection/retry/self-funded branches open"]],
+  "M2.06.06": [["interviewEligibility", "Browser and forged Worker/Company apply blocked before assessment waiting threshold, then eligible after real clock advances; attempt-limit/credential/reassessment paths open"]],
+  "M2.11.02": [["interviewEligibility", "Worker UTC availability persists on refresh, visible to Assessor; outside window blocked, inside scheduled, UTC independent of NY process timezone, 390px no overflow"]],
+  "M2.11.03": [["interviewEligibility", "Assessor reasoned reschedule updates actual Worker/Company/Assessor appointment and real compiled outbox CLI: old events suppressed and new scoped notices/email accepted, private reason excluded"]],
+  "M2.11.05": [["interviewEligibility", "Worker technical report only available in scheduled join window; persisted TECHNICAL_HOLD visible after refresh, no-show and late status branches open"]],
+  "M2.11.06": [["interviewEligibility", "Worker technical-report control hidden before scheduling; actual join readied/unassigned access-denial not independently tested"]],
+  "M2.12.04": [["interviewEligibility", "Worker in-window technical issue persists interview runtime TECHNICAL_HOLD and request details, including refresh; other pause/reconnect/reschedule paths open"]],
+
   "M3.05.02": [["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"]],
   "M1.05.01": [["adversarial", "Duplicate resolution history and evidence review resolution persisted; full material-transition coverage open"]],
   "M2.02.01": [["adversarial", "Actual Worker submitted evidence reaches Verifier queue with a review task; all evidence kinds open"]],
