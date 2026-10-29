@@ -77,6 +77,16 @@ const browserRuns = {
     observedCodeSha: "1a8b0fd792d657527ff831b39140701c987345bd",
     passed: "ℹ pass 4", failed: "ℹ fail 0"
   },
+  companyWorkerSecurity: {
+    file: "20261029-A28-554bfbf-company-worker-security-browser.log",
+    observedCodeSha: "554bfbf0d8fbae77042578919e9d18af8df86fea",
+    passed: "ℹ pass 4", failed: "ℹ fail 0"
+  },
+  workerReviewWorkforce: {
+    file: "20261029-A28-554bfbf-worker-review-workforce-browser.log",
+    observedCodeSha: "554bfbf0d8fbae77042578919e9d18af8df86fea",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
   mfaAccommodationPrivacy: {
     file: "20261029-A28-93aab3d-mfa-accommodation-privacy-browser.log",
     observedCodeSha: "93aab3d661b82362a776a9c1178f8ab6877eac82",
@@ -131,13 +141,36 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M1.03.06": [["companyWorkerSecurity", "Actual six role session UI denies forged cross-account revocation and disallows protected page after sign-out, but exhaustive wrong-role and wrong-password/MFA matrix still open"]],
+  "M1.03.07": [["companyWorkerSecurity", "All six roles sign out their active session and lose protected access; separate Exit Portal session-preservation behavior not exercised"]],
+  "M1.09.02": [["companyWorkerSecurity", "Actual site/department archive removes matching Worker placement and Team assigned unit yet retains immutable prior-scope events, and restoring unit does not resurrect placement"]],
+  "M1.09.03": [["companyWorkerSecurity", "Archived site and department cannot receive a forged new placement, and current Worker placement display excludes archived units"]],
+  "M1.09.04": [["companyWorkerSecurity", "Company Team viewer invitation, real MFA enrollment, role+permission/site update, manager permission scope and live session validated; exhaustive permission matrix open"]],
+  "M1.09.05": [["companyWorkerSecurity", "Suspended then revoked Team member's already authenticated Company dashboard access denied; events and access mirrors persisted"]],
+  "M1.09.06": [["companyWorkerSecurity", "Actual Company Team UI and submitted form forbid staff member granting absent permissions or owner role; legitimate viewer invite still works"]],
+  "M1.10.02": [["companyWorkerSecurity", "Actual Company mixed Worker CSV accepts valid row and flags malformed email, one invitation created; duplicate/larger CSV matrix open"]],
+  "M1.10.03": [["companyWorkerSecurity", "Actual one-use Company registration code records expiry and selected site/department defaults, Worker redeems and tenant links correctly; exhausted/expired-code denial not exercised"]],
+  "M1.07.05": [["workerReviewWorkforce", "Actual verified Worker identity correction independently rejected, changes requested and unable to verify while original verified parent retains status; all accepted-correction and duplicate collision cases still open"]],
+  "M1.11.01": [["workerReviewWorkforce", "Actual Worker qualification revision submitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED reflected in Worker UI after independent review; broader invalid-file paths open"]],
+  "M1.11.02": [["workerReviewWorkforce", "Actual Worker experience correction resubmitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED persisted and reflected in Worker UI; workplace source check unverified"]],
+  "M1.11.03": [["workerReviewWorkforce", "Actual Worker skill correction resubmitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED persisted and reflected to Worker; skill lifecycle scope matrix open"]],
+  "M1.11.04": [["workerReviewWorkforce", "Actual Worker employment revision independently reviewed REJECTED, CHANGES_REQUESTED and APPROVED with Worker-side status; multiple-employment unlink histories open"]],
+  "M3.04.01": [["companyWorkerSecurity", "Actual Company filtered workforce pagination across 26 active matches, Previous/Next/refresh and mobile/desktop header search; revoked/foreign Workers excluded, forged scope denied, permission removal disables search"]],
+  "M3.04.02": [["companyWorkerSecurity", "Company-created registration code creates specific Worker link, archived unit removes active placement while keeping immutable history and Worker state synced; moving between two employers unverified"]],
+  "M3.05.01": [["companyWorkerSecurity", "Actual sandbox Company checkout captured once, exact 10-credit balance despite capture replay, new provider-pending checkout grants no unpaid credit; live merchant not tested"]],
+  "M3.05.04": [["companyWorkerSecurity", "Real Company sandbox billing applied partial then remaining full refund, balance zero and ledger has original capture plus two retained refund records; live processor settlement open"]],
+  "M3.05.06": [["companyWorkerSecurity", "Actual invalid signed checkout callback and altered signed replay refused, exact same replay idempotent with no double credit or refund; provider live webhook unverified"]],
+  "M3.10.02": [["companyWorkerSecurity", "Actual forged payment callback rejected, changed signed payload denied, provider-pending new purchase grants no credits even though old sandbox purchase and refunds completed; live gateway unverified"]],
   "M1.02.02": [["notifications", "Each of six role dashboards has actual working notification bell; rest of global header actions not covered"]],
   "M1.05.02": [
     ["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"],
     ["recommendationStaffScoring", "Five Assessor case recommendation events projected through real outbox worker and Worker/Company/(where needed Admin) notification deep-links without private scorecard text"]
   ],
   "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
-  "M1.03.01": [["worker", "Valid Worker registration succeeds, but negative-field matrix not covered by this run"]],
+  "M1.03.01": [
+    ["worker", "Actual valid Worker registration completes"],
+    ["companyWorkerSecurity", "Actual Worker form denies missing policy acceptance, country, password mismatch, and cancels signup preserving recorded policy acceptance time; full field fuzzing not complete"]
+  ],
   "M1.03.03": [["negativeWorkerCompany", "Browser detects three duplicate Worker contact combinations and requires recovery without identity merge"]],
   "M1.03.08": [
     ["negativeWorkerCompany", "Wrong recovery OTP rejected and audited; valid recovery invalidates old sessions and password without erasing identity; all six-role recovery remains open"],
@@ -158,14 +191,21 @@ const browserClauseMap = {
   "M1.07.03": [["negativeWorkerCompany", "Real initial identity rejection retains submitted version, reason and human review, and issues no permanent ID; approve and changes routes not this test"]],
   "M1.07.06": [
     ["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"],
-    ["negativeWorkerCompany", "Rejected initial identity keeps immutable submitted version and no permanent ID; correction-history branches open"]
+    ["negativeWorkerCompany", "Rejected initial identity keeps immutable submitted version and no permanent ID"],
+    ["workerReviewWorkforce", "Actual verified identity correction declined REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY without invalidating original verified identity; accepted-correction and historic permanent-ID projection open"]
   ],
   "M1.07.07": [["adversarial", "Actual duplicate document comparison and four independent dispositions; other duplicate-contact cases open"]],
   "M1.08.01": [["company", "Company registration, pending workspace, scanned PDF and submission in real browser"]],
   "M1.08.03": [["company", "Admin requests changes, Company corrects version 2 and Admin verifies"]],
   "M1.08.05": [["company", "Admin approval makes tenant active; stale Company edit denied, independent double decision matrix open"]],
-  "M1.09.01": [["company", "Verified active Company creates and revisits site unit; edit/archive/restore missing"]],
-  "M1.10.01": [["company", "Company invitation created, resend cooldown and revoke; accept/expiry/replay missing"]],
+  "M1.09.01": [
+    ["company", "Verified active Company creates and revisits site unit"],
+    ["companyWorkerSecurity", "Actual Company site/department create, edit, archive and restore verified across page reloads"]
+  ],
+  "M1.10.01": [
+    ["company", "Company invitation created, resend cooldown and revoke"],
+    ["companyWorkerSecurity", "Actual Worker invitation single/create, resend cooldown/revoke plus Company code Worker redeem; link accept through code only, expired/replayed email-link matrix open"]
+  ],
   "M1.10.05": [["negativeWorkerCompany", "Real Company form ends exact active relationship with reason; Worker loses active Company access while keeping account and historical link"]],
   "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
   "M1.11.07": [["supervisorPrivacyAppeal", "Actual Company signed observation→Worker acknowledgement→Verifier APPROVED/REJECTED/CHANGES_REQUESTED and Worker/Company persisted feedback, including mixed status routing"]],
@@ -210,7 +250,10 @@ const browserClauseMap = {
   "M1.05.01": [["adversarial", "Duplicate resolution history and evidence review resolution persisted; full material-transition coverage open"]],
   "M2.02.01": [["adversarial", "Actual Worker submitted evidence reaches Verifier queue with a review task; all evidence kinds open"]],
   "M2.02.02": [["adversarial", "Claim, escalation and Admin return to Verifier preserve revision/history; all conflict paths open"]],
-  "M2.02.03": [["adversarial", "Unable to verify/escalate/admin return/approval reflected on Worker, other decisions open"]],
+  "M2.02.03": [
+    ["adversarial", "Unable to verify/escalate/admin return/approval reflected on Worker"],
+    ["workerReviewWorkforce", "Actual independent Verifier REVISION REJECTED/CHANGES_REQUESTED/APPROVED for qualification, experience, skill, employment reflected Worker view; full staff permissions/stale races still open"]
+  ],
   "M2.02.05": [["adversarial", "Admin binds review framework and Verifier cannot stale-finalize; calibration/limit edges open"]],
   "M2.07.01": [
     ["adversarial", "Real Chromium denies question until monitoring policy and required permission precheck; external device proof open"],
