@@ -77,6 +77,11 @@ const browserRuns = {
     observedCodeSha: "1a8b0fd792d657527ff831b39140701c987345bd",
     passed: "ℹ pass 4", failed: "ℹ fail 0"
   },
+  recommendationStaffScoring: {
+    file: "20261029-A28-464abda-review-recommendation-invitations-browser.log",
+    observedCodeSha: "464abda9a22eb6a12d594f0d9a60bf693b560856",
+    passed: "ℹ pass 11", failed: "ℹ fail 0"
+  },
   certification: {
     file: "20261029-A28-fe9bc28-m3-11-certification-real-browser.log",
     observedCodeSha: "fe9bc28b2afa428321afdc141f89021a053f2278",
@@ -122,11 +127,15 @@ const browserRuns = {
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
   "M1.02.02": [["notifications", "Each of six role dashboards has actual working notification bell; rest of global header actions not covered"]],
-  "M1.05.02": [["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"]],
+  "M1.05.02": [
+    ["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"],
+    ["recommendationStaffScoring", "Five Assessor case recommendation events projected through real outbox worker and Worker/Company/(where needed Admin) notification deep-links without private scorecard text"]
+  ],
   "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
   "M1.03.01": [["worker", "Valid Worker registration succeeds, but negative-field matrix not covered by this run"]],
   "M1.03.03": [["negativeWorkerCompany", "Browser detects three duplicate Worker contact combinations and requires recovery without identity merge"]],
   "M1.03.08": [["negativeWorkerCompany", "Wrong recovery OTP rejected and audited; valid recovery invalidates old sessions and password without erasing identity; all six-role recovery remains open"]],
+  "M1.03.05": [["recommendationStaffScoring", "Five Company/Assessor/Verifier/Admin/Root actual staff invitations activate role-locked MFA sign-in; expired fresh/cached, unknown and issuer-revoked fresh/open token denial with no account/session; replay full matrix still open"]],
   "M1.03.02": [
     ["worker", "Worker email and phone OTP activation works with sandbox; real provider delivery open"],
     ["negativeWorkerCompany", "Actual email and phone wrong, expired/stale five-attempt lockout, cooldown, resend and fresh activation verified in real browser; live provider send still unverified"]
@@ -179,6 +188,8 @@ const browserClauseMap = {
   "M2.11.03": [["interviewEligibility", "Assessor reasoned reschedule updates actual Worker/Company/Assessor appointment and real compiled outbox CLI: old events suppressed and new scoped notices/email accepted, private reason excluded"]],
   "M2.11.05": [["interviewEligibility", "Worker technical report only available in scheduled join window; persisted TECHNICAL_HOLD visible after refresh, no-show and late status branches open"]],
   "M2.11.06": [["interviewEligibility", "Worker technical-report control hidden before scheduling; actual join readied/unassigned access-denial not independently tested"]],
+  "M2.12.06": [["recommendationStaffScoring", "Real Assessor finalized CONDITIONAL_PASS, ADDITIONAL_EVIDENCE_REQUIRED, REASSESSMENT_REQUIRED, SECOND_INTERVIEW_REQUIRED and FAIL, each Worker/Company status and projected authorized bell deep-link; PASS recommendation not included here"]],
+  "M2.12.07": [["recommendationStaffScoring", "Each of five real browser Assessor final submissions locks subsequent input and transitions owned case and notification; real media shutdown/device behavior not covered"]],
   "M2.12.04": [["interviewEligibility", "Worker in-window technical issue persists interview runtime TECHNICAL_HOLD and request details, including refresh; other pause/reconnect/reschedule paths open"]],
 
   "M3.05.02": [["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"]],
@@ -209,6 +220,9 @@ const browserClauseMap = {
   "M2.12.01": [["appealIntegrityFixed", "Admin appeal-requested interview→Worker readiness→Assessor console→retained interview response→independent final appeal; general intake consent/admit cases open"]],
 
   "M2.09.03": [["adversarial", "Camera/mic/screen denial, partial media acquisition cleanup, policy outage and degraded state handled"]],
+  "M2.10.02": [["recommendationStaffScoring", "Verifier actual browser saves written rubric scores and final PASS, then starts reasoned amendment and rescores new FINAL FAIL retaining SUPERSEDED 80-point original and source answer"]],
+  "M2.10.04": [["recommendationStaffScoring", "Verifier declares independent conflict, loses private scoring authority immediately and case returns to Admin recovery when no calibrated alternative; claim race and stale source remain untested"]],
+  "M3.08.06": [["recommendationStaffScoring", "Root/role-bound Company, Assessor, Verifier and Admin staff invitations enroll MFA with correct role portal; expired/revoked cached and unknown denied, operational root permissions and recovery beyond invitation open"]],
   "M3.11.01": [["certification", "Local M3.11 certification executes native registration/review concurrency suite and 50 authenticated real-server GETs; full parallel business mutation matrix and staging load not covered"]],
   "M3.11.02": [
     ["adversarial", "Actual Worker forbidden Admin route; duplicate review and preview scope cross-role denied; exhaustive IDOR open"],
