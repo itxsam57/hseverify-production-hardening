@@ -133,6 +133,11 @@ test("Real MFA login permits decision override; stale session and forged browser
    await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL("**/admin/dashboard");
    await override(page);await page.getByText("Controlled override with verified supporting evidence",{exact:true}).waitFor();
    console.log("ACTUAL_BROWSER completed recovery-code MFA login permitted override");
+   // Same valid session, same original state and decision ID: stale repeat
+   // cannot create a second override or progress the case twice.
+   await override(page);
+   await page.getByText("Decision override previous state does not match current decision state.",{exact:true}).waitFor();
+   console.log("ACTUAL_BROWSER repeated stale decision override rejected with trusted MFA still fresh");
   }finally{await browser.close();}});
   await dbWork(async db=>{
    const rows=(await db.query("SELECT o.previous_state,o.new_state,o.mfa_verified_at,o.actor_reference,o.notification_required,m.occurred_at AS trusted_mfa_at FROM platform_decision_overrides o JOIN auth_security_events l ON l.account_id=o.actor_reference AND l.event_type='login_succeeded' JOIN auth_security_events m ON m.event_id=l.metadata->>'mfaEventId' WHERE o.decision_id=$1 AND m.metadata->>'method'='recovery_code'",[decisionId])).rows;

@@ -172,6 +172,26 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  repeatedDecision: {
+    file: "20261030-A28-83669bc-repeated-trusted-mfa-decision-browser.log",
+    observedCodeSha: "83669bc2523f09f7744ee4fbac691d78fcbecc4d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  humanAiCaseReplay: {
+    file: "20261030-A28-83669bc-human-ai-case-replay-browser.log",
+    observedCodeSha: "83669bc2523f09f7744ee4fbac691d78fcbecc4d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  companyFundedCredential: {
+    file: "20261030-A28-83669bc-company-order-decision-mfa-browser.log",
+    observedCodeSha: "83669bc2523f09f7744ee4fbac691d78fcbecc4d",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
+  privilegedMfaDecision: {
+    file: "20261030-A28-83669bc-company-order-decision-mfa-browser.log",
+    observedCodeSha: "83669bc2523f09f7744ee4fbac691d78fcbecc4d",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
   roleSessionMatrix: {
     file: "20261030-A28-a4a132f-six-roles-cross-portal-sessions-browser.log",
     observedCodeSha: "a4a132f65dd7959a0c9912fa183f8c3dc0551317",
@@ -201,6 +221,18 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.10.01": [["humanAiCaseReplay", "Actual authenticated Verifier scoring worklist shows original case and its pinned two criterion mark inputs; initially both blank, saved original human marks remain after reload and Admin Case Replay retrieves original case. Unauthorized Verifier, cross-tenant and other rubric versions not tested"]],
+  "M2.10.06": [["humanAiCaseReplay", "Real Verifier Chromium generates sandbox AI guidance and accepts it as advisory; two criterion marks remain empty and save is blocked until human assigns each mark and final PASS. Reload preserves authoritative human 84 marks, decision and Admin Case Replay. External AI timeout/unavailable fallback not exercised"]],
+  "M2.01.01": [["companyFundedCredential", "Real Company browser selects verified linked Worker, creates single credential-target order, retains correct immutable framework policy, draft→READY→submit transitions and new linked Worker assurance case. Additional Workers, edits and invalid draft paths not exercised"]],
+  "M2.01.05": [["companyFundedCredential", "Real Company-funded linked Worker case progresses through assessment, independent human review/interview, signed credential and appeal; Worker-funded, mixed-method and competing reservations are not part of this run"]],
+  "M2.01.08": [["companyFundedCredential", "Actual Company order becomes COMPLETED only after its real final decision; stored immutable policy version and Worker credential issued for exact target confirmed from database. Report generation and multi-case readiness remain unverified"]],
+  "M2.13.02": [["privilegedMfaDecision", "Admin browser creates PENDING_ADDITIONAL_REVIEW decision on a real persisted decision-pending assurance case with responsible Admin action; route via UI, full next-actor notifications and interview-pending branch not exercised"]],
+  "M2.13.05": [["privilegedMfaDecision", "Real Admin MFA login creates pending decision; after trusted MFA event is aged out, authenticated browser forged fresh MFA timestamp fails without any decision, case, timeline or audit mutation; fresh completed recovery-code MFA login permits reason+evidence REJECTED override. Database confirms trusted MFA timestamp, original decision audit, new override, single case timeline event and actor. Distinct production identity and every override target still open"]],
+  "M2.13.06": [
+    ["privilegedMfaDecision", "Authenticated but stale-MFA Admin session and forged client timestamp fail override with exact unchanged DB snapshot; valid fresh completed MFA permits one override and preserved audit. Duplicate race and repeated issuance not tested in this run"],
+    ["repeatedDecision", "Actual Admin Chromium fresh trusted MFA session saves one reasoned decision override then submits the same stale original decision state again; real UI returns previous-state conflict and exact persisted override/timeline/audit counts remain one. Simultaneous request race, foreign role and duplicate credential issuance not tested"]
+  ],
+  "M3.01.02": [["companyFundedCredential", "Real Company-issued credential appears in Worker passport, public verification page and public API; actual public PDF API returns signed PDF containing qualification and 365-day policy expiry. Browser copy button/download UX and all other status views not tested"]],
   "M1.02.01": [
     ["publicNavigationKeyboard", "Real Chromium desktop/mobile home routes, both Worker and Company registration entry forms, and all six role login destinations work; keyboard Contact activation. Does not claim all staff respond or email/demo delivery"],
     ["publicInquiry", "Real mobile Contact and Demo submissions reached private Admin and Root intake; credential concern was received; public and Worker access to private intake denied, DB persisted two inquiries and required audit events. Staff follow-up delivery is not tested"]
