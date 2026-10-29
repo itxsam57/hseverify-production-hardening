@@ -66,6 +66,16 @@ const browserRuns = {
   notifications: {
     file: "20261029-A28-99f40a1-notifications-real-browser.log",
     passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
+  negativeWorkerCompany: {
+    file: "20261029-A28-1a8b0fd-negative-worker-company-browser.log",
+    observedCodeSha: "1a8b0fd792d657527ff831b39140701c987345bd",
+    passed: "ℹ pass 5", failed: "ℹ fail 0"
+  },
+  supervisorPrivacyAppeal: {
+    file: "20261029-A28-1a8b0fd-supervisor-privacy-appeal-browser.log",
+    observedCodeSha: "1a8b0fd792d657527ff831b39140701c987345bd",
+    passed: "ℹ pass 4", failed: "ℹ fail 0"
   }
 };
 // Curated, exact assertions observed from the individual test source and output.
@@ -75,18 +85,33 @@ const browserClauseMap = {
   "M1.05.02": [["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"]],
   "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
   "M1.03.01": [["worker", "Valid Worker registration succeeds, but negative-field matrix not covered by this run"]],
-  "M1.03.02": [["worker", "Worker email and phone OTP activation works with the sandbox; expiry/resend provider paths still open"]],
+  "M1.03.03": [["negativeWorkerCompany", "Browser detects three duplicate Worker contact combinations and requires recovery without identity merge"]],
+  "M1.03.08": [["negativeWorkerCompany", "Wrong recovery OTP rejected and audited; valid recovery invalidates old sessions and password without erasing identity; all six-role recovery remains open"]],
+  "M1.03.02": [
+    ["worker", "Worker email and phone OTP activation works with sandbox; real provider delivery open"],
+    ["negativeWorkerCompany", "Actual email and phone wrong, expired/stale five-attempt lockout, cooldown, resend and fresh activation verified in real browser; live provider send still unverified"]
+  ],
   "M1.03.04": [["company", "Company email/MFA activation leads to pending tenant; other edge states still open"]],
   "M1.06.01": [["company", "PDF upload is scanned and bound to Company verification version; other types and production scanner still open"]],
   "M1.06.05": [["company", "Actual PDF Admin preview has inline PDF bytes; all authorization scopes/expiry not covered"]],
-  "M1.07.06": [["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"]],
+  "M1.07.03": [["negativeWorkerCompany", "Real initial identity rejection retains submitted version, reason and human review, and issues no permanent ID; approve and changes routes not this test"]],
+  "M1.07.06": [
+    ["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"],
+    ["negativeWorkerCompany", "Rejected initial identity keeps immutable submitted version and no permanent ID; correction-history branches open"]
+  ],
   "M1.07.07": [["adversarial", "Actual duplicate document comparison and four independent dispositions; other duplicate-contact cases open"]],
   "M1.08.01": [["company", "Company registration, pending workspace, scanned PDF and submission in real browser"]],
   "M1.08.03": [["company", "Admin requests changes, Company corrects version 2 and Admin verifies"]],
   "M1.08.05": [["company", "Admin approval makes tenant active; stale Company edit denied, independent double decision matrix open"]],
   "M1.09.01": [["company", "Verified active Company creates and revisits site unit; edit/archive/restore missing"]],
   "M1.10.01": [["company", "Company invitation created, resend cooldown and revoke; accept/expiry/replay missing"]],
+  "M1.10.05": [["negativeWorkerCompany", "Real Company form ends exact active relationship with reason; Worker loses active Company access while keeping account and historical link"]],
   "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
+  "M1.11.07": [["supervisorPrivacyAppeal", "Actual Company signed observation→Worker acknowledgement→Verifier APPROVED/REJECTED/CHANGES_REQUESTED and Worker/Company persisted feedback, including mixed status routing"]],
+  "M3.03.04": [["supervisorPrivacyAppeal", "Actual earlier share link retained then independently revoked; old recipient denied while new active share recipient still accesses"]],
+  "M3.07.03": [["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"]],
+  "M3.09.01": [["supervisorPrivacyAppeal", "Worker optional sharing restriction request reached Admin for reasoned completion; other privacy-request kinds open"]],
+  "M3.09.02": [["supervisorPrivacyAppeal", "Admin fulfilled sharing restriction: old recipient denied, Worker form disabled and new server-side link issuance HTTP403; wider consent/withdrawal still open"]],
   "M2.06.03": [["notifications", "Actual Worker request reaches Company, approval creates funded case and start-precheck; rejection/retry/self-funded branches open"]],
   "M3.05.02": [["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"]],
   "M1.05.01": [["adversarial", "Duplicate resolution history and evidence review resolution persisted; full material-transition coverage open"]],
@@ -128,8 +153,8 @@ const records = original.map(row => {
     current_result: "NOT_CERTIFIED",
     scoped_exact_browser_observations: browserClauses.map(([name, provenClause]) => ({
       provenance: "ACTUAL_CHROMIUM_LOCAL_TEST",
-      observed_code_sha: browserEvidenceHeadSha,
-      code_head_matches_observation: currentSha === browserEvidenceHeadSha,
+      observed_code_sha: browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha,
+      code_head_matches_observation: currentSha === (browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha),
       log: ".autopilot/artifacts/" + browserRuns[name].file,
       proven_clause_only: provenClause
     })),
@@ -155,7 +180,11 @@ const result = {
   scoped_local_evidence_from_prior_head: scopedEvidenceOnCurrentHead ? 0 : Object.keys(evidence).length,
   scoped_local_evidence_from_exact_head: scopedEvidenceOnCurrentHead ? Object.keys(evidence).length : 0,
   unique_scenarios_with_candidate_browser_clause: Object.keys(browserClauseMap).length,
-  candidate_browser_clause_matches_current_head: currentSha === browserEvidenceHeadSha,
+  candidate_browser_code_shas: [...new Set(Object.values(browserRuns).map(run => run.observedCodeSha ?? browserEvidenceHeadSha))],
+  browser_clause_observations_on_current_head: records.flatMap(row => row.scoped_exact_browser_observations)
+    .filter(entry => entry.code_head_matches_observation).length,
+  browser_clause_observations_on_prior_head: records.flatMap(row => row.scoped_exact_browser_observations)
+    .filter(entry => !entry.code_head_matches_observation).length,
   unique_scenarios_with_any_scoped_evidence: records.filter(row =>
     row.scoped_local_evidence || row.scoped_exact_browser_observations.length > 0).length,
   without_scoped_recent_local_evidence: records.filter(row =>
@@ -174,7 +203,8 @@ console.log(JSON.stringify({
   scope_evidence_from_exact_head: result.scoped_local_evidence_from_exact_head,
   scope_evidence_from_prior_head: result.scoped_local_evidence_from_prior_head,
   candidate_browser_clause_scenarios: result.unique_scenarios_with_candidate_browser_clause,
-  candidate_browser_head_matches_current: result.candidate_browser_clause_matches_current_head,
+  browser_clause_observations_on_current_head: result.browser_clause_observations_on_current_head,
+  browser_clause_observations_on_prior_head: result.browser_clause_observations_on_prior_head,
   unique_scenarios_with_any_scoped_evidence: result.unique_scenarios_with_any_scoped_evidence,
   not_locally_reconciled: result.without_scoped_recent_local_evidence,
   exact_sha_burst: result.exact_sha_50_request_burst, artifact: path, release: result.release_decision
