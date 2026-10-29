@@ -959,12 +959,32 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
     if (SCREEN_ERRORS) {
       const verify=new PGlite(dbDir);
       try {
-        const attempts=(await verify.query("SELECT attempt_id,status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
-        assert.equal(attempts.length,1);
-        assert.equal(attempts[0].status,"SUBMITTED");
-        const answers=(await verify.query("SELECT position,text_value FROM assessment_attempt_answers WHERE attempt_id=$1 ORDER BY position",[attempts[0].attempt_id])).rows;
+        const attempts=(await verify.query("SELECT attempt_id,form_id,status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        const replacing=process.env.HSE_MASTERPLAN_RECOVERY_MODE==="replacement";
+        assert.equal(attempts.length,replacing?2:1,"Recovery must retain original and replacement attempt records separately");
+        const submitted=attempts.filter(row=>row.status==="SUBMITTED");
+        assert.equal(submitted.length,1,"There must be exactly one final submitted attempt");
+        const answers=(await verify.query("SELECT position,text_value FROM assessment_attempt_answers WHERE attempt_id=$1 ORDER BY position",[submitted[0].attempt_id])).rows;
         assert.deepEqual(answers,[{position:1,text_value:MCQ_ANSWER},{position:2,text_value:"Stop work, verify the isolated hazard is controlled, and only restart after confirming the area is safe."}]);
-        console.log("ACTUAL_A12_DB two persisted answers after invalid attempts, transport failure and retries");
+        if(replacing){
+          const original=attempts.filter(row=>row.status==="REPLACED");
+          assert.equal(original.length,1,"Original emergency attempt must remain marked REPLACED");
+          assert.notEqual(original[0].attempt_id,submitted[0].attempt_id);
+          assert.notEqual(original[0].form_id,submitted[0].form_id);
+          const items=(await verify.query("SELECT form_id,question_id FROM generated_assessment_form_items WHERE form_id=ANY($1::text[])",[attempts.map(row=>row.form_id)])).rows;
+          const exposed=new Set(items.filter(row=>row.form_id===original[0].form_id).map(row=>row.question_id));
+          const replacementQuestions=items.filter(row=>row.form_id===submitted[0].form_id).map(row=>row.question_id);
+          assert.equal(exposed.size,2,"Original exposed questions must remain available for audit");
+          assert.equal(replacementQuestions.length,2);
+          assert.ok(replacementQuestions.every(id=>!exposed.has(id)),"Replacement repeated an exposed question");
+          const retained=(await verify.query("SELECT position,text_value FROM assessment_attempt_drafts WHERE attempt_id=$1",[original[0].attempt_id])).rows;
+          assert.equal(retained[0]?.position,2,"Interrupted written draft must remain retained");
+          assert.match(retained[0].text_value,/Stop work, verify the isolated hazard/);
+          const authority=(await verify.query("SELECT status,replacement_form_id FROM assessment_replacement_authorizations WHERE original_attempt_id=$1",[original[0].attempt_id])).rows[0];
+          assert.equal(authority?.status,"CONSUMED");
+          assert.equal(authority.replacement_form_id,submitted[0].form_id);
+        }
+        console.log("ACTUAL_A12_DB final two persisted answers after invalid attempts, transport failure and retries; recovery source"+(replacing?" original REPLACED + fresh exposure preserved":" unchanged"));
       } finally {await verify.close();}
       return;
     }
