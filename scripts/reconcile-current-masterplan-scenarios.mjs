@@ -46,12 +46,93 @@ if (existsSync(burstPath)) {
   burstSameSha = burst.status === "PASS" && burst.requests === 50 && burst.releaseSha === currentSha &&
     Object.values(burst.perRole || {}).every(v => v === 10);
 }
+// Each observed acceptance test below was actually executed on this pinned
+// Git head, before this audit-only commit. These are scoped local clauses;
+// none is a full multi-environment Masterplan release certification.
+const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
+const browserRuns = {
+  company: {
+    file: "20261029-A28-99f40a1-company-verification-evidence-browser.log",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  worker: {
+    file: "20261029-A28-99f40a1-worker-identity-evidence-sharing-browser.log",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  adversarial: {
+    file: "20261029-A28-adversarial-cross-role-browser.log",
+    passed: "ℹ pass 4", failed: "ℹ fail 0"
+  },
+  notifications: {
+    file: "20261029-A28-99f40a1-notifications-real-browser.log",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  }
+};
+// Curated, exact assertions observed from the individual test source and output.
+// Do not infer coverage for a whole brick from a file's name alone.
+const browserClauseMap = {
+  "M1.02.02": [["notifications", "Each of six role dashboards has actual working notification bell; rest of global header actions not covered"]],
+  "M1.05.02": [["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"]],
+  "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
+  "M1.03.01": [["worker", "Valid Worker registration succeeds, but negative-field matrix not covered by this run"]],
+  "M1.03.02": [["worker", "Worker email and phone OTP activation works with the sandbox; expiry/resend provider paths still open"]],
+  "M1.03.04": [["company", "Company email/MFA activation leads to pending tenant; other edge states still open"]],
+  "M1.06.01": [["company", "PDF upload is scanned and bound to Company verification version; other types and production scanner still open"]],
+  "M1.06.05": [["company", "Actual PDF Admin preview has inline PDF bytes; all authorization scopes/expiry not covered"]],
+  "M1.07.06": [["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"]],
+  "M1.07.07": [["adversarial", "Actual duplicate document comparison and four independent dispositions; other duplicate-contact cases open"]],
+  "M1.08.01": [["company", "Company registration, pending workspace, scanned PDF and submission in real browser"]],
+  "M1.08.03": [["company", "Admin requests changes, Company corrects version 2 and Admin verifies"]],
+  "M1.08.05": [["company", "Admin approval makes tenant active; stale Company edit denied, independent double decision matrix open"]],
+  "M1.09.01": [["company", "Verified active Company creates and revisits site unit; edit/archive/restore missing"]],
+  "M1.10.01": [["company", "Company invitation created, resend cooldown and revoke; accept/expiry/replay missing"]],
+  "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
+  "M2.06.03": [["notifications", "Actual Worker request reaches Company, approval creates funded case and start-precheck; rejection/retry/self-funded branches open"]],
+  "M3.05.02": [["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"]],
+  "M1.05.01": [["adversarial", "Duplicate resolution history and evidence review resolution persisted; full material-transition coverage open"]],
+  "M2.02.01": [["adversarial", "Actual Worker submitted evidence reaches Verifier queue with a review task; all evidence kinds open"]],
+  "M2.02.02": [["adversarial", "Claim, escalation and Admin return to Verifier preserve revision/history; all conflict paths open"]],
+  "M2.02.03": [["adversarial", "Unable to verify/escalate/admin return/approval reflected on Worker, other decisions open"]],
+  "M2.02.05": [["adversarial", "Admin binds review framework and Verifier cannot stale-finalize; calibration/limit edges open"]],
+  "M2.07.01": [
+    ["adversarial", "Real Chromium denies question until monitoring policy and required permission precheck; external device proof open"],
+    ["notifications", "Company-funded Worker Start assessment reaches exact case/version precheck; broad device/media matrix open"]
+  ],
+  "M2.09.03": [["adversarial", "Camera/mic/screen denial, partial media acquisition cleanup, policy outage and degraded state handled"]],
+  "M3.11.02": [
+    ["adversarial", "Actual Worker forbidden Admin route; duplicate review and preview scope cross-role denied; exhaustive IDOR open"],
+    ["notifications", "Unrelated Worker does not receive Company-funded assessment notification, exact actor and tenant delivery asserted"]
+  ]
+};
+for (const [name, run] of Object.entries(browserRuns)) {
+  const pathname = resolve(".autopilot/artifacts", run.file);
+  assert(existsSync(pathname), "Missing exact-candidate Chromium evidence: " + pathname);
+  const log = readFileSync(pathname, "utf8");
+  assert(log.includes(run.passed) && log.includes(run.failed),
+    "Chromium run " + name + " did not complete with expected passing count");
+}
+for (const [id, clauses] of Object.entries(browserClauseMap)) {
+  assert(original.some(row => row.id === id), "Browser clause has unknown Masterplan ID " + id);
+  for (const [name, note] of clauses) {
+    assert(Object.hasOwn(browserRuns, name) && note.length > 30,
+      "Incomplete observed browser clause " + id + " " + name);
+  }
+}
+
 const records = original.map(row => {
   const local = evidence[row.id];
+  const browserClauses = browserClauseMap[row.id] ?? [];
   return {
     id: row.id, brick: row.brick, roles: row.roles, scenario: row.scenario,
     historical_status_older_sha: row.status,
     current_result: "NOT_CERTIFIED",
+    scoped_exact_browser_observations: browserClauses.map(([name, provenClause]) => ({
+      provenance: "ACTUAL_CHROMIUM_LOCAL_TEST",
+      observed_code_sha: browserEvidenceHeadSha,
+      code_head_matches_observation: currentSha === browserEvidenceHeadSha,
+      log: ".autopilot/artifacts/" + browserRuns[name].file,
+      proven_clause_only: provenClause
+    })),
     scoped_local_evidence: local ? {
       disposition: "CLAUSE_ONLY_NOT_WHOLE_SCENARIO",
       observed_code_sha: legacyScopedRunSha,
@@ -73,7 +154,12 @@ const result = {
   with_scoped_recent_local_evidence: records.filter(row => row.scoped_local_evidence).length,
   scoped_local_evidence_from_prior_head: scopedEvidenceOnCurrentHead ? 0 : Object.keys(evidence).length,
   scoped_local_evidence_from_exact_head: scopedEvidenceOnCurrentHead ? Object.keys(evidence).length : 0,
-  without_scoped_recent_local_evidence: records.filter(row => !row.scoped_local_evidence).length,
+  unique_scenarios_with_candidate_browser_clause: Object.keys(browserClauseMap).length,
+  candidate_browser_clause_matches_current_head: currentSha === browserEvidenceHeadSha,
+  unique_scenarios_with_any_scoped_evidence: records.filter(row =>
+    row.scoped_local_evidence || row.scoped_exact_browser_observations.length > 0).length,
+  without_scoped_recent_local_evidence: records.filter(row =>
+    !row.scoped_local_evidence && row.scoped_exact_browser_observations.length === 0).length,
   exact_sha_50_request_burst: burstSameSha ? "PASS" : "NOT_VERIFIED_ON_HEAD",
   release_decision: "NO_GO",
   policy: "Historical statuses are informational; no per-ID current-head PASS without full role/browser/downstream/staging/provider assertions. Local subclause evidence never promotes scenario certification.",
@@ -87,6 +173,9 @@ console.log(JSON.stringify({
   scoped_local_evidence: result.with_scoped_recent_local_evidence,
   scope_evidence_from_exact_head: result.scoped_local_evidence_from_exact_head,
   scope_evidence_from_prior_head: result.scoped_local_evidence_from_prior_head,
+  candidate_browser_clause_scenarios: result.unique_scenarios_with_candidate_browser_clause,
+  candidate_browser_head_matches_current: result.candidate_browser_clause_matches_current_head,
+  unique_scenarios_with_any_scoped_evidence: result.unique_scenarios_with_any_scoped_evidence,
   not_locally_reconciled: result.without_scoped_recent_local_evidence,
   exact_sha_burst: result.exact_sha_50_request_burst, artifact: path, release: result.release_decision
 }, null, 2));
