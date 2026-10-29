@@ -172,6 +172,21 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  roleSessionMatrix: {
+    file: "20261030-A28-a4a132f-six-roles-cross-portal-sessions-browser.log",
+    observedCodeSha: "a4a132f65dd7959a0c9912fa183f8c3dc0551317",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  publicNavigationKeyboard: {
+    file: "20261030-A28-a4a132f-keyboard-public-navigation-real-browser.log",
+    observedCodeSha: "a4a132f65dd7959a0c9912fa183f8c3dc0551317",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  publicInquiry: {
+    file: "20261030-A28-a4a132f-public-nav-contact-demo-private-review-browser.log",
+    observedCodeSha: "a4a132f65dd7959a0c9912fa183f8c3dc0551317",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
   controlledReview: {
     file: "20261029-A28-0afd4df-controlled-review-full-browser.log",
     observedCodeSha: "0afd4df37bea0e5d8187969090d4781142ef7594",
@@ -186,6 +201,23 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M1.02.01": [
+    ["publicNavigationKeyboard", "Real Chromium desktop/mobile home routes, both Worker and Company registration entry forms, and all six role login destinations work; keyboard Contact activation. Does not claim all staff respond or email/demo delivery"],
+    ["publicInquiry", "Real mobile Contact and Demo submissions reached private Admin and Root intake; credential concern was received; public and Worker access to private intake denied, DB persisted two inquiries and required audit events. Staff follow-up delivery is not tested"]
+  ],
+  "M1.02.03": [["publicInquiry", "Actual contact form rejects short invalid answer without discarding typed name/draft, waits for React hydration before entry, then accepts valid message/demo; scoped public form states only, not every scenario page"]],
+  "M1.02.04": [["publicNavigationKeyboard", "Real 1440px desktop and 390px mobile public navigation, both registration entry forms, six role sign-in routes, no horizontal overflow on public home; tables, dialogs, tablet and every role layout remain unverified"]],
+  "M1.02.05": [
+    ["publicNavigationKeyboard", "Actual keyboard Tab focuses public Contact navigation at both desktop/mobile widths and Enter opens correctly labelled form; more complex accessibility, screen readers and all role controls remain unverified"],
+    ["publicInquiry", "Real contact form labels resolve in Chromium; hydration-disabled input blocks premature edits, rejected short draft retains name/message and can be corrected and submitted; other forms and unsaved navigation remain unverified"]
+  ],
+  "M1.04.01": [["roleSessionMatrix", "Actual six-role Worker, Company, Assessor, Verifier, Admin, Root browser tested all 30 wrong-role sign-ins and authenticated direct cross-portal dashboard attempts; role-bound session, 30 audit denials, password and MFA negatives and 6 sign-outs persisted in DB. API-level resources and permissions matrix separately open"]],
+  "M1.04.02": [["dualEmployer", "Real Company A and Company B independent sessions, two consented Worker links: each Company views its own link and foreign Company link returns 404; Worker retains both active relationships, then Company B revocation leaves Company A link intact. Invitation acceptance is preseeded and broader tenant files/exports still open"]],
+  "M1.04.03": [["wrongWorkerInvite", "Real Worker B submits forged Company invitation/link ID meant for Worker A and cannot accept or mutate it; rightful Workers can accept their own links and actor-scoped audit persists. Other copied capabilities and resource IDs not exhausted"]],
+  "M1.04.04": [
+    ["roleSessionMatrix", "Real six-role already-authenticated session Exit Portal retains same role while Cancel Sign out retains access; confirmed Sign out revokes exactly one role session each, direct dashboard then redirects to login and persisted events record logout. Privilege escalation and stale membership/permission race still open"],
+    ["companyWorkerSecurity", "Real active Company Team staff session denied after own membership suspension/revocation, distinct from admin's live membership; other role revocation and privilege elevation paths remain open"]
+  ],
   "M1.03.06": [["companyWorkerSecurity", "Actual six role session UI denies forged cross-account revocation and disallows protected page after sign-out, but exhaustive wrong-role and wrong-password/MFA matrix still open"]],
   "M1.03.07": [["companyWorkerSecurity", "All six roles sign out their active session and lose protected access; separate Exit Portal session-preservation behavior not exercised"]],
   "M1.09.02": [["companyWorkerSecurity", "Actual site/department archive removes matching Worker placement and Team assigned unit yet retains immutable prior-scope events, and restoring unit does not resurrect placement"]],
