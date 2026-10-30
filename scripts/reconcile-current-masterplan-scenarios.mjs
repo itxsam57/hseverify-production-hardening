@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m11201PublicWorkerId: {
+    file: "20261030-A28-a4e7261-exact-M11201-public-worker-browser.log",
+    observedCodeSha: "a4e72610b6397c994f206f182edcf422944ceee0",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m11108InactiveApprovedSkill: {
     file: "20261030-A28-98bc299-exact-M11108-inactive-skill-browser.log",
     observedCodeSha: "98bc299fb778436372a305ee762e9a725f096bf3",
@@ -455,7 +460,7 @@ const browserClauseMap = {
   "M2.07.03": [["controlledReview", "Actual Worker Controlled Review revises and flags MCQ and written answer before submission, completes separate Verifier scoring, interview, signed credential, share and appeal; additional stale answer tab/device and real proctor hardware unverified"]],
   "M2.07.04": [["sectionReview", "Real Section Review revises and flags MCQ in section 1, locks it, denies Worker direct review of locked section, revises and flags written section 2 and reaches credential, share and appeal; real proctoring and multi-device race still open"]],
   "M2.07.05": [["naturalExpiry", "Real Worker Chromium 90-second natural adjusted timer (approved human 1.5x accommodation, original 60s) persists through refresh; saved MCQ is system auto-submitted at actual deadline, no invented unanswered written answer, original attempt status AUTO_SUBMITTED, exactly one actor-null system audit, independent Verifier human FINAL FAIL rubric review and retained reassessment requirement. Does not prove real-device proctor, dual-tab submit races or production clock drift"]],
-  "M1.12.01": [["worker", "Worker passport/scoped sharing flow exercised; public verification safe-opaque capability full matrix open"]],
+  "M1.12.01": [["m11201PublicWorkerId", "Actual signed-in Worker completed identity fields, identity document/photo/selfie uploads and submitted; independent Verifier and Admin APPROVED issued permanent Worker ID. Fresh separate anonymous Chromium using public /verify Worker ID form obtained encrypted opaque short-lived /verify/result capability URL without raw account or Worker ID in URL, showed allowed public Independent Worker name, valid current status, and permanent public identifier only; no contact info, date of birth, nationality, country, source filenames, reviewer notes or assessment/qualification contents. Reload retained valid result, valid-shape unknown Worker ID received neutral Identifier not verified response, and legacy public /verify/worker/raw-id route redirected to /verify without disclosure. Migrated PGlite confirms Worker ID issued against submitted verified identity and public lookup consumed persisted rate limiter. Real Chromium 1/1 PASS exact source SHA; companion credential browser tests previously covered signed credential form, negative tampered/expired capabilities and credential rate limiter. Exhaustive QR-camera/device, suspended/revoked identity transitions, IP rotation, deployed WAF and production public proxy still unverified"]],
   "M1.11.07": [["supervisorPrivacyAppeal", "Actual Company signed observation→Worker acknowledgement→Verifier APPROVED/REJECTED/CHANGES_REQUESTED and Worker/Company persisted feedback, including mixed status routing"]],
   "M3.01.01": [["reportCredential", "Decision-pinned credential issue/expiry reflected consistently in actual browser, public API and real PDF; signing/issuance policy beyond this test not reverified"]],
   "M3.01.03": [["reportCredential", "Actual browser, public status and signed credential PDF preserve pinned expiry and lifecycle display; exhaustive suspended/revoked/conditional states still open"]],
