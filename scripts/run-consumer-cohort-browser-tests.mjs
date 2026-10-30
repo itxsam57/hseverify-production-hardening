@@ -31,9 +31,33 @@ const tests = [
   "tests/browser/m3-12-production-launch.browser.test.mjs"
 ];
 
+// In CI, distribute the existing 24 isolated browser fixtures across four
+// parallel jobs. Local npm usage with no --shard continues to run all 24.
+const args = process.argv.slice(2);
+const shardFlag = args.find(argument => argument.startsWith("--shard="));
+const otherArgs = args.filter(argument => argument !== shardFlag && argument !== "--list");
+if (otherArgs.length || args.filter(argument => argument.startsWith("--shard=")).length > 1) {
+  throw new Error("Consumer cohort runner accepts only --shard=1/4 and --list.");
+}
+const parts = shardFlag ? /^--shard=(\d+)\/(\d+)$/.exec(shardFlag) : null;
+if (shardFlag && !parts) throw new Error("Invalid cohort --shard syntax.");
+const shard = parts ? Number(parts[1]) : null;
+const total = parts ? Number(parts[2]) : null;
+if (parts && (!Number.isSafeInteger(shard) || !Number.isSafeInteger(total) ||
+  total < 1 || total > tests.length || shard < 1 || shard > total)) {
+  throw new Error("Invalid cohort shard index or total.");
+}
+const selectedTests = parts
+  ? tests.filter((_, index) => index % total === shard - 1)
+  : tests;
+if (args.includes("--list")) {
+  console.log(JSON.stringify(selectedTests));
+  process.exit(0);
+}
+
 // Each existing browser fixture owns its seed and server. Isolate their credentials,
 // database and temporary files while retaining actual UI assertions and cleanup.
-for (const file of tests) {
+for (const file of selectedTests) {
   const directory = mkdtempSync(join(tmpdir(), "hse-consumer-browser-"));
   const environment = { ...process.env };
   for (const key of Object.keys(environment)) {

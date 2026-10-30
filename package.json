@@ -92,7 +92,7 @@
     "test:profile-overflow": "node --test tests/platform/profile-overflow-contract.test.mjs",
     "test:preview-copy": "node --test tests/platform/preview-bundle-copy.test.mjs",
     "test:next-system": "node --test tests/platform/next-build-system.test.mjs",
-    "test:engineering": "node --test tests/engineering/handoff-domain.test.mjs tests/engineering/authorization-runner-isolation.test.mjs tests/engineering/autopilot-compliance-range.test.mjs tests/engineering/autopilot-session-cycle.test.mjs tests/engineering/m311-ci-browser-precheck.test.mjs tests/engineering/company-decision-browser-ci.test.mjs",
+    "test:engineering": "node --test tests/engineering/handoff-domain.test.mjs tests/engineering/authorization-runner-isolation.test.mjs tests/engineering/autopilot-compliance-range.test.mjs tests/engineering/autopilot-session-cycle.test.mjs tests/engineering/m311-ci-browser-precheck.test.mjs tests/engineering/company-decision-browser-ci.test.mjs tests/engineering/masterplan-browser-shards.test.mjs",
     "test:development": "node scripts/smoke-development.mjs",
     "test:portal-redirects": "node scripts/smoke-signed-out-portal-redirects.mjs",
     "test:runtime-db": "node scripts/smoke-application-pglite.mjs",

@@ -206,6 +206,10 @@ jobs:
   connected-browser:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       HSE_APP_ENV: test
       # Disposable fixture key; production signing uses a private configured key.
@@ -237,173 +241,231 @@ jobs:
       - name: Install Chromium
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
+      - name: Build compiled outbox worker for isolated browser shards
+        run: node scripts/build-outbox-worker.mjs
+
       - name: Assessor interview search navigation and direct record denial
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/assessor-interview-search.browser.test.mjs
 
       - name: No-show and technical replacement across Assessor Worker Company and Admin
+        if: ${{ matrix.shard == 2 }}
         run: node --test --test-concurrency=1 tests/browser/interview-replacement.browser.test.mjs
 
       - name: Actual reminder due time, private recipient links and obsolete-work suppression
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/interview-reminder.browser.test.mjs
 
       - name: Scheduling notices through compiled worker to authorized recipient records
+        if: ${{ matrix.shard == 4 }}
         run: |
           node scripts/build-outbox-worker.mjs
           node --test tests/browser/interview-scheduling-notification.browser.test.mjs
 
       - name: Admin operational email queue, retry and acceptance browser workflow
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/interview-email-operational-health.browser.test.mjs
 
       - name: Interview email queued, retry, sent and private-link browser journey
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/interview-email-delivery-visibility.browser.test.mjs
 
       - name: UTC scheduling browser with alternate browser and server timezone
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/interview-scheduling-timezone.browser.test.mjs
 
       - name: Verifier review search and real claim boundary
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/verifier-review-search.browser.test.mjs
 
       - name: Root invitation header search and revoked session boundary
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/root-invitation-search.browser.test.mjs
 
       - name: Admin Company verification header search and revoked session boundary
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/admin-verification-search.browser.test.mjs
 
       - name: Worker application search desktop mobile and session revocation
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/worker-assessment-search.browser.test.mjs
 
       - name: Filtered Company workforce Next, refresh and Previous
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/company-workforce-pagination.browser.test.mjs
 
       - name: Company staff existing-session suspension and revocation
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/company-complete-journey.browser.test.mjs
 
       - name: M2.05 real Admin blueprint revisions and activation Chromium with persisted DB
+        if: ${{ matrix.shard == 2 }}
         run: node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs
 
       - name: Root-invited independent Admin Question Bank, policy and staff decision browser
+        if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/staff-role-complete-journey.browser.test.mjs
 
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
 
       - name: Partly finalized Company order cancellation preserves approved Worker decisions
+        if: ${{ matrix.shard == 1 }}
         run: node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs
 
       - name: M1.12 valid public credential and malformed/tampered/expired capability neutrality
+        if: ${{ matrix.shard == 2 }}
         run: node --test --test-concurrency=1 tests/browser/public-verification-invalid-capability.browser.test.mjs
 
       - name: M1.06 Worker invalid file upload cannot poison next file reservation
+        if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/worker-file-upload-validation.browser.test.mjs
 
       - name: M3.05 dual Company invoice and ledger isolation denies foreign refunds
+        if: ${{ matrix.shard == 4 }}
         run: node --test --test-concurrency=1 tests/browser/company-billing-cross-tenant.browser.test.mjs
 
       - name: M2.06 Worker terminal case reapplication preserves original record and new case
+        if: ${{ matrix.shard == 1 }}
         run: node --test --test-concurrency=1 tests/browser/worker-terminal-reapplication.browser.test.mjs
 
       - name: M2.06 revoked link and zero-credit funding rejection through paid sandbox case
+        if: ${{ matrix.shard == 2 }}
         run: node --test --test-concurrency=1 tests/browser/funding-revoked-link-e2e.browser.test.mjs
 
       - name: Company-funded assurance order through final Worker credential and appeal
+        if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/company-credential-target-e2e.browser.test.mjs
 
       - name: Admin decision override requires trusted recent MFA and rejects forged timestamp
+        if: ${{ matrix.shard == 4 }}
         run: node --test --test-concurrency=1 tests/browser/decision-recent-mfa.browser.test.mjs
 
       - name: Worker -> Admin -> Worker privacy/accommodation journey
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Owned privacy fulfilment revokes recipient access and retains unrelated sharing
+        if: ${{ matrix.shard == 2 }}
         env:
           HSE_PRIVACY_FULFILMENT: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Owned scoped-consent request runtime
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/platform/privacy-consent-request-runtime.test.mjs
       - name: Worker optional sharing consent request reaches withdrawal
+        if: ${{ matrix.shard == 4 }}
         run: HSE_PRIVACY_CONSENT_REQUEST=true node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
       - name: Desktop and mobile public entry controls
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/public-navigation.browser.test.mjs
       - name: Public contact and demo reach private staff intake and preserve concern reporting
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/public-inquiry.browser.test.mjs
 
       - name: Owned personal-data access and export runtime
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/platform/worker-privacy-data-runtime.test.mjs
       - name: Worker access/export reviewed personal-data download
+        if: ${{ matrix.shard == 4 }}
         run: HSE_PRIVACY_DATA_DOWNLOAD=true node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
       - name: Worker direct share revocation uses authoritative server time
+        if: ${{ matrix.shard == 1 }}
         env:
           HSE_DIRECT_SHARE_REVOCATION: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Natural share-link expiry denies prior recipient access
+        if: ${{ matrix.shard == 2 }}
         env:
           HSE_SHARE_EXPIRY: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Company checkout, duplicate capture and refund recovery
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/company-billing-validation.browser.test.mjs
 
       - name: Initial identity rejection retains the immutable human outcome
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/initial-identity-rejection.browser.test.mjs
 
       - name: MCQ-only and written-only natural expiry retain saved drafts
+        if: ${{ matrix.shard == 1 }}
         run: |
           HSE_AUDIT_CREDENTIALS_PATH="$RUNNER_TEMP/mcq-expiry-credentials.json" HSE_MASTERPLAN_TIMING=true HSE_MASTERPLAN_EXPIRY=true HSE_MASTERPLAN_DELIVERY_MODE=STRICT HSE_MASTERPLAN_FUNDING_MODE=independent HSE_MASTERPLAN_CONTENT_MODE=MCQ_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
           HSE_AUDIT_CREDENTIALS_PATH="$RUNNER_TEMP/written-expiry-credentials.json" HSE_MASTERPLAN_TIMING=true HSE_MASTERPLAN_EXPIRY=true HSE_MASTERPLAN_DELIVERY_MODE=STRICT HSE_MASTERPLAN_FUNDING_MODE=independent HSE_MASTERPLAN_CONTENT_MODE=WRITTEN_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
 
       - name: Six-role notification read and mark-all synchronization
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/all-role-notification-workflow.browser.test.mjs
       - name: Six-role authentication and session boundaries
+        if: ${{ matrix.shard == 3 }}
         run: npm run test:authentication-boundaries-browser
 
       - name: Worker registration country and policy acceptance
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:worker-registration-policy-browser
 
       - name: Configured non-sandbox Worker and Company registration browser
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/registration-provider-delivery.browser.test.mjs
 
       - name: Six-role desktop and mobile portal support navigation
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/portal-help.browser.test.mjs
 
       - name: Worker restriction to Admin completion and recipient denial
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/privacy-sharing-restriction.browser.test.mjs
 
       - name: Configured six-role password recovery, session revocation and retained MFA
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/recovery-provider-delivery.browser.test.mjs
 
       - name: Worker email and phone OTP boundaries
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:worker-registration-otp-browser
 
       - name: Staff invitation revocation browser boundaries
+        if: ${{ matrix.shard == 2 }}
         run: npm run test:staff-invitation-revocation-browser
 
       - name: Five-role staff invitation activation and token lifecycle
+        if: ${{ matrix.shard == 3 }}
         run: npm run test:staff-invitation-lifecycle-browser
 
 
       - name: Worker duplicate contacts and password recovery
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:worker-duplicate-recovery-browser
 
       - name: Company pending registration email and MFA boundaries
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:company-registration-boundaries-browser
 
       - name: Six-role password recovery cooldown and replay boundaries
+        if: ${{ matrix.shard == 2 }}
         run: npm run test:six-role-password-recovery-browser
       - name: Six-role own-session and foreign-session boundaries
+        if: ${{ matrix.shard == 3 }}
         run: npm run test:active-session-boundaries-browser
 
       - name: Six-role password change and session revocation boundaries
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:password-change-boundaries-browser
 
       - name: Five-role recovery-code rotation and authenticator replacement
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:mfa-management-boundaries-browser
 
       - name: Assessor console live media, Verifier sharing and private evidence
+        if: ${{ matrix.shard == 2 }}
         run: npm run test:interview-live-media-browser
 
       - name: Real reports, funding handoff, privacy execution and pinned interview policy journeys
+        if: ${{ matrix.shard == 3 }}
         run: |
           npm run test:credential-validity-browser
           npm run test:assessment-eligibility-browser
@@ -413,6 +475,7 @@ jobs:
           npm run test:interview-policy-browser
 
       - name: Actual blueprint timers and approved Worker time delivery
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:assessment-timing-browser
 
   release-readiness:
@@ -528,6 +591,10 @@ jobs:
   consumer-cohorts:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       NEXT_TELEMETRY_DISABLED: "1"
@@ -550,4 +617,4 @@ jobs:
       - name: Install Chromium for actual consumer workflows
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - name: Company, authoring, privacy, all-role controls and handover consumers
-        run: npm run test:consumer-cohorts-browser
+        run: node scripts/run-consumer-cohort-browser-tests.mjs --shard=${{ matrix.shard }}/4
