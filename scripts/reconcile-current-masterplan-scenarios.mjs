@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10701IncompleteIdentity: {
+    file: "20261030-A28-d5daaaf-m10701-incomplete-identity-browser.log",
+    observedCodeSha: "d5daaaf14585a082e156ec43c8aa20994b6f4656",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m303PublicRecipientPrivacy: {
     file: "20261030-A28-f15f8c6-exact-public-share-reason-and-recipient-browser.log",
     observedCodeSha: "f15f8c6c608a7f621f1d1a9cebece50d4c8279be",
@@ -320,6 +325,7 @@ const browserClauseMap = {
     ["publicNavigationKeyboard", "Real Chromium desktop/mobile home routes, both Worker and Company registration entry forms, and all six role login destinations work; keyboard Contact activation. Does not claim all staff respond or email/demo delivery"],
     ["publicInquiry", "Real mobile Contact and Demo submissions reached private Admin and Root intake; credential concern was received; public and Worker access to private intake denied, DB persisted two inquiries and required audit events. Staff follow-up delivery is not tested"]
   ],
+  "M1.07.01": [["m10701IncompleteIdentity", "Actual signed-in Worker in 390px Chromium attempted empty initial identity submission and received a specific missing-requirements error. Worker saved partial legal first/last name, reloaded, retried incomplete submit, and retained exact draft values after the second rejection. Migrated PGlite confirms identity and version remain DRAFT, no submission timestamp, no Verifier review task or premature permanent Worker ID. Does not yet test incomplete general Worker profile, cross-tab draft races, all file/field combinations or eventual valid submission in this same test"]],
   "M1.02.03": [["publicInquiry", "Actual contact form rejects short invalid answer without discarding typed name/draft, waits for React hydration before entry, then accepts valid message/demo; scoped public form states only, not every scenario page"]],
   "M1.02.04": [["publicNavigationKeyboard", "Real 1440px desktop and 390px mobile public navigation, both registration entry forms, six role sign-in routes, no horizontal overflow on public home; tables, dialogs, tablet and every role layout remain unverified"]],
   "M1.02.05": [

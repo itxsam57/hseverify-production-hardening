@@ -324,6 +324,10 @@ jobs:
         if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/worker-file-upload-validation.browser.test.mjs
 
+      - name: M1.07 Worker incomplete identity submission preserves partial draft and blocks premature verification
+        if: ${{ matrix.shard == 3 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs
+
       - name: M3.03 public share link field scopes and neutral invalid expired revoked token denials
         if: ${{ matrix.shard == 4 }}
         run: node --test --test-concurrency=1 tests/browser/m3-03-scoped-share-links.browser.test.mjs
