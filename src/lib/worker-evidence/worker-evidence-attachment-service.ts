@@ -13,6 +13,7 @@ import type { SecureFileScanService } from "../secure-files/secure-file-scan-ser
 import type { SecureFileService } from "../secure-files/secure-file-service";
 import {
   createTrustedSecureFileUploadPolicy,
+  preflightSecureFileUploadContent,
   SECURE_FILE_UPLOAD_DEFAULT_MAX_BYTES
 } from "../secure-files/secure-file-upload-domain";
 import type { SecureFileUploadService } from "../secure-files/secure-file-upload-service";
@@ -254,6 +255,18 @@ export class WorkerEvidenceAttachmentService {
       throw new WorkerEvidenceContractError("Evidence file is required.");
     }
 
+    const policy = createTrustedSecureFileUploadPolicy({
+      policyKey: `worker.evidence.${input.attachmentKind}`,
+      allowedKinds: ["pdf", "png", "jpeg"],
+      maxBytes: SECURE_FILE_UPLOAD_DEFAULT_MAX_BYTES
+    });
+    preflightSecureFileUploadContent({
+      policy,
+      originalFilename: displayFilename,
+      declaredMime: input.declaredMime,
+      bytes: input.bytes
+    });
+
     const businessReference = workerEvidenceBusinessReference({
       recordId,
       versionId,
@@ -277,11 +290,7 @@ export class WorkerEvidenceAttachmentService {
       lifecycleStatus: "reserved"
     });
 
-    const policy = createTrustedSecureFileUploadPolicy({
-      policyKey: `worker.evidence.${input.attachmentKind}`,
-      allowedKinds: ["pdf", "png", "jpeg"],
-      maxBytes: SECURE_FILE_UPLOAD_DEFAULT_MAX_BYTES
-    });
+
     await this.secureUploads.quarantineForPrincipal({
       principal: worker,
       fileId: reserved.fileId,
@@ -480,6 +489,18 @@ export class WorkerEvidenceAttachmentService {
       throw new WorkerEvidenceContractError("Leaving letter file is required.");
     }
 
+    const policy = createTrustedSecureFileUploadPolicy({
+      policyKey: "worker.evidence.leaving_letter",
+      allowedKinds: ["pdf", "png", "jpeg"],
+      maxBytes: SECURE_FILE_UPLOAD_DEFAULT_MAX_BYTES
+    });
+    preflightSecureFileUploadContent({
+      policy,
+      originalFilename: displayFilename,
+      declaredMime: input.declaredMime,
+      bytes: input.bytes
+    });
+
     const businessReference = workerLeavingLetterBusinessReference({
       recordId,
       versionId
@@ -502,11 +523,7 @@ export class WorkerEvidenceAttachmentService {
       lifecycleStatus: "reserved"
     });
 
-    const policy = createTrustedSecureFileUploadPolicy({
-      policyKey: "worker.evidence.leaving_letter",
-      allowedKinds: ["pdf", "png", "jpeg"],
-      maxBytes: SECURE_FILE_UPLOAD_DEFAULT_MAX_BYTES
-    });
+
     await this.secureUploads.quarantineForPrincipal({
       principal: worker,
       fileId: reserved.fileId,

@@ -9,6 +9,7 @@ test("Real staff authoring, Company-funded credential, and trusted-MFA decision 
     "node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/staff-role-complete-journey.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs",
+    "node --test --test-concurrency=1 tests/browser/worker-file-upload-validation.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/company-billing-cross-tenant.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/worker-terminal-reapplication.browser.test.mjs",
     "node --test --test-concurrency=1 tests/browser/funding-revoked-link-e2e.browser.test.mjs",

@@ -43,6 +43,16 @@ test("PDF and JPEG upload through actual quarantine, leased scan handler, exact 
   for(const [extension,mime,bytes] of [["pdf","application/pdf",pdf],["jpeg","image/jpeg",jpeg]]){
    const draft=await evidence.createDraft(worker,"qualification");
    const current=await evidence.saveQualificationDraft(worker,{recordId:draft.recordId,expectedRevision:draft.currentVersion.revision,title:"Format pipeline "+extension,category:"Safety",issuingOrganization:"Test issuer",learningProvider:"Test provider",certificateNumber:"FORMAT-"+extension,issueDate:"2024-01-10",expiryDate:"2029-01-10",level:"3",country:"United Kingdom",verificationUrl:"https://example.test/certificate",declarationAccepted:true});
+   if(extension==="pdf"){
+    const existing=(await db.query("SELECT COUNT(*)::int AS n FROM platform_secure_files WHERE owner_account_id=$1",[worker.accountId])).rows[0].n;
+    await assert.rejects(
+      attachments.uploadAndBind(worker,{recordId:current.recordId,versionId:current.currentVersion.versionId,attachmentKind:"primary_certificate",expectedActiveAttachmentId:null,originalFilename:"fake-certificate.png",declaredMime:"image/png",bytes:pdf}),
+      error=>error?.name==="SecureFileUploadValidationError"&&error.reason==="type_mismatch",
+      "MIME-spoofed PDF must fail before any immutable upload-slot reservation"
+    );
+    assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM platform_secure_files WHERE owner_account_id=$1",[worker.accountId])).rows[0].n,existing,
+      "Invalid file must not leave a permanent reservation that blocks a clean next file with a different name");
+   }
    const pending=await attachments.uploadAndBind(worker,{recordId:current.recordId,versionId:current.currentVersion.versionId,attachmentKind:"primary_certificate",expectedActiveAttachmentId:null,originalFilename:"certificate."+extension,declaredMime:mime,bytes});
    assert.ok(pending.candidateId,"Upload must return a pending exact-version candidate");
    await assert.rejects(attachments.finalizePendingCandidate(worker,pending.candidateId),/available|scan/i);
