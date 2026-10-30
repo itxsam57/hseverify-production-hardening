@@ -105,6 +105,21 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
           assert.deepEqual(errors,[],output());
           console.log("ACTUAL_M20103_04_BROWSER Company creates and validates two scoped linked Workers, one case each with separate required next action; stale second browser submit returns safe conflict; cold reload shows exactly two immutable cases");
+          if(process.env.HSE_M20107_CANCEL_SUBMITTED_ONLY==="true"){
+            const caseIds=await page.locator("tbody tr").evaluateAll(rows=>rows.map(row=>row.id));
+            assert.equal(caseIds.length,2);
+            await page.getByRole("button",{name:"Cancel Submitted Order",exact:true}).click();
+            await page.getByText("CANCELLED",{exact:true}).waitFor({timeout:20000});
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("CANCELLED",{exact:true}).waitFor();
+            for(const caseId of caseIds){
+              const row=page.locator("tbody tr[id='"+caseId+"']");
+              await row.getByText("Closed",{exact:true}).waitFor();
+              assert.match(await row.innerText(),/No pending action/);
+            }
+            assert.equal(await page.getByRole("button",{name:"Cancel Submitted Order",exact:true}).count(),0);
+            console.log("ACTUAL_M20107_BROWSER Company cancels two pending Worker cases from SUBMITTED, persists CANCELLED after cold reload, each case shows Closed/No pending action and cancellation button is removed");
+          }
           await context.close();
         }finally{await browser.close();}
       }
@@ -119,7 +134,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       assert.equal(order.site_id,site);
       assert.equal(order.department_id,department);
       assert.equal(order.interview_required,true);
-      assert.equal(order.order_status,"SUBMITTED");
+      const cancellation=process.env.HSE_M20107_CANCEL_SUBMITTED_ONLY==="true";
+      assert.equal(order.order_status,cancellation?"CANCELLED":"SUBMITTED");
       assert.ok(order.submitted_at);
       assert.equal(new Date(order.deadline).toISOString(),deadline.slice(0,16)+":00.000Z");
       const targets=(await verifyDb.query("SELECT target_id,worker_account_id,worker_link_id,site_id,department_id,funding_method,target_status FROM assurance_order_workers WHERE order_id=$1 ORDER BY worker_account_id",[order.order_id])).rows;
@@ -136,14 +152,20 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       assert.equal(cases.length,2);
       assert.equal(new Set(cases.map(x=>x.target_id)).size,2);
       assert.equal(new Set(cases.map(x=>x.worker_account_id)).size,2);
-      assert.ok(cases.every(x=>x.case_status==="Identity pending"&&x.owner_kind==="worker"));
-      const actions=(await verifyDb.query("SELECT case_id,worker_account_id FROM assurance_action_items WHERE order_id=$1",[order.order_id])).rows;
+      assert.ok(cases.every(x=>cancellation?(x.case_status==="Closed"&&x.owner_kind===null):(x.case_status==="Identity pending"&&x.owner_kind==="worker")));
+      const actions=(await verifyDb.query("SELECT case_id,worker_account_id,action_status FROM assurance_action_items WHERE order_id=$1",[order.order_id])).rows;
       assert.equal(actions.length,2);
       assert.equal(new Set(actions.map(x=>x.case_id)).size,2);
+      assert.ok(actions.every(x=>x.action_status===(cancellation?"resolved":"open")));
       const events=(await verifyDb.query("SELECT event_type,case_id FROM assurance_case_timeline_events WHERE order_id=$1",[order.order_id])).rows;
       assert.equal(events.filter(x=>x.event_type==="order_submitted").length,1);
       assert.equal(events.filter(x=>x.event_type==="case_created").length,2);
-      console.log("ACTUAL_M20103_04_DB one submitted order, exact immutable site/dept/deadline/interview scope, two separate submitted targets/cases/action obligations, one order-submission event and two case-created events after duplicate-tab attempt");
+      assert.equal(events.filter(x=>x.event_type==="order_cancelled").length,cancellation?1:0);
+      assert.equal(events.filter(x=>x.event_type==="case_cancelled").length,cancellation?2:0);
+      assert.equal(new Set(events.filter(x=>x.event_type==="case_cancelled").map(x=>x.case_id)).size,cancellation?2:0);
+      assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0,"No payment credits were purchased; cancellation must not invent credit or refund ledger entries.");
+      if(cancellation)console.log("ACTUAL_M20107_DB retained immutable original SUBMITTED two target scope, case-created timeline; two case-cancelled + one order-cancelled events, both cases Closed, actions resolved, zero unsolicited billing-credit mutations");
+      else console.log("ACTUAL_M20103_04_DB one submitted order, exact immutable site/dept/deadline/interview scope, two separate submitted targets/cases/action obligations, one order-submission event and two case-created events after duplicate-tab attempt");
     }finally{await verifyDb.close();}
   }finally{await fixture.cleanup();}
 });

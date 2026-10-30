@@ -187,6 +187,16 @@ const browserRuns = {
     observedCodeSha: "f9e1666c27fb2b7c43dd526f4d46c1aae078e857",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m20106RejectedCrossPortal: {
+    file: "20261031-A28-2688703-exact-M20106-rejected-browser.log",
+    observedCodeSha: "2688703408c87f477549f6eca4ad6e8d024eb2ab",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m20106ChangesCorrectedApproved: {
+    file: "20261031-A28-2688703-exact-M20106-changes-corrected-approved-browser.log",
+    observedCodeSha: "2688703408c87f477549f6eca4ad6e8d024eb2ab",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m21304CredentialLifecycleViews: {
     file: "20261030-A28-c42782c-credential-validity-public-passport-renewal-browser.log",
     observedCodeSha: "c42782c95c27c8d9ac591b0f88f25bc9278c1ddd",
@@ -393,6 +403,10 @@ const browserClauseMap = {
     ["m20104CompetingFundingNative", "Actual active Worker assessment funding service (not unused standalone FundingService): seeded two distinct verified Worker IDs/active Company links, two separate Worker-initiated funding applications to same Company and one legitimate purchased sandbox credit. Two concurrent Company approve calls via Promise.allSettled on migrated PGlite return one success and one safe insufficient-unreserved-credits conflict; persisted exactly one APPROVED funding row/reserved credit/Worker case, other request remains REQUESTED, second application remains FUNDING_REQUESTED and original one-credit purchase ledger balance is unchanged. 1/1 native PASS exact pushed source and full 25/25 funding/outbox/security native regression PASS. Does not prove simultaneous independent PostgreSQL connections/multi-instance finance race, live paid credits, provider settlement, multi-tenant production load or duplicate simultaneous payment capture"]
   ],
   "M2.01.05": [["companyFundedCredential", "Real Company-funded linked Worker case progresses through assessment, independent human review/interview, signed credential and appeal; Worker-funded, mixed-method and competing reservations are not part of this run"]],
+  "M2.01.06": [
+    ["m20106RejectedCrossPortal", "Real four-role browser: Worker submits authentic scanned qualification evidence, Company invites and links Worker, creates and submits actual scoped order, Company queues case-specific evidence, Admin sets explicit review governance, Verifier claims and finalizes REJECTED with reason; both Company case row and Worker dashboard show Rejected after cold reload. Migrated PGlite verifies original Worker qualification version retained submitted, one exact Company case bound Verifier task REJECTED to original version, case Rejected with null pending owner, parent submitted order preserved. Exact source 2688703 1/1 PASS. Separate payment/provider notifications, other evidence types and all request outcomes untested in this clause"],
+    ["m20106ChangesCorrectedApproved", "Real independent Worker/Company/Verifier/Admin Chromium: actual Company case-scoped Verifier CHANGES_REQUESTED with reason appears both Company order table and Worker dashboard; Worker starts new qualification revision with corrected certificate number, uploads actual PNG scan and submits version 2; Company queues fresh task; Admin pins governance; Verifier independently claims and APPROVED version 2; Worker sees Assessment pending and Company dashboard loads. Migrated PGlite retains original superseded v1 and active submitted v2, with two independent evidence_review_decisions bound exact v1 CHANGES_REQUESTED and v2 APPROVED, correct order and case outcome. Exact pushed source 2688703 1/1 PASS; real production provider messaging, full appeal and all assessment variants not covered"]
+  ],
   "M2.01.07": [["finalizedCompanyCancellation", "Real authenticated Company Chromium tries to cancel ACTIVE two-Worker order with one already Approved decision and one Assessment pending. UI shows explicit reason, exact persisted order stays ACTIVE, original approval and pending sibling preserved, zero cancellation timeline events; same exact SHA native eight-case runtime gate verifies ordinary pending cancellation and rejects conditional/rejected statuses or credential references. Paid cancellations, refunds and races with concurrent final decisions remain unverified"]],
   "M2.01.08": [["companyFundedCredential", "Actual Company order becomes COMPLETED only after its real final decision; stored immutable policy version and Worker credential issued for exact target confirmed from database. Report generation and multi-case readiness remain unverified"]],
   "M2.13.04": [["m21304CredentialLifecycleViews", "Actual local Chromium scans signed QR using browser BarcodeDetector simulation, resolves suspended real persisted credential, and public status remains Suspended after reload. Separate persisted expired, current valid and revoked/replaced issuance cases show matching statuses and expiry in public verification UI, /api/credentials JSON and actual binary signed PDF rendering. Worker Passport retains expired status and updated valid renewal, and scoped share shows expired/suspended original conditions. Tampered signature/expiry source returns neutral 404. Database decision signatures and QR payload unchanged when status overridden. Real 1/1 browser PASS source pinned; does not cover real optical camera scanner, every Company dashboard badge, genuine external revocation provider notifications or production status cache propagation"]],
