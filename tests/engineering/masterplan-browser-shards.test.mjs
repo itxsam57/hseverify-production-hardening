@@ -27,6 +27,7 @@ test("hosted connected-browser splits every real journey into exactly one of fou
   assert.equal(new Set(steps.map(step=>step.name)).size,steps.length,"No duplicated or discarded browser step");
   assert.match(shardedSteps,/Build compiled outbox worker for isolated browser shards/);
   assert.match(shardedSteps,/HSE_MASTERPLAN_TRANSPORT_AUDIT=true HSE_MASTERPLAN_TRANSPORT_ONLY=true HSE_MASTERPLAN_CONTENT_MODE=COMBINED/,"M2.05 candidate payload privacy regression must run in permanent hosted browser CI");
+  assert.match(shardedSteps,/M3\.03 public share link field scopes and neutral invalid expired revoked token denials\n        if: \$\{\{ matrix\.shard == 4 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/m3-03-scoped-share-links\.browser\.test\.mjs/,"Recipient privacy regression must have a permanent isolated hosted Chromium gate");
 });
 
 test("all consumer cohorts are selected exactly once across the four separately hosted jobs",()=>{

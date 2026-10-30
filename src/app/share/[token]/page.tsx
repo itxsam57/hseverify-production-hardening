@@ -23,7 +23,9 @@ export default async function SharedPassportPage({
   });
 
   if (result.kind === "denied") {
-    return <main><h1>Share link unavailable</h1><p>{result.reason}</p></main>;
+    // Denials are intentionally indistinguishable to public recipients.
+    // Owners can inspect authoritative status through their signed-in portal.
+    return <main><h1>Share link unavailable</h1></main>;
   }
 
   return (

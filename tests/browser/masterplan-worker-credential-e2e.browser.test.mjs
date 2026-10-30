@@ -62,7 +62,7 @@ function auditCandidateAssessmentTransport(page) {
     void job.then(() => pending.delete(job), () => pending.delete(job));
   };
   page.on("response", capture);
-  return async () => {
+  const audit = async () => {
     page.off("response", capture);
     await Promise.all([...pending]);
     assert.ok(responses.some((entry) => entry.method === "GET"), "No actual candidate assessment GET payload was captured.");
@@ -78,6 +78,20 @@ function auditCandidateAssessmentTransport(page) {
     }
     console.log("ACTUAL_ASSESSMENT_TRANSPORT_BROWSER checked " + responses.length + " Worker GET/POST HTML/RSC/JSON payloads for question IDs, answer keys and grading rubrics");
   };
+  // Browser response events can be delivered before response.text() settles
+  // and a subsequent route refresh may obscure an autosave POST. Explicitly
+  // collect the exact awaited 200 Server Action as well, not merely an event.
+  audit.recordCompletedPost = async (response) => {
+    assert.equal(response.request().method(),"POST");
+    assert.equal(response.status(),200);
+    const pathname=new URL(response.url()).pathname;
+    assert.match(pathname,/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]+$/);
+    responses.push({
+      pathname, contentType:response.headers()["content-type"] ?? "",
+      method:"POST", body:await response.text()
+    });
+  };
+  return audit;
 }
 
 async function assertCandidateQuestionBoundary(page) {
@@ -635,6 +649,7 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
               response.status()===200,{timeout:25000});
             await worker.getByLabel(MCQ_ANSWER).check();
             const saved=await savedPost;
+            await auditTransport.recordCompletedPost(saved);
             console.log("ACTUAL_M205_POST_TRANSPORT",saved.request().method(),saved.headers()["content-type"]??"(unspecified)");
             await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:20000});
             await worker.reload({waitUntil:"domcontentloaded"});
