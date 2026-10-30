@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m303PublicRecipientPrivacy: {
+    file: "20261030-A28-f15f8c6-exact-public-share-reason-and-recipient-browser.log",
+    observedCodeSha: "f15f8c6c608a7f621f1d1a9cebece50d4c8279be",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m205FutureQuestionTransport: {
     file: "20261030-A28-ea84b47-m205-option-order-private-transport-all-mime-browser.log",
     observedCodeSha: "ea84b47d95386ab5283ccc8855fcd5c0759cc83e",
@@ -419,6 +424,10 @@ const browserClauseMap = {
   "M3.01.01": [["reportCredential", "Decision-pinned credential issue/expiry reflected consistently in actual browser, public API and real PDF; signing/issuance policy beyond this test not reverified"]],
   "M3.01.03": [["reportCredential", "Actual browser, public status and signed credential PDF preserve pinned expiry and lifecycle display; exhaustive suspended/revoked/conditional states still open"]],
   "M3.02.02": [["reportCredential", "Credential version/current lifecycle with policy-pinned expiry inspected across browser/API/PDF; all restrictions and prior versions open"]],
+  "M3.03.01": [["m303PublicRecipientPrivacy", "Actual anonymous Chromium recipient viewed two separately signed Worker-owned scoped links: Worker-ID-only link displays only selected Worker ID and purpose; employer-only link shows chosen employer and purpose but never Worker ID. Migrated PGlite confirms exact two distinct scopes persisted. Qualification, skill, competency, restrictions and conditions selection matrices not covered"]],
+  "M3.03.02": [["m303PublicRecipientPrivacy", "Real public page for Worker-ID-only recipient never displays unselected private employer; employer-only recipient never displays Worker ID. Signed links stored separately; no private data in either visible recipient projection. Other employers, sensitive documents and all field combinations remain unverified"]],
+  "M3.03.03": [["m303PublicRecipientPrivacy", "Real anonymous Chromium valid recipient sees exact owner-selected purpose; SQL confirms original purpose, per-field selection and expiry timestamp persisted. Persisted private access records distinguish granted active recipients and denied expired/revoked links while public pages expose no internal status. Real recipient authentication/email delivery and complete audit-log retention not verified"]],
+  "M3.03.05": [["m303PublicRecipientPrivacy", "Real anonymous Chromium/public JSON API for nonexistent ID, signature-tampered existing active record, signed expired and signed revoked link all reject without showing internal invalid/expired/revoked reason. Public HTML exactly Share link unavailable; JSON neutral share_link_unavailable HTTP403. Original source af2d4fc RED displayed Share link unavailableinvalid and production f15f8c6 removes reason, exact-sha browser PASS. Enumeration across timing/volumetric brute-force not penetration certified"]],
   "M3.03.04": [["supervisorPrivacyAppeal", "Actual earlier share link retained then independently revoked; old recipient denied while new active share recipient still accesses"]],
   "M3.06.01": [["reportCredential", "Worker report UI captures owned qualification and versioned settings, real private CSV/PDF/print produced; all worker report variants open"]],
   "M3.06.02": [["reportCredential", "Actual Company generated scoped CSV/PDF/print via authenticated UI; all workforce/readiness/billing report categories unverified"]],
