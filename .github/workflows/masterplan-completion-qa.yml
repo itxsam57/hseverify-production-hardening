@@ -290,6 +290,9 @@ jobs:
       - name: Partly finalized Company order cancellation preserves approved Worker decisions
         run: node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs
 
+      - name: M3.05 dual Company invoice and ledger isolation denies foreign refunds
+        run: node --test --test-concurrency=1 tests/browser/company-billing-cross-tenant.browser.test.mjs
+
       - name: M2.06 Worker terminal case reapplication preserves original record and new case
         run: node --test --test-concurrency=1 tests/browser/worker-terminal-reapplication.browser.test.mjs
 
