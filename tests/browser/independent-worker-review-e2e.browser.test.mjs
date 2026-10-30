@@ -447,6 +447,14 @@ test(
             await worker.locator(".copy-feedback").getByText("Worker ID copied.", { exact: true }).waitFor({ timeout: 15_000 });
             assert.equal(await worker.evaluate(() => navigator.clipboard.readText()), permanentWorkerId);
 
+            if (process.env.HSE_INITIAL_IDENTITY_MORE_INFO_ONLY === "true") {
+              assert.equal(process.env.HSE_INITIAL_IDENTITY_MORE_INFO, "true");
+              await worker.goto(`${baseUrl}/worker/identity`, { waitUntil: "domcontentloaded" });
+              await worker.getByText("Verified", { exact: true }).first().waitFor();
+              assert.equal(await worker.getByLabel("Legal first name", { exact: true }).inputValue(), "Independent");
+              console.log("ACTUAL_M10704_BROWSER initial CHANGES_REQUESTED -> revision -> corrected submission -> independent APPROVED -> permanent Worker ID");
+              return;
+            }
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
             const mainText = await worker.locator("main").innerText();
             assert.match(mainText, /Independent verification: approved/i);
@@ -633,6 +641,36 @@ test(
           assert.equal(identity.lifecycle_status,"rejected");
           assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,0);
           assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
+          return;
+        }
+        if (process.env.HSE_INITIAL_IDENTITY_MORE_INFO_ONLY === "true") {
+          const workerId = "audit_worker_account_20260901";
+          const identity = (await database.query(
+            "SELECT identity_id,lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1",
+            [workerId]
+          )).rows[0];
+          assert.equal(identity.lifecycle_status,"verified");
+          assert.equal(identity.current_version_number,2);
+          const versions = (await database.query(
+            "SELECT identity_version_id,version_number,parent_version_id,version_status,submitted_at FROM worker_identity_versions WHERE identity_id=$1 ORDER BY version_number",
+            [identity.identity_id]
+          )).rows;
+          assert.equal(versions.length,2);
+          assert.deepEqual(versions.map(row=>row.version_status),["submitted","submitted"]);
+          assert.ok(versions.every(row=>row.submitted_at));
+          assert.equal(versions[1].parent_version_id,versions[0].identity_version_id);
+          const decisions=(await database.query(
+            "SELECT task_status,source_version_id FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='identity' ORDER BY created_at,task_id",
+            [workerId]
+          )).rows;
+          assert.equal(decisions.length,2);
+          assert.deepEqual(decisions.map(row=>row.task_status).sort(),["APPROVED","CHANGES_REQUESTED"]);
+          assert.ok(decisions.some(row=>row.task_status==="CHANGES_REQUESTED"&&row.source_version_id===versions[0].identity_version_id));
+          assert.ok(decisions.some(row=>row.task_status==="APPROVED"&&row.source_version_id===versions[1].identity_version_id));
+          assert.equal((await database.query(
+            "SELECT COUNT(*)::int AS n FROM worker_identity_worker_ids WHERE worker_account_id=$1",[workerId]
+          )).rows[0].n,1);
+          console.log("ACTUAL_M10704_DB immutable original and corrected versions, independent dispositions and one permanent Worker ID");
           return;
         }
         const taskResult = await database.query(
