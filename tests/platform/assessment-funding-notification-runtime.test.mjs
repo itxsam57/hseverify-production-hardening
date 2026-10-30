@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
-import { assessmentFundingFixture } from "../helpers/assessment-funding-fixture.mjs";
+import { assessmentFundingFixture, fundingPrincipal } from "../helpers/assessment-funding-fixture.mjs";
+import { seedPermanentWorkerId } from "../helpers/permanent-worker-id-fixture.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
 const { WorkerAssessmentApplicationService } = loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
 test("Actual Worker Company-funding request atomically persists one real next-actor notification job", async () => {
@@ -150,4 +151,43 @@ test("Company approval rejects exhausted credits without changing pending fundin
     assert.equal(pending.application_status,"FUNDING_REQUESTED");
     assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE worker_account_id=$1",[fixture.worker.accountId])).rows[0].n,before);
   } finally { await database.close(); await fixture.cleanup(); }
+});
+
+
+test("M2.01.04 competing funded Worker approvals never overreserve one purchased Company credit",async()=>{
+  const fixture=await assessmentFundingFixture({startingCreditUnits:1});
+  const database=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+  try{
+    const now=new Date().toISOString(),secondWorker="search_foreign_worker";
+    const foreignWorkerId=await seedPermanentWorkerId(database,{accountId:secondWorker},"z",now);
+    const secondLinkId="company_worker_link_"+"z".repeat(24);
+    await database.query(
+      "INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,payment_responsibility,requested_by_membership_id,worker_accepted_at,activated_at,created_at,updated_at) VALUES($1,$2,$3,$4,'permanent_worker_id','active','company',$5,$6,$6,$6,$6)",
+      [secondLinkId,fixture.fundingInput.tenantId,secondWorker,foreignWorkerId,fixture.credentials.company.membershipId,now]
+    );
+    const secondPrincipal=await fundingPrincipal(database,{accountId:secondWorker});
+    const service=new WorkerAssessmentApplicationService(database);
+    const first=await service.requestCompanyFunding(fixture.worker,fixture.fundingInput);
+    const second=await service.requestCompanyFunding(secondPrincipal,{...fixture.fundingInput,workerLinkId:secondLinkId});
+    assert.notEqual(first.fundingRequestId,second.fundingRequestId);
+    const before=(await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS amount FROM billing_credit_ledger WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0].amount;
+    assert.equal(before,1);
+    const competing=await Promise.allSettled([first,second].map(item=>service.decideCompanyFunding(fixture.company,{fundingRequestId:item.fundingRequestId,approved:true})));
+    assert.equal(competing.filter(item=>item.status==="fulfilled").length,1);
+    const errors=competing.filter(item=>item.status==="rejected");
+    assert.equal(errors.length,1);
+    assert.match(errors[0].reason.message,/enough unreserved assessment credits/i);
+    const reservations=(await database.query("SELECT funding_request_id,status,credit_units,reserved_credit_units FROM funding_requests WHERE tenant_id=$1 ORDER BY funding_request_id",[fixture.fundingInput.tenantId])).rows;
+    assert.equal(reservations.length,2);
+    assert.deepEqual(reservations.map(row=>row.status).sort(),["APPROVED","REQUESTED"]);
+    assert.equal(reservations.reduce((sum,row)=>sum+Number(row.reserved_credit_units),0),1);
+    const applications=(await database.query("SELECT worker_account_id,application_status,assurance_case_id FROM worker_assessment_applications WHERE company_tenant_id=$1 ORDER BY worker_account_id",[fixture.fundingInput.tenantId])).rows;
+    assert.equal(applications.length,2);
+    assert.deepEqual(applications.map(row=>row.application_status).sort(),["CASE_CREATED","FUNDING_REQUESTED"]);
+    const cases=(await database.query("SELECT case_id,worker_account_id FROM assurance_cases WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows;
+    assert.equal(cases.length,1);
+    assert.ok(applications.some(row=>row.assurance_case_id===cases[0].case_id));
+    assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS amount FROM billing_credit_ledger WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0].amount,1);
+    console.log("ACTUAL_M20104_FUNDING_CONCURRENT 2 real worker requests / one purchased credit / one reserved and funded case, other remains pending; no overspend or double debit, atomic Company permission-scoped transactions");
+  }finally{await database.close();await fixture.cleanup();}
 });
