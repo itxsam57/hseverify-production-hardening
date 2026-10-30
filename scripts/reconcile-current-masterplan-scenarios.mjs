@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10804CompanyRejectedPending: {
+    file: "20261030-A28-c511259-exact-M10804-company-rejection-browser.log",
+    observedCodeSha: "c5112596693cd8d23fa43b7f6de18603ff3cfccb",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10303WorkerRecoveryReplay: {
     file: "20261030-A28-3b589ea-exact-M10303-duplicate-recovery-replay-browser.log",
     observedCodeSha: "3b589eaa50b3ae4a1c6f258a2506e8790a32720b",
@@ -485,6 +490,7 @@ const browserClauseMap = {
   ],
   "M1.08.01": [["company", "Company registration, pending workspace, scanned PDF and submission in real browser"]],
   "M1.08.03": [["company", "Admin requests changes, Company corrects version 2 and Admin verifies"]],
+  "M1.08.04": [["m10804CompanyRejectedPending", "Actual real Chrome Company registered with business email OTP and MFA, signed in, saved legal/business details, uploaded a genuine scanned PDF and submitted locked Company verification version 1. Separately authenticated Root-created Admin opened the case, previewed its PDF through private staff-only endpoint, began review and selected Reject. Worker-side Company portal displayed Rejected and pending tenant warning after cold reload, retained submitted legal name, trading name, verified business email and attached original registration PDF; Save, Submit and Create correction actions remained absent. Rejected case disappeared from pending Admin decision queue. Migrated PGlite confirms exactly one Company verification version remains terminal rejected and submitted, original scanned PDF has available lifecycle bound to exact rejected version, tenant still pending with null activated_at, no approval timestamp, rejection recorded and immutable audit transition. Real browser 1/1 PASS exact pushed QA SHA. Does not establish a separate Company restart/appeal policy, every evidence MIME/scan provider, production multi-admin race, or tenant cross-role access sweep"]],
   "M1.08.05": [["company", "Admin approval makes tenant active; stale Company edit denied, independent double decision matrix open"]],
   "M1.09.01": [
     ["company", "Verified active Company creates and revisits site unit"],
