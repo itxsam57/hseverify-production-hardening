@@ -476,6 +476,28 @@ test(
               await decideQueueItem(verifier, admin, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
               await worker.goto(`${baseUrl}/worker/evidence`);
               await worker.locator("article").filter({hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record`}).first().getByText(/Independent verification: approved/).waitFor();
+              if (process.env.HSE_INACTIVE_SKILL_ONLY === "true" && kind === "skill") {
+                await worker.goto(`${baseUrl}/worker/dashboard`,{waitUntil:"domcontentloaded"});
+                const skillsMetric=worker.locator("article.metric-card").filter({hasText:"Evidence verification"});
+                await skillsMetric.getByText(/Skills:\s*1 verified/).waitFor({timeout:15000});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                const skill=worker.locator("article").filter({hasText:"Skill record"}).first();
+                await skill.getByText("active · submitted",{exact:true}).waitFor();
+                await skill.getByRole("button",{name:"Mark skill inactive",exact:true}).click();
+                await skill.getByText("inactive · submitted",{exact:true}).waitFor({timeout:15000});
+                await skill.getByText(/This skill is inactive and excluded from current verified competency counts/).waitFor({timeout:15000});
+                assert.equal(await skill.getByText(/Independent verification has not been queued for this version yet/).count(),0);
+                await worker.reload({waitUntil:"domcontentloaded"});
+                await skill.getByText("inactive · submitted",{exact:true}).waitFor({timeout:15000});
+                await skill.getByText(/This skill is inactive and excluded from current verified competency counts/).waitFor();
+                assert.equal(await skill.getByRole("button",{name:"Mark skill inactive"}).count(),0);
+                const skillHistory=await skill.getByRole("region",{name:"skill history"}).innerText();
+                for(const version of [1,2,3])assert.match(skillHistory,new RegExp("Version "+version));
+                await worker.goto(`${baseUrl}/worker/dashboard`,{waitUntil:"domcontentloaded"});
+                await skillsMetric.getByText(/Skills:\s*0 verified/).waitFor({timeout:15000});
+                console.log("ACTUAL_M11108_BROWSER independently approved skill 1 verified -> inactive preserved three versions and dashboard 0 verified after cold reload");
+                return;
+              }
               if (process.env.HSE_EXPERIENCE_SCAN_RETRY_ONLY === "true" && kind === "experience") {
                 const experience = worker.locator("article").filter({hasText:"Experience record"}).first();
                 const history = experience.getByRole("region",{name:"experience history"});
@@ -654,6 +676,38 @@ test(
           assert.equal(identity.lifecycle_status,"rejected");
           assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,0);
           assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
+          return;
+        }
+        if (process.env.HSE_INACTIVE_SKILL_ONLY === "true") {
+          const workerId="audit_worker_account_20260901";
+          const records=(await database.query(
+            "SELECT record_id,lifecycle_status,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='skill'",
+            [workerId]
+          )).rows;
+          assert.equal(records.length,1);
+          const row=records[0];
+          assert.equal(row.lifecycle_status,"inactive");
+          const versions=(await database.query(
+            "SELECT version_id,version_number,version_status,submitted_at,supersedes_version_id FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",
+            [row.record_id]
+          )).rows;
+          assert.equal(versions.length,3);
+          assert.deepEqual(versions.map(x=>x.version_status),["superseded","superseded","submitted"]);
+          assert.ok(versions.every(x=>x.submitted_at));
+          assert.equal(row.current_version_id,versions[2].version_id);
+          assert.equal(versions[2].supersedes_version_id,versions[1].version_id);
+          const reviews=(await database.query(
+            "SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='skill'",
+            [workerId]
+          )).rows;
+          assert.ok(reviews.some(x=>x.source_version_id===versions[0].version_id&&x.task_status==="CHANGES_REQUESTED"));
+          assert.ok(reviews.some(x=>x.source_version_id===versions[1].version_id&&x.task_status==="APPROVED"));
+          assert.ok(!reviews.some(x=>x.source_version_id===versions[2].version_id&&x.task_status==="APPROVED"));
+          assert.equal((await database.query(
+            "SELECT COUNT(*)::int AS n FROM worker_evidence_records r JOIN worker_evidence_versions v ON v.version_id=r.current_version_id JOIN evidence_review_tasks t ON t.source_version_id=v.version_id WHERE r.worker_account_id=$1 AND r.record_kind='skill' AND r.lifecycle_status<>'inactive' AND v.version_status='submitted' AND t.task_status='APPROVED'",
+            [workerId]
+          )).rows[0].n,0);
+          console.log("ACTUAL_M11108_DB inactive skill retains three versions and past reviews but contributes zero current approved competencies");
           return;
         }
         if (process.env.HSE_EXPERIENCE_SCAN_RETRY_ONLY === "true") {

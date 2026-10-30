@@ -648,6 +648,7 @@ function VerificationResult({
 }: {
   record: WorkerEvidenceWorkspaceRecord;
 }): React.JSX.Element | null {
+  if (record.kind === "skill" && record.lifecycleStatus === "inactive") return null;
   if (!record.verificationStatus) {
     return record.currentVersion.status === "submitted" ? (
       <Alert tone="neutral">
@@ -699,6 +700,11 @@ function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): Reac
       </div>
 
       <VerificationResult record={record} />
+      {record.kind === "skill" && record.lifecycleStatus === "inactive" ? (
+        <Alert tone="neutral">
+          This skill is inactive and excluded from current verified competency counts. Its previous evidence and independent review history remain preserved below.
+        </Alert>
+      ) : null}
 
       {editable ? (
         <>

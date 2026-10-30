@@ -341,6 +341,10 @@ jobs:
         if: ${{ matrix.shard == 2 }}
         run: HSE_INITIAL_IDENTITY_MORE_INFO=true HSE_INITIAL_IDENTITY_MORE_INFO_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
 
+      - name: M1.11 independently verified skill inactive removes current competency but preserves history
+        if: ${{ matrix.shard == 4 }}
+        run: HSE_INACTIVE_SKILL_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+
       - name: M1.11 corrected experience scanned attachment and Verifier re-review
         if: ${{ matrix.shard == 3 }}
         run: HSE_EXPERIENCE_SCAN_RETRY_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
