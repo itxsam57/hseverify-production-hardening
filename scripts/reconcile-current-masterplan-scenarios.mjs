@@ -197,6 +197,11 @@ const browserRuns = {
     observedCodeSha: "fea49a9a26e85d3285ce742f307db9bd35d9e63e",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m305RefundCreditBoundariesNative: {
+    file: "20261031-A28-22ebd2f-exact-M305-refund-credit-boundaries-native.log",
+    observedCodeSha: "22ebd2faba4df0bd7c8ea7a39bb52b0c5c9a50a5",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
   m20107TwoWorkerSubmittedCancellation: {
     file: "20261031-A28-c632b4f-exact-M20107-two-worker-cancellation-browser.log",
     observedCodeSha: "c632b4fdfd75503b401cbc85350eac5a6f89e380",
@@ -497,7 +502,10 @@ const browserClauseMap = {
     ["tenantBillingReceipt", "Real production route /company/billing/receipts/[invoiceId] renders paid printable sandbox receipt for matching tenant only, both A and B own receipts HTTP200 and exact foreign guessed URLs HTTP404 without invoice details. Company credit activity table shows only its own purchase/refund ledger entries, foreign refund form denied; persisted two-Company DB remains unchanged. PDF-native download, complete assessment usage export, real merchant/tax status and production rollout not certified"],
     ["tenantBillingFullCompany", "Existing Company end-to-end browser rerun against receipt feature exact application SHA confirms organization/units, staff revocation, payment capture/replay protection, partial/full refund ledger, pending unpaid checkout, tenant records and Company reporting all still work. Corrected test section selector to exact Refunds heading after new credit activity section. Standalone live merchant settlement remains unverified"]
   ],
-  "M3.05.04": [["companyWorkerSecurity", "Real Company sandbox billing applied partial then remaining full refund, balance zero and ledger has original capture plus two retained refund records; live processor settlement open"]],
+  "M3.05.04": [
+    ["companyWorkerSecurity", "Real Company sandbox billing applied partial then remaining full refund, balance zero and ledger has original capture plus two retained refund records; live processor settlement open"],
+    ["m305RefundCreditBoundariesNative", "Two real migrated sandbox native funding/refund service regressions 2/2 PASS source SHA 22ebd2f: single legitimately paid Company credit already reserved by approved Worker assessment funding or by a Company-created pending assurance case cannot be refunded; no refund row created on denial. Inverse: provider-pending refund of that same unit blocks a new Worker funding case, retaining REQUESTED state and no case/ledger mutation. Company cancellation of a pending unused Company-funded order releases its previous one-unit credit claim and permits a single pending refund, without rewriting original purchase entry. Full 14/14 BillingService and 28/28 Worker funding/outbox regression PASS same candidate source prior push. Limits: no live merchant settlement, chargeback, provider-refund-failure recovery, independent PostgreSQL connection race, Company frontend blocked-error copy or tax rules certified"]
+  ],
   "M3.05.06": [["companyWorkerSecurity", "Actual invalid signed checkout callback and altered signed replay refused, exact same replay idempotent with no double credit or refund; provider live webhook unverified"]],
   "M3.10.02": [["companyWorkerSecurity", "Actual forged payment callback rejected, changed signed payload denied, provider-pending new purchase grants no credits even though old sandbox purchase and refunds completed; live gateway unverified"]],
   "M1.02.02": [["notifications", "Each of six role dashboards has actual working notification bell; rest of global header actions not covered"]],
@@ -614,7 +622,10 @@ const browserClauseMap = {
   "M2.12.07": [["recommendationStaffScoring", "Each of five real browser Assessor final submissions locks subsequent input and transitions owned case and notification; real media shutdown/device behavior not covered"]],
   "M2.12.04": [["interviewEligibility", "Worker in-window technical issue persists interview runtime TECHNICAL_HOLD and request details, including refresh; other pause/reconnect/reschedule paths open"]],
 
-  "M3.05.02": [["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"]],
+  "M3.05.02": [
+    ["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"],
+    ["m305RefundCreditBoundariesNative", "Real Company-paid one-credit native assessment funding approved → pending refund denied; separately pending Company refund → new Worker funding approval denied without creating a case; original sandbox purchase ledger unchanged. A direct Company-submitted pending case likewise prevents refund until actual Company cancellation closes it and releases its claim. Exact pushed source SHA native 2/2 PASS. Worker funding approval against genuine multiple tenants, real merchant callbacks and independent PostgreSQL multi-process races remain uncertified"]
+  ],
   "M1.05.01": [["adversarial", "Duplicate resolution history and evidence review resolution persisted; full material-transition coverage open"]],
   "M2.02.01": [["adversarial", "Actual Worker submitted evidence reaches Verifier queue with a review task; all evidence kinds open"]],
   "M2.02.02": [["adversarial", "Claim, escalation and Admin return to Verifier preserve revision/history; all conflict paths open"]],
@@ -668,7 +679,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative"]);
+const nativeRunNames = new Set(["outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
