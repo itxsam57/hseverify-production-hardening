@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10303WorkerRecoveryReplay: {
+    file: "20261030-A28-3b589ea-exact-M10303-duplicate-recovery-replay-browser.log",
+    observedCodeSha: "3b589eaa50b3ae4a1c6f258a2506e8790a32720b",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10707DuplicateAdminReview: {
     file: "20261030-A28-6865557-duplicate-independent-review-browser.log",
     observedCodeSha: "6865557519f919fc26fc2f0616e1eb390fb22617",
@@ -443,9 +448,13 @@ const browserClauseMap = {
     ["worker", "Actual valid Worker registration completes"],
     ["companyWorkerSecurity", "Actual Worker form denies missing policy acceptance, country, password mismatch, and cancels signup preserving recorded policy acceptance time; full field fuzzing not complete"]
   ],
-  "M1.03.03": [["negativeWorkerCompany", "Browser detects three duplicate Worker contact combinations and requires recovery without identity merge"]],
+  "M1.03.03": [
+    ["m10303WorkerRecoveryReplay", "Actual signed-in Worker browser saved nonempty identity draft and skill metadata, then independently authenticated fresh Chromium attempted three distinct duplicate registration variants involving repeated email, repeated phone and both; all three were blocked at registration with safe non-enumerating feedback, no second account or registration flow created. Real Worker email reset requested via sandbox delivery, invalid OTP persisted exactly one 4-attempt-remaining failure and audit without altering old session or password; valid OTP consumed original flow, revoked old session, denied old password and allowed new password with same Worker account. A different fresh browser that retained the valid pre-reset HttpOnly recovery token/cookie tried reusing the consumed OTP with a distinct replacement password and received denial; no second reset occurred. After reload migrated PGlite snapshot confirms unchanged account count, registered Worker ID/account, roles, immutable identity draft/version, skill/evidence, registration and recovery histories, exactly one reset completion, two sessions with old revoked and new valid. 1/1 real Chromium PASS on exact pushed source SHA; live email/SMS delivery, simultaneous two registration races, unrelated accounts and production rate limiting still not release certified"],
+    ["negativeWorkerCompany", "Earlier separate duplicate-contact negative browser matrix; enhanced by source-pinned complete Worker recovery and replay proof"]
+  ],
   "M1.03.08": [
-    ["negativeWorkerCompany", "Wrong recovery OTP rejected and audited; valid recovery invalidates old sessions and password without erasing identity; all six-role recovery remains open"],
+    ["m10303WorkerRecoveryReplay", "Real Worker email password-reset recovery with wrong OTP audit and attempt decrement, correct code consumed once, old Worker session/password revoked, new login on same account without evidence or identity loss, and attempted replay with pre-consumption recovery cookie plus same OTP in independent browser denied. Exact source 3b589ea browser 1/1 PASS; complement existing full six-role recovery. External email/SMS provider and all role-specific live operational recovery still open"],
+    ["negativeWorkerCompany", "Separate previous Worker wrong-code audit, committed challenge counter and new-password recovery result"],
     ["mfaAccommodationPrivacy", "Company/Assessor/Verifier/Admin/Root rotate ten unique recovery hashes and replace authenticators, audits persist, fresh old factors and code replay/cross-account/wrong password rejected, new factor succeeds with role security notification"]
   ],
   "M1.03.05": [["recommendationStaffScoring", "Five Company/Assessor/Verifier/Admin/Root actual staff invitations activate role-locked MFA sign-in; expired fresh/cached, unknown and issuer-revoked fresh/open token denial with no account/session; replay full matrix still open"]],
