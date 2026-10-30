@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10704InitialCorrection: {
+    file: "20261030-A28-543b227-exact-M10704-correction-browser.log",
+    observedCodeSha: "543b22783c67f80d607a8e68c068e9fea95c3512",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10701IncompleteIdentity: {
     file: "20261030-A28-d5daaaf-m10701-incomplete-identity-browser.log",
     observedCodeSha: "d5daaaf14585a082e156ec43c8aa20994b6f4656",
@@ -331,6 +336,7 @@ const browserClauseMap = {
     ["publicInquiry", "Real mobile Contact and Demo submissions reached private Admin and Root intake; credential concern was received; public and Worker access to private intake denied, DB persisted two inquiries and required audit events. Staff follow-up delivery is not tested"]
   ],
   "M1.06.04": [["m10604WorkerAttachmentPreview", "Real 390px signed-in Worker Chromium creates a qualification draft and uploads two distinct structurally valid PNG certificate files through the actual UI. On cold reload the previous attachment stays visible as superseded and replacement stays active; each separate historical file-row private preview button negotiates a 200 signed same-session /api/secure-files/preview URL and exact old/new distinct immutable image bytes, correct image/png inline no-store headers. Replay from fresh anonymous Chromium context returns 404 for each. Migrated actual PGlite preserves both attachments, same immutable version_id, correct superseded timestamps, distinct matching SHA256 digests and available secure-file provenance. Does not cover all evidence categories/roles, browser PDF rendering, provider-backed storage or all historical authorization transitions"]],
+  "M1.07.04": [["m10704InitialCorrection", "Actual initial Worker identity CHANGES_REQUESTED with a reason returned to Worker UI, Worker clicked Start identity revision, saved corrected detail, uploaded replacement passport evidence, resubmitted exact second version, and independently authenticated Verifier/Admin workflow APPROVED corrected review. Real Worker identity and dashboard displayed Verified and a permanent Worker ID. Exact migrated PGlite confirms two distinct parent-linked submitted identity versions, old requested-changes review bound to first version and approved review to corrected version, and exactly one issued permanent ID. Isolated branch of larger test 1/1 real Chromium, does NOT prove a terminal rejected initial identity can resubmit (policy deliberately forbids), all correction field variants, live identity provider or full independent experience correction run"]],
   "M1.07.01": [["m10701IncompleteIdentity", "Actual signed-in Worker in 390px Chromium attempted empty initial identity submission and received a specific missing-requirements error. Worker saved partial legal first/last name, reloaded, retried incomplete submit, and retained exact draft values after the second rejection. Migrated PGlite confirms identity and version remain DRAFT, no submission timestamp, no Verifier review task or premature permanent Worker ID. Does not yet test incomplete general Worker profile, cross-tab draft races, all file/field combinations or eventual valid submission in this same test"]],
   "M1.02.03": [["publicInquiry", "Actual contact form rejects short invalid answer without discarding typed name/draft, waits for React hydration before entry, then accepts valid message/demo; scoped public form states only, not every scenario page"]],
   "M1.02.04": [["publicNavigationKeyboard", "Real 1440px desktop and 390px mobile public navigation, both registration entry forms, six role sign-in routes, no horizontal overflow on public home; tables, dialogs, tablet and every role layout remain unverified"]],
