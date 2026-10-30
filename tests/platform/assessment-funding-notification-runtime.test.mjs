@@ -5,6 +5,7 @@ import { assessmentFundingFixture, fundingPrincipal } from "../helpers/assessmen
 import { seedPermanentWorkerId } from "../helpers/permanent-worker-id-fixture.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
 const { WorkerAssessmentApplicationService } = loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
+const { BillingService } = loadWorkerRegistrationTs("src/lib/billing/billing-service.ts");
 const { AssuranceOrderService } = loadWorkerRegistrationTs("src/lib/assurance/assurance-order-service.ts");
 test("Actual Worker Company-funding request atomically persists one real next-actor notification job", async () => {
   const fixture = await assessmentFundingFixture(), database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
@@ -254,5 +255,73 @@ test("M2.01 shared Company credits cannot fund direct orders and Worker requests
     assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE order_id=$1",[funded.assurance_order_id])).rows[0].n,1);
     assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[tenant])).rows[0].n,1);
     console.log("ACTUAL_M20102_CREDIT_CROSS_FLOW real 1-credit sandbox purchase: direct Company order holds one, second direct and Worker funding denied; cancelling pending order releases hold; Worker funding reserves once and creates case; stale READY direct submission denied, no duplicate ledger debit");
+  }finally{await database.close();await fixture.cleanup();}
+});
+
+test("M3.05 refunded credits cannot exceed unreserved Company assessment commitments in either order",async()=>{
+  // A real sandbox capture has credited exactly one purchased unit.
+  for(const fundingFirst of [true,false]){
+    const fixture=await assessmentFundingFixture({startingCreditUnits:1});
+    const database=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+    try{
+      const service=new BillingService(database);
+      const funding=new WorkerAssessmentApplicationService(database);
+      const invoice=(await database.query("SELECT invoice_id FROM billing_invoices WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0];
+      assert.ok(invoice);
+      const application=await funding.requestCompanyFunding(fixture.worker,fixture.fundingInput);
+      const refund=()=>service.requestRefund(fixture.company,{
+        invoiceId:invoice.invoice_id,idempotencyKey:fundingFirst?"reserved-credit-refund":"pending-refund-first",amountMinor:100
+      });
+      const approve=()=>funding.decideCompanyFunding(fixture.company,{fundingRequestId:application.fundingRequestId,approved:true});
+      if(fundingFirst){
+        await approve();
+        await assert.rejects(refund(),/unreserved|already.*fund|insufficient.*credit/i,
+          "A funded Worker has permanently claimed the only purchased credit; owner refund request must not approve it again.");
+        assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM billing_refunds WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0].n,0);
+      }else{
+        const pending=await refund();
+        assert.equal(pending.status,"REQUIRES_PROVIDER");
+        await assert.rejects(approve(),/unreserved|insufficient.*credit|enough.*credits/i,
+          "An authorized provider-pending credit refund must hold its credit and block new Worker assessment funding.");
+        assert.equal((await database.query("SELECT status FROM funding_requests WHERE funding_request_id=$1",[application.fundingRequestId])).rows[0].status,"REQUESTED");
+        assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0].n,0);
+      }
+      assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0].n,1);
+      console.log("ACTUAL_M305_REFUND_RESERVATION",fundingFirst?"funding-first-refund-denied":"refund-pending-funding-denied");
+    }finally{await database.close();await fixture.cleanup();}
+  }
+});
+
+test("M3.05 Company direct-order reserved credit is not refundable until pending order is cancelled",async()=>{
+  const fixture=await assessmentFundingFixture({startingCreditUnits:1});
+  const database=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+  try{
+    const company={...fixture.company,authorizedTenantPermission:"company.orders.manage"};
+    const orders=new AssuranceOrderService(database),billing=new BillingService(database);
+    const tenant=fixture.fundingInput.tenantId;
+    const inv=(await database.query("SELECT invoice_id FROM billing_invoices WHERE tenant_id=$1",[tenant])).rows[0];
+    const order=await orders.createDraft(company,{
+      orderName:"Reserved Company order paid credit",orderReference:"REFUND-RESERVED-DIRECT",
+      siteId:null,departmentId:null,requestedIdentityChecks:["identity"],requestedEvidenceChecks:["qualification"],
+      assessmentFrameworkReferences:[],interviewRequired:false,credentialTarget:null,
+      deadline:new Date(Date.now()+86400000).toISOString(),effectivePolicyReference:null,
+      companyNotes:"One reserved Company credit",purchaseOrderReference:null
+    });
+    await orders.addWorkerTarget(company,order.orderId,fixture.fundingInput.workerLinkId,"company");
+    assert.equal((await orders.validateOrder(company,order.orderId)).ready,true);
+    assert.equal((await orders.submitOrder(company,order.orderId)).length,1);
+    await assert.rejects(
+      billing.requestRefund(fixture.company,{invoiceId:inv.invoice_id,idempotencyKey:"company-order-reserved-refund",amountMinor:100}),
+      /unreserved.*credits/i
+    );
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM billing_refunds WHERE tenant_id=$1",[tenant])).rows[0].n,0);
+    await orders.cancelSubmittedOrder(company,order.orderId);
+    const refund=await billing.requestRefund(fixture.company,{
+      invoiceId:inv.invoice_id,idempotencyKey:"company-order-reserved-refund",amountMinor:100
+    });
+    assert.equal(refund.status,"REQUIRES_PROVIDER");
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE order_id=$1 AND case_status='Closed'",[order.orderId])).rows[0].n,1);
+    assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[tenant])).rows[0].n,1);
+    console.log("ACTUAL_M305_DIRECT_ORDER_REFUND PENDING Company-funded case prevents refund of its only paid credit; case cancellation closes order and releases balance for one provider-pending refund, ledger stays immutable");
   }finally{await database.close();await fixture.cleanup();}
 });

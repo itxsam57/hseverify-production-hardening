@@ -9,6 +9,7 @@ import {
   type BillingCheckout,type BillingInvoice,type BillingLedgerEntry,type BillingReconciliationItem,type BillingReconciliationRun,type BillingRefund,type BillingSnapshot,type BillingSubscription
 } from "./billing-domain";
 import { SandboxBillingProvider,billingPayloadHash,parseBillingProviderEvent,verifyBillingWebhook } from "./billing-provider";
+import { unreservedCompanyCreditUnits } from "./company-credit-availability";
 
 type ManagePrincipal=TenantPermissionPrincipal<typeof BILLING_MANAGE_PERMISSION>;
 type ReadPrincipal=TenantPermissionPrincipal<typeof BILLING_READ_PERMISSION>;
@@ -191,7 +192,10 @@ export class BillingService {
       const found=await database.query<InvoiceRow>(`SELECT invoice_id,checkout_id,status,credit_units,amount_minor,refunded_amount_minor,currency,created_at,updated_at FROM billing_invoices WHERE tenant_id=$1 AND invoice_id=$2 FOR UPDATE`,[scope.tenantId,invoiceId]); const inv=found.rows[0]; if(!inv)throw new BillingAccessError(); if(inv.status!=="PAID"&&inv.status!=="PARTIALLY_REFUNDED")throw new BillingConflictError("Only a paid invoice can be refunded.");
       const unitPrice=Number(inv.amount_minor)/Number(inv.credit_units); if(!Number.isSafeInteger(unitPrice)||amount%unitPrice!==0)throw new BillingInputError("Refund amount must equal a whole number of purchased credits.");
       const reserved=await database.query<{total:number|string}>(`SELECT COALESCE(SUM(amount_minor),0) AS total FROM billing_refunds WHERE tenant_id=$1 AND invoice_id=$2 AND status IN ('REQUIRES_PROVIDER','SUCCEEDED')`,[scope.tenantId,invoiceId]); if(Number(reserved.rows[0]?.total??0)+amount>Number(inv.amount_minor))throw new BillingConflictError("Refund exceeds the invoice refundable amount.");
-      const creditUnits=amount/unitPrice, refundId=billingId("billing_refund"), providerReference=this.provider.createRefundReference(),timestamp=now.toISOString();
+      const creditUnits=amount/unitPrice;
+      if(await unreservedCompanyCreditUnits(database,scope.tenantId)<creditUnits)
+        throw new BillingConflictError("Refund exceeds unreserved Company assessment credits.");
+      const refundId=billingId("billing_refund"), providerReference=this.provider.createRefundReference(),timestamp=now.toISOString();
       await database.query(`INSERT INTO billing_refunds(refund_id,tenant_id,invoice_id,idempotency_key,amount_minor,credit_units,currency,provider_mode,provider_refund_reference,status,created_by_membership_id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,'sandbox',$8,'REQUIRES_PROVIDER',$9,$10)`,[refundId,scope.tenantId,invoiceId,key,amount,creditUnits,inv.currency,providerReference,scope.membershipId,timestamp]);
       await this.audit(database,principal,"billing.refund.requested",refundId,{invoiceId,amountMinor:amount,creditUnits,currency:inv.currency,providerMode:"sandbox"});
       return Object.freeze({refundId,invoiceId,status:"REQUIRES_PROVIDER" as const,providerMode:"sandbox" as const,providerRefundReference:providerReference,amountMinor:amount,creditUnits,currency:inv.currency,createdAt:timestamp});

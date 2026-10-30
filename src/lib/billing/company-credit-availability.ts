@@ -13,6 +13,8 @@ export async function unreservedCompanyCreditUnits(database: DatabaseClient, ten
          FROM billing_credit_ledger WHERE tenant_id=$1)
       - (SELECT COALESCE(SUM(reserved_credit_units),0)::int
            FROM funding_requests WHERE tenant_id=$1 AND status='APPROVED')
+      - (SELECT COALESCE(SUM(credit_units),0)::int
+           FROM billing_refunds WHERE tenant_id=$1 AND status='REQUIRES_PROVIDER')
       - (SELECT COUNT(*)::int
            FROM assurance_order_workers AS targets
            JOIN assurance_orders AS orders
