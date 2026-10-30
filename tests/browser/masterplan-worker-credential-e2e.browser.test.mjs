@@ -51,6 +51,9 @@ function auditCandidateAssessmentTransport(page) {
     const pathname = new URL(response.url()).pathname;
     if (!/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]+(?:\/|$)/.test(pathname)) return;
     if (response.status() !== 200) return;
+    // In transport-only mode, route.fetch captures POST bodies before an
+    // automatic Server Action navigation can evict them from Chromium.
+    if (TRANSPORT_ONLY && response.request().method() === "POST") return;
     const contentType = response.headers()["content-type"] ?? "";
     // Server Actions may negotiate multiple text-like transport media types.
     // Do not silently exempt an assessment response by Content-Type: every
@@ -78,17 +81,26 @@ function auditCandidateAssessmentTransport(page) {
     }
     console.log("ACTUAL_ASSESSMENT_TRANSPORT_BROWSER checked " + responses.length + " Worker GET/POST HTML/RSC/JSON payloads for question IDs, answer keys and grading rubrics");
   };
-  // Browser response events can be delivered before response.text() settles
-  // and a subsequent route refresh may obscure an autosave POST. Explicitly
-  // collect the exact awaited 200 Server Action as well, not merely an event.
-  audit.recordCompletedPost = async (response) => {
-    assert.equal(response.request().method(),"POST");
-    assert.equal(response.status(),200);
-    const pathname=new URL(response.url()).pathname;
-    assert.match(pathname,/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]+$/);
-    responses.push({
-      pathname, contentType:response.headers()["content-type"] ?? "",
-      method:"POST", body:await response.text()
+  // Capture real Server Action bodies before Playwright hands them back to
+  // Chromium. Once Next navigates, response.text() can be unavailable even
+  // though the action was persisted, making a late read a false test failure.
+  audit.captureServerActionPosts = async () => {
+    await page.route("**/worker/assessments/**", async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      if (request.method() !== "POST" ||
+          !/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]+$/.test(pathname)) {
+        return route.continue();
+      }
+      const response = await route.fetch();
+      const body = await response.text();
+      if (response.status() === 200) {
+        responses.push({
+          pathname, contentType: response.headers()["content-type"] ?? "",
+          method: "POST", body
+        });
+      }
+      await route.fulfill({ response, body });
     });
   };
   return audit;
@@ -643,13 +655,13 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
               "Undelivered future written question appeared on the first question screen");
             const optionOrderBefore=(await worker.getByRole("group",{name:"Choose one answer"}).locator("label").allInnerTexts()).map(v=>v.trim());
             assert.equal(optionOrderBefore.length,2,"The pinned MCQ must show both answer options.");
+            await auditTransport.captureServerActionPosts();
             const savedPost=worker.waitForResponse(response=>
               response.request().method()==="POST" &&
               new URL(response.url()).pathname===`/worker/assessments/${attemptId}` &&
               response.status()===200,{timeout:25000});
             await worker.getByLabel(MCQ_ANSWER).check();
             const saved=await savedPost;
-            await auditTransport.recordCompletedPost(saved);
             console.log("ACTUAL_M205_POST_TRANSPORT",saved.request().method(),saved.headers()["content-type"]??"(unspecified)");
             await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:20000});
             await worker.reload({waitUntil:"domcontentloaded"});
