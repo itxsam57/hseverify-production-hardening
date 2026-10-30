@@ -94,6 +94,20 @@ test("M1.12 public valid credential and missing/tampered/malformed/expired capab
             assert.equal(await page.getByRole("heading",{name:"HSE Verify credential",exact:true}).count(),0);
             console.log("ACTUAL_M112_INVALID_PUBLIC_BROWSER "+label+" denied neutrally with no credential data");
           }
+          // Repeated lookups of the same real credential hit a distinct
+          // identifier bucket; limits are server-side and cannot be bypassed
+          // by reopening the public result page.
+          let blocked=0;
+          for(let attempt=0;attempt<13;attempt++){
+            const response=await page.goto(base+"/verify/result/"+issued.credentialId,{waitUntil:"domcontentloaded"});
+            assert.ok(response&&response.status()<500);
+            if(await page.getByRole("heading",{name:"Verification temporarily unavailable",exact:true}).count()){
+              blocked++;
+              assert.equal(await page.getByText("Public synthetic safety credential",{exact:true}).count(),0);
+            }
+          }
+          assert.ok(blocked>=1,"Repeated same-credential lookups must hit a server-side neutral rate-limit");
+          console.log("ACTUAL_M112_PUBLIC_RATE_LIMIT_BROWSER repeated credential lookups blocked safely, no private projection on limited result");
           assert.deepEqual(fatal,[],output());
         }finally{await browser.close();}
       }

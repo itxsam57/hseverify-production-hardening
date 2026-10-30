@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  publicRateLimitNeutrality: {
+    file: "20261030-A28-34a8759-public-rate-limit-and-capability-browser.log",
+    observedCodeSha: "34a87599dba595d1116a13a9dd3fce0af9d31e7d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   publicCapabilityNeutrality: {
     file: "20261030-A28-96e947c-public-credential-invalid-capability-hydration-browser.log",
     observedCodeSha: "96e947cab01e520ea0283101255c4d36adbc18d9",
@@ -333,6 +338,7 @@ const browserClauseMap = {
   "M3.04.04": [["companyAction", "Company browser assigns internal owner then verifies persistence on reload, rejects invalid past-dated snooze while preserving entered values, accepts future snooze, acknowledges action and follows exact case deep link; external reminders and other action kinds remain unverified"]],
   "M2.08.04": [["secondDevice", "Fresh separately authenticated browser of same Worker is denied active bound exam question and answer-control read with HTTP404; original session preserves exam and persisted IN_PROGRESS state; independent forged-write/session-switch mutation tests remain open"]],
   "M3.05.01": [["companyWorkerSecurity", "Actual sandbox Company checkout captured once, exact 10-credit balance despite capture replay, new provider-pending checkout grants no unpaid credit; live merchant not tested"]],
+  "M1.12.05": [["publicRateLimitNeutrality", "Real public Chromium first verifies a genuine signed credential; a 21-minute-old correctly signed result capability is rejected neutrally after its 10-minute lifetime; repeated direct browser lookups of the same genuine credential hit the server-side identifier rate-limit and show Verification temporarily unavailable, without credential fields. Larger distributed/IP-rotated abuse floods, clock skew, QR-camera and production edge limits remain unverified"]],
   "M1.12.02": [["publicCapabilityNeutrality", "Real public Chromium verifies a signed credential and receives opaque short-lived capability; valid-shape missing credential ID, malformed identifier, guessed unsupported token, tampered capability and correctly signed but 21-minute-old expired capability all return neutral Identifier not verified and reveal zero credential data. Other QR/scanner modes, rate limits and exhaustive fuzz inputs remain unverified"]],
   "M1.12.03": [["publicCapabilityNeutrality", "Real public Chromium renders authenticated synthetic credential title/status using opaque capability, with no worker account ID, source worker email, obvious assessment answer-key or password/secret marker in page text. Broad document, reviewer-note, internal API payload, and other-worker disclosure matrices are not certified"]],
   "M1.06.02": [["workerFileValidation", "Real authenticated Worker Chromium creates qualification draft, attempts >10MB PNG, PDF filename/declared MIME with PNG content, and unsupported executable, receives safe rejection, reload shows no pending scan or accepted attachment. Exact source PostgreSQL/PGlite verifies zero secure-file reserved/available rows and zero Worker evidence attachments. Separate native exact SHA PDF and JPEG clean scan/bind with negative upload preflight passed. Empty file-picker, corrupt PDFs beyond MIME spoofing, EICAR browser, real storage/scanner provider and hardware upload remain unverified"]],
