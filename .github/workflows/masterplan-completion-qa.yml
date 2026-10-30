@@ -378,6 +378,7 @@ jobs:
         if: ${{ matrix.shard == 3 }}
         run: |
           node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
+          HSE_M20102_NO_CREDIT_ONLY=true node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
           HSE_M20107_CANCEL_SUBMITTED_ONLY=true node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
           HSE_M20106_REJECTED_ONLY=true node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs
           node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs

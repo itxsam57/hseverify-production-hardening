@@ -12,6 +12,7 @@ import type { TenantPermissionPrincipal } from "../authorization/tenant-scoped-r
 import { evaluatePlatformPermission } from "../authorization/authorization-domain";
 import { hasUnseenAssessmentCapacity } from "../assessment-generation/assessment-form-generation-service";
 import { fundingId } from "../billing/funding-domain";
+import { unreservedCompanyCreditUnits } from "../billing/company-credit-availability";
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 import { createPolicySnapshotId } from "../policy/effective-policy-domain";
 import { resolveEffectivePolicy } from "../policy/effective-policy-service";
@@ -1015,20 +1016,7 @@ export class WorkerAssessmentApplicationService {
       if (!activeLink.rows.length) throw new WorkerAssessmentApplicationConflictError("The Worker is no longer linked to this Company.");
       await permanentWorkerId(database, row.worker_account_id);
 
-      const ledger = await database.query<{ balance: number | string }>(
-        `SELECT COALESCE(SUM(credit_delta),0)::int AS balance
-           FROM billing_credit_ledger
-          WHERE tenant_id=$1`,
-        [scope.tenantId]
-      );
-      const reserved = await database.query<{ reserved: number | string }>(
-        `SELECT COALESCE(SUM(reserved_credit_units),0)::int AS reserved
-           FROM funding_requests
-          WHERE tenant_id=$1 AND status='APPROVED'`,
-        [scope.tenantId]
-      );
-      const available =
-        Number(ledger.rows[0]?.balance ?? 0) - Number(reserved.rows[0]?.reserved ?? 0);
+      const available = await unreservedCompanyCreditUnits(database, scope.tenantId);
       if (available < Number(row.credit_units)) {
         throw new WorkerAssessmentApplicationConflictError(
           "The Company does not have enough unreserved assessment credits."

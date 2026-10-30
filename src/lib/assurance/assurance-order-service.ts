@@ -2,6 +2,7 @@ import "server-only";
 import { evaluateWorkerAssessmentHistory } from "../assessment-catalogue/assessment-eligibility-policy-service";
 
 import { runTenantScopedCommand } from "../authorization/tenant-scoped-command-guard";
+import { unreservedCompanyCreditUnits } from "../billing/company-credit-availability";
 import { deriveTrustedTenantScope, type TenantPermissionPrincipal } from "../authorization/tenant-scoped-resource-domain";
 import { bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
@@ -169,6 +170,10 @@ export class AssuranceOrderService {
       const errors:string[]=[...(await assertActiveUnit(database,scope.tenantId,order.siteId,order.departmentId))]; const targets=await repository.listTargets(scope.tenantId,id,true); const targetResults:{targetId:string;eligible:boolean;reason:string|null}[]=[];
       if(targets.length===0) errors.push("Add at least one active linked Worker before validation.");
       for(const target of targets){ const live=await activeLink(database,scope.tenantId,target.workerLinkId,true); const reason=!live?"Worker link is no longer active for this Company.":await workerAssessmentPolicyReason(database,order,target.workerAccountId,now); targetResults.push({targetId:target.targetId,eligible:reason===null,reason}); if(reason) errors.push(`${target.workerAccountId}: ${reason}`); }
+      const companyFundedTargets=targets.filter(target=>target.fundingMethod==="company").length;
+      if(companyFundedTargets>0 && await unreservedCompanyCreditUnits(database,scope.tenantId)<companyFundedTargets) {
+        errors.push("Company has insufficient unreserved assessment credits for the selected Company-funded Workers.");
+      }
       errors.push(...await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now}));
       // Positive final decisions issue the retained credential target through the credential engine.
       // interviewRequired remains an explicit M2.01 boundary field; Interview scheduling is integrated through M2.11+ without changing the M2.01 order boundary.
@@ -188,6 +193,11 @@ export class AssuranceOrderService {
       const policyErrors=await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now});if(policyErrors.length>0)throw new AssuranceOrderConflictError(`Effective policy changed; validate again. ${policyErrors.join(" ")}`);
 
       for(const target of targets){const reason=await workerAssessmentPolicyReason(database,order,target.workerAccountId,now);if(reason)throw new AssuranceOrderConflictError(reason);}
+      // Serialize against all other Company orders AND Worker-requested funding
+      // approvals by rechecking under the shared tenant row lock at submission.
+      const companyFundedTargets=targets.filter(target=>target.fundingMethod==="company").length;
+      if(companyFundedTargets>0 && await unreservedCompanyCreditUnits(database,scope.tenantId)<companyFundedTargets)
+        throw new AssuranceOrderConflictError("Company has insufficient unreserved assessment credits for this Assurance Order.");
 
       // The worker target rows are part of submitted scope. Move them to their
       // terminal submitted target state while the parent order is still READY;

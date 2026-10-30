@@ -151,6 +151,25 @@ test("M2.01 real runtime creates one durable Assurance Case and Action Centre ob
   } finally { await database.close(); }
 });
 
+test("M2.01 Company-funded Assurance Order cannot be READY with zero purchased or reserved credits",async()=>{
+  const database=await openScriptDatabase(ENV);
+  try{
+    // This M2.01 test deliberately runs through the later real billing/funding
+    // schema; the ordinary engine tests retain the frozen 0033 ceiling.
+    await applyMigrationsThrough(database,ENV.releaseSha,"0095_assessment_funding_notifications");
+    const company=await seedCompany(database,"Y");
+    const worker=await seedWorkerLink(database,company,"Z");
+    const service=new AssuranceOrderService(database),principal=managePrincipal(company);
+    const order=await service.createDraft(principal,basicDraft("M201-MISSING-CREDIT"),NOW_DATE);
+    await service.addWorkerTarget(principal,order.orderId,worker.linkId,"company",NOW_DATE);
+    const wallet=(await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n;
+    assert.equal(wallet,0,"Fixture must start with no purchased Company credits");
+    const check=await service.validateOrder(principal,order.orderId,NOW_DATE);
+    assert.equal(check.ready,false,"Company-funded zero-credit order must not show READY and allow unpaid case creation");
+    assert.match(check.errors.join(" "),/credit|fund|payment/i,"Company must receive actionable missing-funding validation");
+  } finally {await database.close();}
+});
+
 test("M2.01 concurrent submit race produces exactly one submission and no duplicate cases/actions",async()=>{
   const database=await db();
   try {

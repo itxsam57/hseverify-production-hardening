@@ -17,6 +17,7 @@ async function freePort(){
 }
 test("M2.01 actual two Worker cases keep scope/site/deadline and stale second submit cannot duplicate cases", {timeout:180000},async()=>{
   const fixture=await workerAssessmentSearchFixture();
+  const noCredits=process.env.HSE_M20102_NO_CREDIT_ONLY==="true";
   const baseUrl="http://127.0.0.1:"+(await freePort());
   const company=fixture.credentials.company;
   const site=id("site","north"),department=id("department","safety");
@@ -77,12 +78,24 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.getByLabel("Interview required").check();
           await page.getByLabel("Deadline").fill(deadline.slice(0,16));
           for(const link of linkIds)await page.locator('input[name="workerLinkIds"][value="'+link+'"]').check();
-          await page.getByLabel("Funding method").selectOption("worker");
+          await page.getByLabel("Funding method").selectOption(noCredits?"company":"worker");
           await page.getByRole("button",{name:"Save Draft"}).click();
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
           await page.getByRole("button",{name:"Validate Order",exact:true}).click();
+          if(noCredits){
+            await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor({timeout:20000});
+            await page.getByText(/insufficient unreserved assessment credits/i).waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor();
+            await page.getByText(/insufficient unreserved assessment credits/i).waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            console.log("ACTUAL_M20102_NO_CREDIT_BROWSER real Company selects two active linked Workers with Company funding and zero paid credits, receives actionable VALIDATION_FAILED after cold reload, no Submit Order allowed");
+            await context.close();
+            return;
+          }
           await page.getByText("READY",{exact:true}).waitFor({timeout:20000});
           // Load a second same-company browser tab while the order is still READY.
           const stale=await context.newPage();
@@ -130,6 +143,20 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
+      if(noCredits){
+        assert.equal(order.tenant_id,company.tenantId);
+        assert.equal(order.order_status,"VALIDATION_FAILED");
+        assert.equal(order.submitted_at,null);
+        const targets=(await verifyDb.query("SELECT target_status,funding_method FROM assurance_order_workers WHERE order_id=$1",[order.order_id])).rows;
+        assert.equal(targets.length,2);
+        assert.ok(targets.every(row=>row.funding_method==="company"));
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE order_id=$1",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_action_items WHERE order_id=$1",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_submitted'",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0);
+        console.log("ACTUAL_M20102_NO_CREDIT_DB two company-funded targets preserved in editable VALIDATION_FAILED draft, no submitted status, no case/action/submission and no credit reservation or billing history");
+        return;
+      }
       assert.equal(order.tenant_id,company.tenantId);
       assert.equal(order.site_id,site);
       assert.equal(order.department_id,department);

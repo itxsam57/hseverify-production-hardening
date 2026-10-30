@@ -5,6 +5,7 @@ import { assessmentFundingFixture, fundingPrincipal } from "../helpers/assessmen
 import { seedPermanentWorkerId } from "../helpers/permanent-worker-id-fixture.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
 const { WorkerAssessmentApplicationService } = loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
+const { AssuranceOrderService } = loadWorkerRegistrationTs("src/lib/assurance/assurance-order-service.ts");
 test("Actual Worker Company-funding request atomically persists one real next-actor notification job", async () => {
   const fixture = await assessmentFundingFixture(), database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
   try {
@@ -189,5 +190,69 @@ test("M2.01.04 competing funded Worker approvals never overreserve one purchased
     assert.ok(applications.some(row=>row.assurance_case_id===cases[0].case_id));
     assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS amount FROM billing_credit_ledger WHERE tenant_id=$1",[fixture.fundingInput.tenantId])).rows[0].amount,1);
     console.log("ACTUAL_M20104_FUNDING_CONCURRENT 2 real worker requests / one purchased credit / one reserved and funded case, other remains pending; no overspend or double debit, atomic Company permission-scoped transactions");
+  }finally{await database.close();await fixture.cleanup();}
+});
+
+test("M2.01 shared Company credits cannot fund direct orders and Worker requests twice; pending cancellation releases order hold",async()=>{
+  const fixture=await assessmentFundingFixture({startingCreditUnits:1});
+  const database=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+  try{
+    const workerAccount="search_foreign_worker",now=new Date().toISOString(),tenant=fixture.fundingInput.tenantId;
+    const company={...fixture.company,authorizedTenantPermission:"company.orders.manage"};
+    const secondWorkerId=await seedPermanentWorkerId(database,{accountId:workerAccount},"y",now);
+    const secondLink="company_worker_link_"+"y".repeat(24);
+    await database.query(
+      "INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,payment_responsibility,requested_by_membership_id,worker_accepted_at,activated_at,created_at,updated_at) VALUES($1,$2,$3,$4,'permanent_worker_id','active','company',$5,$6,$6,$6,$6)",
+      [secondLink,tenant,workerAccount,secondWorkerId,fixture.credentials.company.membershipId,now]
+    );
+    const orders=new AssuranceOrderService(database);
+    const funding=new WorkerAssessmentApplicationService(database);
+    const draft=(ref)=>({
+      orderName:"Company credit cross-flow "+ref,orderReference:ref,siteId:null,departmentId:null,
+      requestedIdentityChecks:["identity"],requestedEvidenceChecks:["qualification"],assessmentFrameworkReferences:[],
+      interviewRequired:false,credentialTarget:null,deadline:new Date(Date.now()+86400000).toISOString(),
+      effectivePolicyReference:null,companyNotes:"Verified purchased credit boundary",purchaseOrderReference:null
+    });
+    const first=await orders.createDraft(company,draft("CREDIT-CROSS-FIRST"));
+    await orders.addWorkerTarget(company,first.orderId,fixture.fundingInput.workerLinkId,"company");
+    assert.equal((await orders.validateOrder(company,first.orderId)).ready,true);
+    const firstCases=await orders.submitOrder(company,first.orderId);
+    assert.equal(firstCases.length,1);
+    assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS amount FROM billing_credit_ledger WHERE tenant_id=$1",[tenant])).rows[0].amount,1);
+
+    const second=await orders.createDraft(company,draft("CREDIT-CROSS-SECOND"));
+    await orders.addWorkerTarget(company,second.orderId,secondLink,"company");
+    const insufficient=await orders.validateOrder(company,second.orderId);
+    assert.equal(insufficient.ready,false,"Direct Company order must respect the first order's held credit.");
+    assert.match(insufficient.errors.join(" "),/insufficient.*credits/i);
+
+    const secondActor=await fundingPrincipal(database,{accountId:workerAccount});
+    const request=await funding.requestCompanyFunding(secondActor,{...fixture.fundingInput,workerLinkId:secondLink});
+    await assert.rejects(
+      funding.decideCompanyFunding(fixture.company,{fundingRequestId:request.fundingRequestId,approved:true}),
+      /enough unreserved assessment credits/i,
+      "Worker application cannot spend a credit already held by a direct Company Assurance Order."
+    );
+    assert.equal((await database.query("SELECT status FROM funding_requests WHERE funding_request_id=$1",[request.fundingRequestId])).rows[0].status,"REQUESTED");
+
+    await orders.cancelSubmittedOrder(company,first.orderId);
+    assert.equal((await database.query("SELECT order_status FROM assurance_orders WHERE order_id=$1",[first.orderId])).rows[0].order_status,"CANCELLED");
+    assert.equal((await database.query("SELECT case_status FROM assurance_cases WHERE order_id=$1",[first.orderId])).rows[0].case_status,"Closed");
+    assert.equal((await orders.validateOrder(company,second.orderId)).ready,true,"Cancelled pending order must no longer consume unused Company credit.");
+
+    await funding.decideCompanyFunding(fixture.company,{fundingRequestId:request.fundingRequestId,approved:true});
+    assert.equal((await database.query("SELECT reserved_credit_units FROM funding_requests WHERE funding_request_id=$1",[request.fundingRequestId])).rows[0].reserved_credit_units,1);
+    await assert.rejects(
+      orders.submitOrder(company,second.orderId),
+      /insufficient unreserved assessment credits/i,
+      "A once-READY direct order must not submit using the credit now reserved by the Worker funding path."
+    );
+    assert.equal((await database.query("SELECT order_status FROM assurance_orders WHERE order_id=$1",[second.orderId])).rows[0].order_status,"READY");
+    const funded=(await database.query("SELECT assurance_order_id,assurance_case_id,application_status FROM worker_assessment_applications WHERE funding_request_id=$1",[request.fundingRequestId])).rows[0];
+    assert.equal(funded.application_status,"CASE_CREATED");
+    assert.ok(funded.assurance_order_id&&funded.assurance_case_id);
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE order_id=$1",[funded.assurance_order_id])).rows[0].n,1);
+    assert.equal((await database.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[tenant])).rows[0].n,1);
+    console.log("ACTUAL_M20102_CREDIT_CROSS_FLOW real 1-credit sandbox purchase: direct Company order holds one, second direct and Worker funding denied; cancelling pending order releases hold; Worker funding reserves once and creates case; stale READY direct submission denied, no duplicate ledger debit");
   }finally{await database.close();await fixture.cleanup();}
 });
