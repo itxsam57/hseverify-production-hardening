@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  outboxBusinessRecovery: {
+    file: "20261030-A28-fa7e2d2-m105-business-outbox-outage-test.log",
+    observedCodeSha: "fa7e2d23ddf69bae66dd33c91ed78ce6deb14025",
+    passed: "ℹ pass 4", failed: "ℹ fail 0"
+  },
   publicRateLimitNeutrality: {
     file: "20261030-A28-34a8759-public-rate-limit-and-capability-browser.log",
     observedCodeSha: "34a87599dba595d1116a13a9dd3fce0af9d31e7d",
@@ -355,6 +360,7 @@ const browserClauseMap = {
     ["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"],
     ["recommendationStaffScoring", "Five Assessor case recommendation events projected through real outbox worker and Worker/Company/(where needed Admin) notification deep-links without private scorecard text"]
   ],
+  "M1.05.04": [["outboxBusinessRecovery", "Actual migrated PGlite native transactional outbox test stores a synthetic accepted-business row and one deduplicated durable job, simulates provider retry_wait failure, asserts original committed state persists while delivery is pending, next delivery worker resumes successfully without duplicate job, stale worker cannot finalize, and exactly two immutable failed/succeeded attempts are retained. This is the core outbox foundation path, NOT a real email/SMS provider outage or entire Worker/Company browser workflow"]],
   "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
   "M1.03.01": [
     ["worker", "Actual valid Worker registration completes"],
@@ -494,6 +500,10 @@ const browserClauseMap = {
   "M3.11.04": [["certification", "M3.11 physical isolated database dump/restore and incident regression were executed with four persisted Admin drill results; deployed database/object provider restore and incident rehearsal remain open"]],
   "M3.11.05": [["certification", "Actual 50 parallel authenticated local five-role HTTP200 GETs (10 per role) in M3.11 certification; active answer preservation under concurrent mutation and production saturation open"]]
 };
+// Preserve honest evidence provenance: the M1.05 outage drill is migrated
+// native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
+// but never increments the number of browser-tested scenarios or observations.
+const nativeRunNames = new Set(["outboxBusinessRecovery"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
@@ -504,10 +514,10 @@ for (const [name, run] of Object.entries(browserRuns)) {
       "M3.11 isolated certification did not persist all four passing drills");
   }
   const pathname = resolve(".autopilot/artifacts", run.file);
-  assert(existsSync(pathname), "Missing exact-candidate Chromium evidence: " + pathname);
+  assert(existsSync(pathname), "Missing exact-candidate test evidence: " + pathname);
   const log = readFileSync(pathname, "utf8");
   assert(log.includes(run.passed) && log.includes(run.failed),
-    "Chromium run " + name + " did not complete with expected passing count");
+    "Scoped test run " + name + " did not complete with expected passing count");
 }
 for (const [id, clauses] of Object.entries(browserClauseMap)) {
   assert(original.some(row => row.id === id), "Browser clause has unknown Masterplan ID " + id);
@@ -524,7 +534,14 @@ const records = original.map(row => {
     id: row.id, brick: row.brick, roles: row.roles, scenario: row.scenario,
     historical_status_older_sha: row.status,
     current_result: "NOT_CERTIFIED",
-    scoped_exact_browser_observations: browserClauses.map(([name, provenClause]) => ({
+    scoped_exact_native_observations: browserClauses.filter(([name]) => nativeRunNames.has(name)).map(([name, provenClause]) => ({
+      provenance: "ACTUAL_NATIVE_MIGRATED_PGLITE_TEST",
+      observed_code_sha: browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha,
+      code_head_matches_observation: currentSha === (browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha),
+      log: ".autopilot/artifacts/" + browserRuns[name].file,
+      proven_clause_only: provenClause
+    })),
+    scoped_exact_browser_observations: browserClauses.filter(([name]) => !nativeRunNames.has(name)).map(([name, provenClause]) => ({
       provenance: "ACTUAL_CHROMIUM_LOCAL_TEST",
       observed_code_sha: browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha,
       code_head_matches_observation: currentSha === (browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha),
@@ -552,16 +569,21 @@ const result = {
   with_scoped_recent_local_evidence: records.filter(row => row.scoped_local_evidence).length,
   scoped_local_evidence_from_prior_head: scopedEvidenceOnCurrentHead ? 0 : Object.keys(evidence).length,
   scoped_local_evidence_from_exact_head: scopedEvidenceOnCurrentHead ? Object.keys(evidence).length : 0,
-  unique_scenarios_with_candidate_browser_clause: Object.keys(browserClauseMap).length,
+  unique_scenarios_with_candidate_browser_clause: Object.values(browserClauseMap).filter(clauses => clauses.some(([name]) => !nativeRunNames.has(name))).length,
+  unique_scenarios_with_native_clause: Object.values(browserClauseMap).filter(clauses => clauses.some(([name]) => nativeRunNames.has(name))).length,
   candidate_browser_code_shas: [...new Set(Object.values(browserRuns).map(run => run.observedCodeSha ?? browserEvidenceHeadSha))],
   browser_clause_observations_on_current_head: records.flatMap(row => row.scoped_exact_browser_observations)
     .filter(entry => entry.code_head_matches_observation).length,
   browser_clause_observations_on_prior_head: records.flatMap(row => row.scoped_exact_browser_observations)
     .filter(entry => !entry.code_head_matches_observation).length,
+  native_clause_observations_on_current_head: records.flatMap(row => row.scoped_exact_native_observations)
+    .filter(entry => entry.code_head_matches_observation).length,
+  native_clause_observations_on_prior_head: records.flatMap(row => row.scoped_exact_native_observations)
+    .filter(entry => !entry.code_head_matches_observation).length,
   unique_scenarios_with_any_scoped_evidence: records.filter(row =>
-    row.scoped_local_evidence || row.scoped_exact_browser_observations.length > 0).length,
+    row.scoped_local_evidence || row.scoped_exact_browser_observations.length > 0 || row.scoped_exact_native_observations.length > 0).length,
   without_scoped_recent_local_evidence: records.filter(row =>
-    !row.scoped_local_evidence && row.scoped_exact_browser_observations.length === 0).length,
+    !row.scoped_local_evidence && row.scoped_exact_browser_observations.length === 0 && row.scoped_exact_native_observations.length === 0).length,
   exact_sha_50_request_burst: burstSameSha ? "PASS" : "NOT_VERIFIED_ON_HEAD",
   release_decision: "NO_GO",
   policy: "Historical statuses are informational; no per-ID current-head PASS without full role/browser/downstream/staging/provider assertions. Local subclause evidence never promotes scenario certification.",
@@ -576,6 +598,9 @@ console.log(JSON.stringify({
   scope_evidence_from_exact_head: result.scoped_local_evidence_from_exact_head,
   scope_evidence_from_prior_head: result.scoped_local_evidence_from_prior_head,
   candidate_browser_clause_scenarios: result.unique_scenarios_with_candidate_browser_clause,
+  native_clause_scenarios: result.unique_scenarios_with_native_clause,
+  native_clause_observations_on_current_head: result.native_clause_observations_on_current_head,
+  native_clause_observations_on_prior_head: result.native_clause_observations_on_prior_head,
   browser_clause_observations_on_current_head: result.browser_clause_observations_on_current_head,
   browser_clause_observations_on_prior_head: result.browser_clause_observations_on_prior_head,
   unique_scenarios_with_any_scoped_evidence: result.unique_scenarios_with_any_scoped_evidence,

@@ -270,3 +270,49 @@ test("retry then success preserves attempts and rejects stale completion", async
     await database.close();
   }
 });
+
+
+test("M1.05 notification delivery outage does not roll back committed business state, duplicate, or erase retry attempts", async () => {
+  const sql = await contracts();
+  const environment = {...ENVIRONMENT, releaseSha:"outbox-business-recovery-qa"};
+  const db=await openScriptDatabase(environment);
+  try{
+    await applyPendingMigrations(db,environment.releaseSha);
+    await db.execute("CREATE TABLE outbox_business_recovery (business_id TEXT PRIMARY KEY, approved_at TIMESTAMPTZ NOT NULL DEFAULT now(), owner_id TEXT NOT NULL)");
+    let jobId;
+    await db.transaction(async transaction=>{
+      await transaction.query("INSERT INTO outbox_business_recovery(business_id,owner_id) VALUES($1,$2)",["approval_record","worker_owner_original"]);
+      const enqueued=await enqueue(transaction,sql.enqueue,"F");
+      assert.equal(enqueued.rows.length,1);
+      jobId=enqueued.rows[0].job_id;
+    });
+    const second=await enqueue(db,sql.enqueue,"F",{jobId:opaqueId("job","G"),idempotencyKey:"f".repeat(64)});
+    assert.equal(second.rows.length,0,"Duplicate event delivery may not enqueue a second job");
+    const before=(await db.query("SELECT approved_at,owner_id FROM outbox_business_recovery WHERE business_id='approval_record'")).rows[0];
+    assert.equal(before.owner_id,"worker_owner_original");
+    const firstLease=opaqueId("lease","F"),firstWorker=opaqueId("outbox_worker","F"),firstAttempt=opaqueId("attempt","F");
+    assert.equal((await db.query(sql.lease,[jobId,firstLease,firstWorker,60])).rows[0].status,"leased");
+    await db.query(sql.insertAttempt,[firstAttempt,jobId,1,firstWorker,firstLease]);
+    const outage=await db.query(sql.retryJob,[jobId,firstLease,firstWorker,7,"provider_unavailable","Temporary email transport outage"]);
+    assert.equal(outage.rows[0].status,"retry_wait");
+    await db.query(sql.retryAttempt,[firstAttempt,jobId,firstLease,7,"provider_unavailable","Temporary email transport outage"]);
+    const held=(await db.query("SELECT approved_at,owner_id FROM outbox_business_recovery WHERE business_id='approval_record'")).rows[0];
+    assert.deepEqual(held,before,"A delivery outage must not roll back the already committed worker approval record");
+    assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM platform_outbox_jobs WHERE idempotency_key=$1",["f".repeat(64)])).rows[0].n,1);
+    assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM platform_outbox_job_attempts WHERE job_id=$1",[jobId])).rows[0].n,1);
+    await db.query("UPDATE platform_outbox_jobs SET next_attempt_at=CURRENT_TIMESTAMP-INTERVAL '1 second' WHERE job_id=$1",[jobId]);
+    const secondLease=opaqueId("lease","G"),secondWorker=opaqueId("outbox_worker","G"),secondAttempt=opaqueId("attempt","G");
+    const resumed=await db.query(sql.lease,[jobId,secondLease,secondWorker,60]);
+    assert.equal(Number(resumed.rows[0].attempt_count),2);
+    await db.query(sql.insertAttempt,[secondAttempt,jobId,2,secondWorker,secondLease]);
+    assert.equal((await db.query(sql.succeedJob,[jobId,firstLease,firstWorker])).rows.length,0,"Old delivery worker cannot finish a reclaimed attempt");
+    assert.equal((await db.query(sql.succeedJob,[jobId,secondLease,secondWorker])).rows[0].status,"succeeded");
+    await db.query(sql.succeedAttempt,[secondAttempt,jobId,secondLease,secondWorker]);
+    const attempts=(await db.query("SELECT attempt_number,outcome FROM platform_outbox_job_attempts WHERE job_id=$1 ORDER BY attempt_number",[jobId])).rows;
+    assert.deepEqual(attempts.map(x=>[Number(x.attempt_number),x.outcome]),[[1,"retry_scheduled"],[2,"succeeded"]]);
+    const after=(await db.query("SELECT approved_at,owner_id FROM outbox_business_recovery WHERE business_id='approval_record'")).rows[0];
+    assert.deepEqual(after,before);
+    assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM platform_outbox_jobs WHERE idempotency_key=$1",["f".repeat(64)])).rows[0].n,1);
+    console.log("ACTUAL_M105_OUTBOX_DB committed business approval survives delayed delivery, idempotent one job, failed+success attempts, stale lease denied");
+  }finally{await db.close();}
+});

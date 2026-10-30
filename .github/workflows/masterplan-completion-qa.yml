@@ -451,6 +451,9 @@ jobs:
       - name: M3.11 domain certification contracts
         run: node --test tests/platform/load-security-recovery-certification-runtime.test.mjs
 
+      - name: M1.05 transactional outbox delivery-outage recovery and business commit safety
+        run: npm run test:outbox-platform
+
       - name: M3.12 release handover runtime
         run: node --test tests/platform/production-launch-operations-runtime.test.mjs tests/platform/production-launch-handover-runtime.test.mjs
 
