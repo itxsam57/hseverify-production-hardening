@@ -374,9 +374,11 @@ jobs:
         if: ${{ matrix.shard == 2 }}
         run: node --test --test-concurrency=1 tests/browser/funding-revoked-link-e2e.browser.test.mjs
 
-      - name: Company-funded assurance order through final Worker credential and appeal
+      - name: Two-Worker assurance scope and duplicate submission plus final credential
         if: ${{ matrix.shard == 3 }}
-        run: node --test --test-concurrency=1 tests/browser/company-credential-target-e2e.browser.test.mjs
+        run: |
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
+          node --test --test-concurrency=1 tests/browser/company-credential-target-e2e.browser.test.mjs
 
       - name: Admin decision override requires trusted recent MFA and rejects forged timestamp
         if: ${{ matrix.shard == 4 }}
