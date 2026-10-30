@@ -332,6 +332,10 @@ jobs:
         if: ${{ matrix.shard == 2 }}
         run: HSE_INITIAL_IDENTITY_MORE_INFO=true HSE_INITIAL_IDENTITY_MORE_INFO_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
 
+      - name: M1.11 corrected experience scanned attachment and Verifier re-review
+        if: ${{ matrix.shard == 3 }}
+        run: HSE_EXPERIENCE_SCAN_RETRY_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+
       - name: M1.07 Worker incomplete identity submission preserves partial draft and blocks premature verification
         if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs

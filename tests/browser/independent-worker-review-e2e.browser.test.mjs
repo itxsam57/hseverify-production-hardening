@@ -148,13 +148,18 @@ async function reviseEvidence(page, baseUrl, kind, label, value) {
   await card.getByLabel(kind === "qualification" ? "Primary certificate file" : "Evidence file", { exact: true }).setInputFiles({ ...PNG_FILE, name: filename });
   await card.getByRole("button", { name: "Upload file", exact: true }).click();
   await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor();
-  const attachedFile = card.getByText(`${filename} · ${kind === "qualification" ? "primary certificate" : `${kind} evidence`} · active`, { exact: true });
+  const attachedFile = card.getByRole("region", { name: kind + " history" }).locator("p")
+    .filter({ hasText: filename })
+    .filter({ hasText: (kind === "qualification" ? "primary certificate" : kind + " evidence") + " · active" });
   // Local processing deliberately drains a bounded batch. Exercise the same
   // status-check control a Worker uses while queued scans finish in later batches.
   for (let attempt = 0; attempt < 20 && !(await attachedFile.count()); attempt += 1) {
+    const check = card.getByRole("button", { name: "Check scan status", exact: true });
+    assert.equal(await check.count(),1,
+      "Attachment is not shown active, but its pending scan recovery action is missing.");
     await Promise.all([
       page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
-      card.getByRole("button", { name: "Check scan status", exact: true }).click()
+      check.click()
     ]);
     await page.reload({ waitUntil: "domcontentloaded" });
   }
@@ -471,6 +476,14 @@ test(
               await decideQueueItem(verifier, admin, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
               await worker.goto(`${baseUrl}/worker/evidence`);
               await worker.locator("article").filter({hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record`}).first().getByText(/Independent verification: approved/).waitFor();
+              if (process.env.HSE_EXPERIENCE_SCAN_RETRY_ONLY === "true" && kind === "experience") {
+                const experience = worker.locator("article").filter({hasText:"Experience record"}).first();
+                const history = experience.getByRole("region",{name:"experience history"});
+                await history.locator("p").filter({hasText:"experience-corrected-"}).filter({hasText:" · active"}).waitFor();
+                await experience.getByText(/Independent verification: approved/).waitFor();
+                console.log("ACTUAL_EXPERIENCE_SCAN_RETRY_BROWSER rejected initial evidence -> real Worker corrected upload, scan recovery, submitted exact new version, independently APPROVED");
+                return;
+              }
             }
 
 
@@ -641,6 +654,45 @@ test(
           assert.equal(identity.lifecycle_status,"rejected");
           assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,0);
           assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
+          return;
+        }
+        if (process.env.HSE_EXPERIENCE_SCAN_RETRY_ONLY === "true") {
+          const workerId = "audit_worker_account_20260901";
+          const records=(await database.query(
+            "SELECT record_id,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='experience'",
+            [workerId]
+          )).rows;
+          assert.equal(records.length,1);
+          const versions=(await database.query(
+            "SELECT version_id,version_number,version_status,submitted_at FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",
+            [records[0].record_id]
+          )).rows;
+          assert.equal(versions.length,2);
+          assert.equal(records[0].current_version_id,versions[1].version_id);
+          assert.deepEqual(versions.map(x=>x.version_status),["superseded","submitted"]);
+          assert.ok(versions.every(x=>x.submitted_at));
+          const attachments=(await database.query(
+            "SELECT a.version_id,a.display_filename,a.superseded_at,f.lifecycle_status FROM worker_evidence_attachments a JOIN platform_secure_files f ON f.file_id=a.secure_file_id WHERE a.record_id=$1 ORDER BY a.created_at,a.attachment_id",
+            [records[0].record_id]
+          )).rows;
+          assert.equal(attachments.length,2);
+          assert.ok(attachments.every(x=>x.superseded_at===null&&x.lifecycle_status==="available"));
+          assert.equal(attachments[0].version_id,versions[0].version_id);
+          assert.equal(attachments[1].version_id,versions[1].version_id);
+          assert.match(attachments[1].display_filename,/^experience-corrected-.*\.png$/);
+          const candidates=(await database.query(
+            "SELECT candidate_status FROM worker_evidence_file_candidates WHERE record_id=$1",[records[0].record_id]
+          )).rows;
+          assert.ok(candidates.length>=1);
+          assert.ok(candidates.every(x=>x.candidate_status==="finalized"));
+          const decisions=(await database.query(
+            "SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='experience'",
+            [workerId]
+          )).rows;
+          assert.equal(decisions.length,2);
+          assert.ok(decisions.some(x=>x.source_version_id===versions[0].version_id&&x.task_status==="REJECTED"));
+          assert.ok(decisions.some(x=>x.source_version_id===versions[1].version_id&&x.task_status==="APPROVED"));
+          console.log("ACTUAL_EXPERIENCE_SCAN_RETRY_DB two immutable submitted versions, both exact-version available files, no pending scan candidates, one rejected old and one approved corrected Verifier task");
           return;
         }
         if (process.env.HSE_INITIAL_IDENTITY_MORE_INFO_ONLY === "true") {

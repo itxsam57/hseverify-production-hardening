@@ -107,9 +107,13 @@ async function createEvidence(page, baseUrl, kind, fields) {
   await page.reload({ waitUntil: "domcontentloaded" });
 
   const ready = page.locator("article").filter({ hasText: title }).first();
-  const attached=ready.getByText(`${kind}-proof.png · ${kind === "qualification" ? "primary certificate" : `${kind} evidence`} · active`,{exact:true});
+  const attached=ready.getByRole("region",{name:kind+" history"}).locator("p")
+    .filter({hasText:kind+"-proof.png"})
+    .filter({hasText:(kind==="qualification"?"primary certificate":kind+" evidence")+" · active"});
   for(let attempt=0;attempt<20&&!(await attached.count());attempt++){
-    await Promise.all([page.waitForResponse(response=>response.request().method()==="POST"&&response.url().includes("/worker/evidence")),ready.getByRole("button",{name:"Check scan status",exact:true}).click()]);
+    const check=ready.getByRole("button",{name:"Check scan status",exact:true});
+    assert.equal(await check.count(),1,"No pending scan recovery control although attachment has not become active.");
+    await Promise.all([page.waitForResponse(response=>response.request().method()==="POST"&&response.url().includes("/worker/evidence")),check.click()]);
     await page.reload({waitUntil:"domcontentloaded"});
   }
   await attached.waitFor();
