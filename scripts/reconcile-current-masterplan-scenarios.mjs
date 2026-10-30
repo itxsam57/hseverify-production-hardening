@@ -172,6 +172,16 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  tenantBillingFullCompany: {
+    file: "20261030-A28-79584bf-existing-company-complete-billing-selector-fixed.log",
+    observedCodeSha: "79584bf1c1d32eb26e603f68f3ba88ee18b9409d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  tenantBillingReceipt: {
+    file: "20261030-A28-79584bf-exact-tenant-billing-receipt-browser.log",
+    observedCodeSha: "79584bf1c1d32eb26e603f68f3ba88ee18b9409d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   tenantBillingInvoice: {
     file: "20261030-A28-d0e127f-m305-dual-company-invoice-scope-browser.log",
     observedCodeSha: "d0e127f65d6ded02865614a8a78987d0bbef0096",
@@ -313,7 +323,11 @@ const browserClauseMap = {
   "M3.04.04": [["companyAction", "Company browser assigns internal owner then verifies persistence on reload, rejects invalid past-dated snooze while preserving entered values, accepts future snooze, acknowledges action and follows exact case deep link; external reminders and other action kinds remain unverified"]],
   "M2.08.04": [["secondDevice", "Fresh separately authenticated browser of same Worker is denied active bound exam question and answer-control read with HTTP404; original session preserves exam and persisted IN_PROGRESS state; independent forged-write/session-switch mutation tests remain open"]],
   "M3.05.01": [["companyWorkerSecurity", "Actual sandbox Company checkout captured once, exact 10-credit balance despite capture replay, new provider-pending checkout grants no unpaid credit; live merchant not tested"]],
-  "M3.05.03": [["tenantBillingInvoice", "Two independently authenticated Company browser sessions see only their own sandbox-paid invoice histories and balances. A creates 3-credit paid invoice; B starts with zero, creates/pays 2-credit sandbox checkout and sees only B invoice. Forged B refund request for A invoice rejected with neutral error; DB verifies each tenant invoice/ledger ownership and zero cross-tenant refund writes. Downloadable receipt, usage report beyond balance, live merchant, cross-tenant admin exports remain unverified"]],
+  "M3.05.03": [
+    ["tenantBillingInvoice", "Two independently authenticated Company browser sessions see only their own sandbox-paid invoice histories and balances. A creates 3-credit paid invoice; B starts with zero, creates/pays 2-credit sandbox checkout and sees only B invoice. Forged B refund request for A invoice rejected with neutral error; DB verifies each tenant invoice/ledger ownership and zero cross-tenant refund writes. Printable receipt and full credit activity not implemented in this older source"],
+    ["tenantBillingReceipt", "Real production route /company/billing/receipts/[invoiceId] renders paid printable sandbox receipt for matching tenant only, both A and B own receipts HTTP200 and exact foreign guessed URLs HTTP404 without invoice details. Company credit activity table shows only its own purchase/refund ledger entries, foreign refund form denied; persisted two-Company DB remains unchanged. PDF-native download, complete assessment usage export, real merchant/tax status and production rollout not certified"],
+    ["tenantBillingFullCompany", "Existing Company end-to-end browser rerun against receipt feature exact application SHA confirms organization/units, staff revocation, payment capture/replay protection, partial/full refund ledger, pending unpaid checkout, tenant records and Company reporting all still work. Corrected test section selector to exact Refunds heading after new credit activity section. Standalone live merchant settlement remains unverified"]
+  ],
   "M3.05.04": [["companyWorkerSecurity", "Real Company sandbox billing applied partial then remaining full refund, balance zero and ledger has original capture plus two retained refund records; live processor settlement open"]],
   "M3.05.06": [["companyWorkerSecurity", "Actual invalid signed checkout callback and altered signed replay refused, exact same replay idempotent with no double credit or refund; provider live webhook unverified"]],
   "M3.10.02": [["companyWorkerSecurity", "Actual forged payment callback rejected, changed signed payload denied, provider-pending new purchase grants no credits even though old sandbox purchase and refunds completed; live gateway unverified"]],

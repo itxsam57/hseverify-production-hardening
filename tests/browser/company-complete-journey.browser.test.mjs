@@ -591,7 +591,9 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           await company.locator(".metric-card").filter({ hasText: "Company credits" }).getByText("10", { exact: true }).waitFor();
 
-          const refundCard = company.locator(".card").filter({ hasText: "Refunds" }).first();
+          const refundCard = company.locator(".card").filter({
+            has: company.getByRole("heading", { name: "Refunds", exact: true })
+          }).first();
           await refundCard.getByLabel("Invoice ID").fill(invoiceId);
           await refundCard.getByLabel("Amount (minor units)").fill("2000");
           await refundCard.getByRole("button", { name: "Request sandbox refund" }).click();
