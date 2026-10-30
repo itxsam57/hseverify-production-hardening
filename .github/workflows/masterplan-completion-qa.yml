@@ -282,9 +282,11 @@ jobs:
         if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/root-invitation-search.browser.test.mjs
 
-      - name: Admin Company verification header search and revoked session boundary
+      - name: Admin Company verification search, access and rejected pending history
         if: ${{ matrix.shard == 2 }}
-        run: node --test tests/browser/admin-verification-search.browser.test.mjs
+        run: |
+          node --test tests/browser/admin-verification-search.browser.test.mjs
+          HSE_COMPANY_REJECTION_ONLY=true node --test --test-concurrency=1 tests/browser/m1-08-company-verification.browser.test.mjs
 
       - name: Worker application search desktop mobile and session revocation
         if: ${{ matrix.shard == 3 }}

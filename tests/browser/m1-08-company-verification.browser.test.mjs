@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
@@ -269,6 +270,29 @@ async function runBrowserAcceptance(baseUrl, output) {
     await card.getByRole("button", { name: "Begin review" }).click();
     await adminSession.page.waitForURL(/result=review-started/, { timeout: 15_000 });
     card = adminSession.page.locator("article[data-case-id]").filter({ hasText: COMPANY_LEGAL_NAME }).first();
+    if (process.env.HSE_COMPANY_REJECTION_ONLY === "true") {
+      await card.getByRole("button",{name:"Reject",exact:true}).click();
+      await adminSession.page.waitForURL(/result=decision-recorded/,{timeout:15000});
+      await companyPage.reload({waitUntil:"domcontentloaded"});
+      await companyPage.getByRole("heading",{name:"Rejected",exact:true}).waitFor({timeout:15000});
+      await companyPage.getByText(/This Company tenant is pending verification/).waitFor();
+      assert.equal(await companyPage.getByLabel("Verified business email").inputValue(),COMPANY_EMAIL);
+      assert.equal(await companyPage.getByLabel("Trading name").inputValue(),"M1.08 Browser Saved First");
+      for(const action of ["Save Company details","Submit Company verification","Create correction version"]){
+        assert.equal(await companyPage.getByRole("button",{name:action,exact:true}).count(),0,
+          "Terminal rejected Company may not edit or activate itself via "+action);
+      }
+      await companyPage.reload({waitUntil:"domcontentloaded"});
+      await companyPage.getByRole("heading",{name:"Rejected",exact:true}).waitFor();
+      await companyPage.getByText("Evidence attached to Company verification version 1.",{exact:true}).waitFor();
+      await adminSession.page.goto(baseUrl+"/admin/company-verifications",{waitUntil:"domcontentloaded"});
+      assert.equal(await adminSession.page.locator("article[data-case-id]").filter({hasText:COMPANY_LEGAL_NAME}).count(),0,
+        "Terminally rejected Company must leave pending Admin decision queue");
+      assert.deepEqual(companyErrors,[]);
+      assert.deepEqual(adminSession.errors,[]);
+      console.log("ACTUAL_M10804_BROWSER actual Company submits scanned registration PDF, Admin rejects exact submitted version; Company remains rejected with pending-tenant notice, immutable details/evidence after reload, no edit/resubmit, case leaves Admin queue");
+      return;
+    }
     await card.getByRole("button", { name: "Request changes" }).click();
     await adminSession.page.waitForURL(/result=decision-recorded/, { timeout: 15_000 });
 
@@ -513,6 +537,39 @@ test("M1.08 real Chromium acceptance covers Company registration, correction, ev
       }
     });
     assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
+    if (process.env.HSE_COMPANY_REJECTION_ONLY === "true") {
+      const database=await PGlite.create(databaseDirectory);
+      try{
+        const cases=(await database.query("SELECT case_id,tenant_id,owner_account_id,current_version_id,case_status,submitted_at,rejected_at,verified_at FROM company_verification_cases")).rows;
+        assert.equal(cases.length,1);
+        const item=cases[0];
+        assert.equal(item.case_status,"rejected");
+        assert.ok(item.submitted_at&&item.rejected_at);
+        assert.equal(item.verified_at,null);
+        const tenants=(await database.query("SELECT tenant_status,activated_at FROM platform_tenants WHERE tenant_id=$1",[item.tenant_id])).rows;
+        assert.deepEqual(tenants,[{tenant_status:"pending",activated_at:null}]);
+        const versions=(await database.query("SELECT version_id,version_number,version_status,submitted_at,terminal_at,legal_name,trading_name,business_email_normalized FROM company_verification_versions WHERE case_id=$1 ORDER BY version_number",[item.case_id])).rows;
+        assert.equal(versions.length,1);
+        assert.equal(versions[0].version_id,item.current_version_id);
+        assert.equal(versions[0].version_number,1);
+        assert.equal(versions[0].version_status,"rejected");
+        assert.ok(versions[0].submitted_at&&versions[0].terminal_at);
+        assert.equal(versions[0].legal_name,COMPANY_LEGAL_NAME);
+        assert.equal(versions[0].trading_name,"M1.08 Browser Saved First");
+        assert.equal(versions[0].business_email_normalized,COMPANY_EMAIL);
+        const evidence=(await database.query("SELECT e.version_id,e.binding_status,f.lifecycle_status,f.detected_mime,f.byte_size FROM company_verification_evidence e JOIN platform_secure_files f ON f.file_id=e.secure_file_id WHERE e.case_id=$1",[item.case_id])).rows;
+        assert.equal(evidence.length,1);
+        assert.equal(evidence[0].version_id,item.current_version_id);
+        assert.equal(evidence[0].binding_status,"active");
+        assert.equal(evidence[0].lifecycle_status,"available");
+        assert.equal(evidence[0].detected_mime,"application/pdf");
+        assert.ok(Number(evidence[0].byte_size)>0);
+        const events=(await database.query("SELECT action_key,metadata FROM platform_audit_events WHERE target_reference=$1 ORDER BY occurred_at",[item.case_id])).rows;
+        assert.ok(events.some(event=>event.action_key==="company_verification.status.changed"&&event.metadata?.to==="rejected"),
+          "Reject must retain a reasoned terminal version transition audit");
+        console.log("ACTUAL_M10804_DB rejected exact submitted Company version and original scanned PDF retained; tenant pending/not activated; only one version and rejection audit persisted");
+      } finally{await database.close();}
+    }
   } finally {
     await rm(databaseDirectory, { recursive: true, force: true });
   }
