@@ -342,6 +342,7 @@ jobs:
         run: |
           HSE_INITIAL_IDENTITY_MORE_INFO=true HSE_INITIAL_IDENTITY_MORE_INFO_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
           HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+          node --test --test-concurrency=1 tests/browser/duplicate-identity-review.browser.test.mjs
 
       - name: M1.11 independently verified skill inactive removes current competency but preserves history
         if: ${{ matrix.shard == 4 }}

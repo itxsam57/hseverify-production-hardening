@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10707DuplicateAdminReview: {
+    file: "20261030-A28-6865557-duplicate-independent-review-browser.log",
+    observedCodeSha: "6865557519f919fc26fc2f0616e1eb390fb22617",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10705VerifiedCorrections: {
     file: "20261030-A28-3fb1c10-exact-M10705-verified-corrections-browser.log",
     observedCodeSha: "3fb1c10e432a2ff345a3e0bd8cdc28212e15160c",
@@ -460,11 +465,15 @@ const browserClauseMap = {
   ],
   "M1.07.03": [["negativeWorkerCompany", "Real initial identity rejection retains submitted version, reason and human review, and issues no permanent ID; approve and changes routes not this test"]],
   "M1.07.06": [
+    ["m10705VerifiedCorrections", "Real signed-in Worker and independent Verifier/Admin browser initial verified identity creates one permanent Worker ID, accepted correction replaces exact current verified version with new signed evidence and corrected legal name, then unsuccessful REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY correction versions do not alter corrected active identity or permanent ID. Migrated PGlite shows five retained original/corrected/rejected versions, both original and corrected passport evidence bindings, one unchanged permanent Worker ID and exact source review lineage after all cases; 1/1 PASS on exact 3fb1c10. Does not prove Worker ID across multi-Company moves, identity suspension/reinstatement, expiry or external ID provider"],
     ["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"],
     ["negativeWorkerCompany", "Rejected initial identity keeps immutable submitted version and no permanent ID"],
     ["workerReviewWorkforce", "Actual verified identity correction declined REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY without invalidating original verified identity; accepted-correction and historic permanent-ID projection open"]
   ],
-  "M1.07.07": [["adversarial", "Actual duplicate document comparison and four independent dispositions; other duplicate-contact cases open"]],
+  "M1.07.07": [
+    ["m10707DuplicateAdminReview", "Real signed-in Admin and Worker Chromium compared distinct Worker identities with normalized matching document signals, displayed retained duplicate comparison without raw document numbers, authenticated Admin opened short-lived PDF preview and received actual scanned PDF bytes with no-store; independently recorded four reasoned outcomes duplicate_review/recover_existing_account/block_worker_id/continue. Worker viewed each exact disposition while other candidate identity remained hidden and separate. Stale second Admin browser tab denied conflicting overwrite; after resolving collision original preview capability revoked HTTP404, Worker role denied foreign private preview and Admin duplicate-review page, PGlite confirmed exactly one permanent Worker ID for the two matched identities and four immutable resolution dispositions. 1/1 actual Chromium PASS exact source QA SHA 6865557. Does not cover all normalized contact/DOB partial matches, nonstaff document comparisons, live scanning or forged cross-tenant POST mutation matrix"],
+    ["adversarial", "Independent earlier duplicate-document collision/decision matrix; other duplicate-contact cases remain open"]
+  ],
   "M1.08.01": [["company", "Company registration, pending workspace, scanned PDF and submission in real browser"]],
   "M1.08.03": [["company", "Admin requests changes, Company corrects version 2 and Admin verifies"]],
   "M1.08.05": [["company", "Admin approval makes tenant active; stale Company edit denied, independent double decision matrix open"]],
