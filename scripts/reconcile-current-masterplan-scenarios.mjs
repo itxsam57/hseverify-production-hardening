@@ -177,6 +177,16 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m20103TwoWorkerBrowser: {
+    file: "20261031-A28-6658704-exact-M20103-M20104-multiworker-browser.log",
+    observedCodeSha: "66587048f0f2e919001763811075f543d48538fc",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m20104CompetingFundingNative: {
+    file: "20261031-A28-f9e1666-exact-M20104-competing-credit-reservations-native.log",
+    observedCodeSha: "f9e1666c27fb2b7c43dd526f4d46c1aae078e857",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m21304CredentialLifecycleViews: {
     file: "20261030-A28-c42782c-credential-validity-public-passport-renewal-browser.log",
     observedCodeSha: "c42782c95c27c8d9ac591b0f88f25bc9278c1ddd",
@@ -377,6 +387,11 @@ const browserClauseMap = {
   "M2.10.01": [["humanAiCaseReplay", "Actual authenticated Verifier scoring worklist shows original case and its pinned two criterion mark inputs; initially both blank, saved original human marks remain after reload and Admin Case Replay retrieves original case. Unauthorized Verifier, cross-tenant and other rubric versions not tested"]],
   "M2.10.06": [["humanAiCaseReplay", "Real Verifier Chromium generates sandbox AI guidance and accepts it as advisory; two criterion marks remain empty and save is blocked until human assigns each mark and final PASS. Reload preserves authoritative human 84 marks, decision and Admin Case Replay. External AI timeout/unavailable fallback not exercised"]],
   "M2.01.01": [["companyFundedCredential", "Real Company browser selects verified linked Worker, creates single credential-target order, retains correct immutable framework policy, draft→READY→submit transitions and new linked Worker assurance case. Additional Workers, edits and invalid draft paths not exercised"]],
+  "M2.01.03": [["m20103TwoWorkerBrowser", "Actual signed-in Company 390px Chromium creates one scope-defined Assurance Order through the real UI, selecting two distinct active linked Worker identities, real saved site and department references, a 30-day deadline, required interview, and Worker funding; validates READY and submits. Each Worker appears as a separate Identity pending case and assigned Worker action, with real cold reload. A second already-open same-Company browser tab attempts stale Submit Order and receives an explicit conflict instead of creating cases. Migrated PGlite confirms one SUBMITTED immutable order with correct site/department/deadline/interview flag, two distinct Worker target/account/link records and matching per-target site/department/funding, exactly two case IDs and two Action Centre obligations, exactly one order-submitted event and two case-created events. Exact pushed browser 1/1 PASS and separate M2.01 native assurance runtime 8/8 PASS includes two cases. Links and organization were seeded structurally valid before browser test, so actual invitation acceptance and full multi-Worker eligibility matrix not re-tested, live reminders/billing not certified"]],
+  "M2.01.04": [
+    ["m20103TwoWorkerBrowser", "Real same-Company Chromium second stale tab submits one already-submitted two-Worker order, gets safe READY-only conflict, reloaded UI still shows exactly two cases and no second Submit button. Migrated DB contains only one order_submitted event, one case per Worker and exactly two Action Centre obligations. Separate native service 12 competing submit operations resolves one success and 11 conflict results with no duplicate case/action rows, but this browser clause does not by itself establish credit reservations"],
+    ["m20104CompetingFundingNative", "Actual active Worker assessment funding service (not unused standalone FundingService): seeded two distinct verified Worker IDs/active Company links, two separate Worker-initiated funding applications to same Company and one legitimate purchased sandbox credit. Two concurrent Company approve calls via Promise.allSettled on migrated PGlite return one success and one safe insufficient-unreserved-credits conflict; persisted exactly one APPROVED funding row/reserved credit/Worker case, other request remains REQUESTED, second application remains FUNDING_REQUESTED and original one-credit purchase ledger balance is unchanged. 1/1 native PASS exact pushed source and full 25/25 funding/outbox/security native regression PASS. Does not prove simultaneous independent PostgreSQL connections/multi-instance finance race, live paid credits, provider settlement, multi-tenant production load or duplicate simultaneous payment capture"]
+  ],
   "M2.01.05": [["companyFundedCredential", "Real Company-funded linked Worker case progresses through assessment, independent human review/interview, signed credential and appeal; Worker-funded, mixed-method and competing reservations are not part of this run"]],
   "M2.01.07": [["finalizedCompanyCancellation", "Real authenticated Company Chromium tries to cancel ACTIVE two-Worker order with one already Approved decision and one Assessment pending. UI shows explicit reason, exact persisted order stays ACTIVE, original approval and pending sibling preserved, zero cancellation timeline events; same exact SHA native eight-case runtime gate verifies ordinary pending cancellation and rejects conditional/rejected statuses or credential references. Paid cancellations, refunds and races with concurrent final decisions remain unverified"]],
   "M2.01.08": [["companyFundedCredential", "Actual Company order becomes COMPLETED only after its real final decision; stored immutable policy version and Worker credential issued for exact target confirmed from database. Report generation and multi-case readiness remain unverified"]],
@@ -615,7 +630,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["outboxBusinessRecovery"]);
+const nativeRunNames = new Set(["outboxBusinessRecovery", "m20104CompetingFundingNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
