@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import {
   createWorkerEvidenceRecordAction,
@@ -566,6 +566,51 @@ function PendingScans({
   );
 }
 
+function PrivateEvidencePreview({ fileRef }: { fileRef: string }): React.JSX.Element {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  async function prepare(): Promise<void> {
+    setPending(true);
+    setUrl(null);
+    setError(false);
+    try {
+      const response = await fetch("/api/secure-files/access", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileRef, purpose: "preview" })
+      });
+      if (!response.ok) throw new Error("Private preview unavailable");
+      const result: unknown = await response.json();
+      const accessUrl = result && typeof result === "object" && "accessUrl" in result
+        ? (result as { accessUrl: unknown }).accessUrl
+        : null;
+      if (typeof accessUrl !== "string" || !/^\/api\/secure-files\/preview\?access=[A-Za-z0-9_.%~-]+$/.test(accessUrl)) {
+        throw new Error("Unexpected private preview URL");
+      }
+      setUrl(accessUrl);
+    } catch {
+      setError(true);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <>
+      {" · "}
+      <button type="button" onClick={() => void prepare()} disabled={pending} className="button button-secondary">
+        {pending ? "Preparing…" : "Prepare private preview"}
+      </button>
+      {url ? <>{" · "}<a href={url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Open file preview</a></> : null}
+      {error ? <span role="alert"> Private preview unavailable. Retry or contact support.</span> : null}
+    </>
+  );
+}
+
 function History({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.JSX.Element {
   return (
     <section className="content-stack" aria-label={`${record.kind} history`}>
@@ -580,6 +625,9 @@ function History({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.J
         {record.attachments.map((attachment) => (
           <p className="muted-copy" key={attachment.attachmentId}>
             {attachment.displayFilename} · {attachment.attachmentKind.replaceAll("_", " ")} · {attachment.supersededAt ? "superseded" : "active"}
+            {" · Version "}
+            {record.versions.find(version => version.versionId === attachment.versionId)?.versionNumber ?? "historical"}
+            <PrivateEvidencePreview fileRef={attachment.secureFileId} />
           </p>
         ))}
         {record.leavingLetters.map((letter) => (

@@ -324,6 +324,10 @@ jobs:
         if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/worker-file-upload-validation.browser.test.mjs
 
+      - name: M1.06 Worker replacement keeps versioned private old and new previews
+        if: ${{ matrix.shard == 1 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-06-attachment-replacement-preview.browser.test.mjs
+
       - name: M1.07 Worker incomplete identity submission preserves partial draft and blocks premature verification
         if: ${{ matrix.shard == 3 }}
         run: node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs
