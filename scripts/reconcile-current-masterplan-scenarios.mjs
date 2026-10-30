@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m11105IndependentEmployments: {
+    file: "20261030-A28-e4d87b4-exact-M11105-browser.log",
+    observedCodeSha: "e4d87b48c4d4cb12a2d210f7912ac554e6e39fc7",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10704InitialCorrection: {
     file: "20261030-A28-543b227-exact-M10704-correction-browser.log",
     observedCodeSha: "543b22783c67f80d607a8e68c068e9fea95c3512",
@@ -364,6 +369,7 @@ const browserClauseMap = {
   "M1.11.01": [["workerReviewWorkforce", "Actual Worker qualification revision submitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED reflected in Worker UI after independent review; broader invalid-file paths open"]],
   "M1.11.02": [["workerReviewWorkforce", "Actual Worker experience correction resubmitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED persisted and reflected in Worker UI; workplace source check unverified"]],
   "M1.11.03": [["workerReviewWorkforce", "Actual Worker skill correction resubmitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED persisted and reflected to Worker; skill lifecycle scope matrix open"]],
+  "M1.11.05": [["m11105IndependentEmployments", "Actual signed-in 390px Worker Chromium created two independent employment records for Employer Alpha and Employer Beta, filled full typed details, attached two separately scanned PNG evidence files, submitted each for independent assurance, then used End employment and preserve history on Alpha alone. After real cold reload, Alpha displayed ended/submitted and retained Version 1 and Version 2 with original Alpha evidence; Beta stayed active/submitted, retained original Version 1 and Beta file, with its own end control still available. Migrated exact-source PGlite confirms exactly two separate records, Alpha lifecycle ended, Beta active, Alpha version 1 superseded and version 2 submitted with end date and exact current version linkage; Beta only one submitted version; both exact-version file histories retained without foreign mixing. Real browser 1/1 PASS, source pinned to exact QA SHA. Does not cover Verifier approvals of both employment cases, replacement leaving letters, employer-entered employment, real scanning provider or all employment termination dates"]],
   "M1.11.04": [["workerReviewWorkforce", "Actual Worker employment revision independently reviewed REJECTED, CHANGES_REQUESTED and APPROVED with Worker-side status; multiple-employment unlink histories open"]],
   "M3.04.01": [["companyWorkerSecurity", "Actual Company filtered workforce pagination across 26 active matches, Previous/Next/refresh and mobile/desktop header search; revoked/foreign Workers excluded, forged scope denied, permission removal disables search"]],
   "M3.04.02": [["companyWorkerSecurity", "Company-created registration code creates specific Worker link, archived unit removes active placement while keeping immutable history and Worker state synced; moving between two employers unverified"]],
