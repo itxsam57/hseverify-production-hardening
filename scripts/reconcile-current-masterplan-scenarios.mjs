@@ -177,6 +177,11 @@ const browserRuns = {
     observedCodeSha: "22e950aeef3c951af61ee45b245ef238b833b3b1",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10705VerifiedCorrections: {
+    file: "20261030-A28-3fb1c10-exact-M10705-verified-corrections-browser.log",
+    observedCodeSha: "3fb1c10e432a2ff345a3e0bd8cdc28212e15160c",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m11204PublicConcernResolution: {
     file: "20261030-A28-8f17fd2-exact-M11204-public-concern-browser.log",
     observedCodeSha: "8f17fd2f2265768969a7fb58fe53e3c9c5359f24",
@@ -390,7 +395,10 @@ const browserClauseMap = {
   "M1.09.06": [["companyWorkerSecurity", "Actual Company Team UI and submitted form forbid staff member granting absent permissions or owner role; legitimate viewer invite still works"]],
   "M1.10.02": [["companyWorkerSecurity", "Actual Company mixed Worker CSV accepts valid row and flags malformed email, one invitation created; duplicate/larger CSV matrix open"]],
   "M1.10.03": [["companyWorkerSecurity", "Actual one-use Company registration code records expiry and selected site/department defaults, Worker redeems and tenant links correctly; exhausted/expired-code denial not exercised"]],
-  "M1.07.05": [["workerReviewWorkforce", "Actual verified Worker identity correction independently rejected, changes requested and unable to verify while original verified parent retains status; all accepted-correction and duplicate collision cases still open"]],
+  "M1.07.05": [
+    ["m10705VerifiedCorrections", "Actual separately authenticated Worker, Verifier and Admin Chromium first submitted scanned passport, photo, selfie and identity, Verifier APPROVED and issued a permanent Worker ID. Worker started a correction version with distinct reason, changed legal first name, saved new details, securely uploaded distinct correction passport/photo/selfie and submitted. Verifier APPROVED exact version 2; Worker saw corrected legal first name and unchanged permanent Worker ID. Worker started and submitted three more separately source-version-bound corrections; Verifier REJECTED, CHANGES_REQUESTED and UNABLE_TO_VERIFY respectively. Each Worker return showed verified identity, original approved correction details and same permanent Worker ID; after fix the CHANGES_REQUESTED correction displays changes requested rather than falsely rejected. Actual cold reload/dashboard maintained approved details. Migrated PGlite proves exactly five retained immutable submitted versions, exact-version review dispositions APPROVED initial / APPROVED correction / REJECTED / CHANGES_REQUESTED / UNABLE_TO_VERIFY, original and approved scanned passport bindings still retained, original legal name retained, only accepted version active, one permanent Worker ID, four correction decisions with reason codes. 1/1 actual browser PASS on exact QA source SHA. Exhaustive duplicate identity collision, fresh cross-worker access, suspension, expiration, live identity verification and actual device proctoring remain unverified"],
+    ["workerReviewWorkforce", "Separate prior negative-only review matrix independently showed unsuccessful correction outcomes preserved verified parent; not a full affirmative corrected-identity workflow"]
+  ],
   "M1.11.01": [["workerReviewWorkforce", "Actual Worker qualification revision submitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED reflected in Worker UI after independent review; broader invalid-file paths open"]],
   "M1.11.02": [["workerReviewWorkforce", "Actual Worker experience correction resubmitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED persisted and reflected in Worker UI; workplace source check unverified"]],
   "M1.11.03": [["workerReviewWorkforce", "Actual Worker skill correction resubmitted and Verifier REJECTED, CHANGES_REQUESTED and APPROVED persisted and reflected to Worker; skill lifecycle scope matrix open"]],
