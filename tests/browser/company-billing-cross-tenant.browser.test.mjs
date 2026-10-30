@@ -105,6 +105,33 @@ test("M3.05 two independent Company browser sessions isolate paid invoices and d
           assert.equal(await invoiceCard(companyA).getByText(bInvoice,{exact:true}).count(),0);
           assert.equal(await invoiceCard(companyA).getByText(aInvoice,{exact:true}).count(),1);
           console.log("ACTUAL_M305_TWO_COMPANIES_BROWSER distinct paid sandbox invoices and credit balances visible only to their owners");
+
+          // The printable receipt itself is private, not just the invoice
+          // table. Both authorized owners see their captured amount and credit
+          // activity, but guessed cross-tenant receipt URLs must be 404.
+          const receiptUrl=id=>base+"/company/billing/receipts/"+encodeURIComponent(id);
+          assert.equal((await companyA.goto(receiptUrl(aInvoice),{waitUntil:"domcontentloaded"}))?.status(),200);
+          await companyA.getByRole("heading",{name:"Payment receipt",exact:true}).waitFor();
+          await companyA.getByText(aInvoice,{exact:true}).waitFor();
+          await companyA.getByText(fixture.credentials.company.tenantId,{exact:true}).waitFor();
+          await companyA.getByText("3",{exact:true}).first().waitFor();
+          assert.equal((await companyB.goto(receiptUrl(bInvoice),{waitUntil:"domcontentloaded"}))?.status(),200);
+          await companyB.getByRole("heading",{name:"Payment receipt",exact:true}).waitFor();
+          await companyB.getByText(SECOND.tenantId,{exact:true}).waitFor();
+          await companyB.getByText(bInvoice,{exact:true}).waitFor();
+          assert.equal((await companyB.goto(receiptUrl(aInvoice),{waitUntil:"domcontentloaded"}))?.status(),404);
+          assert.equal(await companyB.getByText(aInvoice,{exact:true}).count(),0);
+          assert.equal((await companyA.goto(receiptUrl(bInvoice),{waitUntil:"domcontentloaded"}))?.status(),404);
+          assert.equal(await companyA.getByText(bInvoice,{exact:true}).count(),0);
+          console.log("ACTUAL_M305_RECEIPT_BROWSER own paid receipts 200, both foreign guessed URLs 404, no invoice details");
+          await companyA.goto(base+"/company/billing",{waitUntil:"domcontentloaded"});
+          await companyB.goto(base+"/company/billing",{waitUntil:"domcontentloaded"});
+          const activityA=companyA.locator(".card").filter({has:companyA.getByRole("heading",{name:"Credit activity",exact:true})}).first();
+          const activityB=companyB.locator(".card").filter({has:companyB.getByRole("heading",{name:"Credit activity",exact:true})}).first();
+          assert.equal(await activityA.getByText(aInvoice,{exact:true}).count(),1);
+          assert.equal(await activityA.getByText(bInvoice,{exact:true}).count(),0);
+          assert.equal(await activityB.getByText(bInvoice,{exact:true}).count(),1);
+          assert.equal(await activityB.getByText(aInvoice,{exact:true}).count(),0);
           const refunds=companyB.locator(".card").filter({has:companyB.getByRole("heading",{name:"Refunds",exact:true})}).first();
           await refunds.getByLabel("Invoice ID").fill(aInvoice);
           await refunds.getByLabel("Amount (minor units)").fill("100");

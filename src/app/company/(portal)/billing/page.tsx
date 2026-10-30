@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { resolveTenantPermissions } from "@/lib/authorization/authorization-domain";
@@ -189,10 +190,41 @@ export default async function CompanyBillingPage({searchParams}: {searchParams: 
               <tbody>
                 {snapshot.invoices.map((item) => (
                   <tr key={item.invoiceId}>
-                    <td>{item.invoiceId}</td>
+                    <td>
+                      {item.status === "OPEN"
+                        ? <code>{item.invoiceId}</code>
+                        : <Link href={"/company/billing/receipts/" + encodeURIComponent(item.invoiceId)} aria-label={"View payment receipt " + item.invoiceId}>{item.invoiceId}</Link>}
+                    </td>
                     <td>{item.status}</td>
                     <td>{item.amountMinor} {item.currency}</td>
                     <td>{item.refundedAmountMinor}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Credit activity</h2>
+        <p>Sandbox purchases and successful refunds are recorded as immutable credit-ledger entries. Assessment funding reservations are shown separately above.</p>
+        {snapshot.creditLedger.length === 0 ? (
+          <p>No credit activity recorded yet.</p>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Occurred</th><th>Activity</th><th>Invoice</th><th>Credits</th><th>Amount (minor units)</th></tr>
+              </thead>
+              <tbody>
+                {snapshot.creditLedger.map((item) => (
+                  <tr key={item.ledgerEntryId}>
+                    <td><time dateTime={item.occurredAt}>{item.occurredAt}</time></td>
+                    <td>{item.entryType}</td>
+                    <td><code>{item.invoiceId}</code></td>
+                    <td>{item.creditDelta > 0 ? "+" : ""}{item.creditDelta}</td>
+                    <td>{item.amountMinor} {item.currency}</td>
                   </tr>
                 ))}
               </tbody>
