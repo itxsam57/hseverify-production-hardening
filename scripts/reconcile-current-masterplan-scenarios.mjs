@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  workerFileValidation: {
+    file: "20261030-A28-011b229-exact-worker-rejected-file-browser.log",
+    observedCodeSha: "011b2290855ba1d475de9efee849368905d66b9c",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   tenantBillingFullCompany: {
     file: "20261030-A28-79584bf-existing-company-complete-billing-selector-fixed.log",
     observedCodeSha: "79584bf1c1d32eb26e603f68f3ba88ee18b9409d",
@@ -323,6 +328,7 @@ const browserClauseMap = {
   "M3.04.04": [["companyAction", "Company browser assigns internal owner then verifies persistence on reload, rejects invalid past-dated snooze while preserving entered values, accepts future snooze, acknowledges action and follows exact case deep link; external reminders and other action kinds remain unverified"]],
   "M2.08.04": [["secondDevice", "Fresh separately authenticated browser of same Worker is denied active bound exam question and answer-control read with HTTP404; original session preserves exam and persisted IN_PROGRESS state; independent forged-write/session-switch mutation tests remain open"]],
   "M3.05.01": [["companyWorkerSecurity", "Actual sandbox Company checkout captured once, exact 10-credit balance despite capture replay, new provider-pending checkout grants no unpaid credit; live merchant not tested"]],
+  "M1.06.02": [["workerFileValidation", "Real authenticated Worker Chromium creates qualification draft, attempts >10MB PNG, PDF filename/declared MIME with PNG content, and unsupported executable, receives safe rejection, reload shows no pending scan or accepted attachment. Exact source PostgreSQL/PGlite verifies zero secure-file reserved/available rows and zero Worker evidence attachments. Separate native exact SHA PDF and JPEG clean scan/bind with negative upload preflight passed. Empty file-picker, corrupt PDFs beyond MIME spoofing, EICAR browser, real storage/scanner provider and hardware upload remain unverified"]],
   "M3.05.03": [
     ["tenantBillingInvoice", "Two independently authenticated Company browser sessions see only their own sandbox-paid invoice histories and balances. A creates 3-credit paid invoice; B starts with zero, creates/pays 2-credit sandbox checkout and sees only B invoice. Forged B refund request for A invoice rejected with neutral error; DB verifies each tenant invoice/ledger ownership and zero cross-tenant refund writes. Printable receipt and full credit activity not implemented in this older source"],
     ["tenantBillingReceipt", "Real production route /company/billing/receipts/[invoiceId] renders paid printable sandbox receipt for matching tenant only, both A and B own receipts HTTP200 and exact foreign guessed URLs HTTP404 without invoice details. Company credit activity table shows only its own purchase/refund ledger entries, foreign refund form denied; persisted two-Company DB remains unchanged. PDF-native download, complete assessment usage export, real merchant/tax status and production rollout not certified"],
