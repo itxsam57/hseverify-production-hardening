@@ -40,6 +40,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
             await page.getByRole("heading",{name:"My profile",exact:true}).waitFor();
           };
           const save=async()=>page.getByRole("button",{name:"Save changes",exact:true}).click();
+          const waitSaved=async section=>page.locator('.profile-step-navigation a[href*="section='+section+'"] small').getByText("Complete",{exact:true}).waitFor({timeout:20000});
           const feedback=page.getByRole("alert");
           await visit("personal");
           await page.getByLabel("Legal first name",{exact:true}).fill("Navin");
@@ -55,7 +56,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           assert.equal(await page.getByLabel("Preferred name").inputValue(),"X","Rejected Personal save lost invalid typed draft.");
           await page.getByLabel("Preferred name").fill("Nav");
           await save();
-          await page.getByText("Profile section saved.",{exact:true}).waitFor({timeout:15000});
+          await waitSaved("personal");
           await visit("contact");
           await page.getByLabel("Country code",{exact:true}).fill("+92");
           await page.getByLabel("Phone number",{exact:true}).fill("3001234567");
@@ -69,7 +70,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           assert.equal(await page.locator('input[name="city"]').inputValue(),"X","Rejected Contact save lost invalid city.");
           await page.locator('input[name="city"]').fill("Lahore");
           await save();
-          await page.getByText("Profile section saved.",{exact:true}).waitFor({timeout:15000});
+          await waitSaved("contact");
           await visit("professional");
           await page.getByLabel("Primary occupation or trade",{exact:true}).fill("Safety Officer");
           await page.getByLabel("Years of experience",{exact:true}).fill("70");
@@ -84,7 +85,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await page.getByLabel("Years of experience",{exact:true}).fill("8");
           await page.locator('select[name="employmentStatus"]').selectOption("employed");
           await save();
-          await page.getByText("Profile section saved.",{exact:true}).waitFor({timeout:15000});
+          await waitSaved("professional");
           await page.reload({waitUntil:"domcontentloaded"});
           assert.equal(await page.getByLabel("Primary occupation or trade",{exact:true}).inputValue(),"Safety Officer");
           assert.equal(await page.getByLabel("Years of experience",{exact:true}).inputValue(),"8");
