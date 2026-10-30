@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  terminalReapplication: {
+    file: "20261030-A28-0650f95-m206-terminal-reapply-two-server-browser.log",
+    observedCodeSha: "0650f95bf14e2a291e85bd36b6a0f745edb1ed58",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   zeroCreditFunding: {
     file: "20261030-A28-020c4bd-m206-revoked-plus-zero-credit-dual-browser.log",
     observedCodeSha: "020c4bd44fadfe112d7b925bfafc34ef273f5fc7",
@@ -389,6 +394,7 @@ const browserClauseMap = {
   "M2.06.03": [["notifications", "Actual Worker request reaches Company, approval creates funded case and start-precheck; rejection/retry/self-funded branches open"]],
   "M2.06.04": [["zeroCreditFunding", "Worker mobile authenticates and requests assessment credit from active linked Company with genuine zero-balance sandbox ledger; Company desktop real Approve shows insufficient unreserved credits, retains REQUESTED; Company creates and completes 1-credit sandbox checkout, same funding request then APPROVED and Worker reaches pinned assessment precheck. DB confirms 1 ledger credit, 1 reserved unit, 1 funded case and no duplicate. Does not prove live merchant/webhook, cross-tenant balances or multi-Worker contention"]],
   "M2.06.05": [["revokedFundingLink", "Real authenticated Worker mobile browser requests one assessment credit from linked verified Company, real Company desktop browser ends that relationship while request remains pending, and attempts approval. UI rejects with Worker no longer linked message, pending request stays REQUESTED after reload; exact persisted database has revoked link, zero approved or reserved credit, worker application FUNDING_REQUESTED, null case reference and zero Worker cases. Retried/self-funded branches and production merchant/credits not exercised"]],
+  "M2.06.07": [["terminalReapplication", "Worker browser creates original self-paid sandbox case; test fixture advances original case to Closed only while app is stopped, then restarted real Worker browser reapplies and self-funds fresh independent case. DB verifies original application moved to COMPLETED with original case and audit retained, distinct new CASE_CREATED, separate immutable policy snapshots and exactly one completion event. Real Verifier/Assessor terminalization, Company-funded retry, published waiting/attempt limits and live payment remain unverified"]],
   "M2.06.06": [["interviewEligibility", "Browser and forged Worker/Company apply blocked before assessment waiting threshold, then eligible after real clock advances; attempt-limit/credential/reassessment paths open"]],
   "M2.11.02": [["interviewEligibility", "Worker UTC availability persists on refresh, visible to Assessor; outside window blocked, inside scheduled, UTC independent of NY process timezone, 390px no overflow"]],
   "M2.11.03": [["interviewEligibility", "Assessor reasoned reschedule updates actual Worker/Company/Assessor appointment and real compiled outbox CLI: old events suppressed and new scoped notices/email accepted, private reason excluded"]],
