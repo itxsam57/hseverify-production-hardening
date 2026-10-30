@@ -332,6 +332,11 @@ jobs:
         if: ${{ matrix.shard == 1 }}
         run: node --test --test-concurrency=1 tests/browser/m1-11-multiple-employments.browser.test.mjs
 
+      - name: M1.11 leaving letter replacement preserved exact-employment history and private preview
+        if: ${{ matrix.shard == 2 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs
+
+
       - name: M1.07 initial identity changes requested revision and resubmission approval
         if: ${{ matrix.shard == 2 }}
         run: HSE_INITIAL_IDENTITY_MORE_INFO=true HSE_INITIAL_IDENTITY_MORE_INFO_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs

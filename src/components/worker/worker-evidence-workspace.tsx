@@ -633,6 +633,9 @@ function History({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.J
         {record.leavingLetters.map((letter) => (
           <p className="muted-copy" key={letter.leavingLetterId}>
             Leaving letter: {letter.displayFilename} · {letter.status}
+            {" · Version "}
+            {record.versions.find(version => version.versionId === letter.employmentVersionId)?.versionNumber ?? "historical"}
+            <PrivateEvidencePreview fileRef={letter.secureFileId} />
           </p>
         ))}
       </div>
