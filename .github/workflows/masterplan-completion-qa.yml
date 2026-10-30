@@ -300,7 +300,9 @@ jobs:
 
       - name: M2.05 real Admin blueprint revisions and activation Chromium with persisted DB
         if: ${{ matrix.shard == 2 }}
-        run: node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs
+        run: |
+          node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs
+          HSE_MASTERPLAN_TRANSPORT_AUDIT=true HSE_MASTERPLAN_TRANSPORT_ONLY=true HSE_MASTERPLAN_CONTENT_MODE=COMBINED HSE_MASTERPLAN_FUNDING_MODE=independent node --test --test-concurrency=1 tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
 
       - name: Root-invited independent Admin Question Bank, policy and staff decision browser
         if: ${{ matrix.shard == 3 }}

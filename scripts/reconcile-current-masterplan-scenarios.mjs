@@ -172,6 +172,11 @@ const browserRuns = {
     observedCodeSha: "9a77ffa8b3f6452a884c35352d74fa8837f032df",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m205FutureQuestionTransport: {
+    file: "20261030-A28-ea84b47-m205-option-order-private-transport-all-mime-browser.log",
+    observedCodeSha: "ea84b47d95386ab5283ccc8855fcd5c0759cc83e",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   outboxBusinessRecovery: {
     file: "20261030-A28-fa7e2d2-m105-business-outbox-outage-test.log",
     observedCodeSha: "fa7e2d23ddf69bae66dd33c91ed78ce6deb14025",
@@ -360,6 +365,8 @@ const browserClauseMap = {
     ["notifications", "Worker application→Company funding request→Company approval→Worker assessment deep-link propagated by real outbox CLI; other transitions open"],
     ["recommendationStaffScoring", "Five Assessor case recommendation events projected through real outbox worker and Worker/Company/(where needed Admin) notification deep-links without private scorecard text"]
   ],
+  "M2.05.05": [["m205FutureQuestionTransport", "Actual authenticated Worker COMBINED generated form shows two MCQ options; real browser captures their displayed order before and after cold reload and asserts the order remains identical while the existing answer is retained. Migrated physical DB stores two immutable distinct question_id/question_version_id pairs and a pinned option_order_json containing exactly the source MCQ options. Does not prove all question types, across-device presentation, concurrent admin revision during attempt, or every version migration"]],
+  "M2.05.06": [["m205FutureQuestionTransport", "Actual Worker browser with real independently approved identity and self-funded pinned case starts COMBINED 2-question assessment. Before exposing question 2, captured three actual assessment GET/POST HTML/RSC/JSON responses and checked none carries future written question prompt, answer keys, scoring rubrics, question-bank IDs, or planted written grading criterion. First MCQ answer saved and persisted after browser reload; migrated DB has only position 1 draft, current_position 1 of 2, attempt IN_PROGRESS. This does not cover numeric/true-false/other blueprint families, all device contexts, network intermediaries, or external live proctor"]],
   "M1.05.04": [["outboxBusinessRecovery", "Actual migrated PGlite native transactional outbox test stores a synthetic accepted-business row and one deduplicated durable job, simulates provider retry_wait failure, asserts original committed state persists while delivery is pending, next delivery worker resumes successfully without duplicate job, stale worker cannot finalize, and exactly two immutable failed/succeeded attempts are retained. This is the core outbox foundation path, NOT a real email/SMS provider outage or entire Worker/Company browser workflow"]],
   "M1.05.03": [["notifications", "All six roles read/mark/mark-all/synchronize unread badge and 24 persisted read/audit records verified"]],
   "M1.03.01": [

@@ -26,6 +26,7 @@ const INTERVIEW_POLICY = process.env.HSE_MASTERPLAN_INTERVIEW_POLICY === "true";
 const INTERVIEW_POLICY_MIN_ACTIVE_SECONDS = 15;
 const configuredActiveSince = new WeakMap();
 const EXPIRY_MODE=process.env.HSE_MASTERPLAN_EXPIRY === "true";
+const TRANSPORT_ONLY=process.env.HSE_MASTERPLAN_TRANSPORT_ONLY === "true";
 const SCREEN_ERRORS=process.env.HSE_MASTERPLAN_A12_SCREEN_ERRORS === "true";
 const DEVICE_DENIAL=process.env.HSE_MASTERPLAN_DEVICE_DENIAL === "true";
 const COMPANY_CREDENTIAL_TARGET_MODE=process.env.HSE_MASTERPLAN_COMPANY_CREDENTIAL_TARGET === "true";
@@ -51,7 +52,9 @@ function auditCandidateAssessmentTransport(page) {
     if (!/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]+(?:\/|$)/.test(pathname)) return;
     if (response.status() !== 200) return;
     const contentType = response.headers()["content-type"] ?? "";
-    if (!/(?:text\/html|text\/x-component|application\/json)/i.test(contentType)) return;
+    // Server Actions may negotiate multiple text-like transport media types.
+    // Do not silently exempt an assessment response by Content-Type: every
+    // successful GET and POST at this path must be inspected for secrets.
     const job = response.text().then((body) => responses.push({
       pathname, contentType, method: response.request().method(), body
     }));
@@ -70,6 +73,8 @@ function auditCandidateAssessmentTransport(page) {
       assert.doesNotMatch(payload, /question_version_[A-Za-z0-9_-]{24}|question_[A-Za-z0-9_-]{24}/i, "Internal question identifier leaked in " + where);
       assert.doesNotMatch(payload, /["'](?:answerKey|answer_key_json|rubric|rubric_json|correctAnswer|correctOption|scoringKey)["']\s*:/i, "Scoring/answer material leaked in " + where);
       assert.equal(payload.includes("Identifies controlled verification before restart"), false, "Actual seeded written scoring criterion leaked in " + where);
+      if(TRANSPORT_ONLY) assert.equal(payload.includes(WRITTEN_PROMPT),false,
+        "Question 2, not yet revealed to the candidate, appeared in a question 1 transport payload: "+where);
     }
     console.log("ACTUAL_ASSESSMENT_TRANSPORT_BROWSER checked " + responses.length + " Worker GET/POST HTML/RSC/JSON payloads for question IDs, answer keys and grading rubrics");
   };
@@ -616,6 +621,34 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
             return {attemptId,deviceDenialTested:true};
           }
           if (auditTransport) await worker.reload({waitUntil:"domcontentloaded"});
+          if(TRANSPORT_ONLY) {
+            assert.ok(auditTransport,"Transport-only regression needs GET and POST capture enabled.");
+            assert.equal(CONTENT_MODE,"COMBINED","Future-question test requires distinct MCQ and written prompts.");
+            await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();
+            assert.equal(await worker.getByText(WRITTEN_PROMPT,{exact:false}).count(),0,
+              "Undelivered future written question appeared on the first question screen");
+            const optionOrderBefore=(await worker.getByRole("group",{name:"Choose one answer"}).locator("label").allInnerTexts()).map(v=>v.trim());
+            assert.equal(optionOrderBefore.length,2,"The pinned MCQ must show both answer options.");
+            const savedPost=worker.waitForResponse(response=>
+              response.request().method()==="POST" &&
+              new URL(response.url()).pathname===`/worker/assessments/${attemptId}` &&
+              response.status()===200,{timeout:25000});
+            await worker.getByLabel(MCQ_ANSWER).check();
+            const saved=await savedPost;
+            console.log("ACTUAL_M205_POST_TRANSPORT",saved.request().method(),saved.headers()["content-type"]??"(unspecified)");
+            await worker.getByText("Saved",{exact:true}).first().waitFor({timeout:20000});
+            await worker.reload({waitUntil:"domcontentloaded"});
+            await worker.getByText(MCQ_PROMPT,{exact:false}).waitFor();
+            const optionOrderAfter=(await worker.getByRole("group",{name:"Choose one answer"}).locator("label").allInnerTexts()).map(v=>v.trim());
+            assert.deepEqual(optionOrderAfter,optionOrderBefore,"Pinned option order shifted after cold browser refresh.");
+            assert.equal(await worker.getByLabel(MCQ_ANSWER).isChecked(),true,
+              "Actual first question draft did not persist on reload");
+            assert.equal(await worker.getByText(WRITTEN_PROMPT,{exact:false}).count(),0,
+              "Future question revealed after first-question draft POST");
+            await auditTransport();
+            console.log("ACTUAL_M205_FUTURE_QUESTION_BROWSER real Worker HTML/RSC/GET/POST transport hides next written question, bank IDs, answer keys, scoring rubric; current MCQ draft persists and attempt remains open");
+            return {attemptId,transportOnlyTested:true};
+          }
           if(process.env.HSE_MASTERPLAN_TIMING === "true") {
             const timer=worker.getByRole("timer",{name:"Assessment time remaining"});
             await timer.waitFor();
@@ -965,6 +998,30 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
       }
     });
     assert.equal(phase2.requestedSignal,"SMOKE_COMPLETE");
+    if(TRANSPORT_ONLY) {
+      const verify=new PGlite(dbDir);
+      try {
+        const rows=(await verify.query("SELECT attempt_id,status,current_position,question_count FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        assert.equal(rows.length,1);
+        assert.equal(rows[0].status,"IN_PROGRESS");
+        assert.equal(Number(rows[0].current_position),1);
+        assert.equal(Number(rows[0].question_count),2);
+        const drafts=(await verify.query("SELECT position,text_value FROM assessment_attempt_drafts WHERE attempt_id=$1 ORDER BY position",[rows[0].attempt_id])).rows;
+        assert.deepEqual(drafts,[{position:1,text_value:MCQ_ANSWER}]);
+        const formItems=(await verify.query(
+          "SELECT i.position,i.question_id,i.question_version_id,i.option_order_json,i.form_id "+
+          "FROM assessment_attempts a JOIN generated_assessment_form_items i ON i.form_id=a.form_id "+
+          "WHERE a.attempt_id=$1 ORDER BY i.position",[rows[0].attempt_id]
+        )).rows;
+        assert.equal(formItems.length,2);
+        assert.equal(new Set(formItems.map(item=>item.question_id)).size,2);
+        assert.ok(formItems.every(item=>/^question_version_[A-Za-z0-9_-]{24}$/.test(item.question_version_id)));
+        assert.deepEqual([...formItems[0].option_order_json].sort(),[MCQ_ANSWER,"Continue working and report later."].sort(),
+          "The pinned database option ordering must consist of exactly the two published options.");
+        console.log("ACTUAL_M205_FUTURE_QUESTION_DB only position 1 answered, both immutable bank question versions pinned, question 2 hidden, attempt IN_PROGRESS");
+      }finally{await verify.close();}
+      return;
+    }
     if (DEVICE_DENIAL) {
       const verify=new PGlite(dbDir);
       try {
