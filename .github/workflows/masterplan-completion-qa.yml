@@ -316,9 +316,9 @@ jobs:
         if: ${{ matrix.shard == 1 }}
         run: node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs
 
-      - name: M1.12 valid public credential and malformed/tampered/expired capability neutrality
+      - name: M1.12 public Worker ID and credential opaque capability privacy and negative boundaries
         if: ${{ matrix.shard == 2 }}
-        run: node --test --test-concurrency=1 tests/browser/public-verification-invalid-capability.browser.test.mjs
+        run: HSE_PUBLIC_WORKER_LOOKUP_ONLY=true node --test --test-concurrency=1 tests/browser/public-verification-invalid-capability.browser.test.mjs tests/browser/independent-worker-review-e2e.browser.test.mjs
 
       - name: M1.06 Worker invalid file upload cannot poison next file reservation
         if: ${{ matrix.shard == 3 }}

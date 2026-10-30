@@ -452,6 +452,59 @@ test(
             await worker.locator(".copy-feedback").getByText("Worker ID copied.", { exact: true }).waitFor({ timeout: 15_000 });
             assert.equal(await worker.evaluate(() => navigator.clipboard.readText()), permanentWorkerId);
 
+            if (process.env.HSE_PUBLIC_WORKER_LOOKUP_ONLY === "true") {
+              const publicContext=await browser.newContext({viewport:{width:390,height:844}});
+              try {
+                const publicPage=await publicContext.newPage();
+                const errors=[];
+                publicPage.on("pageerror",error=>errors.push(error.message));
+                publicPage.on("response",response=>{
+                  if(response.status()>=500)errors.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);
+                });
+                await publicPage.goto(`${baseUrl}/verify`,{waitUntil:"networkidle",timeout:25000});
+                const search=publicPage.getByLabel("Worker ID or Credential ID");
+                await search.fill(permanentWorkerId);
+                const verify=publicPage.getByRole("button",{name:"Verify",exact:true});
+                if(!(await verify.isEnabled())){
+                  await publicPage.waitForTimeout(450);
+                  await search.fill("");
+                  await search.fill(permanentWorkerId);
+                }
+                await verify.click();
+                await publicPage.waitForURL("**/verify/result/**",{timeout:20000});
+                const token=decodeURIComponent(new URL(publicPage.url()).pathname.split("/").at(-1));
+                assert.ok(token.length>80&&!token.includes(permanentWorkerId),"Public worker resolution must produce encrypted opaque capability, never a raw ID URL.");
+                assert.match(token,/^[A-Za-z0-9_-]+$/);
+                await publicPage.getByRole("heading",{name:"Independent Worker",exact:true}).waitFor({timeout:15000});
+                await publicPage.getByText(permanentWorkerId,{exact:true}).waitFor();
+                await publicPage.getByText("Valid",{exact:true}).waitFor();
+                const mainText=await publicPage.locator("main").innerText();
+                for(const forbidden of [
+                  "audit_worker_account_20260901",credentials.worker.email,
+                  "1992-04-18","Pakistani","Pakistan","corrected-passport.png",
+                  "Identity document, photo and submitted details",
+                  "Evidence verified practical proficiency","NEBOSH International General Certificate",
+                  "password_hash","totp_secret","assessment answer keys"
+                ]){
+                  assert.ok(!mainText.includes(forbidden),"Public Worker projection leaked private data: "+forbidden);
+                }
+                const report=publicPage.getByRole("link",{name:"Report a credential concern"});
+                const reportHref=await report.getAttribute("href");
+                assert.ok(reportHref.includes("reference="));
+                assert.ok(!reportHref.includes(permanentWorkerId));
+                await publicPage.reload({waitUntil:"domcontentloaded"});
+                await publicPage.getByRole("heading",{name:"Independent Worker",exact:true}).waitFor();
+                const absent="worker_id_"+("Z".repeat(24));
+                await publicPage.goto(`${baseUrl}/verify/result/${absent}`,{waitUntil:"domcontentloaded"});
+                await publicPage.getByRole("heading",{name:"Identifier not verified",exact:true}).waitFor();
+                assert.equal(await publicPage.getByText("Independent Worker",{exact:true}).count(),0);
+                await publicPage.goto(`${baseUrl}/verify/worker/${permanentWorkerId}`,{waitUntil:"domcontentloaded"});
+                await publicPage.waitForURL("**/verify");
+                assert.deepEqual(errors,[],"Anonymous verifier must not hit 500 or browser runtime exceptions.");
+                console.log("ACTUAL_M11201_PUBLIC_WORKER_BROWSER genuine Worker ID from independent Verifier resolves to opaque short-lived URL, allowed Worker status, no private projection; invalid ID neutral; legacy raw Worker route redirects safely");
+              } finally { await publicContext.close(); }
+              return;
+            }
             if (process.env.HSE_INITIAL_IDENTITY_MORE_INFO_ONLY === "true") {
               assert.equal(process.env.HSE_INITIAL_IDENTITY_MORE_INFO, "true");
               await worker.goto(`${baseUrl}/worker/identity`, { waitUntil: "domcontentloaded" });
@@ -676,6 +729,23 @@ test(
           assert.equal(identity.lifecycle_status,"rejected");
           assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,0);
           assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
+          return;
+        }
+        if (process.env.HSE_PUBLIC_WORKER_LOOKUP_ONLY === "true") {
+          const workerAccount="audit_worker_account_20260901";
+          const result=(await database.query(
+            "SELECT ids.permanent_worker_id,ids.worker_account_id,ids.identity_version_id,i.lifecycle_status,v.version_status,d.legal_first_name,d.legal_last_name FROM worker_identity_worker_ids ids JOIN worker_identities i ON i.identity_id=ids.identity_id JOIN worker_identity_versions v ON v.identity_version_id=ids.identity_version_id JOIN worker_identity_version_drafts d ON d.identity_version_id=v.identity_version_id WHERE ids.worker_account_id=$1",
+            [workerAccount]
+          )).rows;
+          assert.equal(result.length,1);
+          assert.match(result[0].permanent_worker_id,/^worker_id_[A-Za-z0-9_-]{24}$/);
+          assert.equal(result[0].lifecycle_status,"verified");
+          assert.equal(result[0].version_status,"submitted");
+          assert.equal(result[0].legal_first_name,"Independent");
+          assert.equal(result[0].legal_last_name,"Worker");
+          const rate=await database.query("SELECT COUNT(*)::int AS count FROM public_verification_rate_limits WHERE action='lookup'");
+          assert.ok(Number(rate.rows[0]?.count)>=1,"Public Worker lookup must consume a persisted rate-limit bucket.");
+          console.log("ACTUAL_M11201_PUBLIC_WORKER_DB verified Worker-ID version bound and persisted public lookup throttling");
           return;
         }
         if (process.env.HSE_INACTIVE_SKILL_ONLY === "true") {
