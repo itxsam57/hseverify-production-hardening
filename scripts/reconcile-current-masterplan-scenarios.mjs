@@ -207,6 +207,11 @@ const browserRuns = {
     observedCodeSha: "543b22783c67f80d607a8e68c068e9fea95c3512",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
   },
+  m10702ProfileThreeDrafts: {
+    file: "20261030-A28-b533a9f-exact-M10701-M10702-browser.log",
+    observedCodeSha: "b533a9f86cbef40a3026da4a4008838cbc2c23e2",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
   m10701IncompleteIdentity: {
     file: "20261030-A28-d5daaaf-m10701-incomplete-identity-browser.log",
     observedCodeSha: "d5daaaf14585a082e156ec43c8aa20994b6f4656",
@@ -441,7 +446,10 @@ const browserClauseMap = {
     ["company", "Actual PDF Admin preview has inline PDF bytes; all authorization scopes/expiry not covered"],
     ["appealIntegrityFixed", "Authorized Admin clicked retained PNG evidence and opened real 200-byte image preview in new tab while retaining reasoned appeal form; other scopes and token expiry remain open"]
   ],
-  "M1.07.02": [["mfaAccommodationPrivacy", "Worker qualification draft editable with dirty-state guard on links/Back, rejected malformed URL retains input, successful saved snapshot across navigation, delayed save cannot erase later edits; both native navigation/history fallback browser tests"]],
+  "M1.07.02": [
+    ["m10702ProfileThreeDrafts", "Actual authenticated 390px Worker Chromium used all three real /worker/profile?section=Personal/Contact/Professional forms: each invalid server-validated save returned field error without clearing originally entered valid/invalid text, select and relocation checkbox, then corrected retry saved. Cold reload, navigation between all tabs and Worker dashboard return preserved exact submitted section drafts, completion reached 100% but no premature profile submission. Migrated PGlite confirms exactly three successfully persisted version increments, profile.status READY and null submitted_at, exact legal/contact/professional fields and three section-saved audit events without invalid attempted writes. Product fix controlled section forms plus prevented automatic reset after server rejection. Original transient save toast can be refreshed away, test verifies persistent Complete section in UI instead. Exact source SHA Chromium 2/2 with M1.07.01. Does not cover uncommitted form navigation guard, parallel browser stale-edit conflicts, verified-detail correction request or every invalid input variant"],
+    ["mfaAccommodationPrivacy", "Separate saved qualification and dirty-state navigation guard evidence (not proof of these three Worker Profile forms); retained as adjacent guard behavior, not complete M1.07.02 coverage"]
+  ],
   "M1.07.03": [["negativeWorkerCompany", "Real initial identity rejection retains submitted version, reason and human review, and issues no permanent ID; approve and changes routes not this test"]],
   "M1.07.06": [
     ["adversarial", "Admin cleared duplicate Worker gets only one permanent ID; historical correction matrix open"],
