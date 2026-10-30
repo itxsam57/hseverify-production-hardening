@@ -42,8 +42,15 @@ test("Real signed issuance → public Verify/Concern/scanned evidence → Admin 
  await publicPage.getByRole("button",{name:"Verify",exact:true}).click();await publicPage.waitForURL("**/verify/result/**");
  await publicPage.getByRole("link",{name:"Report a credential concern",exact:true}).click();
  await publicPage.getByLabel("Concern type").selectOption("document_concern");
- await publicPage.getByLabel("What is wrong?").fill("Review this signed credential with independent evidence; no fraud finding is asserted.");
+ await publicPage.getByLabel("What is wrong?").fill("short");
  await publicPage.getByLabel("Email",{exact:true}).fill("concern.browser@example.test");
+ await publicPage.locator("form").evaluate(form=>{form.noValidate=true;});
+ await publicPage.getByRole("button",{name:"Submit concern",exact:true}).click();
+ await publicPage.getByText("Check the concern details and contact information.",{exact:true}).waitFor({timeout:15000});
+ assert.equal(await publicPage.getByLabel("What is wrong?").inputValue(),"short","Invalid concern must retain the user's draft.");
+ assert.equal(await publicPage.getByLabel("Email",{exact:true}).inputValue(),"concern.browser@example.test");
+ assert.equal(await publicPage.getByText("Concern reference:",{exact:true}).count(),0,"Invalid concern must not mint a reference.");
+ await publicPage.getByLabel("What is wrong?").fill("Review this signed credential with independent evidence; no fraud finding is asserted.");
  await publicPage.getByLabel("Evidence (optional)").setInputFiles({name:"concern-proof.pdf",mimeType:"application/pdf",buffer:bytes});
  await publicPage.getByRole("button",{name:"Submit concern",exact:true}).click();
  const status=publicPage.locator(".public-form-status");await status.getByText(/Concern reference:/).waitFor();

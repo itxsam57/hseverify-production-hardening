@@ -396,9 +396,9 @@ jobs:
       - name: Desktop and mobile public entry controls
         if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/public-navigation.browser.test.mjs
-      - name: Public contact and demo reach private staff intake and preserve concern reporting
+      - name: M1.12 public concern form, scanned private evidence, staff intake, resolution and public inquiries
         if: ${{ matrix.shard == 2 }}
-        run: node --test tests/browser/public-inquiry.browser.test.mjs
+        run: node --test --test-concurrency=1 tests/browser/public-inquiry.browser.test.mjs tests/browser/credential-concern-review.browser.test.mjs
 
       - name: Owned personal-data access and export runtime
         if: ${{ matrix.shard == 3 }}
