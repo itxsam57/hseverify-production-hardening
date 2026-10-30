@@ -143,7 +143,11 @@ function SummaryCard({
               : "Duplicate eligibility has not been evaluated yet."}
         </p>
         {correction ? (
-          <p>Latest correction: {correction.decisionReasonCode === "manual_review_unable_to_verify" ? "unable to verify" : correction.decision ?? (correction.submittedAt ? "submitted" : "draft")}</p>
+          <p>Latest correction: {correction.decisionReasonCode === "manual_review_unable_to_verify"
+            ? "unable to verify"
+            : correction.decisionReasonCode === "manual_review_changes_requested"
+              ? "changes requested"
+              : correction.decision ?? (correction.submittedAt ? "submitted" : "draft")}</p>
         ) : null}
       </div>
     </section>

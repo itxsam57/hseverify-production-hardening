@@ -522,7 +522,7 @@ test(
             assert.match(mainText, /Provide additional evidence showing practical use/i);
 
 
-            if (process.env.HSE_IDENTITY_QUEUE_FAILURE !== "true") {
+            if (process.env.HSE_IDENTITY_QUEUE_FAILURE !== "true" && process.env.HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY !== "true") {
             for (const [kind,label,value] of [["experience","Duties / experience detail","Corrected experience supported by attributable site records."],["skill","Proficiency claim","Evidence verified practical proficiency"]]) {
               console.log("SCENARIO: correct and resubmit " + kind);
               await reviseEvidence(worker, baseUrl, kind, label, value);
@@ -618,10 +618,25 @@ test(
               await worker.getByText("Verified", {exact:true}).first().waitFor();
               assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
               await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
-              await worker.getByText(outcome==="UNABLE_TO_VERIFY"?"Latest correction: unable to verify":"Latest correction: rejected", {exact:true}).waitFor();
+              await worker.getByText(
+                outcome==="UNABLE_TO_VERIFY" ? "Latest correction: unable to verify"
+                  : outcome==="CHANGES_REQUESTED" ? "Latest correction: changes requested" : "Latest correction: rejected",
+                {exact:true}
+              ).waitFor();
             }
             await worker.goto(`${baseUrl}/worker/evidence`);
 
+            if (process.env.HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY === "true") {
+              await worker.goto(baseUrl+"/worker/identity",{waitUntil:"domcontentloaded"});
+              await worker.getByText("Verified",{exact:true}).first().waitFor();
+              await worker.getByText(permanentWorkerId,{exact:true}).waitFor();
+              assert.equal(await worker.getByLabel("Legal first name").inputValue(),"Independent Corrected");
+              await worker.goto(baseUrl+"/worker/dashboard",{waitUntil:"domcontentloaded"});
+              await worker.getByText(permanentWorkerId,{exact:true}).waitFor();
+              await worker.getByText("Verified",{exact:true}).first().waitFor();
+              console.log("ACTUAL_M10705_BROWSER initial verified, accepted corrected name, REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY further corrections, original identity and permanent Worker ID preserved after cold reload");
+              return;
+            }
             const employment = worker.locator("article").filter({ hasText: "Employment record" }).first();
             await employment.getByLabel("Employment end date").fill("2026-09-01");
             await employment.getByLabel("End reason").fill("Employment ended after project completion.");
@@ -729,6 +744,45 @@ test(
           assert.equal(identity.lifecycle_status,"rejected");
           assert.equal((await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].count,0);
           assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
+          return;
+        }
+        if (process.env.HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY === "true") {
+          const workerId="audit_worker_account_20260901";
+          const identities=(await database.query("SELECT identity_id,lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1",[workerId])).rows;
+          assert.equal(identities.length,1);
+          assert.equal(identities[0].lifecycle_status,"verified");
+          assert.equal(identities[0].current_version_number,2,"Only the accepted correction may replace the active verified identity.");
+          const versions=(await database.query("SELECT identity_version_id,version_number,parent_version_id,version_kind,version_status,submitted_at FROM worker_identity_versions WHERE identity_id=$1 ORDER BY version_number",[identities[0].identity_id])).rows;
+          assert.equal(versions.length,5);
+          assert.deepEqual(versions.map(x=>x.version_kind),["initial","correction","correction","correction","correction"]);
+          assert.ok(versions.every(x=>x.version_status==="submitted"&&x.submitted_at));
+          const originalId=versions[0].identity_version_id;
+          const approvedId=versions[1].identity_version_id;
+          assert.equal(versions[1].parent_version_id,originalId);
+          for(const version of versions.slice(2))assert.equal(version.parent_version_id,approvedId);
+          const originals=(await database.query("SELECT identity_version_id,legal_first_name FROM worker_identity_version_drafts WHERE identity_version_id IN ($1,$2)",[originalId,approvedId])).rows;
+          assert.equal(originals.length,2);
+          assert.equal(originals.find(row=>row.identity_version_id===originalId).legal_first_name,"Independent");
+          assert.equal(originals.find(row=>row.identity_version_id===approvedId).legal_first_name,"Independent Corrected");
+          const issued=(await database.query("SELECT permanent_worker_id,identity_version_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",[workerId])).rows;
+          assert.equal(issued.length,1);
+          assert.match(issued[0].permanent_worker_id,/^worker_id_[A-Za-z0-9_-]{24}$/);
+          const tasks=(await database.query("SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='identity'",[workerId])).rows;
+          assert.equal(tasks.length,5);
+          for(const [i,status] of ["APPROVED","APPROVED","REJECTED","CHANGES_REQUESTED","UNABLE_TO_VERIFY"].entries()){
+            assert.ok(tasks.some(t=>t.source_version_id===versions[i].identity_version_id&&t.task_status===status),
+              "Missing exact correction review "+status+" on version "+versions[i].version_number);
+          }
+          const bindings=(await database.query("SELECT identity_version_id,purpose,binding_status FROM worker_identity_evidence_bindings WHERE worker_account_id=$1",[workerId])).rows;
+          assert.ok(bindings.some(x=>x.identity_version_id===originalId&&x.purpose==="identity_document"));
+          assert.ok(bindings.some(x=>x.identity_version_id===approvedId&&x.purpose==="identity_document"));
+          assert.ok(bindings.every(x=>versions.some(v=>v.identity_version_id===x.identity_version_id)));
+          const corrections=(await database.query("SELECT r.parent_version_id,r.correction_version_id,d.decision,d.reason_code FROM worker_identity_correction_requests r JOIN worker_identity_correction_decisions d ON d.correction_request_id=r.correction_request_id WHERE r.worker_account_id=$1",[workerId])).rows;
+          assert.equal(corrections.length,4);
+          assert.equal(corrections.filter(x=>x.decision==="accepted").length,1);
+          assert.equal(corrections.filter(x=>x.decision==="rejected").length,3);
+          assert.ok(corrections.every(row=>row.reason_code&&versions.some(v=>v.identity_version_id===row.correction_version_id)));
+          console.log("ACTUAL_M10705_DB five retained exact-version reviews, unchanged original and approved evidence, one permanent Worker ID and only accepted correction active");
           return;
         }
         if (process.env.HSE_PUBLIC_WORKER_LOOKUP_ONLY === "true") {
