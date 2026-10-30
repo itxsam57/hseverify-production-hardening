@@ -349,9 +349,9 @@ jobs:
         if: ${{ matrix.shard == 3 }}
         run: HSE_EXPERIENCE_SCAN_RETRY_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
 
-      - name: M1.07 Worker incomplete identity submission preserves partial draft and blocks premature verification
+      - name: M1.07 Worker identity incomplete and profile drafts validation navigation retry
         if: ${{ matrix.shard == 3 }}
-        run: node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs
+        run: node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs tests/browser/m1-07-profile-draft-navigation.browser.test.mjs
 
       - name: M3.03 public share link field scopes and neutral invalid expired revoked token denials
         if: ${{ matrix.shard == 4 }}
