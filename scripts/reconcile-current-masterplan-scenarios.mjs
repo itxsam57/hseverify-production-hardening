@@ -51,6 +51,11 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m10603ScannerOutageNative: {
+    file: "20261031-A28-01d9d23-exact-M10603-scanner-native.log",
+    observedCodeSha: "01d9d2398141f485900311a49ddeddd5a0a7a72d",
+    passed: "ℹ pass 7", failed: "ℹ fail 0"
+  },
   m10802PendingTenantBrowser: {
     file: "20261031-A28-6f686e6-exact-M10802-Company-Chromium.log",
     observedCodeSha: "6f686e62cfdc3725166bde43f395f37af17e74ea",
@@ -537,6 +542,9 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M1.06.03": [
+    ["m10603ScannerOutageNative", "Exact committed source 01d9d23 real migrated PGlite and local encrypted private-object-file lifecycle scan handler 7/7 PASS: new scanner-unavailable test uses actual leased outbox and injected throwing scanner, confirms result retryable scanner_error, accepted quarantined object remains scan_pending and unavailable, no available audit; concurrent schedule returns same job and generation, identical replay bytes accepted idempotently, different bytes at same original private object key denied. After real outbox backoff/reclaim, local deterministic scanner marks ONLY original accepted digest available with one persisted scan.available audit; attempts to replace original bytes or rescan accepted file rejected. Existing same exact source 6 other scanner-runtime cases pass: clean exactly once, malicious sample unsafe, one retry recovery, exhausted retries terminal scan_failed, missing/tampered object terminal fail, and expired lease cannot mutate scan result. Isolated runtime harness updated for 3 newly imported report/email outbox finalizers, with job-type-checked no-op only on secure_file.scan; this is not a production scanner adapter implementation. Does NOT verify real external scanner API outage, provider restoration, multipart upload UI, populated protected staging, every Viewer/Reviewer privacy boundary or complete release security."],
+  ],
   "M1.08.02": [
     ["m10802PendingTenantBrowser", "Exact committed source 6f686e6 real authenticated Company-owner MFA Chromium 1/1 PASS: RED demonstrated a live tenant pending but prior Company verification case verified displayed misleading verified badge and omitted required Open Company verification link. Root dashboard fix prioritizes authoritative platform_tenants.tenant_status and restores verification access whenever tenant is not active. A signed-in pending Company sees pending status, clicks actual Company profile/verification route, while forged/stale in-memory authorized service principals cannot create workforce invitations, registration codes, Assurance Orders or billing checkouts; physical database retains identical invoice/ledger/order/invitation/code counts, previous sessions remain active. Protected Company billing, workforce invitations and Assurance Order page navigation shows safe access-denied, with no HTTP 500 or protected form exposure. Re-activating same tenant without altering verified historical case restores verified badge, suppresses verification-warning link, and reopens actual Company billing and workforce pages using existing auth session. This uses disposable PGlite and test owner MFA, not real company verification provider acceptance, billing provider activation, populated staging or all possible high-risk Company mutations. Recorded 1/1 is one full local browser scenario, not production release certification."]
   ],
@@ -850,7 +858,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
