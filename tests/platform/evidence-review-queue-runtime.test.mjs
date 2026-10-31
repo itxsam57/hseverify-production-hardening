@@ -108,8 +108,8 @@ async function seedCase(database, c, requestedEvidenceChecks=[]) {
   return { company, orderId, targetId, caseId, workerAccountId };
 }
 
-async function queueObservation(database, c, text="Supervisor directly observed the worker completing the competency safely and independently.") {
-  const seeded=await seedCase(database,c);
+async function queueObservation(database, c, text="Supervisor directly observed the worker completing the competency safely and independently.", requestedEvidenceChecks=[]) {
+  const seeded=await seedCase(database,c,requestedEvidenceChecks);
   const service=new EvidenceReviewService(database);
   for(const [accountId,sessionId,role] of [[seeded.company.accountId,seeded.company.sessionId,"company"],[seeded.workerAccountId,`session_m202_worker_${c}`,"worker"]]){
     await database.query(`INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$1,'active','fixture-hash',$3,$3,$3,$3)`,[accountId,accountId.toLowerCase()+"@supervisor.test",NOW]);
@@ -285,6 +285,66 @@ test("M2.02 CHANGES_REQUESTED returns the case to the Worker while preserving re
     assert.equal(state.rows[0].owner_kind,"worker");
     assert.match(state.rows[0].next_action,/correct/i);
   } finally { await database.close(); }
+});
+
+test("M2.02.04 corrected case evidence supersedes assigned stale work but preserves terminal decision history",async()=>{
+  const database=await db();
+  try{
+    const x=await queueObservation(database,"T",undefined,["qualification","experience"]);
+    const verifier=await seedVerifier(database,"U");
+    const records=[];
+    for(const [kind,letter] of [["qualification","X"],["experience","Y"]]){
+      const recordId=oid("evidence_record",letter),versionId=oid("evidence_version",letter);
+      await database.query(`INSERT INTO worker_evidence_records
+        (record_id,worker_account_id,record_kind,lifecycle_status,current_version_id,created_at,updated_at)
+        VALUES ($1,$2,$3,'active',NULL,$4,$4)`,[recordId,x.workerAccountId,kind,NOW]);
+      await database.query(`INSERT INTO worker_evidence_versions
+        (version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at)
+        VALUES ($1,$2,1,1,'submitted',NULL,$3,$3,$3)`,[versionId,recordId,NOW]);
+      await database.query("UPDATE worker_evidence_records SET current_version_id=$2 WHERE record_id=$1",[recordId,versionId]);
+      records.push({kind,letter,recordId,versionId});
+    }
+    assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),2);
+    const initial=(await database.query("SELECT task_id,evidence_kind,source_version_id FROM evidence_review_tasks WHERE case_id=$1 AND evidence_kind IN ('qualification','experience') ORDER BY evidence_kind",[x.caseId])).rows;
+    assert.equal(initial.length,2);
+    for(const task of initial){
+      await authorizeReviewFixture(database,{taskId:task.task_id,verifiers:[verifier],at:NOW_DATE});
+      await x.service.claim(verifier,task.task_id,NOW_DATE);
+    }
+    const oldAssigned=initial.find(t=>t.evidence_kind==="qualification");
+    const oldTerminal=initial.find(t=>t.evidence_kind==="experience");
+    await x.service.decide(verifier,oldTerminal.task_id,"APPROVED","Review concluded the original experience version is supported.",NOW_DATE);
+    const terminalBefore=(await database.query("SELECT decision_id,source_version_id,outcome,reason FROM evidence_review_decisions WHERE task_id=$1",[oldTerminal.task_id])).rows;
+    assert.equal(terminalBefore.length,1);
+    const now2="2026-08-18T01:03:00.000Z";
+    for(const record of records){
+      const replacement=oid("evidence_version",record.letter.toLowerCase());
+      await database.query("UPDATE worker_evidence_versions SET version_status='superseded',updated_at=$2 WHERE version_id=$1",[record.versionId,now2]);
+      await database.query(`INSERT INTO worker_evidence_versions
+        (version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at)
+        VALUES ($1,$2,2,1,'submitted',$3,$4,$4,$4)`,
+        [replacement,record.recordId,record.versionId,now2]);
+      await database.query("UPDATE worker_evidence_records SET current_version_id=$2,updated_at=$3 WHERE record_id=$1",[record.recordId,replacement,now2]);
+      record.replacement=replacement;
+    }
+    assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,new Date(now2)),2);
+    const after=(await database.query("SELECT task_id,evidence_kind,source_version_id,task_status FROM evidence_review_tasks WHERE case_id=$1 AND evidence_kind IN ('qualification','experience') ORDER BY evidence_kind,created_at,source_version_id",[x.caseId])).rows;
+    assert.equal(after.length,4);
+    const priorAssigned=after.find(t=>t.task_id===oldAssigned.task_id);
+    const priorTerminal=after.find(t=>t.task_id===oldTerminal.task_id);
+    assert.equal(priorAssigned.task_status,"SUPERSEDED","Corrected version must remove outdated assigned task from the Reviewer action queue.");
+    assert.equal(priorTerminal.task_status,"APPROVED","Previously completed review decision must remain terminal.");
+    for(const record of records){
+      const current=after.find(t=>t.evidence_kind===record.kind && t.source_version_id===record.replacement);
+      assert.equal(current?.task_status,"QUEUED");
+    }
+    await assert.rejects(x.service.decide(verifier,oldAssigned.task_id,"APPROVED","Stale task must not approve old data.",new Date(now2)),error=>error instanceof EvidenceReviewConflictError || error instanceof EvidenceReviewAccessError);
+    const terminalAfter=(await database.query("SELECT decision_id,source_version_id,outcome,reason FROM evidence_review_decisions WHERE task_id=$1",[oldTerminal.task_id])).rows;
+    assert.deepEqual(terminalAfter,terminalBefore);
+    assert.equal((await database.query("SELECT COUNT(*)::int n FROM evidence_review_decisions WHERE task_id=$1",[oldAssigned.task_id])).rows[0].n,0);
+    assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,new Date(now2)),0,"Replayed corrected versions must not duplicate new tasks.");
+    console.log("M20204_CASE_CORRECTION retained prior terminal evidence decision, superseded stale assigned version, new live versions queued, replay idempotent and stale decision denied.");
+  }finally{await database.close();}
 });
 
 test("M2.02 history-preserving rollback and repeat-safe reapply keep review rows intact",async()=>{

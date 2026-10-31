@@ -1282,6 +1282,22 @@ export class EvidenceReviewService {
     label: string,
     now: Date
   ): Promise<number> {
+    // A Worker correction may produce a new task while a Reviewer still holds
+    // the prior version. In the same case-locked transaction, retire only
+    // unresolved tasks for that identical record; completed decisions remain
+    // immutable and are never rewritten or re-opened by a later correction.
+    await database.query(
+      `UPDATE evidence_review_tasks
+          SET task_status='SUPERSEDED',updated_at=$7
+        WHERE tenant_id=$1
+          AND case_id=$2
+          AND worker_account_id=$3
+          AND evidence_kind=$4
+          AND source_record_id=$5
+          AND source_version_id<>$6
+          AND task_status IN ('QUEUED','ASSIGNED','UNABLE_TO_VERIFY','ESCALATED')`,
+      [tenantId,caseId,workerAccountId,kind,recordId,versionId,now.toISOString()]
+    );
     const result = await database.query(
       `INSERT INTO evidence_review_tasks(
          task_id,tenant_id,case_id,worker_account_id,evidence_kind,
