@@ -201,6 +201,14 @@ export type QuestionAdminListItem = Readonly<{
         workflow: QuestionWorkflow;
     }>[];
 }>;
+export type QuestionCapacityMetric = Readonly<{
+    frameworkReference: string;
+    publishedQuestions: number;
+    neverReservedPublishedQuestions: number;
+    questionReservations: number;
+    distinctWorkersWithReservations: number;
+    questionsEverReserved: number;
+}>;
 export class QuestionBankService {
     constructor(private readonly database: DatabaseClient) { }
     async importDraftQuestions(principal: AuthorizationPrincipal, rows: readonly {
@@ -367,6 +375,46 @@ export class QuestionBankService {
         if (!item)
             throw new QuestionBankAccessError();
         return (await this.transitionQuestion(principal, { questionId, expectedAuthoringVersionId: item.question.authoringVersionId, expectedWorkflowState: item.workflow.state, expectedRevisionNo: item.workflow.revisionNo, action: "PAUSE" }, now)).question;
+    }
+    async listCapacityMetrics(principal: AuthorizationPrincipal): Promise<readonly QuestionCapacityMetric[]> {
+        return this.database.transaction(async database => {
+            await liveAdmin(database, principal, new Date());
+            const result = await database.query<{
+                framework_reference: string;
+                published_questions: number | string;
+                never_reserved_published_questions: number | string;
+                question_reservations: number | string;
+                distinct_workers_with_reservations: number | string;
+                questions_ever_reserved: number | string;
+            }>(`SELECT f.framework_reference,
+                  COUNT(DISTINCT q.question_id) FILTER (
+                    WHERE q.question_status='ACTIVE' AND w.workflow_state='PUBLISHED'
+                  )::int AS published_questions,
+                  COUNT(DISTINCT q.question_id) FILTER (
+                    WHERE q.question_status='ACTIVE' AND w.workflow_state='PUBLISHED'
+                      AND i.question_id IS NULL
+                  )::int AS never_reserved_published_questions,
+                  COUNT(i.form_item_id)::int AS question_reservations,
+                  COUNT(DISTINCT i.worker_account_id)::int AS distinct_workers_with_reservations,
+                  COUNT(DISTINCT i.question_id)::int AS questions_ever_reserved
+                FROM assurance_frameworks f
+                LEFT JOIN assessment_question_versions v ON v.framework_id=f.framework_id
+                LEFT JOIN assessment_questions q ON q.question_id=v.question_id
+                  AND q.current_version_id=v.question_version_id
+                LEFT JOIN question_version_workflow w ON w.question_id=q.question_id
+                  AND w.question_version_id=v.question_version_id
+                LEFT JOIN generated_assessment_form_items i ON i.question_id=q.question_id
+                GROUP BY f.framework_id,f.framework_reference
+                ORDER BY f.framework_reference`);
+            return Object.freeze(result.rows.map(row => Object.freeze({
+                frameworkReference: row.framework_reference,
+                publishedQuestions: Number(row.published_questions),
+                neverReservedPublishedQuestions: Number(row.never_reserved_published_questions),
+                questionReservations: Number(row.question_reservations),
+                distinctWorkersWithReservations: Number(row.distinct_workers_with_reservations),
+                questionsEverReserved: Number(row.questions_ever_reserved)
+            })));
+        });
     }
     async listQuestions(principal: AuthorizationPrincipal): Promise<readonly QuestionAdminListItem[]> {
         return this.database.transaction(async (database) => {

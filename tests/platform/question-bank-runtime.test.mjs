@@ -612,3 +612,68 @@ test("M2.04 bulk draft import is all-or-nothing, reports the failing row and pre
     await database.close();
   }
 });
+
+test("M2.04 capacity metrics reflect publication, Worker reservations and retirement without leaking answers", async () => {
+  const database=await db();
+  try {
+    const admin=await seedAdmin(database,"Z");
+    const revoked=await seedAdmin(database,"V",{revoked:true});
+    const framework=await seedFramework(database,"Z");
+    const other=await seedFramework(database,"W");
+    const service=new QuestionBankService(database);
+    const version=(ref,prompt)=>common(ref,prompt,"MULTIPLE_CHOICE",{
+      options:["Stop and assess","Proceed"],answerKey:"Stop and assess"
+    });
+    const created=await service.createQuestion(admin,{questionReference:"CAP-ONE",version:version(framework.frameworkReference,"Which safe approach is required before entering the first restricted site?")},NOW_DATE);
+    const pending=await service.createQuestion(admin,{questionReference:"CAP-TWO",version:version(framework.frameworkReference,"Which safe approach is required before entering the second restricted site?")},NOW_DATE);
+    const foreign=await service.createQuestion(admin,{questionReference:"CAP-OTHER",version:version(other.frameworkReference,"Which safe approach is required before entering another restricted site?")},NOW_DATE);
+    const get=async ref=>(await service.listCapacityMetrics(admin)).find(r=>r.frameworkReference===ref);
+    let before=await get(framework.frameworkReference);
+    assert.equal(before.publishedQuestions,0);
+    assert.equal(before.neverReservedPublishedQuestions,0);
+    assert.equal(before.questionReservations,0);
+    assert.equal(before.distinctWorkersWithReservations,0);
+    await assert.rejects(service.listCapacityMetrics(revoked),QuestionBankAccessError);
+    const live=await publish(database,service,admin,created);
+    const unpublished=await get(framework.frameworkReference);
+    assert.equal(unpublished.publishedQuestions,1);
+    assert.equal(unpublished.neverReservedPublishedQuestions,1);
+    assert.equal(unpublished.questionReservations,0);
+    assert.equal((await get(other.frameworkReference)).publishedQuestions,0);
+    await publish(database,service,admin,pending);
+    assert.equal((await get(framework.frameworkReference)).publishedQuestions,2);
+    const blueprintId=oid("assessment_blueprint","z");
+    const blueprintVersionId=oid("blueprint_version","z");
+    await database.query("INSERT INTO assessment_blueprints(blueprint_id,blueprint_reference,created_by_account_id,created_at,updated_at) VALUES($1,$2,$3,$4,$4)",
+      [blueprintId,"CAP-BP-Z",admin.accountId,NOW]);
+    await database.query("INSERT INTO assessment_blueprint_versions(blueprint_version_id,blueprint_id,version_no,framework_id,title,selectors_json,created_by_account_id,created_at) VALUES($1,$2,1,$3,'Capacity check',$4::jsonb,$5,$6)",
+      [blueprintVersionId,blueprintId,framework.frameworkId,JSON.stringify([{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}]),admin.accountId,NOW]);
+    const formId=oid("assessment_form","z");
+    const worker="worker_capacity_metric_example";
+    await database.transaction(async tx=>{
+      await tx.query("INSERT INTO generated_assessment_forms(form_id,case_id,worker_account_id,blueprint_version_id,generation_nonce_hex,question_count,generated_at) VALUES($1,$2,$3,$4,$5,1,$6)",
+        [formId,oid("assurance_case","z"),worker,blueprintVersionId,"a".repeat(64),NOW]);
+      await tx.query("INSERT INTO generated_assessment_form_items(form_item_id,form_id,worker_account_id,position,question_id,question_version_id,created_at) VALUES($1,$2,$3,1,$4,$5,$6)",
+        [oid("assessment_form_item","z"),formId,worker,created.question.questionId,created.version.questionVersionId,NOW]);
+    });
+    const afterReservation=await get(framework.frameworkReference);
+    assert.equal(afterReservation.publishedQuestions,2);
+    assert.equal(afterReservation.neverReservedPublishedQuestions,1);
+    assert.equal(afterReservation.questionReservations,1);
+    assert.equal(afterReservation.distinctWorkersWithReservations,1);
+    assert.equal(afterReservation.questionsEverReserved,1);
+    assert.equal((await get(other.frameworkReference)).questionReservations,0);
+    assert.equal(JSON.stringify(afterReservation).includes("Stop and assess"),false,"Never return hidden answer keys or question prompts");
+    await transition(service,admin,live,"PAUSE");
+    const paused=await get(framework.frameworkReference);
+    assert.equal(paused.publishedQuestions,1);
+    assert.equal(paused.neverReservedPublishedQuestions,1);
+    assert.equal(paused.questionReservations,1,"Historic Worker reservation cannot disappear after pausing publication");
+    const resumed=(await service.listQuestions(admin)).find(r=>r.question.questionId===created.question.questionId);
+    await transition(service,admin,resumed,"RESUME");
+    assert.equal((await get(framework.frameworkReference)).publishedQuestions,2);
+    assert.equal((await get(framework.frameworkReference)).neverReservedPublishedQuestions,1);
+    await publish(database,service,admin,foreign);
+    assert.equal((await get(other.frameworkReference)).publishedQuestions,1);
+  } finally {await database.close();}
+});

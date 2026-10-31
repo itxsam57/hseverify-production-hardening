@@ -63,6 +63,9 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         const policy=page.locator("form").filter({has:page.getByRole("button",{name:"Publish immutable version"})});
         await policy.getByLabel("Framework reference",{exact:true}).fill("UI-AUTHORING");await policy.getByLabel("Policy reference",{exact:true}).fill("UI-POLICY");await policy.getByLabel("Title",{exact:true}).fill("UI authored policy");await policy.getByLabel("Effective from",{exact:true}).fill("2026-01-01T00:00");await policy.getByRole("button",{name:"Publish immutable version"}).click();await page.getByRole("status").getByText("Immutable policy version published.",{exact:true}).waitFor();
         await page.goto(`${baseUrl}/admin/question-bank`);
+        const publishedMetric=page.locator('[data-framework-reference="UI-AUTHORING"] [data-capacity-metric="published"]');
+        const neverReservedMetric=page.locator('[data-framework-reference="UI-AUTHORING"] [data-capacity-metric="never-reserved"]');
+        assert.equal((await publishedMetric.innerText()).trim(),"0");
         const version={questionType:"MULTIPLE_CHOICE",prompt:"Which action controls an uncontrolled hazard?",options:["Stop work","Ignore it"],answerKey:"Stop work",rubric:null,frameworkReference:"UI-AUTHORING",domainReference:"Hazard control",difficulty:"MEDIUM",tags:["core"]};
         // M2.04.05: actual signed-in Admin bulk-form input, all-or-none persistence and row feedback.
         const batchForm=page.locator("form").filter({has:page.getByRole("button",{name:"Validate and import drafts",exact:true})});
@@ -92,7 +95,10 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await reviewPage.goto(`${baseUrl}/admin/question-bank`);
         await reviewCard.getByRole("button",{name:"Approve version",exact:true}).click();await reviewCard.getByText(/v1 · APPROVED/).first().waitFor();
         await reviewCard.getByRole("button",{name:"Publish approved version",exact:true}).click();await reviewCard.getByText(/v1 · PUBLISHED/).first().waitFor();
-        await page.goto(`${baseUrl}/admin/question-bank`);await card.getByText("Create a new immutable revision",{exact:true}).click();
+        await page.goto(`${baseUrl}/admin/question-bank`);
+        assert.equal((await publishedMetric.innerText()).trim(),"1","First published question increases live capacity");
+        assert.equal((await neverReservedMetric.innerText()).trim(),"1");
+        await card.getByText("Create a new immutable revision",{exact:true}).click();
         await card.getByLabel("Replacement version JSON").fill(JSON.stringify({...version,prompt:"Which immediate action controls an uncontrolled hazard safely?"}));await card.getByRole("button",{name:"Save draft revision",exact:true}).click();
         await card.getByText(/v2 · DRAFT/).first().waitFor();await card.getByText("Published: Which action controls an uncontrolled hazard?",{exact:true}).waitFor();
         // Both live controls and the untouched old publication remain available during review.
@@ -113,11 +119,17 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await retire.getByLabel("Decision reason").fill("Retired after the real browser lifecycle verification.");await retire.getByRole("button",{name:"Retire version",exact:true}).click();await reviewCard.getByText(/v3 · RETIRED/).first().waitFor();
         await reviewCard.getByRole("button",{name:"Archive version",exact:true}).click();await reviewCard.getByText(/v3 · ARCHIVED/).first().waitFor();
         assert.equal(await reviewCard.getByRole("button").count(),0);
+        await page.goto(`${baseUrl}/admin/question-bank`);
+        assert.equal((await publishedMetric.innerText()).trim(),"0","Archived publication has no live capacity");
         // A second genuinely reviewed published question supplies blueprint capacity.
         await page.goto(`${baseUrl}/admin/question-bank`);
         await question.getByLabel("Stable reference").fill("UI-Q-CAPACITY");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify({...version,prompt:"Which first action safely supplies the assessment capacity?"}));await question.getByRole("button",{name:"Create draft question",exact:true}).click();
         const capacityCard=page.locator('[data-question-reference="UI-Q-CAPACITY"]');await capacityCard.getByText(/DRAFT/).first().waitFor();await capacityCard.getByRole("button",{name:"Submit for review",exact:true}).click();await capacityCard.getByText(/UNDER_REVIEW/).first().waitFor();
         await reviewPage.goto(`${baseUrl}/admin/question-bank`);const capacityReview=reviewPage.locator('[data-question-reference="UI-Q-CAPACITY"]');await capacityReview.getByRole("button",{name:"Approve version",exact:true}).click();await capacityReview.getByText(/APPROVED/).first().waitFor();await capacityReview.getByRole("button",{name:"Publish approved version",exact:true}).click();await capacityReview.getByText(/PUBLISHED/).first().waitFor();
+        await page.goto(`${baseUrl}/admin/question-bank`);
+        assert.equal((await publishedMetric.innerText()).trim(),"1","New publication restores live capacity");
+        assert.equal((await neverReservedMetric.innerText()).trim(),"1");
+        console.log("ACTUAL_M204_CAPACITY_BROWSER published inventory 0->1->0->1 after real Admin publish/retire/re-publish, global never reserved matches");
         console.log("ACTUAL_TWO_ADMIN_QUESTION_BROWSER independent login author Draft submit reviewer approval publication request-changes revision old-live pause-resume retire archive");
         await page.goto(`${baseUrl}/admin/assessment-blueprints`);
         const blueprint=page.locator("form").filter({has:page.getByRole("button",{name:"Create blueprint",exact:true})});

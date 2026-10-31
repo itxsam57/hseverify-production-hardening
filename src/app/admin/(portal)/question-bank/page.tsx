@@ -23,12 +23,21 @@ function validActions(item: QuestionAdminListItem, accountId: string): readonly 
 }
 export default async function QuestionBankPage() {
     const principal = await requirePlatformPermission({ expectedRole: "admin", permission: "platform.operations.manage" });
-    const questions = await (await getQuestionBankService()).listQuestions(principal);
+    const service = await getQuestionBankService();
+    const questions = await service.listQuestions(principal);
+    const capacity = await service.listCapacityMetrics(principal);
     const publishedCount = questions.filter(item => item.question.questionStatus === "ACTIVE").length;
     return <section className="page-stack">
  <div className="page-heading"><div><p className="eyebrow">Assessment administration</p><h1>Question Bank</h1><p>Drafts require an independent administrator to approve the exact version before publication. Only published versions enter live assessments.</p><p>{publishedCount} published questions available</p></div></div>
  <form action={createQuestionAction}><h2>Create question</h2><label>Stable reference<input name="questionReference" required minLength={2} maxLength={120}/></label><label>Version JSON<textarea name="versionPayload" required rows={16} placeholder={EXAMPLE}/></label><button type="submit">Create draft question</button></form>
  <QuestionBulkImportForm action={importDraftQuestionsAction}/>
+ <section aria-labelledby="question-capacity-heading">
+  <h2 id="question-capacity-heading">Published capacity by framework</h2>
+  <p>Live inventory and permanent generated-form reservations. “Never reserved” means globally unused published questions, not the unseen pool for a specific Worker. Reserved assignments stay in history even if a question is paused or retired.</p>
+  {capacity.length===0?<p>No assessment frameworks configured.</p>:<table><thead><tr><th scope="col">Framework</th><th scope="col">Published questions</th><th scope="col">Published never reserved</th><th scope="col">Historical reservations</th><th scope="col">Workers with reservations</th></tr></thead><tbody>
+    {capacity.map(item=><tr key={item.frameworkReference} data-framework-reference={item.frameworkReference}><th scope="row">{item.frameworkReference}</th><td data-capacity-metric="published">{item.publishedQuestions}</td><td data-capacity-metric="never-reserved">{item.neverReservedPublishedQuestions}</td><td data-capacity-metric="reservations">{item.questionReservations}</td><td data-capacity-metric="workers">{item.distinctWorkersWithReservations}</td></tr>)}
+  </tbody></table>}
+ </section>
  <section><h2>Current questions</h2>{questions.length === 0 ? <p>No questions have been created.</p> : questions.map(item => <article key={item.question.questionId} data-question-reference={item.question.questionReference}>
  <h3>{item.question.questionReference}</h3>
  <p>{item.version.questionType} · {item.version.difficulty} · v{item.version.versionNo} · {item.workflow.state}</p><p>{item.version.prompt}</p>
