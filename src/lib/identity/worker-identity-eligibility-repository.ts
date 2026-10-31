@@ -592,6 +592,45 @@ export class DatabaseWorkerIdentityEligibilityRepository
           "Permanent Worker ID requires a current duplicate evaluation."
         );
       }
+      // An earlier clear/review disposition cannot authorize ID issuance if
+      // another identity was submitted (or a candidate identity version
+      // changed) after that evaluation. Re-evaluate, then independently
+      // resolve any new duplicate signals; never merge accounts implicitly.
+      const currentCandidates = await transaction.query<EligibilityFactsRow>(
+        ELIGIBILITY_CANDIDATES_SQL,
+        [identityId]
+      );
+      const currentSignals = evaluateWorkerIdentityDuplicateSignals(
+        factsFromRow(targetRow),
+        currentCandidates.rows.map(factsFromRow)
+      );
+      const recordedSignals = await transaction.query<{
+        candidate_identity_id: string;
+        candidate_identity_version_id: string;
+        signal_type: string;
+        signal_strength: string;
+      }>(
+        `SELECT candidate_identity_id, candidate_identity_version_id,
+                signal_type, signal_strength
+           FROM worker_identity_duplicate_signals
+          WHERE check_id = $1`,
+        [latestCheck.checkId]
+      );
+      const key = (candidateIdentityId: string, candidateIdentityVersionId: string,
+        signalType: string, strength: string): string =>
+        JSON.stringify([candidateIdentityId, candidateIdentityVersionId, signalType, strength]);
+      const observed = currentSignals.map(signal =>
+        key(signal.candidateIdentityId, signal.candidateIdentityVersionId,
+          signal.signalType, signal.strength)).sort();
+      const recorded = recordedSignals.rows.map(signal =>
+        key(signal.candidate_identity_id, signal.candidate_identity_version_id,
+          signal.signal_type, signal.signal_strength)).sort();
+      if (JSON.stringify(observed) !== JSON.stringify(recorded)) {
+        throw new WorkerIdentityWorkerIdBlockedError(
+          "Duplicate identity evidence changed. A fresh duplicate evaluation is required before Worker ID issuance."
+        );
+      }
+
       const latestDisposition = await loadLatestDisposition(
         transaction,
         latestCheck.checkId
