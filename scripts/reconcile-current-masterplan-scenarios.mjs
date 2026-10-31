@@ -51,6 +51,21 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m10707CorrectionParentNative: {
+    file: "20261031-A28-7ccaf7f-exact-correction-duplicate-migration-native.log",
+    observedCodeSha: "7ccaf7fb339ac3f89759e796e8284fa164800df4",
+    passed: "ℹ pass 3", failed: "ℹ fail 0"
+  },
+  m10707CorrectionParentPostgres: {
+    file: "20261031-A28-6d735e6-exact-Postgres-identity-correction-2cases.log",
+    observedCodeSha: "6d735e6998cd5c4786338f45bbd10ce39709a6fd",
+    passed: "ℹ pass 2", failed: "ℹ fail 0"
+  },
+  m10707CorrectionParentBrowser: {
+    file: "20261031-A28-6d735e6-exact-Worker-Admin-duplicate-Chromium.log",
+    observedCodeSha: "6d735e6998cd5c4786338f45bbd10ce39709a6fd",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10707PostgresLockBrowser: {
     file: "20261031-A28-596b338-exact-Worker-Admin-duplicate-review-Chromium.log",
     observedCodeSha: "596b33885e31a4cad024b4f9f16752d3813abf08",
@@ -652,6 +667,9 @@ const browserClauseMap = {
     ["workerReviewWorkforce", "Actual verified identity correction declined REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY without invalidating original verified identity; accepted-correction and historic permanent-ID projection open"]
   ],
   "M1.07.07": [
+    ["m10707CorrectionParentNative", "Exact product source 7ccaf7f PGlite native 3/3: demonstrated RED where existing permanent Worker with verified identity requests real correction and matching second account erroneously receives CLEAR because current version is draft. Root fix candidate query uses immutable last verified parent version while correction pending; migration 0125 updates database duplicate-signal trigger with restrictive verified-parent check and reversible down/up. New test verifies second account REVIEW_REQUIRED for correction draft and submitted-but-not-approved correction, DB rejects forged unverified-version signal, one retained permanent ID, two independent accounts, and migration rollback/reapply restores original function exactly. Existing authenticated staff duplicate review native still passes; 15/15 S5 native tests separately pass. No provider-backed human identity source or all correction concurrency orders."],
+    ["m10707CorrectionParentPostgres", "Exact source 6d735e6 real isolated PostgreSQL16 2/2 native: prior actual two independent connections issuance-vs-matching-submission race remains blocked (wait and zero IDs) AND newly applied migration 0125 preserves already verified Worker ID identity parent during draft and submitted-unapproved correction. Distinct normalized matching second Worker forces duplicate review with only the verified parent version in retained signal rows, cannot issue second permanent ID, no merge. Authenticated Worker registration verification was seeded in synthetic fixture, not live external identity provider; these are two source-scoped PostgreSQL tests, not comprehensive release race certification. The isolated PostgreSQL cluster stopped cleanly."],
+    ["m10707CorrectionParentBrowser", "Exact code SHA 6d735e6 real independently authenticated Admin/Worker Chromium duplicate identity outcomes 1/1 PASS after new migration: matched independent identities are not merged, reasoned Admin dispositions and Worker visibility preserved and only separately cleared Worker gets Worker ID. This browser test does not create a pending verified identity correction; that specific collision is covered by native PostgreSQL and PGlite tests, not certified public browser journey."],
     ["m10707PostgresLockBrowser", "Exact product source 596b338 real authenticated Admin/Worker Chromium 1/1 PASS after PostgreSQL issuance write fence: two submitted independent Worker identities with normalized matching lawful signals entered retained duplicate-review queue, Admin performed reasoned outcomes and safe private evidence access; only the independently cleared identity gained permanent Worker ID, other identity remained distinct, subsequent stale review overwrite denied. This browser regression does not execute an uncommitted PostgreSQL race; separate m10707PostgresIssuanceRace exact source proves the two-connection race. Does not validate production SMS/provider identity proof or a second account bypassing precheck with forged credentials."],
     ["m10707PostgresIssuanceRace", "Exact committed source 596b338 actual isolated PostgreSQL 16 two independent database connections, migrated to 0120: first verified Worker and unrelated-account duplicate check initially CLEAR, later second identity with equivalent document+legal name/DOB is submitted via real production WorkerIdentityRepository in a distinct transaction held uncommitted after the actual submit operation. Without fix, real PostgreSQL test failed because the first ID was issued during the uncommitted competing submission (saved RED log). Root fix takes a transaction-scoped SHARE lock on worker_identity_versions BEFORE any issuance read; second Worker submission holds a ROW EXCLUSIVE write lock, so issuance waits, detects the newly committed duplicate signals and returns WorkerIdentityWorkerIdBlockedError. Asserted zero permanent Worker IDs, both separate identities retained, second identity submitted, no merge. Exact source 1/1 PASS and bounded isolated database auto-stopped. No full cross-account public signup browser, live identity provider, all identity-correction concurrent permutations, protected staging PostgreSQL or owner acceptance."],
     ["m10707StaleDuplicateNative", "Exact committed source d732748 15/15 migrated PGlite native S5 eligibility suite PASS after deliberately failing RED on stale clear: verified target first evaluated CLEAR, later distinct account submitted normalized matching document/name/DOB, stale check no longer issues permanent Worker ID and creates zero IDs until a new review. Also checks that a previously authorized staff CONTINUE disposition cannot authorize ID after a newly matching third account: requires fresh review and independent disposition. Unrelated later accounts leave valid clear checks eligible; normal clear, idempotent issuance, never-auto-merge, immutable audit/IDs, scoped read and unverified state tests remain PASS. Red log 12/13 with specifically missing rejection; exact GREEN 15/15. No real Worker browser duplicate signup/cross-account assessment, external identity provider, PostgreSQL cross-process concurrent identity submission/issuance race or protected staging. Test suite total 15, not 15 new cases."],
@@ -782,7 +800,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
