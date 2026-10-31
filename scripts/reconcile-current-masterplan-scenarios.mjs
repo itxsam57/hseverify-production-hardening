@@ -51,6 +51,11 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m205FormMatrixNative: {
+    file: "20261031-A28-6357726-exact-M205-matrix-native.log",
+    observedCodeSha: "6357726693fa110a0561d670cd6ae3a8c8263be2",
+    passed: "ℹ pass 8", failed: "ℹ fail 0"
+  },
   m204CapacityBrowser: {
     file: "20261031-A28-56e603e-exact-M20406-capacity-Chromium.log",
     observedCodeSha: "56e603e2ecf01dbc9b5f8d6e77d7d868bdb2c834",
@@ -427,6 +432,9 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.05.01": [["m205FormMatrixNative", "Exact source 6357726 migrated PGlite Admin service generates real canonical MCQ-only (2), LONG_TEXT+SHORT_TEXT written-only (2), and MCQ+LONG_TEXT mixed (2) blueprint-filtered immutable forms with exactly requested types and distinct stable question IDs. All 8 M2.05 native generation tests pass; full generation contract, SQL invariants, selector matching, audit, blueprint and answer-safe delivery regression passes on source equivalent. No real Worker browser on all three forms, no exhaustive marks/time/difficulty/hazard distributions, no protected staging or release certification."]],
+  "M2.05.02": [["m205FormMatrixNative", "For each MCQ-only/written-only/mixed form: exact source Admin PGlite generated items are permanently reserved to a stable Worker account and idempotent repeat call returns exact original form/version/order; second assurance case in different tenant for same Worker cannot reuse any already-reserved item. Existing native suite validates same-Worker revised stable-question exclusion and competing cross-case generation race, 8/8 PASS. No actual device, employment/company link change browser, separate account duplicate-identity resolution, or true Exposure Family variants tested."]],
+  "M2.05.04": [["m205FormMatrixNative", "For each of three fully reserved distinct Worker question pools, a second case in another tenant fails with an explicit insufficient unseen AssessmentFormGenerationError; no second generated form, no duplicate reservations, and second case still Assessment pending with Worker ownership. Migrated PGlite generation 8/8 PASS on exact source; no real billing credit ledger mutation was involved in this test, and full Worker UI, funding entitlement, audit notification, alternate equivalent-variant exception and live staging remain unverified."]],
   "M2.04.06": [[
     "m204CapacityBrowser",
     "Exact committed source 56e603e in signed-in independent Admin Chromium: framework live published question count and global never-reserved count 0 to 1 after independent reviewer approval/publication; archived former publication returns 0; publishing a replacement distinct question restores 1; no leaked answer key in metrics projection. Separately same source-equivalent migrated native PGlite 17/17 PASS covers 2 published questions, one permanent Worker form reservation reducing globally never-reserved to 1 but retaining published total 2, reservation and distinct Worker counters, paused publication reducing active count while reservation remains, resume restoring active count, cross-framework isolation and revoked Admin denial. Native generated form+item fixture is a committed transaction, not actual Worker browser generated exam. Metric is globally never-reserved, not per-Worker unseen blueprint-equivalent capacity. Actual live Worker exam, full staging DB, all mixed selectors, concurrent form generation and public release remain unverified."
@@ -713,7 +721,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
