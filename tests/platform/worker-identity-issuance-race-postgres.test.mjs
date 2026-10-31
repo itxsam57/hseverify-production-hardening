@@ -6,6 +6,7 @@ import {prepareSubmittedWorker,advanceThroughAutomatedChecks,markVerified} from 
 import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
 
 const {DatabaseWorkerIdentityRepository}=loadWorkerRegistrationTs("src/lib/identity/worker-identity-repository.ts");
+const {DatabaseWorkerIdentityCorrectionRepository}=loadWorkerRegistrationTs("src/lib/identity/worker-identity-correction-repository.ts");
 const base=process.env.HSE_POSTGRES_TEST_DATABASE_URL;
 if(!base)throw new Error("Isolated HSE_POSTGRES_TEST_DATABASE_URL is required for two-session duplicate Worker identity race.");
 const databaseName="hse_identity_race_"+process.pid;
@@ -78,5 +79,59 @@ test("actual two-connection PostgreSQL: later duplicate identity submission must
     await second?.close();
     await db?.close();
     try{await admin.execute('DROP DATABASE "'+databaseName+'"');}finally{await admin.close();}
+  }
+});
+
+
+test("actual PostgreSQL 16: verified identity remains a duplicate candidate throughout pending corrections",{timeout:180000},async()=>{
+  const url=new URL(base);
+  const admin=await openScriptDatabase({...env,databaseUrl:url.href});
+  const correctionDatabaseName=databaseName+"_correction";
+  let db;
+  try{
+    await admin.execute('CREATE DATABASE "'+correctionDatabaseName+'"');
+    url.pathname="/"+correctionDatabaseName;
+    db=await openScriptDatabase({...env,databaseUrl:url.href,releaseSha:"postgres-identity-correction"});
+    await applyMigrationsThrough(db,"postgres-identity-correction","0125_worker_identity_duplicate_correction_candidates");
+    const draft={legalFirstName:"Mina",legalLastName:"Hassan",dateOfBirth:"1992-09-14"};
+    const established=await prepareSubmittedWorker(db,"pg-corr-one",{draft,documentNumber:"PG-CORR-8765"});
+    await advanceThroughAutomatedChecks(established);
+    await markVerified(db,established.submitted.identity.identityId);
+    assert.equal((await established.eligibilityService.evaluate(established.submitted.identity.identityId)).checkStatus,"clear");
+    await established.eligibilityService.issuePermanentWorkerId(established.submitted.identity.identityId);
+    const correction=new DatabaseWorkerIdentityCorrectionRepository(Promise.resolve(db));
+    const lock=(await db.query("SELECT lock_version FROM worker_identities WHERE identity_id=$1",[established.submitted.identity.identityId])).rows[0].lock_version;
+    const pending=await correction.requestOwn(established.worker,{
+      expectedLockVersion:Number(lock),reason:"Updated lawful passport details requested for verified identity."
+    });
+    const second=await prepareSubmittedWorker(db,"pg-corr-two",{draft,documentNumber:"PGCORR8765"});
+    await advanceThroughAutomatedChecks(second);
+    await markVerified(db,second.submitted.identity.identityId);
+    const check=await second.eligibilityService.evaluate(second.submitted.identity.identityId);
+    assert.equal(check.checkStatus,"review_required",
+      "PostgreSQL cannot omit original verified identity while correction draft is current.");
+    const rows=(await db.query("SELECT candidate_identity_version_id FROM worker_identity_duplicate_signals WHERE check_id=$1",[check.checkId])).rows;
+    assert.ok(rows.length>0);
+    assert.ok(rows.every(row=>row.candidate_identity_version_id===established.submitted.currentVersion.identityVersionId));
+    const afterLock=(await db.query("SELECT lock_version FROM worker_identities WHERE identity_id=$1",[established.submitted.identity.identityId])).rows[0].lock_version;
+    await correction.submitOwn(established.worker,Number(afterLock));
+    const after=await second.eligibilityService.evaluate(second.submitted.identity.identityId);
+    assert.equal(after.checkStatus,"review_required",
+      "Even a submitted, unapproved correction must not overwrite its verified parent as candidate.");
+    const candidateRows=(await db.query("SELECT candidate_identity_version_id FROM worker_identity_duplicate_signals WHERE check_id=$1",[after.checkId])).rows;
+    assert.ok(candidateRows.length>0);
+    assert.ok(candidateRows.every(row=>row.candidate_identity_version_id===established.submitted.currentVersion.identityVersionId));
+    await assert.rejects(
+      second.eligibilityService.issuePermanentWorkerId(second.submitted.identity.identityId),
+      error=>error?.name==="WorkerIdentityWorkerIdBlockedError"
+    );
+    assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM worker_identity_worker_ids")).rows[0].n,1,
+      "Only the original permanent Worker ID may exist before human duplicate disposition.");
+    assert.notEqual(pending.correctionVersionId,established.submitted.currentVersion.identityVersionId);
+    console.log("ACTUAL_POSTGRES_PENDING_CORRECTION duplicate-check parent retained in draft+submitted, approved identity stable, second ID denied");
+  }finally{
+    await db?.close();
+    try{await admin.execute('DROP DATABASE "'+correctionDatabaseName+'"');}
+    finally{await admin.close();}
   }
 });
