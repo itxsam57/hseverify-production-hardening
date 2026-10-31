@@ -51,6 +51,16 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m205FamilyNative: {
+    file: "20261031-A28-3303934-exact-M20503-family-native.log",
+    observedCodeSha: "3303934f2a589d4da1d8062b552a9c221aaabca0",
+    passed: "ℹ pass 9", failed: "ℹ fail 0"
+  },
+  m205FamilyAdminBrowser: {
+    file: "20261031-A28-3303934-exact-M20503-family-Chromium.log",
+    observedCodeSha: "3303934f2a589d4da1d8062b552a9c221aaabca0",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m205FormMatrixNative: {
     file: "20261031-A28-6357726-exact-M205-matrix-native.log",
     observedCodeSha: "6357726693fa110a0561d670cd6ae3a8c8263be2",
@@ -432,6 +442,10 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.05.03": [
+    ["m205FamilyNative", "Exact source 3303934 PGlite migrated through additive 0124: separately approved/Published two different stable question IDs with one explicitly bound immutable Exposure Family plus a distinct family. 9/9 native generation tests PASS: allocator with 5/5 selector tests selects no two variants of same family in complete form, same permanent Worker retake in separate case cannot receive unreserved second variant, generated question-history retains family, direct forged SQL insert into generated form items using different question ID but previously reserved family rejected with unique-constraint 23505 and whole form rolled back; attempted UPDATE of stable family denied and unsafe migration rollback with populated question/exposure denied 55000. Existing legacy references are normalized for backfill; old content is not automatically asserted semantically equivalent. Full M2.05 suite passed. No actual Worker browser changed-device or displayed-unanswered-quit followed by same-family retake; no protected staging, production schema migration or identity dedup. The 9/9 is a generator suite total, not 9 independent family-only tests."],
+    ["m205FamilyAdminBrowser", "Source 3303934 independent signed-in Admin actual Chromium bulk-imported two distinct question references with the same explicitly supplied Exposure Family, both remained Draft with separate approval obligation and identical immutable family after cold reload; whole Admin author/review/publish/retire/blueprint catalogue regression remained 1/1 PASS. Does not prove actual candidate rendering across retakes or inability to reverse exposure via duplicated Worker accounts, external live providers, release-grade QA."],
+  ],
   "M2.05.01": [["m205FormMatrixNative", "Exact source 6357726 migrated PGlite Admin service generates real canonical MCQ-only (2), LONG_TEXT+SHORT_TEXT written-only (2), and MCQ+LONG_TEXT mixed (2) blueprint-filtered immutable forms with exactly requested types and distinct stable question IDs. All 8 M2.05 native generation tests pass; full generation contract, SQL invariants, selector matching, audit, blueprint and answer-safe delivery regression passes on source equivalent. No real Worker browser on all three forms, no exhaustive marks/time/difficulty/hazard distributions, no protected staging or release certification."]],
   "M2.05.02": [["m205FormMatrixNative", "For each MCQ-only/written-only/mixed form: exact source Admin PGlite generated items are permanently reserved to a stable Worker account and idempotent repeat call returns exact original form/version/order; second assurance case in different tenant for same Worker cannot reuse any already-reserved item. Existing native suite validates same-Worker revised stable-question exclusion and competing cross-case generation race, 8/8 PASS. No actual device, employment/company link change browser, separate account duplicate-identity resolution, or true Exposure Family variants tested."]],
   "M2.05.04": [["m205FormMatrixNative", "For each of three fully reserved distinct Worker question pools, a second case in another tenant fails with an explicit insufficient unseen AssessmentFormGenerationError; no second generated form, no duplicate reservations, and second case still Assessment pending with Worker ownership. Migrated PGlite generation 8/8 PASS on exact source; no real billing credit ledger mutation was involved in this test, and full Worker UI, funding entitlement, audit notification, alternate equivalent-variant exception and live staging remain unverified."]],
@@ -721,7 +735,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
