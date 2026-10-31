@@ -186,7 +186,14 @@ async function loadAssessmentSelectionInputs(
     `SELECT DISTINCT i.exposure_family_reference
        FROM generated_assessment_forms f
        JOIN generated_assessment_form_items i ON i.form_id=f.form_id
-      WHERE f.worker_account_id=$1`,
+       LEFT JOIN worker_identity_worker_ids historical_owner
+         ON historical_owner.worker_account_id=f.worker_account_id
+      WHERE f.worker_account_id=$1
+         OR historical_owner.permanent_worker_id=(
+           SELECT current_owner.permanent_worker_id
+           FROM worker_identity_worker_ids AS current_owner
+           WHERE current_owner.worker_account_id=$1
+         )`,
     [input.workerAccountId]
   );
   const excluded = new Set(priorResult.rows.map((row) => row.exposure_family_reference));

@@ -22,6 +22,28 @@ test("Duplicate identity staff recovery is authenticated, stale-safe, reasoned a
   await service.decide(admin,{...input,expectedRevision:1,disposition:"continue",reason:"Independent source documents establish distinct people despite the shared matching signal."});
   const own=await target.eligibilityService.loadOwnStatus(target.worker);assert.match(own.permanentWorkerId,/^worker_id_/);
   assert.equal((await candidate.eligibilityService.loadOwnStatus(candidate.worker)).permanentWorkerId,null);
+  await markVerified(db,candidate.submitted.identity.identityId);
+  const distinctCheck=await candidate.eligibilityService.evaluate(candidate.submitted.identity.identityId);
+  assert.equal(distinctCheck.checkStatus,"review_required");
+  assert.equal((await candidate.eligibilityService.loadOwnStatus(candidate.worker)).permanentWorkerId,null);
+  const secondReview=(await service.list(admin)).find(row=>row.check_id===distinctCheck.checkId);
+  assert.ok(secondReview,"A separate matching Worker remains independently subject to documented Admin review.");
+  await service.decide(admin,{
+   identityId:distinctCheck.identityId,
+   identityVersionId:distinctCheck.identityVersionId,
+   checkId:distinctCheck.checkId,
+   expectedRevision:0,
+   disposition:"continue",
+   reason:"Independent supporting records are represented by separate synthetic Workers; reviewer independently concludes they are different humans for this test."
+  });
+  const issuedOther=(await candidate.eligibilityService.loadOwnStatus(candidate.worker)).permanentWorkerId;
+  assert.match(issuedOther,/^worker_id_/);
+  assert.notEqual(issuedOther,own.permanentWorkerId,
+   "Two independently accepted distinct people must never share or auto-merge permanent Worker IDs.");
+  const ids=(await db.query("SELECT permanent_worker_id,worker_account_id FROM worker_identity_worker_ids WHERE worker_account_id=ANY($1::text[])",[[target.worker.accountId,candidate.worker.accountId]])).rows;
+  assert.equal(ids.length,2);
+  assert.equal(new Set(ids.map(row=>row.permanent_worker_id)).size,2);
+  assert.equal(new Set(ids.map(row=>row.worker_account_id)).size,2);
   const audits=(await db.query("SELECT actor_account_id,metadata FROM platform_audit_events WHERE metadata->>'duplicateReviewCheckId'=$1",[check.checkId])).rows;assert.equal(audits.length,2);assert.ok(audits.every(a=>a.actor_account_id===admin.accountId&&a.metadata.reason));
   assert.equal((await db.query("SELECT COUNT(*)::integer n FROM worker_identities WHERE identity_id=ANY($1::text[])",[[check.identityId,candidate.submitted.identity.identityId]])).rows[0].n,2);
   await db.query("UPDATE auth_sessions SET revoked_at=clock_timestamp(),revocation_reason='review revocation test' WHERE session_id=$1",[admin.sessionId]);await assert.rejects(service.list(admin),error=>error.name==='EvidenceReviewAccessError');
