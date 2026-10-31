@@ -69,8 +69,8 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         const version={questionType:"MULTIPLE_CHOICE",prompt:"Which action controls an uncontrolled hazard?",options:["Stop work","Ignore it"],answerKey:"Stop work",rubric:null,frameworkReference:"UI-AUTHORING",domainReference:"Hazard control",difficulty:"MEDIUM",tags:["core"]};
         // M2.04.05: actual signed-in Admin bulk-form input, all-or-none persistence and row feedback.
         const batchForm=page.locator("form").filter({has:page.getByRole("button",{name:"Validate and import drafts",exact:true})});
-        const batchA={questionReference:"UI-BULK-A",version:{...version,prompt:"What is the first safe action before using a temporary platform?"}};
-        const batchB={questionReference:"UI-BULK-B",version:{...version,prompt:"What should be inspected before a hazardous task starts?"}};
+        const batchA={questionReference:"UI-BULK-A",exposureFamilyReference:"UI-SHARED-FAMILY",version:{...version,prompt:"What is the first safe action before using a temporary platform?"}};
+        const batchB={questionReference:"UI-BULK-B",exposureFamilyReference:"UI-SHARED-FAMILY",version:{...version,prompt:"What should be inspected before a hazardous task starts?"}};
         await batchForm.getByLabel("Question batch JSON").fill(JSON.stringify([batchA,{...batchB,version:{...batchB.version,answerKey:"Unknown choice"}}]));
         await batchForm.getByRole("button",{name:"Validate and import drafts",exact:true}).click();
         await batchForm.getByRole("alert").getByText(/No rows imported.*Row 2/i).waitFor();
@@ -84,6 +84,9 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await page.reload();
         assert.equal(await page.locator('[data-question-reference="UI-BULK-A"]').count(),1);
         assert.equal(await page.locator('[data-question-reference="UI-BULK-B"]').count(),1);
+        await page.locator('[data-question-reference="UI-BULK-A"]').getByText("Exposure Family: UI-SHARED-FAMILY",{exact:true}).waitFor();
+        await page.locator('[data-question-reference="UI-BULK-B"]').getByText("Exposure Family: UI-SHARED-FAMILY",{exact:true}).waitFor();
+        console.log("ACTUAL_M205_EXPOSURE_FAMILY_ADMIN_BROWSER two distinct draft question IDs use one immutable family from actual JSON import form, survive reload");
         console.log("ACTUAL_M204_BULK_IMPORT_BROWSER row2 invalid rejects entire batch, two valid independent-approval drafts persist after cold reload");
         const question=page.locator("form").filter({has:page.getByRole("button",{name:"Create draft question",exact:true})});
         await question.getByLabel("Stable reference").fill("UI-Q-1");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify(version));await question.getByRole("button",{name:"Create draft question",exact:true}).click();

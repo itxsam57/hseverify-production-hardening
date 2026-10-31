@@ -45,7 +45,7 @@ async function db() {
   await applyMigrationsThrough(
     database,
     ENV.releaseSha,
-    "0103_question_approval_lifecycle"
+    "0124_question_exposure_families"
   );
   return database;
 }

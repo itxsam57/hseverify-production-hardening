@@ -39,7 +39,7 @@ const fingerprint = (value) =>
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0103_question_approval_lifecycle");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0124_question_exposure_families");
   return database;
 }
 

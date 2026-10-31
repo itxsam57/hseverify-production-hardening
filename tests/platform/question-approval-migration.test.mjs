@@ -165,7 +165,7 @@ test("Question approval direct SQL cannot self-review, activate unapproved conte
 });
 
 test("Archiving newer draft restores published authoring without resurrecting retired history",async()=>{
- const database=await databaseThrough();
+ const database=await databaseThrough("0124_question_exposure_families");
  try{
  const author=await seedAdmin(database,"A"),reviewer=await seedAdmin(database,"B"),framework=await seedFramework(database,"A"),service=new QuestionBankService(database);
  const payload=prompt=>({questionType:"TRUE_FALSE",prompt,answerKey:true,frameworkReference:framework.frameworkReference,domainReference:"Safety",difficulty:"MEDIUM"});
@@ -189,7 +189,7 @@ test("Archiving newer draft restores published authoring without resurrecting re
 });
 
 test("Archiving a stack of newer drafts restores latest retained Draft or Changes Requested authoring",async()=>{
- const database=await databaseThrough();
+ const database=await databaseThrough("0124_question_exposure_families");
  try{
  const author=await seedAdmin(database,"A"),reviewer=await seedAdmin(database,"B"),framework=await seedFramework(database,"A"),service=new QuestionBankService(database);
  const payload=prompt=>({questionType:"TRUE_FALSE",prompt,answerKey:true,frameworkReference:framework.frameworkReference,domainReference:"Safety",difficulty:"MEDIUM"});

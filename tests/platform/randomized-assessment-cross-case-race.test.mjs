@@ -41,7 +41,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function database() {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0103_question_approval_lifecycle");
+  await applyMigrationsThrough(db, ENV.releaseSha, "0124_question_exposure_families");
   return db;
 }
 

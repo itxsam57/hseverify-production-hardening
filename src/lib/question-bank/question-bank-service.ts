@@ -4,10 +4,11 @@ import { bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
 import type { DatabaseClient } from "../database/database";
 import { getDatabaseClient } from "../database/database";
-import { QuestionBankAccessError, QuestionBankConflictError, QuestionBankInputError, createQuestionId, createQuestionVersionId, normalizeQuestionReference, normalizeQuestionVersion, type NormalizedQuestionVersion, type QuestionStatus, type QuestionVersionInput, type StoredQuestion, type StoredQuestionVersion, type WrittenRubric, type QuestionAnswerKey, type QuestionType, type QuestionDifficulty, type QuestionWorkflow, type QuestionWorkflowAction, type QuestionWorkflowState } from "./question-bank-domain";
+import { QuestionBankAccessError, QuestionBankConflictError, QuestionBankInputError, createQuestionId, createQuestionVersionId, normalizeQuestionReference, normalizeExposureFamilyReference, normalizeQuestionVersion, type NormalizedQuestionVersion, type QuestionStatus, type QuestionVersionInput, type StoredQuestion, type StoredQuestionVersion, type WrittenRubric, type QuestionAnswerKey, type QuestionType, type QuestionDifficulty, type QuestionWorkflow, type QuestionWorkflowAction, type QuestionWorkflowState } from "./question-bank-domain";
 type QuestionRow = {
     question_id: string;
     question_reference: string;
+    exposure_family_reference: string;
     question_status: QuestionStatus;
     authoring_version_id: string | null;
     current_version_id: string | null;
@@ -82,6 +83,7 @@ function toQuestion(row: QuestionRow): StoredQuestion {
     return Object.freeze({
         questionId: row.question_id,
         questionReference: row.question_reference,
+        exposureFamilyReference: row.exposure_family_reference,
         questionStatus: row.question_status,
         currentVersionId: row.current_version_id,
         authoringVersionId: row.authoring_version_id,
@@ -213,6 +215,7 @@ export class QuestionBankService {
     constructor(private readonly database: DatabaseClient) { }
     async importDraftQuestions(principal: AuthorizationPrincipal, rows: readonly {
         questionReference: string;
+        exposureFamilyReference?: string;
         version: QuestionVersionInput;
     }[], now = new Date()): Promise<Readonly<{ createdCount: number }>> {
         if (!Array.isArray(rows) || rows.length === 0 || rows.length > 25)
@@ -240,8 +243,9 @@ export class QuestionBankService {
                         throw new QuestionBankInputError("Duplicate question reference within this import.");
                     seen.add(reference);
                     const framework = await frameworkId(database, normalized.frameworkReference);
+                    const family = normalizeExposureFamilyReference(row.exposureFamilyReference ?? reference);
                     const id = createQuestionId();
-                    await database.query("INSERT INTO assessment_questions(question_id,question_reference,question_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'INACTIVE',$3,$4,$4)", [id, reference, principal.accountId, now.toISOString()]);
+                    await database.query("INSERT INTO assessment_questions(question_id,question_reference,exposure_family_reference,question_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,$3,'INACTIVE',$4,$5,$5)", [id, reference, family, principal.accountId, now.toISOString()]);
                     const versionId = await insertVersion(database, id, 1, normalized, framework, principal, now);
                     await database.query("UPDATE assessment_questions SET current_version_id=$2,authoring_version_id=$2,current_content_fingerprint=$3 WHERE question_id=$1", [id, versionId, normalized.contentFingerprint]);
                     await appendAudit(database, principal, "assessment.question.created", id, { questionType: normalized.questionType, versionNo: 1, workflowState: "DRAFT", importRow: position });
@@ -258,6 +262,7 @@ export class QuestionBankService {
     }
     async createQuestion(principal: AuthorizationPrincipal, input: {
         questionReference: string;
+        exposureFamilyReference?: string;
         version: QuestionVersionInput;
     }, now = new Date()): Promise<QuestionAdminListItem> {
         const reference = normalizeQuestionReference(input.questionReference), normalized = normalizeQuestionVersion(input.version);
@@ -265,7 +270,8 @@ export class QuestionBankService {
             return await this.database.transaction(async (database) => {
                 await liveAdmin(database, principal, now);
                 const framework = await frameworkId(database, normalized.frameworkReference), id = createQuestionId();
-                await database.query("INSERT INTO assessment_questions(question_id,question_reference,question_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'INACTIVE',$3,$4,$4)", [id, reference, principal.accountId, now.toISOString()]);
+                const family = normalizeExposureFamilyReference(input.exposureFamilyReference ?? reference);
+                await database.query("INSERT INTO assessment_questions(question_id,question_reference,exposure_family_reference,question_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,$3,'INACTIVE',$4,$5,$5)", [id, reference, family, principal.accountId, now.toISOString()]);
                 const versionId = await insertVersion(database, id, 1, normalized, framework, principal, now);
                 await database.query("UPDATE assessment_questions SET current_version_id=$2,authoring_version_id=$2,current_content_fingerprint=$3 WHERE question_id=$1", [id, versionId, normalized.contentFingerprint]);
                 await appendAudit(database, principal, "assessment.question.created", id, { questionType: normalized.questionType, versionNo: 1, workflowState: "DRAFT" });

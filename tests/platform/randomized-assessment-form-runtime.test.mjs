@@ -1,6 +1,7 @@
 import {seedPublishedQuestion,revisePublishedFixtureQuestion} from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -41,7 +42,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0103_question_approval_lifecycle");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0124_question_exposure_families");
   return database;
 }
 
@@ -419,5 +420,87 @@ test("M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real gene
       assert.equal(reservationsAfter.rows[0].count,2,"No duplicate/reserved exposure after failed retake");
       console.log("NATIVE_M205_MATRIX_"+scenario.name.replace(/ /g,"_").toUpperCase()+" complete reserved form, original idempotent, second tenant/case fails closed");
     }
+  } finally {await database.close();}
+});
+
+test("M2.05.03 equivalent variants are excluded both within form and across worker retakes", async () => {
+  const database=await db();
+  try {
+    const admin=await seedAdmin(database,"y");
+    const framework=await seedFramework(database,"y");
+    const shared="EQUIVALENT-FAMILY-Y";
+    const questions=[];
+    for(const [c,family] of [["y",shared],["z",shared],["j","INDEPENDENT-FAMILY-J"]]){
+      const questionId=oid("assessment_question",c);
+      await seedPublishedQuestion(database,{
+        questionId,versionId:oid("question_version",c),
+        reference:"M205-FAMILY-"+c.toUpperCase(),exposureFamilyReference:family,
+        questionType:"MULTIPLE_CHOICE",
+        prompt:`What specific safe step is needed for related hazard variant ${c}?`,
+        options:["Stop work","Continue work","Ignore the hazard"],
+        answerKey:"Stop work",frameworkId:framework.frameworkId,
+        domainReference:"General Safety",difficulty:"MEDIUM",
+        tags:c==="j"?["core"]:["core","family"],
+        fingerprint:fingerprint("m205-exposure-family-"+c),now:NOW
+      });
+      questions.push({questionId,family});
+    }
+    const original=await database.query("SELECT question_id,exposure_family_reference FROM assessment_questions WHERE question_id=$1",[questions[0].questionId]);
+    assert.equal(original.rows[0].exposure_family_reference,shared);
+    await assert.rejects(
+      database.query("UPDATE assessment_questions SET exposure_family_reference='FORGED-FAMILY' WHERE question_id=$1",[questions[0].questionId]),
+      error=>error.code==="55000","Family assignment must not be changed after Worker exposure"
+    );
+    const oneVersion=await new AssessmentBlueprintService(database).createBlueprint(admin,{
+      blueprintReference:"M205-SHARED-ONE",version:{
+        title:"Single variant exposure evaluation",frameworkReference:framework.frameworkReference,
+        selectors:[{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["family"]}]
+      }
+    },NOW_DATE);
+    const twoVersion=await new AssessmentBlueprintService(database).createBlueprint(admin,{
+      blueprintReference:"M205-SHARED-TWO",version:{
+        title:"Two independent families evaluation",frameworkReference:framework.frameworkReference,
+        selectors:[{count:2,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}]
+      }
+    },NOW_DATE);
+    const service=new AssessmentFormGenerationService(database);
+    const worker="worker_m205_exposure_family_permanent";
+    const firstCase=await seedCase(database,"x",worker,framework.frameworkId);
+    const first=await service.generateForCase(admin,{
+      caseId:firstCase.caseId,blueprintVersionId:oneVersion.version.blueprintVersionId
+    },NOW_DATE);
+    assert.equal(first.items.length,1);
+    assert.ok(questions.slice(0,2).some(q=>q.questionId===first.items[0].questionId));
+    const secondCase=await seedCase(database,"f",worker,framework.frameworkId);
+    await assert.rejects(service.generateForCase(admin,{
+      caseId:secondCase.caseId,blueprintVersionId:oneVersion.version.blueprintVersionId
+    },NOW_DATE),error=>error instanceof AssessmentFormGenerationError && /insufficient unseen/i.test(error.message));
+    assert.equal((await database.query("SELECT COUNT(*)::int n FROM generated_assessment_forms WHERE case_id=$1",[secondCase.caseId])).rows[0].n,0);
+    const thirdCase=await seedCase(database,"b","worker_m205_family_fresh_person",framework.frameworkId);
+    const two=await service.generateForCase(admin,{
+      caseId:thirdCase.caseId,blueprintVersionId:twoVersion.version.blueprintVersionId
+    },NOW_DATE);
+    assert.equal(two.items.length,2);
+    const familyRows=await database.query("SELECT exposure_family_reference FROM generated_assessment_form_items WHERE form_id=$1",[two.formId]);
+    assert.equal(new Set(familyRows.rows.map(row=>row.exposure_family_reference)).size,2,
+      "A single complete assessment must not select two equivalent variants");
+    const reservations=await database.query("SELECT exposure_family_reference,worker_account_id FROM generated_assessment_form_items WHERE worker_account_id=$1",[worker]);
+    assert.deepEqual(reservations.rows,[{exposure_family_reference:shared,worker_account_id:worker}]);
+    const forgedFormId=oid("assessment_form","u");
+    const existingQuestion=questions.find(q=>q.questionId!==first.items[0].questionId&&q.family===shared);
+    await assert.rejects(database.transaction(async tx=>{
+      await tx.query("INSERT INTO generated_assessment_forms(form_id,case_id,worker_account_id,blueprint_version_id,generation_nonce_hex,question_count,generated_at) VALUES($1,$2,$3,$4,$5,1,$6)",
+        [forgedFormId,secondCase.caseId,worker,oneVersion.version.blueprintVersionId,"b".repeat(64),NOW]);
+      const version=(await tx.query("SELECT current_version_id FROM assessment_questions WHERE question_id=$1",[existingQuestion.questionId])).rows[0].current_version_id;
+      await tx.query("INSERT INTO generated_assessment_form_items(form_item_id,form_id,position,question_id,question_version_id,created_at) VALUES($1,$2,1,$3,$4,$5)",
+        [oid("assessment_form_item","u"),forgedFormId,existingQuestion.questionId,version,NOW]);
+    }),error=>error.code==="23505","Database must reject cross-case exposure of an equivalent question variant");
+    assert.equal((await database.query("SELECT COUNT(*)::int n FROM generated_assessment_forms WHERE form_id=$1",[forgedFormId])).rows[0].n,0);
+    await assert.rejects(
+      database.execute(readFileSync("database/migrations/0124_question_exposure_families.down.sql","utf8")),
+      error=>error.code==="55000",
+      "Rollback must refuse to drop permanent exposure-family history on a populated database"
+    );
+    console.log("ACTUAL_M20503_FAMILY_SQL same-form distinct families, same Worker retake excludes equivalent stable ID, direct DB bypass rejected, exact history immutable, unsafe rollback refused");
   } finally {await database.close();}
 });

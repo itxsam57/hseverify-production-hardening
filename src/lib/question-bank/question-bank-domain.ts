@@ -41,6 +41,7 @@ export type NormalizedQuestionVersion = Readonly<{
 export type StoredQuestion = Readonly<{
     questionId: string;
     questionReference: string;
+    exposureFamilyReference: string;
     questionStatus: QuestionStatus;
     currentVersionId: string;
     authoringVersionId: string;
@@ -75,6 +76,12 @@ export class QuestionBankConflictError extends Error {
 }
 export const createQuestionId = () => createIdentifier("assessment_question");
 export const createQuestionVersionId = () => createIdentifier("question_version");
+export function normalizeExposureFamilyReference(value: string): string {
+    if (typeof value !== "string")
+        throw new QuestionBankInputError("Question Exposure Family reference must be a string.");
+    try { return normalizeQuestionReference(value); }
+    catch { throw new QuestionBankInputError("Question Exposure Family reference is invalid."); }
+}
 export function normalizeQuestionReference(value: string): string { const v = value.trim().toUpperCase(); if (v.length < 2 || v.length > 120 || !/^[A-Z0-9][A-Z0-9._:/-]*$/.test(v))
     throw new QuestionBankInputError("Question reference is invalid."); return v; }
 export function normalizePrompt(value: string): string { const v = value.trim().replace(/\s+/g, " "); if (v.length < 10 || v.length > 5000)
