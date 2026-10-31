@@ -225,7 +225,7 @@ function repositories(database) {
 }
 
 async function prepareSubmittedWorker(database, suffix, options = {}) {
-  const worker = await seedPrincipal(database, suffix);
+  const worker = options.workerPrincipal ?? await seedPrincipal(database, suffix);
   const repos = repositories(database);
   const initial = await repos.identity.ensureOwnDraft(worker);
   await repos.draft.saveOwn(worker, completeDraft(options.draft), null);
