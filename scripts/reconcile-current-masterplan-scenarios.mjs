@@ -51,6 +51,11 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m204CapacityBrowser: {
+    file: "20261031-A28-56e603e-exact-M20406-capacity-Chromium.log",
+    observedCodeSha: "56e603e2ecf01dbc9b5f8d6e77d7d868bdb2c834",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m204BulkImportBrowser: {
     file: "20261031-A28-db3e3c4-exact-M204-bulk-Chromium.log",
     observedCodeSha: "db3e3c4375b7d7a2b1878ac9fe091a4b82514ac3",
@@ -422,6 +427,10 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.04.06": [[
+    "m204CapacityBrowser",
+    "Exact committed source 56e603e in signed-in independent Admin Chromium: framework live published question count and global never-reserved count 0 to 1 after independent reviewer approval/publication; archived former publication returns 0; publishing a replacement distinct question restores 1; no leaked answer key in metrics projection. Separately same source-equivalent migrated native PGlite 17/17 PASS covers 2 published questions, one permanent Worker form reservation reducing globally never-reserved to 1 but retaining published total 2, reservation and distinct Worker counters, paused publication reducing active count while reservation remains, resume restoring active count, cross-framework isolation and revoked Admin denial. Native generated form+item fixture is a committed transaction, not actual Worker browser generated exam. Metric is globally never-reserved, not per-Worker unseen blueprint-equivalent capacity. Actual live Worker exam, full staging DB, all mixed selectors, concurrent form generation and public release remain unverified."
+  ]],
   "M2.04.05": [[
     "m204BulkImportBrowser",
     "Exact committed source db3e3c4: signed-in independent real Admin Chromium typed JSON batch with first valid second invalid answer, saw No rows imported Row 2 and no first/second question rendered; subsequent two valid rows imported as DRAFT, persisted across cold reload in migrated PGlite with actual author account and null independent reviewer. Existing same browser run completed separate Admin author/reviewer publish, revision, pause/retire/archive and blueprint/catalogue link. Native PGlite batch rejects duplicate reference and missing required prompt with Row 2, rolls back all prior inserts/audits; full native 16/16 PASS on source-equivalent precommit working tree. No CSV/Excel import, all invalid row classes, provider/live DB or protected staging full release certification."
