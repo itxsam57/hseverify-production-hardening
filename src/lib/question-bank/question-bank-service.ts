@@ -203,6 +203,51 @@ export type QuestionAdminListItem = Readonly<{
 }>;
 export class QuestionBankService {
     constructor(private readonly database: DatabaseClient) { }
+    async importDraftQuestions(principal: AuthorizationPrincipal, rows: readonly {
+        questionReference: string;
+        version: QuestionVersionInput;
+    }[], now = new Date()): Promise<Readonly<{ createdCount: number }>> {
+        if (!Array.isArray(rows) || rows.length === 0 || rows.length > 25)
+            throw new QuestionBankInputError("Import must contain 1 to 25 question rows.");
+        return this.database.transaction(async database => {
+            await liveAdmin(database, principal, now);
+            const seen = new Set<string>();
+            for (const [index, row] of rows.entries()) {
+                const position = index + 1;
+                try {
+                    if (!row || typeof row !== "object" || Array.isArray(row) || !row.version ||
+                        typeof row.version !== "object" || Array.isArray(row.version))
+                        throw new QuestionBankInputError("Question row or version must be an object.");
+                    let reference: string;
+                    let normalized: NormalizedQuestionVersion;
+                    try {
+                        reference = normalizeQuestionReference(row.questionReference);
+                        normalized = normalizeQuestionVersion(row.version);
+                    } catch (error) {
+                        if (error instanceof TypeError)
+                            throw new QuestionBankInputError("Question row is missing fields or has invalid field types.");
+                        throw error;
+                    }
+                    if (seen.has(reference))
+                        throw new QuestionBankInputError("Duplicate question reference within this import.");
+                    seen.add(reference);
+                    const framework = await frameworkId(database, normalized.frameworkReference);
+                    const id = createQuestionId();
+                    await database.query("INSERT INTO assessment_questions(question_id,question_reference,question_status,created_by_account_id,created_at,updated_at) VALUES($1,$2,'INACTIVE',$3,$4,$4)", [id, reference, principal.accountId, now.toISOString()]);
+                    const versionId = await insertVersion(database, id, 1, normalized, framework, principal, now);
+                    await database.query("UPDATE assessment_questions SET current_version_id=$2,authoring_version_id=$2,current_content_fingerprint=$3 WHERE question_id=$1", [id, versionId, normalized.contentFingerprint]);
+                    await appendAudit(database, principal, "assessment.question.created", id, { questionType: normalized.questionType, versionNo: 1, workflowState: "DRAFT", importRow: position });
+                } catch (error) {
+                    if (error instanceof QuestionBankInputError)
+                        throw new QuestionBankInputError(`Row ${position}: ${error.message}`);
+                    if (error instanceof QuestionBankConflictError || (error && typeof error === "object" && (error as {code?: unknown}).code === "23505"))
+                        throw new QuestionBankConflictError(`Row ${position}: question reference or content conflicts with an existing question.`);
+                    throw error;
+                }
+            }
+            return Object.freeze({ createdCount: rows.length });
+        });
+    }
     async createQuestion(principal: AuthorizationPrincipal, input: {
         questionReference: string;
         version: QuestionVersionInput;

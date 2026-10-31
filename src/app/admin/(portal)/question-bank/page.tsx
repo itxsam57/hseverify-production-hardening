@@ -1,7 +1,8 @@
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getQuestionBankService, type QuestionAdminListItem } from "@/lib/question-bank/question-bank-service";
 import type { QuestionWorkflowAction } from "@/lib/question-bank/question-bank-domain";
-import { createQuestionAction, reviseQuestionAction, transitionQuestionAction } from "./actions";
+import { createQuestionAction, reviseQuestionAction, transitionQuestionAction, importDraftQuestionsAction } from "./actions";
+import { QuestionBulkImportForm } from "@/components/admin/question-bulk-import-form";
 const EXAMPLE = JSON.stringify({ questionType: "MULTIPLE_CHOICE", prompt: "What is the first safe action after discovering an uncontrolled workplace hazard?", options: ["Stop work", "Continue working", "Ignore the hazard"], answerKey: "Stop work", rubric: null, frameworkReference: "HSE-CORE", domainReference: "Hazard control", difficulty: "MEDIUM", tags: ["hazards", "core"] }, null, 2);
 function validActions(item: QuestionAdminListItem, accountId: string): readonly Readonly<{
     action: QuestionWorkflowAction;
@@ -27,6 +28,7 @@ export default async function QuestionBankPage() {
     return <section className="page-stack">
  <div className="page-heading"><div><p className="eyebrow">Assessment administration</p><h1>Question Bank</h1><p>Drafts require an independent administrator to approve the exact version before publication. Only published versions enter live assessments.</p><p>{publishedCount} published questions available</p></div></div>
  <form action={createQuestionAction}><h2>Create question</h2><label>Stable reference<input name="questionReference" required minLength={2} maxLength={120}/></label><label>Version JSON<textarea name="versionPayload" required rows={16} placeholder={EXAMPLE}/></label><button type="submit">Create draft question</button></form>
+ <QuestionBulkImportForm action={importDraftQuestionsAction}/>
  <section><h2>Current questions</h2>{questions.length === 0 ? <p>No questions have been created.</p> : questions.map(item => <article key={item.question.questionId} data-question-reference={item.question.questionReference}>
  <h3>{item.question.questionReference}</h3>
  <p>{item.version.questionType} · {item.version.difficulty} · v{item.version.versionNo} · {item.workflow.state}</p><p>{item.version.prompt}</p>

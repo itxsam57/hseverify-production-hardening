@@ -561,3 +561,54 @@ test("Question independent approval retains old live publication through changes
   console.log("ACTUAL_QUESTION_LIFECYCLE_SQL two live Admin accounts, submit/review/publish races, self review denied, requested changes, draft/live separation, pause/resume/retire/archive, event tamper denied");
  }finally{await database.close();}
 });
+
+
+test("M2.04 bulk draft import is all-or-nothing, reports the failing row and preserves independent approval", async () => {
+  const database = await db();
+  try {
+    const author = await seedAdmin(database, "Y");
+    const framework = await seedFramework(database, "Y");
+    const service = new QuestionBankService(database);
+    const draft = (reference, prompt) => ({
+      questionReference: reference,
+      version: common(framework.frameworkReference, prompt, "MULTIPLE_CHOICE", {
+        options: ["Stop work", "Keep working"], answerKey: "Stop work"
+      })
+    });
+    const first = draft("BATCH-SAFE-1", "What is the safest action for the first imported hazard?");
+    const second = draft("BATCH-SAFE-2", "What is the safest action for the next imported hazard?");
+    await assert.rejects(
+      service.importDraftQuestions(author, [first, {...second, version: {...second.version, answerKey: "not-an-option"}}], NOW_DATE),
+      error => error instanceof QuestionBankInputError && /row 2/i.test(error.message)
+    );
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assessment_questions")).rows[0].n, 0,
+      "Invalid later row cannot partially import earlier valid question");
+    await assert.rejects(
+      service.importDraftQuestions(author, [first, {questionReference:"BATCH-MISSING-PROMPT",version:{questionType:"MULTIPLE_CHOICE",difficulty:"MEDIUM"}}], NOW_DATE),
+      error => error instanceof QuestionBankInputError && /row 2/i.test(error.message),
+      "Missing required fields must report its row, not throw an internal TypeError"
+    );
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assessment_questions")).rows[0].n,0);
+
+    await assert.rejects(
+      service.importDraftQuestions(author, [first, {...second, questionReference: first.questionReference}], NOW_DATE),
+      error => error instanceof QuestionBankInputError && /row 2/i.test(error.message)
+    );
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assessment_questions")).rows[0].n, 0);
+    const result = await service.importDraftQuestions(author, [first, second], NOW_DATE);
+    assert.equal(result.createdCount, 2);
+    const listed = await service.listQuestions(author);
+    assert.deepEqual(new Set(listed.map(item => item.question.questionReference)),new Set(["BATCH-SAFE-1","BATCH-SAFE-2"]));
+    assert.ok(listed.every(item => item.workflow.state === "DRAFT" && item.question.questionStatus === "INACTIVE"));
+    assert.ok(listed.every(item => item.workflow.authorAccountId === author.accountId && item.workflow.approvedByAccountId === null));
+    await assert.rejects(
+      service.importDraftQuestions(author, [draft("BATCH-SAFE-3","A third valid draft that must roll back."), second], NOW_DATE),
+      error => error instanceof QuestionBankConflictError && /row 2/i.test(error.message)
+    );
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assessment_questions")).rows[0].n, 2);
+    const audits=await database.query("SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assessment.question.created'");
+    assert.equal(audits.rows[0].n, 2, "Exactly one successful creation audit per imported draft");
+  } finally {
+    await database.close();
+  }
+});

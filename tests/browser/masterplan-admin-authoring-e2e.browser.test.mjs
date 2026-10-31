@@ -64,6 +64,24 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
         await policy.getByLabel("Framework reference",{exact:true}).fill("UI-AUTHORING");await policy.getByLabel("Policy reference",{exact:true}).fill("UI-POLICY");await policy.getByLabel("Title",{exact:true}).fill("UI authored policy");await policy.getByLabel("Effective from",{exact:true}).fill("2026-01-01T00:00");await policy.getByRole("button",{name:"Publish immutable version"}).click();await page.getByRole("status").getByText("Immutable policy version published.",{exact:true}).waitFor();
         await page.goto(`${baseUrl}/admin/question-bank`);
         const version={questionType:"MULTIPLE_CHOICE",prompt:"Which action controls an uncontrolled hazard?",options:["Stop work","Ignore it"],answerKey:"Stop work",rubric:null,frameworkReference:"UI-AUTHORING",domainReference:"Hazard control",difficulty:"MEDIUM",tags:["core"]};
+        // M2.04.05: actual signed-in Admin bulk-form input, all-or-none persistence and row feedback.
+        const batchForm=page.locator("form").filter({has:page.getByRole("button",{name:"Validate and import drafts",exact:true})});
+        const batchA={questionReference:"UI-BULK-A",version:{...version,prompt:"What is the first safe action before using a temporary platform?"}};
+        const batchB={questionReference:"UI-BULK-B",version:{...version,prompt:"What should be inspected before a hazardous task starts?"}};
+        await batchForm.getByLabel("Question batch JSON").fill(JSON.stringify([batchA,{...batchB,version:{...batchB.version,answerKey:"Unknown choice"}}]));
+        await batchForm.getByRole("button",{name:"Validate and import drafts",exact:true}).click();
+        await batchForm.getByRole("alert").getByText(/No rows imported.*Row 2/i).waitFor();
+        assert.equal(await page.locator('[data-question-reference="UI-BULK-A"]').count(),0);
+        assert.equal(await page.locator('[data-question-reference="UI-BULK-B"]').count(),0);
+        await batchForm.getByLabel("Question batch JSON").fill(JSON.stringify([batchA,batchB]));
+        await batchForm.getByRole("button",{name:"Validate and import drafts",exact:true}).click();
+        await batchForm.getByRole("status").getByText("2 draft questions imported. Independent approval is still required.").waitFor();
+        await page.locator('[data-question-reference="UI-BULK-A"]').getByText(/DRAFT/).first().waitFor();
+        await page.locator('[data-question-reference="UI-BULK-B"]').getByText(/DRAFT/).first().waitFor();
+        await page.reload();
+        assert.equal(await page.locator('[data-question-reference="UI-BULK-A"]').count(),1);
+        assert.equal(await page.locator('[data-question-reference="UI-BULK-B"]').count(),1);
+        console.log("ACTUAL_M204_BULK_IMPORT_BROWSER row2 invalid rejects entire batch, two valid independent-approval drafts persist after cold reload");
         const question=page.locator("form").filter({has:page.getByRole("button",{name:"Create draft question",exact:true})});
         await question.getByLabel("Stable reference").fill("UI-Q-1");await question.getByLabel("Version JSON",{exact:true}).fill(JSON.stringify(version));await question.getByRole("button",{name:"Create draft question",exact:true}).click();
         const card=page.locator('[data-question-reference="UI-Q-1"]'),reviewCard=reviewPage.locator('[data-question-reference="UI-Q-1"]');
@@ -136,6 +154,9 @@ test("Admin authors a policy, revises a question, publishes a blueprint and conn
       assert.deepEqual(rows[0].timing_config_json,{mode:"COMBINED",durationSeconds:120});
       assert.deepEqual(rows[1].timing_config_json,{mode:"SEPARATE"});
       assert.equal(rows[1].section_config_json[0].durationSeconds,90);
+      const imported=(await database.query("SELECT q.question_reference,w.workflow_state,w.author_account_id,w.approved_by_account_id FROM assessment_questions q JOIN question_version_workflow w ON w.question_id=q.question_id WHERE q.question_reference LIKE 'UI-BULK-%' ORDER BY q.question_reference")).rows;
+      assert.deepEqual(imported.map(item=>item.question_reference),["UI-BULK-A","UI-BULK-B"]);
+      assert.ok(imported.every(item=>item.workflow_state==="DRAFT"&&item.author_account_id===admin.accountId&&item.approved_by_account_id===null));
       const history=(await database.query("SELECT q.question_reference,v.version_no,w.workflow_state,w.author_account_id,w.approved_by_account_id,w.provenance FROM assessment_questions q JOIN assessment_question_versions v USING(question_id) JOIN question_version_workflow w USING(question_id,question_version_id) WHERE q.question_reference IN ('UI-Q-1','UI-Q-CAPACITY') ORDER BY q.question_reference,v.version_no")).rows;
       assert.equal(history.length,4);
       for(const row of history){
