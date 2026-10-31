@@ -51,6 +51,16 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m10707PostgresLockBrowser: {
+    file: "20261031-A28-596b338-exact-Worker-Admin-duplicate-review-Chromium.log",
+    observedCodeSha: "596b33885e31a4cad024b4f9f16752d3813abf08",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m10707PostgresIssuanceRace: {
+    file: "20261031-A28-596b338-exact-PostgreSQL-identity-race.log",
+    observedCodeSha: "596b33885e31a4cad024b4f9f16752d3813abf08",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m10707StaleDuplicateNative: {
     file: "20261031-A28-d732748-exact-duplicate-identity-native.log",
     observedCodeSha: "d732748bb6bf2a3d70d47a538ca187d3fb71e4cb",
@@ -642,6 +652,8 @@ const browserClauseMap = {
     ["workerReviewWorkforce", "Actual verified identity correction declined REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY without invalidating original verified identity; accepted-correction and historic permanent-ID projection open"]
   ],
   "M1.07.07": [
+    ["m10707PostgresLockBrowser", "Exact product source 596b338 real authenticated Admin/Worker Chromium 1/1 PASS after PostgreSQL issuance write fence: two submitted independent Worker identities with normalized matching lawful signals entered retained duplicate-review queue, Admin performed reasoned outcomes and safe private evidence access; only the independently cleared identity gained permanent Worker ID, other identity remained distinct, subsequent stale review overwrite denied. This browser regression does not execute an uncommitted PostgreSQL race; separate m10707PostgresIssuanceRace exact source proves the two-connection race. Does not validate production SMS/provider identity proof or a second account bypassing precheck with forged credentials."],
+    ["m10707PostgresIssuanceRace", "Exact committed source 596b338 actual isolated PostgreSQL 16 two independent database connections, migrated to 0120: first verified Worker and unrelated-account duplicate check initially CLEAR, later second identity with equivalent document+legal name/DOB is submitted via real production WorkerIdentityRepository in a distinct transaction held uncommitted after the actual submit operation. Without fix, real PostgreSQL test failed because the first ID was issued during the uncommitted competing submission (saved RED log). Root fix takes a transaction-scoped SHARE lock on worker_identity_versions BEFORE any issuance read; second Worker submission holds a ROW EXCLUSIVE write lock, so issuance waits, detects the newly committed duplicate signals and returns WorkerIdentityWorkerIdBlockedError. Asserted zero permanent Worker IDs, both separate identities retained, second identity submitted, no merge. Exact source 1/1 PASS and bounded isolated database auto-stopped. No full cross-account public signup browser, live identity provider, all identity-correction concurrent permutations, protected staging PostgreSQL or owner acceptance."],
     ["m10707StaleDuplicateNative", "Exact committed source d732748 15/15 migrated PGlite native S5 eligibility suite PASS after deliberately failing RED on stale clear: verified target first evaluated CLEAR, later distinct account submitted normalized matching document/name/DOB, stale check no longer issues permanent Worker ID and creates zero IDs until a new review. Also checks that a previously authorized staff CONTINUE disposition cannot authorize ID after a newly matching third account: requires fresh review and independent disposition. Unrelated later accounts leave valid clear checks eligible; normal clear, idempotent issuance, never-auto-merge, immutable audit/IDs, scoped read and unverified state tests remain PASS. Red log 12/13 with specifically missing rejection; exact GREEN 15/15. No real Worker browser duplicate signup/cross-account assessment, external identity provider, PostgreSQL cross-process concurrent identity submission/issuance race or protected staging. Test suite total 15, not 15 new cases."],
     ["m10707StaffReviewNative", "Exact source d732748 1/1 native PGlite independently authenticated staff duplicate-review regression PASS: wrong Worker denied, staff MFA freshness required, reasoned immutable duplicate dispositions with stale revision denied, Worker own status updates, privacy-safe candidate comparison and Worker ID only after authorized continue; no cross-tenant browser attack matrix, live identity scanning or account auto-merge."],
     ["m10707DuplicateAdminReview", "Real signed-in Admin and Worker Chromium compared distinct Worker identities with normalized matching document signals, displayed retained duplicate comparison without raw document numbers, authenticated Admin opened short-lived PDF preview and received actual scanned PDF bytes with no-store; independently recorded four reasoned outcomes duplicate_review/recover_existing_account/block_worker_id/continue. Worker viewed each exact disposition while other candidate identity remained hidden and separate. Stale second Admin browser tab denied conflicting overwrite; after resolving collision original preview capability revoked HTTP404, Worker role denied foreign private preview and Admin duplicate-review page, PGlite confirmed exactly one permanent Worker ID for the two matched identities and four immutable resolution dispositions. 1/1 actual Chromium PASS exact source QA SHA 6865557. Does not cover all normalized contact/DOB partial matches, nonstaff document comparisons, live scanning or forged cross-tenant POST mutation matrix"],
@@ -770,7 +782,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
