@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
@@ -91,10 +91,11 @@ function FormActions({ hasNext }: { hasNext: boolean }): React.JSX.Element {
 function PersonalForm({ record }: { record: WorkerProfileRecord }): React.JSX.Element {
   const [state, action] = useActionState(saveWorkerProfileSectionAction, INITIAL_PROFILE_ACTION_STATE);
   useRefreshAfterAction(state);
+  const [draft, setDraft] = useState(() => record.personal);
   const locked = record.sensitiveFieldsLocked;
 
   return (
-    <form action={action} className="profile-form" noValidate>
+    <form action={action} className="profile-form" noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="section" value="personal" />
       <input type="hidden" name="expectedVersion" value={record.version} />
 
@@ -108,41 +109,41 @@ function PersonalForm({ record }: { record: WorkerProfileRecord }): React.JSX.El
       <div className="profile-field-grid">
         <label className="profile-field">
           <span>Legal first name</span>
-          <input name="legalFirstName" defaultValue={record.personal.legalFirstName} disabled={locked} required />
+          <input name="legalFirstName" value={draft.legalFirstName} onChange={event => setDraft(previous => ({ ...previous, legalFirstName: event.target.value }))} disabled={locked} required />
           {locked ? <input type="hidden" name="legalFirstName" value={record.personal.legalFirstName} /> : null}
           <FieldError state={state} name="legalFirstName" />
         </label>
         <label className="profile-field">
           <span>Legal last name</span>
-          <input name="legalLastName" defaultValue={record.personal.legalLastName} disabled={locked} required />
+          <input name="legalLastName" value={draft.legalLastName} onChange={event => setDraft(previous => ({ ...previous, legalLastName: event.target.value }))} disabled={locked} required />
           {locked ? <input type="hidden" name="legalLastName" value={record.personal.legalLastName} /> : null}
           <FieldError state={state} name="legalLastName" />
         </label>
         <label className="profile-field">
           <span>Preferred name <small>Optional</small></span>
-          <input name="preferredName" defaultValue={record.personal.preferredName} />
+          <input name="preferredName" value={draft.preferredName} onChange={event => setDraft(previous => ({ ...previous, preferredName: event.target.value }))} />
           <FieldError state={state} name="preferredName" />
         </label>
         <label className="profile-field">
           <span>Date of birth</span>
-          <input type="date" name="dateOfBirth" defaultValue={record.personal.dateOfBirth} disabled={locked} required />
+          <input type="date" name="dateOfBirth" value={draft.dateOfBirth} onChange={event => setDraft(previous => ({ ...previous, dateOfBirth: event.target.value }))} disabled={locked} required />
           {locked ? <input type="hidden" name="dateOfBirth" value={record.personal.dateOfBirth} /> : null}
           <FieldError state={state} name="dateOfBirth" />
         </label>
         <label className="profile-field">
           <span>Nationality</span>
-          <input name="nationality" defaultValue={record.personal.nationality} disabled={locked} required />
+          <input name="nationality" value={draft.nationality} onChange={event => setDraft(previous => ({ ...previous, nationality: event.target.value }))} disabled={locked} required />
           {locked ? <input type="hidden" name="nationality" value={record.personal.nationality} /> : null}
           <FieldError state={state} name="nationality" />
         </label>
         <label className="profile-field">
           <span>Country of residence</span>
-          <input name="countryOfResidence" defaultValue={record.personal.countryOfResidence} required />
+          <input name="countryOfResidence" value={draft.countryOfResidence} onChange={event => setDraft(previous => ({ ...previous, countryOfResidence: event.target.value }))} required />
           <FieldError state={state} name="countryOfResidence" />
         </label>
         <label className="profile-field">
           <span>Primary language</span>
-          <input name="primaryLanguage" defaultValue={record.personal.primaryLanguage} required />
+          <input name="primaryLanguage" value={draft.primaryLanguage} onChange={event => setDraft(previous => ({ ...previous, primaryLanguage: event.target.value }))} required />
           <FieldError state={state} name="primaryLanguage" />
         </label>
       </div>
@@ -156,45 +157,46 @@ function PersonalForm({ record }: { record: WorkerProfileRecord }): React.JSX.El
 function ContactForm({ record }: { record: WorkerProfileRecord }): React.JSX.Element {
   const [state, action] = useActionState(saveWorkerProfileSectionAction, INITIAL_PROFILE_ACTION_STATE);
   useRefreshAfterAction(state);
+  const [draft, setDraft] = useState(() => record.contact);
 
   return (
-    <form action={action} className="profile-form" noValidate>
+    <form action={action} className="profile-form" noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="section" value="contact" />
       <input type="hidden" name="expectedVersion" value={record.version} />
       <div className="profile-field-grid">
         <label className="profile-field profile-field-small">
           <span>Country code</span>
-          <input name="phoneCountryCode" inputMode="tel" placeholder="+92" defaultValue={record.contact.phoneCountryCode} required />
+          <input name="phoneCountryCode" inputMode="tel" placeholder="+92" value={draft.phoneCountryCode} onChange={event => setDraft(previous => ({ ...previous, phoneCountryCode: event.target.value }))} required />
           <FieldError state={state} name="phoneCountryCode" />
         </label>
         <label className="profile-field">
           <span>Phone number</span>
-          <input name="phoneNumber" inputMode="tel" autoComplete="tel-national" defaultValue={record.contact.phoneNumber} required />
+          <input name="phoneNumber" inputMode="tel" autoComplete="tel-national" value={draft.phoneNumber} onChange={event => setDraft(previous => ({ ...previous, phoneNumber: event.target.value }))} required />
           <FieldError state={state} name="phoneNumber" />
         </label>
         <label className="profile-field profile-field-wide">
           <span>Address line 1</span>
-          <input name="addressLine1" autoComplete="address-line1" defaultValue={record.contact.addressLine1} required />
+          <input name="addressLine1" autoComplete="address-line1" value={draft.addressLine1} onChange={event => setDraft(previous => ({ ...previous, addressLine1: event.target.value }))} required />
           <FieldError state={state} name="addressLine1" />
         </label>
         <label className="profile-field profile-field-wide">
           <span>Address line 2 <small>Optional</small></span>
-          <input name="addressLine2" autoComplete="address-line2" defaultValue={record.contact.addressLine2} />
+          <input name="addressLine2" autoComplete="address-line2" value={draft.addressLine2} onChange={event => setDraft(previous => ({ ...previous, addressLine2: event.target.value }))} />
           <FieldError state={state} name="addressLine2" />
         </label>
         <label className="profile-field">
           <span>City</span>
-          <input name="city" autoComplete="address-level2" defaultValue={record.contact.city} required />
+          <input name="city" autoComplete="address-level2" value={draft.city} onChange={event => setDraft(previous => ({ ...previous, city: event.target.value }))} required />
           <FieldError state={state} name="city" />
         </label>
         <label className="profile-field">
           <span>Region or province <small>Optional</small></span>
-          <input name="region" autoComplete="address-level1" defaultValue={record.contact.region} />
+          <input name="region" autoComplete="address-level1" value={draft.region} onChange={event => setDraft(previous => ({ ...previous, region: event.target.value }))} />
           <FieldError state={state} name="region" />
         </label>
         <label className="profile-field">
           <span>Postal code <small>Optional</small></span>
-          <input name="postalCode" autoComplete="postal-code" defaultValue={record.contact.postalCode} />
+          <input name="postalCode" autoComplete="postal-code" value={draft.postalCode} onChange={event => setDraft(previous => ({ ...previous, postalCode: event.target.value }))} />
           <FieldError state={state} name="postalCode" />
         </label>
       </div>
@@ -207,25 +209,26 @@ function ContactForm({ record }: { record: WorkerProfileRecord }): React.JSX.Ele
 function ProfessionalForm({ record }: { record: WorkerProfileRecord }): React.JSX.Element {
   const [state, action] = useActionState(saveWorkerProfileSectionAction, INITIAL_PROFILE_ACTION_STATE);
   useRefreshAfterAction(state);
+  const [draft, setDraft] = useState(() => ({ ...record.professional, employmentStatus: String(record.professional.employmentStatus), yearsExperience: record.professional.yearsExperience?.toString() ?? "" }));
 
   return (
-    <form action={action} className="profile-form" noValidate>
+    <form action={action} className="profile-form" noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="section" value="professional" />
       <input type="hidden" name="expectedVersion" value={record.version} />
       <div className="profile-field-grid">
         <label className="profile-field profile-field-wide">
           <span>Primary occupation or trade</span>
-          <input name="primaryOccupation" defaultValue={record.professional.primaryOccupation} required />
+          <input name="primaryOccupation" value={draft.primaryOccupation} onChange={event => setDraft(previous => ({ ...previous, primaryOccupation: event.target.value }))} required />
           <FieldError state={state} name="primaryOccupation" />
         </label>
         <label className="profile-field">
           <span>Years of experience</span>
-          <input type="number" name="yearsExperience" min={0} max={70} step={1} defaultValue={record.professional.yearsExperience ?? ""} required />
+          <input type="number" name="yearsExperience" min={0} max={70} step={1} value={draft.yearsExperience} onChange={event => setDraft(previous => ({ ...previous, yearsExperience: event.target.value }))} required />
           <FieldError state={state} name="yearsExperience" />
         </label>
         <label className="profile-field">
           <span>Current employment status</span>
-          <select name="employmentStatus" defaultValue={record.professional.employmentStatus} required>
+          <select name="employmentStatus" value={draft.employmentStatus} onChange={event => setDraft(previous => ({ ...previous, employmentStatus: event.target.value }))} required>
             <option value="">Select status</option>
             <option value="employed">Employed</option>
             <option value="self_employed">Self-employed</option>
@@ -237,11 +240,11 @@ function ProfessionalForm({ record }: { record: WorkerProfileRecord }): React.JS
         </label>
         <label className="profile-field profile-field-wide">
           <span>Preferred work countries <small>Optional</small></span>
-          <input name="preferredWorkCountries" defaultValue={record.professional.preferredWorkCountries} placeholder="For example: Saudi Arabia, UAE, Pakistan" />
+          <input name="preferredWorkCountries" value={draft.preferredWorkCountries} onChange={event => setDraft(previous => ({ ...previous, preferredWorkCountries: event.target.value }))} placeholder="For example: Saudi Arabia, UAE, Pakistan" />
           <FieldError state={state} name="preferredWorkCountries" />
         </label>
         <label className="profile-checkbox profile-field-wide">
-          <input type="checkbox" name="willingToRelocate" defaultChecked={record.professional.willingToRelocate} />
+          <input type="checkbox" name="willingToRelocate" checked={draft.willingToRelocate} onChange={event => setDraft(previous => ({ ...previous, willingToRelocate: event.target.checked }))} />
           <span>I am willing to relocate for suitable work.</span>
         </label>
       </div>

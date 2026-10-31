@@ -7,6 +7,9 @@ import { pathToFileURL } from "node:url";
 import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
+const { SupervisorObservationService }=loadWorkerRegistrationTs("src/lib/review/supervisor-observation-service.ts");
+import { authorizeReviewFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 
 const runtime = process.env.HSE_EVIDENCE_REVIEW_RUNTIME_DIST ?? ".evidence-review-runtime-test-dist";
@@ -22,7 +25,7 @@ const serviceModule = await import(pathToFileURL(join(runtime, "review", "eviden
 const { EvidenceReviewAccessError, EvidenceReviewConflictError } = domainModule;
 const { EvidenceReviewService } = serviceModule;
 
-const MIGRATION = "0034_evidence_verification_queues";
+const MIGRATION = "0112_supervisor_signed_evidence";
 const NOW_DATE = new Date("2026-08-18T01:00:00.000Z");
 const NOW = NOW_DATE.toISOString();
 const FUTURE = "2099-01-01T00:00:00.000Z";
@@ -36,9 +39,9 @@ const ENV = {
 };
 const oid = (prefix, c) => `${prefix}_${c.repeat(24)}`;
 
-async function db() {
+async function db(ceiling=MIGRATION) {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, MIGRATION);
+  await applyMigrationsThrough(database, ENV.releaseSha, ceiling);
   return database;
 }
 
@@ -77,6 +80,8 @@ async function seedVerifier(database, c) {
     (session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at)
     VALUES ($1,$2,'verifier',$3,$4,$5,$5,$6)`,
     [verifier.sessionId,verifier.accountId,`m202-token-${c}`,`m202-csrf-${c}`,NOW,FUTURE]);
+  const tasks=await database.query("SELECT task_id FROM evidence_review_tasks WHERE task_status='QUEUED'");
+  for(const task of tasks.rows)await authorizeReviewFixture(database,{taskId:task.task_id,verifiers:[verifier],at:NOW_DATE});
   return Object.freeze({
     ...verifier, activeRole:"verifier", accountStatus:"active", createdAt:NOW,
     lastSeenAt:NOW, expiresAt:FUTURE, tenantMembership:null
@@ -90,8 +95,8 @@ async function seedCase(database, c, requestedEvidenceChecks=[]) {
   await database.query(`INSERT INTO assurance_orders
     (order_id,tenant_id,created_by_membership_id,order_name,order_reference,requested_identity_checks,requested_evidence_checks,
      assessment_framework_references,interview_required,order_status,submitted_at,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,'[]'::jsonb,$6::jsonb,'[]'::jsonb,FALSE,'SUBMITTED',$7,$7,$7)`,
-    [orderId,company.tenantMembership.tenantId,company.tenantMembership.membershipId,`M202 Order ${c}`,`M202-${c}`,JSON.stringify(requestedEvidenceChecks),NOW]);
+    VALUES ($1,$2,$3,$4,$5,'[]'::jsonb,$6::jsonb,$8::jsonb,FALSE,'SUBMITTED',$7,$7,$7)`,
+    [orderId,company.tenantMembership.tenantId,company.tenantMembership.membershipId,`M202 Order ${c}`,`M202-${c}`,JSON.stringify(requestedEvidenceChecks),NOW,JSON.stringify([`SUPERVISOR-${c}`])]);
   await database.query(`INSERT INTO assurance_order_workers
     (target_id,order_id,tenant_id,worker_link_id,worker_account_id,funding_method,target_status,created_at,updated_at)
     VALUES ($1,$2,$3,$4,$5,'worker','submitted',$6,$6)`,
@@ -103,24 +108,34 @@ async function seedCase(database, c, requestedEvidenceChecks=[]) {
   return { company, orderId, targetId, caseId, workerAccountId };
 }
 
-async function queueObservation(database, c, text="Supervisor directly observed the worker completing the competency safely and independently.") {
-  const seeded=await seedCase(database,c);
+async function queueObservation(database, c, text="Supervisor directly observed the worker completing the competency safely and independently.", requestedEvidenceChecks=[]) {
+  const seeded=await seedCase(database,c,requestedEvidenceChecks);
   const service=new EvidenceReviewService(database);
-  const observationId=await service.addSupervisorObservation(seeded.company,{
-    caseId:seeded.caseId,
-    competencyReference:`COMP-${c}`,
-    observedAt:NOW_DATE,
-    observationText:text,
-    outcome:"demonstrated"
+  for(const [accountId,sessionId,role] of [[seeded.company.accountId,seeded.company.sessionId,"company"],[seeded.workerAccountId,`session_m202_worker_${c}`,"worker"]]){
+    await database.query(`INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$1,'active','fixture-hash',$3,$3,$3,$3)`,[accountId,accountId.toLowerCase()+"@supervisor.test",NOW]);
+    await database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,$2,$3)",[accountId,role,NOW]);
+    await database.query(`INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) VALUES($1,$2,$3,$1,$1,$4,$4,$5)`,[sessionId,accountId,role,NOW,FUTURE]);
+  }
+  const {tenantId,membershipId}=seeded.company.tenantMembership;
+  await database.query(`INSERT INTO platform_tenants(tenant_id,tenant_type,display_name,tenant_status,created_at,updated_at,activated_at) VALUES($1,'company','Supervisor test tenant','active',$2,$2,$2)`,[tenantId,NOW]);
+  await database.query(`INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_at,updated_at,activated_at) VALUES($1,$2,$3,'company','owner','active',$4,$4,$4)`,[membershipId,tenantId,seeded.company.accountId,NOW]);
+  const frameworkReference=`SUPERVISOR-${c}`;
+  const observations=new SupervisorObservationService(Promise.resolve(database));
+  const observationId=await observations.create(seeded.company,{
+    caseId:seeded.caseId,observerMembershipId:membershipId,frameworkReference,
+    competencyReference:`COMP-${c}`,taskReference:"Safe isolation",checklist:["Isolation proved"],
+    observedAt:NOW_DATE,observationText:text,outcome:"demonstrated",
+    supervisorDeclaration:"I personally observed the safe isolation task."
   },NOW_DATE);
-  const queued=await service.queueCaseEvidence(seeded.company,seeded.caseId,NOW_DATE);
-  assert.equal(queued,1);
+  const worker={accountId:seeded.workerAccountId,sessionId:`session_m202_worker_${c}`,activeRole:"worker",accountStatus:"active",tenantMembership:null};
+  await observations.acknowledge(worker,observationId,"I acknowledge the signed observation.",NOW_DATE);
+  assert.equal(await service.queueCaseEvidence(seeded.company,seeded.caseId,NOW_DATE),0,"Acknowledgement already queued the exact signed version");
   const rows=await database.query(`SELECT task_id,source_version_id,source_record_id,task_status FROM evidence_review_tasks WHERE case_id=$1`,[seeded.caseId]);
   assert.equal(rows.rows.length,1);
   assert.equal(rows.rows[0].source_version_id,observationId);
   assert.equal(rows.rows[0].source_record_id,observationId);
   assert.equal(rows.rows[0].task_status,"QUEUED");
-  return {...seeded,service,observationId,taskId:rows.rows[0].task_id};
+  return {...seeded,service,observations,worker,frameworkReference,observationId,taskId:rows.rows[0].task_id};
 }
 
 test("M2.02 runtime queues exactly one immutable evidence-version task and advances case ownership",async()=>{
@@ -272,6 +287,66 @@ test("M2.02 CHANGES_REQUESTED returns the case to the Worker while preserving re
   } finally { await database.close(); }
 });
 
+test("M2.02.04 corrected case evidence supersedes assigned stale work but preserves terminal decision history",async()=>{
+  const database=await db();
+  try{
+    const x=await queueObservation(database,"T",undefined,["qualification","experience"]);
+    const verifier=await seedVerifier(database,"U");
+    const records=[];
+    for(const [kind,letter] of [["qualification","X"],["experience","Y"]]){
+      const recordId=oid("evidence_record",letter),versionId=oid("evidence_version",letter);
+      await database.query(`INSERT INTO worker_evidence_records
+        (record_id,worker_account_id,record_kind,lifecycle_status,current_version_id,created_at,updated_at)
+        VALUES ($1,$2,$3,'active',NULL,$4,$4)`,[recordId,x.workerAccountId,kind,NOW]);
+      await database.query(`INSERT INTO worker_evidence_versions
+        (version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at)
+        VALUES ($1,$2,1,1,'submitted',NULL,$3,$3,$3)`,[versionId,recordId,NOW]);
+      await database.query("UPDATE worker_evidence_records SET current_version_id=$2 WHERE record_id=$1",[recordId,versionId]);
+      records.push({kind,letter,recordId,versionId});
+    }
+    assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),2);
+    const initial=(await database.query("SELECT task_id,evidence_kind,source_version_id FROM evidence_review_tasks WHERE case_id=$1 AND evidence_kind IN ('qualification','experience') ORDER BY evidence_kind",[x.caseId])).rows;
+    assert.equal(initial.length,2);
+    for(const task of initial){
+      await authorizeReviewFixture(database,{taskId:task.task_id,verifiers:[verifier],at:NOW_DATE});
+      await x.service.claim(verifier,task.task_id,NOW_DATE);
+    }
+    const oldAssigned=initial.find(t=>t.evidence_kind==="qualification");
+    const oldTerminal=initial.find(t=>t.evidence_kind==="experience");
+    await x.service.decide(verifier,oldTerminal.task_id,"APPROVED","Review concluded the original experience version is supported.",NOW_DATE);
+    const terminalBefore=(await database.query("SELECT decision_id,source_version_id,outcome,reason FROM evidence_review_decisions WHERE task_id=$1",[oldTerminal.task_id])).rows;
+    assert.equal(terminalBefore.length,1);
+    const now2="2026-08-18T01:03:00.000Z";
+    for(const record of records){
+      const replacement=oid("evidence_version",record.letter.toLowerCase());
+      await database.query("UPDATE worker_evidence_versions SET version_status='superseded',updated_at=$2 WHERE version_id=$1",[record.versionId,now2]);
+      await database.query(`INSERT INTO worker_evidence_versions
+        (version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at)
+        VALUES ($1,$2,2,1,'submitted',$3,$4,$4,$4)`,
+        [replacement,record.recordId,record.versionId,now2]);
+      await database.query("UPDATE worker_evidence_records SET current_version_id=$2,updated_at=$3 WHERE record_id=$1",[record.recordId,replacement,now2]);
+      record.replacement=replacement;
+    }
+    assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,new Date(now2)),2);
+    const after=(await database.query("SELECT task_id,evidence_kind,source_version_id,task_status FROM evidence_review_tasks WHERE case_id=$1 AND evidence_kind IN ('qualification','experience') ORDER BY evidence_kind,created_at,source_version_id",[x.caseId])).rows;
+    assert.equal(after.length,4);
+    const priorAssigned=after.find(t=>t.task_id===oldAssigned.task_id);
+    const priorTerminal=after.find(t=>t.task_id===oldTerminal.task_id);
+    assert.equal(priorAssigned.task_status,"SUPERSEDED","Corrected version must remove outdated assigned task from the Reviewer action queue.");
+    assert.equal(priorTerminal.task_status,"APPROVED","Previously completed review decision must remain terminal.");
+    for(const record of records){
+      const current=after.find(t=>t.evidence_kind===record.kind && t.source_version_id===record.replacement);
+      assert.equal(current?.task_status,"QUEUED");
+    }
+    await assert.rejects(x.service.decide(verifier,oldAssigned.task_id,"APPROVED","Stale task must not approve old data.",new Date(now2)),error=>error instanceof EvidenceReviewConflictError || error instanceof EvidenceReviewAccessError);
+    const terminalAfter=(await database.query("SELECT decision_id,source_version_id,outcome,reason FROM evidence_review_decisions WHERE task_id=$1",[oldTerminal.task_id])).rows;
+    assert.deepEqual(terminalAfter,terminalBefore);
+    assert.equal((await database.query("SELECT COUNT(*)::int n FROM evidence_review_decisions WHERE task_id=$1",[oldAssigned.task_id])).rows[0].n,0);
+    assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,new Date(now2)),0,"Replayed corrected versions must not duplicate new tasks.");
+    console.log("M20204_CASE_CORRECTION retained prior terminal evidence decision, superseded stale assigned version, new live versions queued, replay idempotent and stale decision denied.");
+  }finally{await database.close();}
+});
+
 test("M2.02 history-preserving rollback and repeat-safe reapply keep review rows intact",async()=>{
   const database=await db();
   try {
@@ -290,3 +365,41 @@ test("M2.02 history-preserving rollback and repeat-safe reapply keep review rows
     assert.equal(retainedAfter.rows[0].source_version_id,x.observationId);
   } finally { await database.close(); }
 });
+
+for(const outcome of ["UNABLE_TO_VERIFY","ESCALATED"]){
+ test("Another task approval preserves the correct next actor for "+outcome,async()=>{
+ const database=await db("0112_supervisor_signed_evidence");try{
+ const x=await queueObservation(database,outcome==="ESCALATED"?"V":"W"),verifier=await seedVerifier(database,"N");
+ const secondId=await x.observations.create(x.company,{caseId:x.caseId,observerMembershipId:x.company.tenantMembership.membershipId,frameworkReference:x.frameworkReference,competencyReference:"COMP-SECOND",taskReference:"Second safe task",checklist:["Safe operation confirmed"],observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated",supervisorDeclaration:"I personally observed this second task."});
+ await x.observations.acknowledge(x.worker,secondId,"I acknowledge the second observation.");
+ assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),0);
+ const second=(await database.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[secondId])).rows[0].task_id;
+ await authorizeReviewFixture(database,{taskId:second,verifiers:[verifier],at:NOW_DATE});
+ await x.service.claim(verifier,x.taskId,NOW_DATE);await x.service.claim(verifier,second,NOW_DATE);
+ await x.service.resolveReview(verifier,x.taskId,{expectedRevision:0,outcome,reason:"The evidence remains unresolved and needs the correct next actor.",destination:outcome==="ESCALATED"?"admin":undefined,attemptedMethods:"Contacted the supervisor and checked the available observation records.",limitations:"The records do not independently confirm this observation."},NOW_DATE);
+ await x.service.decide(verifier,second,"APPROVED","The second observation was independently verified against its source.",NOW_DATE);
+ const row=(await database.query("SELECT case_status,owner_kind,next_action FROM assurance_cases WHERE case_id=$1",[x.caseId])).rows[0];
+ assert.equal(row.owner_kind,outcome==="ESCALATED"?"admin":"worker");assert.equal(row.case_status,outcome==="ESCALATED"?"Review pending":"Evidence pending");
+ assert.match(row.next_action,outcome==="ESCALATED"?/Admin/:/supporting evidence/);
+ }finally{await database.close();}
+ });
+}
+
+for(const outcome of ["ESCALATED"]){
+ test("Another task changes-requested preserves the correct next actor for "+outcome,async()=>{
+ const database=await db("0112_supervisor_signed_evidence");try{
+ const x=await queueObservation(database,outcome==="ESCALATED"?"V":"W"),verifier=await seedVerifier(database,"N");
+ const secondId=await x.observations.create(x.company,{caseId:x.caseId,observerMembershipId:x.company.tenantMembership.membershipId,frameworkReference:x.frameworkReference,competencyReference:"COMP-SECOND",taskReference:"Second safe task",checklist:["Safe operation confirmed"],observedAt:NOW_DATE,observationText:"Supervisor independently observed a second competency safely and completely.",outcome:"demonstrated",supervisorDeclaration:"I personally observed this second task."});
+ await x.observations.acknowledge(x.worker,secondId,"I acknowledge the second observation.");
+ assert.equal(await x.service.queueCaseEvidence(x.company,x.caseId,NOW_DATE),0);
+ const second=(await database.query("SELECT task_id FROM evidence_review_tasks WHERE source_version_id=$1",[secondId])).rows[0].task_id;
+ await authorizeReviewFixture(database,{taskId:second,verifiers:[verifier],at:NOW_DATE});
+ await x.service.claim(verifier,x.taskId,NOW_DATE);await x.service.claim(verifier,second,NOW_DATE);
+ await x.service.resolveReview(verifier,x.taskId,{expectedRevision:0,outcome,reason:"The evidence remains unresolved and needs the correct next actor.",destination:outcome==="ESCALATED"?"admin":undefined,attemptedMethods:"Contacted the supervisor and checked the available observation records.",limitations:"The records do not independently confirm this observation."},NOW_DATE);
+ await x.service.decide(verifier,second,"CHANGES_REQUESTED","The second observation was independently verified against its source.",NOW_DATE);
+ const row=(await database.query("SELECT case_status,owner_kind,next_action FROM assurance_cases WHERE case_id=$1",[x.caseId])).rows[0];
+ assert.equal(row.owner_kind,outcome==="ESCALATED"?"admin":"worker");assert.equal(row.case_status,outcome==="ESCALATED"?"Review pending":"Evidence pending");
+ assert.match(row.next_action,outcome==="ESCALATED"?/Admin/:/supporting evidence/);
+ }finally{await database.close();}
+ });
+}

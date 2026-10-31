@@ -234,13 +234,26 @@ forbidPattern(
   "public M1.12 routes",
   "public concern-evidence preview/download authority"
 );
+const publicBoundarySource = [
+  sources.service,
+  sources.repository,
+  sources.contactActions,
+  sources.resultPage
+].join("\n");
+const readOnlyCredentialHelpers = new Set(["credentialAuthentication", "credentialFromRow"]);
+const publicAuthoritySource = publicBoundarySource.replace(
+  /import\s*\{([^}]+)\}\s*from\s*(["'])@\/lib\/credential\/credential-issuance-domain\2\s*;?/g,
+  (statement, bindings) => bindings.split(",").every((binding) => {
+    const match = binding.trim().match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+[A-Za-z_$][\w$]*)?$/);
+    return match && readOnlyCredentialHelpers.has(match[1]);
+  }) ? "" : statement
+);
 forbidPattern(
-  `${sources.service}\n${sources.repository}\n${sources.contactActions}\n${sources.resultPage}`,
+  publicAuthoritySource,
   /reviewer[^\n]{0,120}(?:approve|reject|decision)|assessment[^\n]{0,100}(?:deliver|answer|score)|credential[^\n]{0,100}(?:\bissue\b|\bissuance\b)|\bissueCredential\s*\(|\.issue\s*\(|\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+")\s*\.\s*)?"?credential_issuances\b"?|living.?record|scoped.?share/i,
   "M1.12 production boundary",
   "later M2/M3 workflow authority"
 );
-
 for (const path of [
   paths.domainTest,
   paths.migrationTest,

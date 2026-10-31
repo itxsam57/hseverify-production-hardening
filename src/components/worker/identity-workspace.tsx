@@ -128,14 +128,26 @@ function SummaryCard({
         <p className="section-kicker">Permanent Worker ID</p>
         <strong>{eligibility?.permanentWorkerId ?? "Not issued"}</strong>
         <p>
-          {eligibility?.duplicateStatus === "review_required"
+          {eligibility?.permanentWorkerId
+            ? "Permanent Worker ID issued after identity assurance."
+            : eligibility?.latestDisposition === "recover_existing_account"
+              ? "Use account recovery from the Worker sign-in page or contact support. Your identity records remain separate."
+              : eligibility?.latestDisposition === "block_worker_id"
+                ? "Permanent Worker ID remains blocked after authorized review. Contact support for the next review step."
+                : eligibility?.latestDisposition === "duplicate_review"
+                  ? "Further independent duplicate review is required. Your submitted identity remains retained."
+                  : eligibility?.duplicateStatus === "review_required"
             ? "Duplicate/recovery eligibility requires authorized review."
             : eligibility?.duplicateStatus === "clear"
               ? "Duplicate eligibility check is clear."
               : "Duplicate eligibility has not been evaluated yet."}
         </p>
         {correction ? (
-          <p>Latest correction: {correction.decision ?? (correction.submittedAt ? "submitted" : "draft")}</p>
+          <p>Latest correction: {correction.decisionReasonCode === "manual_review_unable_to_verify"
+            ? "unable to verify"
+            : correction.decisionReasonCode === "manual_review_changes_requested"
+              ? "changes requested"
+              : correction.decision ?? (correction.submittedAt ? "submitted" : "draft")}</p>
         ) : null}
       </div>
     </section>

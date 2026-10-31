@@ -71,7 +71,7 @@ assert.match(down, /DROP TABLE IF EXISTS platform_email_deliveries/);
 assert.match(down, /expanded[\s\S]*outbox job type[\s\S]*audit action\/target vocabularies/i);
 assert.doesNotMatch(down, /DROP CONSTRAINT IF EXISTS platform_outbox_jobs_job_type_check/);
 
-assert.match(domain, /EMAIL_DELIVERY_TYPES = \["platform\.foundation\.email", "interview\.scheduled", "interview\.reminder"\]/);
+assert.ok(domain.includes('export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email", "interview.scheduled", "interview.reminder", ...ASSURANCE_EVENT_TYPES, "assessment.funding.requested", "assessment.funding.approved"] as const;'));
 assert.match(domain, /EMAIL_ADAPTER_KEYS = \["local_test", "resend"\]/);
 assert.match(domain, /hashEmailRecipientAddress/);
 assert.match(domain, /deriveEmailDispatchKey/);
@@ -183,3 +183,9 @@ assert.match(packageJson.scripts["test:integration"], /test:email-delivery-runti
 console.log(
   "Durable email queue, lease-safe attempt history, real local/test delivery path and scoped read contracts passed."
 );
+
+const assuranceTypes = ["evidence.submitted","evidence.reviewed","evidence.additional.requested","evidence.unable","evidence.escalated","evidence.returned","assessment.review.conflict","evidence.second_review.requested","assessment.review.assigned","integrity.escalated","integrity.returned","interview.recommended","decision.recorded","credential.issued","appeal.submitted","appeal.updated","appeal.evidence.submitted","appeal.interview.submitted"];
+const currentOutboxDomain = await readFile(resolve("src/lib/outbox/outbox-domain.ts"),"utf8");
+const assuranceTypeMatch=/ASSURANCE_EVENT_TYPES = \[([\s\S]*?)\] as const/.exec(currentOutboxDomain);
+assert.ok(assuranceTypeMatch);
+assert.deepEqual(JSON.parse("["+assuranceTypeMatch[1].replace(/,\s*$/,"")+"]"),assuranceTypes);

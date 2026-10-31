@@ -3,6 +3,7 @@ import "server-only";
 import { bindTrustedSystemAuditActor } from "@/lib/audit/audit-domain";
 import { DatabaseAuditRepository } from "@/lib/audit/audit-repository";
 import type { DatabaseClient } from "@/lib/database/database";
+import { credentialAuthentication, credentialFromRow } from "@/lib/credential/credential-issuance-domain";
 import {
   createOutboxJobId,
   deriveOutboxIdempotencyKey
@@ -62,6 +63,7 @@ export type PublicVerificationConcernCategory =
 export type CreatePublicVerificationConcernInput = Readonly<{
   concernId: string;
   subjectReferenceHash: string;
+  subjectBinding?: Readonly<{kind: "worker" | "credential"; identifier: string}>;
   category: PublicVerificationConcernCategory;
   description: string;
   contactName: string | null;
@@ -379,13 +381,15 @@ export class PublicVerificationRepository {
     });
   }
 
-  async findPublicCredentialById(credentialId: string): Promise<PublicCredentialVerificationSource | null> {
+  async findPublicCredentialById(credentialId: string, signingSecrets: readonly string[]): Promise<PublicCredentialVerificationSource | null> {
     const identifier = normalizePublicVerificationIdentifier(credentialId);
     if (!identifier || identifier.kind !== "credential") return null;
     const result = await this.database.query<{
       credential_id: string; qualification: string; status: PublicCredentialVerificationSource["status"];
+      worker_id: string; version: number; public_status_url: string; qr_payload: string; signature: string; pdf_url: string;
       issued_at: string | Date; expires_at: string | Date | null; conditional: boolean;
-    }>(`SELECT credential_id,qualification,status,issued_at,expires_at,
+    }>(`SELECT credential_id,worker_id,qualification,status,issued_at,expires_at,version,
+               public_status_url,qr_payload,signature,pdf_url,
                COALESCE((SELECT decisions.state='CONDITIONALLY_APPROVED'
                   FROM assurance_cases cases JOIN platform_decisions decisions
                     ON decisions.decision_id=cases.decision_reference AND decisions.tenant_id=cases.tenant_id
@@ -395,9 +399,14 @@ export class PublicVerificationRepository {
                          AND records.status='conditionally_approved')) AS conditional
           FROM credential_issuances credentials WHERE credential_id=$1 LIMIT 1`, [identifier.normalizedIdentifier]);
     const row = result.rows[0];
-    return row ? Object.freeze({ credentialId: row.credential_id, qualification: row.qualification,
+    if (!row) return null;
+    const authentication = credentialAuthentication(credentialFromRow(row), signingSecrets);
+    if (authentication !== "authenticated" && authentication !== "legacy_unverified") return null;
+    const schema = await this.database.query<{present:boolean}>("SELECT to_regclass('public.credential_replacements') IS NOT NULL AS present");
+    const replaced = schema.rows[0]?.present ? Boolean((await this.database.query("SELECT 1 FROM credential_replacements WHERE old_credential_id=$1 AND disposition='REPLACED' LIMIT 1",[row.credential_id])).rows[0]) : false;
+    return Object.freeze({ credentialId: row.credential_id, qualification: row.qualification,
       status: row.status, issuedAt: timestamp(row.issued_at), expiresAt: row.expires_at ? timestamp(row.expires_at) : null,
-      conditional: row.conditional }) : null;
+      conditional: row.conditional, authentication, replaced });
   }
 
   async findReceivedConcern(concernReference: string): Promise<Readonly<{
@@ -859,6 +868,15 @@ export class PublicVerificationRepository {
         throw new Error("Public verification concern could not be resolved.");
       }
 
+      if (created && input.subjectBinding) {
+        const identifier = normalizePublicVerificationIdentifier(input.subjectBinding.identifier);
+        if (!identifier || identifier.kind !== input.subjectBinding.kind) throw new Error("Concern subject binding is invalid.");
+        const source = identifier.kind === "credential"
+          ? await transaction.query<{worker_reference:string}>("SELECT worker_id AS worker_reference FROM credential_issuances WHERE credential_id=$1 FOR SHARE", [identifier.normalizedIdentifier])
+          : await transaction.query<{worker_reference:string}>("SELECT ids.permanent_worker_id AS worker_reference FROM worker_identity_worker_ids ids JOIN worker_identities identities ON identities.identity_id=ids.identity_id WHERE ids.permanent_worker_id=$1 FOR SHARE OF ids, identities", [identifier.normalizedIdentifier]);
+        if (!source.rows[0]) throw new Error("Concern subject is unavailable.");
+        await transaction.query("INSERT INTO public_verification_concern_subjects(concern_id,subject_kind,subject_identifier,worker_reference) VALUES($1,$2,$3,$4)", [concernId, identifier.kind, identifier.normalizedIdentifier, source.rows[0].worker_reference]);
+      }
       if (created) {
         const audit = new DatabaseAuditRepository(Promise.resolve(transaction));
         await audit.append(

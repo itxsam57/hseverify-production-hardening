@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { prepareReviewCalibrationFixture } from "../helpers/evidence-review-calibration-fixture.mjs";
 
 const PNG_FILE = {
   name: "proof.png",
@@ -142,31 +143,88 @@ async function reviseEvidence(page, baseUrl, kind, label, value) {
   await card.getByLabel(label, { exact: false }).first().fill(value);
   await card.getByRole("button", { name: "Save metadata" }).click();
   await card.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor();
-  await card.getByLabel(kind === "qualification" ? "Primary certificate file" : "Evidence file", { exact: true }).setInputFiles({ ...PNG_FILE, name: `${kind}-corrected.png` });
+  const versionId = await card.locator('input[name="versionId"]').inputValue();
+  const filename = `${kind}-corrected-${versionId}.png`;
+  await card.getByLabel(kind === "qualification" ? "Primary certificate file" : "Evidence file", { exact: true }).setInputFiles({ ...PNG_FILE, name: filename });
   await card.getByRole("button", { name: "Upload file", exact: true }).click();
-  await card.getByText(/uploaded, security-scanned and bound/).waitFor();
+  await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor();
+  const attachedFile = card.getByRole("region", { name: kind + " history" }).locator("p")
+    .filter({ hasText: filename })
+    .filter({ hasText: (kind === "qualification" ? "primary certificate" : kind + " evidence") + " · active" });
+  // Local processing deliberately drains a bounded batch. Exercise the same
+  // status-check control a Worker uses while queued scans finish in later batches.
+  for (let attempt = 0; attempt < 20 && !(await attachedFile.count()); attempt += 1) {
+    const check = card.getByRole("button", { name: "Check scan status", exact: true });
+    assert.equal(await check.count(),1,
+      "Attachment is not shown active, but its pending scan recovery action is missing.");
+    await Promise.all([
+      page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
+      check.click()
+    ]);
+    await page.reload({ waitUntil: "domcontentloaded" });
+  }
+  await attachedFile.waitFor();
   await card.getByRole("button", { name: "Submit this version" }).click();
   await card.getByText("active · submitted", { exact: true }).waitFor();
 }
 
-async function decideQueueItem(page, baseUrl, kind, outcome, reason) {
+async function bindQueuedReview(admin, baseUrl, taskId) {
+  await admin.goto(`${baseUrl}/admin/review-frameworks`, { waitUntil: "domcontentloaded" });
+  const card = admin.locator(`section[aria-label="Framework for ${taskId}"]`);
+  await card.waitFor();
+  if (!(await card.getByText("Framework unresolved", { exact: true }).count())) return;
+  const revision = card.locator('select[name="frameworkVersionId"]');
+  const options = await revision.locator("option").evaluateAll(items =>
+    items.map(option => ({ value: option.value, text: option.textContent ?? "" })).filter(item => item.value && item.text.includes("INDEPENDENT-REVIEW")));
+  assert.equal(options.length, 1, "Expected one authoritative review framework revision.");
+  await revision.selectOption(options[0].value);
+  await card.locator('textarea[name="reason"]').fill("This browser journey uses the explicit independent review standard for the submitted source.");
+  await card.getByRole("button", { name: "Bind review framework", exact: true }).click();
+  await admin.getByText("Review framework binding recorded.", { exact: true }).waitFor();
+}
+
+async function decideQueueItem(page, adminPage, baseUrl, kind, outcome, reason) {
   await page.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
   const row = page.locator("tbody tr").filter({
     has: page.locator("td", { hasText: kind })
   }).filter({ hasText: "QUEUED" }).first();
-  await row.getByRole("link", { name: "Review" }).click();
+  const reviewLink = row.getByRole("link", { name: "Review" });
+  const href = await reviewLink.getAttribute("href");
+  assert.ok(href, "Queued review did not expose its fixed review link.");
+  const taskId = href.split("/").filter(Boolean).at(-1);
+  assert.ok(taskId?.startsWith("evidence_review_"), "Queued review link did not contain an opaque task id.");
+  await bindQueuedReview(adminPage, baseUrl, taskId);
+  await page.goto(`${baseUrl}${href}`, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Evidence review" }).waitFor();
   await page.getByRole("button", { name: "Claim review" }).click();
   await page.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
-  await page.getByLabel("Decision").selectOption(outcome);
-  await page.getByLabel("Reason").last().fill(reason);
-  await page.getByRole("button", { name: "Finalize review" }).click();
-  await page.getByText(outcome, { exact: true }).waitFor({ timeout: 15_000 });
+  const privateNotes=`Private checks for ${kind}: issuer response is being verified.`;
+  await page.getByLabel("Private draft notes",{exact:true}).fill(privateNotes);
+  await Promise.all([
+    page.waitForResponse(response=>response.request().method()==="POST"&&response.url().includes("/verifier/reviews/")),
+    page.getByRole("button",{name:"Save draft notes",exact:true}).click()
+  ]);
+  await page.reload({waitUntil:"domcontentloaded"});
+  assert.equal(await page.getByLabel("Private draft notes",{exact:true}).inputValue(),privateNotes);
+  assert.equal(await page.locator('input[name="draftRevision"]').inputValue(),"1");
+  await page.getByText("ASSIGNED",{exact:true}).waitFor();
+  if(outcome==="UNABLE_TO_VERIFY"){
+    await page.getByLabel("Unable to verify reason",{exact:true}).fill(reason);
+    await page.getByLabel("Attempted verification methods",{exact:true}).fill("Contacted the issuing authority and checked available original records.");
+    await page.getByLabel("Verification limitations",{exact:true}).fill("The issuer could not confirm the proposed details at this time.");
+    await page.getByRole("button",{name:"Record unable to verify",exact:true}).click();
+    await page.getByRole("heading",{name:"UNABLE TO VERIFY",exact:true}).waitFor();
+  }else{
+    await page.getByLabel("Decision").selectOption(outcome);
+    await page.getByLabel("Reason", { exact: true }).fill(reason);
+    await page.getByRole("button", { name: "Finalize review" }).click();
+    await page.getByText(outcome, { exact: true }).waitFor({ timeout: 15_000 });
+  }
 }
 
 test(
   "independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI",
-  { timeout: 300_000 },
+  { timeout: 780_000 },
   async () => {
     const root = process.cwd();
     const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-independent-review-"));
@@ -201,6 +259,16 @@ test(
       const credentials = JSON.parse(
         await readFile("/tmp/independent-audit-credentials.json", "utf8")
       );
+      const authorityDatabase = new PGlite(databaseDirectory);
+      try {
+        await prepareReviewCalibrationFixture(authorityDatabase, {
+          verifiers: [{ accountId: credentials.verifier.accountId }],
+          reference: "INDEPENDENT-REVIEW",
+          at: new Date()
+        });
+      } finally {
+        await authorityDatabase.close();
+      }
 
       if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
         const faultDatabase = new PGlite(databaseDirectory);
@@ -231,9 +299,12 @@ test(
           const worker = await workerContext.newPage();
           const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const verifier = await verifierContext.newPage();
+          const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const admin = await adminContext.newPage();
 
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
+            await login(admin, baseUrl, credentials.admin, "admin");
 
             await worker.goto(`${baseUrl}/worker/identity`, { waitUntil: "domcontentloaded" });
             await worker.getByLabel("Legal first name").fill("Independent");
@@ -307,7 +378,7 @@ test(
 
             if(process.env.HSE_INITIAL_IDENTITY_REJECTION === "true") {
               console.log("SCENARIO: initial identity rejection remains terminal and issues no Worker ID");
-              await decideQueueItem(verifier,baseUrl,"identity","REJECTED","The supplied identity evidence cannot establish the claimed legal identity.");
+              await decideQueueItem(verifier,admin,baseUrl,"identity","REJECTED","The supplied identity evidence cannot establish the claimed legal identity.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("Rejected",{exact:true}).first().waitFor();
               await worker.getByText("The supplied identity evidence cannot establish the claimed legal identity.",{exact:true}).waitFor();
@@ -318,7 +389,7 @@ test(
             }
             if(process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true") {
               console.log("SCENARIO: initial identity changes requested -> revised submission -> approval");
-              await decideQueueItem(verifier,baseUrl,"identity","CHANGES_REQUESTED","The document photograph needs correction before the initial identity can be verified.");
+              await decideQueueItem(verifier,admin,baseUrl,"identity","CHANGES_REQUESTED","The document photograph needs correction before the initial identity can be verified.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("More information required",{exact:true}).first().waitFor({timeout:15000});
               await worker.getByText("The document photograph needs correction before the initial identity can be verified.",{exact:true}).waitFor({timeout:10000});
@@ -333,6 +404,7 @@ test(
             }
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "identity",
               "APPROVED",
@@ -340,6 +412,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "qualification",
               "APPROVED",
@@ -347,6 +420,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "experience",
               "REJECTED",
@@ -354,6 +428,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "skill",
               "CHANGES_REQUESTED",
@@ -361,6 +436,7 @@ test(
             );
             await decideQueueItem(
               verifier,
+              admin,
               baseUrl,
               "employment",
               "APPROVED",
@@ -376,6 +452,67 @@ test(
             await worker.locator(".copy-feedback").getByText("Worker ID copied.", { exact: true }).waitFor({ timeout: 15_000 });
             assert.equal(await worker.evaluate(() => navigator.clipboard.readText()), permanentWorkerId);
 
+            if (process.env.HSE_PUBLIC_WORKER_LOOKUP_ONLY === "true") {
+              const publicContext=await browser.newContext({viewport:{width:390,height:844}});
+              try {
+                const publicPage=await publicContext.newPage();
+                const errors=[];
+                publicPage.on("pageerror",error=>errors.push(error.message));
+                publicPage.on("response",response=>{
+                  if(response.status()>=500)errors.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);
+                });
+                await publicPage.goto(`${baseUrl}/verify`,{waitUntil:"networkidle",timeout:25000});
+                const search=publicPage.getByLabel("Worker ID or Credential ID");
+                await search.fill(permanentWorkerId);
+                const verify=publicPage.getByRole("button",{name:"Verify",exact:true});
+                if(!(await verify.isEnabled())){
+                  await publicPage.waitForTimeout(450);
+                  await search.fill("");
+                  await search.fill(permanentWorkerId);
+                }
+                await verify.click();
+                await publicPage.waitForURL("**/verify/result/**",{timeout:20000});
+                const token=decodeURIComponent(new URL(publicPage.url()).pathname.split("/").at(-1));
+                assert.ok(token.length>80&&!token.includes(permanentWorkerId),"Public worker resolution must produce encrypted opaque capability, never a raw ID URL.");
+                assert.match(token,/^[A-Za-z0-9_-]+$/);
+                await publicPage.getByRole("heading",{name:"Independent Worker",exact:true}).waitFor({timeout:15000});
+                await publicPage.getByText(permanentWorkerId,{exact:true}).waitFor();
+                await publicPage.getByText("Valid",{exact:true}).waitFor();
+                const mainText=await publicPage.locator("main").innerText();
+                for(const forbidden of [
+                  "audit_worker_account_20260901",credentials.worker.email,
+                  "1992-04-18","Pakistani","Pakistan","corrected-passport.png",
+                  "Identity document, photo and submitted details",
+                  "Evidence verified practical proficiency","NEBOSH International General Certificate",
+                  "password_hash","totp_secret","assessment answer keys"
+                ]){
+                  assert.ok(!mainText.includes(forbidden),"Public Worker projection leaked private data: "+forbidden);
+                }
+                const report=publicPage.getByRole("link",{name:"Report a credential concern"});
+                const reportHref=await report.getAttribute("href");
+                assert.ok(reportHref.includes("reference="));
+                assert.ok(!reportHref.includes(permanentWorkerId));
+                await publicPage.reload({waitUntil:"domcontentloaded"});
+                await publicPage.getByRole("heading",{name:"Independent Worker",exact:true}).waitFor();
+                const absent="worker_id_"+("Z".repeat(24));
+                await publicPage.goto(`${baseUrl}/verify/result/${absent}`,{waitUntil:"domcontentloaded"});
+                await publicPage.getByRole("heading",{name:"Identifier not verified",exact:true}).waitFor();
+                assert.equal(await publicPage.getByText("Independent Worker",{exact:true}).count(),0);
+                await publicPage.goto(`${baseUrl}/verify/worker/${permanentWorkerId}`,{waitUntil:"domcontentloaded"});
+                await publicPage.waitForURL("**/verify");
+                assert.deepEqual(errors,[],"Anonymous verifier must not hit 500 or browser runtime exceptions.");
+                console.log("ACTUAL_M11201_PUBLIC_WORKER_BROWSER genuine Worker ID from independent Verifier resolves to opaque short-lived URL, allowed Worker status, no private projection; invalid ID neutral; legacy raw Worker route redirects safely");
+              } finally { await publicContext.close(); }
+              return;
+            }
+            if (process.env.HSE_INITIAL_IDENTITY_MORE_INFO_ONLY === "true") {
+              assert.equal(process.env.HSE_INITIAL_IDENTITY_MORE_INFO, "true");
+              await worker.goto(`${baseUrl}/worker/identity`, { waitUntil: "domcontentloaded" });
+              await worker.getByText("Verified", { exact: true }).first().waitFor();
+              assert.equal(await worker.getByLabel("Legal first name", { exact: true }).inputValue(), "Independent");
+              console.log("ACTUAL_M10704_BROWSER initial CHANGES_REQUESTED -> revision -> corrected submission -> independent APPROVED -> permanent Worker ID");
+              return;
+            }
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
             const mainText = await worker.locator("main").innerText();
             assert.match(mainText, /Independent verification: approved/i);
@@ -385,13 +522,43 @@ test(
             assert.match(mainText, /Provide additional evidence showing practical use/i);
 
 
-            if (process.env.HSE_IDENTITY_QUEUE_FAILURE !== "true") {
+            if (process.env.HSE_IDENTITY_QUEUE_FAILURE !== "true" && process.env.HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY !== "true") {
             for (const [kind,label,value] of [["experience","Duties / experience detail","Corrected experience supported by attributable site records."],["skill","Proficiency claim","Evidence verified practical proficiency"]]) {
               console.log("SCENARIO: correct and resubmit " + kind);
               await reviseEvidence(worker, baseUrl, kind, label, value);
-              await decideQueueItem(verifier, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
+              await decideQueueItem(verifier, admin, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
               await worker.goto(`${baseUrl}/worker/evidence`);
               await worker.locator("article").filter({hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record`}).first().getByText(/Independent verification: approved/).waitFor();
+              if (process.env.HSE_INACTIVE_SKILL_ONLY === "true" && kind === "skill") {
+                await worker.goto(`${baseUrl}/worker/dashboard`,{waitUntil:"domcontentloaded"});
+                const skillsMetric=worker.locator("article.metric-card").filter({hasText:"Evidence verification"});
+                await skillsMetric.getByText(/Skills:\s*1 verified/).waitFor({timeout:15000});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                const skill=worker.locator("article").filter({hasText:"Skill record"}).first();
+                await skill.getByText("active · submitted",{exact:true}).waitFor();
+                await skill.getByRole("button",{name:"Mark skill inactive",exact:true}).click();
+                await skill.getByText("inactive · submitted",{exact:true}).waitFor({timeout:15000});
+                await skill.getByText(/This skill is inactive and excluded from current verified competency counts/).waitFor({timeout:15000});
+                assert.equal(await skill.getByText(/Independent verification has not been queued for this version yet/).count(),0);
+                await worker.reload({waitUntil:"domcontentloaded"});
+                await skill.getByText("inactive · submitted",{exact:true}).waitFor({timeout:15000});
+                await skill.getByText(/This skill is inactive and excluded from current verified competency counts/).waitFor();
+                assert.equal(await skill.getByRole("button",{name:"Mark skill inactive"}).count(),0);
+                const skillHistory=await skill.getByRole("region",{name:"skill history"}).innerText();
+                for(const version of [1,2,3])assert.match(skillHistory,new RegExp("Version "+version));
+                await worker.goto(`${baseUrl}/worker/dashboard`,{waitUntil:"domcontentloaded"});
+                await skillsMetric.getByText(/Skills:\s*0 verified/).waitFor({timeout:15000});
+                console.log("ACTUAL_M11108_BROWSER independently approved skill 1 verified -> inactive preserved three versions and dashboard 0 verified after cold reload");
+                return;
+              }
+              if (process.env.HSE_EXPERIENCE_SCAN_RETRY_ONLY === "true" && kind === "experience") {
+                const experience = worker.locator("article").filter({hasText:"Experience record"}).first();
+                const history = experience.getByRole("region",{name:"experience history"});
+                await history.locator("p").filter({hasText:"experience-corrected-"}).filter({hasText:" · active"}).waitFor();
+                await experience.getByText(/Independent verification: approved/).waitFor();
+                console.log("ACTUAL_EXPERIENCE_SCAN_RETRY_BROWSER rejected initial evidence -> real Worker corrected upload, scan recovery, submitted exact new version, independently APPROVED");
+                return;
+              }
             }
 
 
@@ -399,7 +566,7 @@ test(
               for (const outcome of ["REJECTED","CHANGES_REQUESTED","APPROVED"]) {
                 console.log("SCENARIO: " + kind + " revision -> " + outcome);
                 await reviseEvidence(worker, baseUrl, kind, label, kind === "qualification" ? "NEBOSH International General Certificate" : "Versioned evidence supports the claimed work and requires independent review.");
-                await decideQueueItem(verifier, baseUrl, kind, outcome, "Reasoned " + outcome.toLowerCase() + " decision against the exact revised source and retained prior evidence.");
+                await decideQueueItem(verifier, admin, baseUrl, kind, outcome, "Reasoned " + outcome.toLowerCase() + " decision against the exact revised source and retained prior evidence.");
                 await worker.goto(`${baseUrl}/worker/evidence`);
                 const card = worker.locator("article").filter({hasText:`${kind[0].toUpperCase()}${kind.slice(1)} record`}).first();
                 await card.getByText("Independent verification: " + outcome.toLowerCase().replaceAll("_"," ") + ".",{exact:true}).waitFor();
@@ -432,29 +599,44 @@ test(
             await worker.getByText("Awaiting authorized decision", {exact:true}).waitFor();
             await verifier.goto(`${baseUrl}/verifier/reviews`);
             await verifier.locator("tbody tr").filter({hasText:"identity"}).filter({hasText:"QUEUED"}).first().waitFor({timeout:15000});
-            await decideQueueItem(verifier, baseUrl, "identity", "APPROVED", "Corrected legal spelling verified against new document and original identity history.");
+            await decideQueueItem(verifier, admin, baseUrl, "identity", "APPROVED", "Corrected legal spelling verified against new document and original identity history.");
             await worker.goto(`${baseUrl}/worker/identity`);
             await worker.getByText("Verified", {exact:true}).first().waitFor();
             assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
             await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
 
 
-            for (const outcome of ["REJECTED", "CHANGES_REQUESTED"]) {
+            for (const outcome of ["REJECTED", "CHANGES_REQUESTED", "UNABLE_TO_VERIFY"]) {
               console.log("SCENARIO: identity correction -> " + outcome + " preserves verified parent");
               await worker.getByLabel("Reason for correction").fill("Request another correction for independent review while retaining the approved identity.");
               await worker.getByRole("button", {name:"Start correction version"}).click();
               await worker.getByRole("button", {name:"Submit correction"}).waitFor();
               await worker.getByRole("button", {name:"Submit correction"}).click();
               await worker.getByText("Awaiting authorized decision", {exact:true}).waitFor();
-              await decideQueueItem(verifier, baseUrl, "identity", outcome, "Proposed correction cannot be accepted; original verified identity and permanent identifier remain valid.");
+              await decideQueueItem(verifier, admin, baseUrl, "identity", outcome, "Proposed correction cannot be accepted; original verified identity and permanent identifier remain valid.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("Verified", {exact:true}).first().waitFor();
               assert.equal(await worker.getByLabel("Legal first name").inputValue(), "Independent Corrected");
               await worker.getByText(permanentWorkerId, {exact:true}).waitFor();
-              await worker.getByText("Latest correction: rejected", {exact:true}).waitFor();
+              await worker.getByText(
+                outcome==="UNABLE_TO_VERIFY" ? "Latest correction: unable to verify"
+                  : outcome==="CHANGES_REQUESTED" ? "Latest correction: changes requested" : "Latest correction: rejected",
+                {exact:true}
+              ).waitFor();
             }
             await worker.goto(`${baseUrl}/worker/evidence`);
 
+            if (process.env.HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY === "true") {
+              await worker.goto(baseUrl+"/worker/identity",{waitUntil:"domcontentloaded"});
+              await worker.getByText("Verified",{exact:true}).first().waitFor();
+              await worker.getByText(permanentWorkerId,{exact:true}).waitFor();
+              assert.equal(await worker.getByLabel("Legal first name").inputValue(),"Independent Corrected");
+              await worker.goto(baseUrl+"/worker/dashboard",{waitUntil:"domcontentloaded"});
+              await worker.getByText(permanentWorkerId,{exact:true}).waitFor();
+              await worker.getByText("Verified",{exact:true}).first().waitFor();
+              console.log("ACTUAL_M10705_BROWSER initial verified, accepted corrected name, REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY further corrections, original identity and permanent Worker ID preserved after cold reload");
+              return;
+            }
             const employment = worker.locator("article").filter({ hasText: "Employment record" }).first();
             await employment.getByLabel("Employment end date").fill("2026-09-01");
             await employment.getByLabel("End reason").fill("Employment ended after project completion.");
@@ -475,7 +657,17 @@ test(
               ended.getByRole("button", { name: "Upload leaving letter" }).click()
             ]);
             await worker.reload({ waitUntil: "domcontentloaded" });
-            await worker.getByText(/Leaving letter: .* · active/).waitFor({ timeout: 15_000 });
+            const activeLeavingLetter = ended.getByText(/Leaving letter: .* · active/);
+            // Leaving letters share the asynchronous scan queue with evidence files.
+            // Use the same visible recovery control instead of assuming immediate binding.
+            for (let attempt = 0; attempt < 20 && !(await activeLeavingLetter.count()); attempt += 1) {
+              await Promise.all([
+                worker.waitForResponse(response => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
+                ended.getByRole("button", {name:"Check scan status",exact:true}).click()
+              ]);
+              await worker.reload({waitUntil:"domcontentloaded"});
+            }
+            await activeLeavingLetter.waitFor({ timeout: 15_000 });
 
             await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
             await worker.getByRole("heading", { level: 1, name: /Welcome,/ }).waitFor({ timeout: 20_000 });
@@ -493,6 +685,7 @@ test(
           } finally {
             await workerContext.close();
             await verifierContext.close();
+            await adminContext.close();
             await browser.close();
           }
         }
@@ -516,16 +709,21 @@ test(
               const worker = await browser.newPage();
               const verifierContext = await browser.newContext({storageState:recoveryVerifierState});
               const verifier = await verifierContext.newPage();
+              const adminContext = await browser.newContext();
+              const admin = await adminContext.newPage();
               await login(worker,baseUrl,credentials.worker,"worker");
+              await login(admin,baseUrl,credentials.admin,"admin");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByRole("button",{name:"Submit correction",exact:true}).click();
               await worker.getByText("Awaiting authorized decision",{exact:true}).waitFor();
               await verifier.goto(`${baseUrl}/verifier/reviews`);
-              await decideQueueItem(verifier,baseUrl,"identity","APPROVED","Recovered queue successfully delivered the original corrected identity for independent review.");
+              await decideQueueItem(verifier,admin,baseUrl,"identity","APPROVED","Recovered queue successfully delivered the original corrected identity for independent review.");
               await worker.goto(`${baseUrl}/worker/identity`);
               await worker.getByText("Verified",{exact:true}).first().waitFor();
               assert.equal(await worker.getByLabel("Legal first name").inputValue(),"Independent Corrected");
               console.log("SCENARIO: queue failure -> preserved draft -> retry -> Verifier approval");
+              await verifierContext.close();
+              await adminContext.close();
             } finally { await browser.close(); }
           }
         });
@@ -548,6 +746,163 @@ test(
           assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='identity'")).rows[0].task_status,"REJECTED");
           return;
         }
+        if (process.env.HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY === "true") {
+          const workerId="audit_worker_account_20260901";
+          const identities=(await database.query("SELECT identity_id,lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1",[workerId])).rows;
+          assert.equal(identities.length,1);
+          assert.equal(identities[0].lifecycle_status,"verified");
+          assert.equal(identities[0].current_version_number,2,"Only the accepted correction may replace the active verified identity.");
+          const versions=(await database.query("SELECT identity_version_id,version_number,parent_version_id,version_kind,version_status,submitted_at FROM worker_identity_versions WHERE identity_id=$1 ORDER BY version_number",[identities[0].identity_id])).rows;
+          assert.equal(versions.length,5);
+          assert.deepEqual(versions.map(x=>x.version_kind),["initial","correction","correction","correction","correction"]);
+          assert.ok(versions.every(x=>x.version_status==="submitted"&&x.submitted_at));
+          const originalId=versions[0].identity_version_id;
+          const approvedId=versions[1].identity_version_id;
+          assert.equal(versions[1].parent_version_id,originalId);
+          for(const version of versions.slice(2))assert.equal(version.parent_version_id,approvedId);
+          const originals=(await database.query("SELECT identity_version_id,legal_first_name FROM worker_identity_version_drafts WHERE identity_version_id IN ($1,$2)",[originalId,approvedId])).rows;
+          assert.equal(originals.length,2);
+          assert.equal(originals.find(row=>row.identity_version_id===originalId).legal_first_name,"Independent");
+          assert.equal(originals.find(row=>row.identity_version_id===approvedId).legal_first_name,"Independent Corrected");
+          const issued=(await database.query("SELECT permanent_worker_id,identity_version_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",[workerId])).rows;
+          assert.equal(issued.length,1);
+          assert.match(issued[0].permanent_worker_id,/^worker_id_[A-Za-z0-9_-]{24}$/);
+          const tasks=(await database.query("SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='identity'",[workerId])).rows;
+          assert.equal(tasks.length,5);
+          for(const [i,status] of ["APPROVED","APPROVED","REJECTED","CHANGES_REQUESTED","UNABLE_TO_VERIFY"].entries()){
+            assert.ok(tasks.some(t=>t.source_version_id===versions[i].identity_version_id&&t.task_status===status),
+              "Missing exact correction review "+status+" on version "+versions[i].version_number);
+          }
+          const bindings=(await database.query("SELECT identity_version_id,purpose,binding_status FROM worker_identity_evidence_bindings WHERE worker_account_id=$1",[workerId])).rows;
+          assert.ok(bindings.some(x=>x.identity_version_id===originalId&&x.purpose==="identity_document"));
+          assert.ok(bindings.some(x=>x.identity_version_id===approvedId&&x.purpose==="identity_document"));
+          assert.ok(bindings.every(x=>versions.some(v=>v.identity_version_id===x.identity_version_id)));
+          const corrections=(await database.query("SELECT r.parent_version_id,r.correction_version_id,d.decision,d.reason_code FROM worker_identity_correction_requests r JOIN worker_identity_correction_decisions d ON d.correction_request_id=r.correction_request_id WHERE r.worker_account_id=$1",[workerId])).rows;
+          assert.equal(corrections.length,4);
+          assert.equal(corrections.filter(x=>x.decision==="accepted").length,1);
+          assert.equal(corrections.filter(x=>x.decision==="rejected").length,3);
+          assert.ok(corrections.every(row=>row.reason_code&&versions.some(v=>v.identity_version_id===row.correction_version_id)));
+          console.log("ACTUAL_M10705_DB five retained exact-version reviews, unchanged original and approved evidence, one permanent Worker ID and only accepted correction active");
+          return;
+        }
+        if (process.env.HSE_PUBLIC_WORKER_LOOKUP_ONLY === "true") {
+          const workerAccount="audit_worker_account_20260901";
+          const result=(await database.query(
+            "SELECT ids.permanent_worker_id,ids.worker_account_id,ids.identity_version_id,i.lifecycle_status,v.version_status,d.legal_first_name,d.legal_last_name FROM worker_identity_worker_ids ids JOIN worker_identities i ON i.identity_id=ids.identity_id JOIN worker_identity_versions v ON v.identity_version_id=ids.identity_version_id JOIN worker_identity_version_drafts d ON d.identity_version_id=v.identity_version_id WHERE ids.worker_account_id=$1",
+            [workerAccount]
+          )).rows;
+          assert.equal(result.length,1);
+          assert.match(result[0].permanent_worker_id,/^worker_id_[A-Za-z0-9_-]{24}$/);
+          assert.equal(result[0].lifecycle_status,"verified");
+          assert.equal(result[0].version_status,"submitted");
+          assert.equal(result[0].legal_first_name,"Independent");
+          assert.equal(result[0].legal_last_name,"Worker");
+          const rate=await database.query("SELECT COUNT(*)::int AS count FROM public_verification_rate_limits WHERE action='lookup'");
+          assert.ok(Number(rate.rows[0]?.count)>=1,"Public Worker lookup must consume a persisted rate-limit bucket.");
+          console.log("ACTUAL_M11201_PUBLIC_WORKER_DB verified Worker-ID version bound and persisted public lookup throttling");
+          return;
+        }
+        if (process.env.HSE_INACTIVE_SKILL_ONLY === "true") {
+          const workerId="audit_worker_account_20260901";
+          const records=(await database.query(
+            "SELECT record_id,lifecycle_status,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='skill'",
+            [workerId]
+          )).rows;
+          assert.equal(records.length,1);
+          const row=records[0];
+          assert.equal(row.lifecycle_status,"inactive");
+          const versions=(await database.query(
+            "SELECT version_id,version_number,version_status,submitted_at,supersedes_version_id FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",
+            [row.record_id]
+          )).rows;
+          assert.equal(versions.length,3);
+          assert.deepEqual(versions.map(x=>x.version_status),["superseded","superseded","submitted"]);
+          assert.ok(versions.every(x=>x.submitted_at));
+          assert.equal(row.current_version_id,versions[2].version_id);
+          assert.equal(versions[2].supersedes_version_id,versions[1].version_id);
+          const reviews=(await database.query(
+            "SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='skill'",
+            [workerId]
+          )).rows;
+          assert.ok(reviews.some(x=>x.source_version_id===versions[0].version_id&&x.task_status==="CHANGES_REQUESTED"));
+          assert.ok(reviews.some(x=>x.source_version_id===versions[1].version_id&&x.task_status==="APPROVED"));
+          assert.ok(!reviews.some(x=>x.source_version_id===versions[2].version_id&&x.task_status==="APPROVED"));
+          assert.equal((await database.query(
+            "SELECT COUNT(*)::int AS n FROM worker_evidence_records r JOIN worker_evidence_versions v ON v.version_id=r.current_version_id JOIN evidence_review_tasks t ON t.source_version_id=v.version_id WHERE r.worker_account_id=$1 AND r.record_kind='skill' AND r.lifecycle_status<>'inactive' AND v.version_status='submitted' AND t.task_status='APPROVED'",
+            [workerId]
+          )).rows[0].n,0);
+          console.log("ACTUAL_M11108_DB inactive skill retains three versions and past reviews but contributes zero current approved competencies");
+          return;
+        }
+        if (process.env.HSE_EXPERIENCE_SCAN_RETRY_ONLY === "true") {
+          const workerId = "audit_worker_account_20260901";
+          const records=(await database.query(
+            "SELECT record_id,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='experience'",
+            [workerId]
+          )).rows;
+          assert.equal(records.length,1);
+          const versions=(await database.query(
+            "SELECT version_id,version_number,version_status,submitted_at FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",
+            [records[0].record_id]
+          )).rows;
+          assert.equal(versions.length,2);
+          assert.equal(records[0].current_version_id,versions[1].version_id);
+          assert.deepEqual(versions.map(x=>x.version_status),["superseded","submitted"]);
+          assert.ok(versions.every(x=>x.submitted_at));
+          const attachments=(await database.query(
+            "SELECT a.version_id,a.display_filename,a.superseded_at,f.lifecycle_status FROM worker_evidence_attachments a JOIN platform_secure_files f ON f.file_id=a.secure_file_id WHERE a.record_id=$1 ORDER BY a.created_at,a.attachment_id",
+            [records[0].record_id]
+          )).rows;
+          assert.equal(attachments.length,2);
+          assert.ok(attachments.every(x=>x.superseded_at===null&&x.lifecycle_status==="available"));
+          assert.equal(attachments[0].version_id,versions[0].version_id);
+          assert.equal(attachments[1].version_id,versions[1].version_id);
+          assert.match(attachments[1].display_filename,/^experience-corrected-.*\.png$/);
+          const candidates=(await database.query(
+            "SELECT candidate_status FROM worker_evidence_file_candidates WHERE record_id=$1",[records[0].record_id]
+          )).rows;
+          assert.ok(candidates.length>=1);
+          assert.ok(candidates.every(x=>x.candidate_status==="finalized"));
+          const decisions=(await database.query(
+            "SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='experience'",
+            [workerId]
+          )).rows;
+          assert.equal(decisions.length,2);
+          assert.ok(decisions.some(x=>x.source_version_id===versions[0].version_id&&x.task_status==="REJECTED"));
+          assert.ok(decisions.some(x=>x.source_version_id===versions[1].version_id&&x.task_status==="APPROVED"));
+          console.log("ACTUAL_EXPERIENCE_SCAN_RETRY_DB two immutable submitted versions, both exact-version available files, no pending scan candidates, one rejected old and one approved corrected Verifier task");
+          return;
+        }
+        if (process.env.HSE_INITIAL_IDENTITY_MORE_INFO_ONLY === "true") {
+          const workerId = "audit_worker_account_20260901";
+          const identity = (await database.query(
+            "SELECT identity_id,lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1",
+            [workerId]
+          )).rows[0];
+          assert.equal(identity.lifecycle_status,"verified");
+          assert.equal(identity.current_version_number,2);
+          const versions = (await database.query(
+            "SELECT identity_version_id,version_number,parent_version_id,version_status,submitted_at FROM worker_identity_versions WHERE identity_id=$1 ORDER BY version_number",
+            [identity.identity_id]
+          )).rows;
+          assert.equal(versions.length,2);
+          assert.deepEqual(versions.map(row=>row.version_status),["submitted","submitted"]);
+          assert.ok(versions.every(row=>row.submitted_at));
+          assert.equal(versions[1].parent_version_id,versions[0].identity_version_id);
+          const decisions=(await database.query(
+            "SELECT task_status,source_version_id FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='identity' ORDER BY created_at,task_id",
+            [workerId]
+          )).rows;
+          assert.equal(decisions.length,2);
+          assert.deepEqual(decisions.map(row=>row.task_status).sort(),["APPROVED","CHANGES_REQUESTED"]);
+          assert.ok(decisions.some(row=>row.task_status==="CHANGES_REQUESTED"&&row.source_version_id===versions[0].identity_version_id));
+          assert.ok(decisions.some(row=>row.task_status==="APPROVED"&&row.source_version_id===versions[1].identity_version_id));
+          assert.equal((await database.query(
+            "SELECT COUNT(*)::int AS n FROM worker_identity_worker_ids WHERE worker_account_id=$1",[workerId]
+          )).rows[0].n,1);
+          console.log("ACTUAL_M10704_DB immutable original and corrected versions, independent dispositions and one permanent Worker ID");
+          return;
+        }
         const taskResult = await database.query(
           `SELECT evidence_kind,task_status
              FROM evidence_review_tasks
@@ -560,7 +915,7 @@ test(
           accumulator.set(row.evidence_kind, current);
           return accumulator;
         }, new Map());
-        assert.deepEqual([...statusesByKind.get("identity")].sort(), (process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true" ? ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "CHANGES_REQUESTED", "REJECTED"] : ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "REJECTED"]));
+        assert.deepEqual([...statusesByKind.get("identity")].sort(), (process.env.HSE_INITIAL_IDENTITY_MORE_INFO === "true" ? ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "CHANGES_REQUESTED", "REJECTED", "UNABLE_TO_VERIFY"] : ["APPROVED", "APPROVED", "CHANGES_REQUESTED", "REJECTED", "UNABLE_TO_VERIFY"]));
         for (const kind of ["qualification", "experience", "skill", "employment"]) {
           const statuses = statusesByKind.get(kind);
           for (const outcome of ["APPROVED", "REJECTED", "CHANGES_REQUESTED"]) assert.ok(statuses.includes(outcome), kind + " missing " + outcome);

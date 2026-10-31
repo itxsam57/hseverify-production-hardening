@@ -9,6 +9,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { bindGovernedReviewTask, createGovernedReviewSetup } from "../helpers/review-governance-browser-helper.mjs";
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const PNG_FILE = {
@@ -72,6 +73,7 @@ async function login(page, baseUrl, identity, role) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
+
 
 async function submitQualification(page, baseUrl) {
   await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
@@ -161,7 +163,8 @@ test(
           const worker = await workerContext.newPage();
           const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const verifier = await verifierContext.newPage();
-
+          const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const admin = await adminContext.newPage();
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
             await submitQualification(worker, baseUrl);
@@ -263,14 +266,48 @@ test(
               .filter({ has: verifier.locator("td", { hasText: "qualification" }) })
               .last();
             await caseReviewRow.getByRole("link", { name: "Review", exact: true }).click();
-            await verifier.getByRole("button", { name: "Claim review" }).click();
+            await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
+            const taskId = new URL(verifier.url()).pathname.split("/").filter(Boolean).at(-1);
+            assert(taskId?.startsWith("evidence_review_"), "Queued evidence review must expose its task id.");
+            await login(admin, baseUrl, credentials.admin, "admin");
+            const reviewRevision = await createGovernedReviewSetup(admin, baseUrl, {
+              taskId,
+              verifierEmails: [credentials.verifier.email],
+              frameworkReference: "COMPANY-ASSURANCE-REVIEW",
+              policyReference: "COMPANY-ASSURANCE-POLICY",
+              frameworkTitle: "Company assurance review standard",
+              policyTitle: "Company assurance review policy"
+            });
+            await verifier.reload({ waitUntil: "domcontentloaded" });
+            const claimButton = verifier.getByRole("button", { name: "Claim review" });
+            if (!(await claimButton.count())) throw new Error(`Claim review unavailable after explicit governance setup: ${await verifier.locator("main").innerText()}`);
+            await claimButton.click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
-            await verifier.getByLabel("Decision").selectOption("CHANGES_REQUESTED");
-            await verifier.getByLabel("Reason").last().fill("Correct the certificate number before this Company case can proceed.");
+            const terminalReject = process.env.HSE_M20106_REJECTED_ONLY === "true";
+            const verdict = terminalReject ? "REJECTED" : "CHANGES_REQUESTED";
+            await verifier.getByLabel("Decision").selectOption(verdict);
+            await verifier.getByLabel("Reason", { exact: true }).fill(
+              terminalReject
+                ? "Original qualification document was proven invalid; do not accept this submitted version."
+                : "Correct the certificate number before this Company case can proceed."
+            );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
-            await verifier.getByText("CHANGES_REQUESTED", { exact: true }).waitFor({ timeout: 15_000 });
+            await verifier.getByText(verdict, { exact: true }).waitFor({ timeout: 15_000 });
+            await company.goto(orderUrl, { waitUntil: "domcontentloaded" });
+            await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+              .getByText(terminalReject ? "Rejected" : "Evidence pending",{exact:true}).waitFor({timeout:15000});
 
             await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
+            if (terminalReject) {
+              await worker.getByText("Rejected",{exact:true}).first().waitFor({timeout:15000});
+              await worker.reload({waitUntil:"domcontentloaded"});
+              await worker.getByText("Rejected",{exact:true}).first().waitFor();
+              await company.reload({waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Rejected",{exact:true}).waitFor();
+              console.log("ACTUAL_M20106_REJECTED_BROWSER Verifier terminal rejection reached both Worker and Company after cold reload, case never auto-progressed");
+              return;
+            }
             await worker.getByText("Evidence pending", { exact: true }).first().waitFor({ timeout: 15_000 });
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
             const qualification = worker.locator("article").filter({ hasText: "Qualification record" }).first();
@@ -293,10 +330,20 @@ test(
               .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
               .filter({ has: verifier.locator("td", { hasText: "qualification" }) }).last();
             await correctedReview.getByRole("link", { name: "Review", exact: true }).click();
+            await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
+            const correctedTaskId = new URL(verifier.url()).pathname.split("/").filter(Boolean).at(-1);
+            assert(correctedTaskId?.startsWith("evidence_review_"), "Corrected review must expose its task id.");
+            await bindGovernedReviewTask(admin, baseUrl, {
+              taskId: correctedTaskId,
+              frameworkReference: "COMPANY-ASSURANCE-REVIEW",
+              policyReference: "COMPANY-ASSURANCE-POLICY",
+              revisionValue: reviewRevision
+            });
+            await verifier.reload({ waitUntil: "domcontentloaded" });
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("APPROVED");
-            await verifier.getByLabel("Reason").last().fill(
+            await verifier.getByLabel("Reason", { exact: true }).fill(
               "Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
@@ -313,6 +360,7 @@ test(
             await companyContext.close();
             await workerContext.close();
             await verifierContext.close();
+            await adminContext.close();
             await browser.close();
           }
         }
@@ -342,7 +390,29 @@ test(
              JOIN assurance_orders AS orders ON orders.order_id=cases.order_id
             WHERE orders.order_reference='ASSURE-LINK-001'`
         );
-        assert.equal(caseState.rows[0]?.case_status, "Assessment pending");
+        assert.equal(caseState.rows[0]?.case_status, process.env.HSE_M20106_REJECTED_ONLY === "true" ? "Rejected" : "Assessment pending");
+        if (process.env.HSE_M20106_REJECTED_ONLY === "true") {
+          assert.equal(caseState.rows[0].owner_kind,null);
+          const original=(await database.query("SELECT versions.version_id,versions.version_status FROM worker_evidence_versions versions JOIN worker_evidence_records records ON records.record_id=versions.record_id WHERE records.worker_account_id='audit_worker_account_20260901' AND records.record_kind='qualification' ORDER BY versions.created_at")).rows;
+          assert.equal(original.length,1);
+          assert.equal(original[0].version_status,"submitted");
+          const reviewed=(await database.query("SELECT task_id,task_status,source_version_id FROM evidence_review_tasks WHERE worker_account_id='audit_worker_account_20260901' AND evidence_kind='qualification' AND case_id IN (SELECT cases.case_id FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id WHERE orders.order_reference='ASSURE-LINK-001')")).rows;
+          assert.equal(reviewed.length,1);
+          assert.equal(reviewed[0].task_status,"REJECTED");
+          assert.equal(reviewed[0].source_version_id,original[0].version_id);
+          console.log("ACTUAL_M20106_REJECTED_DB one retained original Worker qualification version, terminal Verifier REJECTED exact source-linked task and Company case with no owner; Company order remains SUBMITTED");
+        } else {
+          const versions=(await database.query("SELECT versions.version_id,versions.version_number,versions.version_status FROM worker_evidence_versions versions JOIN worker_evidence_records records ON records.record_id=versions.record_id WHERE records.worker_account_id='audit_worker_account_20260901' AND records.record_kind='qualification' ORDER BY versions.version_number")).rows;
+          assert.equal(versions.length,2,"Worker must retain both original and corrected qualification versions.");
+          assert.deepEqual(versions.map(version=>version.version_number),[1,2]);
+          assert.deepEqual(versions.map(version=>version.version_status),["superseded","submitted"],
+            "Corrected qualification must preserve the old immutable submitted evidence as superseded and retain new active submitted evidence.");
+          const decisions=(await database.query("SELECT decisions.outcome,decisions.source_version_id FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id IN (SELECT cases.case_id FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id WHERE orders.order_reference='ASSURE-LINK-001') AND tasks.evidence_kind='qualification' ORDER BY decisions.decided_at")).rows;
+          assert.equal(decisions.length,2,"Both independent final Verifier decisions must remain source-linked.");
+          assert.ok(decisions.some(decision=>decision.outcome==="CHANGES_REQUESTED"&&decision.source_version_id===versions[0].version_id),"Original correction decision source lost.");
+          assert.ok(decisions.some(decision=>decision.outcome==="APPROVED"&&decision.source_version_id===versions[1].version_id),"Corrected accepted decision source lost.");
+          console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
+        }
       } finally {
         await database.close();
       }

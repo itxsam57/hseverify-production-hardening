@@ -6,7 +6,8 @@ import { getServerEnvironment } from "../config/server-environment";
 import { processNextOutboxJob } from "../outbox/outbox-worker";
 import {
   PrivateObjectConflictError,
-  createLocalTestPrivateObjectStorage,
+  createRuntimePrivateObjectStorage,
+  PrivateObjectStorageError,
   type PrivateObjectStorage
 } from "../secure-files/private-object-storage";
 import {
@@ -150,17 +151,20 @@ let service: CompanyApplicationSecureFileService | null = null;
 export function getCompanyApplicationSecureFileService(): CompanyApplicationSecureFileService {
   if (service) return service;
   const environment = getServerEnvironment();
-  if (
-    environment.appEnvironment !== "development" &&
-    environment.appEnvironment !== "test"
-  ) {
-    throw new SecureFileUploadValidationError("invalid_policy");
+  let storage: PrivateObjectStorage;
+  try {
+    storage = createRuntimePrivateObjectStorage(environment.appEnvironment);
+  } catch (error) {
+    if (error instanceof PrivateObjectStorageError) {
+      throw new SecureFileUploadValidationError("invalid_policy");
+    }
+    throw error;
   }
   service = new CompanyApplicationSecureFileService(
     new DatabaseSecureFileRepository(),
     new DatabaseSecureFileUploadRepository(),
     new DatabaseSecureFileScanRepository(),
-    createLocalTestPrivateObjectStorage(environment.appEnvironment)
+    storage
   );
   return service;
 }

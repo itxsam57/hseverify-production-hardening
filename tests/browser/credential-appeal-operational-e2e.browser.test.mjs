@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -10,6 +10,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { chromium } from "playwright";
 
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { seedCredentialDecisionFixture } from "../helpers/credential-decision-fixture.mjs";
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -72,6 +74,8 @@ test(
       HSE_APP_ENV: "development",
       HSE_DATABASE_DRIVER: "pglite",
       HSE_PGLITE_DATA_DIR: databaseDirectory,
+      HSE_AUDIT_CREDENTIALS_PATH: join(databaseDirectory,"browser-credentials.json"),
+      HSE_CREDENTIAL_SIGNING_SECRET: randomBytes(32).toString("hex"),
       HSE_RELEASE_SHA: "credential-appeal-operational-browser",
       HSE_SESSION_SECRET: "credential-appeal-browser-session-secret-2026-000000000",
       HSE_AUTH_PEPPER: "credential-appeal-browser-auth-pepper-2026-00000000000",
@@ -95,49 +99,34 @@ test(
       });
       assert.equal(seed.status, 0, seed.stderr || seed.stdout);
       const credentials = JSON.parse(
-        await readFile("/tmp/independent-audit-credentials.json", "utf8")
+        await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH, "utf8")
       );
 
       const workerId = "HSE-REG-INDEPENDENTAUDIT";
-      const credentialId = "credential_id_" + "a".repeat(24);
+      let credentialId;
       const evidenceRecordId = "worker_evidence_record_appeal_browser_01";
       const evidenceVersionId = "worker_evidence_version_appeal_browser_01";
-      const competencyId = "competency_appeal_browser_000001";
+      let competencyId;
       const issuedAt = "2026-09-20T10:00:00.000Z";
 
+      // Real decision producer creates signed issuance, case provenance and Living Record.
+      const fixtureDatabase=await openScriptDatabase({appEnvironment:"test",databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:databaseDirectory,releaseSha:environment.HSE_RELEASE_SHA});
+      const originalFixture=await seedCredentialDecisionFixture(fixtureDatabase,{
+        qualification:"HSE Operational Assurance",policy:{credentialValidity:"no_expiry"},
+        workerAccountId:credentials.worker.accountId,permanentWorkerId:workerId,
+        signingSecret:environment.HSE_CREDENTIAL_SIGNING_SECRET
+      });
+      try {
+        const originalActor="account_original_appeal_browser_admin";
+        await originalFixture.database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'original-appeal-browser@example.test','Original decision admin','active','test-only',$2,$2,$2,$2)",[originalActor,issuedAt]);
+        await originalFixture.database.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[originalActor,issuedAt]);
+        await originalFixture.repo.saveDecisionAndProgressCase(originalFixture.decision,originalActor);
+        credentialId=(await originalFixture.database.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[originalFixture.caseId])).rows[0].credential_reference;
+        competencyId=(await originalFixture.database.query("SELECT competency_id FROM living_record_competencies WHERE source_credential_id=$1",[credentialId])).rows[0].competency_id;
+        assert.notEqual(originalActor,credentials.admin.accountId);
+      } finally { await originalFixture.database.close(); }
       const database = new PGlite(databaseDirectory);
       try {
-        await database.query(
-          `INSERT INTO credential_issuances(
-             credential_id,worker_id,qualification,issued_at,expires_at,status,version,
-             public_status_url,qr_payload,signature,pdf_url
-           ) VALUES($1,$2,'HSE Operational Assurance',$3,NULL,'valid',1,$4,$5,$6,$7)`,
-          [
-            credentialId,
-            workerId,
-            issuedAt,
-            "/verify/result/" + credentialId,
-            JSON.stringify({ type: "hse_verify_credential", credentialId }),
-            "a".repeat(64),
-            "/api/credentials/" + credentialId + "/pdf"
-          ]
-        );
-        await database.query(
-          "INSERT INTO credential_lifecycle_events(credential_id,status,version,changed_at) VALUES($1,'valid',1,$2)",
-          [credentialId, issuedAt]
-        );
-        await database.query(
-          `INSERT INTO living_record_competencies(
-             competency_id,worker_id,title,source_credential_id,created_at
-           ) VALUES($1,$2,'HSE Operational Assurance',$3,$4)`,
-          [competencyId, workerId, credentialId, issuedAt]
-        );
-        await database.query(
-          `INSERT INTO living_record_versions(
-             competency_id,version,status,effective_at,expires_at,restrictions,conditions,reassessment
-           ) VALUES($1,1,'valid',$2,NULL,'[]'::jsonb,'[]'::jsonb,$3::jsonb)`,
-          [competencyId, issuedAt, JSON.stringify({ required: false, dueAt: null, reason: null })]
-        );
 
         await database.query(
           `INSERT INTO worker_evidence_records(

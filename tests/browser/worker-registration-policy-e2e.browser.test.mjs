@@ -24,7 +24,7 @@ async function freePort() {
     });
   });
 }
-test("Worker registration denies missing policies/country and password mismatch, then records server-dated acceptance before OTP", {timeout:180000}, async()=>{
+test("Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance", {timeout:180000}, async()=>{
   const root = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-worker-policy-browser-"));
   const port = await freePort();
@@ -42,6 +42,8 @@ test("Worker registration denies missing policies/country and password mismatch,
     HSE_ENABLE_AUTH_SANDBOX: "true",
     HSE_AUTH_SANDBOX_ACCESS_KEY: "registration-consent-red-synthetic-sandbox-key-2026"
   };
+
+  let registrationCookies=[], registeredAccountId, registeredFlowId;
 
   try {
     const migration = spawnSync(process.execPath, ["scripts/db-migrate.mjs"], {
@@ -160,6 +162,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           await page.getByRole("button", { name: "Create Worker account", exact: true }).click();
           await page.waitForURL("**/worker/register/verify");
           await page.getByText("Step 1 of 2", { exact: false }).waitFor();
+          registrationCookies=await page.context().cookies();
           assert.deepEqual(errors, []);
         } finally { await browser.close(); }
       }
@@ -172,9 +175,11 @@ test("Worker registration denies missing policies/country and password mismatch,
       assert.equal(accounts.rows.length, 1);
       assert.equal(accounts.rows[0].account_status, "pending_email");
       const accountId = accounts.rows[0].account_id;
+      registeredAccountId=accountId;
       const flow = await db.query("SELECT flow_id,current_step FROM auth_registration_flows WHERE account_id=$1", [accountId]);
       assert.equal(flow.rows.length, 1);
       assert.equal(flow.rows[0].current_step, "pending_email");
+      registeredFlowId=flow.rows[0].flow_id;
       const otp = await db.query("SELECT purpose,code_hash FROM auth_otp_challenges WHERE account_id=$1", [accountId]);
       assert.equal(otp.rows.length, 1);
       assert.equal(otp.rows[0].purpose, "registration_email");
@@ -192,5 +197,33 @@ test("Worker registration denies missing policies/country and password mismatch,
       const recorded = new Date(row.occurred_at).getTime();
       assert.ok(recorded >= startedAt && recorded <= Date.now(), "Registration accepted a caller-supplied acceptance timestamp.");
     } finally { await db.close(); }
+    await runDevelopmentServer({
+      args:["--hostname","127.0.0.1","--port",String(port)],
+      probeUrl:baseUrl+"/worker/register",projectRoot:root,environment,
+      probe:async()=>{
+        const browser=await chromium.launch({headless:true});
+        try{
+          const context=await browser.newContext();await context.addCookies(registrationCookies);
+          const page=await context.newPage(),errors=[];page.on("pageerror",error=>errors.push(error.message));
+          await page.goto(baseUrl+"/worker/register/verify");
+          await page.getByText("Step 1 of 2",{exact:false}).waitFor();
+          await page.getByText("Cancel this registration",{exact:true}).click();
+          await page.getByRole("button",{name:"Cancel and start again",exact:true}).click();
+          await page.waitForURL("**/worker/register?reason=cancelled");
+          await page.goto(baseUrl+"/worker/register/verify");
+          await page.waitForURL(url=>url.pathname==="/worker/register");
+          assert.equal(new URL(page.url()).searchParams.get("reason"),"restart");
+          assert.deepEqual(errors,[]);
+        }finally{await browser.close();}
+      }
+    });
+    const cancelled=new PGlite(databaseDirectory);
+    try{
+      for(const table of ["auth_accounts","reviewer_capacity_locks","auth_registration_flows","auth_otp_challenges"])
+        assert.equal((await cancelled.query("SELECT count(*)::int n FROM "+table+" WHERE account_id=$1",[registeredAccountId])).rows[0].n,0,table+" retained cancelled signup");
+      const retained=(await cancelled.query("SELECT metadata FROM platform_audit_events WHERE actor_account_id=$1 AND metadata->>'stage'='policy_acceptance'",[registeredAccountId])).rows;
+      assert.equal(retained.length,1);assert.equal(retained[0].metadata.flowId,registeredFlowId);
+      assert.equal((await cancelled.query("SELECT count(*)::int n FROM platform_audit_events WHERE actor_account_id=$1 AND metadata->>'reason'='user_cancelled'",[registeredAccountId])).rows[0].n,1);
+    }finally{await cancelled.close();}
   } finally { await rm(databaseDirectory, { recursive: true, force: true }); }
 });

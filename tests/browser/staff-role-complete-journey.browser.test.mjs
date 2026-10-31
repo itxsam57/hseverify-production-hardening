@@ -151,7 +151,7 @@ async function seedAdminDecisionCase(databaseDirectory) {
   }
 }
 
-async function runAdminForms(page, baseUrl) {
+async function runAdminForms(page, baseUrl, reviewPage) {
   const frameworkReference = "HSE-JOURNEY";
   await gotoOk(page, baseUrl, "/admin/frameworks", "Frameworks & effective policy");
   const createFrameworkForm = page.locator("form").filter({ hasText: "Create framework" });
@@ -183,16 +183,34 @@ async function runAdminForms(page, baseUrl) {
   };
   await page.getByLabel("Stable reference").fill("JOURNEY-Q-001");
   await page.getByLabel("Version JSON").fill(JSON.stringify(questionPayload));
-  await page.getByRole("button", { name: "Create active question" }).click();
-  await page.getByText("JOURNEY-Q-001", { exact: true }).waitFor({ timeout: 15_000 });
-  await page.getByRole("button", { name: "Deactivate" }).click();
-  await page.getByText(/INACTIVE/).waitFor({ timeout: 15_000 });
-  await page.getByRole("button", { name: "Reactivate" }).click();
-  await page.getByText(/ACTIVE/).waitFor({ timeout: 15_000 });
-  await page.getByText("Create a new immutable revision").click();
-  await page.getByLabel("Replacement version JSON").fill(JSON.stringify({ ...questionPayload, prompt: "Which control is persisted after an Admin revision?" }));
-  await page.getByRole("button", { name: "Publish revision" }).click();
-  await page.getByText("Which control is persisted after an Admin revision?", { exact: true }).waitFor({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Create draft question", exact: true }).click();
+  const questionCard = page.locator('[data-question-reference="JOURNEY-Q-001"]');
+  const reviewCard = reviewPage.locator('[data-question-reference="JOURNEY-Q-001"]');
+  async function approveAndPublish(version) {
+    await questionCard.getByRole("button", { name: "Submit for review", exact: true }).click();
+    await questionCard.getByText(new RegExp("v" + version + " · UNDER_REVIEW")).first().waitFor();
+    assert.equal(await questionCard.getByRole("button", { name: "Approve version", exact: true }).count(), 0);
+    await gotoOk(reviewPage, baseUrl, "/admin/question-bank", "Question Bank");
+    await reviewCard.getByRole("button", { name: "Approve version", exact: true }).click();
+    await reviewCard.getByText(new RegExp("v" + version + " · APPROVED")).first().waitFor();
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await questionCard.getByRole("button", { name: "Publish approved version", exact: true }).click();
+    await questionCard.getByText(new RegExp("v" + version + " · PUBLISHED")).first().waitFor();
+  }
+  await questionCard.getByText(/v1 · DRAFT/).first().waitFor();
+  await approveAndPublish(1);
+  await questionCard.getByRole("button", { name: "Pause publication", exact: true }).click();
+  await questionCard.getByText(/v1 · PAUSED/).first().waitFor();
+  await questionCard.getByRole("button", { name: "Resume publication", exact: true }).click();
+  await questionCard.getByText(/v1 · PUBLISHED/).first().waitFor();
+  await questionCard.getByText("Create a new immutable revision", { exact: true }).click();
+  await questionCard.getByLabel("Replacement version JSON").fill(JSON.stringify({ ...questionPayload, prompt: "Which control is persisted after an Admin revision?" }));
+  await questionCard.getByRole("button", { name: "Save draft revision", exact: true }).click();
+  await questionCard.getByText(/v2 · DRAFT/).first().waitFor();
+  await questionCard.getByText("Published: Which control is tested by the full Admin journey?", { exact: true }).waitFor();
+  await approveAndPublish(2);
+  await questionCard.getByText("Published: Which control is persisted after an Admin revision?", { exact: true }).waitFor();
+  console.log("ACTUAL_ROOT_INVITED_TWO_ADMIN_QUESTION author draft independent MFA reviewer approval publication pause resume immutable revision");
 
   await gotoOk(page, baseUrl, "/admin/assessment-blueprints", "Assessment blueprints");
   const selectors = [{ count: 1, questionType: "MULTIPLE_CHOICE", domainReference: "Hazard Control", difficulty: "MEDIUM", tagsAll: ["core"] }];
@@ -330,6 +348,20 @@ async function runJourney(baseUrl) {
       previousInvitation = invitation;
       identities.push(await enroll(browser, baseUrl, invitation, role, email));
     }
+    const reviewerEmail = "question.reviewer.staff.journey@example.test";
+    await root.page.getByLabel("Staff email").fill(reviewerEmail);
+    await root.page.getByLabel("Portal role").selectOption("admin");
+    await root.page.getByRole("button", { name: "Create one-time invitation" }).click();
+    await root.page.waitForFunction(({ previous }) => {
+      const value = document.querySelector(".security-key-card strong")?.textContent?.trim() ?? "";
+      return value.startsWith("/staff/invite/") && value !== previous;
+    }, { previous: previousInvitation }, { timeout: 15_000 });
+    const reviewerInvitation = (await root.page.locator(".security-key-card strong").first().innerText()).trim();
+    const reviewerIdentity = await enroll(browser, baseUrl, reviewerInvitation, "admin", reviewerEmail);
+    const reviewerSession = await login(browser, baseUrl, reviewerIdentity);
+    sessions.push(reviewerSession);
+    assert.notEqual(reviewerIdentity.email, identities.find(identity => identity.role === "admin").email);
+
     await root.page.reload({ waitUntil: "domcontentloaded" });
     for (const identity of identities) {
       await root.page.getByText(identity.email, { exact: true }).waitFor({ timeout: 15_000 });
@@ -349,7 +381,7 @@ async function runJourney(baseUrl) {
         await gotoOk(session.page, baseUrl, path, heading);
         await assertNoMobileOverflow(session.page, path);
       }
-      if (identity.role === "admin") await runAdminForms(session.page, baseUrl);
+      if (identity.role === "admin") await runAdminForms(session.page, baseUrl, reviewerSession.page);
       await gotoOk(session.page, baseUrl, "/account/sessions", "Active sessions");
       await assertNoMobileOverflow(session.page, identity.role + " sessions");
       const forbiddenRole = identity.role === "admin" ? "root" : "admin";
@@ -360,6 +392,7 @@ async function runJourney(baseUrl) {
       await session.page.waitForURL((url) => url.pathname === `/${identity.role}/login` && url.searchParams.get("reason") === "signed-out", { timeout: 15_000 });
       assert.deepEqual(session.errors, []);
     }
+    assert.deepEqual(reviewerSession.errors, []);
     assert.deepEqual(root.errors, []);
   } finally {
     await Promise.all(sessions.map((session) => session.context.close().catch(() => {})));
@@ -400,6 +433,47 @@ test("Root provisions every staff role and each MFA session reaches only its rea
       }
     });
     assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
+    const persisted = new PGlite(databaseDirectory);
+    try {
+      const history = await persisted.query(
+        `SELECT v.version_no,v.prompt,q.current_version_id,v.question_version_id,
+                w.workflow_state,w.provenance,author.email_normalized AS author_email,
+                reviewer.email_normalized AS reviewer_email,w.author_account_id,w.approved_by_account_id
+           FROM assessment_questions q
+           JOIN assessment_question_versions v ON v.question_id=q.question_id
+           JOIN question_version_workflow w ON w.question_version_id=v.question_version_id
+           JOIN auth_accounts author ON author.account_id=w.author_account_id
+           JOIN auth_accounts reviewer ON reviewer.account_id=w.approved_by_account_id
+          WHERE q.question_reference='JOURNEY-Q-001' ORDER BY v.version_no`
+      );
+      assert.equal(history.rows.length, 2);
+      for (const row of history.rows) {
+        assert.equal(row.author_email, "admin.staff.journey@example.test");
+        assert.equal(row.reviewer_email, "question.reviewer.staff.journey@example.test");
+        assert.notEqual(row.author_account_id, row.approved_by_account_id);
+        assert.equal(row.provenance, "AUTHORED");
+      }
+      assert.equal(history.rows[0].prompt, "Which control is tested by the full Admin journey?");
+      assert.equal(history.rows[1].prompt, "Which control is persisted after an Admin revision?");
+      assert.notEqual(history.rows[0].question_version_id, history.rows[1].question_version_id);
+      assert.notEqual(history.rows[0].workflow_state, "PUBLISHED");
+      assert.equal(history.rows[1].workflow_state, "PUBLISHED");
+      assert.equal(history.rows[1].current_version_id, history.rows[1].question_version_id);
+      const transitions = await persisted.query(
+        `SELECT e.question_version_id,e.to_state,e.actor_account_id
+           FROM question_version_workflow_events e
+           JOIN assessment_question_versions v ON v.question_version_id=e.question_version_id
+           JOIN assessment_questions q ON q.question_id=v.question_id
+          WHERE q.question_reference='JOURNEY-Q-001' ORDER BY e.revision_no`
+      );
+      for (const row of history.rows) {
+        const events = transitions.rows.filter(event => event.question_version_id === row.question_version_id);
+        assert(events.some(event => event.to_state === "UNDER_REVIEW" && event.actor_account_id === row.author_account_id));
+        assert(events.some(event => event.to_state === "APPROVED" && event.actor_account_id === row.approved_by_account_id));
+        assert(events.some(event => event.to_state === "PUBLISHED" && event.actor_account_id === row.author_account_id));
+      }
+      console.log("ACTUAL_QUESTION_APPROVAL_DB two immutable authored versions, independent reviewer and exact published pointer retained");
+    } finally { await persisted.close(); }
   } finally {
     await rm(databaseDirectory, { recursive: true, force: true });
   }

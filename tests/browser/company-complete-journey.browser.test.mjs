@@ -300,7 +300,8 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await codeSection.getByLabel("Site default").selectOption({label:"Journey Site Updated"});
           await codeSection.getByLabel("Department default").selectOption({label:"Journey Department Updated"});
           await codeSection.getByLabel("Usage limit").fill("1");
-          await codeSection.getByLabel("Expiry").fill("2026-10-20T12:00");
+          const registrationExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+          await codeSection.getByLabel("Expiry").fill(registrationExpiry);
           await codeSection.getByRole("button", { name: "Create Company registration code" }).click();
           await codeSection.getByText(/Company registration code created/).waitFor({ timeout: 15_000 });
           const registrationCode = (await codeSection.locator("p strong").last().innerText()).trim();
@@ -489,8 +490,15 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await companyAction.getByRole("button", { name: "Assign owner" }).click();
           await company.reload({ waitUntil: "networkidle" });
           companyAction = company.locator("article").filter({ hasText: "Company follow-up action for browser acceptance." }).first();
-          await companyAction.getByLabel("Until").fill("2026-10-15T10:00");
+          const pastSnooze = new Date(Date.now()-86400000).toISOString().slice(0,16);
+          await companyAction.getByLabel("Until").fill(pastSnooze);
           await companyAction.getByLabel("Reason").fill("Deferred until scheduled internal follow-up.");
+          await companyAction.getByRole("button", { name: "Snooze" }).click();
+          await companyAction.getByRole("alert").filter({hasText:"Snooze requires a future date and a reason."}).waitFor();
+          assert.equal(await companyAction.getByLabel("Until").inputValue(),pastSnooze);
+          assert.equal(await companyAction.getByLabel("Reason").inputValue(),"Deferred until scheduled internal follow-up.");
+          assert.equal(await companyAction.getByText(/status: snoozed/i).count(),0);
+          await companyAction.getByLabel("Until").fill(new Date(Date.now()+86400000).toISOString().slice(0,16));
           await companyAction.getByRole("button", { name: "Snooze" }).click();
           await companyAction.getByText(/status: snoozed/i).waitFor({ timeout: 15_000 });
           await companyAction.getByRole("button", { name: "Mark internally acknowledged" }).click();
@@ -583,7 +591,9 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           await company.locator(".metric-card").filter({ hasText: "Company credits" }).getByText("10", { exact: true }).waitFor();
 
-          const refundCard = company.locator(".card").filter({ hasText: "Refunds" }).first();
+          const refundCard = company.locator(".card").filter({
+            has: company.getByRole("heading", { name: "Refunds", exact: true })
+          }).first();
           await refundCard.getByLabel("Invoice ID").fill(invoiceId);
           await refundCard.getByLabel("Amount (minor units)").fill("2000");
           await refundCard.getByRole("button", { name: "Request sandbox refund" }).click();
@@ -648,10 +658,32 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
 
           // Report queue.
           await company.goto(`${baseUrl}/company/reports`, { waitUntil: "networkidle" });
-          await company.getByLabel("Report ID").fill("report_company_journey_001");
-          await company.getByLabel("Format").selectOption("csv");
-          await company.getByRole("button", { name: "Queue report delivery" }).click();
-          await company.getByText("report_company_journey_001", { exact: false }).waitFor({ timeout: 15_000 });
+          await company.getByLabel("Report type", { exact: true }).selectOption("workforce-status");
+          await company.getByLabel("Format", { exact: true }).selectOption("csv");
+          await company.getByLabel("Definition name (for saving)", { exact: true }).fill("report_company_journey_001");
+          await company.getByRole("button", { name: "Save report definition", exact: true }).click();
+          await company.waitForURL("**/company/reports?notice=saved");
+          await company.getByRole("status").filter({ hasText: "Your report definition is saved." }).waitFor();
+          const savedReport = company.locator("[data-definition-id]").filter({ hasText: "report_company_journey_001" });
+          assert.equal(await savedReport.count(), 1);
+          const definitionId = await savedReport.getAttribute("data-definition-id");
+          assert.match(definitionId, /^report_definition_[A-Za-z0-9_-]{24}$/);
+          await company.reload({ waitUntil: "domcontentloaded" });
+          const persistedDefinition = company.locator('[data-definition-id="' + definitionId + '"]');
+          await persistedDefinition.getByText("report_company_journey_001", { exact: true }).waitFor();
+          await persistedDefinition.getByRole("button", { name: "Queue saved report", exact: true }).click();
+          await company.waitForURL("**/company/reports?notice=queued");
+          await company.getByRole("status").filter({ hasText: "Your report is queued." }).waitFor();
+          const queuedReport = company.locator("[data-report-id]");
+          assert.equal(await queuedReport.count(), 1);
+          const reportId = await queuedReport.getAttribute("data-report-id");
+          assert.ok(reportId, "The persisted queue must expose its server-assigned report ID.");
+          await company.reload({ waitUntil: "domcontentloaded" });
+          const persistedReport = company.locator('[data-report-id="' + reportId + '"]');
+          await persistedReport.getByText("Workforce status", { exact: true }).waitFor();
+          await persistedReport.getByText("queued", { exact: true }).waitFor();
+          assert.match(await persistedReport.innerText(), /CSV/);
+          assert.match(await persistedReport.innerText(), /Saved definition version 1/);
 
           // Tenant-scope CRUD demonstration.
           await company.goto(`${baseUrl}/company/tenant-scope`, { waitUntil: "networkidle" });
@@ -662,10 +694,17 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.getByRole("heading", { name: "Journey Tenant Record" }).waitFor({ timeout: 15_000 });
           let demoCard = company.locator("[data-company-scope-record]").filter({ hasText: "Journey Tenant Record" }).first();
           await demoCard.getByLabel("Title").fill("Journey Tenant Record Updated");
+          // The Save button dispatches a React useActionState Server Action.
+          // Never reload before the server confirms its update; that can
+          // abort an in-flight POST on a busy CI runner and falsely report a
+          // missing Company record.
           await demoCard.getByRole("button", { name: "Save demonstration record" }).click();
+          await demoCard.getByText("Demonstration record updated inside the current Company tenant.", { exact: true }).waitFor({ timeout: 20_000 });
+          await demoCard.getByRole("heading", { name: "Journey Tenant Record Updated", exact: true }).waitFor({ timeout: 20_000 });
           await company.reload({ waitUntil: "networkidle" });
           demoCard = company.locator("[data-company-scope-record]").filter({ hasText: "Journey Tenant Record Updated" }).first();
           await demoCard.waitFor({ timeout: 15_000 });
+          console.log("ACTUAL_COMPANY_SCOPE_UPDATE acked Server Action and persisted updated tenant record across reload");
           await demoCard.getByRole("button", { name: "Delete" }).click();
           await company.getByRole("dialog").getByRole("button", { name: "Delete demonstration record" }).click();
           await company.getByText(/deleted from the current Company tenant/i).waitFor({ timeout: 15_000 });
@@ -693,7 +732,14 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
         db.query(`SELECT order_reference,order_status FROM assurance_orders WHERE order_reference LIKE 'JOURNEY-ORDER%'`),
         db.query(`SELECT membership_status,membership_role FROM auth_tenant_memberships WHERE account_id IN (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')`),
         db.query(`SELECT override_values FROM tenant_policy_overrides WHERE tenant_id='tenant_independent-audit-compan'`),
-        db.query(`SELECT report_id,status FROM report_deliveries WHERE tenant_id='tenant_independent-audit-compan'`),
+        db.query(`SELECT delivery.report_id,delivery.status,delivery.format,delivery.report_type,delivery.definition_version,version.name
+                    FROM report_deliveries AS delivery
+                    JOIN report_definitions AS definition ON definition.definition_id=delivery.definition_id
+                         AND definition.tenant_id=delivery.tenant_id AND definition.owner_kind='company'
+                    JOIN report_definition_versions AS version ON version.definition_id=delivery.definition_id
+                         AND version.version=delivery.definition_version
+                   WHERE delivery.tenant_id='tenant_independent-audit-compan'
+                     AND version.name='report_company_journey_001'`),
         db.query(`SELECT i.status,i.refunded_amount_minor,
                          (SELECT COALESCE(SUM(credit_delta),0) FROM billing_credit_ledger WHERE tenant_id=i.tenant_id) AS credit_balance,
                          (SELECT COUNT(*)::int FROM billing_reconciliation_runs WHERE tenant_id=i.tenant_id AND status='CLEAN') AS clean_runs
@@ -756,7 +802,13 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
       console.log("ACTUAL_COMPANY_STAFF_DENIAL_DB revoked membership, same authenticated session, persisted denials with complete audit mirrors");
 
       assert(overrides.rows.length >= 1);
-      assert(reports.rows.some((row) => row.report_id === "report_company_journey_001"));
+      assert.equal(reports.rows.length, 1, "The named saved definition must produce exactly one persisted report request.");
+      assert.ok(reports.rows[0].report_id, "The report request retains its server-assigned ID.");
+      assert.equal(reports.rows[0].name, "report_company_journey_001");
+      assert.equal(reports.rows[0].definition_version, 1);
+      assert.equal(reports.rows[0].report_type, "workforce-status");
+      assert.equal(reports.rows[0].format, "csv");
+      assert.equal(reports.rows[0].status, "queued");
       assert.equal(billing.rows[0]?.status, "REFUNDED");
       assert.equal(Number(billing.rows[0]?.refunded_amount_minor), 5000);
       assert.equal(Number(billing.rows[0]?.credit_balance), 0);

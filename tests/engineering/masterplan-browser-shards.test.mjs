@@ -1,0 +1,55 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const workflow = readFileSync(".github/workflows/masterplan-completion-qa.yml","utf8");
+const between=(a,b)=>{
+  const start=workflow.indexOf("\n  "+a+":");
+  const end=workflow.indexOf("\n  "+b+":",start);
+  assert.ok(start>=0&&end>start);
+  return workflow.slice(start,end);
+};
+const shardedSteps=between("connected-browser","release-readiness");
+const cohortSteps=workflow.slice(workflow.indexOf("\n  consumer-cohorts:"));
+const allTests=/^      - name: ([^\n]+)\n        if: \$\{\{ matrix\.shard == ([1-4]) \}\}/gm;
+
+test("hosted connected-browser splits every real journey into exactly one of four bounded shards",()=>{
+  assert.match(shardedSteps,/strategy:[\s\S]*?fail-fast: false[\s\S]*?shard: \[1, 2, 3, 4\]/);
+  const steps=[...shardedSteps.matchAll(allTests)].map(m=>({name:m[1],shard:Number(m[2])}));
+  const allCommands=shardedSteps.match(/^      - name: /gm)||[];
+  assert.equal(steps.length,allCommands.length-3,"Every test step after PDF/Chromium and shared outbox build must be assigned to one shard");
+  assert.ok(steps.length>=50,"Do not silently drop previously required browser journeys");
+  for(let shard=1;shard<=4;shard++){
+    const selected=steps.filter(step=>step.shard===shard);
+    assert.ok(selected.length>=12&&selected.length<=16,"Unbalanced or missing hosted browser shard "+shard);
+  }
+  assert.equal(new Set(steps.map(step=>step.name)).size,steps.length,"No duplicated or discarded browser step");
+  assert.match(shardedSteps,/Build compiled outbox worker for isolated browser shards/);
+  assert.match(shardedSteps,/HSE_MASTERPLAN_TRANSPORT_AUDIT=true HSE_MASTERPLAN_TRANSPORT_ONLY=true HSE_MASTERPLAN_CONTENT_MODE=COMBINED/,"M2.05 candidate payload privacy regression must run in permanent hosted browser CI");
+  assert.match(shardedSteps,/Two-Worker assurance scope, review outcomes and final credential\n        if: \$\{\{ matrix\.shard == 3 \}\}\n        run: \|\n          node --test --test-concurrency=1 tests\/browser\/m2-01-multiworker-submit\.browser\.test\.mjs\n          HSE_M20102_NO_CREDIT_ONLY=true node --test --test-concurrency=1 tests\/browser\/m2-01-multiworker-submit\.browser\.test\.mjs\n          HSE_M20107_CANCEL_SUBMITTED_ONLY=true node --test --test-concurrency=1 tests\/browser\/m2-01-multiworker-submit\.browser\.test\.mjs\n          HSE_M20106_REJECTED_ONLY=true node --test --test-concurrency=1 tests\/browser\/company-workforce-assurance-e2e\.browser\.test\.mjs\n          node --test --test-concurrency=1 tests\/browser\/company-workforce-assurance-e2e\.browser\.test\.mjs\n          node --test --test-concurrency=1 tests\/browser\/company-credential-target-e2e\.browser\.test\.mjs/,"M2.01.03-04 two Workers and M2.01.06 Verifier rejection must visibly reach Company and Worker in hosted Chromium");
+  assert.match(shardedSteps,/Admin Company verification search, access and rejected pending history\n        if: \$\{\{ matrix\.shard == 2 \}\}\n        run: \|\n          node --test tests\/browser\/admin-verification-search\.browser\.test\.mjs\n          HSE_COMPANY_REJECTION_ONLY=true node --test --test-concurrency=1 tests\/browser\/m1-08-company-verification\.browser\.test\.mjs/,"M1.08.04 Company rejection preserves pending tenant and immutable original evidence in permanent hosted Chromium");
+  assert.match(shardedSteps,/M1\.07 initial and verified identity corrections independent review outcomes\n        if: \$\{\{ matrix\.shard == 2 \}\}\n        run: \|\n          HSE_INITIAL_IDENTITY_MORE_INFO=true HSE_INITIAL_IDENTITY_MORE_INFO_ONLY=true node --test --test-concurrency=1 tests\/browser\/independent-worker-review-e2e\.browser\.test\.mjs\n          HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY=true node --test --test-concurrency=1 tests\/browser\/independent-worker-review-e2e\.browser\.test\.mjs/,"M1.07.04 and M1.07.05 must both exercise independent review in hosted Chromium");
+  assert.match(shardedSteps,/HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY=true node --test --test-concurrency=1 tests\/browser\/independent-worker-review-e2e\.browser\.test\.mjs\n          node --test --test-concurrency=1 tests\/browser\/duplicate-identity-review\.browser\.test\.mjs/,"M1.07.07 cross-identity collision and Admin duplicate resolution must stay in same independent-review hosted gate");
+  assert.match(shardedSteps,/M1\.11 leaving letter replacement preserved exact-employment history and private preview\n        if: \$\{\{ matrix\.shard == 2 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/m1-11-leaving-letter-replacement-preview\.browser\.test\.mjs/,"M1.11.06 historical letter preview must run in real hosted Chromium");
+  assert.match(shardedSteps,/M1\.11 two Worker employments end one without changing the other\n        if: \$\{\{ matrix\.shard == 1 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/m1-11-multiple-employments\.browser\.test\.mjs/,"M1.11.05 two employment histories and exact end must run on hosted Chromium");
+  assert.match(shardedSteps,/M1\.06 Worker replacement keeps versioned private old and new previews\n        if: \$\{\{ matrix\.shard == 1 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/m1-06-attachment-replacement-preview\.browser\.test\.mjs/,"Worker old/new attachment preview must be permanent hosted Chromium gate");
+  assert.match(shardedSteps,/M1\.12 public concern form, scanned private evidence, staff intake, resolution and public inquiries\n        if: \$\{\{ matrix\.shard == 2 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/public-inquiry\.browser\.test\.mjs tests\/browser\/credential-concern-review\.browser\.test\.mjs/,"M1.12.04 must run actual public concern private scan and Admin resolution in hosted Chromium");
+  assert.match(shardedSteps,/M1\.12 public Worker ID and credential opaque capability privacy and negative boundaries\n        if: \$\{\{ matrix\.shard == 2 \}\}\n        run: HSE_PUBLIC_WORKER_LOOKUP_ONLY=true node --test --test-concurrency=1 tests\/browser\/public-verification-invalid-capability\.browser\.test\.mjs tests\/browser\/independent-worker-review-e2e\.browser\.test\.mjs/,"M1.12.01 must test both real public Worker-ID and credential paths together in hosted Chromium");
+  assert.match(shardedSteps,/M1\.11 independently verified skill inactive removes current competency but preserves history\n        if: \$\{\{ matrix\.shard == 4 \}\}\n        run: HSE_INACTIVE_SKILL_ONLY=true node --test --test-concurrency=1 tests\/browser\/independent-worker-review-e2e\.browser\.test\.mjs/,"M1.11.08 inactive approved skill counter must be permanently tested on hosted Chromium");
+  assert.match(shardedSteps,/M1\.11 corrected experience scanned attachment and Verifier re-review\n        if: \$\{\{ matrix\.shard == 3 \}\}\n        run: HSE_EXPERIENCE_SCAN_RETRY_ONLY=true node --test --test-concurrency=1 tests\/browser\/independent-worker-review-e2e\.browser\.test\.mjs/,"Experience file scan completion and independent review retry must run in hosted Chromium");
+  assert.match(shardedSteps,/M1\.07 Worker identity incomplete and profile drafts validation navigation retry\n        if: \$\{\{ matrix\.shard == 3 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/m1-07-incomplete-identity-submission\.browser\.test\.mjs tests\/browser\/m1-07-profile-draft-navigation\.browser\.test\.mjs/,"M1.07.01 and M1.07.02 must both run hosted real Chromium with retry and history");
+
+  assert.match(shardedSteps,/M3\.03 public share link field scopes and neutral invalid expired revoked token denials\n        if: \$\{\{ matrix\.shard == 4 \}\}\n        run: node --test --test-concurrency=1 tests\/browser\/m3-03-scoped-share-links\.browser\.test\.mjs/,"Recipient privacy regression must have a permanent isolated hosted Chromium gate");
+});
+
+test("all consumer cohorts are selected exactly once across the four separately hosted jobs",()=>{
+  assert.match(cohortSteps,/strategy:[\s\S]*?fail-fast: false[\s\S]*?shard: \[1, 2, 3, 4\]/);
+  assert.match(cohortSteps,/run: node scripts\/run-consumer-cohort-browser-tests\.mjs --shard=\$\{\{ matrix\.shard \}\}\/4/);
+  const list=(args)=>JSON.parse(execFileSync(process.execPath,["scripts/run-consumer-cohort-browser-tests.mjs",...args,"--list"],{encoding:"utf8"}));
+  const original=list([]);
+  const chunks=[1,2,3,4].map(shard=>list(["--shard="+shard+"/4"]));
+  assert.equal(original.length,24,"Preserve all 24 original consumer cohort browser files");
+  assert.deepEqual(chunks.flat().slice().sort(),original.slice().sort(),"Every original cohort must run once across the four shards");
+  assert.ok(chunks.every(chunk=>chunk.length===6),"No oversized or empty consumer cohort shard");
+});

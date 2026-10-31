@@ -3,12 +3,8 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
-import {
-  InterviewMediaAccessError,
-  authorizeInterviewMedia,
-  listInterviewMediaSignals,
-  publishInterviewMediaSignal
-} from "../../src/lib/interview/interview-media-service.ts";
+import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
+const {InterviewMediaAccessError,authorizeInterviewMedia,listInterviewMediaSignals,publishInterviewMediaSignal}=loadTs("src/lib/interview/interview-media-service.ts");
 
 const NOW = "2026-09-25T10:00:00.000Z";
 const ENV = {

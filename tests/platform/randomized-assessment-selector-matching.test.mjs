@@ -110,3 +110,17 @@ test("M2.05 matching enforces domain, type, difficulty and tagsAll filters", () 
   assert.ok(allocation);
   assert.equal(allocation[0].candidate.questionId, correct.questionId);
 });
+
+test("M2.05.03 exposure families prevent equivalent variants sharing one generated form", () => {
+  const selectors = [{count:2,questionType:"MULTIPLE_CHOICE",tagsAll:[]}];
+  const a = {...candidate("p","MEDIUM"),exposureFamilyReference:"FAMILY-1"};
+  const b = {...candidate("q","MEDIUM"),exposureFamilyReference:"FAMILY-1"};
+  const c = {...candidate("r","MEDIUM"),exposureFamilyReference:"FAMILY-2"};
+  for (let n=0;n<64;n++){
+    const nonce=n.toString(16).padStart(64,"0");
+    const found=allocateBlueprintCandidates(selectors,[a,b,c],nonce);
+    assert.ok(found,"two distinct families must still satisfy blueprint regardless nonce");
+    assert.equal(new Set(found.map(x=>x.candidate.exposureFamilyReference)).size,2);
+    assert.equal(allocateBlueprintCandidates(selectors,[a,b],nonce),null,"same family cannot count as two unseen questions");
+  }
+});

@@ -1,39 +1,34 @@
-// @ts-expect-error Runtime test execution loads TypeScript modules directly.
-import { createReportExportRequest, type ReportExportRequest, type ReportFormat } from "./report-delivery-domain.ts";
-
-type ReportDeliveryWriter = {
-  save(record: unknown, scheduleAt?: string): Promise<void>;
-  find(reportId: string, tenantId?: string): Promise<unknown | null>;
-  markStatus(reportId: string, tenantId: string, status: "processing" | "delivered" | "failed"): Promise<void>;
-};
+import "server-only";
+import type { OutboxJobRecord, TrustedOutboxLease } from "../outbox/outbox-domain";
+import type { PrivateObjectStorage } from "../secure-files/private-object-storage";
+import { createRuntimePrivateObjectStorage } from "../secure-files/private-object-storage";
+import { getServerEnvironment } from "../config/server-environment";
+import { ReportInputError, type ReportExportRequest } from "./report-delivery-domain";
+import {
+  ReportDeliveryRepository, type ReportExportPrincipal, type ReportReadPrincipal
+} from "./report-delivery-repository";
 
 export class ReportDeliveryService {
-  private readonly repository: ReportDeliveryWriter;
-
-  constructor(repository: ReportDeliveryWriter) {
-    this.repository = repository;
+  constructor(
+    private readonly repository: ReportDeliveryRepository = new ReportDeliveryRepository(),
+    private readonly suppliedStorage?: PrivateObjectStorage
+  ) {}
+  private storage(): PrivateObjectStorage {
+    return this.suppliedStorage ?? createRuntimePrivateObjectStorage(getServerEnvironment().appEnvironment);
   }
-
-  async queue(request: ReportExportRequest) {
-    const result = createReportExportRequest(request);
-    await this.repository.save(result, request.scheduleAt);
-    return result;
+  async queue(request: ReportExportRequest, principal: ReportExportPrincipal) {
+    return this.repository.queue(request, principal);
   }
-
-  async schedule(request: ReportExportRequest) {
-    if (!request.scheduleAt) {
-      throw new Error("Schedule time is required.");
-    }
-    return this.queue(request);
+  async schedule(request: ReportExportRequest, principal: ReportExportPrincipal) {
+    if (!request.scheduleAt) throw new ReportInputError("Schedule time is required.");
+    return this.queue(request, principal);
   }
-
-  async deliver(reportId: string, tenantId: string, format: ReportFormat) {
-    const existing = await this.repository.find(reportId, tenantId);
-    if (!existing) {
-      throw new Error("Report delivery not found.");
-    }
-    await this.repository.markStatus(reportId, tenantId, "processing");
-    await this.repository.markStatus(reportId, tenantId, "delivered");
-    return { reportId, tenantId, format, status: "delivered" as const };
+  async workspace(principal: ReportReadPrincipal) { return this.repository.workspace(principal); }
+  async retry(principal: ReportExportPrincipal, reportId: string) { return this.repository.retry(principal, reportId); }
+  async download(principal: ReportExportPrincipal, reportId: string) {
+    return this.repository.download(principal, reportId, this.storage());
+  }
+  async generate(job: OutboxJobRecord, lease: TrustedOutboxLease) {
+    return this.repository.generate(job, lease, this.storage());
   }
 }

@@ -1,0 +1,8 @@
+DROP INDEX generated_assessment_forms_worker_id_idx;
+DROP INDEX generated_assessment_form_items_worker_id_family_uq;
+DROP TRIGGER generated_assessment_form_items_owner_id ON generated_assessment_form_items;
+DROP FUNCTION hse_generated_assessment_item_owner_id();
+DROP TRIGGER generated_assessment_forms_owner_id ON generated_assessment_forms;
+DROP FUNCTION hse_generated_assessment_form_owner_id();
+ALTER TABLE generated_assessment_form_items DROP COLUMN permanent_worker_id;
+ALTER TABLE generated_assessment_forms DROP COLUMN permanent_worker_id;

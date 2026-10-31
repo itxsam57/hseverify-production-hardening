@@ -1,5 +1,9 @@
 import "server-only";
 
+import { bindTrustedAuditActor } from "../audit/audit-domain";
+import { DatabaseAuditRepository } from "../audit/audit-repository";
+import { latestEffectiveCalibration, requireLiveReviewActor } from "./review-calibration-authority";
+
 import { createIdentifier } from "@/lib/auth/auth-domain";
 import type { AuthorizationPrincipal } from "@/lib/authorization/authorization-context-domain";
 import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
@@ -39,6 +43,7 @@ export class StaffCalibrationService {
       throw new StaffCalibrationInputError("Administrator access is required.");
     }
     const db = await this.databasePromise;
+    await requireLiveReviewActor(db,principal,principal.activeRole as "admin"|"root"|"verifier"|"assessor");
     const result = await db.query<{
       account_id: string; display_name: string; email_normalized: string; role: "verifier" | "assessor";
     }>(
@@ -46,6 +51,7 @@ export class StaffCalibrationService {
          FROM auth_accounts AS accounts
          JOIN auth_account_roles AS roles ON roles.account_id=accounts.account_id
         WHERE accounts.account_status='active' AND roles.role IN ('verifier','assessor')
+          AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete')
         ORDER BY roles.role,accounts.display_name,accounts.account_id`
     );
     return Object.freeze(result.rows.map((row) => Object.freeze({
@@ -62,6 +68,7 @@ export class StaffCalibrationService {
       accountId: string;
       role: "verifier" | "assessor";
       frameworkReference: string;
+      frameworkVersionId?: string;
       status: StaffCalibrationStatus;
       validFrom: Date;
       validUntil: Date;
@@ -79,7 +86,7 @@ export class StaffCalibrationService {
     if (note.length < 5 || note.length > 2000) {
       throw new StaffCalibrationInputError("Calibration note is invalid.");
     }
-    if (input.validUntil <= input.validFrom) {
+    if (!Number.isFinite(input.validFrom.getTime()) || !Number.isFinite(input.validUntil.getTime()) || input.validUntil <= input.validFrom) {
       throw new StaffCalibrationInputError("Calibration expiry must be after its start.");
     }
     if (!["CURRENT","EXPIRED","FAILED","SUSPENDED"].includes(input.status)) {
@@ -88,11 +95,24 @@ export class StaffCalibrationService {
 
     const db = await this.databasePromise;
     return db.transaction(async (tx) => {
+      await requireLiveReviewActor(tx,principal,principal.activeRole === "root" ? "root" : "admin",true);
+      const framework = await tx.query<{framework_id:string;framework_version_id:string}>(
+        `SELECT revisions.framework_id,revisions.framework_version_id FROM assurance_framework_revisions revisions
+         JOIN assurance_frameworks frameworks USING(framework_id)
+         WHERE frameworks.framework_reference=$1 AND frameworks.framework_status='ACTIVE'
+           AND revisions.effective_from<=$2 AND ($3::text IS NULL OR revisions.framework_version_id=$3)
+         ORDER BY revisions.effective_from DESC,revisions.version_no DESC LIMIT 1 FOR SHARE OF frameworks`,
+        [frameworkReference,input.validFrom.toISOString(),input.frameworkVersionId??null]);
+      if(!framework.rows[0]) throw new StaffCalibrationInputError("Select an authoritative framework revision effective at calibration start.");
+      // Enrollment terminal transitions lock flows before touching the account.
+      await tx.query("SELECT flow_id FROM auth_staff_enrollment_flows WHERE account_id=$1 ORDER BY flow_id FOR UPDATE",[input.accountId]);
       const role = await tx.query<{ role: string }>(
         `SELECT roles.role
            FROM auth_accounts AS accounts
            JOIN auth_account_roles AS roles ON roles.account_id=accounts.account_id
-          WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role=$2`,
+          WHERE accounts.account_id=$1 AND accounts.account_status='active' AND roles.role=$2
+            AND NOT EXISTS(SELECT 1 FROM auth_staff_enrollment_flows flows WHERE flows.account_id=accounts.account_id AND flows.current_step<>'complete')
+          FOR NO KEY UPDATE OF accounts,roles`,
         [input.accountId, input.role]
       );
       if (!role.rows[0]) throw new StaffCalibrationInputError("Selected staff account does not hold that role.");
@@ -100,14 +120,18 @@ export class StaffCalibrationService {
       await tx.query(
         `INSERT INTO staff_calibrations(
            calibration_id,account_id,role,framework_reference,status,valid_from,valid_until,
-           note,recorded_by_account_id,created_at
-         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+           note,recorded_by_account_id,created_at,framework_id,framework_version_id
+         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
           id,input.accountId,input.role,frameworkReference,input.status,
           input.validFrom.toISOString(),input.validUntil.toISOString(),note,
-          principal.accountId,new Date().toISOString()
+          principal.accountId,new Date().toISOString(),framework.rows[0].framework_id,framework.rows[0].framework_version_id
         ]
       );
+      await new DatabaseAuditRepository(Promise.resolve(tx)).append(bindTrustedAuditActor(principal),{
+        action:"staff.calibration.recorded",outcome:"succeeded",target:{type:"account",reference:input.accountId},
+        metadata:{calibrationId:id,frameworkId:framework.rows[0].framework_id,frameworkVersionId:framework.rows[0].framework_version_id,calibrationStatus:input.status}
+      });
       return id;
     });
   }
@@ -117,6 +141,7 @@ export class StaffCalibrationService {
       throw new StaffCalibrationInputError("Administrator access is required.");
     }
     const db = await this.databasePromise;
+    await requireLiveReviewActor(db,principal,principal.activeRole as "admin"|"root"|"verifier"|"assessor");
     const result = await db.query<{
       calibration_id: string; account_id: string; display_name: string; role: "verifier" | "assessor";
       framework_reference: string; status: StaffCalibrationStatus; valid_from: string | Date;
@@ -155,6 +180,7 @@ export class StaffCalibrationService {
       throw new StaffCalibrationInputError("Verifier or Assessor access is required.");
     }
     const db = await this.databasePromise;
+    await requireLiveReviewActor(db,principal,principal.activeRole as "admin"|"root"|"verifier"|"assessor");
     const result = await db.query<{
       calibration_id: string; account_id: string; display_name: string; role: "verifier" | "assessor";
       framework_reference: string; status: StaffCalibrationStatus; valid_from: string | Date;
@@ -196,14 +222,13 @@ export class StaffCalibrationService {
     at = new Date()
   ): Promise<boolean> {
     const db = await this.databasePromise;
-    const result = await db.query(
-      `SELECT 1 FROM staff_calibrations
-        WHERE account_id=$1 AND role=$2 AND framework_reference=$3
-          AND status='CURRENT' AND valid_from<=$4 AND valid_until>$4
-        ORDER BY created_at DESC LIMIT 1`,
-      [accountId, role, frameworkReference, at.toISOString()]
-    );
-    return Boolean(result.rows[0]);
+    const framework = await db.query<{framework_id:string;framework_version_id:string}>(
+      `SELECT revisions.framework_id,revisions.framework_version_id FROM assurance_framework_revisions revisions
+       JOIN assurance_frameworks frameworks USING(framework_id) WHERE frameworks.framework_reference=$1 AND frameworks.framework_status='ACTIVE'
+       AND revisions.effective_from<=$2 ORDER BY revisions.effective_from DESC,revisions.version_no DESC LIMIT 1`,[frameworkReference,at.toISOString()]);
+    if(!framework.rows[0])return false;
+    const calibration=await latestEffectiveCalibration(db,accountId,role,framework.rows[0].framework_id,framework.rows[0].framework_version_id,at);
+    return Boolean(calibration?.status === "CURRENT" && new Date(calibration.valid_until)>at);
   }
 }
 

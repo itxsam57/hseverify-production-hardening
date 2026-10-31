@@ -111,7 +111,9 @@ export function summarizeIntegrityTimeline(events: readonly IntegrityEvidenceEve
   }
   return Object.freeze({
     state: latest.state,
-    classification: latest.classification,
+    classification: events.some((event) => event.classification === "RED")
+      ? "RED"
+      : events.some((event) => event.classification === "YELLOW") ? "YELLOW" : "GREEN",
     eventCount: events.length
   });
 }

@@ -85,9 +85,20 @@ SELECT
   evidence.document_type,
   evidence.document_number
 FROM worker_identities AS identities
+JOIN worker_identity_versions AS current_version
+  ON current_version.identity_id = identities.identity_id
+ AND current_version.version_number = identities.current_version_number
 JOIN worker_identity_versions AS versions
   ON versions.identity_id = identities.identity_id
- AND versions.version_number = identities.current_version_number
+ AND versions.identity_version_id = CASE
+   -- A correction draft or unreviewed submission is not a new verified
+   -- identity. Preserve the previously accepted submitted parent for
+   -- duplicate detection, including after subsequent accepted corrections.
+   WHEN identities.lifecycle_status = 'correction_pending'
+    AND current_version.version_kind = 'correction'
+   THEN current_version.parent_version_id
+   ELSE current_version.identity_version_id
+ END
 JOIN worker_identity_version_drafts AS drafts
   ON drafts.identity_version_id = versions.identity_version_id
 JOIN worker_identity_evidence_bindings AS evidence
@@ -563,6 +574,12 @@ export class DatabaseWorkerIdentityEligibilityRepository
     const database = await this.client();
 
     return database.transaction(async (transaction) => {
+      // Candidate versions become visible only after their submitting transaction
+      // commits. Lock their shared write table BEFORE any issuance reads, so an
+      // in-flight submission/correction cannot appear between the duplicate
+      // check and Worker ID insertion. SHARE blocks writers' ROW EXCLUSIVE
+      // locks while allowing independent reads and concurrent safe issuers.
+      await transaction.execute("LOCK TABLE worker_identity_versions IN SHARE MODE");
       const existing = await loadWorkerIdByIdentity(transaction, identityId);
       if (existing) {
         await reconcileWorkerProfilePermanentId(transaction, existing);
@@ -592,6 +609,45 @@ export class DatabaseWorkerIdentityEligibilityRepository
           "Permanent Worker ID requires a current duplicate evaluation."
         );
       }
+      // An earlier clear/review disposition cannot authorize ID issuance if
+      // another identity was submitted (or a candidate identity version
+      // changed) after that evaluation. Re-evaluate, then independently
+      // resolve any new duplicate signals; never merge accounts implicitly.
+      const currentCandidates = await transaction.query<EligibilityFactsRow>(
+        ELIGIBILITY_CANDIDATES_SQL,
+        [identityId]
+      );
+      const currentSignals = evaluateWorkerIdentityDuplicateSignals(
+        factsFromRow(targetRow),
+        currentCandidates.rows.map(factsFromRow)
+      );
+      const recordedSignals = await transaction.query<{
+        candidate_identity_id: string;
+        candidate_identity_version_id: string;
+        signal_type: string;
+        signal_strength: string;
+      }>(
+        `SELECT candidate_identity_id, candidate_identity_version_id,
+                signal_type, signal_strength
+           FROM worker_identity_duplicate_signals
+          WHERE check_id = $1`,
+        [latestCheck.checkId]
+      );
+      const key = (candidateIdentityId: string, candidateIdentityVersionId: string,
+        signalType: string, strength: string): string =>
+        JSON.stringify([candidateIdentityId, candidateIdentityVersionId, signalType, strength]);
+      const observed = currentSignals.map(signal =>
+        key(signal.candidateIdentityId, signal.candidateIdentityVersionId,
+          signal.signalType, signal.strength)).sort();
+      const recorded = recordedSignals.rows.map(signal =>
+        key(signal.candidate_identity_id, signal.candidate_identity_version_id,
+          signal.signal_type, signal.signal_strength)).sort();
+      if (JSON.stringify(observed) !== JSON.stringify(recorded)) {
+        throw new WorkerIdentityWorkerIdBlockedError(
+          "Duplicate identity evidence changed. A fresh duplicate evaluation is required before Worker ID issuance."
+        );
+      }
+
       const latestDisposition = await loadLatestDisposition(
         transaction,
         latestCheck.checkId

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EndWorkerRelationshipForm } from "@/components/company/end-worker-relationship-form";
 import { notFound } from "next/navigation";
 
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
@@ -39,6 +40,11 @@ export default async function CompanyWorkerDetailPage({
         </dl>
         {worker.workerId ? <Link href={`/verify/worker/${encodeURIComponent(worker.workerId)}`}>Open public verification</Link> : null}
       </section>
+      {worker.status === "active" ? (
+        <EndWorkerRelationshipForm linkId={linkId} today={new Date().toISOString().slice(0, 10)} />
+      ) : worker.status === "revoked" ? (
+        <p role="status">This Company relationship has ended. The Worker identity and prior history remain intact.</p>
+      ) : null}
     </div>
   );
 }

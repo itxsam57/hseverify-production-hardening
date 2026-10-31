@@ -34,6 +34,8 @@ jobs:
     timeout-minutes: 40
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: memory://
       HSE_RELEASE_SHA: masterplan-completion-qa
@@ -49,8 +51,15 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
+      - name: Install PDF text verifier for real credential assertions
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends poppler-utils
+          fi
+          pdftotext -v
 
       - name: Independently invalid production configurations are rejected
         run: node --test tests/platform/production-environment-isolation.test.mjs
@@ -67,6 +76,26 @@ jobs:
         run: node --test tests/auth/recovery-provider-delivery.test.mjs
       - name: Worker OTP cooldown, exhaustion and required-audit rollback
         run: node --test tests/platform/worker-registration-otp-runtime.test.mjs
+      - name: Assessor console case context and private preview boundaries
+        run: npm run test:interview-console-context
+
+      - name: Credential authenticity, reports, funding, privacy execution and pinned interview rules
+        run: |
+          npm run test:credential-authentication
+          npm run test:assessment-eligibility
+          npm run test:report-generation
+          npm run test:funding-notifications
+          npm run test:privacy-execution
+          npm run test:interview-policy
+
+      - name: Cold database and private object business recovery
+        run: npm run test:restore-business-recovery
+
+      - name: Independent question approval and trusted recent decision MFA
+        run: |
+          node scripts/run-question-bank-tests.mjs
+          npm run test:owner-acceptance-regressions
+
       - name: Strict TypeScript
         run: npm run typecheck
 
@@ -176,9 +205,15 @@ jobs:
 
   connected-browser:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 40
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: memory://
       HSE_RELEASE_SHA: masterplan-completion-browser
@@ -194,145 +229,299 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
+      - name: Install PDF text verifier for real credential assertions
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends poppler-utils
+          fi
+          pdftotext -v
       - name: Install Chromium
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
+      - name: Build compiled outbox worker for isolated browser shards
+        run: node scripts/build-outbox-worker.mjs
+
       - name: Assessor interview search navigation and direct record denial
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/assessor-interview-search.browser.test.mjs
 
       - name: No-show and technical replacement across Assessor Worker Company and Admin
+        if: ${{ matrix.shard == 2 }}
         run: node --test --test-concurrency=1 tests/browser/interview-replacement.browser.test.mjs
 
       - name: Actual reminder due time, private recipient links and obsolete-work suppression
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/interview-reminder.browser.test.mjs
 
       - name: Scheduling notices through compiled worker to authorized recipient records
+        if: ${{ matrix.shard == 4 }}
         run: |
           node scripts/build-outbox-worker.mjs
           node --test tests/browser/interview-scheduling-notification.browser.test.mjs
 
       - name: Admin operational email queue, retry and acceptance browser workflow
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/interview-email-operational-health.browser.test.mjs
 
       - name: Interview email queued, retry, sent and private-link browser journey
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/interview-email-delivery-visibility.browser.test.mjs
 
       - name: UTC scheduling browser with alternate browser and server timezone
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/interview-scheduling-timezone.browser.test.mjs
 
       - name: Verifier review search and real claim boundary
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/verifier-review-search.browser.test.mjs
 
       - name: Root invitation header search and revoked session boundary
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/root-invitation-search.browser.test.mjs
 
-      - name: Admin Company verification header search and revoked session boundary
-        run: node --test tests/browser/admin-verification-search.browser.test.mjs
+      - name: Admin Company verification search, access and rejected pending history
+        if: ${{ matrix.shard == 2 }}
+        run: |
+          node --test tests/browser/admin-verification-search.browser.test.mjs
+          HSE_COMPANY_REJECTION_ONLY=true node --test --test-concurrency=1 tests/browser/m1-08-company-verification.browser.test.mjs
 
       - name: Worker application search desktop mobile and session revocation
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/worker-assessment-search.browser.test.mjs
 
       - name: Filtered Company workforce Next, refresh and Previous
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/company-workforce-pagination.browser.test.mjs
 
       - name: Company staff existing-session suspension and revocation
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/company-complete-journey.browser.test.mjs
 
+      - name: M2.05 real Admin blueprint revisions and activation Chromium with persisted DB
+        if: ${{ matrix.shard == 2 }}
+        run: |
+          node --test --test-concurrency=1 tests/browser/m2-05-assessment-generation.browser.test.mjs
+          HSE_MASTERPLAN_TRANSPORT_AUDIT=true HSE_MASTERPLAN_TRANSPORT_ONLY=true HSE_MASTERPLAN_CONTENT_MODE=COMBINED HSE_MASTERPLAN_FUNDING_MODE=independent node --test --test-concurrency=1 tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
+
+      - name: Root-invited independent Admin Question Bank, policy and staff decision browser
+        if: ${{ matrix.shard == 3 }}
+        run: node --test --test-concurrency=1 tests/browser/staff-role-complete-journey.browser.test.mjs
+
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
 
+      - name: Partly finalized Company order cancellation preserves approved Worker decisions
+        if: ${{ matrix.shard == 1 }}
+        run: node --test --test-concurrency=1 tests/browser/company-finalized-cancellation.browser.test.mjs
+
+      - name: M1.12 public Worker ID and credential opaque capability privacy and negative boundaries
+        if: ${{ matrix.shard == 2 }}
+        run: HSE_PUBLIC_WORKER_LOOKUP_ONLY=true node --test --test-concurrency=1 tests/browser/public-verification-invalid-capability.browser.test.mjs tests/browser/independent-worker-review-e2e.browser.test.mjs
+
+      - name: M1.06 Worker invalid file upload cannot poison next file reservation
+        if: ${{ matrix.shard == 3 }}
+        run: node --test --test-concurrency=1 tests/browser/worker-file-upload-validation.browser.test.mjs
+
+      - name: M1.06 Worker replacement keeps versioned private old and new previews
+        if: ${{ matrix.shard == 1 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-06-attachment-replacement-preview.browser.test.mjs
+
+      - name: M1.11 two Worker employments end one without changing the other
+        if: ${{ matrix.shard == 1 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-11-multiple-employments.browser.test.mjs
+
+      - name: M1.11 leaving letter replacement preserved exact-employment history and private preview
+        if: ${{ matrix.shard == 2 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs
+
+
+      - name: M1.07 initial and verified identity corrections independent review outcomes
+        if: ${{ matrix.shard == 2 }}
+        run: |
+          HSE_INITIAL_IDENTITY_MORE_INFO=true HSE_INITIAL_IDENTITY_MORE_INFO_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+          HSE_VERIFIED_IDENTITY_CORRECTIONS_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+          node --test --test-concurrency=1 tests/browser/duplicate-identity-review.browser.test.mjs
+
+      - name: M1.11 independently verified skill inactive removes current competency but preserves history
+        if: ${{ matrix.shard == 4 }}
+        run: HSE_INACTIVE_SKILL_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+
+      - name: M1.11 corrected experience scanned attachment and Verifier re-review
+        if: ${{ matrix.shard == 3 }}
+        run: HSE_EXPERIENCE_SCAN_RETRY_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs
+
+      - name: M1.07 Worker identity incomplete and profile drafts validation navigation retry
+        if: ${{ matrix.shard == 3 }}
+        run: node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs tests/browser/m1-07-profile-draft-navigation.browser.test.mjs
+
+      - name: M3.03 public share link field scopes and neutral invalid expired revoked token denials
+        if: ${{ matrix.shard == 4 }}
+        run: node --test --test-concurrency=1 tests/browser/m3-03-scoped-share-links.browser.test.mjs
+
+      - name: M3.05 dual Company invoice and ledger isolation denies foreign refunds
+        if: ${{ matrix.shard == 4 }}
+        run: node --test --test-concurrency=1 tests/browser/company-billing-cross-tenant.browser.test.mjs
+
+      - name: M2.06 Worker terminal case reapplication preserves original record and new case
+        if: ${{ matrix.shard == 1 }}
+        run: node --test --test-concurrency=1 tests/browser/worker-terminal-reapplication.browser.test.mjs
+
+      - name: M2.06 revoked link and zero-credit funding rejection through paid sandbox case
+        if: ${{ matrix.shard == 2 }}
+        run: node --test --test-concurrency=1 tests/browser/funding-revoked-link-e2e.browser.test.mjs
+
+      - name: Two-Worker assurance scope, review outcomes and final credential
+        if: ${{ matrix.shard == 3 }}
+        run: |
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
+          HSE_M20102_NO_CREDIT_ONLY=true node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
+          HSE_M20107_CANCEL_SUBMITTED_ONLY=true node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs
+          HSE_M20106_REJECTED_ONLY=true node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs
+          node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs
+          node --test --test-concurrency=1 tests/browser/company-credential-target-e2e.browser.test.mjs
+
+      - name: Admin decision override requires trusted recent MFA and rejects forged timestamp
+        if: ${{ matrix.shard == 4 }}
+        run: node --test --test-concurrency=1 tests/browser/decision-recent-mfa.browser.test.mjs
+
       - name: Worker -> Admin -> Worker privacy/accommodation journey
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Owned privacy fulfilment revokes recipient access and retains unrelated sharing
+        if: ${{ matrix.shard == 2 }}
         env:
           HSE_PRIVACY_FULFILMENT: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Owned scoped-consent request runtime
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/platform/privacy-consent-request-runtime.test.mjs
       - name: Worker optional sharing consent request reaches withdrawal
+        if: ${{ matrix.shard == 4 }}
         run: HSE_PRIVACY_CONSENT_REQUEST=true node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
       - name: Desktop and mobile public entry controls
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/public-navigation.browser.test.mjs
-      - name: Public contact and demo reach private staff intake and preserve concern reporting
-        run: node --test tests/browser/public-inquiry.browser.test.mjs
+      - name: M1.12 public concern form, scanned private evidence, staff intake, resolution and public inquiries
+        if: ${{ matrix.shard == 2 }}
+        run: node --test --test-concurrency=1 tests/browser/public-inquiry.browser.test.mjs tests/browser/credential-concern-review.browser.test.mjs
 
       - name: Owned personal-data access and export runtime
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/platform/worker-privacy-data-runtime.test.mjs
       - name: Worker access/export reviewed personal-data download
+        if: ${{ matrix.shard == 4 }}
         run: HSE_PRIVACY_DATA_DOWNLOAD=true node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
       - name: Worker direct share revocation uses authoritative server time
+        if: ${{ matrix.shard == 1 }}
         env:
           HSE_DIRECT_SHARE_REVOCATION: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Natural share-link expiry denies prior recipient access
+        if: ${{ matrix.shard == 2 }}
         env:
           HSE_SHARE_EXPIRY: "true"
         run: node --test tests/browser/privacy-consent-accommodation-e2e.browser.test.mjs
 
       - name: Company checkout, duplicate capture and refund recovery
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/company-billing-validation.browser.test.mjs
 
       - name: Initial identity rejection retains the immutable human outcome
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/initial-identity-rejection.browser.test.mjs
 
       - name: MCQ-only and written-only natural expiry retain saved drafts
+        if: ${{ matrix.shard == 1 }}
         run: |
           HSE_AUDIT_CREDENTIALS_PATH="$RUNNER_TEMP/mcq-expiry-credentials.json" HSE_MASTERPLAN_TIMING=true HSE_MASTERPLAN_EXPIRY=true HSE_MASTERPLAN_DELIVERY_MODE=STRICT HSE_MASTERPLAN_FUNDING_MODE=independent HSE_MASTERPLAN_CONTENT_MODE=MCQ_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
           HSE_AUDIT_CREDENTIALS_PATH="$RUNNER_TEMP/written-expiry-credentials.json" HSE_MASTERPLAN_TIMING=true HSE_MASTERPLAN_EXPIRY=true HSE_MASTERPLAN_DELIVERY_MODE=STRICT HSE_MASTERPLAN_FUNDING_MODE=independent HSE_MASTERPLAN_CONTENT_MODE=WRITTEN_ONLY node --test tests/browser/masterplan-worker-credential-e2e.browser.test.mjs
 
       - name: Six-role notification read and mark-all synchronization
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/all-role-notification-workflow.browser.test.mjs
       - name: Six-role authentication and session boundaries
+        if: ${{ matrix.shard == 3 }}
         run: npm run test:authentication-boundaries-browser
 
       - name: Worker registration country and policy acceptance
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:worker-registration-policy-browser
 
       - name: Configured non-sandbox Worker and Company registration browser
+        if: ${{ matrix.shard == 1 }}
         run: node --test tests/browser/registration-provider-delivery.browser.test.mjs
 
       - name: Six-role desktop and mobile portal support navigation
+        if: ${{ matrix.shard == 2 }}
         run: node --test tests/browser/portal-help.browser.test.mjs
 
       - name: Worker restriction to Admin completion and recipient denial
+        if: ${{ matrix.shard == 3 }}
         run: node --test tests/browser/privacy-sharing-restriction.browser.test.mjs
 
       - name: Configured six-role password recovery, session revocation and retained MFA
+        if: ${{ matrix.shard == 4 }}
         run: node --test tests/browser/recovery-provider-delivery.browser.test.mjs
 
       - name: Worker email and phone OTP boundaries
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:worker-registration-otp-browser
 
       - name: Staff invitation revocation browser boundaries
+        if: ${{ matrix.shard == 2 }}
         run: npm run test:staff-invitation-revocation-browser
 
       - name: Five-role staff invitation activation and token lifecycle
+        if: ${{ matrix.shard == 3 }}
         run: npm run test:staff-invitation-lifecycle-browser
 
 
       - name: Worker duplicate contacts and password recovery
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:worker-duplicate-recovery-browser
 
       - name: Company pending registration email and MFA boundaries
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:company-registration-boundaries-browser
 
       - name: Six-role password recovery cooldown and replay boundaries
+        if: ${{ matrix.shard == 2 }}
         run: npm run test:six-role-password-recovery-browser
       - name: Six-role own-session and foreign-session boundaries
+        if: ${{ matrix.shard == 3 }}
         run: npm run test:active-session-boundaries-browser
 
       - name: Six-role password change and session revocation boundaries
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:password-change-boundaries-browser
 
       - name: Five-role recovery-code rotation and authenticator replacement
+        if: ${{ matrix.shard == 1 }}
         run: npm run test:mfa-management-boundaries-browser
 
+      - name: Assessor console live media, Verifier sharing and private evidence
+        if: ${{ matrix.shard == 2 }}
+        run: npm run test:interview-live-media-browser
+
+      - name: Real reports, funding handoff, privacy execution and pinned interview policy journeys
+        if: ${{ matrix.shard == 3 }}
+        run: |
+          npm run test:credential-validity-browser
+          npm run test:assessment-eligibility-browser
+          npm run test:report-generation-browser
+          npm run test:funding-notifications-browser
+          npm run test:privacy-execution-browser
+          npm run test:interview-policy-browser
+
       - name: Actual blueprint timers and approved Worker time delivery
+        if: ${{ matrix.shard == 4 }}
         run: npm run test:assessment-timing-browser
 
   release-readiness:
@@ -340,6 +529,8 @@ jobs:
     timeout-minutes: 45
     env:
       HSE_APP_ENV: test
+      # Disposable fixture key; production signing uses a private configured key.
+      HSE_CREDENTIAL_SIGNING_SECRET: hse-test-credential-signing-key-for-disposable-ci-only-2026
       HSE_DATABASE_DRIVER: pglite
       HSE_PGLITE_DATA_DIR: .data/m3-release-db
       HSE_RELEASE_SHA: ${{ github.sha }}
@@ -355,8 +546,13 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
+
+      # The M3.11 concurrency drill itself launches a real authenticated Chromium
+      # 50-request burst. The browser must exist before the certification step.
+      - name: Install Chromium
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
       - name: M3.11 execute load security and recovery certification
         run: node scripts/run-m3-11-certification.mjs
@@ -364,14 +560,14 @@ jobs:
       - name: M3.11 domain certification contracts
         run: node --test tests/platform/load-security-recovery-certification-runtime.test.mjs
 
+      - name: M1.05 transactional outbox delivery-outage recovery and business commit safety
+        run: npm run test:outbox-platform
+
       - name: M3.12 release handover runtime
         run: node --test tests/platform/production-launch-operations-runtime.test.mjs tests/platform/production-launch-handover-runtime.test.mjs
 
       - name: Seed Admin browser identity
         run: node scripts/independent-audit-seed.mjs
-
-      - name: Install Chromium
-        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
       - name: M3.11 persisted certification Admin browser
         run: node --test tests/browser/m3-11-certification.browser.test.mjs
@@ -386,3 +582,85 @@ jobs:
           name: m3-11-certification-${{ github.sha }}
           path: artifacts/m3-11/certification.json
           if-no-files-found: error
+
+  postgres-json:
+    # PG16 archive restore requires a same-major client; ubuntu-latest now uses
+    # Ubuntu 26.04, which lacks the postgresql-client-16 apt package.
+    # The service remains PostgreSQL 16; pin only this job's supported runner.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hse_test
+          POSTGRES_PASSWORD: disposable-ci-postgres-only
+          POSTGRES_DB: hse_json_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hse_test -d hse_json_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      HSE_APP_ENV: test
+      HSE_POSTGRES_TEST_DATABASE_URL: postgresql://hse_test:disposable-ci-postgres-only@127.0.0.1:5432/hse_json_test
+      # Match the PostgreSQL 16 service. Newer pg_restore emits transaction_timeout (PG17+).
+      HSE_POSTGRES_PG_DUMP: /usr/lib/postgresql/16/bin/pg_dump
+      HSE_POSTGRES_PG_RESTORE: /usr/lib/postgresql/16/bin/pg_restore
+      HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      HSE_SESSION_SECRET: postgres-json-disposable-ci-session-secret-2026
+      HSE_AUTH_PEPPER: postgres-json-disposable-ci-auth-pepper-2026
+      HSE_CREDENTIAL_SIGNING_SECRET: postgres-json-disposable-ci-signing-secret-2026
+      HSE_ENABLE_AUTH_SANDBOX: "false"
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Verify PostgreSQL 16 archive client tools
+        run: |
+          if [ ! -x "$HSE_POSTGRES_PG_DUMP" ] || [ ! -x "$HSE_POSTGRES_PG_RESTORE" ]; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client-16
+          fi
+          "$HSE_POSTGRES_PG_DUMP" --version | grep -Eq '[[:space:]]16\.'
+          "$HSE_POSTGRES_PG_RESTORE" --version | grep -Eq '[[:space:]]16\.'
+      - name: PostgreSQL JSON parameters through script and runtime transactions
+        run: npm run test:postgres-json
+
+  consumer-cohorts:
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      HSE_RELEASE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Install PDF text verifier for real credential assertions
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends poppler-utils
+          fi
+          pdftotext -v
+      - name: Install Chromium for actual consumer workflows
+        run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
+      - name: Company, authoring, privacy, all-role controls and handover consumers
+        run: node scripts/run-consumer-cohort-browser-tests.mjs --shard=${{ matrix.shard }}/4

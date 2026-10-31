@@ -353,6 +353,7 @@ test("cancelling an unactivated registration removes sensitive state but preserv
 
     for (const [table, column, value] of [
       ["auth_accounts", "account_id", accountId],
+      ["reviewer_capacity_locks", "account_id", accountId],
       ["auth_account_roles", "account_id", accountId],
       ["auth_registration_flows", "account_id", accountId],
       ["auth_otp_challenges", "account_id", accountId],

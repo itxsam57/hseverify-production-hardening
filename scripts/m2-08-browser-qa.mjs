@@ -1,3 +1,4 @@
+import { seedPublishedQuestion } from "../tests/helpers/question-publication-fixture.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -114,38 +115,8 @@ export async function seedBrowserScenario() {
     const catalogueVersionId = `catalogue_version_${digest("m208-browser-catalogue-v2").slice(0, 24)}`;
     const fingerprint = digest(`DECIMAL:${DECIMAL_PROMPT}:m208-browser`);
 
+    await seedPublishedQuestion(database,{questionId:decimalQuestionId,versionId:decimalQuestionVersionId,reference:"M208-Q-DECIMAL",questionType:"DECIMAL",prompt:DECIMAL_PROMPT,answerKey:19,frameworkId,domainReference:"Draft Recovery",difficulty:"MEDIUM",tags:[],fingerprint,now:NOW});
     await database.transaction(async (tx) => {
-      await tx.query(
-        `INSERT INTO assessment_questions(
-           question_id,question_reference,question_status,current_version_id,current_content_fingerprint,
-           created_by_account_id,created_at,updated_at
-         ) VALUES($1,'M208-Q-DECIMAL','INACTIVE',NULL,NULL,$2,$3,$3)`,
-        [decimalQuestionId, createdByAccountId, NOW]
-      );
-      await tx.query(
-        `INSERT INTO assessment_question_versions(
-           question_version_id,question_id,version_no,question_type,prompt,options_json,
-           answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-           content_fingerprint,created_by_account_id,created_at
-         ) VALUES($1,$2,1,'DECIMAL',$3,NULL,$4::jsonb,NULL,$5,'Draft Recovery','MEDIUM','[]'::jsonb,$6,$7,$8)`,
-        [
-          decimalQuestionVersionId,
-          decimalQuestionId,
-          DECIMAL_PROMPT,
-          JSON.stringify(19),
-          frameworkId,
-          fingerprint,
-          createdByAccountId,
-          NOW
-        ]
-      );
-      await tx.query(
-        `UPDATE assessment_questions
-         SET current_version_id=$2,current_content_fingerprint=$3,question_status='ACTIVE',updated_at=$4
-         WHERE question_id=$1`,
-        [decimalQuestionId, decimalQuestionVersionId, fingerprint, NOW]
-      );
-
       await tx.query(
         `INSERT INTO assessment_blueprint_versions(
            blueprint_version_id,blueprint_id,version_no,framework_id,title,

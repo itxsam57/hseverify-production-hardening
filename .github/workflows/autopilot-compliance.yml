@@ -16,6 +16,8 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify fail-closed compliance range selection
+        run: node --test tests/engineering/autopilot-compliance-range.test.mjs
       - name: Verify guarded commits
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -31,5 +33,14 @@ jobs:
           if [ "$base" = "0000000000000000000000000000000000000000" ]; then
             candidate="$(git merge-base "origin/$CANONICAL_BRANCH" "$head" 2>/dev/null || true)"
             if [ -n "$candidate" ] && [ "$candidate" != "$head" ]; then base="$candidate"; fi
+          fi
+          # Imported canonical history is already established; check every candidate addition.
+          # Both ancestry checks are mandatory, and canonical HEAD itself is never excluded.
+          canonical="$(git rev-parse --verify "refs/remotes/origin/$CANONICAL_BRANCH" 2>/dev/null || true)"
+          if [ "$EVENT_NAME" = "push" ] && [ "$base" != "0000000000000000000000000000000000000000" ] &&
+             [ -n "$canonical" ] && [ "$canonical" != "$head" ] &&
+             git merge-base --is-ancestor "$base" "$canonical" &&
+             git merge-base --is-ancestor "$canonical" "$head"; then
+            base="$canonical"
           fi
           python .autopilot/guard.py ci --root . --base-sha "$base" --head-sha "$head"

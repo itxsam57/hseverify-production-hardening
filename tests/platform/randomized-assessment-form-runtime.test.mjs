@@ -1,5 +1,7 @@
+import {seedPublishedQuestion,revisePublishedFixtureQuestion} from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
@@ -40,7 +42,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0073_assessment_option_order_snapshot");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0124_question_exposure_families");
   return database;
 }
 
@@ -115,77 +117,12 @@ async function makeBlueprint(database, admin, frameworkReference, reference, cou
   );
 }
 
-async function seedQuestion(database, frameworkId, c) {
-  const questionId = oid("assessment_question", c);
-  const questionVersionId = oid("question_version", c);
-  const hash = fingerprint(`question-${c}-v1`);
-  await database.query(
-    `INSERT INTO assessment_questions(
-       question_id,question_reference,question_status,
-       created_by_account_id,created_at,updated_at
-     ) VALUES($1,$2,'INACTIVE',$3,$4,$4)`,
-    [questionId, `GEN-Q-${c}`, `account_seed_${c}`, NOW]
-  );
-  await database.query(
-    `INSERT INTO assessment_question_versions(
-       question_version_id,question_id,version_no,question_type,prompt,options_json,
-       answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-       content_fingerprint,created_by_account_id,created_at
-     ) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-              'General Safety','MEDIUM',$7::jsonb,$8,$9,$10)`,
-    [
-      questionVersionId,
-      questionId,
-      `What is the safe response for generated question ${c}?`,
-      JSON.stringify(["Stop work", "Continue", "Ignore"]),
-      JSON.stringify("Stop work"),
-      frameworkId,
-      JSON.stringify(["core"]),
-      hash,
-      `account_seed_${c}`,
-      NOW
-    ]
-  );
-  await database.query(
-    `UPDATE assessment_questions
-     SET current_version_id=$2,current_content_fingerprint=$3,
-         question_status='ACTIVE',updated_at=$4
-     WHERE question_id=$1`,
-    [questionId, questionVersionId, hash, NOW]
-  );
-  return { questionId, questionVersionId };
+async function seedQuestion(database,frameworkId,c) {
+ return seedPublishedQuestion(database,{questionId:oid("assessment_question",c),versionId:oid("question_version",c),reference:`GEN-Q-${c}`,questionType:"MULTIPLE_CHOICE",prompt:`What is the safe response for generated question ${c}?`,options:["Stop work","Continue","Ignore"],answerKey:"Stop work",frameworkId,domainReference:"General Safety",difficulty:"MEDIUM",tags:["core"],fingerprint:fingerprint(`question-${c}-v1`),now:NOW});
 }
-
-async function reviseQuestion(database, question, frameworkId, c) {
-  const nextVersionId = oid("question_version", c);
-  const hash = fingerprint(`question-${question.questionId}-${c}`);
-  await database.query(
-    `INSERT INTO assessment_question_versions(
-       question_version_id,question_id,version_no,question_type,prompt,options_json,
-       answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-       content_fingerprint,created_by_account_id,created_at
-     ) VALUES($1,$2,2,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-              'General Safety','MEDIUM',$7::jsonb,$8,$9,$10)`,
-    [
-      nextVersionId,
-      question.questionId,
-      `Revised safe response prompt ${c} keeps the same stable question identity`,
-      JSON.stringify(["Stop work", "Continue", "Ignore"]),
-      JSON.stringify("Stop work"),
-      frameworkId,
-      JSON.stringify(["core"]),
-      hash,
-      `account_seed_${c}`,
-      NOW
-    ]
-  );
-  await database.query(
-    `UPDATE assessment_questions
-     SET current_version_id=$2,current_content_fingerprint=$3,updated_at=$4
-     WHERE question_id=$1`,
-    [question.questionId, nextVersionId, hash, NOW]
-  );
-  return nextVersionId;
+async function reviseQuestion(database,question,frameworkId,c) {
+ const framework=(await database.query("SELECT framework_reference FROM assurance_frameworks WHERE framework_id=$1",[frameworkId])).rows[0].framework_reference;
+ return revisePublishedFixtureQuestion(database,question,{questionType:"MULTIPLE_CHOICE",prompt:`Revised safe response prompt ${c} keeps the same stable question identity`,options:["Stop work","Continue","Ignore"],answerKey:"Stop work",frameworkReference:framework,domainReference:"General Safety",difficulty:"MEDIUM",tags:["core"]},NOW);
 }
 
 async function seedCase(database, c, workerAccountId, frameworkId, { snapshot = true } = {}) {
@@ -413,4 +350,157 @@ test("M2.05 concurrent generation converges to one immutable form and item set",
   } finally {
     await database.close();
   }
+});
+
+test("M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real generation, permanent exposure and exhaustion", async () => {
+  const database=await db();
+  try {
+    const admin=await seedAdmin(database,"t");
+    const framework=await seedFramework(database,"t");
+    const questionInputs=[
+      ["t","MULTIPLE_CHOICE"],
+      ["u","MULTIPLE_CHOICE"],
+      ["v","LONG_TEXT"],
+      ["w","SHORT_TEXT"]
+    ];
+    for(const [key,type] of questionInputs){
+      await seedPublishedQuestion(database,{
+        questionId:oid("assessment_question",key),
+        versionId:oid("question_version",key),
+        reference:"M205-MATRIX-"+key.toUpperCase(),
+        questionType:type,
+        prompt:`What actions control the specific workplace hazard in scenario ${key}?`,
+        options:type==="MULTIPLE_CHOICE"?["Stop and assess","Proceed without checking","Ignore"]:null,
+        answerKey:type==="MULTIPLE_CHOICE"?"Stop and assess":null,
+        rubric:type!=="MULTIPLE_CHOICE"?{maxScore:10,criteria:[{description:"Names the hazard and a suitable control",points:10}]}:null,
+        frameworkId:framework.frameworkId,
+        domainReference:"General Safety",
+        difficulty:"MEDIUM",
+        tags:["core"],
+        fingerprint:fingerprint("m205-matrix-"+key),now:NOW
+      });
+    }
+    const cases=[
+      {name:"MCQ only",tag:"m",selectors:[{count:2,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}],expected:["MULTIPLE_CHOICE","MULTIPLE_CHOICE"]},
+      {name:"written only",tag:"n",selectors:[{count:1,questionType:"LONG_TEXT",tagsAll:["core"]},{count:1,questionType:"SHORT_TEXT",tagsAll:["core"]}],expected:["LONG_TEXT","SHORT_TEXT"]},
+      {name:"mixed",tag:"o",selectors:[{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]},{count:1,questionType:"LONG_TEXT",tagsAll:["core"]}],expected:["MULTIPLE_CHOICE","LONG_TEXT"]}
+    ];
+    const service=new AssessmentFormGenerationService(database);
+    const blueprintService=new AssessmentBlueprintService(database);
+    const allQuestions=new Map((await database.query("SELECT question_id,question_type FROM assessment_question_versions")).rows.map(row=>[row.question_id,row.question_type]));
+    for(const scenario of cases){
+      const blueprint=await blueprintService.createBlueprint(admin,{
+        blueprintReference:"M205-MATRIX-"+scenario.name.replace(/ /g,"-").toUpperCase(),
+        version:{title:"Canonical "+scenario.name+" assessment",frameworkReference:framework.frameworkReference,selectors:scenario.selectors}
+      },NOW_DATE);
+      const worker="worker_m205_matrix_"+scenario.tag;
+      const firstCase=await seedCase(database,scenario.tag,worker,framework.frameworkId);
+      const first=await service.generateForCase(admin,{caseId:firstCase.caseId,blueprintVersionId:blueprint.version.blueprintVersionId},NOW_DATE);
+      assert.equal(first.items.length,2,scenario.name);
+      assert.deepEqual(first.items.map(item=>allQuestions.get(item.questionId)),scenario.expected,scenario.name);
+      assert.equal(new Set(first.items.map(item=>item.questionId)).size,2);
+      const reserved=await database.query("SELECT COUNT(*)::int AS count FROM generated_assessment_form_items WHERE worker_account_id=$1",[worker]);
+      assert.equal(reserved.rows[0].count,2,scenario.name+" complete form reserved atomically before display");
+      const itemSnapshot=first.items.map(item=>({id:item.questionId,version:item.questionVersionId,position:item.position}));
+      const reloaded=await service.generateForCase(admin,{caseId:firstCase.caseId,blueprintVersionId:blueprint.version.blueprintVersionId},NOW_DATE);
+      assert.equal(reloaded.formId,first.formId,"Retry must be idempotent");
+      assert.deepEqual(reloaded.items.map(item=>({id:item.questionId,version:item.questionVersionId,position:item.position})),itemSnapshot);
+      const secondCase=await seedCase(database,String.fromCharCode(scenario.tag.charCodeAt(0)+10),worker,framework.frameworkId);
+      await assert.rejects(
+        service.generateForCase(admin,{caseId:secondCase.caseId,blueprintVersionId:blueprint.version.blueprintVersionId},NOW_DATE),
+        error=>error instanceof AssessmentFormGenerationError && /insufficient unseen/i.test(error.message),
+        "The second tenant/case for the same permanent Worker must not repeat the reserved questions"
+      );
+      const after=await database.query("SELECT COUNT(*)::int AS count FROM generated_assessment_forms WHERE case_id=$1",[secondCase.caseId]);
+      assert.equal(after.rows[0].count,0,"No partial form on capacity exhaustion");
+      const caseAfter=await database.query("SELECT case_status,owner_kind FROM assurance_cases WHERE case_id=$1",[secondCase.caseId]);
+      assert.equal(caseAfter.rows[0].case_status,"Assessment pending");
+      assert.equal(caseAfter.rows[0].owner_kind,"worker");
+      const reservationsAfter=await database.query("SELECT COUNT(*)::int AS count FROM generated_assessment_form_items WHERE worker_account_id=$1",[worker]);
+      assert.equal(reservationsAfter.rows[0].count,2,"No duplicate/reserved exposure after failed retake");
+      console.log("NATIVE_M205_MATRIX_"+scenario.name.replace(/ /g,"_").toUpperCase()+" complete reserved form, original idempotent, second tenant/case fails closed");
+    }
+  } finally {await database.close();}
+});
+
+test("M2.05.03 equivalent variants are excluded both within form and across worker retakes", async () => {
+  const database=await db();
+  try {
+    const admin=await seedAdmin(database,"y");
+    const framework=await seedFramework(database,"y");
+    const shared="EQUIVALENT-FAMILY-Y";
+    const questions=[];
+    for(const [c,family] of [["y",shared],["z",shared],["j","INDEPENDENT-FAMILY-J"]]){
+      const questionId=oid("assessment_question",c);
+      await seedPublishedQuestion(database,{
+        questionId,versionId:oid("question_version",c),
+        reference:"M205-FAMILY-"+c.toUpperCase(),exposureFamilyReference:family,
+        questionType:"MULTIPLE_CHOICE",
+        prompt:`What specific safe step is needed for related hazard variant ${c}?`,
+        options:["Stop work","Continue work","Ignore the hazard"],
+        answerKey:"Stop work",frameworkId:framework.frameworkId,
+        domainReference:"General Safety",difficulty:"MEDIUM",
+        tags:c==="j"?["core"]:["core","family"],
+        fingerprint:fingerprint("m205-exposure-family-"+c),now:NOW
+      });
+      questions.push({questionId,family});
+    }
+    const original=await database.query("SELECT question_id,exposure_family_reference FROM assessment_questions WHERE question_id=$1",[questions[0].questionId]);
+    assert.equal(original.rows[0].exposure_family_reference,shared);
+    await assert.rejects(
+      database.query("UPDATE assessment_questions SET exposure_family_reference='FORGED-FAMILY' WHERE question_id=$1",[questions[0].questionId]),
+      error=>error.code==="55000","Family assignment must not be changed after Worker exposure"
+    );
+    const oneVersion=await new AssessmentBlueprintService(database).createBlueprint(admin,{
+      blueprintReference:"M205-SHARED-ONE",version:{
+        title:"Single variant exposure evaluation",frameworkReference:framework.frameworkReference,
+        selectors:[{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["family"]}]
+      }
+    },NOW_DATE);
+    const twoVersion=await new AssessmentBlueprintService(database).createBlueprint(admin,{
+      blueprintReference:"M205-SHARED-TWO",version:{
+        title:"Two independent families evaluation",frameworkReference:framework.frameworkReference,
+        selectors:[{count:2,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}]
+      }
+    },NOW_DATE);
+    const service=new AssessmentFormGenerationService(database);
+    const worker="worker_m205_exposure_family_permanent";
+    const firstCase=await seedCase(database,"x",worker,framework.frameworkId);
+    const first=await service.generateForCase(admin,{
+      caseId:firstCase.caseId,blueprintVersionId:oneVersion.version.blueprintVersionId
+    },NOW_DATE);
+    assert.equal(first.items.length,1);
+    assert.ok(questions.slice(0,2).some(q=>q.questionId===first.items[0].questionId));
+    const secondCase=await seedCase(database,"f",worker,framework.frameworkId);
+    await assert.rejects(service.generateForCase(admin,{
+      caseId:secondCase.caseId,blueprintVersionId:oneVersion.version.blueprintVersionId
+    },NOW_DATE),error=>error instanceof AssessmentFormGenerationError && /insufficient unseen/i.test(error.message));
+    assert.equal((await database.query("SELECT COUNT(*)::int n FROM generated_assessment_forms WHERE case_id=$1",[secondCase.caseId])).rows[0].n,0);
+    const thirdCase=await seedCase(database,"b","worker_m205_family_fresh_person",framework.frameworkId);
+    const two=await service.generateForCase(admin,{
+      caseId:thirdCase.caseId,blueprintVersionId:twoVersion.version.blueprintVersionId
+    },NOW_DATE);
+    assert.equal(two.items.length,2);
+    const familyRows=await database.query("SELECT exposure_family_reference FROM generated_assessment_form_items WHERE form_id=$1",[two.formId]);
+    assert.equal(new Set(familyRows.rows.map(row=>row.exposure_family_reference)).size,2,
+      "A single complete assessment must not select two equivalent variants");
+    const reservations=await database.query("SELECT exposure_family_reference,worker_account_id FROM generated_assessment_form_items WHERE worker_account_id=$1",[worker]);
+    assert.deepEqual(reservations.rows,[{exposure_family_reference:shared,worker_account_id:worker}]);
+    const forgedFormId=oid("assessment_form","u");
+    const existingQuestion=questions.find(q=>q.questionId!==first.items[0].questionId&&q.family===shared);
+    await assert.rejects(database.transaction(async tx=>{
+      await tx.query("INSERT INTO generated_assessment_forms(form_id,case_id,worker_account_id,blueprint_version_id,generation_nonce_hex,question_count,generated_at) VALUES($1,$2,$3,$4,$5,1,$6)",
+        [forgedFormId,secondCase.caseId,worker,oneVersion.version.blueprintVersionId,"b".repeat(64),NOW]);
+      const version=(await tx.query("SELECT current_version_id FROM assessment_questions WHERE question_id=$1",[existingQuestion.questionId])).rows[0].current_version_id;
+      await tx.query("INSERT INTO generated_assessment_form_items(form_item_id,form_id,position,question_id,question_version_id,created_at) VALUES($1,$2,1,$3,$4,$5)",
+        [oid("assessment_form_item","u"),forgedFormId,existingQuestion.questionId,version,NOW]);
+    }),error=>error.code==="23505","Database must reject cross-case exposure of an equivalent question variant");
+    assert.equal((await database.query("SELECT COUNT(*)::int n FROM generated_assessment_forms WHERE form_id=$1",[forgedFormId])).rows[0].n,0);
+    await assert.rejects(
+      database.execute(readFileSync("database/migrations/0124_question_exposure_families.down.sql","utf8")),
+      error=>error.code==="55000",
+      "Rollback must refuse to drop permanent exposure-family history on a populated database"
+    );
+    console.log("ACTUAL_M20503_FAMILY_SQL same-form distinct families, same Worker retake excludes equivalent stable ID, direct DB bypass rejected, exact history immutable, unsafe rollback refused");
+  } finally {await database.close();}
 });

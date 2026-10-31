@@ -1,3 +1,4 @@
+import {seedPublishedQuestion} from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
@@ -40,7 +41,7 @@ const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 
 async function database() {
   const db = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(db, ENV.releaseSha, "0073_assessment_option_order_snapshot");
+  await applyMigrationsThrough(db, ENV.releaseSha, "0124_question_exposure_families");
   return db;
 }
 
@@ -109,42 +110,10 @@ async function seedFrameworkAndBlueprint(db, admin) {
   return { frameworkId, blueprintVersionId: blueprint.version.blueprintVersionId };
 }
 
-async function seedSingleQuestion(db, frameworkId) {
-  const questionId = oid("assessment_question", "r");
-  const versionId = oid("question_version", "r");
-  const hash = fingerprint("m205-cross-case-race-question");
-  await db.query(
-    `INSERT INTO assessment_questions(
-       question_id,question_reference,question_status,created_by_account_id,created_at,updated_at
-     ) VALUES($1,'GEN-Q-RACE','INACTIVE','account_cross_case_seed',$2,$2)`,
-    [questionId, NOW]
-  );
-  await db.query(
-    `INSERT INTO assessment_question_versions(
-       question_version_id,question_id,version_no,question_type,prompt,options_json,
-       answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-       content_fingerprint,created_by_account_id,created_at
-     ) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-              'General Safety','MEDIUM',$7::jsonb,$8,'account_cross_case_seed',$9)`,
-    [
-      versionId,
-      questionId,
-      "What is the safe response when a serious uncontrolled hazard is identified?",
-      JSON.stringify(["Stop work", "Continue", "Ignore"]),
-      JSON.stringify("Stop work"),
-      frameworkId,
-      JSON.stringify(["core"]),
-      hash,
-      NOW
-    ]
-  );
-  await db.query(
-    `UPDATE assessment_questions
-     SET current_version_id=$2,current_content_fingerprint=$3,question_status='ACTIVE',updated_at=$4
-     WHERE question_id=$1`,
-    [questionId, versionId, hash, NOW]
-  );
-  return questionId;
+async function seedSingleQuestion(db,frameworkId) {
+ const questionId=oid("assessment_question","r");
+ await seedPublishedQuestion(db,{questionId,versionId:oid("question_version","r"),reference:"GEN-Q-RACE",questionType:"MULTIPLE_CHOICE",prompt:"What is the safe response when a serious uncontrolled hazard is identified?",options:["Stop work","Continue","Ignore"],answerKey:"Stop work",frameworkId,domainReference:"General Safety",difficulty:"MEDIUM",tags:["core"],fingerprint:fingerprint("m205-cross-case-race-question"),now:NOW});
+ return questionId;
 }
 
 async function seedCase(db, c, workerAccountId, frameworkId) {

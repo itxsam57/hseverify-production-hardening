@@ -1,4 +1,6 @@
 import "server-only";
+import { PrivacyExecution, executeContactCityCorrection, normalizeContactCityCorrection, normalizeRecordingDeletion, type ContactCityCorrection, type RecordingDeletion } from "./privacy-execution";
+import type { PrivateObjectStorage } from "../secure-files/private-object-storage";
 import { lockSharingAccount, OPTIONAL_SHARING_RESTRICTION } from "./optional-sharing-restriction";
 import { ConsentRecordService } from "./consent-record-service";
 import { collectWorkerPrivacyData } from "./worker-privacy-data";
@@ -71,10 +73,11 @@ export type PrivacyRequestReviewRow = {
   status: string;
   created_at: string | Date;
   review_reason: string | null;
+  execution_pending?: boolean;
 };
 
 export class PrivacyOperationsRepository {
-  constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient()) {}
+  constructor(private readonly clientPromise: Promise<DatabaseClient> = getDatabaseClient(), private readonly objectStorage?: PrivateObjectStorage) {}
 
   async listOwnedShareLinks(workerId: string): Promise<Array<{ share_link_id: string; purpose: string }>> {
     const client = await this.clientPromise;
@@ -95,6 +98,22 @@ export class PrivacyOperationsRepository {
     const client = await this.clientPromise;
     await client.transaction(async (tx) => {
       let details = input.details ?? {};
+      if (input.type === "correction" && details.correction !== undefined) {
+        if (Object.keys(details).some(key=>key!=="correction")) throw new Error("Choose only the supported correction scope fields.");
+        const correction=normalizeContactCityCorrection(details.correction);
+        const profile=await tx.query("SELECT worker_sub FROM worker_profiles WHERE worker_sub=$1 AND version=$2 AND profile_document->>'workerSub'=$1",
+          [input.workerId,correction.expectedProfileVersion]);
+        if (!profile.rows[0]) throw new Error("The owned profile version changed or is unavailable.");
+        details={correction};
+      }
+      if (input.type === "deletion" && details.deletion !== undefined) {
+        if (Object.keys(details).some(key=>key!=="deletion")) throw new Error("Choose only the supported deletion scope fields.");
+        const deletion=normalizeRecordingDeletion(details.deletion);
+        const asset=await tx.query("SELECT recording_asset_id FROM recording_assets WHERE recording_asset_id=$1 AND worker_account_id=$2",
+          [deletion.recordingAssetId,input.workerId]);
+        if (!asset.rows[0]) throw new Error("Recording does not belong to this Worker.");
+        details={deletion};
+      }
       // General restriction intake stays reviewable; only an explicit supported scope can be fulfilled.
       if (input.type === "restriction" && Object.keys(details).length > 0) {
         if (details.purpose !== "optional_sharing" || Object.keys(details).some(key => key !== "purpose")) {
@@ -120,7 +139,10 @@ export class PrivacyOperationsRepository {
   async listRequestReviewQueue(): Promise<PrivacyRequestReviewRow[]> {
     const client = await this.clientPromise;
     const result = await client.query<PrivacyRequestReviewRow>(
-      `SELECT requests.*, latest.reason AS review_reason
+      `SELECT requests.*, latest.reason AS review_reason, EXISTS(
+         SELECT 1 FROM privacy_execution_events approved WHERE approved.request_id=requests.request_id
+          AND approved.event_type='APPROVED' AND NOT EXISTS(SELECT 1 FROM privacy_execution_events executed
+           WHERE executed.operation_id=approved.operation_id AND executed.event_type='EXECUTED')) AS execution_pending
        FROM privacy_requests requests
        LEFT JOIN LATERAL (
          SELECT reason FROM privacy_request_reviews
@@ -135,8 +157,16 @@ export class PrivacyOperationsRepository {
   async reviewRequest(input: {
     requestId: string; reviewerAccountId: string; reviewId: string;
     expectedStatus: string; decision: "PROCESSING" | "REJECTED" | "COMPLETED"; reason: string; now: string;
+    reviewerSessionId?: string; approvedCorrection?: ContactCityCorrection; approvedDeletion?: RecordingDeletion;
   }) {
     const client = await this.clientPromise;
+    if (input.decision === "COMPLETED") {
+      const type=await client.query<{request_type:string;details:Record<string,unknown>}>("SELECT request_type,details FROM privacy_requests WHERE request_id=$1",[input.requestId]);
+      if (type.rows[0]?.request_type === "deletion") {
+        if(type.rows[0].details?.deletion===undefined) throw new Error("This request requires its specific fulfilment operation before completion.");
+        return new PrivacyExecution(client,this.objectStorage).eraseRequest(input);
+      }
+    }
     return client.transaction(async (tx) => {
       const found = await tx.query<PrivacyRequestReviewRow>(
         `SELECT * FROM privacy_requests WHERE request_id=$1 FOR UPDATE`, [input.requestId]
@@ -146,13 +176,19 @@ export class PrivacyOperationsRepository {
           !["OPEN", "PROCESSING"].includes(request.status) || request.status === input.decision) {
         throw new Error("Privacy request changed or is unavailable for this decision.");
       }
+      if (request.request_type === "deletion" && request.details?.deletion !== undefined) {
+        const pending=await tx.query("SELECT operation_id FROM privacy_execution_events approved WHERE request_id=$1 AND event_type='APPROVED' AND NOT EXISTS(SELECT 1 FROM privacy_execution_events executed WHERE executed.operation_id=approved.operation_id AND executed.event_type='EXECUTED') LIMIT 1",[request.request_id]);
+        if(pending.rows.length) throw new Error("Approved recording erasure is pending; resume the exact operation before another review decision.");
+      }
       let details = request.details;
       if (input.decision === "COMPLETED" && request.request_type === "restriction") {
         if (request.details?.purpose !== "optional_sharing") throw new Error("Privacy fulfilment operation requires a supported fulfilment scope for this restriction.");
         await lockSharingAccount(tx, request.worker_id, true);
       }
       if (input.decision === "COMPLETED") {
-        if (request.request_type === "restriction") {
+        if (request.request_type === "correction") {
+          details=await executeContactCityCorrection(tx,request,input);
+        } else if (request.request_type === "restriction") {
           await tx.query(
             `UPDATE scoped_share_links links SET revoked_at=COALESCE(links.revoked_at,$2::timestamptz)
              WHERE links.revoked_at IS NULL AND EXISTS (
@@ -429,12 +465,34 @@ export class PrivacyOperationsRepository {
     );
   }
 
-  async completeRetentionJob(input: { id: string; tenantId: string; status: string }) {
-    const client = await this.clientPromise;
-    const result = await client.query(
-      `UPDATE retention_jobs SET status=$3 WHERE job_id=$1 AND tenant_id=$2 AND status='PENDING'`,
-      [input.id, input.tenantId, input.status]
-    );
-    if (changedRows(result) !== 1) throw new Error("retention job not found or already closed");
+  async currentContactCorrectionVersion(workerId:string) {
+    const client=await this.clientPromise;
+    const result=await client.query<{version:number}>("SELECT version FROM worker_profiles WHERE worker_sub=$1 AND profile_document->>'workerSub'=$1",[workerId]);
+    return result.rows[0]?.version??null;
+  }
+
+  async listOwnedRecordingAssets(workerId:string) {
+    const client=await this.clientPromise;
+    return (await client.query<{recording_asset_id:string;retention_until:string|Date;legal_hold:boolean;case_status:string}>(
+      `SELECT assets.recording_asset_id,assets.retention_until,assets.legal_hold,cases.case_status
+       FROM recording_assets assets JOIN assurance_cases cases
+        ON cases.case_id=assets.case_id AND cases.worker_account_id=assets.worker_account_id
+       WHERE assets.worker_account_id=$1 AND assets.status<>'PURGED' ORDER BY assets.created_at DESC`,[workerId])).rows;
+  }
+
+  async listRetentionTenants() {
+    const client=await this.clientPromise;
+    return (await client.query<{tenant_id:string;display_name:string}>("SELECT tenant_id,display_name FROM platform_tenants ORDER BY display_name,tenant_id")).rows;
+  }
+
+  async listRetentionJobs() {
+    const client=await this.clientPromise;
+    return (await client.query<{job_id:string;tenant_id:string|null;resource_type:string;retention_before:string|Date;status:string;execution_result:Record<string,unknown>}>(
+      "SELECT * FROM retention_jobs ORDER BY created_at DESC,job_id")).rows;
+  }
+
+  async completeRetentionJob(input: { id:string;tenantId:string;status:string;reviewerAccountId:string;reviewerSessionId?:string;reason:string;now:string }) {
+    const client=await this.clientPromise;
+    return new PrivacyExecution(client,this.objectStorage).executeRetention(input);
   }
 }

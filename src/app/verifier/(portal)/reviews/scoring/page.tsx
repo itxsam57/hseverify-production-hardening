@@ -1,3 +1,6 @@
+import {ScoringRecoveryForm} from "@/components/review/scoring-recovery-form";
+import {IntegrityReviewForm} from "@/components/review/integrity-review-form";
+import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { WrittenScoringService } from "@/lib/scoring/written-scoring-service";
 import { getDatabaseClient } from "@/lib/database/database";
@@ -6,6 +9,9 @@ import {
   WrittenScoringAssistanceService
 } from "@/lib/scoring/written-scoring-assistance-service";
 import {
+  declareWrittenScoringConflictAction,
+  beginWrittenScoringAmendmentAction,
+  resolveIntegrityReviewAction,
   addWrittenScoreRubricMarkAction,
   finalizeWrittenScoreAction,
   generateWrittenScoringAssistanceAction,
@@ -18,13 +24,14 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
     expectedRole: "verifier",
     permission: "verification.assigned.read"
   });
-  const reviews = await new WrittenScoringService(await getDatabaseClient()).listReviewQueue({
+  const reviews = await new WrittenScoringService(await getDatabaseClient(),actor).listReviewQueue({
     reviewerAccountId: actor.accountId
   });
   const [assistance, aiProvider] = await Promise.all([
     new WrittenScoringAssistanceService().listForReviewer(actor.accountId),
     Promise.resolve(getScoringAiProviderStatus())
   ]);
+  const integrityReviews=await new IntegrityReviewService(await getDatabaseClient()).list(actor);
   const typedReviews = reviews;
 
   return (
@@ -54,18 +61,35 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
             </thead>
             <tbody>
               {typedReviews.map((review) => {
+                const integrity=integrityReviews.find(item=>item.review_id===review.review_id);
+                const criterionKeys=review.questions.flatMap(question=>question.rubricCriteria.map((_,index)=>`Q${question.position}:C${index}`));
+                const markedCriteria=new Set(review.rubricMarks.map(mark=>mark.criterion));
+                const allCriteriaMarked=criterionKeys.length>0&&criterionKeys.every(key=>markedCriteria.has(key));
                 const readyToFinalize =
-                  review.status === "DRAFT" &&
+                  review.status === "DRAFT" && review.canReview &&
                   review.score !== null &&
-                  review.decision !== null;
+                  review.decision !== null && (!integrity || (integrity.disposition==="CLEAR" && Number(integrity.reviewed_event_count)===Number(integrity.event_count)));
                 const reviewAssistance = assistance.filter((item) => item.reviewId === review.review_id);
                 const latestAssistance = reviewAssistance[0] ?? null;
                 return (
-                  <tr key={review.review_id}>
+                  <tr key={review.review_id} id={review.review_id}>
                     <td>
                       {review.case_id}
+                      {integrity ? <section className="content-stack" aria-label={"Integrity review "+review.review_id}>
+                        <h2>Integrity concern</h2>
+                        <p>{String(integrity.event_count)} retained signals require a reasoned human disposition before progression.</p>
+                        <ul aria-label="Retained integrity signals">{integrity.events.map((event,index)=><li key={index}>{event.at} — {event.type} — {event.classification} — {event.state} — Provider: {event.providerState??"Not supplied"}</li>)}</ul>
+                        {integrity.history?.length ? <ol aria-label="Integrity decision history">{integrity.history.map(item=><li key={item.revision}>Revision {item.revision}: {item.disposition} ({item.role}) — {item.reason}</li>)}</ol> : null}
+                        {integrity.disposition ? <><strong>{integrity.disposition}</strong><p>{integrity.reason}</p></> : null}
+                        {review.status==="DRAFT" && review.canReview && (!integrity.disposition || integrity.disposition==="REVIEW_REQUIRED" || (integrity.disposition==="CLEAR" && Number(integrity.reviewed_event_count)<Number(integrity.event_count))) ? <IntegrityReviewForm action={resolveIntegrityReviewAction} reviewId={review.review_id} revision={integrity.revision??0} eventCount={Number(integrity.event_count)}/> : null}
+                      </section> : null}
+
                       <br />
                       <strong>{review.status}</strong>
+                      {review.unavailableReason ? <p role="status">{review.unavailableReason}</p> : null}
+                      {review.status==="SUPERSEDED"?<p>Original finalized scoring evidence retained in amendment history.</p>:null}
+                      {review.status==="DRAFT"&&review.canReview?<ScoringRecoveryForm action={declareWrittenScoringConflictAction} reviewId={review.review_id} revision={review.draft_revision} mode="conflict"/>:null}
+                      {review.canAmend?<ScoringRecoveryForm action={beginWrittenScoringAmendmentAction} reviewId={review.review_id} revision={review.draft_revision} mode="amendment"/>:null}
                       <section className="content-stack" aria-label={"Assessment evidence " + review.review_id}>
                         {review.questions.map(question => (
                           <article key={question.position} className="content-stack">
@@ -85,7 +109,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       <section className="content-stack" aria-label={"AI scoring guidance " + review.review_id}>
                         <strong>AI guidance</strong>
                         <p className="muted-copy">{aiProvider.reason}</p>
-                        {review.status === "DRAFT" && aiProvider.available ? (
+                        {review.status === "DRAFT" && review.canReview && aiProvider.available ? (
                           <form action={generateWrittenScoringAssistanceAction}>
                             <input type="hidden" name="reviewId" value={review.review_id} />
                             <button type="submit">Generate sandbox AI suggestion</button>
@@ -129,20 +153,11 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                           </div>
                         ) : null}
                       </section>
-                      {review.status === "DRAFT" ? (
+                      {review.status === "DRAFT" && review.canReview && criterionKeys.length>0 ? (
                         <form action={saveWrittenScoreDecisionAction} className="content-stack">
                           <input type="hidden" name="reviewId" value={review.review_id} />
-                          <label>
-                            Score
-                            <input
-                              name="score"
-                              type="number"
-                              min="0"
-                              max="100"
-                              required
-                              defaultValue={review.score ?? ""}
-                            />
-                          </label>
+                          <input type="hidden" name="expectedRevision" value={review.draft_revision} />
+                          <p><strong>Overall score:</strong> {review.score ?? (allCriteriaMarked ? "Ready to calculate from rubric marks" : "Save every rubric criterion first")}</p>
                           <label>
                             Decision
                             <select name="decision" required defaultValue={review.decision ?? ""}>
@@ -162,7 +177,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                               defaultValue={review.reason}
                             />
                           </label>
-                          <button type="submit">Save scoring decision</button>
+                          <button type="submit" disabled={!allCriteriaMarked}>Save scoring decision</button>
                         </form>
                       ) : (
                         <>
@@ -171,21 +186,33 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                       )}
                     </td>
                     <td>
-                      {review.status === "DRAFT" ? (
-                        <form action={addWrittenScoreRubricMarkAction}>
-                          <input type="hidden" name="reviewId" value={review.review_id} />
-                          <input name="criterion" placeholder="Criterion" required />
-                          <input name="mark" type="number" min="0" max="100" required />
-                          <button type="submit">Save mark</button>
-                        </form>
+                      {review.status === "DRAFT" && review.canReview ? (
+                        <div className="content-stack">
+                          {review.questions.flatMap(question=>question.rubricCriteria.map((criterion,index)=>{
+                            const key=`Q${question.position}:C${index}`;
+                            const current=review.rubricMarks.find(mark=>mark.criterion===key);
+                            return <form action={addWrittenScoreRubricMarkAction} className="content-stack" aria-label={`Rubric mark ${key}`} key={key}>
+                              <input type="hidden" name="reviewId" value={review.review_id} />
+                              <input type="hidden" name="criterion" value={key} />
+                              <input type="hidden" name="expectedRevision" value={review.draft_revision} />
+                              <strong>{key} · {criterion.description} ({criterion.points} points)</strong>
+                              <label>Criterion mark<input name="mark" type="number" min="0" max="100" required defaultValue={current?.mark ?? ""} /></label>
+                              <label>Mark reason<textarea name="markReason" minLength={5} maxLength={4000} required defaultValue={current?.reason ?? ""} /></label>
+                              <button type="submit">Save mark</button>
+                            </form>;
+                          }))}
+                        </div>
+                      ) : review.rubricMarks.length>0 ? (
+                        <ul>{review.rubricMarks.map(mark=><li key={mark.criterion}>{mark.criterion}: {mark.mark}% — {mark.reason}</li>)}</ul>
                       ) : (
                         "Locked"
                       )}
                     </td>
                     <td>
-                      {review.status === "DRAFT" ? (
+                      {review.status === "DRAFT" && review.canReview ? (
                         <form action={finalizeWrittenScoreAction}>
                           <input type="hidden" name="reviewId" value={review.review_id} />
+                          <label><input type="checkbox" name="assessorVisible" />Share this reason with the assigned Assessor</label>
                           <button type="submit" disabled={!readyToFinalize}>
                             Finalize review
                           </button>

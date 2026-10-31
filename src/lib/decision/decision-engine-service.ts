@@ -1,3 +1,5 @@
+import { requireRecentSessionMfa } from "../auth/recent-mfa-service";
+import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { createDecision, toDecisionAuditEvent, type DecisionRecord, type ManualDecisionOverride } from "./decision-engine-domain";
 import { bindTrustedSystemAuditActor } from "../audit/audit-domain";
 import { getAuditRepository } from "../audit/audit-repository";
@@ -57,7 +59,10 @@ export class DecisionEngineService {
     await this.recordAudit(decision);
   }
 
-  async recordOverride(override: ManualDecisionOverride): Promise<void> {
+  async recordOverride(override: ManualDecisionOverride, principal: AuthorizationPrincipal): Promise<void> {
+    const mfaVerifiedAt = await requireRecentSessionMfa(principal);
+    if (principal.accountId !== override.actorReference) throw new Error("Decision override actor does not match the authenticated account.");
+    override = { ...override, mfaVerifiedAt };
     const decision = await this.decisionRepository.findDecision(override.decisionId, override.tenantId);
     if (!decision) {
       throw new Error("Decision override target is outside the tenant boundary or does not exist.");

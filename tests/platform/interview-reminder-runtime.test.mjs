@@ -1,3 +1,5 @@
+import {openScriptDatabase} from "../../scripts/lib/database.mjs";
+import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {createHash} from "node:crypto";
@@ -84,23 +86,24 @@ test("Partial reminder enqueue rolls back its recipient set and repairs once fro
 test("Reminder migration restores exact empty contracts and refuses retained due work",{timeout:120000},async()=>{
  const up=await readFile("database/migrations/0092_interview_reminders.up.sql","utf8"),down=await readFile("database/migrations/0092_interview_reminders.down.sql","utf8");
  const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+ const empty=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:"memory://"});await applyMigrationsThrough(empty,"reminder-empty-rollback","0092_interview_reminders");
  try{
-  const contract=(await db.query("SELECT platform_interview_reminder_rollback_contract() AS contract")).rows[0].contract;
-  await db.transaction(tx=>tx.exec(down));
+  const contract=(await empty.query("SELECT platform_interview_reminder_rollback_contract() AS contract")).rows[0].contract;
+  await empty.transaction(tx=>tx.execute(down));
   for(const item of contract.constraints){
-   assert.equal((await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[item.table,item.constraint])).rows[0].definition,item.definition);
+   assert.equal((await empty.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[item.table,item.constraint])).rows[0].definition,item.definition);
   }
   for(const item of contract.functions){
-   assert.equal((await db.query("SELECT pg_get_functiondef($1::regprocedure) AS definition",[item.reference])).rows[0].definition,item.definition);
+   assert.equal((await empty.query("SELECT pg_get_functiondef($1::regprocedure) AS definition",[item.reference])).rows[0].definition,item.definition);
   }
   for(const item of contract.triggers){
-   assert.equal((await db.query("SELECT pg_get_triggerdef(oid) AS definition FROM pg_trigger WHERE tgname=$1",[item.name])).rows[0].definition,item.definition);
+   assert.equal((await empty.query("SELECT pg_get_triggerdef(oid) AS definition FROM pg_trigger WHERE tgname=$1",[item.name])).rows[0].definition,item.definition);
   }
-  await db.transaction(tx=>tx.exec(up));
+  await empty.transaction(tx=>tx.execute(up));
   await new InterviewSchedulingService(db).scheduleInterview({principal:await assessorSchedulingPrincipal(db,fixture.credentials.assessor),tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:future(3600000),reminderAt:future(1800000)});
   await assert.rejects(db.transaction(tx=>tx.exec(down)),/Retained interview reminder history/);
   assert.equal((await reminderJobs(db)).rows.length,6);
- }finally{await db.close();await fixture.cleanup();}
+ }finally{await empty.close();await db.close();await fixture.cleanup();}
 });
 
 

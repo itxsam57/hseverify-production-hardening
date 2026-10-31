@@ -11,6 +11,7 @@ export default async function CompanyObservationsPage({
   const params = await searchParams;
   const principal = await requireCurrentTenantPermission("company.orders.manage");
   const context = await getSupervisorObservationService().listCompanyContext(principal);
+  const submitted = await getSupervisorObservationService().listForCompany(principal);
 
   return (
     <div className="dashboard-page">
@@ -31,7 +32,7 @@ export default async function CompanyObservationsPage({
               <option value="" disabled>Select case</option>
               {context.cases.map((item) => <option key={item.caseId} value={item.caseId}>{item.workerName} · {item.caseStatus} · {item.caseId}</option>)}
             </select></label>
-            <label>Authorized supervisor<select name="observerMembershipId" required defaultValue="">
+            <label>Signing supervisor<select name="observerMembershipId" required defaultValue="">
               <option value="" disabled>Select supervisor</option>
               {context.supervisors.map((item) => <option key={item.membershipId} value={item.membershipId}>{item.displayName} · {item.role}</option>)}
             </select></label>
@@ -52,6 +53,23 @@ export default async function CompanyObservationsPage({
             <button className="button button-primary" type="submit">Submit observation for Worker acknowledgement</button>
           </form>
         )}
+      </section>
+      <section className="surface-card">
+        <h2>Submitted observations</h2>
+        {submitted.length === 0 ? <p>No observations submitted yet.</p> : submitted.map(item => (
+          <article key={item.observationId} id={item.observationId} className="surface-card">
+            <h3>{item.competencyReference} · {item.taskReference}</h3>
+            <p>{item.frameworkReference} · {item.outcome.replaceAll("_", " ")}</p>
+            <p>{item.supervisorSignedAt ? <>Signed by {item.supervisorName} · {new Date(item.supervisorSignedAt).toLocaleString()}</> : "Legacy unsigned observation: unavailable for acknowledgement or independent review."}</p>
+            <p>{item.observationText}</p>
+                {item.checklist.length ? <ul>{item.checklist.map((check,index) => <li key={index}>{check}</li>)}</ul> : null}
+                {item.supervisorDeclaration ? <p>Signed declaration: {item.supervisorDeclaration}</p> : null}
+            {item.restrictions ? <p>Restrictions: {item.restrictions}</p> : null}
+            <p>{item.workerAcknowledgedAt ? "Worker acknowledged" : "Awaiting Worker acknowledgement"}</p>
+            {item.reviewStatus ? <p>Independent review: {item.reviewStatus.replaceAll("_", " ")}</p> : null}
+            {item.reviewReason ? <p>Verifier feedback: {item.reviewReason}</p> : null}
+          </article>
+        ))}
       </section>
     </div>
   );

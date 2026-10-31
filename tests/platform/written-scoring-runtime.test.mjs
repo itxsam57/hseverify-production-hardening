@@ -1,67 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { loadWrittenScoringRuntime } from "../helpers/written-scoring-runtime-loader.mjs";
+import {fixture} from "../helpers/written-scoring-authority-fixture.mjs";
 
-const { WrittenScoringService, createIdentifier } = await loadWrittenScoringRuntime();
-
-function databaseFixture() {
-  const reviews = [];
-  const calibrations = [];
-  const marks = [];
-  const conflicts = [];
-  return {
-    reviews,
-    calibrations,
-    marks,
-    conflicts,
-    async query(sql, params) {
-      if (sql.includes("INSERT INTO written_score_reviews")) {
-        reviews.push({ review_id: params[0], tenant_id: params[1], reviewer_account_id: params[4], status: "DRAFT", attempt_id: params[3] });
-        return { rows: [] };
-      }
-      if (sql.includes("SELECT review_id FROM written_score_reviews")) {
-        return { rows: reviews.filter((review) => review.review_id === params[0] && review.reviewer_account_id === params[1] && (!params[2] || review.tenant_id === params[2])) };
-      }
-      if (sql.includes("INSERT INTO scoring_calibration_events")) {
-        calibrations.push(params);
-        return { rows: [] };
-      }
-      if (sql.includes("INSERT INTO written_score_rubric_marks")) {
-        marks.push(params);
-        return { rows: [] };
-      }
-      if (sql.includes("INSERT INTO scoring_conflict_declarations")) {
-        conflicts.push(params);
-        return { rows: [] };
-      }
-      if (sql.includes("UPDATE written_score_reviews SET status='FINAL'")) {
-        const review = reviews.find((item) => item.review_id === params[0]);
-        if (!review || conflicts.some((item) => item[1] === params[0])) return { rows: [] };
-        review.status = "FINAL";
-        return { rows: [review] };
-      }
-      if (sql.includes("SELECT review_id,status FROM written_score_reviews")) return { rows: reviews.filter((review) => review.review_id === params[0] && review.status === "FINAL") };
-      throw new Error(`Unexpected SQL in runtime fixture: ${sql}`);
-    }
-  };
-}
-
-test("written scoring runtime enforces decisions, persistence and reviewer ownership", async () => {
-  const database = databaseFixture();
-  const service = new WrittenScoringService(database);
-  await service.publish({ tenantId: "tenant_alpha", caseId: "assurance_case_1", attemptId: "attempt_1", reviewerAccountId: "reviewer_1", rubricVersion: "v1", score: 85, decision: "PASS", reason: "Meets requirements" });
-  const reviewId = database.reviews[0].review_id;
-  await service.addRubricMark({ reviewId, criterion: "Safety", mark: 90, reviewerAccountId: "reviewer_1", tenantId: "tenant_alpha" });
-  await service.addCalibration({ reviewId, reviewerAccountId: "reviewer_1", tenantId: "tenant_alpha", note: "Aligned review" });
-  assert.equal(database.marks.length, 1);
-  assert.equal(database.calibrations.length, 1);
-  await assert.rejects(() => service.addRubricMark({ reviewId, criterion: "Safety", mark: 90, reviewerAccountId: "reviewer_2", tenantId: "tenant_alpha" }));
-  await service.finalize({ reviewId, reviewerAccountId: "reviewer_1", tenantId: "tenant_alpha" });
-  assert.equal(database.reviews[0].status, "FINAL");
+test("written scoring runtime enforces calibrated ownership and final persistence", async () => {
+  const x=await fixture("legacy-runtime-happy");
+  try {
+    await x.service.addRubricMark({reviewId:x.reviewId,criterion:"Q1:C0",mark:100,reason:"Isolation criterion fully demonstrated.",reviewerAccountId:x.actor.accountId,tenantId:x.tenantId,expectedRevision:0});
+    await x.service.addRubricMark({reviewId:x.reviewId,criterion:"Q1:C1",mark:75,reason:"Zero-energy test substantially demonstrated.",reviewerAccountId:x.actor.accountId,tenantId:x.tenantId,expectedRevision:1});
+    await x.service.addCalibration({reviewId:x.reviewId,reviewerAccountId:x.actor.accountId,tenantId:x.tenantId,note:"Aligned review against the pinned rubric."});
+    const saved=await x.service.saveDraftDecision({reviewId:x.reviewId,reviewerAccountId:x.actor.accountId,tenantId:x.tenantId,expectedRevision:2,decision:"PASS",reason:"Pinned rubric evidence meets the required standard."});
+    assert.equal(saved.score,90);
+    await x.service.finalize({reviewId:x.reviewId,reviewerAccountId:x.actor.accountId,tenantId:x.tenantId});
+    const row=(await x.db.query("SELECT status,score,decision FROM written_score_reviews WHERE review_id=$1",[x.reviewId])).rows[0];
+    assert.deepEqual(row,{status:"FINAL",score:90,decision:"PASS"});
+    await assert.rejects(()=>x.service.addRubricMark({reviewId:x.reviewId,criterion:"Q1:C0",mark:100,reason:"Final evidence cannot be overwritten.",reviewerAccountId:x.actor.accountId,tenantId:x.tenantId,expectedRevision:3}));
+  } finally { await x.db.close(); }
 });
 
 test("written scoring runtime rejects invalid score decisions", async () => {
-  assert.equal(typeof createIdentifier, "function");
-  const service = new WrittenScoringService(databaseFixture());
-  await assert.rejects(() => service.publish({ tenantId: "tenant_alpha", caseId: "assurance_case_1", attemptId: "attempt_1", reviewerAccountId: "reviewer_1", rubricVersion: "v1", score: 101, decision: "PASS", reason: "Invalid" }));
+  const x=await fixture("legacy-runtime-invalid");
+  try {
+    await assert.rejects(()=>x.service.saveDraftDecision({reviewId:x.reviewId,reviewerAccountId:x.actor.accountId,tenantId:x.tenantId,expectedRevision:0,decision:"NOT_A_DECISION",reason:"Invalid decision must be rejected."}));
+  } finally { await x.db.close(); }
 });

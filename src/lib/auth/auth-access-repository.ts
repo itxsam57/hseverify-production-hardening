@@ -428,6 +428,19 @@ export class AuthAccessRepository {
   async findRecoveryFlowForUpdate(
     tokenHash: string
   ): Promise<RecoveryFlow | null> {
+    // Request invalidation locks account then flow. Match that order before any
+    // reset/resend can retain a flow lock and subsequently update its account.
+    const account = await this.database.query<{ account_id: string }>(
+      `SELECT accounts.account_id
+       FROM auth_accounts accounts
+       WHERE accounts.account_id = (
+         SELECT flows.account_id FROM auth_recovery_flows flows WHERE flows.token_hash = $1
+       )
+       FOR UPDATE OF accounts`,
+      [tokenHash]
+    );
+    if (!account.rows[0]) return null;
+    // Re-read and lock after waiting; callers still validate consumption/expiry.
     const result = await this.database.query<RecoveryFlowRow>(
       `SELECT ${RECOVERY_COLUMNS}
        FROM auth_recovery_flows
@@ -900,6 +913,44 @@ export class AuthAccessRepository {
       [accountId]
     );
     return result.affectedRows === 1;
+  }
+
+  async requireUnboundMfaEvent(input: { eventId: string; accountId: string; role: AuthRole; now: string }): Promise<void> {
+    const result = await this.database.query<{ event_id: string }>(
+      `SELECT event_id FROM auth_security_events
+       WHERE event_id=$1 AND account_id=$2 AND active_role=$3 AND event_type='mfa_succeeded'
+         AND occurred_at <= $4 AND occurred_at >= $4::timestamptz - interval '5 minutes'
+       FOR UPDATE`, [input.eventId, input.accountId, input.role, input.now]
+    );
+    if (!result.rows[0]) throw new Error("Completed MFA verification is required.");
+    const bound = await this.database.query(
+      `SELECT event_id FROM auth_security_events WHERE event_type='login_succeeded'
+       AND metadata->>'mfaEventId'=$1`, [input.eventId]
+    );
+    if (bound.rows.length) throw new Error("MFA verification is already bound to a session.");
+  }
+
+  async findSessionMfaVerification(input: { sessionId: string; accountId: string; role: AuthRole; now: string }): Promise<string | null> {
+    const result = await this.database.query<{ occurred_at: DatabaseTimestamp }>(
+      `SELECT mfa.occurred_at
+       FROM auth_sessions AS sessions
+       JOIN auth_accounts AS accounts ON accounts.account_id=sessions.account_id
+         AND accounts.account_status='active'
+       JOIN auth_account_roles AS roles ON roles.account_id=sessions.account_id
+         AND roles.role=sessions.active_role
+       JOIN auth_security_events AS login ON login.account_id=sessions.account_id
+         AND login.active_role=sessions.active_role AND login.event_type='login_succeeded'
+         AND login.metadata->>'sessionId'=sessions.session_id
+       JOIN auth_security_events AS mfa ON mfa.event_id=login.metadata->>'mfaEventId'
+         AND mfa.account_id=sessions.account_id AND mfa.active_role=sessions.active_role
+         AND mfa.event_type='mfa_succeeded'
+       WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role=$3
+         AND sessions.revoked_at IS NULL AND sessions.expires_at>$4
+         AND mfa.occurred_at <= $4 AND mfa.occurred_at <= login.occurred_at
+       ORDER BY mfa.occurred_at DESC LIMIT 1`,
+      [input.sessionId, input.accountId, input.role, input.now]
+    );
+    return result.rows[0] ? timestamp(result.rows[0].occurred_at) : null;
   }
 
   async listActiveSessions(

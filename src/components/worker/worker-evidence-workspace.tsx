@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import {
   createWorkerEvidenceRecordAction,
@@ -14,6 +14,7 @@ import {
   uploadWorkerLeavingLetterAction
 } from "@/app/worker/(portal)/evidence/actions";
 import { Button } from "@/components/ui/button";
+import { captureFormSnapshot } from "@/components/ui/unsaved-changes-guard";
 import { Alert } from "@/components/ui/feedback";
 import {
   CheckboxField,
@@ -305,9 +306,16 @@ function DraftMetadataForm({
     saveWorkerEvidenceDraftAction,
     INITIAL_WORKER_EVIDENCE_ACTION_STATE
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  const submittedSnapshot = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.status === "success" && submittedSnapshot.current !== null) {
+      formRef.current?.dispatchEvent(new CustomEvent("hse:form-saved", { bubbles: true, detail: submittedSnapshot.current }));
+    }
+  }, [state]);
   const prefix = `evidence-${record.recordId}`;
   return (
-    <form action={action} className="profile-form" noValidate>
+    <form ref={formRef} action={action} className="profile-form" noValidate onReset={event => event.preventDefault()} onSubmit={event => { submittedSnapshot.current = captureFormSnapshot(event.currentTarget); }}>
       <input type="hidden" name="recordId" value={record.recordId} />
       <input type="hidden" name="expectedRevision" value={record.currentVersion.revision} />
       {record.kind === "qualification" ? (
@@ -558,6 +566,51 @@ function PendingScans({
   );
 }
 
+function PrivateEvidencePreview({ fileRef }: { fileRef: string }): React.JSX.Element {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  async function prepare(): Promise<void> {
+    setPending(true);
+    setUrl(null);
+    setError(false);
+    try {
+      const response = await fetch("/api/secure-files/access", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileRef, purpose: "preview" })
+      });
+      if (!response.ok) throw new Error("Private preview unavailable");
+      const result: unknown = await response.json();
+      const accessUrl = result && typeof result === "object" && "accessUrl" in result
+        ? (result as { accessUrl: unknown }).accessUrl
+        : null;
+      if (typeof accessUrl !== "string" || !/^\/api\/secure-files\/preview\?access=[A-Za-z0-9_.%~-]+$/.test(accessUrl)) {
+        throw new Error("Unexpected private preview URL");
+      }
+      setUrl(accessUrl);
+    } catch {
+      setError(true);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <>
+      {" · "}
+      <button type="button" onClick={() => void prepare()} disabled={pending} className="button button-secondary">
+        {pending ? "Preparing…" : "Prepare private preview"}
+      </button>
+      {url ? <>{" · "}<a href={url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Open file preview</a></> : null}
+      {error ? <span role="alert"> Private preview unavailable. Retry or contact support.</span> : null}
+    </>
+  );
+}
+
 function History({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.JSX.Element {
   return (
     <section className="content-stack" aria-label={`${record.kind} history`}>
@@ -572,11 +625,17 @@ function History({ record }: { record: WorkerEvidenceWorkspaceRecord }): React.J
         {record.attachments.map((attachment) => (
           <p className="muted-copy" key={attachment.attachmentId}>
             {attachment.displayFilename} · {attachment.attachmentKind.replaceAll("_", " ")} · {attachment.supersededAt ? "superseded" : "active"}
+            {" · Version "}
+            {record.versions.find(version => version.versionId === attachment.versionId)?.versionNumber ?? "historical"}
+            <PrivateEvidencePreview fileRef={attachment.secureFileId} />
           </p>
         ))}
         {record.leavingLetters.map((letter) => (
           <p className="muted-copy" key={letter.leavingLetterId}>
             Leaving letter: {letter.displayFilename} · {letter.status}
+            {" · Version "}
+            {record.versions.find(version => version.versionId === letter.employmentVersionId)?.versionNumber ?? "historical"}
+            <PrivateEvidencePreview fileRef={letter.secureFileId} />
           </p>
         ))}
       </div>
@@ -589,6 +648,7 @@ function VerificationResult({
 }: {
   record: WorkerEvidenceWorkspaceRecord;
 }): React.JSX.Element | null {
+  if (record.kind === "skill" && record.lifecycleStatus === "inactive") return null;
   if (!record.verificationStatus) {
     return record.currentVersion.status === "submitted" ? (
       <Alert tone="neutral">
@@ -613,7 +673,7 @@ function VerificationResult({
       <strong>Independent verification: {label}.</strong>
       {record.verificationReason ? <> {record.verificationReason}</> : null}
       {record.verificationDecidedAt
-        ? <> Decision recorded {formatUtc(record.verificationDecidedAt)}.</>
+        ? <> {status==="UNABLE_TO_VERIFY"||status==="ESCALATED"||status==="QUEUED"?"Review update recorded":"Decision recorded"} {formatUtc(record.verificationDecidedAt)}.</>
         : null}
     </Alert>
   );
@@ -625,7 +685,7 @@ function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): Reac
   const canRevise = submitted && record.lifecycleStatus === "active";
 
   return (
-    <article className="panel page-section content-stack">
+    <article id={record.recordId} className="panel page-section content-stack">
       <div className="section-heading-row">
         <div>
           <p className="eyebrow">{record.kind}</p>
@@ -640,6 +700,11 @@ function RecordCard({ record }: { record: WorkerEvidenceWorkspaceRecord }): Reac
       </div>
 
       <VerificationResult record={record} />
+      {record.kind === "skill" && record.lifecycleStatus === "inactive" ? (
+        <Alert tone="neutral">
+          This skill is inactive and excluded from current verified competency counts. Its previous evidence and independent review history remain preserved below.
+        </Alert>
+      ) : null}
 
       {editable ? (
         <>
