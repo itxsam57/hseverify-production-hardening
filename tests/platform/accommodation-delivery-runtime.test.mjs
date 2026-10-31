@@ -87,3 +87,33 @@ test("separate phases share one approved break budget and rest denies review, pr
   await assert.rejects(c.service.startApprovedBreak(c.worker,{attemptId,durationSeconds:1,mutationKey:"revoked_break_delivery_0001"},null,at(c,142)),/access|available|session/i);
  }finally{await c.cleanup();}
 });
+
+
+test("approved adjustment increases delivery time but cannot lower the pinned objective pass mark",async()=>{
+ const c=await accommodationDeliveryFixture({seed:"objective_standard",passMark:75});
+ try{
+  const id=c.begun.attempt.attemptId;
+  assert.equal(c.begun.timing.remainingSeconds,450);
+  const snapshot=(await c.db.query("SELECT effective_value_json FROM assurance_case_policy_snapshots WHERE case_id=$1",[c.seeded.caseId])).rows[0];
+  assert.equal(snapshot.effective_value_json.pass_mark,75);
+  const first=c.begun.currentQuestion;
+  assert.ok(first.options.includes("Alpha"));
+  const next=await c.service.submitCurrentAnswer(c.worker,{attemptId:id,position:1,questionVersionId:first.questionVersionId,answer:"Alpha"},at(c,10),null);
+  assert.equal(next.currentQuestion.position,2);
+  assert.ok(next.currentQuestion.options.includes("Bravo"));
+  await c.service.submitCurrentAnswer(c.worker,{attemptId:id,position:2,questionVersionId:next.currentQuestion.questionVersionId,answer:"Bravo"},at(c,20),null);
+  const submitted=await c.service.finalizeAssessment(c.worker,id,null,at(c,25));
+  assert.equal(submitted.submitted,true);
+  const score=(await c.db.query("SELECT score,decision,status,reason FROM written_score_reviews WHERE attempt_id=$1",[id])).rows;
+  assert.equal(score.length,1);
+  assert.equal(Number(score[0].score),50);
+  assert.equal(score[0].decision,"FAIL");
+  assert.equal(score[0].status,"FINAL");
+  assert.match(score[0].reason,/pass mark 75/);
+  const caseState=(await c.db.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[c.seeded.caseId])).rows[0];
+  assert.equal(caseState.case_status,"Reassessment required");
+  const immutable=(await c.db.query("SELECT time_multiplier FROM assessment_attempt_time_policies WHERE attempt_id=$1",[id])).rows[0];
+  assert.equal(Number(immutable.time_multiplier),1.5);
+  assert.equal((await c.db.query("SELECT effective_value_json FROM assurance_case_policy_snapshots WHERE case_id=$1",[c.seeded.caseId])).rows[0].effective_value_json.pass_mark,75);
+ }finally{await c.cleanup();}
+});
