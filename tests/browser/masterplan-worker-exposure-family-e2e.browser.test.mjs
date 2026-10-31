@@ -7,6 +7,7 @@ import {PGlite} from "@electric-sql/pglite";
 import {runDevelopmentServer} from "../../scripts/lib/development-server.mjs";
 import {assessmentFundingFixture} from "../helpers/assessment-funding-fixture.mjs";
 import {seedPublishedQuestion} from "../helpers/question-publication-fixture.mjs";
+import {seedSecondEmployerInvitation} from "../helpers/m20503-second-employer-fixture.mjs";
 import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
 
 const {WorkerAssessmentApplicationService}=loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
@@ -55,7 +56,7 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
   const port=await freePort(),baseUrl="http://127.0.0.1:"+port;
   const browser=await chromium.launch({headless:true,args:["--use-fake-device-for-media-stream","--use-fake-ui-for-media-stream"]});
   let firstCaseId,secondCaseId,secondCatalogueId,firstQuestionId,secondQuestionId,attemptId;
-  let creditsBefore;
+  let creditsBefore,secondTenantId,secondEmployerInvitationPath;
   const workerContext=await browser.newContext({viewport:{width:1280,height:900},permissions:["camera","microphone"]});
   const worker=await workerContext.newPage(),errors=[];
   worker.on("pageerror",error=>errors.push(error.message));
@@ -97,6 +98,11 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
       assert.equal(statuses.length,2);
       assert.ok(statuses.every(row=>row.case_status==="Assessment pending"&&row.worker_account_id===fixture.worker.accountId));
       creditsBefore=(await database.query("SELECT COUNT(*)::int AS n FROM billing_credit_ledger")).rows[0].n;
+      const secondEmployer=await seedSecondEmployerInvitation(database,fixture);
+      secondTenantId=secondEmployer.tenantId;
+      secondEmployerInvitationPath=secondEmployer.invitationPath;
+      assert.ok(secondEmployerInvitationPath.startsWith("/worker/company-invitations/"));
+      console.log("M20503_SECOND_EMPLOYER authorized verified second Company issued a real invitation, Worker acceptance still pending");
       console.log("M20503_READY two valid paid separate cases; separate published stable question IDs share immutable family");
     });
     const response=await runDevelopmentServer({
@@ -146,6 +152,12 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
             await company.getByText("This Company relationship has ended. The Worker identity and prior history remain intact.",{exact:true}).waitFor({timeout:20000});
             console.log("ACTUAL_M20503_COMPANY_BROWSER verified Company revoked its Worker relationship without altering Worker assessment.");
           }finally{await companyContext.close();}
+          await worker.goto(baseUrl+secondEmployerInvitationPath,{waitUntil:"domcontentloaded"});
+          await worker.getByRole("heading",{name:"Accept Company invitation",exact:true}).waitFor({timeout:20000});
+          await worker.getByRole("button",{name:"Accept invitation",exact:true}).click();
+          await worker.waitForURL(url=>url.pathname==="/worker/company-access"&&url.searchParams.get("status")==="linked",{timeout:25000});
+          await worker.getByText("Second verified employer",{exact:false}).first().waitFor({timeout:20000});
+          console.log("ACTUAL_M20503_SECOND_EMPLOYER_BROWSER same signed-in Worker accepted real invitation from verified Company B after Company A termination; Worker identity did not change");
           const newContext=await browser.newContext({viewport:{width:390,height:844}});
           const newDevice=await newContext.newPage();
           try{
@@ -185,6 +197,15 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
               [fixture.fundingInput.workerLinkId])).rows[0];
             assert.equal(formerEmployer.link_status,"revoked");
             assert.equal(formerEmployer.worker_account_id,fixture.worker.accountId);
+            const incoming=(await database.query("SELECT link_status,worker_account_id FROM company_worker_links WHERE tenant_id=$1",[secondTenantId])).rows;
+            assert.equal(incoming.length,1);
+            assert.equal(incoming[0].link_status,"active");
+            assert.equal(incoming[0].worker_account_id,fixture.worker.accountId);
+            const invitationStatus=(await database.query("SELECT invitation_status,accepted_by_worker_account_id FROM company_worker_invitations WHERE tenant_id=$1",[secondTenantId])).rows;
+            assert.equal(invitationStatus.length,1);
+            assert.equal(invitationStatus[0].invitation_status,"accepted");
+            assert.equal(invitationStatus[0].accepted_by_worker_account_id,fixture.worker.accountId);
+            console.log("ACTUAL_M20503_TWO_EMPLOYERS_DB Company A revoked; verified Company B accepted/active, permanent Worker account and Exposure Family reservation unchanged");
             console.log("ACTUAL_M20503_EMPLOYER_UNLINK_DB previous Company relationship revoked but permanent Worker account, family reservation, unpaid answer and second case remained intact");
             console.log("ACTUAL_M20503_WORKER_DB real displayed unanswered reserved family survived interruption and fresh login; second case and funds unchanged");
           });
