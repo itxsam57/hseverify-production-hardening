@@ -350,3 +350,74 @@ test("M2.05 concurrent generation converges to one immutable form and item set",
     await database.close();
   }
 });
+
+test("M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real generation, permanent exposure and exhaustion", async () => {
+  const database=await db();
+  try {
+    const admin=await seedAdmin(database,"t");
+    const framework=await seedFramework(database,"t");
+    const questionInputs=[
+      ["t","MULTIPLE_CHOICE"],
+      ["u","MULTIPLE_CHOICE"],
+      ["v","LONG_TEXT"],
+      ["w","SHORT_TEXT"]
+    ];
+    for(const [key,type] of questionInputs){
+      await seedPublishedQuestion(database,{
+        questionId:oid("assessment_question",key),
+        versionId:oid("question_version",key),
+        reference:"M205-MATRIX-"+key.toUpperCase(),
+        questionType:type,
+        prompt:`What actions control the specific workplace hazard in scenario ${key}?`,
+        options:type==="MULTIPLE_CHOICE"?["Stop and assess","Proceed without checking","Ignore"]:null,
+        answerKey:type==="MULTIPLE_CHOICE"?"Stop and assess":null,
+        rubric:type!=="MULTIPLE_CHOICE"?{maxScore:10,criteria:[{description:"Names the hazard and a suitable control",points:10}]}:null,
+        frameworkId:framework.frameworkId,
+        domainReference:"General Safety",
+        difficulty:"MEDIUM",
+        tags:["core"],
+        fingerprint:fingerprint("m205-matrix-"+key),now:NOW
+      });
+    }
+    const cases=[
+      {name:"MCQ only",tag:"m",selectors:[{count:2,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]}],expected:["MULTIPLE_CHOICE","MULTIPLE_CHOICE"]},
+      {name:"written only",tag:"n",selectors:[{count:1,questionType:"LONG_TEXT",tagsAll:["core"]},{count:1,questionType:"SHORT_TEXT",tagsAll:["core"]}],expected:["LONG_TEXT","SHORT_TEXT"]},
+      {name:"mixed",tag:"o",selectors:[{count:1,questionType:"MULTIPLE_CHOICE",tagsAll:["core"]},{count:1,questionType:"LONG_TEXT",tagsAll:["core"]}],expected:["MULTIPLE_CHOICE","LONG_TEXT"]}
+    ];
+    const service=new AssessmentFormGenerationService(database);
+    const blueprintService=new AssessmentBlueprintService(database);
+    const allQuestions=new Map((await database.query("SELECT question_id,question_type FROM assessment_question_versions")).rows.map(row=>[row.question_id,row.question_type]));
+    for(const scenario of cases){
+      const blueprint=await blueprintService.createBlueprint(admin,{
+        blueprintReference:"M205-MATRIX-"+scenario.name.replace(/ /g,"-").toUpperCase(),
+        version:{title:"Canonical "+scenario.name+" assessment",frameworkReference:framework.frameworkReference,selectors:scenario.selectors}
+      },NOW_DATE);
+      const worker="worker_m205_matrix_"+scenario.tag;
+      const firstCase=await seedCase(database,scenario.tag,worker,framework.frameworkId);
+      const first=await service.generateForCase(admin,{caseId:firstCase.caseId,blueprintVersionId:blueprint.version.blueprintVersionId},NOW_DATE);
+      assert.equal(first.items.length,2,scenario.name);
+      assert.deepEqual(first.items.map(item=>allQuestions.get(item.questionId)),scenario.expected,scenario.name);
+      assert.equal(new Set(first.items.map(item=>item.questionId)).size,2);
+      const reserved=await database.query("SELECT COUNT(*)::int AS count FROM generated_assessment_form_items WHERE worker_account_id=$1",[worker]);
+      assert.equal(reserved.rows[0].count,2,scenario.name+" complete form reserved atomically before display");
+      const itemSnapshot=first.items.map(item=>({id:item.questionId,version:item.questionVersionId,position:item.position}));
+      const reloaded=await service.generateForCase(admin,{caseId:firstCase.caseId,blueprintVersionId:blueprint.version.blueprintVersionId},NOW_DATE);
+      assert.equal(reloaded.formId,first.formId,"Retry must be idempotent");
+      assert.deepEqual(reloaded.items.map(item=>({id:item.questionId,version:item.questionVersionId,position:item.position})),itemSnapshot);
+      const secondCase=await seedCase(database,String.fromCharCode(scenario.tag.charCodeAt(0)+10),worker,framework.frameworkId);
+      await assert.rejects(
+        service.generateForCase(admin,{caseId:secondCase.caseId,blueprintVersionId:blueprint.version.blueprintVersionId},NOW_DATE),
+        error=>error instanceof AssessmentFormGenerationError && /insufficient unseen/i.test(error.message),
+        "The second tenant/case for the same permanent Worker must not repeat the reserved questions"
+      );
+      const after=await database.query("SELECT COUNT(*)::int AS count FROM generated_assessment_forms WHERE case_id=$1",[secondCase.caseId]);
+      assert.equal(after.rows[0].count,0,"No partial form on capacity exhaustion");
+      const caseAfter=await database.query("SELECT case_status,owner_kind FROM assurance_cases WHERE case_id=$1",[secondCase.caseId]);
+      assert.equal(caseAfter.rows[0].case_status,"Assessment pending");
+      assert.equal(caseAfter.rows[0].owner_kind,"worker");
+      const reservationsAfter=await database.query("SELECT COUNT(*)::int AS count FROM generated_assessment_form_items WHERE worker_account_id=$1",[worker]);
+      assert.equal(reservationsAfter.rows[0].count,2,"No duplicate/reserved exposure after failed retake");
+      console.log("NATIVE_M205_MATRIX_"+scenario.name.replace(/ /g,"_").toUpperCase()+" complete reserved form, original idempotent, second tenant/case fails closed");
+    }
+  } finally {await database.close();}
+});
