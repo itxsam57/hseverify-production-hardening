@@ -563,6 +563,12 @@ export class DatabaseWorkerIdentityEligibilityRepository
     const database = await this.client();
 
     return database.transaction(async (transaction) => {
+      // Candidate versions become visible only after their submitting transaction
+      // commits. Lock their shared write table BEFORE any issuance reads, so an
+      // in-flight submission/correction cannot appear between the duplicate
+      // check and Worker ID insertion. SHARE blocks writers' ROW EXCLUSIVE
+      // locks while allowing independent reads and concurrent safe issuers.
+      await transaction.execute("LOCK TABLE worker_identity_versions IN SHARE MODE");
       const existing = await loadWorkerIdByIdentity(transaction, identityId);
       if (existing) {
         await reconcileWorkerProfilePermanentId(transaction, existing);

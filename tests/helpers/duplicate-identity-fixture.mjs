@@ -235,8 +235,10 @@ async function prepareSubmittedWorker(database, suffix, options = {}) {
   await repos.evidence.bindOwn(worker, documentInput(documentFile, options.documentNumber ?? `S5-${suffix}-DOC`), null);
   await repos.evidence.bindOwn(worker, imageInput("profile_photo", photoFile), null);
   await repos.evidence.bindOwn(worker, imageInput("selfie", selfieFile), null);
-  const submitted = await repos.identity.submitOwn(worker, initial.identity.lockVersion);
-  return { worker, submitted, ...repos };
+  const submitted = options.deferSubmission
+    ? null
+    : await repos.identity.submitOwn(worker, initial.identity.lockVersion);
+  return { worker, initial, submitted, ...repos };
 }
 
 async function advanceThroughAutomatedChecks(prepared) {
