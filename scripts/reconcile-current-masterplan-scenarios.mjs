@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  // Exact 27cfd84 local native migrated-PGlite proof; never counted as browser.
+  m203PolicyNative: {
+    file: "20261031-A28-27cfd84-M203-policy-native.log",
+    observedCodeSha: "27cfd8476ee542c0b070d3964d77500645a9c46d",
+    passed: "ℹ pass 8", failed: "ℹ fail 0"
+  },
+  m203PinnedEligibilityNative: {
+    file: "20261031-A28-27cfd84-M203-policy-pinning-native.log",
+    observedCodeSha: "27cfd8476ee542c0b070d3964d77500645a9c46d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   company: {
     file: "20261029-A28-99f40a1-company-verification-evidence-browser.log",
     passed: "ℹ pass 1", failed: "ℹ fail 0"
@@ -406,6 +417,11 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.03.02": [["m203PolicyNative", "Migrated PGlite policy service rejected unauthorized/weaker Company overrides (pass_mark 60 below global 80), blocked disallowed recording change, accepted a tightened pass_mark 90 and verified a different tenant retains global 80; resolver permitted pass_mark 85 and stricter max_attempts 1. 8/8 native service tests PASS, separate 5/5 static contracts. No signed-in Company browser submission, external production tenant or current deployed PostgreSQL proof."]],
+  "M2.03.03": [
+    ["m203PolicyNative", "Migrated PGlite concurrent case policy snapshot pin (8 calls) returned one immutable stored snapshot, disallowed SQL UPDATE/DELETE and preserved it across schema migration down/reapply; M2.01 native assurance case uses resolved selected policy. Native 8/8 PASS, no actual Company browser policy UI."],
+    ["m203PinnedEligibilityNative", "Actual persisted terminal assessment submission, Worker waiting and Company READY denial under original pinned two-day policy; publishing a later ninety-day policy did not rewrite first case snapshot, later permissible Worker attempt began at original two-day boundary, attempt-limit protected new funding. Migrated native PGlite 1/1 PASS; no authenticated Chromium or deployed PostgreSQL upgrade/rollback coverage."]
+  ],
   "M2.01.02": [
     ["workerEligibility", "Earlier pinned Policy qualification and waiting precheck denies ineligible Worker application and Company READY submission, then policy window unlocks; wrong/unlinked Worker IDs not fully covered"],
     ["m20102NoCreditBrowser", "Real signed-in Company Chromium at 390px chooses two structurally valid active linked Workers, site/department/deadline/interview and Company funding with zero genuine purchased credits, creates draft, Validate returns visible actionable insufficient-unreserved-credits VALIDATION_FAILED, same result after cold reload, Submit Order not present. Migrated full-schema PGlite verifies both editable Company-funded targets retained and zero submitted orders/cases/Action Centre obligations/submission timeline/credit ledger entries. One actual source-pinned browser PASS; does not prove forged Worker link, full policy eligibility, live merchant payment or production backend"],
@@ -679,7 +695,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative"]);
+const nativeRunNames = new Set(["outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
