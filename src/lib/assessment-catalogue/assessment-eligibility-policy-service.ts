@@ -3,7 +3,7 @@ import type { DatabaseClient } from "../database/database";
 import { normalizeAssessmentEligibilityPolicyFields, type AssessmentEligibilityRequirements } from "../policy/assessment-eligibility-policy-domain";
 
 export type AssessmentEligibilityDecision = Readonly<{
-  eligibilityStatus: "AVAILABLE" | "WAITING" | "ATTEMPT_LIMIT" | "QUALIFICATION_REQUIRED" | "EXPERIENCE_REQUIRED" | "JURISDICTION_REQUIRED" | "TRADE_REQUIRED";
+  eligibilityStatus: "AVAILABLE" | "WAITING" | "ATTEMPT_LIMIT" | "QUESTION_CAPACITY" | "QUALIFICATION_REQUIRED" | "EXPERIENCE_REQUIRED" | "JURISDICTION_REQUIRED" | "TRADE_REQUIRED";
   eligibilityReason: string | null;
   availableAt: string | null;
 }>;

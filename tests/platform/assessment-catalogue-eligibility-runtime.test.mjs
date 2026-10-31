@@ -402,7 +402,7 @@ test("M2.06 rejected, changes-requested and another Worker's qualification never
   }
 });
 
-test("M2.06 hides a pending assessment when permanent exposure exhausts unseen blueprint capacity", async () => {
+test("M2.06 denies start but explains restricted capacity when permanent exposure exhausts unseen blueprint capacity", async () => {
   const database = await db();
   try {
     const worker = await seedAccount(database, "o");
@@ -461,6 +461,14 @@ test("M2.06 hides a pending assessment when permanent exposure exhausts unseen b
       await service.findAvailableForCase(worker, second.caseId, NOW_DATE),
       []
     );
+    const restricted = (await service.listUnavailableForWorker(worker, NOW_DATE))
+      .find(entry => entry.caseId === second.caseId);
+    assert.ok(restricted,"Capacity-exhausted pending case must remain visible as restricted.");
+    assert.equal(restricted.eligibilityStatus,"QUESTION_CAPACITY");
+    assert.match(restricted.eligibilityReason,/unused questions/i);
+    assert.equal(restricted.availableAt,null);
+    assert.ok(!JSON.stringify(restricted).includes("assessment_question_"),"Do not leak question identities.");
+    assert.equal((await database.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[second.caseId])).rows[0].case_status,"Assessment pending");
   } finally {
     await database.close();
   }

@@ -229,7 +229,20 @@ export class AssessmentCatalogueEligibilityService {
         workerAccountId: principal.accountId, frameworkId: row.framework_id,
         policyValues: row.effective_value_json, excludeCaseId: row.case_id, now
       });
-      return {...toAvailability(row), ...decision};
+      if (decision.eligibilityStatus !== "AVAILABLE") return {...toAvailability(row), ...decision};
+      const hasCapacity = await hasUnseenAssessmentCapacity(this.database, {
+        workerAccountId: principal.accountId,
+        blueprintVersionId: row.blueprint_version_id,
+        frameworkId: row.framework_id
+      });
+      return {
+        ...toAvailability(row),
+        ...(hasCapacity ? decision : {
+          eligibilityStatus: "QUESTION_CAPACITY" as const,
+          eligibilityReason: "This assessment cannot start because enough unused questions are not currently available. Your assessment history is preserved. Contact your assessment coordinator for next steps.",
+          availableAt: null
+        })
+      };
     }));
     return Object.freeze(decisions.filter(row => row.eligibilityStatus !== "AVAILABLE"));
   }

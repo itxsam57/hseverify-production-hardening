@@ -36,13 +36,13 @@ function totp(secret){
   const digest=createHmac("sha1",Buffer.from(decoded)).update(message).digest();
   return String((digest.readUInt32BE(digest.at(-1)&15)&0x7fffffff)%1000000).padStart(6,"0");
 }
-async function login(page,baseUrl,identity){
-  await page.goto(baseUrl+"/worker/login",{waitUntil:"domcontentloaded"});
+async function login(page,baseUrl,identity,role="worker"){
+  await page.goto(baseUrl+"/"+role+"/login",{waitUntil:"domcontentloaded"});
   await page.getByLabel("Email address").fill(identity.email);
   await page.getByLabel("Password").fill(identity.password);
   if(identity.totpSecret)await page.getByLabel("Authenticator code").fill(totp(identity.totpSecret));
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
-  await page.waitForURL("**/worker/dashboard",{timeout:20000});
+  await page.waitForURL("**/"+role+"/dashboard",{timeout:20000});
 }
 async function dbRead(directory,callback){
   const database=await PGlite.create(directory);
@@ -134,6 +134,18 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
           await worker.getByRole("heading",{name:"Interrupted assessments"}).waitFor({timeout:15000});
           await worker.getByRole("button",{name:"Resume bound assessment"}).waitFor();
           console.log("ACTUAL_M20503_WORKER_BROWSER emergency exit left an INTERRUPTED resumable attempt");
+          const companyContext=await browser.newContext({viewport:{width:1440,height:960}});
+          const company=await companyContext.newPage();
+          try{
+            await login(company,baseUrl,fixture.credentials.company,"company");
+            await company.goto(baseUrl+"/company/workers/"+fixture.fundingInput.workerLinkId,{waitUntil:"domcontentloaded"});
+            await company.getByRole("heading",{name:"End Company relationship",exact:true}).waitFor();
+            await company.getByLabel("Reason for ending relationship").fill("Employer assignment ended; Worker must retain personal assessment history.");
+            await company.getByLabel("I confirm the Company relationship will end immediately.").check();
+            await company.getByRole("button",{name:"End relationship",exact:true}).click();
+            await company.getByText("This Company relationship has ended. The Worker identity and prior history remain intact.",{exact:true}).waitFor({timeout:20000});
+            console.log("ACTUAL_M20503_COMPANY_BROWSER verified Company revoked its Worker relationship without altering Worker assessment.");
+          }finally{await companyContext.close();}
           const newContext=await browser.newContext({viewport:{width:390,height:844}});
           const newDevice=await newContext.newPage();
           try{
@@ -141,6 +153,14 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
             await newDevice.goto(baseUrl+"/worker/available-assessments",{waitUntil:"domcontentloaded"});
             assert.equal(await newDevice.locator("article[id='"+secondCaseId+"']").filter({has:newDevice.getByRole("heading",{name:"Equivalent variant retake",exact:true})}).getByRole("button",{name:"Start assessment",exact:true}).count(),0,
               "Fresh device must not start another case with only an exposed equivalent variant");
+            const restricted=newDevice.locator('section[aria-labelledby="waiting-assessments-heading"]')
+              .locator("article[id='"+secondCaseId+"']")
+              .filter({has:newDevice.getByRole("heading",{name:"Equivalent variant retake",exact:true})});
+            assert.equal(await restricted.count(),1,
+              "An already-funded capacity-exhausted case must remain visible as restricted, never silently disappear");
+            assert.match(await restricted.getByRole("status").innerText(),/unused questions|question capacity/i,
+              "Worker must see a clear generic reason for unseen-question capacity exhaustion");
+            console.log("ACTUAL_M20503_CAPACITY_UX_BROWSER paid second case remains visible with no Start button and generic unused-question explanation");
             const attempt=await newDevice.goto(baseUrl+"/worker/assessments/"+attemptId,{waitUntil:"domcontentloaded"});
             assert.equal(attempt.status(),404,"Other device must not take over interrupted bound attempt");
             console.log("ACTUAL_M20503_WORKER_BROWSER distinct authenticated device cannot repeat exposed family or hijack bound attempt");
@@ -161,6 +181,11 @@ test("M2.05.03 real Worker displays an unanswered question, emergency exits, and
             assert.equal(second.owner_kind,"worker");
             assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM generated_assessment_forms WHERE case_id=$1",[secondCaseId])).rows[0].n,0);
             assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM billing_credit_ledger")).rows[0].n,creditsBefore);
+            const formerEmployer=(await database.query("SELECT link_status,worker_account_id FROM company_worker_links WHERE link_id=$1",
+              [fixture.fundingInput.workerLinkId])).rows[0];
+            assert.equal(formerEmployer.link_status,"revoked");
+            assert.equal(formerEmployer.worker_account_id,fixture.worker.accountId);
+            console.log("ACTUAL_M20503_EMPLOYER_UNLINK_DB previous Company relationship revoked but permanent Worker account, family reservation, unpaid answer and second case remained intact");
             console.log("ACTUAL_M20503_WORKER_DB real displayed unanswered reserved family survived interruption and fresh login; second case and funds unchanged");
           });
           assert.deepEqual(errors,[],output());
