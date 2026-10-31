@@ -263,10 +263,10 @@ async function markVerified(database, identityId) {
   assert.equal(result.rows.length, 1, "fixture identity must move manual_review -> verified");
 }
 
-async function setupTest(releaseSha) {
+async function setupTest(releaseSha, finalMigration = OWNED_MIGRATION) {
   const env = environment(releaseSha);
   const database = await openScriptDatabase(env);
-  await applyMigrationsThrough(database, releaseSha, OWNED_MIGRATION);
+  await applyMigrationsThrough(database, releaseSha, finalMigration);
   return database;
 }
 

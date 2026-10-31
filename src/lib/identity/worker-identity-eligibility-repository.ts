@@ -85,9 +85,20 @@ SELECT
   evidence.document_type,
   evidence.document_number
 FROM worker_identities AS identities
+JOIN worker_identity_versions AS current_version
+  ON current_version.identity_id = identities.identity_id
+ AND current_version.version_number = identities.current_version_number
 JOIN worker_identity_versions AS versions
   ON versions.identity_id = identities.identity_id
- AND versions.version_number = identities.current_version_number
+ AND versions.identity_version_id = CASE
+   -- A correction draft or unreviewed submission is not a new verified
+   -- identity. Preserve the previously accepted submitted parent for
+   -- duplicate detection, including after subsequent accepted corrections.
+   WHEN identities.lifecycle_status = 'correction_pending'
+    AND current_version.version_kind = 'correction'
+   THEN current_version.parent_version_id
+   ELSE current_version.identity_version_id
+ END
 JOIN worker_identity_version_drafts AS drafts
   ON drafts.identity_version_id = versions.identity_version_id
 JOIN worker_identity_evidence_bindings AS evidence
