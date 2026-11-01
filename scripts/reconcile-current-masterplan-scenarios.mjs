@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21204RetentionNative: {
+    file: "20261101-A28-a533084-exact-M21204-native.log",
+    observedCodeSha: "a533084efebba8d49a3d4adec5e3f00c4cf6489d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m21204RetentionBrowser: {
+    file: "20261101-A28-a533084-exact-M21204-Chromium.log",
+    observedCodeSha: "a533084efebba8d49a3d4adec5e3f00c4cf6489d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21203DraftRecoveryNative: {
     file: "20261101-A28-0b7fc51-exact-M21203-native.log",
     observedCodeSha: "0b7fc5144e2325d04e48c7e3dcb000848a0d02f4",
@@ -987,7 +998,11 @@ const browserClauseMap = {
   ],
   "M2.12.06": [["recommendationStaffScoring", "Real Assessor finalized CONDITIONAL_PASS, ADDITIONAL_EVIDENCE_REQUIRED, REASSESSMENT_REQUIRED, SECOND_INTERVIEW_REQUIRED and FAIL, each Worker/Company status and projected authorized bell deep-link; PASS recommendation not included here"]],
   "M2.12.07": [["recommendationStaffScoring", "Each of five real browser Assessor final submissions locks subsequent input and transitions owned case and notification; real media shutdown/device behavior not covered"]],
-  "M2.12.04": [["interviewEligibility", "Worker in-window technical issue persists interview runtime TECHNICAL_HOLD and request details, including refresh; other pause/reconnect/reschedule paths open"]],
+  "M2.12.04": [
+    ["interviewEligibility","Earlier scoped Worker in-window technical reporting persisted TECHNICAL_HOLD and request details across refresh; follow-up native and browser proofs cover pause/resume, second technical failure, and replacement; real isolated WebRTC disconnect/reconnect evidence is separately mapped to M2.12.03."],
+    ["m21204RetentionNative","Exact committed source a533084 migrated-PGlite 1/1 PASS: actual configured pinned interview fully ACTIVE, Assessor saves partial notes and scores; unauthorized Worker role and duplicate PAUSED denied; PAUSED -> ACTIVE -> TECHNICAL_HOLD -> ACTIVE, second revised note and score saved, terminal TECHNICAL_HOLD; historical PAUSED/RESUMED/TECHNICAL_ISSUE event sequence exactly retained. Real live matching profile and pinned calibration added; replacement requested once with matching eligible Assessor, original runtime events, scores, draft note, frozen question set and case audit persist exactly, archived original refuses stale Save Draft, distinct successor unscheduled until actual Assessor schedule, Worker sees original CANCELLED and newly scheduled distinct request with action owner case pointer. Adjacent native 3/3 including original archived media denial and recording policy retention. Local SQL PGlite evidence only, not external media provider certification."],
+    ["m21204RetentionBrowser","Exact committed source a533084 real Next/Chromium 1/1 PASS: independently authenticated 390px Assessor and Worker. Assessor real tab and Save draft notes and partial scores while interview ACTIVE, Pause reason form and PAUSED state, resumed ACTIVE, Technical issue form creates TECHNICAL_HOLD, resume ACTIVE, re-save different notes/score, second technical hold, real reasoned Request replacement form redirects and old archived read-only console retains private notes and score. Worker original interview shows no private notes and offers real Open replacement interview link to distinct request; eligible Assessor schedules successor via real list form, Worker views new appointment. Reopened migrated database confirms archived original runtime five pause/resume/technical events, original partial draft exactly one and old approved question set, separate new scheduled request with no inherited draft, same case pointer and one audit. Assessor/Worker 390px have no horizontal overflow. Separate earlier M2.12.03 exact source real two-party test demonstrates WebRTC disconnect/reconnect using synthetic Chromium devices; this test does not certify production forced network failure or recording providers."]
+  ],
 
   "M3.05.02": [
     ["notifications", "Company funding approval persists exactly one reserved credit and one case; rejection and parallel overspend unverified"],
@@ -1046,7 +1061,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21204RetentionNative", "m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
