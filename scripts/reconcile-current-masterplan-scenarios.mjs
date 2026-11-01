@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21105LateNoShowNative: {
+    file: "20261101-A28-a5294c4-exact-M21105-native.log",
+    observedCodeSha: "a5294c4290e4e0a90bd7e32320d1777e34243843",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m21105NoShowBrowser: {
+    file: "20261101-A28-a5294c4-exact-M21105-Chromium.log",
+    observedCodeSha: "a5294c4290e4e0a90bd7e32320d1777e34243843",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21104ConflictPrivateNative: {
     file: "20261101-A28-5984244-exact-M21104-native.log",
     observedCodeSha: "59842448e473e09a0d41ad4d2164779d74d9d6b4",
@@ -922,7 +933,10 @@ const browserClauseMap = {
   "M2.06.06": [["interviewEligibility", "Browser and forged Worker/Company apply blocked before assessment waiting threshold, then eligible after real clock advances; attempt-limit/credential/reassessment paths open"]],
   "M2.11.02": [["interviewEligibility", "Worker UTC availability persists on refresh, visible to Assessor; outside window blocked, inside scheduled, UTC independent of NY process timezone, 390px no overflow"]],
   "M2.11.03": [["interviewEligibility", "Assessor reasoned reschedule updates actual Worker/Company/Assessor appointment and real compiled outbox CLI: old events suppressed and new scoped notices/email accepted, private reason excluded"]],
-  "M2.11.05": [["interviewEligibility", "Worker technical report only available in scheduled join window; persisted TECHNICAL_HOLD visible after refresh, no-show and late status branches open"]],
+  "M2.11.05": [
+    ["m21105LateNoShowNative","Exact committed code SHA a5294c4 migrated-PGlite 1/1 PASS. Actual calibrated Assessor and Worker sessions, independent Alpha/Beta cases: no-show before 15-minute threshold denied without creating runtime; rescheduled 22 minutes past original start, late Worker entered waiting room and completed real readiness, no-show rejected; separate real 25-minute late unready Worker marked NO_SHOW after direct Worker attempt denied; repeated no-show rejected with exactly one original event, unique unscheduled replacement created, prior closed runtime and audit retained, Worker sees distinct appointment requiring scheduling. Pre-fix RED showed duplicate noShow silently accepted and rewrote closed record; source fix rejects final NO_SHOW before mutation. 16 adjacent native regressions plus new test PASS 17/17 precommit identical product code. Full prod build, typecheck and lint PASS. Local only; no external calendar or live provider release-certified."],
+    ["m21105NoShowBrowser","Exact committed source a5294c4 real Next+Chromium 1/1 PASS signed-in Assessor no-show form, reasoned replacement, original draft and runtime history retained, Worker and Company separately sign in and see replacement appointment, closed original rejects stale draft/final POSTs, 390px no overflow. Additional two real browser scenarios at same unchanged product code immediately before commit passed: TECHNICAL_HOLD replacement to Worker and Company; NO_SHOW with no eligible Assessor remains unscheduled and visible in Admin 390px queue (original precommit 3/3 PASS .autopilot/artifacts/20261101-A28-M21105-browser-WIP.log). Exact committed 1/1 browser log recorded; no external media/provider/staging UAT verified."]
+  ],
   "M2.11.06": [["interviewEligibility", "Worker technical-report control hidden before scheduling; actual join readied/unassigned access-denial not independently tested"]],
   "M2.12.06": [["recommendationStaffScoring", "Real Assessor finalized CONDITIONAL_PASS, ADDITIONAL_EVIDENCE_REQUIRED, REASSESSMENT_REQUIRED, SECOND_INTERVIEW_REQUIRED and FAIL, each Worker/Company status and projected authorized bell deep-link; PASS recommendation not included here"]],
   "M2.12.07": [["recommendationStaffScoring", "Each of five real browser Assessor final submissions locks subsequent input and transitions owned case and notification; real media shutdown/device behavior not covered"]],
@@ -985,7 +999,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
