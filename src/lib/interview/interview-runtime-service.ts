@@ -294,6 +294,16 @@ async function readView(database: DatabaseClient, interviewRequestId: string): P
   });
 }
 
+async function assertWorkerJoinWindow(database: DatabaseClient, request: RequestRow): Promise<void> {
+  const scheduled = request.scheduled_at ? new Date(request.scheduled_at).getTime() : Number.NaN;
+  const clock = await database.query<{now:string|Date}>("SELECT clock_timestamp() AS now");
+  const current = new Date(clock.rows[0]?.now ?? "").getTime();
+  if (!Number.isFinite(scheduled) || !Number.isFinite(current) ||
+      current < scheduled - 30 * 60 * 1000 || current > scheduled + 4 * 60 * 60 * 1000) {
+    throw new InterviewRuntimeConflictError("The interview waiting room is not open during the scheduled join window.");
+  }
+}
+
 export class InterviewRuntimeService {
   constructor(private readonly databasePromise: Promise<DatabaseClient> = getDatabaseClient()) {}
 
@@ -316,9 +326,12 @@ export class InterviewRuntimeService {
     return database.transaction(async (tx) => {
       const request = await requestForUpdate(tx, interviewRequestId,true);
       if ((await assertParticipant(tx,principal, request)) !== "worker") throw new InterviewRuntimeAccessError();
-      if (!request.scheduled_at || !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
+      if (!request.scheduled_at || !request.assessor_account_id || !["ASSIGNED","WAITING_ROOM"].includes(request.status)) {
         throw new InterviewRuntimeConflictError("This interview is not ready for the waiting room.");
       }
+      // This server-side clock check protects the action even when a stale form
+      // bypasses the page's earlier join-window check.
+      await assertWorkerJoinWindow(tx, request);
       if (request.status === "ASSIGNED") {
         await tx.query(
           "UPDATE interview_requests SET status='WAITING_ROOM' WHERE interview_request_id=$1 AND status='ASSIGNED'",
@@ -352,7 +365,14 @@ export class InterviewRuntimeService {
       if (request.recording_consent_required && !input.recordingConsent) {
         throw new InterviewRuntimeInputError("Recording consent is required by the current interview policy.");
       }
-      const session = await ensureWaitingRoomSession(tx, request, now);
+      if (!["ASSIGNED","WAITING_ROOM"].includes(request.status) || !request.assessor_account_id) {
+        throw new InterviewRuntimeConflictError("This interview is not ready for the waiting room.");
+      }
+      await assertWorkerJoinWindow(tx, request);
+      // Readiness must not initialize a runtime itself. The Worker must have
+      // entered the waiting room or the assigned Assessor must have claimed it.
+      const session = await sessionForUpdate(tx, interviewRequestId);
+      if (!session) throw new InterviewRuntimeConflictError("Enter the waiting room before marking Ready.");
       if (!["WAITING_ROOM","CLAIMED","READY"].includes(session.status)) {
         throw new InterviewRuntimeConflictError("Interview is no longer in the waiting room.");
       }
