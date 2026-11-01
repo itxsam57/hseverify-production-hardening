@@ -53,7 +53,7 @@ async function login(page, baseUrl, credential, role) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-import {writeFile} from "node:fs/promises";
+import {mkdir,writeFile} from "node:fs/promises";
 import {reportCompanyFixture} from "../helpers/report-company-fixture.mjs";
 import {prepareSubmittedWorker,advanceThroughAutomatedChecks,markVerified} from "../helpers/duplicate-identity-fixture.mjs";
 import {openScriptDatabase} from "../../scripts/lib/database.mjs";
@@ -94,7 +94,10 @@ test("Admin actual duplicate identity outcomes preserve separate people and unbl
     const oldPreview=await admin.context().request.get(baseUrl+previewUrl);assert.equal(oldPreview.status(),404,"A resolved identity must not retain duplicate-review preview authority");
     const wrongRole=await worker.context().request.get(baseUrl+previewUrl);assert.ok(wrongRole.status()>=400||!wrongRole.headers()["content-type"]?.includes("application/pdf"));
     const denied=await worker.goto(baseUrl+"/admin/operations/duplicate-identities");assert.ok(denied.status()>=400||!worker.url().endsWith("/admin/operations/duplicate-identities"));
-   }finally{await writeFile(".autopilot/artifacts/20261015-duplicate-identity-browser-server.log",output());}
+   }finally{
+     await mkdir(".autopilot/artifacts",{recursive:true});
+     await writeFile(".autopilot/artifacts/20261015-duplicate-identity-browser-server.log",output());
+   }
   }});
   const proof=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:base.environment.HSE_PGLITE_DATA_DIR});try{assert.equal((await proof.query("SELECT COUNT(*)::integer n FROM worker_identity_worker_ids WHERE worker_account_id=ANY($1::text[])",[[target.worker.accountId,candidate.worker.accountId]])).rows[0].n,1);assert.equal((await proof.query("SELECT COUNT(*)::integer n FROM worker_identity_duplicate_dispositions WHERE check_id IN(SELECT check_id FROM worker_identity_duplicate_checks WHERE identity_id=$1)",[target.submitted.identity.identityId])).rows[0].n,4);}finally{await proof.close();}
   assert.deepEqual(errors,[]);
