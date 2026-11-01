@@ -76,7 +76,7 @@ test("Real MFA login permits decision override; stale session and forged browser
   await page.goto(baseUrl+"/admin/decisions?tenantId="+scope.tenantId+"&caseId="+scope.caseId);
   const form=page.locator("form").filter({has:page.getByRole("button",{name:"Record override",exact:true})});
   await form.getByLabel("Decision ID").fill(decisionId);
-  await form.locator("[name=previousState]").selectOption("PENDING_ADDITIONAL_REVIEW");
+  await form.locator("[name=previousState]").selectOption("SUSPENDED");
   await form.locator("[name=newState]").selectOption("REJECTED");
   await form.getByLabel("Reason",{exact:true}).fill("Controlled override with verified supporting evidence");
   await form.getByLabel("Evidence reference").fill("evidence-mfa-browser");
@@ -102,7 +102,7 @@ test("Real MFA login permits decision override; stale session and forged browser
    await page.goto(baseUrl+"/admin/decisions?tenantId="+scope.tenantId+"&caseId="+scope.caseId);
    assert.equal(new URL(page.url()).pathname,"/admin/decisions",await page.locator("body").innerText());
    const form=page.locator("form").filter({has:page.getByRole("button",{name:"Create decision",exact:true})});
-   await form.locator("[name=state]").selectOption("PENDING_ADDITIONAL_REVIEW");
+   await form.locator("[name=state]").selectOption("SUSPENDED");
    await form.getByLabel("Reason code").fill("mfa_review");
    await form.getByLabel("Explanation").fill("Additional independent verification required before approval");
    await form.getByLabel("Rule version").fill("mfa-v1");

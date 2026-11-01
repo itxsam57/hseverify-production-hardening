@@ -50,8 +50,17 @@ async function requireJobs(database, eventType, eventRef, {emailOnly = false} = 
 async function approvedDecision(x) {
   const db = x.database, caseId = x.request.caseId, tenantId = x.fixture.credentials.company.tenantId;
   const workerId = await seedPermanentWorkerId(db, x.fixture.credentials.worker, "n");
+  // Notification tests supply a completed, case-bound assessor recommendation
+  // as a fixture prerequisite. The separate interview runtime suite verifies
+  // the full assessor and Worker journey; we do not mutate submitted orders.
+  await db.query("UPDATE interview_requests SET status='COMPLETED' WHERE tenant_id=$1 AND interview_request_id=$2",
+    [tenantId,x.request.interviewRequestId]);
+  await db.query(
+    "INSERT INTO interview_console_drafts(tenant_id,interview_session_id,interview_request_id,recommendation,submitted,scorecard,updated_at) VALUES($1,$2,$3,'PASS',TRUE,$4::jsonb,CURRENT_TIMESTAMP)",
+    [tenantId,x.session.interviewSessionId,x.request.interviewRequestId,JSON.stringify({technicalKnowledge:3,safetyAwareness:3,comments:"Controlled notification test: passing interview result is supplied as a prerequisite."})]
+  );
   await db.query("UPDATE assurance_cases SET case_status='Decision pending',owner_kind='admin',next_action='Record final decision.',permanent_worker_id=$2 WHERE case_id=$1", [caseId,workerId]);
-  const decision = createDecision({tenantId,caseId,state:"APPROVED",reasonCode:"complete",explanation:"Controlled evidence and interview support this decision.",ruleVersion:"notification-fixture",inputReferences:[x.snapshot.snapshotId,x.set.questionSetId],createdAt:new Date().toISOString()});
+  const decision = createDecision({tenantId,caseId,state:"APPROVED",reasonCode:"complete",explanation:"Controlled case review and completed interview support this notification test decision.",ruleVersion:"notification-fixture",inputReferences:[x.snapshot.snapshotId,x.set.questionSetId],createdAt:new Date().toISOString()});
   await new DecisionRepository(Promise.resolve(db),SIGNING).saveDecisionAndProgressCase(decision,x.admin.accountId);
   const stored = (await db.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[caseId])).rows[0];
   assert.ok(stored.credential_reference);

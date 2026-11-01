@@ -290,7 +290,7 @@ async function runAdminForms(page, baseUrl, reviewPage) {
   await page.getByText("No decisions recorded", { exact: true }).waitFor({ timeout: 15_000 });
 
   const createDecisionForm = page.locator("form").filter({ hasText: "Create decision" });
-  await createDecisionForm.getByLabel("State").selectOption("PENDING_ADDITIONAL_REVIEW");
+  await createDecisionForm.getByLabel("State").selectOption("SUSPENDED");
   await createDecisionForm.getByLabel("Reason code").fill("journey_review");
   await createDecisionForm.getByLabel("Explanation").fill("Awaiting final journey review");
   await createDecisionForm.getByLabel("Rule version").fill("journey-v1");
@@ -302,7 +302,7 @@ async function runAdminForms(page, baseUrl, reviewPage) {
 
   const overrideForm = page.locator("form").filter({ hasText: "Record override" });
   await overrideForm.getByLabel("Decision ID").fill(decisionId);
-  await overrideForm.getByLabel("Previous state").selectOption("PENDING_ADDITIONAL_REVIEW");
+  await overrideForm.getByLabel("Previous state").selectOption("SUSPENDED");
   await overrideForm.getByLabel("New state").selectOption("APPROVED");
   await overrideForm.getByLabel("Reason").fill("Journey evidence accepted after privileged review.");
   await overrideForm.getByLabel("Evidence reference").fill("evidence-journey-override-1");
