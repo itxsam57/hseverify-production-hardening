@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21203DraftRecoveryNative: {
+    file: "20261101-A28-0b7fc51-exact-M21203-native.log",
+    observedCodeSha: "0b7fc5144e2325d04e48c7e3dcb000848a0d02f4",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m21203WebrtcReconnectBrowser: {
+    file: "20261101-A28-0b7fc51-exact-M21203-Chromium.log",
+    observedCodeSha: "0b7fc5144e2325d04e48c7e3dcb000848a0d02f4",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21202PlaybookNative: {
     file: "20261101-A28-0b59559-exact-M21202-native.log",
     observedCodeSha: "0b59559313816f94edfadc0efcaad2c0636fc73d",
@@ -663,6 +674,11 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.12.03": [
+    ["m21203DraftRecoveryNative","Exact committed SHA 0b7fc51 migrated PGlite 1/1 native PASS with actual assigned Assessor form Server Action and configured, pinned-policy active interview. Partially populated notes and scoring (technicalKnowledge 2, practicalReasoning null, recommendation pending) saved; actual technicalIssue transitions ACTIVE to TECHNICAL_HOLD, reloaded persisted draft untouched; actual resume returns ACTIVE; forged other interviewSessionId Save Draft fails without modifying persisted draft; revised partial score 4 and notes after reconnect persist in same current runtime session, one unsubmitted draft. Adjacent native exact source 3/3 across frozen policy and interview finalization duration. No vendor media/device or protected staging verification."],
+    ["m21203WebrtcReconnectBrowser","Exact committed SHA 0b7fc51 real Next and Chromium 1/1 PASS, independently signed-in MFA Assessor at 390px and Worker, test-only fake Chromium cameras and microphones. Real browser-to-browser WebRTC peer connection reaches encrypted live state on both sides; unsaved notes and partial technical score survive moving Questions and back. Both users Leave media, local media stops; two sides manually re-enable and establish actual second encrypted peer connection; unsaved notes and score still intact. Real Save draft Server Action followed by hard reload restores notes, partial score and comments; change note and score after reconnect/reload, Save again, reload shows updated values. Worker does not see Assessor notes controls, 390px mobile no overflow. Reopened migrated PGlite holds exactly one unsubmitted draft under original active session with updated score and note. Prior broader live-media browser already established 9-tab stability and visible stream during tab navigation; this adds explicit second connection. No production real hardware/media TURN/STUN resilience, forced outage, network packet loss or owner UAT certified."]
+  ],
+
   "M2.12.02": [
     ["m21202PlaybookNative","Exact committed code SHA 0b59559 migrated PGlite 1/1 native PASS. True configured/published pinned interview policy and calibrated Assessor generate mandatory/high-risk/random deterministic original set v1; ensure and getAssigned return identical version; unauthorized Worker and invalid/duplicate follow-up refused with zero new versions. Real approved follow-up produces distinct v2 with exact frozen original question IDs/prompts and policy source context, selectedTemplateIds and actor; old v1 SQL row remains byte-equivalent. Pre-fix RED proved unrestricted direct SQL UPDATE would rewrite stored v1; production migration 0128 append-only trigger now denies UPDATE and DELETE. Actual migration down/up test retains both rows, drops only guard then restores guard and DELETE denial. Old frozen-policy tamper regression adapted to assert earlier DB denial and PASS. Full strict TypeScript, ESLint, deterministic production build PASS. Local migration and versioned scenario only, no real staging/owner production accreditation."],
     ["m21202PlaybookBrowser","Exact committed code SHA 0b59559 real Next/Chromium 1/1 PASS: TOTP authenticated Assessor 390px opens actual Questions tab on configured mandatory and high risk v1, chooses eligible 'follow' approved policy template, submits real Server Action and sees new v2, no repeat approved option; reload and tabs preserve v2 and same original question wording. Independently signed-in Worker cannot open Assessor console or read question prompt. After Next shutdown reopened migrated PGlite confirms exactly versions 1 and 2, original frozen v1 persists unchanged and v2 has expected original questions plus approved follow-up with pinned policy version and case. No external media, tenant-wide independent browsers, production historical dataset or protected staging certified."]
@@ -1030,7 +1046,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
