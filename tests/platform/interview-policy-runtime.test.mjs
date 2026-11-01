@@ -102,13 +102,19 @@ test("End denies tampered replay selection and frozen policy or foreign ownershi
       {...original.source_context_json,selectedTemplateIds:["forged"]},
       {...original.source_context_json,policyVersionId:"foreign-version"}
     ]) {
-      await x.database.query("UPDATE interview_question_sets SET source_context_json=$2::jsonb WHERE question_set_id=$1",[x.set.questionSetId,JSON.stringify(tampered)]);
-      await assert.rejects(x.runtime.end(x.principal,x.request.interviewRequestId),/question|policy/i);
+      await assert.rejects(
+        x.database.query("UPDATE interview_question_sets SET source_context_json=$2::jsonb WHERE question_set_id=$1",[x.set.questionSetId,JSON.stringify(tampered)]),
+        /append.only/i,
+        "Direct tampering with frozen selection and policy version must fail before the runtime is used"
+      );
       assert.equal((await x.runtime.view(x.principal,x.request.interviewRequestId)).status,"ACTIVE");
     }
-    await x.database.query("UPDATE interview_question_sets SET source_context_json=$2::jsonb,questions_json=$3::jsonb WHERE question_set_id=$1",[x.set.questionSetId,JSON.stringify(original.source_context_json),JSON.stringify(original.questions_json.map((q,i)=>i===0?{...q,prompt:"Tampered prompt is not the approved policy template."}:q))]);
-    await assert.rejects(x.runtime.end(x.principal,x.request.interviewRequestId),/question|template/i);
-    await x.database.query("UPDATE interview_question_sets SET questions_json=$2::jsonb WHERE question_set_id=$1",[x.set.questionSetId,JSON.stringify(original.questions_json)]);
+    await assert.rejects(
+      x.database.query("UPDATE interview_question_sets SET source_context_json=$2::jsonb,questions_json=$3::jsonb WHERE question_set_id=$1",[x.set.questionSetId,JSON.stringify(original.source_context_json),JSON.stringify(original.questions_json.map((q,i)=>i===0?{...q,prompt:"Tampered prompt is not the approved policy template."}:q))]),
+      /append.only/i,
+      "A stored approved prompt may not be rewritten without creating a version"
+    );
+    assert.deepEqual((await x.database.query("SELECT source_context_json,questions_json FROM interview_question_sets WHERE question_set_id=$1",[x.set.questionSetId])).rows[0],original);
     await x.database.query("UPDATE assurance_cases SET interview_reference=$2 WHERE case_id=$1",[x.request.caseId,x.fixture.requests.Alpha.interviewRequestId]);
     await assert.rejects(x.runtime.end(x.principal,x.request.interviewRequestId),/current/i);
     await assert.rejects(actions(x).saveInterviewConsoleAction(scoreForm(x)),error=>error.location?.includes("consoleError=closed"));
