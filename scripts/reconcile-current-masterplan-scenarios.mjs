@@ -51,6 +51,12 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21007ReasonedEscalationBrowser: {
+    file: "20261101-A28-158cbce-exact-M21007-Chromium.log",
+    observedCodeSha: "158cbce4e10e40370d0a580f544aff4a4c4683ea",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21005LiveCalibrationNative: {
     file: "20261101-A28-c94d1a1-exact-M21005-native.log",
     observedCodeSha: "c94d1a1dcf92019e7ce7d9a22236033e68281987",
@@ -602,6 +608,10 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.10.07": [
+    ["m21007ReasonedEscalationBrowser","Exact committed source 158cbce real Next+Chromium 1/1 PASS across signed-in Worker, original Verifier at 390px, MFA Admin, and a different independently authenticated calibrated Verifier. Two distinct submitted qualification source versions from one Worker: first task original Verifier claimed, saved/reloaded private draft, recorded reasoned UNABLE_TO_VERIFY with attempted issuer contact and limitations; Admin escalation queue correctly excluded it (not a fraud allegation). Second task original Verifier saved separate private draft, escalated with reason to Admin, which showed reason without private note and returned via actual form; independent Verifier claimed the returned task, saw retained public resolution history but no first Verifier private notes, and reasoned UNABLE with no automatic approval. Worker evidence UI contained no private note. Reopened real migrated isolated PGlite: four append-only resolution events in exact order ESCALATED / RETURNED_TO_QUEUE / UNABLE for escalated task and UNABLE for first; different actor IDs and roles, methods and limitations retained, submitted Worker evidence preserved, two original private draft records retained, decision table remained empty (no fraud/approval), four authorized audit rows. Actual UPDATE of immutable resolution event and DELETE of private draft revisions both rejected by database triggers, without losing history. Adjacent existing draft/resolution/notification migrated-PGlite suites 23/23 PASS on identical precommit product code. Staging/live provider delivery, broader all-role/tenant adversarial matrix, and owner acceptance are NOT certified."]
+  ],
+
   "M2.10.05": [
     ["m21005LiveCalibrationNative","Exact committed source c94d1a1 migrated-PGlite 4/4 PASS across FAILED, EXPIRED, SUSPENDED, and CURRENT-with-past-valid_until calibrations, each superseding an originally current pinned staff revision. Live assigned Verifier scoring queue returns canReview=false, hides private written questions, canAmend=false, with explicit calibration reason; save rubric, save decision, finalize/advance, calibration note, conflict and wrong-role mark all rejected without any scoring/rubric/case writes. Admin assignment list excludes revoked Verifier, worker case remains Review pending; later CURRENT calibration restored eligible assignment and fresh mark ability. All four states tested with real actor sessions and pinned framework revision; no actual external staging or production staff. Does not certify full pen/security review."],
     ["m21005LiveCalibrationBrowser","Exact committed source c94d1a1 real Next+Chromium 1/1 across separate Admin TOTP, 390px Verifier and Worker signed-in sessions. Admin recorded FAILED from real calibration form, original Verifier 390px scoring UI hid pinned written evidence and finalize controls, Admin operations assignment list showed no eligible Verifier, Worker real case remained Review pending. Admin CURRENT restored scoring, then status CURRENT with already expired valid_until blocked again; renewed CURRENT restored, Verifier saved real rubric criterion 83 and reason, saved PASS, finalized, and the Worker real case page advanced to Interview pending. Shutdown/reopen PGlite proved FINAL PASS 83, retained four calibration records with true status ordering and current case owner; no server/source prod-code changes and no external provider/staging certification."]
