@@ -83,13 +83,37 @@ async function assertAttemptAuthority(
   return attempt;
 }
 
+// Client telemetry is untrusted: never persist free-text details that could
+// include accommodations, medical disclosures, pasted answers or other PII.
+const ALLOWED_SIGNAL_VALUES: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze({
+  reason: new Set([
+    "track_ended", "permission_or_device_failure", "fullscreen_start_failed",
+    "screen_share_ended", "monitor_start_failure", "segment_upload_failed",
+    "media_recorder_unavailable", "media_recorder_start_failed", "media_recorder_error"
+  ]),
+  missing: new Set([
+    "camera", "microphone", "screen", "fullscreen",
+    "camera,microphone", "camera,screen", "camera,fullscreen",
+    "microphone,screen", "microphone,fullscreen", "screen,fullscreen",
+    "camera,microphone,screen", "camera,microphone,fullscreen",
+    "camera,screen,fullscreen", "microphone,screen,fullscreen",
+    "camera,microphone,screen,fullscreen"
+  ]),
+  source: new Set(["VIDEO_AUDIO", "CAMERA", "AUDIO_ONLY", "SCREEN"]),
+  operation: new Set(["copy", "cut", "paste"]),
+  monitoring: new Set(["started"]),
+  hidden: new Set(["true", "false"]),
+  online: new Set(["true", "false"])
+});
+
 function safeDetails(input: unknown): Record<string, string> {
   if (!input || typeof input !== "object" || Array.isArray(input)) return {};
   const output: Record<string, string> = {};
-  for (const [key, raw] of Object.entries(input as Record<string, unknown>).slice(0, 20)) {
-    if (!/^[A-Za-z0-9_.-]{1,60}$/.test(key)) continue;
-    if (typeof raw === "string") output[key] = raw.slice(0, 240);
-    else if (typeof raw === "boolean" || typeof raw === "number") output[key] = String(raw);
+  for (const [key, raw] of Object.entries(input as Record<string, unknown>)) {
+    const allowed = ALLOWED_SIGNAL_VALUES[key];
+    if (!allowed || typeof raw !== "string" && typeof raw !== "boolean") continue;
+    const value = String(raw);
+    if (allowed.has(value)) output[key] = value;
   }
   return output;
 }

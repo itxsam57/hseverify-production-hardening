@@ -184,3 +184,29 @@ test("forged saved objective score cannot bypass pinned scoring at finalization"
   assert.equal((await x.database.query("SELECT status FROM written_score_reviews WHERE review_id=$1",[x.review.review_id])).rows[0].status,"DRAFT");
  }finally{await x.cleanup();}
 });
+
+
+test("monitoring signal ingestion never persists Worker accommodation disclosures or free-text details",async()=>{
+ const x=await integrityAssessmentFixture();
+ try{
+  const privacySource=loadWorkerRegistrationTs("src/lib/privacy/privacy-operations-service.ts");
+  const repo=loadWorkerRegistrationTs("src/lib/privacy/privacy-operations-repository.ts");
+  const privacy=new privacySource.PrivacyOperationsService(new repo.PrivacyOperationsRepository(Promise.resolve(x.database)));
+  await privacy.accommodation({id:"integrity_accommodation_private",tenantId:null,workerId:x.worker.accountId,type:"Sensitive medical accessibility request: PRIVATE_HEALTH_MARKER"});
+  await privacy.reviewAccommodation({accommodationId:"integrity_accommodation_private",reviewerAccountId:x.credentials.admin.accountId,decision:"APPROVED",reason:"PRIVATE_REVIEW_MARKER confidential reviewer note",caseId:x.sourceCase.case_id,adjustment:{timeMultiplier:1.5,screenReader:true},now:new Date()});
+  const service=new AssessmentIntegrityService(Promise.resolve(x.database));
+  const event=await service.record(x.worker,x.attemptId,null,{type:"COPY_PASTE_DETECTED",details:{
+    operation:"paste",reason:"PRIVATE_HEALTH_MARKER",accommodation:"PRIVATE_REVIEW_MARKER",diagnosis:"PRIVATE_DIAGNOSIS_MARKER",unrelated:"PRIVATE_FREE_TEXT_MARKER"
+  }});
+  assert.equal(event.classification,"RED");
+  const raw=(await x.database.query("SELECT event_type,classification,details FROM integrity_capture_events WHERE event_id=$1",[event.eventId])).rows[0];
+  assert.equal(raw.event_type,"COPY_PASTE_DETECTED");assert.equal(raw.classification,"RED");
+  const details=typeof raw.details==="string"?JSON.parse(raw.details):raw.details;
+  assert.deepEqual(details,{operation:"paste"});
+  const sensitive=JSON.stringify(details);
+  for(const marker of ["PRIVATE_HEALTH_MARKER","PRIVATE_REVIEW_MARKER","PRIVATE_DIAGNOSIS_MARKER","PRIVATE_FREE_TEXT_MARKER"])assert.ok(!sensitive.includes(marker));
+  const records=(await x.database.query("SELECT accommodation_type,review_reason FROM accessibility_accommodations WHERE accommodation_id=$1",["integrity_accommodation_private"])).rows;
+  assert.equal(records.length,1);assert.match(records[0].accommodation_type,/PRIVATE_HEALTH_MARKER/);
+  await assert.rejects(service.record({...x.worker,activeRole:"company"},x.attemptId,null,{type:"COPY_PASTE_DETECTED",details:{operation:"paste"}}));
+ }finally{await x.cleanup();}
+});
