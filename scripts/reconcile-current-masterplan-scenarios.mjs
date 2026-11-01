@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21106JoinNative: {
+    file: "20261101-A28-893e858-exact-M21106-native.log",
+    observedCodeSha: "893e858acb98dc595ae11ce725d9b2218c7d570c",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m21106JoinBrowser: {
+    file: "20261101-A28-893e858-exact-M21106-Chromium.log",
+    observedCodeSha: "893e858acb98dc595ae11ce725d9b2218c7d570c",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21105LateNoShowNative: {
     file: "20261101-A28-a5294c4-exact-M21105-native.log",
     observedCodeSha: "a5294c4290e4e0a90bd7e32320d1777e34243843",
@@ -937,7 +948,11 @@ const browserClauseMap = {
     ["m21105LateNoShowNative","Exact committed code SHA a5294c4 migrated-PGlite 1/1 PASS. Actual calibrated Assessor and Worker sessions, independent Alpha/Beta cases: no-show before 15-minute threshold denied without creating runtime; rescheduled 22 minutes past original start, late Worker entered waiting room and completed real readiness, no-show rejected; separate real 25-minute late unready Worker marked NO_SHOW after direct Worker attempt denied; repeated no-show rejected with exactly one original event, unique unscheduled replacement created, prior closed runtime and audit retained, Worker sees distinct appointment requiring scheduling. Pre-fix RED showed duplicate noShow silently accepted and rewrote closed record; source fix rejects final NO_SHOW before mutation. 16 adjacent native regressions plus new test PASS 17/17 precommit identical product code. Full prod build, typecheck and lint PASS. Local only; no external calendar or live provider release-certified."],
     ["m21105NoShowBrowser","Exact committed source a5294c4 real Next+Chromium 1/1 PASS signed-in Assessor no-show form, reasoned replacement, original draft and runtime history retained, Worker and Company separately sign in and see replacement appointment, closed original rejects stale draft/final POSTs, 390px no overflow. Additional two real browser scenarios at same unchanged product code immediately before commit passed: TECHNICAL_HOLD replacement to Worker and Company; NO_SHOW with no eligible Assessor remains unscheduled and visible in Admin 390px queue (original precommit 3/3 PASS .autopilot/artifacts/20261101-A28-M21105-browser-WIP.log). Exact committed 1/1 browser log recorded; no external media/provider/staging UAT verified."]
   ],
-  "M2.11.06": [["interviewEligibility", "Worker technical-report control hidden before scheduling; actual join readied/unassigned access-denial not independently tested"]],
+  "M2.11.06": [
+    ["interviewEligibility", "Earlier Worker technical-report control is hidden before scheduling; a separate join eligibility gate is now covered by m21106JoinNative and m21106JoinBrowser."],
+    ["m21106JoinNative","Exact committed SHA 893e858 migrated-PGlite native 1/1 PASS. RED before product fix: direct markWorkerReady on unscheduled assigned interview silently created an unauthorized READY runtime, while enterWaitingRoom had no schedule clock validation. Root fix shared persisted clock in enterWaitingRoom and markWorkerReady enforces 30 min before to four hours after, assigned/WAITING_ROOM state, real assigned Assessor, and existing waiting/claimed session before Ready (never creates session through readiness). Independently tested unscheduled, future and five-hours-expired joins, unassigned and other Worker forged role/ownership; each rejected with zero runtime or mutated source. Valid in-window signed-in Worker enters, incomplete readiness denied, Assessor cannot admit before READY even after Claim, all checks pass then ADMITTED and single readiness event. Adjacent 5/5 native interview scoring, consent, technical reporting checks PASS. Local adapter only; no external ID/device production certification."],
+    ["m21106JoinBrowser","Exact committed SHA 893e858 Next+real Chromium 1/1 PASS with signed-in Worker 390px and independently signed-in calibrated Assessor. Actual additional unassigned case and 65-minute future assigned case show no Enter waiting room button, produce zero runtime; in-window Beta case enters through real Worker form; Ready button initially absent then disabled for missing devices/identity; actual Chromium fake camera and microphone device check succeeds, explicit identity required; Assessor Claim succeeds but Admit not offered until Worker marks Ready; actual Admit form reaches persisted ADMITTED with claimed_at,worker_ready_at and admitted_at. Mobile 390px viewport has no overflow. Synthetic browser fake device, NOT proof of production device/provider availability. Strict typecheck, ESLint, optimized Next production build PASS."]
+  ],
   "M2.12.06": [["recommendationStaffScoring", "Real Assessor finalized CONDITIONAL_PASS, ADDITIONAL_EVIDENCE_REQUIRED, REASSESSMENT_REQUIRED, SECOND_INTERVIEW_REQUIRED and FAIL, each Worker/Company status and projected authorized bell deep-link; PASS recommendation not included here"]],
   "M2.12.07": [["recommendationStaffScoring", "Each of five real browser Assessor final submissions locks subsequent input and transitions owned case and notification; real media shutdown/device behavior not covered"]],
   "M2.12.04": [["interviewEligibility", "Worker in-window technical issue persists interview runtime TECHNICAL_HOLD and request details, including refresh; other pause/reconnect/reschedule paths open"]],
@@ -999,7 +1014,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
