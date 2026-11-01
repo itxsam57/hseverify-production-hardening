@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21101MatchingNative: {
+    file: "20261101-A28-4130cfd-exact-M21101-native.log",
+    observedCodeSha: "4130cfd9dafc3428e0a9c727d769cf9230816fbe",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m21101MatchingBrowser: {
+    file: "20261101-A28-4130cfd-exact-M21101-Chromium.log",
+    observedCodeSha: "4130cfd9dafc3428e0a9c727d769cf9230816fbe",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21007ReasonedEscalationBrowser: {
     file: "20261101-A28-158cbce-exact-M21007-Chromium.log",
     observedCodeSha: "158cbce4e10e40370d0a580f544aff4a4c4683ea",
@@ -608,6 +619,11 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.11.01": [
+    ["m21101MatchingNative","Exact committed SHA 4130cfd migrated-PGlite 1/1 PASS across actual case-backed pending interview, real pinned SEARCH-WORKER calibration and two already-assigned interviews. First live Assessor with exact trade, qualification, language, jurisdiction and risk, available with max 3 active and load 2 is eligible; each of mismatched trade, qualification, language, jurisdiction, risk, temporarily unavailable, unavailable-until and workload cap=2 independently makes candidate ineligible with named failed criterion and selection null. PAUSED profile excluded; real FAILED, naturally elapsed CURRENT, renewed CURRENT calibration deny/deny/allow for pinned revision. Admin matches once, correct Assessor selected and persisted with positive score, workload/calibration checks and ASSIGNED status; duplicate match rejected. Local adapter only, no external scheduling provider or production environment certified."],
+    ["m21101MatchingBrowser","Exact committed SHA 4130cfd actual Next+Chromium 1/1 PASS: signed-in TOTP Admin on 390px saves real Assessor profile with correct scope but Urdu language and workload max 1, click Run automatic match; no eligible banner and request stays pending; update to English with cap 1 still no eligible; cap 3 saves and match redirects to assigned-success banner; independently authenticated Assessor signed into real dashboard and retrieved actual assigned interview deep link, Admin pending queue no longer lists request. Reopened migrated PGlite proves ASSIGNED to correct Assessor and one persisted selected decision with positive score, matching workload, language and calibration. RED pre-fix browser showed runAssessorMatchingAction caught Next successful redirect then returned error; root fix moves success redirect outside try. Strict TypeScript, ESLint, deterministic production build PASS. This does not certify protected staging/provider/owner full acceptance."]
+  ],
+
   "M2.10.07": [
     ["m21007ReasonedEscalationBrowser","Exact committed source 158cbce real Next+Chromium 1/1 PASS across signed-in Worker, original Verifier at 390px, MFA Admin, and a different independently authenticated calibrated Verifier. Two distinct submitted qualification source versions from one Worker: first task original Verifier claimed, saved/reloaded private draft, recorded reasoned UNABLE_TO_VERIFY with attempted issuer contact and limitations; Admin escalation queue correctly excluded it (not a fraud allegation). Second task original Verifier saved separate private draft, escalated with reason to Admin, which showed reason without private note and returned via actual form; independent Verifier claimed the returned task, saw retained public resolution history but no first Verifier private notes, and reasoned UNABLE with no automatic approval. Worker evidence UI contained no private note. Reopened real migrated isolated PGlite: four append-only resolution events in exact order ESCALATED / RETURNED_TO_QUEUE / UNABLE for escalated task and UNABLE for first; different actor IDs and roles, methods and limitations retained, submitted Worker evidence preserved, two original private draft records retained, decision table remained empty (no fraud/approval), four authorized audit rows. Actual UPDATE of immutable resolution event and DELETE of private draft revisions both rejected by database triggers, without losing history. Adjacent existing draft/resolution/notification migrated-PGlite suites 23/23 PASS on identical precommit product code. Staging/live provider delivery, broader all-role/tenant adversarial matrix, and owner acceptance are NOT certified."]
   ],
@@ -953,7 +969,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
