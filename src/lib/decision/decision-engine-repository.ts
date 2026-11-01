@@ -378,6 +378,91 @@ export class DecisionRepository {
     );
   }
 
+
+  private async assertPositiveDecisionPrerequisites(
+    client: Awaited<typeof this.clientPromise>,
+    tenantId: string,
+    caseId: string,
+    state: DecisionState
+  ): Promise<void> {
+    if (state !== "APPROVED" && state !== "CONDITIONALLY_APPROVED") return;
+
+    // An Admin's reason/input references are not evidence that mandatory
+    // assessment and interview stages actually completed.
+    const requirements = await client.query<{
+      worker_account_id: string;
+      assessment_required: boolean;
+      interview_required: boolean;
+      interview_reference: string | null;
+    }>(
+      `SELECT cases.worker_account_id,
+              jsonb_array_length(orders.assessment_framework_references) > 0 AS assessment_required,
+              orders.interview_required,cases.interview_reference
+         FROM assurance_cases AS cases
+         JOIN assurance_orders AS orders
+           ON orders.order_id=cases.order_id AND orders.tenant_id=cases.tenant_id
+        WHERE cases.tenant_id=$1 AND cases.case_id=$2
+        FOR UPDATE OF cases`,
+      [tenantId, caseId]
+    );
+    const row = requirements.rows[0];
+    if (!row) throw new Error("Decision target Assurance Case does not exist in the tenant boundary.");
+
+    if (row.assessment_required) {
+      const passing = await client.query<{ eligible: boolean }>(
+        `SELECT EXISTS(
+           SELECT 1
+             FROM assessment_attempts AS attempt
+            WHERE attempt.case_id=$1 AND attempt.worker_account_id=$2
+              AND attempt.status='SUBMITTED'
+              AND NOT EXISTS (
+                SELECT 1 FROM assessment_attempts AS newer
+                 WHERE newer.case_id=attempt.case_id
+                   AND (newer.started_at,newer.attempt_id) > (attempt.started_at,attempt.attempt_id)
+              )
+              AND (
+                EXISTS (
+                  SELECT 1 FROM written_score_reviews AS review
+                   WHERE review.attempt_id=attempt.attempt_id
+                     AND review.case_id=$1 AND review.status='FINAL' AND review.decision='PASS'
+                )
+                OR EXISTS (
+                  SELECT 1 FROM assurance_case_timeline_events AS event
+                   WHERE event.case_id=$1 AND event.tenant_id=$3
+                     AND event.event_type='assessment_auto_scored_pass'
+                     AND event.occurred_at >= attempt.submitted_at
+                )
+              )
+         ) AS eligible`,
+        [caseId, row.worker_account_id, tenantId]
+      );
+      if (!passing.rows[0]?.eligible) {
+        throw new Error("Required assessment has no completed passing result.");
+      }
+    }
+
+    if (row.interview_required) {
+      const passing = await client.query<{ eligible: boolean }>(
+        `SELECT EXISTS(
+           SELECT 1
+             FROM interview_requests AS request
+             JOIN interview_console_drafts AS draft
+               ON draft.tenant_id=request.tenant_id
+              AND draft.interview_request_id=request.interview_request_id
+            WHERE request.tenant_id=$1 AND request.case_id=$2
+              AND request.interview_request_id=$3
+              AND request.status='COMPLETED'
+              AND draft.submitted=TRUE
+              AND draft.recommendation IN ('PASS','CONDITIONAL_PASS')
+         ) AS eligible`,
+        [tenantId, caseId, row.interview_reference]
+      );
+      if (!passing.rows[0]?.eligible) {
+        throw new Error("Required interview has no completed passing recommendation.");
+      }
+    }
+  }
+
   async saveDecisionAndProgressCase(
     decision: DecisionRecord,
     actorAccountId: string
@@ -395,6 +480,7 @@ export class DecisionRepository {
       if (current.rows[0]?.case_status !== "Decision pending") {
         throw new Error("Assurance Case is not ready for a final decision.");
       }
+      await this.assertPositiveDecisionPrerequisites(transaction, decision.tenantId, decision.caseId, decision.state);
       await this.saveDecisionWithClient(transaction, decision);
       await this.applyDecisionToAssuranceCase(transaction, {
         tenantId: decision.tenantId,
@@ -451,6 +537,7 @@ export class DecisionRepository {
       if (!caseId) {
         throw new Error("Decision override target could not be resolved within the tenant boundary.");
       }
+      await this.assertPositiveDecisionPrerequisites(transaction, override.tenantId, caseId, override.newState);
       await this.applyOverrideStateWithClient(transaction, override);
       await this.saveOverrideWithClient(transaction, override);
       await this.applyDecisionToAssuranceCase(transaction, {

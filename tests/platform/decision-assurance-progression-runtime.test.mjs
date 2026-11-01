@@ -68,10 +68,11 @@ async function seedDecisionPendingCase(database, options = {}) {
   await database.query(
     `INSERT INTO assurance_orders(
        order_id,tenant_id,created_by_membership_id,order_name,order_reference,
-       credential_target,order_status,submitted_at,created_at,updated_at
+       credential_target,assessment_framework_references,interview_required,order_status,submitted_at,created_at,updated_at
      ) VALUES($1,$2,'membership_acceptance_owner','Decision progression order','DECISION-RUNTIME-1',
-       $3,'SUBMITTED',$4,$4,$4)`,
-    [orderId, tenantId, options.credentialTarget ?? null, now]
+       $3,$5::jsonb,$6,'SUBMITTED',$4,$4,$4)`,
+    [orderId, tenantId, options.credentialTarget ?? null, now,
+      JSON.stringify(options.assessmentFrameworkReferences ?? []), options.interviewRequired ?? false]
   );
   await database.query(
     `INSERT INTO assurance_order_workers(
@@ -324,6 +325,88 @@ test("Decision override keeps platform decision and Assurance Case lifecycle ali
     const linked = (await database.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1", [caseId])).rows[0];
     const credential = (await database.query("SELECT status FROM credential_issuances WHERE credential_id=$1", [linked.credential_reference])).rows[0];
     assert.equal(credential.status, "suspended", "A suspended decision must not retain a publicly valid credential.");
+  } finally {
+    await database.close();
+  }
+});
+
+test("M2.13.01 denies APPROVED when a mandatory assessment or interview has not completed", async () => {
+  const { repository, domain } = await loadRepository();
+  for (const state of ["APPROVED", "CONDITIONALLY_APPROVED"]) {
+  for (const requirement of ["assessment", "interview"]) {
+    const sha = "m213-prerequisites-" + requirement + "-" + state;
+    const database = await openScriptDatabase({ ...ENV, releaseSha: sha });
+    try {
+      await applyMigrationsThrough(database, sha, "0067_assessment_review_orchestration");
+      const { tenantId, caseId } = await seedDecisionPendingCase(database, {
+        assessmentFrameworkReferences: requirement === "assessment" ? ["mandatory-framework"] : [],
+        interviewRequired: requirement === "interview"
+      });
+      const decision = domain.createDecision({
+        tenantId,
+        caseId,
+        state,
+        reasonCode: "claimed_complete",
+        explanation: "Completeness is asserted but not recorded.",
+        ruleVersion: "runtime-v1",
+        inputReferences: ["untrusted-form-claim"],
+        createdAt: "2026-09-25T11:00:00.000Z"
+      });
+      const repo = new repository.DecisionRepository(Promise.resolve(database), ENV.sessionSecret);
+      await assert.rejects(
+        () => repo.saveDecisionAndProgressCase(decision, "admin_account_acceptance_01"),
+        /required (assessment|interview)|prerequisite/i,
+        requirement + " must not be bypassed by an Admin-entered input reference"
+      );
+      const rows = await database.query(
+        "SELECT case_status,decision_reference FROM assurance_cases WHERE tenant_id=$1 AND case_id=$2",
+        [tenantId, caseId]
+      );
+      assert.equal(rows.rows[0].case_status, "Decision pending");
+      assert.equal(rows.rows[0].decision_reference, null);
+      const decisions = await database.query("SELECT decision_id FROM platform_decisions WHERE case_id=$1", [caseId]);
+      assert.equal(decisions.rows.length, 0, "failed approval must roll back atomically");
+    } finally {
+      await database.close();
+    }
+  }
+  }
+});
+
+
+test("M2.13.01 positive override cannot turn incomplete assessment into approval", async () => {
+  const sha = "m213-missing-override-approval";
+  const database = await openScriptDatabase({ ...ENV, releaseSha: sha });
+  try {
+    await applyMigrationsThrough(database, sha, "0067_assessment_review_orchestration");
+    const { tenantId, caseId } = await seedDecisionPendingCase(database, {
+      assessmentFrameworkReferences: ["mandatory-framework"]
+    });
+    const { repository, domain } = await loadRepository();
+    const repo = new repository.DecisionRepository(Promise.resolve(database), ENV.sessionSecret);
+    const initial = domain.createDecision({
+      tenantId,caseId,state:"PENDING_ADDITIONAL_REVIEW",
+      reasonCode:"needs_review",explanation:"Assessment remains incomplete.",
+      ruleVersion:"runtime-v1",inputReferences:["pending-1"],
+      createdAt:"2026-09-25T11:00:00.000Z"
+    });
+    await repo.saveDecisionAndProgressCase(initial, "admin_account_acceptance_01");
+    const override = domain.createManualDecisionOverride({
+      decisionId:initial.decisionId,tenantId,
+      previousState:"PENDING_ADDITIONAL_REVIEW",newState:"APPROVED",
+      reason:"Admin claimed evidence suffices but no assessment was completed.",
+      evidenceReference:"untrusted-reference",confirmed:true,
+      mfaVerifiedAt:"2026-09-25T11:01:00.000Z",notificationRequired:true,
+      actorReference:"admin_account_acceptance_01",createdAt:"2026-09-25T11:01:00.000Z"
+    });
+    await assert.rejects(() => repo.persistOverride(override), /Required assessment/);
+    const current = (await database.query(
+      "SELECT state FROM platform_decisions WHERE decision_id=$1",[initial.decisionId]
+    )).rows[0];
+    assert.equal(current.state,"PENDING_ADDITIONAL_REVIEW");
+    const scope = (await database.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[caseId])).rows[0];
+    assert.equal(scope.case_status,"Review pending");
+    assert.equal((await database.query("SELECT override_id FROM platform_decision_overrides WHERE decision_id=$1",[initial.decisionId])).rows.length,0);
   } finally {
     await database.close();
   }
