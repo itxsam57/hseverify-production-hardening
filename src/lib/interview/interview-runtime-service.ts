@@ -583,6 +583,9 @@ export class InterviewRuntimeService {
         throw new InterviewRuntimeConflictError("No-show review opens 15 minutes after the scheduled time.");
       }
       const session = await ensureWaitingRoomSession(tx, request, now);
+      if (session.status === "NO_SHOW") {
+        throw new InterviewRuntimeConflictError("This interview is already marked no-show.");
+      }
       if (session.worker_ready_at || ["ACTIVE","ENDED"].includes(session.status)) {
         throw new InterviewRuntimeConflictError("A ready or active Worker cannot be marked no-show.");
       }
