@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m20905IntegrityNative: {
+    file: "20261101-A28-67c2669-exact-integrity-native.log",
+    observedCodeSha: "67c26693eead44f11174120da754c20a570e5a66",
+    passed: "ℹ pass 13", failed: "ℹ fail 0"
+  },
+  m20905MonitoringPrivacyBrowser: {
+    file: "20261101-A28-67c2669-exact-M20905-Chromium.log",
+    observedCodeSha: "67c26693eead44f11174120da754c20a570e5a66",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m20305AccommodationNative: {
     file: "20261101-A28-88116a0-exact-accommodation-native.log",
     observedCodeSha: "88116a099e423b1bf57c495112a69b37fdccec27",
@@ -563,6 +574,11 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.09.05": [
+    ["m20905IntegrityNative", "Exact committed source 67c2669 native migrated-PGlite integrity-human-review suite 13/13 PASS. New RED-before-fix test proved arbitrary Worker-provided details in COPY_PASTE_DETECTED persisted private accommodation/reviewer/diagnosis markers. Server root fix preserves event classification, chronology and event source but accepts only fixed enumerated monitoring detail keys and values; native green retains operation=paste, private markers absent, original private accommodation record still retained for authorized handling, forged non-Worker service actor denied. Other 12 tests cover scoring/disposition escalation/clearance/immutability; none certifies physical device media or provider."],
+    ["m20905MonitoringPrivacyBrowser", "Exact committed source 67c2669 real 390px Worker+independent Verifier Next/Chromium 1/1 PASS with authorized fixture-approved 1.5x/screen-reader case accommodation. Worker logged in, opened live assessment, submitted same-origin hostile signal containing bogus diagnosis, review reason and accommodation values; API returned 201, retained COPY_PASTE_DETECTED RED concern. Worker actually answered and submitted assessment, Verifier logged in, viewed assigned Retained integrity signals without private markers; forged Verifier POST rejected (existing endpoint returns 400 for role-redirect); server-shutdown PGlite reopened and proved only approved operation=paste persisted, original sensitive accommodation separately retained and forged event added no row. Admin approval occurred through authorized fixture service, not Admin browser; human-media/recording, external providers, protected staging and all-role acceptance unverified."]
+  ],
+
   "M2.03.05": [
     ["m20305AccommodationNative", "Exact source 88116a0 migrated-PGlite accommodation native 5/5 PASS: Admin-approved 1.5x assessment clock remains 450s and immutable, approved breaks suppress question/answer mutation until server expiry, clock expiry and section progression remain safe, and NEW focused native test uses a policy snapshot pinned to pass_mark 75 with 2 real MCQs: Worker submits one Alpha correct and one Bravo wrong, then finalizes and persists score 50, FINAL FAIL, case Reassessment required; published 75 pass mark and original 1.5x time multiplier unchanged after submission. Approval in this test is direct authorized service fixture, not Admin approval browser or live provider."],
     ["m20305AccommodationWorkerBrowser", "Exact source 88116a0 real Next+Chromium 1/1 PASS: authenticated Worker at 390px sees the approved 1.5x-timed assessment, answers Question1 Alpha and Question2 Bravo through actual radio and Next/Save final answer for review/Submit assessment controls, sees Assessment submitted. Independently reopened physical migrated PGlite proves 50/100 objective score, FINAL FAIL against same 75 published pass mark, case Reassessment required, immutable 1.5x timing, and case policy unchanged. Admin approval was fixture-authenticated service, not a real Admin browser decision. Live identity, accommodation privacy across all roles, protected staging and consumer acceptance remain open."]
@@ -888,7 +904,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
