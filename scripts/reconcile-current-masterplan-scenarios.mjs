@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21003AdditionalNative: {
+    file: "20261101-A28-0fe267e-exact-M21003-native.log",
+    observedCodeSha: "0fe267e9499a4585d5f2adb9714d3e9e8e31dbe1",
+    passed: "ℹ pass 5", failed: "ℹ fail 0"
+  },
+  m21003AdditionalBrowser: {
+    file: "20261101-A28-0fe267e-exact-M21003-Chromium.log",
+    observedCodeSha: "0fe267e9499a4585d5f2adb9714d3e9e8e31dbe1",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21003WrittenOwnerRoutingNative: {
     file: "20261101-A28-76233ae-exact-M21003-written-native.log",
     observedCodeSha: "76233ae0079097e522be79ac6f1e512314ffded0",
@@ -581,7 +592,10 @@ const browserRuns = {
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
   "M2.10.03": [
-    ["m21003WrittenOwnerRoutingNative", "Exact committed source 76233ae migrated PGlite written scoring owner routing 4/4 PASS. Real Verifier-assigned live session with current calibration marked two pinned LONG_TEXT rubric criteria and reasoned final decisions: PASS FINAL case Decision pending owner admin, FAIL FINAL case Reassessment required owner worker, CHANGES_REQUESTED FINAL same Worker reassessment with distinct correction reason; each next actionable item ownership asserted and repeated finalization rejected without overwriting historic score. FOURTH test proves Masterplan literal ADDITIONAL_REVIEW is NOT an accepted written scoring decision, so this test explicitly leaves independent additional-review route, Admin reassignment, actor propagation, external staging and real all-role browser acceptance NOT IMPLEMENTED / NOT CERTIFIED. This limited proof is NOT full M2.10.03 scenario closure."]
+    ["m21003WrittenOwnerRoutingNative", "Historical source 76233ae migrated PGlite written scoring owner routing 4/4 PASS for then-implemented PASS, FAIL and CHANGES_REQUESTED outcomes; fourth negative test established literal ADDITIONAL_REVIEW gap which was subsequently resolved in source 0fe267e. Earlier absence is not a claim about current code. This is old subclause evidence, not full release certification."],
+    ["m21003AdditionalNative", "Exact committed source 0fe267e migrated-PGlite M2.10.03 5/5 PASS: three original outcomes and distinct ADDITIONAL_REVIEW supported by additive reversible migration 0127, reasoned first Verifier finalization held Review pending/Admin with Admin-only action; forged reassignment denied and recent MFA required; first Verifier excluded from new candidate list; Admin assigns calibrated different Verifier by CAS expected review ID/revision, prior FINAL becomes immutable SUPERSEDED with retained score and review amendment lineage, second fresh independent rubric marks and PASS FINAL progress to Decision pending/Admin. Original Verifier cannot amend held decision through either amendment path, relevant UI canAmend false; additional review data makes destructive schema downgrade fail closed. Full suite 17/17 native including recovery/authority also passed on precommit identical code; current exact head M2.10.03 focused 5/5. Real provider/staging/owner acceptance not established."],
+    ["m21003AdditionalBrowser", "Exact committed source 0fe267e real Next+Chromium 1/1 PASS across signed-in 390px original Verifier, independent signed-in Admin with TOTP MFA, and different calibrated Verifier. Original Verifier marked real written-answer rubric at 68 and selected ADDITIONAL_REVIEW, finalized, verified self-amend form absent; Admin loaded actual scoring assignment page, first Verifier absent from candidate list, selected different Verifier and submitted reasoned assignment; second Verifier independently signed in, marked fresh criterion at 91 and finalized PASS. Reopened database after browser server shutdown: retained first original ADDITIONAL_REVIEW SUPERSEDED and new PASS FINAL, linked immutable history and admin reassignment audit, actual case Interview pending. Does not prove full production provider, cross-tenant/exhaustive security, notifications under real delivery, protected staging, and owner UAT."]
+
   ],
 
   "M2.09.05": [
@@ -914,7 +928,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
