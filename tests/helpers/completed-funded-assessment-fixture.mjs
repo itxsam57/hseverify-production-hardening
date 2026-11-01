@@ -10,7 +10,8 @@ const id=(prefix,seed)=>prefix+"_"+digest(prefix+":"+seed).slice(0,24);
  * actual objective scoring/progression producer. This is a controlled test
  * fixture; it never changes production evidence or skips a required exam.
  */
-export async function completeFundedCaseObjectiveAssessment(database,caseId,now=new Date()) {
+export async function completeFundedCaseObjectiveAssessment(database,caseId,now=new Date(),submissionStatus="SUBMITTED") {
+  if(!["SUBMITTED","AUTO_SUBMITTED"].includes(submissionStatus))throw new Error("Invalid synthetic submission status.");
   const caseRow=(await database.query(
     `SELECT cases.worker_account_id,application.catalogue_version_id,
             catalogue.blueprint_version_id,catalogue.framework_id
@@ -52,8 +53,8 @@ export async function completeFundedCaseObjectiveAssessment(database,caseId,now=
     `INSERT INTO assessment_attempts(
        attempt_id,case_id,worker_account_id,catalogue_version_id,blueprint_version_id,form_id,
        status,current_position,question_count,started_at,submitted_at,created_at,updated_at)
-       VALUES($1,$2,$3,$4,$5,$6,'SUBMITTED',1,1,$7,$7,$7,$7)`,
-    [attemptId,caseId,caseRow.worker_account_id,caseRow.catalogue_version_id,caseRow.blueprint_version_id,formId,when]
+       VALUES($1,$2,$3,$4,$5,$6,$8,1,1,$7,$7,$7,$7)`,
+    [attemptId,caseId,caseRow.worker_account_id,caseRow.catalogue_version_id,caseRow.blueprint_version_id,formId,when,submissionStatus]
   );
   await tx.query(
     `INSERT INTO assessment_attempt_answers(

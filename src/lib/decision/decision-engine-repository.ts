@@ -577,7 +577,7 @@ export class DecisionRepository {
            SELECT 1
              FROM assessment_attempts AS attempt
             WHERE attempt.case_id=$1 AND attempt.worker_account_id=$2
-              AND attempt.status='SUBMITTED'
+              AND attempt.status IN ('SUBMITTED','AUTO_SUBMITTED')
               AND NOT EXISTS (
                 SELECT 1 FROM assessment_attempts AS newer
                  WHERE newer.case_id=attempt.case_id

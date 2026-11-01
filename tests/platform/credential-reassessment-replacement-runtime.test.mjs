@@ -65,3 +65,33 @@ test("Explicit reassessment issuer rejects owner review, lost Company access, mi
   }finally{await database.close();await fixture.cleanup();}
  }
 });
+
+
+test("Timeout-submitted reassessment with actual FINAL PASS can complete approval", async () => {
+  const fixture=await assessmentFundingFixture({policyValues:{pass_mark:70,credentialValidityDays:60}});
+  const database=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:fixture.environment.HSE_PGLITE_DATA_DIR});
+  try {
+    const source=await acceptedReassessmentSource(fixture,database);
+    const application=await source.service.applyWorkerPay(fixture.worker,fixture.fundingInput.catalogueVersionId,source.now,{sourceAppealId:source.appeal.appealId});
+    const fresh=await source.service.confirmSandboxWorkerPayment(fixture.worker,application.applicationId,source.now);
+    const attemptId=await completeFundedCaseObjectiveAssessment(database,fresh.caseId,source.now,"AUTO_SUBMITTED");
+    const review=(await database.query(
+      "SELECT status,decision FROM written_score_reviews WHERE case_id=$1 AND attempt_id=$2",[fresh.caseId,attemptId]
+    )).rows[0];
+    assert.deepEqual(review,{status:"FINAL",decision:"PASS"});
+    assert.equal((await database.query("SELECT status FROM assessment_attempts WHERE attempt_id=$1",[attemptId])).rows[0].status,"AUTO_SUBMITTED");
+    const {createDecision}=loadTs("src/lib/decision/decision-engine-domain.ts");
+    const {DecisionRepository}=loadTs("src/lib/decision/decision-engine-repository.ts");
+    const decision=createDecision({
+      tenantId:source.oldCase.tenant_id,caseId:fresh.caseId,state:"APPROVED",
+      reasonCode:"reassessment_passed",explanation:"Final scored time-bound submission passed the pinned rules.",
+      ruleVersion:"m213-timeout",inputReferences:[application.applicationId,source.appeal.appealId],
+      createdAt:new Date(source.now.getTime()+1000).toISOString()
+    });
+    await new DecisionRepository(Promise.resolve(database),KEY).saveDecisionAndProgressCase(decision,fixture.credentials.admin.accountId);
+    const after=(await database.query("SELECT case_status,credential_reference FROM assurance_cases WHERE case_id=$1",[fresh.caseId])).rows[0];
+    assert.equal(after.case_status,"Approved");
+    assert.ok(after.credential_reference);
+    assert.equal((await database.query("SELECT COUNT(*)::integer AS total FROM credential_replacements WHERE new_case_id=$1",[fresh.caseId])).rows[0].total,1);
+  }finally{await database.close();await fixture.cleanup();}
+});
