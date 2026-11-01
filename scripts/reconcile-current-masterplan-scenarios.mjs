@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21202PlaybookNative: {
+    file: "20261101-A28-0b59559-exact-M21202-native.log",
+    observedCodeSha: "0b59559313816f94edfadc0efcaad2c0636fc73d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+  m21202PlaybookBrowser: {
+    file: "20261101-A28-0b59559-exact-M21202-Chromium.log",
+    observedCodeSha: "0b59559313816f94edfadc0efcaad2c0636fc73d",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21106JoinNative: {
     file: "20261101-A28-893e858-exact-M21106-native.log",
     observedCodeSha: "893e858acb98dc595ae11ce725d9b2218c7d570c",
@@ -652,6 +663,11 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.12.02": [
+    ["m21202PlaybookNative","Exact committed code SHA 0b59559 migrated PGlite 1/1 native PASS. True configured/published pinned interview policy and calibrated Assessor generate mandatory/high-risk/random deterministic original set v1; ensure and getAssigned return identical version; unauthorized Worker and invalid/duplicate follow-up refused with zero new versions. Real approved follow-up produces distinct v2 with exact frozen original question IDs/prompts and policy source context, selectedTemplateIds and actor; old v1 SQL row remains byte-equivalent. Pre-fix RED proved unrestricted direct SQL UPDATE would rewrite stored v1; production migration 0128 append-only trigger now denies UPDATE and DELETE. Actual migration down/up test retains both rows, drops only guard then restores guard and DELETE denial. Old frozen-policy tamper regression adapted to assert earlier DB denial and PASS. Full strict TypeScript, ESLint, deterministic production build PASS. Local migration and versioned scenario only, no real staging/owner production accreditation."],
+    ["m21202PlaybookBrowser","Exact committed code SHA 0b59559 real Next/Chromium 1/1 PASS: TOTP authenticated Assessor 390px opens actual Questions tab on configured mandatory and high risk v1, chooses eligible 'follow' approved policy template, submits real Server Action and sees new v2, no repeat approved option; reload and tabs preserve v2 and same original question wording. Independently signed-in Worker cannot open Assessor console or read question prompt. After Next shutdown reopened migrated PGlite confirms exactly versions 1 and 2, original frozen v1 persists unchanged and v2 has expected original questions plus approved follow-up with pinned policy version and case. No external media, tenant-wide independent browsers, production historical dataset or protected staging certified."]
+  ],
+
   "M2.11.04": [
     ["m21104ConflictPrivateNative","Exact committed source 5984244 migrated-PGlite 1/1 native PASS. Actual formerly assigned calibrated Assessor declares a reasoned conflict; different calibrated Assessor matches and becomes assigned. First Assessor no longer accesses case, wrong-role forged principal denied, duplicate conflict denied, unrelated other interview remains assigned and revoked original session fails conflict invocation. Reopened scoped Worker and successor Assessor interview data and SQL interview_requests.reschedule_reason contain only neutral scheduling text, not PRIVATE_CONFLICT_MARKER; restricted interview_assignment_conflicts preserves exact reason and actor. Before product fix same native test RED confirmed private marker leaked into general interview_requests.reschedule_reason. This is a bounded isolated local privacy and reassignment proof, not a protected staging/provider certification."],
     ["m21104ConflictPrivateBrowser","Exact committed source 5984244 real five-role Next+Chromium 1/1 PASS. Independent signins original Assessor at 390px, new independently authenticated calibrated successor Assessor, Worker, Company, TOTP Admin. Original uses real Declare conflict / Release and re-match form; assignment leaves original queue and appears through new successor live interview link; Worker and Company pages show no private reason, original subsequent access cannot disclose private reason; Admin queue no longer lists assigned case. After browser shutdown exact migrated-PGlite record confirms only second assessor selected, conflict table retains original actor and reason and stored general interview request not polluted. Before fix private conflict text was copied into broad reschedule_reason; product fix restricts to conflict table, checks real active Assessor session and invalidates Worker/Admin/Company/Assessor route caches. TypeScript and ESLint PASS, production build PASS. Real staging integrations, broader owner/UAT remain unverified."]
@@ -1014,7 +1030,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
