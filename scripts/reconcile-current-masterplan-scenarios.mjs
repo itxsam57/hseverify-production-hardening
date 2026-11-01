@@ -51,6 +51,17 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  m21005LiveCalibrationNative: {
+    file: "20261101-A28-c94d1a1-exact-M21005-native.log",
+    observedCodeSha: "c94d1a1dcf92019e7ce7d9a22236033e68281987",
+    passed: "ℹ pass 4", failed: "ℹ fail 0"
+  },
+  m21005LiveCalibrationBrowser: {
+    file: "20261101-A28-c94d1a1-exact-M21005-Chromium.log",
+    observedCodeSha: "c94d1a1dcf92019e7ce7d9a22236033e68281987",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
+
   m21003AdditionalNative: {
     file: "20261101-A28-0fe267e-exact-M21003-native.log",
     observedCodeSha: "0fe267e9499a4585d5f2adb9714d3e9e8e31dbe1",
@@ -591,6 +602,10 @@ const browserRuns = {
 // Curated, exact assertions observed from the individual test source and output.
 // Do not infer coverage for a whole brick from a file's name alone.
 const browserClauseMap = {
+  "M2.10.05": [
+    ["m21005LiveCalibrationNative","Exact committed source c94d1a1 migrated-PGlite 4/4 PASS across FAILED, EXPIRED, SUSPENDED, and CURRENT-with-past-valid_until calibrations, each superseding an originally current pinned staff revision. Live assigned Verifier scoring queue returns canReview=false, hides private written questions, canAmend=false, with explicit calibration reason; save rubric, save decision, finalize/advance, calibration note, conflict and wrong-role mark all rejected without any scoring/rubric/case writes. Admin assignment list excludes revoked Verifier, worker case remains Review pending; later CURRENT calibration restored eligible assignment and fresh mark ability. All four states tested with real actor sessions and pinned framework revision; no actual external staging or production staff. Does not certify full pen/security review."],
+    ["m21005LiveCalibrationBrowser","Exact committed source c94d1a1 real Next+Chromium 1/1 across separate Admin TOTP, 390px Verifier and Worker signed-in sessions. Admin recorded FAILED from real calibration form, original Verifier 390px scoring UI hid pinned written evidence and finalize controls, Admin operations assignment list showed no eligible Verifier, Worker real case remained Review pending. Admin CURRENT restored scoring, then status CURRENT with already expired valid_until blocked again; renewed CURRENT restored, Verifier saved real rubric criterion 83 and reason, saved PASS, finalized, and the Worker real case page advanced to Interview pending. Shutdown/reopen PGlite proved FINAL PASS 83, retained four calibration records with true status ordering and current case owner; no server/source prod-code changes and no external provider/staging certification."]
+  ],
   "M2.10.03": [
     ["m21003WrittenOwnerRoutingNative", "Historical source 76233ae migrated PGlite written scoring owner routing 4/4 PASS for then-implemented PASS, FAIL and CHANGES_REQUESTED outcomes; fourth negative test established literal ADDITIONAL_REVIEW gap which was subsequently resolved in source 0fe267e. Earlier absence is not a claim about current code. This is old subclause evidence, not full release certification."],
     ["m21003AdditionalNative", "Exact committed source 0fe267e migrated-PGlite M2.10.03 5/5 PASS: three original outcomes and distinct ADDITIONAL_REVIEW supported by additive reversible migration 0127, reasoned first Verifier finalization held Review pending/Admin with Admin-only action; forged reassignment denied and recent MFA required; first Verifier excluded from new candidate list; Admin assigns calibrated different Verifier by CAS expected review ID/revision, prior FINAL becomes immutable SUPERSEDED with retained score and review amendment lineage, second fresh independent rubric marks and PASS FINAL progress to Decision pending/Admin. Original Verifier cannot amend held decision through either amendment path, relevant UI canAmend false; additional review data makes destructive schema downgrade fail closed. Full suite 17/17 native including recovery/authority also passed on precommit identical code; current exact head M2.10.03 focused 5/5. Real provider/staging/owner acceptance not established."],
@@ -928,7 +943,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
