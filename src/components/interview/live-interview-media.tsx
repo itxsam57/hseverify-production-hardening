@@ -54,7 +54,6 @@ export function LiveInterviewMedia({
   const processingRef = useRef(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
-  const recordingSegmentStartedAtRef = useRef<string | null>(null);
 
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState("Not connected");
@@ -127,7 +126,6 @@ export function LiveInterviewMedia({
     }
     recorderRef.current = null;
     recordingStreamRef.current = null;
-    recordingSegmentStartedAtRef.current = null;
     setRecordingStatus("Not recording");
   }, []);
 
@@ -167,11 +165,13 @@ export function LiveInterviewMedia({
         : new MediaRecorder(sourceStream);
       recorderRef.current = recorder;
       recordingStreamRef.current = sourceStream;
-      recordingSegmentStartedAtRef.current = new Date().toISOString();
+      // Keep segment timing scoped to this recorder. Its final callback is
+      // asynchronous and must retain the capture start after stop().
+      let segmentStartedAt = new Date().toISOString();
       recorder.addEventListener("dataavailable", (event) => {
         const endedAt = new Date().toISOString();
-        const startedAt = recordingSegmentStartedAtRef.current ?? endedAt;
-        recordingSegmentStartedAtRef.current = endedAt;
+        const startedAt = segmentStartedAt;
+        segmentStartedAt = endedAt;
         void uploadRecordingSegment(event.data, startedAt, endedAt)
           .then(() => setRecordingStatus("Recording active — latest segment stored"))
           .catch((uploadError) => {
