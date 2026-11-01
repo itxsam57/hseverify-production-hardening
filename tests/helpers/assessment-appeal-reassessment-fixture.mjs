@@ -1,4 +1,7 @@
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { completeFundedCaseObjectiveAssessment } from "./completed-funded-assessment-fixture.mjs";
+import { seedPublishedQuestion } from "./question-publication-fixture.mjs";
+import { createHash } from "node:crypto";
 import { assessmentFundingFixture } from "./assessment-funding-fixture.mjs";
 import { loadWorkerRegistrationTs } from "./worker-registration-runtime-loader.mjs";
 const { WorkerAssessmentApplicationService } = loadWorkerRegistrationTs("src/lib/assessment-catalogue/worker-assessment-application-service.ts");
@@ -12,10 +15,23 @@ export async function acceptedReassessmentSource(fixture,database) {
  const funded=await service.requestCompanyFunding(fixture.worker,fixture.fundingInput,now);
  await service.decideCompanyFunding(fixture.company,{fundingRequestId:funded.fundingRequestId,approved:true,now});
  const oldCase=(await database.query("SELECT cases.* FROM assurance_cases cases JOIN worker_assessment_applications applications ON applications.assurance_case_id=cases.case_id WHERE applications.application_id=$1",[funded.applicationId])).rows[0];
- // Schema-valid completed review prerequisites; the real final-decision producer issues the original credential.
- await database.query("UPDATE assurance_cases SET case_status='Decision pending',owner_kind='admin' WHERE case_id=$1",[oldCase.case_id]);
+ // Pinned objective assessment must pass before the real issuer can record a decision.
+ await completeFundedCaseObjectiveAssessment(database,oldCase.case_id,now);
  const decision=createDecision({tenantId:oldCase.tenant_id,caseId:oldCase.case_id,state:"APPROVED",reasonCode:"review_ready",explanation:"Original evidence review is complete.",ruleVersion:"reassessment-test",inputReferences:[oldCase.case_id],createdAt:now.toISOString()});
  await new DecisionRepository(Promise.resolve(database),KEY).saveDecisionAndProgressCase(decision,fixture.credentials.admin.accountId);
+ // The next paid reassessment needs a DIFFERENT permanently unseen published
+ // exposure family, not the original already-reserved test question.
+ const framework=(await database.query("SELECT framework_id FROM assessment_catalogue_versions WHERE catalogue_version_id=$1",[fixture.fundingInput.catalogueVersionId])).rows[0].framework_id;
+ const hash=(value)=>createHash("sha256").update(value).digest("hex");
+ await seedPublishedQuestion(database,{
+  questionId:"assessment_question_"+hash("reassessment-alternate").slice(0,24),
+  versionId:"question_version_"+hash("reassessment-alternate-version").slice(0,24),
+  reference:"REASSESSMENT-ALTERNATE-Q",
+  questionType:"MULTIPLE_CHOICE",prompt:"What action should follow identification of an uncontrolled hazard?",
+  options:["Stop and assess","Ignore the hazard"],answerKey:"Stop and assess",
+  frameworkId:framework,fingerprint:hash("reassessment-alternate-content"),
+  authorAccountId:fixture.credentials.admin.accountId,now:now.toISOString()
+ });
  const issued=(await database.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[oldCase.case_id])).rows[0].credential_reference;
  const reviewerId="account_independent_appeal_reviewer";
  await database.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'independent-appeal@example.test','Independent appeal reviewer','active','test-only-unused',$2,$2,$2,$2) ON CONFLICT DO NOTHING",[reviewerId,now.toISOString()]);

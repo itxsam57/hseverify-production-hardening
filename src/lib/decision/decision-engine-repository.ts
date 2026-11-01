@@ -7,6 +7,7 @@ import { derivePinnedCredentialValidity } from "../credential/credential-validit
 import { CredentialIssuanceRepository } from "../credential/credential-issuance-repository";
 import { finalizeExplicitReassessmentReplacement } from "../credential/credential-reassessment-replacement-service";
 import { getDatabaseClient } from "../database/database";
+import { InterviewSchedulingService } from "../interview/interview-scheduling-service";
 import { appendLivingCompetencyVersion, createLivingCompetencyRecord } from "../living-record/living-record-domain";
 import { LivingRecordRepository } from "../living-record/living-record-repository";
 import type { DecisionRecord, DecisionState, ManualDecisionOverride } from "./decision-engine-domain";
@@ -247,6 +248,77 @@ export class DecisionRepository {
     return credential.credentialId;
   }
 
+
+  private async resolvePendingDecisionWork(
+    client: Awaited<typeof this.clientPromise>,
+    input: Readonly<{tenantId: string; caseId: string; workerAccountId: string; state: DecisionState}>
+  ): Promise<AssuranceDecisionProjection> {
+    const base = assuranceProjection(input.state);
+    if (input.state === "PENDING_ADDITIONAL_REVIEW") {
+      // Only a submitted case-bound attempt can enter the independent
+      // scoring-assignment queue. A bare decision label creates no work.
+      const source = await client.query<{reviewer_assigned: boolean}>(
+        `SELECT EXISTS (
+            SELECT 1 FROM written_score_reviews AS reviews
+            WHERE reviews.attempt_id=attempts.attempt_id
+              AND reviews.case_id=cases.case_id AND reviews.status='DRAFT'
+              AND reviews.reviewer_account_id IS NOT NULL
+          ) AS reviewer_assigned
+          FROM assurance_cases AS cases
+          JOIN assessment_attempts AS attempts
+            ON attempts.attempt_id=cases.assessment_reference
+           AND attempts.case_id=cases.case_id
+           AND attempts.worker_account_id=cases.worker_account_id
+         WHERE cases.case_id=$1 AND cases.tenant_id=$2
+           AND attempts.status IN ('SUBMITTED','AUTO_SUBMITTED')`,
+        [input.caseId,input.tenantId]
+      );
+      if (!source.rows[0]) throw new Error("Additional review requires a submitted assessment review source.");
+      return source.rows[0].reviewer_assigned
+        ? base
+        : {caseStatus:"Review pending",owner:"admin",
+           nextAction:"Assign an independent Verifier to review the submitted assessment.",
+           terminal:false};
+    }
+    if (input.state === "INTERVIEW_PENDING") {
+      const existing = await client.query<{interview_request_id:string;assessor_account_id:string|null}>(
+        `SELECT interview_request_id,assessor_account_id
+           FROM interview_requests
+          WHERE tenant_id=$1 AND case_id=$2 AND worker_account_id=$3
+            AND status IN ('REQUESTED','ASSIGNED','WAITING_ROOM')
+          ORDER BY requested_at DESC,interview_request_id DESC
+          LIMIT 1 FOR UPDATE`,
+        [input.tenantId,input.caseId,input.workerAccountId]
+      );
+      let reference: string;
+      let assessor: string | null;
+      if (existing.rows[0]) {
+        reference = existing.rows[0].interview_request_id;
+        assessor = existing.rows[0].assessor_account_id;
+      } else {
+        const request = await new InterviewSchedulingService(client).requestAdditionalInterview({
+          tenantId:input.tenantId,caseId:input.caseId,
+          workerAccountId:input.workerAccountId,requestedAt:new Date().toISOString(),
+          timezone:"UTC"
+        });
+        reference = request.interviewRequestId;
+        assessor = request.assessorAccountId;
+      }
+      await client.query(
+        "UPDATE assurance_cases SET interview_reference=$3 WHERE tenant_id=$1 AND case_id=$2",
+        [input.tenantId,input.caseId,reference]
+      );
+      return assessor
+        ? {caseStatus:"Interview pending",owner:"assessor",
+           nextAction:"Assigned Assessor must schedule and complete the required interview.",
+           terminal:false}
+        : {caseStatus:"Interview pending",owner:"admin",
+           nextAction:"Assign an eligible Assessor to the requested interview.",
+           terminal:false};
+    }
+    return base;
+  }
+
   private async applyDecisionToAssuranceCase(
     client: Awaited<typeof this.clientPromise>,
     input: Readonly<{
@@ -281,7 +353,10 @@ export class DecisionRepository {
       throw new Error("Decision target Assurance Case state no longer matches the expected decision state.");
     }
 
-    const projection = assuranceProjection(input.state);
+    const projection = await this.resolvePendingDecisionWork(client, {
+      tenantId:input.tenantId,caseId:input.caseId,
+      workerAccountId:assuranceCase.worker_account_id,state:input.state
+    });
     const now = new Date().toISOString();
     const updated = await client.query(
       `UPDATE assurance_cases
@@ -314,6 +389,27 @@ export class DecisionRepository {
       [input.tenantId, input.caseId, now]
     );
     if (projection.owner && projection.nextAction) {
+      let deepLink = `/company/assurance-orders/${assuranceCase.order_id}#${input.caseId}`;
+      if (input.state === "PENDING_ADDITIONAL_REVIEW") {
+        deepLink = projection.owner === "reviewer"
+          ? "/verifier/reviews/scoring"
+          : `/admin/operations/scoring-assignments#${input.caseId}`;
+      } else if (input.state === "ADDITIONAL_EVIDENCE_REQUIRED" ||
+                 input.state === "REASSESSMENT_REQUIRED") {
+        deepLink = `/worker/assurance-cases/${input.caseId}`;
+      } else if (input.state === "INTERVIEW_PENDING") {
+        if (projection.owner === "assessor") {
+          const current = await client.query<{interview_reference:string|null}>(
+            "SELECT interview_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2",
+            [input.caseId,input.tenantId]
+          );
+          const interviewId = current.rows[0]?.interview_reference;
+          if (!interviewId) throw new Error("Assigned interview has no case-bound request.");
+          deepLink = `/assessor/interviews/${interviewId}`;
+        } else {
+          deepLink = "/admin/assessor-matching";
+        }
+      }
       await client.query(
         `INSERT INTO assurance_action_items(
            action_id,tenant_id,order_id,case_id,worker_account_id,severity,reason,
@@ -328,7 +424,7 @@ export class DecisionRepository {
           assuranceCase.worker_account_id,
           projection.nextAction,
           projection.owner,
-          `/company/assurance-orders/${assuranceCase.order_id}#${input.caseId}`,
+          deepLink,
           now
         ]
       );
@@ -379,13 +475,80 @@ export class DecisionRepository {
   }
 
 
+
+  private async validatedAcceptedRenewalSource(
+    client: Awaited<typeof this.clientPromise>,
+    decision: DecisionRecord,
+    actorAccountId: string,
+    renewalAppealId: string | undefined
+  ): Promise<boolean> {
+    if (!renewalAppealId) { if(decision.reason.code==="accepted_appeal_renewal") throw new Error("Trusted accepted renewal proof did not reach Decision Engine."); return false; }
+    if (decision.reason.code !== "accepted_appeal_renewal" ||
+        !decision.inputReferences.includes(renewalAppealId)) {
+      throw new Error("Renewal proof does not match the independently accepted decision source.");
+    }
+    const proven = await client.query<{source_case_id:string;credential_id:string;original_state:string}>(
+      `SELECT source.case_id AS source_case_id,appeal.credential_id,previous.state AS original_state
+         FROM credential_appeals AS appeal
+         JOIN credential_issuances AS credential
+           ON credential.credential_id=appeal.credential_id
+          AND credential.worker_id=appeal.worker_id
+         JOIN assurance_cases AS source
+           ON source.credential_reference=credential.credential_id
+          AND source.permanent_worker_id=appeal.worker_id
+         JOIN platform_decisions AS previous
+           ON previous.decision_id=source.decision_reference
+          AND previous.tenant_id=source.tenant_id
+         JOIN assurance_cases AS target
+           ON target.case_id=$1
+          AND target.tenant_id=source.tenant_id
+          AND target.worker_account_id=source.worker_account_id
+          AND target.permanent_worker_id=source.permanent_worker_id
+        WHERE appeal.appeal_id=$2
+          AND appeal.status='accepted' AND appeal.outcome_action='renew'
+          AND appeal.reviewer_account_id=$3
+          AND appeal.reviewer_account_id<>source.worker_account_id
+          AND appeal.reviewed_at=$4
+          AND previous.state IN ('APPROVED','CONDITIONALLY_APPROVED')
+          AND NOT EXISTS (
+            SELECT 1 FROM assurance_case_timeline_events AS prior
+             WHERE prior.case_id=source.case_id AND prior.tenant_id=source.tenant_id
+               AND prior.event_type='decision_recorded'
+               AND prior.actor_account_id=$3
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM credential_replacements AS replacement
+             WHERE replacement.appeal_id=appeal.appeal_id
+                OR replacement.old_credential_id=appeal.credential_id
+          )
+        FOR SHARE OF appeal,credential,source,previous`,
+      [decision.caseId,renewalAppealId,actorAccountId,decision.createdAt]
+    );
+    const row=proven.rows[0];
+    if (proven.rows.length!==1 || !row ||
+        !decision.inputReferences.includes(row.source_case_id) ||
+        !decision.inputReferences.includes(row.credential_id) ||
+        (row.original_state==="CONDITIONALLY_APPROVED" ? "CONDITIONALLY_APPROVED":"APPROVED")!==decision.state) {
+      throw new Error("Independently accepted renewal source cannot be authenticated for this case.");
+    }
+    return true;
+  }
+
   private async assertPositiveDecisionPrerequisites(
     client: Awaited<typeof this.clientPromise>,
-    tenantId: string,
-    caseId: string,
-    state: DecisionState
+    decision: DecisionRecord,
+    actorAccountId: string,
+    acceptedRenewalAppealId?: string
   ): Promise<void> {
+    const {tenantId,caseId,state}=decision;
     if (state !== "APPROVED" && state !== "CONDITIONALLY_APPROVED") return;
+    // Renewal reuses a signed, previously approved credential ONLY after a
+    // separately verified independent accepted-appeal review. It is not a
+    // shortcut for an ordinary assessment or an explicit reassessment.
+    const acceptedRenewal = await this.validatedAcceptedRenewalSource(
+      client,decision,actorAccountId,acceptedRenewalAppealId
+    );
+    if (acceptedRenewal) return;
 
     // An Admin's reason/input references are not evidence that mandatory
     // assessment and interview stages actually completed.
@@ -465,7 +628,8 @@ export class DecisionRepository {
 
   async saveDecisionAndProgressCase(
     decision: DecisionRecord,
-    actorAccountId: string
+    actorAccountId: string,
+    acceptedRenewalAppealId?: string
   ): Promise<void> {
     if (!actorAccountId.trim()) throw new Error("Decision actor is required.");
     const client = await this.clientPromise;
@@ -480,7 +644,7 @@ export class DecisionRepository {
       if (current.rows[0]?.case_status !== "Decision pending") {
         throw new Error("Assurance Case is not ready for a final decision.");
       }
-      await this.assertPositiveDecisionPrerequisites(transaction, decision.tenantId, decision.caseId, decision.state);
+      await this.assertPositiveDecisionPrerequisites(transaction, decision, actorAccountId, acceptedRenewalAppealId);
       await this.saveDecisionWithClient(transaction, decision);
       await this.applyDecisionToAssuranceCase(transaction, {
         tenantId: decision.tenantId,
@@ -537,7 +701,11 @@ export class DecisionRepository {
       if (!caseId) {
         throw new Error("Decision override target could not be resolved within the tenant boundary.");
       }
-      await this.assertPositiveDecisionPrerequisites(transaction, override.tenantId, caseId, override.newState);
+      const previous = await new DecisionRepository(Promise.resolve(transaction)).findDecision(override.decisionId,override.tenantId);
+      if (!previous) throw new Error("Decision override cannot verify the original source.");
+      await this.assertPositiveDecisionPrerequisites(
+        transaction,{...previous,state:override.newState},override.actorReference
+      );
       await this.applyOverrideStateWithClient(transaction, override);
       await this.saveOverrideWithClient(transaction, override);
       await this.applyDecisionToAssuranceCase(transaction, {

@@ -78,7 +78,7 @@ export async function issueAppealRenewal(database: DatabaseClient, appeal: Crede
     reasonCode:"accepted_appeal_renewal",explanation:appeal.reviewReason,ruleVersion:pin.globalPolicyVersionId,
     inputReferences:[appeal.appealId,original.credentialId,previous.case_id,previous.decision_reference,...appeal.evidence],
     createdAt:appeal.reviewedAt});
-  await new DecisionRepository(Promise.resolve(database),currentKey).saveDecisionAndProgressCase(decision,appeal.reviewerAccountId);
+  await new DecisionRepository(Promise.resolve(database),currentKey).saveDecisionAndProgressCase(decision,appeal.reviewerAccountId,appeal.appealId);
   const linked = await database.query<{credential_reference:string}>(
     "SELECT credential_reference FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2",[caseId,previous.tenant_id]);
   const replacement = await credentials.findPublic(linked.rows[0]?.credential_reference);

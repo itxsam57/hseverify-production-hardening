@@ -17,6 +17,7 @@ export default async function WorkerAssuranceCasePage({params}:{params:Promise<{
    <p><strong>Next action:</strong> {record.nextAction}</p>
    <p>Updated {formatDateTime(record.updatedAt)}</p>
    {record.credentialReference?<Link className="button button-primary" href={"/worker/passport#"+encodeURIComponent(record.credentialReference)}>Open issued credential</Link>:null}
+   {record.status==="Evidence pending"?<Link className="button button-primary" href="/worker/evidence">Add or correct requested evidence</Link>:null}
    <Link className="button button-secondary" href="/worker/available-assessments">Available assessments</Link>
   </article>
  </section>;

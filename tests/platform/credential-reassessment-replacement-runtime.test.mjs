@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { assessmentFundingFixture } from "../helpers/assessment-funding-fixture.mjs";
 import { acceptedReassessmentSource } from "../helpers/assessment-appeal-reassessment-fixture.mjs";
+import { completeFundedCaseObjectiveAssessment } from "../helpers/completed-funded-assessment-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
 const KEY="reassessment-test-signing-secret-more-than-32";
@@ -16,8 +17,8 @@ test("Actual positive issuer finalizes only the explicitly associated accepted r
   const appealHistory=(await database.query("SELECT * FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",[x.appeal.appealId])).rows;
   const application=await x.service.applyWorkerPay(fixture.worker,fixture.fundingInput.catalogueVersionId,x.now,{sourceAppealId:x.appeal.appealId});
   const fresh=await x.service.confirmSandboxWorkerPayment(fixture.worker,application.applicationId,x.now);
-  // Completed review prerequisites are fixture inputs. Final decision/storage/replacement are actual producers.
-  await database.query("UPDATE assurance_cases SET case_status='Decision pending',owner_kind='admin' WHERE case_id=$1",[fresh.caseId]);
+  // Real objective scorer verifies the pinned synthetic MCQ before the independent reassessment decision.
+  await completeFundedCaseObjectiveAssessment(database,fresh.caseId,x.now);
   const {createDecision}=loadTs("src/lib/decision/decision-engine-domain.ts"),{DecisionRepository}=loadTs("src/lib/decision/decision-engine-repository.ts");
   const issuedAt=new Date(x.now.getTime()+1000).toISOString();
   const decision=createDecision({tenantId:x.oldCase.tenant_id,caseId:fresh.caseId,state:"APPROVED",reasonCode:"reassessment_passed",explanation:"The explicitly linked reassessment meets the pinned rule.",ruleVersion:"reassessment-test",inputReferences:[application.applicationId,x.appeal.appealId],createdAt:issuedAt});
@@ -49,7 +50,7 @@ test("Explicit reassessment issuer rejects owner review, lost Company access, mi
    const x=await acceptedReassessmentSource(fixture,database);
    const application=await x.service.applyWorkerPay(fixture.worker,fixture.fundingInput.catalogueVersionId,x.now,{sourceAppealId:x.appeal.appealId});
    const fresh=await x.service.confirmSandboxWorkerPayment(fixture.worker,application.applicationId,x.now);
-   await database.query("UPDATE assurance_cases SET case_status='Decision pending',owner_kind='admin' WHERE case_id=$1",[fresh.caseId]);
+    await completeFundedCaseObjectiveAssessment(database,fresh.caseId,x.now);
    if(kind==="inactive_link")await database.query("UPDATE company_worker_links SET link_status='revoked',revoked_at=NOW() WHERE link_id=$1",[fixture.fundingInput.workerLinkId]);
    const {createDecision}=loadTs("src/lib/decision/decision-engine-domain.ts"),{DecisionRepository}=loadTs("src/lib/decision/decision-engine-repository.ts");
    const decision=createDecision({tenantId:x.oldCase.tenant_id,caseId:fresh.caseId,state:"APPROVED",reasonCode:"reassessment_passed",explanation:"Controlled explicitly associated reassessment.",ruleVersion:"reassessment-test",inputReferences:[application.applicationId,x.appeal.appealId],createdAt:new Date(x.now.getTime()+1000).toISOString()});
