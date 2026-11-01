@@ -144,6 +144,16 @@ export async function authorizeInterviewMedia(
   if (!row.assessor_account_id) {
     throw new InterviewMediaAccessError("Interview has not been assigned to an Assessor.", 409);
   }
+  // End closes peer signaling immediately, even while the request remains
+  // ASSIGNED until the separate final recommendation is submitted.
+  const runtime = await database.query<{ status: string }>(
+    `SELECT status FROM interview_runtime_sessions WHERE interview_request_id=$1
+      LIMIT 1`,
+    [requestId]
+  );
+  if (row.status === "COMPLETED" || ["ENDED", "CANCELLED", "NO_SHOW"].includes(runtime.rows[0]?.status ?? "")) {
+    throw new InterviewMediaAccessError("Interview media is closed.", 409);
+  }
   if(!await interviewCalibrationCurrent(database,row.assessor_account_id,requestId))throw new InterviewMediaAccessError("Current calibration for the pinned interview framework is required.",403);
   const liveStatus =
     row.status === "ASSIGNED" ||

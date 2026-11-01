@@ -37,6 +37,10 @@ function session(accountId, role) {
 async function database() {
   const db = await openScriptDatabase(ENV);
   await applyMigrationsThrough(db, ENV.releaseSha, "0066_interview_live_media");
+  // This legacy isolated 0066 media fixture predates 0070's runtime table.
+  // Supply the minimal later runtime lookup contract; the new End gate
+  // separately uses the real fully migrated schema and runtime transitions.
+  await db.query("CREATE TABLE interview_runtime_sessions (interview_request_id TEXT UNIQUE, status TEXT NOT NULL)");
   return db;
 }
 
