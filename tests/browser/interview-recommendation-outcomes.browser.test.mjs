@@ -61,7 +61,7 @@ async function login(page, baseUrl, credential, role) {
 
 
 for(const [recommendation,status] of [
- ["CONDITIONAL_PASS","Decision pending"], ["ADDITIONAL_EVIDENCE_REQUIRED","Evidence pending"],
+ ["PASS","Decision pending"], ["CONDITIONAL_PASS","Decision pending"], ["ADDITIONAL_EVIDENCE_REQUIRED","Evidence pending"],
  ["REASSESSMENT_REQUIRED","Reassessment required"], ["SECOND_INTERVIEW_REQUIRED","Interview pending"],
  ["FAIL","Reassessment required"]
 ]) test(`Real Assessor form finalizes ${recommendation} and exposes case routing`,{timeout:300000},async()=>{
@@ -121,7 +121,7 @@ for(const [recommendation,status] of [
   await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",environment:x.fixture.environment,projectRoot:process.cwd(),probe:async()=>{
    const browser=await chromium.launch({headless:true});
    try{
-    for(const role of ["worker","company",...(["CONDITIONAL_PASS","SECOND_INTERVIEW_REQUIRED"].includes(recommendation)?["admin"]:[])]){
+    for(const role of ["worker","company",...(["PASS","CONDITIONAL_PASS","SECOND_INTERVIEW_REQUIRED"].includes(recommendation)?["admin"]:[])]){
      // Preserve actual authenticated sessions across the server restart. Logging
      // Company in again in the same TOTP window correctly triggers replay denial.
      const page=await(await browser.newContext(roleStates[role]?{storageState:roleStates[role]}:{})).newPage();
