@@ -378,6 +378,7 @@ export class InterviewAssignmentService {
     if (principal.activeRole !== "assessor" || principal.accountStatus !== "active") {
       throw new InterviewAssignmentInputError("Assessor access is required.");
     }
+    await requireLiveReviewActor(this.database, principal, "assessor", true);
     const reason = reasonInput.trim();
     if (reason.length < 5 || reason.length > 2000) {
       throw new InterviewAssignmentInputError("Conflict reason must contain between 5 and 2000 characters.");
@@ -422,7 +423,9 @@ export class InterviewAssignmentService {
               reminder_at=NULL,reschedule_reason=$2
         WHERE interview_request_id=$1 AND assessor_account_id=$3
           AND status IN ('ASSIGNED','WAITING_ROOM')`,
-      [interviewRequestId, `Conflict declared: ${reason}`, principal.accountId]
+      // The detailed explanation belongs only in interview_assignment_conflicts.
+      // Worker and successor Assessor can read the ordinary rescheduling field.
+      [interviewRequestId, "Assessor reassigned; appointment needs reconfirmation.", principal.accountId]
     );
     if (reset.affectedRows !== 1) {
       throw new InterviewAssignmentInputError("Interview assignment changed before the conflict could be recorded.");

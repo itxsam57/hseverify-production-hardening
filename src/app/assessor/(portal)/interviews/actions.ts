@@ -316,6 +316,9 @@ export async function declareInterviewConflictAction(formData: FormData): Promis
     );
   });
   revalidateInterview(interviewRequestId);
+  revalidatePath("/worker/interviews/" + interviewRequestId);
+  revalidatePath("/admin/assessor-matching");
+  revalidatePath("/company/assurance-orders");
 }
 
 export async function claimInterviewAction(formData: FormData): Promise<void> {
