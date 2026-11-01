@@ -165,6 +165,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                               <option value="PASS">PASS</option>
                               <option value="FAIL">FAIL</option>
                               <option value="CHANGES_REQUESTED">CHANGES REQUESTED</option>
+                              <option value="ADDITIONAL_REVIEW">ADDITIONAL REVIEW — independent second Verifier</option>
                             </select>
                           </label>
                           <label>

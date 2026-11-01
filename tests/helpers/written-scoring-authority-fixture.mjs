@@ -4,8 +4,8 @@ import {loadWorkerRegistrationTs} from "./worker-registration-runtime-loader.mjs
 import {seedWorkerPrincipal,seedInProgressAttempt,stableId,ATTEMPT_NOW} from "./assessment-attempt-fixture.mjs";
 const {WrittenScoringService}=loadWorkerRegistrationTs("src/lib/scoring/written-scoring-service.ts");
 const env={appEnvironment:"test",databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:"memory://",releaseSha:"written-live-authority",sessionSecret:"test-session-secret-2026-000000000000000",authPepper:"test-auth-pepper-2026-000000000000000",authSandboxEnabled:false,demoAuthEnabled:false,demoDataEnabled:false};
-async function fixture(seed){
- const db=await openScriptDatabase(env);await applyMigrationsThrough(db,env.releaseSha,"0113_written_scoring_final_history");
+async function fixture(seed,migrationCeiling="0113_written_scoring_final_history"){
+ const db=await openScriptDatabase(env);await applyMigrationsThrough(db,env.releaseSha,migrationCeiling);
  const worker=await seedWorkerPrincipal(db,"worker-"+seed);const reviewer=await seedWorkerPrincipal(db,"reviewer-"+seed);
  await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'verifier')",[reviewer.accountId]);
  await db.query("UPDATE auth_sessions SET active_role='verifier' WHERE session_id=$1",[reviewer.sessionId]);

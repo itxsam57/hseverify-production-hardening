@@ -15,7 +15,7 @@ import { normalizeWrittenScore, normalizeWrittenScoreDecision } from "./written-
 type ScoringReviewRow = {
   review_id:string; tenant_id:string; case_id:string; attempt_id:string;
   reviewer_account_id:string; rubric_version:string; score:number|null;
-  decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"|null; reason:string; status:string;
+  decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"|"ADDITIONAL_REVIEW"|null; reason:string; status:string;
   draft_revision:number;
   created_at:string|Date;
 };
@@ -126,7 +126,9 @@ export class WrittenScoringService {
       if(error instanceof Error && error.message==="Integrity concerns require a current reasoned human clearance before this attempt can advance.")throw new ScoringRecoveryError(error.message);
       throw error;
     }
-    const row=(await this.database.query<{status:string;case_status:string}>("SELECT review.status,cases.case_status FROM written_score_reviews review JOIN assurance_cases cases ON cases.case_id=review.case_id WHERE review.review_id=$1",[input.reviewId])).rows[0];
+    const row=(await this.database.query<{status:string;decision:string|null;case_status:string;owner_kind:string}>("SELECT review.status,review.decision,cases.case_status,cases.owner_kind FROM written_score_reviews review JOIN assurance_cases cases ON cases.case_id=review.case_id WHERE review.review_id=$1",[input.reviewId])).rows[0];
+    if(row?.decision==="ADDITIONAL_REVIEW" || (row?.case_status==="Review pending"&&row?.owner_kind==="admin"))
+      throw new ScoringRecoveryError("Additional independent review is awaiting Admin assignment and cannot be amended by the original Verifier.");
     if(row?.status!=="FINAL"||!["Review pending","Decision pending","Reassessment required","Interview pending"].includes(row.case_status))throw new ScoringRecoveryError("Only the current final written review can start an amendment.");
     try{await this.pinnedCriteria(input.reviewId,input.reviewerAccountId);}catch(error){
       if(error instanceof Error && error.message==="Every written question needs an authoritative pinned rubric.")throw new ScoringRecoveryError(error.message);
@@ -176,7 +178,7 @@ export class WrittenScoringService {
     expectedRevision?:number;
     decision: unknown;
     reason: string;
-  }): Promise<{review_id:string;tenant_id:string;case_id:string;score:number;decision:"PASS"|"FAIL"|"CHANGES_REQUESTED";reason:string}> {
+  }): Promise<{review_id:string;tenant_id:string;case_id:string;score:number;decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"|"ADDITIONAL_REVIEW";reason:string}> {
     if(!this.insideTransaction)return this.database.transaction(database=>new WrittenScoringService(database,this.actor,true).saveDraftDecision(input));
     if (!input.reviewId.startsWith("written_score_")) throw new Error("Invalid review scope.");
     if (!input.reviewerAccountId.trim()) throw new Error("Missing reviewer scope.");
@@ -186,7 +188,7 @@ export class WrittenScoringService {
     const owner=await this.requireReviewOwner(input.reviewId,input.reviewerAccountId,input.tenantId);
     if(owner.draft_revision!==this.revision(input.expectedRevision))throw new Error("Scoring history changed; reload before saving.");
     const score=await this.computedScore(input.reviewId,input.reviewerAccountId);
-    const result = await this.database.query<{ review_id:string; tenant_id:string; case_id:string; score:number; decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"; reason:string }>(
+    const result = await this.database.query<{ review_id:string; tenant_id:string; case_id:string; score:number; decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"|"ADDITIONAL_REVIEW"; reason:string }>(
       input.tenantId
         ? `UPDATE written_score_reviews
              SET score=$4,decision=$5,reason=$6,draft_revision=draft_revision+1
@@ -215,7 +217,7 @@ export class WrittenScoringService {
     return this.database.transaction(async (database) => {
       const service = new WrittenScoringService(database,this.actor,true);
       await service.finalize(input);
-      const result = await database.query<{ tenant_id:string; case_id:string; decision:"PASS"|"FAIL"|"CHANGES_REQUESTED" }>(
+      const result = await database.query<{ tenant_id:string; case_id:string; decision:"PASS"|"FAIL"|"CHANGES_REQUESTED"|"ADDITIONAL_REVIEW" }>(
         input.tenantId
           ? `SELECT tenant_id,case_id,decision
                FROM written_score_reviews
@@ -257,6 +259,11 @@ export class WrittenScoringService {
       input.tenantId ? [input.reviewId, input.reviewerAccountId, input.tenantId] : [input.reviewId, input.reviewerAccountId]
     );
     if (!existing.rows[0]) throw new Error("Only the final reviewer may amend a review.");
+    const hold=await database.query<{decision:string;owner_kind:string;case_status:string}>(`SELECT r.decision,c.owner_kind,c.case_status
+      FROM written_score_reviews r JOIN assurance_cases c ON c.case_id=r.case_id WHERE r.review_id=$1`,[input.reviewId]);
+    if(hold.rows[0]?.decision==="ADDITIONAL_REVIEW" ||
+      (hold.rows[0]?.case_status==="Review pending"&&hold.rows[0]?.owner_kind==="admin"))
+      throw new WrittenScoringAccessError("Independent additional review is reserved for Admin reassignment.");
     await database.query(`UPDATE written_score_reviews SET status='SUPERSEDED' WHERE review_id=$1`, [input.reviewId]);
     const replacementId = createIdentifier("written_score");
     await database.query(`INSERT INTO written_score_reviews(review_id,tenant_id,case_id,attempt_id,reviewer_account_id,rubric_version,score,decision,reason,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'FINAL')`, [replacementId, existing.rows[0].tenant_id, existing.rows[0].case_id, existing.rows[0].attempt_id, input.reviewerAccountId, existing.rows[0].rubric_version, score, decision, reason]);
@@ -288,7 +295,7 @@ export class WrittenScoringService {
       }
       const marks=await this.database.query<{criterion:string;mark:number;mark_reason:string}>(`SELECT DISTINCT ON(criterion) criterion,mark,mark_reason FROM written_score_rubric_marks WHERE review_id=$1 AND reviewer_account_id=$2 AND mark_sequence>COALESCE((SELECT (events.metadata->>'marksBeforeAssignment')::bigint FROM platform_audit_events events WHERE events.action_key='assurance_case.status.changed' AND events.metadata->>'assessmentReviewAssignment'=$1 ORDER BY events.audit_sequence DESC LIMIT 1),0) ORDER BY criterion,mark_sequence DESC`,[review.review_id,reviewerAccountId]);
       const rubricMarks=Object.freeze(marks.rows.map(mark=>Object.freeze({criterion:mark.criterion,mark:Number(mark.mark),reason:mark.mark_reason})));
-      const canAmend=review.status==="FINAL" && unavailableReason===null && questions.some(question=>question.questionType==="SHORT_TEXT"||question.questionType==="LONG_TEXT") && Boolean((await this.database.query(`SELECT 1 FROM assurance_cases cases WHERE cases.case_id=$1 AND cases.closed_at IS NULL AND (cases.case_status IN ('Review pending','Decision pending','Reassessment required') OR (cases.case_status='Interview pending' AND EXISTS(SELECT 1 FROM interview_requests requests WHERE requests.interview_request_id=cases.interview_reference AND requests.case_id=cases.case_id AND requests.status='REQUESTED' AND requests.assessor_account_id IS NULL AND NOT EXISTS(SELECT 1 FROM interview_runtime_sessions sessions WHERE sessions.interview_request_id=requests.interview_request_id))))`,[review.case_id])).rows[0]);
+      const canAmend=review.status==="FINAL" && review.decision!=="ADDITIONAL_REVIEW" && unavailableReason===null && questions.some(question=>question.questionType==="SHORT_TEXT"||question.questionType==="LONG_TEXT") && Boolean((await this.database.query(`SELECT 1 FROM assurance_cases cases WHERE cases.case_id=$1 AND cases.closed_at IS NULL AND (cases.case_status IN ('Review pending','Decision pending','Reassessment required') OR (cases.case_status='Interview pending' AND EXISTS(SELECT 1 FROM interview_requests requests WHERE requests.interview_request_id=cases.interview_reference AND requests.case_id=cases.case_id AND requests.status='REQUESTED' AND requests.assessor_account_id IS NULL AND NOT EXISTS(SELECT 1 FROM interview_runtime_sessions sessions WHERE sessions.interview_request_id=requests.interview_request_id))))`,[review.case_id])).rows[0]);
       rows.push({...review,questions,rubricMarks,canReview:unavailableReason===null,canAmend,unavailableReason});
     }
     await requireLiveWrittenReviewer(this.database,this.actor,reviewerAccountId);

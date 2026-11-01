@@ -22,6 +22,9 @@ export async function eligibleWrittenReviewers(database: DatabaseClient, caseId:
   WHERE cases.case_id=$1 AND attempts.attempt_id=$2 AND attempts.status IN ('SUBMITTED','AUTO_SUBMITTED')
     AND cases.closed_at IS NULL AND cases.case_status IN ('Assessment in progress','Review pending')
     AND NOT EXISTS(SELECT 1 FROM scoring_conflict_declarations conflicts JOIN written_score_reviews review ON review.review_id=conflicts.review_id WHERE review.case_id=cases.case_id AND review.attempt_id=attempts.attempt_id AND conflicts.reviewer_account_id=accounts.account_id)
+    AND NOT EXISTS(SELECT 1 FROM written_score_reviews prior WHERE prior.case_id=cases.case_id
+      AND prior.attempt_id=attempts.attempt_id AND prior.reviewer_account_id=accounts.account_id
+      AND prior.decision='ADDITIONAL_REVIEW')
     AND NOT EXISTS(SELECT 1 FROM evidence_review_conflicts conflicts JOIN evidence_review_tasks tasks USING(task_id) WHERE tasks.case_id=cases.case_id AND conflicts.verifier_account_id=accounts.account_id)
   ORDER BY (SELECT COUNT(*) FROM written_score_reviews WHERE reviewer_account_id=accounts.account_id AND status='DRAFT'),accounts.account_id
  `,[caseId,attemptId]);

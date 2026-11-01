@@ -1,4 +1,4 @@
-export const WRITTEN_SCORE_DECISIONS = ["PASS","FAIL","CHANGES_REQUESTED"] as const;
+export const WRITTEN_SCORE_DECISIONS = ["PASS","FAIL","CHANGES_REQUESTED","ADDITIONAL_REVIEW"] as const;
 export type WrittenScoreDecision = (typeof WRITTEN_SCORE_DECISIONS)[number];
 export const WRITTEN_SCORE_STATUSES = ["DRAFT","FINAL","SUPERSEDED"] as const;
 export class WrittenScoreInputError extends Error {}

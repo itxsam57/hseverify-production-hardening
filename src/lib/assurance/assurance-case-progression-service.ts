@@ -266,7 +266,7 @@ export async function advanceAfterAssessmentReview(
   input: Readonly<{
     caseId: string;
     tenantId: string;
-    decision: "PASS" | "FAIL" | "CHANGES_REQUESTED";
+    decision: "PASS" | "FAIL" | "CHANGES_REQUESTED" | "ADDITIONAL_REVIEW";
     actor: ProgressionActor;
     now: Date;
   }>
@@ -274,6 +274,15 @@ export async function advanceAfterAssessmentReview(
   const row = await loadCase(database, input.caseId, input.tenantId);
   if (row.case_status !== "Review pending") {
     throw new Error("Assessment review no longer matches the Assurance Case state.");
+  }
+  if (input.decision === "ADDITIONAL_REVIEW") {
+    await transitionCase(database, {
+      caseId: row.case_id, tenantId: row.tenant_id,
+      status: "Review pending", owner: "admin",
+      nextAction: "Admin must assign a different calibrated independent Verifier for additional written review.",
+      eventType: "assessment_review_additional_requested", actor: input.actor, now: input.now
+    });
+    return;
   }
   if (input.decision === "PASS") {
     await postPassProgression(
