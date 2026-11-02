@@ -21,6 +21,7 @@ function safeDecisionError(error: unknown): string {
       "Assurance Case is not ready for a final decision.",
       "Required assessment has no completed passing result.",
       "Required interview has no completed passing recommendation.",
+      "Additional review requires a submitted assessment review source.",
       "Sign in again with MFA before overriding a decision.",
       "Decision override target is outside the tenant boundary or does not exist.",
       "Decision override previous state does not match current decision state.",
