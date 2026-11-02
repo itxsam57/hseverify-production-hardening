@@ -41,7 +41,9 @@ export async function getPublicVerificationRequestRuntime(): Promise<{
   return {
     service: new PublicVerificationService(
       new PublicVerificationRepository(database),
-      environment.sessionSecret
+      environment.sessionSecret,
+      [environment.credentialSigningSecret, ...(environment.credentialSigningPreviousSecrets ?? [])]
+        .filter((key): key is string => typeof key === "string")
     ),
     requestFingerprint
   };

@@ -494,6 +494,19 @@ test("S5 re-evaluation supersedes an older clear result when a later duplicate a
     });
     await advanceThroughAutomatedChecks(candidate);
 
+    // A past CLEAR must not become an authorization to issue after a new
+    // submitted identity with matching lawful signals enters the system.
+    await assert.rejects(
+      () => target.eligibilityService.issuePermanentWorkerId(target.submitted.identity.identityId),
+      error => error?.name === "WorkerIdentityWorkerIdBlockedError",
+      "Issuance must recheck duplicate candidates after an earlier clear result."
+    );
+    assert.equal(
+      (await database.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+        [target.worker.accountId])).rows[0].count,0,
+      "Blocked stale check must not create a Worker ID."
+    );
+
     const second = await target.eligibilityService.evaluate(target.submitted.identity.identityId);
     assert.equal(second.checkStatus, "review_required");
     assert.equal(second.checkSequence, first.checkSequence + 1);
@@ -504,6 +517,83 @@ test("S5 re-evaluation supersedes an older clear result when a later duplicate a
   } finally {
     await database.close();
   }
+});
+
+test("S5 later matching account invalidates staff-cleared duplicate review until another authorized evaluation", async () => {
+  const database = await setupTest("eligibility-stale-reviewed");
+  try {
+    const samePerson = { legalFirstName: "Tariq", legalLastName: "Sample", dateOfBirth: "1990-12-21" };
+    const target = await prepareSubmittedWorker(database,"review2target",{
+      draft:samePerson,documentNumber:"REVIEW-999"
+    });
+    const earlierCandidate = await prepareSubmittedWorker(database,"review2first",{
+      draft:samePerson,documentNumber:"REVIEW999"
+    });
+    await advanceThroughAutomatedChecks(target);
+    await advanceThroughAutomatedChecks(earlierCandidate);
+    await markVerified(database,target.submitted.identity.identityId);
+    const first = await target.eligibilityService.evaluate(target.submitted.identity.identityId);
+    assert.equal(first.checkStatus,"review_required");
+    await target.eligibilityService.recordDisposition({
+      checkId:first.checkId,disposition:"continue",reasonCode:"duplicate_cleared_by_authority"
+    });
+    // An authorized clearance is scoped to exactly the candidates reviewed.
+    const laterCandidate = await prepareSubmittedWorker(database,"review2later",{
+      draft:samePerson,documentNumber:"REVIEW 999"
+    });
+    await advanceThroughAutomatedChecks(laterCandidate);
+    await assert.rejects(
+      () => target.eligibilityService.issuePermanentWorkerId(target.submitted.identity.identityId),
+      error => error?.name === "WorkerIdentityWorkerIdBlockedError",
+      "A later matching submitted account must invalidate a previous staff clearance."
+    );
+    const fresh = await target.eligibilityService.evaluate(target.submitted.identity.identityId);
+    assert.equal(fresh.checkStatus,"review_required");
+    assert.equal(fresh.checkSequence,first.checkSequence+1);
+    await assert.rejects(
+      () => target.eligibilityService.issuePermanentWorkerId(target.submitted.identity.identityId),
+      error => error?.name === "WorkerIdentityWorkerIdBlockedError",
+      "A new review requires an independent disposition, not an old continue."
+    );
+    await target.eligibilityService.recordDisposition({
+      checkId:fresh.checkId,disposition:"continue",reasonCode:"duplicate_cleared_by_authority"
+    });
+    const issued = await target.eligibilityService.issuePermanentWorkerId(target.submitted.identity.identityId);
+    assert.match(issued.permanentWorkerId,/^worker_id_/);
+    const rows = (await database.query(
+      "SELECT identity_id,worker_account_id FROM worker_identities WHERE identity_id=ANY($1::text[])",
+      [[target.submitted.identity.identityId,earlierCandidate.submitted.identity.identityId,
+        laterCandidate.submitted.identity.identityId]]
+    )).rows;
+    assert.equal(rows.length,3,"Independent Worker identities must never be silently merged.");
+    assert.equal(new Set(rows.map(row=>row.worker_account_id)).size,3);
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM worker_identity_worker_ids")).rows[0].n,1);
+  } finally {
+    await database.close();
+  }
+});
+
+test("S5 nonmatching later account does not invalidate a valid unchanged clear check",async()=>{
+  const database=await setupTest("eligibility-unrelated-later");
+  try {
+    const target=await prepareSubmittedWorker(database,"unrel-target",{
+      draft:{legalFirstName:"Farah",legalLastName:"Test",dateOfBirth:"1980-03-12"},
+      documentNumber:"FIRST-777"
+    });
+    await advanceThroughAutomatedChecks(target);
+    await markVerified(database,target.submitted.identity.identityId);
+    const clear=await target.eligibilityService.evaluate(target.submitted.identity.identityId);
+    assert.equal(clear.checkStatus,"clear");
+    const other=await prepareSubmittedWorker(database,"unrel-later",{
+      draft:{legalFirstName:"Rizwan",legalLastName:"Other",dateOfBirth:"1994-04-20"},
+      documentNumber:"UNRELATED-888"
+    });
+    await advanceThroughAutomatedChecks(other);
+    const id=await target.eligibilityService.issuePermanentWorkerId(target.submitted.identity.identityId);
+    assert.match(id.permanentWorkerId,/^worker_id_/);
+    assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM worker_identity_duplicate_checks WHERE identity_id=$1",[target.submitted.identity.identityId])).rows[0].n,1);
+    assert.equal((await other.eligibilityService.loadOwnStatus(other.worker)).permanentWorkerId,null);
+  } finally {await database.close();}
 });
 
 test("S5 Worker eligibility read is own-session scoped and never exposes duplicate candidate facts", async () => {

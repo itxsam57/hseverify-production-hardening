@@ -1,5 +1,7 @@
 import "server-only";
+import {canOpenAssuranceEventNotification} from "./assurance-event-notification-access";
 import {canOpenInterviewNotification} from "./interview-notification-access";
+import { canOpenAssessmentFundingNotification } from "./assessment-funding-notification-access";
 
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import type { DatabaseClient } from "../database/database";
@@ -76,21 +78,25 @@ SELECT *
 FROM platform_notifications
 WHERE projection_key = $1`;
 
+export const NOTIFICATION_ACCOUNT_GUARD_SQL = `
+SELECT account_id
+FROM auth_accounts
+WHERE account_id = $1
+  AND account_status = 'active'
+FOR UPDATE`;
+
 export const NOTIFICATION_SESSION_GUARD_SQL = `
 SELECT sessions.session_id
 FROM auth_sessions AS sessions
-JOIN auth_accounts AS accounts
-  ON accounts.account_id = sessions.account_id
 JOIN auth_account_roles AS roles
   ON roles.account_id = sessions.account_id
  AND roles.role = sessions.active_role
 WHERE sessions.session_id = $1
   AND sessions.account_id = $2
   AND sessions.active_role = $3
-  AND accounts.account_status = 'active'
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > CURRENT_TIMESTAMP
-FOR UPDATE OF sessions, accounts`;
+FOR UPDATE OF sessions`;
 
 export const NOTIFICATION_COMPANY_SCOPE_GUARD_SQL = `
 SELECT memberships.membership_id
@@ -141,6 +147,18 @@ WHERE recipient_account_id = $1
       AND tenant_id IS NULL
       AND membership_id IS NULL
     )
+  )`;
+
+const NOTIFICATION_UNREAD_RECORD_SQL = `
+SELECT *
+FROM platform_notifications
+WHERE recipient_account_id = $1
+  AND recipient_role = $2
+  AND read_at IS NULL
+  AND notification_type IN ('assessment.funding.requested','assessment.funding.approved','interview.scheduled','interview.reminder','evidence.submitted','evidence.reviewed','evidence.additional.requested','interview.recommended','decision.recorded','credential.issued','appeal.submitted','appeal.updated','appeal.evidence.submitted','appeal.interview.submitted')
+  AND (
+    ($2 = 'company' AND tenant_id = $3 AND membership_id = $4)
+    OR ($2 <> 'company' AND tenant_id IS NULL AND membership_id IS NULL)
   )`;
 
 export const NOTIFICATION_FIND_SQL = `
@@ -280,6 +298,16 @@ async function assertLivePrincipal(
   database: DatabaseClient,
   principal: AuthorizationPrincipal
 ): Promise<void> {
+  // Match other account-sensitive commands: account first, session second.
+  // This prevents concurrent portal notification reads and report actions from
+  // acquiring the same two rows in opposite orders.
+  const account = await database.query<{ account_id: string }>(
+    NOTIFICATION_ACCOUNT_GUARD_SQL,
+    [principal.accountId]
+  );
+  if (account.rows[0]?.account_id !== principal.accountId) {
+    throw new NotificationAccessDeniedError();
+  }
   const session = await database.query<{ session_id: string }>(
     NOTIFICATION_SESSION_GUARD_SQL,
     [principal.sessionId, principal.accountId, principal.activeRole]
@@ -343,6 +371,22 @@ export interface NotificationRepository {
     principal: AuthorizationPrincipal,
     notificationId: string
   ): Promise<NotificationReadResult | null>;
+}
+
+async function accessibleRecordNotifications(
+  database: DatabaseClient,
+  principal: AuthorizationPrincipal,
+  notifications: readonly NotificationRecord[]
+): Promise<readonly NotificationRecord[]> {
+  const visible: NotificationRecord[] = [];
+  for (const notification of notifications) {
+    if (await canOpenAssessmentFundingNotification(database, principal, notification) &&
+        await canOpenInterviewNotification(database, principal, notification) &&
+        await canOpenAssuranceEventNotification(database, principal, notification)) {
+      visible.push(notification);
+    }
+  }
+  return Object.freeze(visible);
 }
 
 export class DatabaseNotificationRepository implements NotificationRepository {
@@ -438,11 +482,15 @@ export class DatabaseNotificationRepository implements NotificationRepository {
     return database.transaction(async (transaction) => {
       await assertLivePrincipal(transaction, principal);
       const scope = scopeParameters(principal);
-      const result = await transaction.query<NotificationRow>(
-        NOTIFICATION_LIST_SQL,
-        [...scope, cursor, limit]
-      );
-      return Object.freeze(result.rows.map(notificationFromRow));
+      const visible:NotificationRecord[]=[];
+      let before=cursor;
+      while(visible.length<limit){
+        const result=await transaction.query<NotificationRow>(NOTIFICATION_LIST_SQL,[...scope,before,100]);
+        visible.push(...await accessibleRecordNotifications(transaction,principal,result.rows.map(notificationFromRow)));
+        if(result.rows.length<100)break;
+        before=Number(result.rows[result.rows.length-1].notification_sequence);
+      }
+      return Object.freeze(visible.slice(0,limit));
     });
   }
 
@@ -456,7 +504,14 @@ export class DatabaseNotificationRepository implements NotificationRepository {
         NOTIFICATION_UNREAD_COUNT_SQL,
         scopeParameters(principal)
       );
-      return Number(result.rows[0]?.unread_count ?? 0);
+      const funding = await transaction.query<NotificationRow>(
+        NOTIFICATION_UNREAD_RECORD_SQL,
+        scopeParameters(principal)
+      );
+      const visible = await accessibleRecordNotifications(
+        transaction, principal, funding.rows.map(notificationFromRow)
+      );
+      return Number(result.rows[0]?.unread_count ?? 0) - funding.rows.length + visible.length;
     });
   }
 
@@ -476,6 +531,8 @@ export class DatabaseNotificationRepository implements NotificationRepository {
       );
       const notification=result.rows[0] ? notificationFromRow(result.rows[0]) : null;
       if(notification && !await canOpenInterviewNotification(transaction,principal,notification))return null;
+      if(notification && !await canOpenAssessmentFundingNotification(transaction,principal,notification))return null;
+      if(notification && !await canOpenAssuranceEventNotification(transaction,principal,notification))return null;
       return notification;
     });
   }
@@ -486,9 +543,24 @@ export class DatabaseNotificationRepository implements NotificationRepository {
     const database = await this.client();
     return database.transaction(async (transaction) => {
       await assertLivePrincipal(transaction, principal);
+      const scope = scopeParameters(principal);
+      const funding = await transaction.query<NotificationRow>(
+        NOTIFICATION_UNREAD_RECORD_SQL, scope
+      );
+      const visible = await accessibleRecordNotifications(
+        transaction, principal, funding.rows.map(notificationFromRow)
+      );
+      const visibleIds = new Set(visible.map(notification => notification.notificationId));
+      const excludedIds = funding.rows
+        .filter(row => !visibleIds.has(row.notification_id))
+        .map(row => row.notification_id);
       const updated = await transaction.query<NotificationRow>(
-        NOTIFICATION_MARK_ALL_READ_SQL,
-        scopeParameters(principal)
+        excludedIds.length === 0
+          ? NOTIFICATION_MARK_ALL_READ_SQL
+          : NOTIFICATION_MARK_ALL_READ_SQL.replace(
+              "RETURNING *", "AND NOT (notification_id = ANY($5::text[])) RETURNING *"
+            ),
+        excludedIds.length === 0 ? scope : [...scope, excludedIds]
       );
       return Object.freeze(updated.rows.map(notificationFromRow));
     });
@@ -504,6 +576,11 @@ export class DatabaseNotificationRepository implements NotificationRepository {
     return database.transaction(async (transaction) => {
       await assertLivePrincipal(transaction, principal);
       const scope = scopeParameters(principal);
+      const found = await transaction.query<NotificationRow>(
+        NOTIFICATION_FIND_SQL, [notificationId, ...scope]
+      );
+      if(!found.rows[0])return null;
+      if((await accessibleRecordNotifications(transaction,principal,[notificationFromRow(found.rows[0])])).length===0)return null;
       const updated = await transaction.query<NotificationRow>(
         NOTIFICATION_MARK_READ_SQL,
         [notificationId, ...scope]

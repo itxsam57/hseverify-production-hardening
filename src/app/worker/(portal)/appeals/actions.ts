@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
+import { AppealFollowupAccessError, AppealFollowupConflictError, CredentialAppealFollowupService } from "@/lib/credential/credential-appeal-followup-service";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
 import { CredentialAppealsService } from "@/lib/credential/credential-appeals-service";
 import { CredentialIssuanceRepository } from "@/lib/credential/credential-issuance-repository";
@@ -76,4 +77,21 @@ export async function withdrawCredentialAppealAction(formData: FormData): Promis
   revalidatePath("/worker/appeals");
   revalidatePath("/worker/dashboard");
   redirect("/worker/appeals?status=withdrawn");
+}
+export async function respondCredentialAppealEvidenceAction(formData:FormData):Promise<void>{
+ const principal=await requirePortalAuthorization("worker");
+ const appealId=text(formData,"appealId"),requestId=text(formData,"requestId"),raw=text(formData,"expectedVersion"),expectedVersion=Number(raw),reason=text(formData,"reason");
+ if(!/^[1-9]\d*$/.test(raw)||!Number.isSafeInteger(expectedVersion)||expectedVersion>2147483646)redirect("/worker/appeals?error=conflict");
+ if(reason.length<10||reason.length>4000)redirect("/worker/appeals?error=reason");
+ const evidence:{recordId:string;versionId:string}[]=[];
+ try{for(const value of formData.getAll("evidenceVersionReferences")){
+  if(typeof value!=="string")throw new Error("Invalid evidence reference");
+  const item=JSON.parse(value) as {recordId?:unknown;versionId?:unknown};
+  if(typeof item.recordId!=="string"||typeof item.versionId!=="string")throw new Error("Invalid evidence reference");
+  evidence.push({recordId:item.recordId,versionId:item.versionId});
+ }}catch{redirect("/worker/appeals?error=evidence");}
+ if(!evidence.length||evidence.length>20)redirect("/worker/appeals?error=evidence");
+ try{await new CredentialAppealFollowupService().respondEvidence({principal,appealId,requestId,expectedVersion,reason,evidence});}
+ catch(error){if(error instanceof AppealFollowupConflictError)redirect("/worker/appeals?error=conflict");if(error instanceof AppealFollowupAccessError)redirect("/worker/appeals?error=evidence");throw error;}
+ revalidatePath("/worker/appeals");revalidatePath("/admin/appeals");redirect("/worker/appeals?status=response");
 }

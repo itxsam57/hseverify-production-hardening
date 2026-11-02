@@ -49,7 +49,9 @@ export {
 
 import type { AssessmentExpiryPayload } from "../outbox/outbox-domain";
 
-import { snapshotAssessmentClock, startAssessmentPhaseClock, readAssessmentClock, assertAssessmentTimeAvailable, type AssessmentTimingView } from "./assessment-attempt-timing";
+import { snapshotAssessmentClock, startAssessmentPhaseClock, readAssessmentClock, assertAssessmentTimeAvailable, scheduleAssessmentExpiryFromDeadline, type AssessmentTimingView } from "./assessment-attempt-timing";
+
+import { readAssessmentBreakState,reserveAssessmentBreak,type AssessmentBreakView } from "./assessment-accommodation-break";
 
 export type CurrentAssessmentQuestion = Readonly<{
   attemptId: string;
@@ -66,6 +68,7 @@ export type CurrentAssessmentQuestion = Readonly<{
 }>;
 
 export type AssessmentAttemptView = Readonly<{
+  accommodationBreak?: AssessmentBreakView | null;
   timing: AssessmentTimingView | null;
   attempt: AssessmentAttemptRecord;
   currentQuestion: CurrentAssessmentQuestion | null;
@@ -246,6 +249,7 @@ async function view(
   ).get(attempt.blueprintVersionId);
 
   const timing = await readAssessmentClock(repository.database, attempt, delivery, now);
+  const {view:accommodationBreak}=await readAssessmentBreakState(repository.database,attempt,now);
   const flagRows = await repository.database.query<{ position: number | string }>(
     `SELECT position
        FROM assessment_candidate_flags
@@ -257,6 +261,7 @@ async function view(
 
   if (attempt.status === "SUBMITTED" || attempt.status === "AUTO_SUBMITTED") {
     return Object.freeze({
+      ...(accommodationBreak ? {accommodationBreak} : {}),
       timing,
       attempt,
       currentQuestion: null,
@@ -274,8 +279,10 @@ async function view(
     throw new AssessmentAttemptConflictError("Assessment must be resumed through its recovery workflow.");
   }
 
+  if(accommodationBreak?.active)return Object.freeze({accommodationBreak,attempt,timing,currentQuestion:null,currentDraft:null,submitted:false,progressionMode:delivery.progressionMode,reviewablePositions:Object.freeze([]),flaggedPositions:Object.freeze([]),awaitingSectionAdvance:false,awaitingFinalSubmit:false,sectionTitle:null});
   if (timing?.expired) {
     return Object.freeze({
+      ...(accommodationBreak ? {accommodationBreak} : {}),
       attempt, timing, currentQuestion: null, currentDraft: null, submitted: false,
       progressionMode: delivery.progressionMode, reviewablePositions: Object.freeze([]),
       flaggedPositions, awaitingSectionAdvance: false, awaitingFinalSubmit: false, sectionTitle: null
@@ -317,6 +324,7 @@ async function view(
     const isFinal = attempt.currentPosition === attempt.questionCount;
     if (isFinal && delivery.progressionMode !== "STRICT") {
       return Object.freeze({
+      ...(accommodationBreak ? {accommodationBreak} : {}),
       timing,
       attempt,
         currentQuestion: null,
@@ -336,6 +344,7 @@ async function view(
       section.endPosition === attempt.currentPosition
     ) {
       return Object.freeze({
+      ...(accommodationBreak ? {accommodationBreak} : {}),
       timing,
       attempt,
         currentQuestion: null,
@@ -361,6 +370,7 @@ async function view(
   }
   const draft = await repository.findCurrentDraft(attempt, item);
   return Object.freeze({
+      ...(accommodationBreak ? {accommodationBreak} : {}),
     timing,
     attempt,
     currentQuestion: currentQuestion(attempt, item),
@@ -821,6 +831,26 @@ export class AssessmentAttemptService {
       }
 
       return view(repository, created, this.timingNow(now));
+    });
+  }
+
+  async startApprovedBreak(principal:AuthorizationPrincipal,input:{attemptId:string;durationSeconds:number;mutationKey:string},accessContext:AssessmentAccessContext|null,now=new Date()):Promise<AssessmentAttemptView>{
+    const attemptId=normalizeAssessmentAttemptReference(input.attemptId);
+    return this.database.transaction(async database=>{
+      await assertLiveWorker(database,principal,now);
+      const repository=new AssessmentAttemptRepository(database);
+      const attempt=await lockCaseAndAttempt(database,repository,principal.accountId,attemptId);
+      if(!attempt||attempt.status!=="IN_PROGRESS")throw new AssessmentAttemptAccessError();
+      const ownerCase=(await database.query<{case_status:string}>("SELECT case_status FROM assurance_cases WHERE case_id=$1 AND worker_account_id=$2",[attempt.caseId,principal.accountId])).rows[0];
+      if(ownerCase?.case_status!=="Assessment in progress")throw new AssessmentAttemptConflictError("This case is not open for an assessment break.");
+      await assertAttemptBinding(repository,attempt,principal,accessContext,now);
+      const delivery=await new AssessmentDeliverySettingsService(Promise.resolve(database)).get(attempt.blueprintVersionId);
+      const timing=await readAssessmentClock(database,attempt,delivery,this.timingNow(now));
+      if(timing?.expired)throw new AssessmentAttemptConflictError("Assessment time has expired.");
+      await reserveAssessmentBreak(database,attempt,principal,input,timing?.phaseIndex??0,this.timingNow(now));
+      const adjusted=await readAssessmentClock(database,attempt,delivery,this.timingNow(now));
+      if(adjusted)await scheduleAssessmentExpiryFromDeadline(database,attemptId,adjusted.phaseIndex,adjusted.deadlineAt,bindTrustedAuditActor(principal));
+      return view(repository,attempt,this.timingNow(now));
     });
   }
 

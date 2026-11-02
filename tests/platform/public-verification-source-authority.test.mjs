@@ -35,3 +35,16 @@ for (const authority of [
   assert.equal(result.status, 1);
   assert.match(result.stderr, /workflow authority/);
 });
+
+test("public projection permits only named read-only credential helpers", () => {
+  const result = runWith("\nimport { credentialFromRow as readRecord, credentialAuthentication as authenticateRecord } from \"@/lib/credential/credential-issuance-domain\";\n");
+  assert.equal(result.status, 0, result.stderr);
+});
+for (const statement of [
+  "import { credentialAuthentication, issueCredential } from \"@/lib/credential/credential-issuance-domain\";",
+  "import * as credentials from \"@/lib/credential/credential-issuance-domain\";"
+]) test(`public boundary rejects credential issuance imports: ${statement}`, () => {
+  const result = runWith(`\n${statement}\n`);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /workflow authority/);
+});

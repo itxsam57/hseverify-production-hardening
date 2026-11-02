@@ -1,4 +1,5 @@
 import "server-only";
+import {interviewCalibrationCurrent} from "../interview/interview-calibration-authority";
 
 import { createHash } from "node:crypto";
 
@@ -289,11 +290,13 @@ export class RecordingAssetService {
       recording_consent_required: boolean;
       recording_consented_at: string | Date | null;
       runtime_status: string | null;
+      runtime_ended_at: string | Date | null;
     }>(
       `SELECT requests.tenant_id,requests.case_id,requests.worker_account_id,
               requests.assessor_account_id,requests.status,requests.recording_policy,
               requests.recording_retention_days,requests.recording_consent_required,
-              requests.recording_consented_at,sessions.status AS runtime_status
+              requests.recording_consented_at,sessions.status AS runtime_status,
+              sessions.ended_at AS runtime_ended_at
          FROM interview_requests AS requests
          LEFT JOIN interview_runtime_sessions AS sessions
            ON sessions.interview_request_id=requests.interview_request_id
@@ -313,6 +316,7 @@ export class RecordingAssetService {
     if (!isWorker && !isAssessor) {
       throw new RecordingAssetAccessError("Interview recording is limited to the assigned Worker and Assessor.");
     }
+    if(!request.assessor_account_id||!await interviewCalibrationCurrent(database,request.assessor_account_id,interviewRequestId))throw new RecordingAssetAccessError("Current calibration for the pinned interview framework is required.");
     if (request.recording_policy === "NOTES_ONLY" || request.recording_policy === "PROHIBITED") {
       throw new RecordingAssetAccessError("This interview policy does not permit recording.");
     }
@@ -324,6 +328,24 @@ export class RecordingAssetService {
     }
     if (!["ACTIVE","PAUSED","TECHNICAL_HOLD","ENDED"].includes(request.runtime_status ?? "")) {
       throw new RecordingAssetAccessError("Interview recording is not open in the current runtime state.");
+    }
+    // Do not accept backdated or fabricated clips after an interview ends.
+    // The recorder's last dataavailable event may arrive just after End;
+    // allow that final upload only if capture began before End and finishes
+    // within two minutes, while the sender is still inside that grace period.
+    if (request.runtime_status === "ENDED") {
+      const runtimeEndedMs = request.runtime_ended_at
+        ? new Date(request.runtime_ended_at).getTime() : Number.NaN;
+      const graceMs = 2 * 60 * 1000;
+      if (!Number.isFinite(runtimeEndedMs) ||
+          startedAt.getTime() > runtimeEndedMs ||
+          runtimeEndedMs + graceMs < Date.now() ||
+          endedAt.getTime() > runtimeEndedMs + graceMs) {
+        throw new RecordingAssetAccessError("Interview recording upload window has closed.");
+      }
+    }
+    if (endedAt.getTime() > Date.now() + 30_000) {
+      throw new RecordingAssetInputError("Recording segment end is in the future.");
     }
     if (
       (request.recording_policy === "AUDIO_ONLY" && source !== "AUDIO_ONLY") ||

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { submitPublicConcernAction } from "@/app/contact/actions";
 import { INITIAL_PUBLIC_CONCERN_ACTION_STATE } from "@/lib/public-verification/public-concern-action-state";
@@ -16,6 +16,13 @@ export function PublicConcernForm({
     submitPublicConcernAction,
     INITIAL_PUBLIC_CONCERN_ACTION_STATE
   );
+  // React resets uncontrolled form fields after server-action submissions.
+  // Preserve the visitor's entered draft when server-side validation rejects it.
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   return (
     <form action={action} className="public-verification-form">
@@ -24,7 +31,7 @@ export function PublicConcernForm({
 
       <div className="field-stack">
         <label htmlFor="public-concern-category">Concern type</label>
-        <select id="public-concern-category" name="category" defaultValue="" required>
+        <select id="public-concern-category" name="category" value={category} onChange={event => setCategory(event.target.value)} required>
           <option value="" disabled>Select a concern</option>
           <option value="identity_mismatch">Identity mismatch</option>
           <option value="suspected_fraud">Suspected fraud or copied result</option>
@@ -43,13 +50,15 @@ export function PublicConcernForm({
           maxLength={4000}
           required
           rows={6}
+          value={description}
+          onChange={event => setDescription(event.target.value)}
           placeholder="Describe what you noticed and why the public verification result concerns you."
         />
       </div>
 
       <div className="field-stack">
         <label htmlFor="public-concern-name">Your name (optional)</label>
-        <input id="public-concern-name" name="contactName" maxLength={160} autoComplete="name" />
+        <input id="public-concern-name" name="contactName" maxLength={160} autoComplete="name" value={contactName} onChange={event => setContactName(event.target.value)} />
       </div>
 
       <div className="field-stack">
@@ -61,6 +70,8 @@ export function PublicConcernForm({
           maxLength={320}
           autoComplete="email"
           placeholder="name@example.com"
+          value={contactEmail}
+          onChange={event => setContactEmail(event.target.value)}
         />
       </div>
 
@@ -73,6 +84,8 @@ export function PublicConcernForm({
           maxLength={32}
           autoComplete="tel"
           placeholder="+966..."
+          value={contactPhone}
+          onChange={event => setContactPhone(event.target.value)}
         />
         <p className="muted-copy">Provide at least an email address or phone number so the concern can be followed up.</p>
       </div>

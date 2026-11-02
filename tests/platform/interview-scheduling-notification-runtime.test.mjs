@@ -1,3 +1,5 @@
+import {openScriptDatabase} from "../../scripts/lib/database.mjs";
+import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
 import {assessorSchedulingPrincipal} from "../helpers/assessor-scheduling-native-principal.mjs";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -86,23 +88,24 @@ test("Notification migration restores original constraints when empty and refuse
  const down=await readFile("database/migrations/0088_interview_scheduling_notifications.down.sql","utf8");
  const up=await readFile("database/migrations/0088_interview_scheduling_notifications.up.sql","utf8");
  const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+ const empty=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:"memory://"});await applyMigrationsThrough(empty,"interview-empty-rollback","0090_interview_worker_availability");
  try{
-  const definitions=(await db.query("SELECT platform_interview_notification_rollback_constraints() AS definitions")).rows[0].definitions;
+  const definitions=(await empty.query("SELECT platform_interview_notification_rollback_constraints() AS definitions")).rows[0].definitions;
   for(const definition of definitions)assert.doesNotMatch(definition.definition,/interview\.scheduled|interview\.record|company\.assurance\.case/);
   const emailDown=await readFile("database/migrations/0089_interview_scheduling_email.down.sql","utf8");
   const emailUp=await readFile("database/migrations/0089_interview_scheduling_email.up.sql","utf8");
   const availabilityDown=await readFile("database/migrations/0090_interview_worker_availability.down.sql","utf8"),availabilityUp=await readFile("database/migrations/0090_interview_worker_availability.up.sql","utf8");
-  await db.transaction(tx=>tx.exec(availabilityDown));
-  await db.transaction(tx=>tx.exec(emailDown));
-  await db.transaction(tx=>tx.exec(down));
+  await empty.transaction(tx=>tx.execute(availabilityDown));
+  await empty.transaction(tx=>tx.execute(emailDown));
+  await empty.transaction(tx=>tx.execute(down));
   for(const definition of definitions){
-   const current=(await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[definition.table,definition.constraint])).rows[0].definition;
+   const current=(await empty.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[definition.table,definition.constraint])).rows[0].definition;
    assert.equal(current,definition.definition);
   }
-  assert.equal(Number((await db.query("SELECT count(*) AS total FROM interview_requests")).rows[0].total),3);
-  await db.transaction(tx=>tx.exec(up));
-  await db.transaction(tx=>tx.exec(emailUp));
-  await db.transaction(tx=>tx.exec(availabilityUp));
+  assert.equal(Number((await empty.query("SELECT count(*) AS total FROM interview_requests")).rows[0].total),0);
+  await empty.transaction(tx=>tx.execute(up));
+  await empty.transaction(tx=>tx.execute(emailUp));
+  await empty.transaction(tx=>tx.execute(availabilityUp));
   const principal=await assessorSchedulingPrincipal(db,fixture.credentials.assessor);
   await new InterviewSchedulingService(db).scheduleInterview({principal,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Alpha,scheduledAt:new Date(Date.now()-5*3600000).toISOString()});
   assert.equal(Number((await db.query("SELECT count(*) AS total FROM platform_outbox_jobs WHERE job_type='notification.interview.scheduled'")).rows[0].total),0,"Beyond the existing four-hour recovery window creates no late notice");
@@ -113,7 +116,7 @@ test("Notification migration restores original constraints when empty and refuse
   await db.query("UPDATE auth_sessions SET expires_at=clock_timestamp()-INTERVAL '1 second' WHERE session_id=$1",[principal.sessionId]);
   await assert.rejects(new InterviewSchedulingService(db).scheduleInterview({principal,tenantId:fixture.credentials.company.tenantId,request:fixture.requests.Beta,scheduledAt:new Date(Date.now()+3600000).toISOString()}),e=>e.name==="InterviewAssignmentAccessError");
   console.log("ACTUAL_INTERVIEW_NOTIFICATION_ROLLBACK empty restores four original constraints/retains requests; source-only history refuses rollback; late notices suppressed; expired persisted session denied");
- }finally{await db.close();await fixture.cleanup();}
+ }finally{await empty.close();await db.close();await fixture.cleanup();}
 });
 
 test("Scheduling projection rejects forged content and current recipient access loss",{timeout:120000},async()=>{

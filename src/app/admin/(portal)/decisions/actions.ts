@@ -19,6 +19,7 @@ function safeDecisionError(error: unknown): string {
   if (error instanceof Error) {
     const allowed = new Set([
       "Assurance Case is not ready for a final decision.",
+      "Sign in again with MFA before overriding a decision.",
       "Decision override target is outside the tenant boundary or does not exist.",
       "Decision override previous state does not match current decision state.",
       "Decision override target could not be resolved within the tenant boundary."
@@ -80,11 +81,12 @@ export async function createDecisionOverrideAction(formData: FormData): Promise<
         reason: text(formData, "reason"),
         evidenceReference: text(formData, "evidenceReference"),
         confirmed: text(formData, "confirmed") === "true",
-        mfaVerifiedAt: text(formData, "mfaVerifiedAt") || new Date().toISOString(),
+        mfaVerifiedAt: "pending-server-verification",
         notificationRequired: true,
         actorReference: principal.accountId,
         createdAt: new Date().toISOString()
-      })
+      }),
+      principal
     );
   } catch (error) {
     redirect(decisionErrorPath(formData, safeDecisionError(error)));

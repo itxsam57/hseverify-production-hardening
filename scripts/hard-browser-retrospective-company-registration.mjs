@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import { createHmac } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
+import { createGovernedReviewSetup } from "../tests/helpers/review-governance-browser-helper.mjs";
 
 const BASE_URL = process.env.HSE_BROWSER_BASE_URL || "http://127.0.0.1:3000";
 const SANDBOX_KEY = process.env.HSE_AUTH_SANDBOX_ACCESS_KEY;
@@ -143,7 +144,7 @@ async function enrollStaff(browser, invitationPath, { role, email, displayName }
   await page.getByText("Enrollment complete", { exact: false }).waitFor({ timeout: 15_000 });
   assert(errors.length === 0, `${role} enrollment browser errors: ${errors.join(" | ")}`);
   await context.close();
-  return { role, email, secret };
+  return { role, email, secret, enrolledAt: Date.now() };
 }
 
 async function loginStaff(browser, identity) {
@@ -153,12 +154,10 @@ async function loginStaff(browser, identity) {
   await gotoOk(page, `/${identity.role}/login`, "sign in");
   await page.getByLabel("Email address").fill(identity.email);
   await page.getByLabel("Password").fill(STAFF_PASSWORD);
-  await page.getByLabel("Authenticator code").fill(totp(identity.secret, 1));
+  const totpOffset = Date.now() - identity.enrolledAt < 30_000 ? 1 : 0;
+  await page.getByLabel("Authenticator code").fill(totp(identity.secret, totpOffset));
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(
-    (url) => url.pathname.startsWith(`/${identity.role}/`) && url.pathname !== `/${identity.role}/login`,
-    { timeout: 15_000 }
-  );
+  try { await page.waitForURL((url) => url.pathname.startsWith(`/${identity.role}/`) && url.pathname !== `/${identity.role}/login`, { timeout: 15_000 }); } catch { const body = await page.locator("main").innerText().catch(() => ""); throw new Error(`${identity.role} login diagnostic: ${page.url()} :: ${body}`); }
   assert(errors.length === 0, `${identity.role} login browser errors: ${errors.join(" | ")}`);
   return { context, page, errors };
 }
@@ -201,6 +200,11 @@ async function bootstrapAdministrator(browser) {
     "admin",
     "admin.company.retrospective.qa@example.test"
   );
+  const adminReviewerInvitationPath = await createRootStaffInvitation(
+    rootSession.page,
+    "admin",
+    "admin.reviewer.company.retrospective.qa@example.test"
+  );
   const verifierAInvitationPath = await createRootStaffInvitation(
     rootSession.page,
     "verifier",
@@ -218,6 +222,11 @@ async function bootstrapAdministrator(browser) {
     email: "admin.company.retrospective.qa@example.test",
     displayName: "Company Retrospective Admin"
   });
+  const adminReviewer = await enrollStaff(browser, adminReviewerInvitationPath, {
+    role: "admin",
+    email: "admin.reviewer.company.retrospective.qa@example.test",
+    displayName: "Company Retrospective Review Admin"
+  });
   const verifierA = await enrollStaff(browser, verifierAInvitationPath, {
     role: "verifier",
     email: "verifier.a.company.retrospective.qa@example.test",
@@ -230,6 +239,7 @@ async function bootstrapAdministrator(browser) {
   });
   return {
     adminSession: await loginStaff(browser, admin),
+    adminReviewerSession: await loginStaff(browser, adminReviewer),
     verifierA,
     verifierB
   };
@@ -261,6 +271,7 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 1000
 const page = await context.newPage();
 const errors = trackErrors(page, "company-retrospective");
 let adminSession = null;
+let adminReviewerSession = null;
 let verifierA = null;
 let verifierB = null;
 let verifierASession = null;
@@ -348,6 +359,7 @@ try {
     const staff = await bootstrapAdministrator(browser);
     verifierA = staff.verifierA;
     verifierB = staff.verifierB;
+    adminReviewerSession = staff.adminReviewerSession;
     adminSession = staff.adminSession;
     const adminPage = adminSession.page;
     await gotoOk(adminPage, "/admin/company-verifications", "Company verification review");
@@ -664,6 +676,16 @@ try {
     assert(exactEvidenceVersion.length > 8, "Verifier detail did not expose the exact evidence version.");
     await verifierPage.getByText("employment", { exact: true }).waitFor({ timeout: 15_000 });
     await verifierPage.getByText("QUEUED", { exact: true }).waitFor({ timeout: 15_000 });
+
+    // Review assignment is deliberately fail-closed. Complete the real Admin UI governance sequence.
+    assert(adminSession && verifierB, "Admin and both Verifiers are required for governed review setup.");
+    const taskId = evidenceTaskPath.split("/").filter(Boolean).at(-1);
+    await createGovernedReviewSetup(adminSession.page, BASE_URL, {
+      taskId, verifierEmails: [verifierA.email, verifierB.email],
+      frameworkReference: "RETRO-EVIDENCE-REVIEW", policyReference: "RETRO-EVIDENCE-POLICY",
+      frameworkTitle: "Retrospective evidence review standard", policyTitle: "Retrospective evidence review policy"
+    });
+    await verifierPage.reload({ waitUntil: "domcontentloaded" });
     await verifierPage.getByRole("button", { name: "Claim review" }).click();
     await verifierPage.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
     const preview = verifierPage.getByRole("link", { name: "Preview evidence" });
@@ -747,16 +769,20 @@ try {
     await policyForm.getByLabel("Override allowed fields JSON").fill('["pass_mark","max_attempts"]');
     await policyForm.getByLabel("Override directions JSON").fill('{"pass_mark":"MINIMUM","max_attempts":"MAXIMUM"}');
     await policyForm.getByRole("button", { name: "Publish immutable version" }).click();
-    await adminPage.getByRole("heading", { name: "Frameworks & effective policy", exact: true }).waitFor({ timeout: 15_000 });
+    await adminPage.getByText("Immutable policy version published.", { exact: true }).waitFor({ timeout: 15_000 });
 
     await gotoOk(page, "/company/settings/policy", "Effective policy");
     await page.getByText("Platform policy is the minimum standard.", { exact: false }).waitFor({ timeout: 15_000 });
     const overrideForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Save immutable override version" }) }).first();
+    // Let the Server Action form hydrate before editing uncontrolled fields; otherwise
+    // React can replay the first interaction against its original textarea default.
+    await page.waitForLoadState("networkidle");
     await overrideForm.getByLabel("Policy reference").fill("RETRO-HSE-POLICY");
     await overrideForm.getByLabel("Override values JSON").fill('{"pass_mark":85,"max_attempts":1}');
     await overrideForm.getByLabel("Effective from").fill("2026-08-15T00:00");
     await overrideForm.getByRole("button", { name: "Save immutable override version" }).click();
-    await page.getByText("RETRO-HSE-POLICY", { exact: true }).waitFor({ timeout: 15_000 });
+    const policyHistoryItem = page.locator("li").filter({ hasText: "RETRO-HSE-POLICY" }).filter({ hasText: '"pass_mark":85' }).filter({ hasText: '"max_attempts":1' });
+    await policyHistoryItem.waitFor({ state: "visible", timeout: 15_000 });
     let policyText = await page.locator("main").innerText();
     assert(policyText.includes('"pass_mark":85'), "Company policy history did not persist the tighter pass mark.");
     assert(policyText.includes('"max_attempts":1'), "Company policy history did not persist the tighter attempt limit.");
@@ -769,12 +795,12 @@ try {
     return { framework: "created", globalPolicy: "published", companyOverride: "tightened-and-persisted" };
   });
 
-  await checkpoint("M2.04 Question Bank immutable revision and written rubric workflow", async () => {
-    assert(adminSession, "Admin session was not preserved for Question Bank administration.");
-    const adminPage = adminSession.page;
-    await gotoOk(adminPage, "/admin/question-bank", "Question Bank");
+  await checkpoint("M2.04 Question Bank independent review, immutable revision and written rubric workflow", async () => {
+    assert(adminSession && adminReviewerSession, "Two independent Admin sessions are required for Question Bank publication.");
+    const authorPage = adminSession.page;
+    await gotoOk(authorPage, "/admin/question-bank", "Question Bank");
 
-    const createForm = adminPage.locator("form").filter({ has: adminPage.getByRole("button", { name: "Create active question" }) }).first();
+    const createForm = authorPage.locator("form").filter({ has: authorPage.getByRole("button", { name: "Create draft question" }) }).first();
     await createForm.getByLabel("Stable reference").fill("RETRO-WRITTEN-001");
     await createForm.getByLabel("Version JSON").fill(JSON.stringify({
       questionType: "LONG_TEXT",
@@ -791,16 +817,32 @@ try {
       difficulty: "MEDIUM",
       tags: ["hazards", "written", "retrospective"]
     }, null, 2));
-    await createForm.getByRole("button", { name: "Create active question" }).click();
+    await createForm.getByRole("button", { name: "Create draft question" }).click();
 
-    let questionCard = adminPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    let questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
     await questionCard.waitFor({ state: "visible", timeout: 15_000 });
-    let questionText = await questionCard.innerText();
-    assert(questionText.includes("LONG_TEXT · MEDIUM · v1 · ACTIVE"), "Written question did not render as active immutable version 1.");
-    assert(questionText.includes("Explain the control sequence"), "Written question prompt did not persist.");
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v1 · DRAFT", { exact: false }).waitFor({ timeout: 15_000 });
+    await questionCard.getByRole("button", { name: "Submit for review" }).click();
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v1 · UNDER_REVIEW", { exact: false }).waitFor({ timeout: 15_000 });
+    await questionCard.getByText("Another administrator must review this version.", { exact: true }).waitFor({ timeout: 15_000 });
 
+    const reviewerPage = adminReviewerSession.page;
+    await gotoOk(reviewerPage, "/admin/question-bank", "Question Bank");
+    let reviewerCard = reviewerPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await reviewerCard.getByRole("button", { name: "Approve version" }).click();
+    reviewerCard = reviewerPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await reviewerCard.getByText("LONG_TEXT · MEDIUM · v1 · APPROVED", { exact: false }).waitFor({ timeout: 15_000 });
+    await reviewerCard.getByRole("button", { name: "Publish approved version" }).click();
+    reviewerCard = reviewerPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await reviewerCard.getByText("LONG_TEXT · MEDIUM · v1 · PUBLISHED", { exact: false }).waitFor({ timeout: 15_000 });
+
+    await authorPage.reload({ waitUntil: "domcontentloaded" });
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v1 · PUBLISHED", { exact: false }).waitFor({ timeout: 15_000 });
+    await questionCard.getByText("Live publication pointer · v1", { exact: true }).waitFor({ timeout: 15_000 });
     await questionCard.locator("summary").filter({ hasText: "Create a new immutable revision" }).click();
-    const revisionForm = questionCard.locator("form").filter({ has: adminPage.getByRole("button", { name: "Publish revision" }) }).first();
+    const revisionForm = questionCard.locator("form").filter({ has: authorPage.getByRole("button", { name: "Save draft revision" }) }).first();
     await revisionForm.getByLabel("Replacement version JSON").fill(JSON.stringify({
       questionType: "LONG_TEXT",
       prompt: "Explain the control sequence and verification evidence a supervisor should document after discovering an uncontrolled workplace hazard.",
@@ -816,29 +858,41 @@ try {
       difficulty: "MEDIUM",
       tags: ["hazards", "written", "retrospective", "revision"]
     }, null, 2));
-    await revisionForm.getByRole("button", { name: "Publish revision" }).click();
+    await revisionForm.getByRole("button", { name: "Save draft revision" }).click();
 
-    questionCard = adminPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
-    await questionCard.getByText("LONG_TEXT · MEDIUM · v2 · ACTIVE", { exact: false }).waitFor({ timeout: 15_000 });
-    questionText = await questionCard.innerText();
-    assert(questionText.includes("LONG_TEXT · MEDIUM · v2 · ACTIVE"), "Question revision did not advance to immutable version 2.");
-    assert(questionText.includes("verification evidence"), "Question Bank did not display the revised written prompt.");
-    await adminPage.reload({ waitUntil: "domcontentloaded" });
-    questionCard = adminPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
-    questionText = await questionCard.innerText();
-    assert(questionText.includes("v2 · ACTIVE") && questionText.includes("verification evidence"), "Written question revision did not survive reload.");
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v2 · DRAFT", { exact: false }).waitFor({ timeout: 15_000 });
+    await questionCard.getByText("Live publication pointer · v1", { exact: true }).waitFor({ timeout: 15_000 });
+    await questionCard.getByText("This version stays live while the newer draft is reviewed.", { exact: true }).waitFor({ timeout: 15_000 });
+    await questionCard.getByRole("button", { name: "Submit for review" }).click();
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v2 · UNDER_REVIEW", { exact: false }).waitFor({ timeout: 15_000 });
 
-    await questionCard.getByRole("button", { name: "Deactivate" }).click();
-    questionCard = adminPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
-    await questionCard.getByText("INACTIVE", { exact: false }).waitFor({ timeout: 15_000 });
-    await adminPage.reload({ waitUntil: "domcontentloaded" });
-    questionCard = adminPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
-    await questionCard.getByRole("button", { name: "Reactivate" }).click();
-    questionCard = adminPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
-    await questionCard.getByText("ACTIVE", { exact: false }).waitFor({ timeout: 15_000 });
-    await adminPage.screenshot({ path: `${artifactsDir}/m2-04-question-bank-written-revision.png`, fullPage: true, caret: "initial" });
+    await gotoOk(reviewerPage, "/admin/question-bank", "Question Bank");
+    reviewerCard = reviewerPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await reviewerCard.getByRole("button", { name: "Approve version" }).click();
+    reviewerCard = reviewerPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await reviewerCard.getByText("LONG_TEXT · MEDIUM · v2 · APPROVED", { exact: false }).waitFor({ timeout: 15_000 });
+    await reviewerCard.getByRole("button", { name: "Publish approved version" }).click();
+    reviewerCard = reviewerPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await reviewerCard.getByText("LONG_TEXT · MEDIUM · v2 · PUBLISHED", { exact: false }).waitFor({ timeout: 15_000 });
+
+    await authorPage.reload({ waitUntil: "domcontentloaded" });
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    let questionText = await questionCard.innerText();
+    assert(questionText.includes("v2 · PUBLISHED") && questionText.includes("verification evidence"), "Published revision 2 did not persist.");
+    await questionCard.getByText("Live publication pointer · v2", { exact: true }).waitFor({ timeout: 15_000 });
+
+    await questionCard.getByRole("button", { name: "Pause publication" }).click();
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v2 · PAUSED", { exact: false }).waitFor({ timeout: 15_000 });
+    await questionCard.getByRole("button", { name: "Resume publication" }).click();
+    questionCard = authorPage.locator("article").filter({ hasText: "RETRO-WRITTEN-001" }).first();
+    await questionCard.getByText("LONG_TEXT · MEDIUM · v2 · PUBLISHED", { exact: false }).waitFor({ timeout: 15_000 });
+
+    await authorPage.screenshot({ path: `${artifactsDir}/m2-04-question-bank-written-revision.png`, fullPage: true, caret: "initial" });
     assert(adminSession.errors.length === 0, `Admin Question Bank browser errors: ${adminSession.errors.join(" | ")}`);
-    return { type: "LONG_TEXT", rubricValidated: true, revision: "v1-to-v2", statusCycle: "ACTIVE-INACTIVE-ACTIVE" };
+    return { type: "LONG_TEXT", rubricValidated: true, publication: "two-admin", revision: "v1-to-v2", statusCycle: "PUBLISHED-PAUSED-PUBLISHED" };
   });
 
   assert(errors.length === 0, `Company retrospective browser errors: ${errors.join(" | ")}`);
@@ -852,6 +906,7 @@ try {
 } finally {
   await writeFile(`${artifactsDir}/results.json`, JSON.stringify(results, null, 2), "utf8");
   await verifierASession?.context.close().catch(() => {});
+  await adminReviewerSession?.context.close().catch(() => {});
   await adminSession?.context.close().catch(() => {});
   await context.close().catch(() => {});
   await browser.close();

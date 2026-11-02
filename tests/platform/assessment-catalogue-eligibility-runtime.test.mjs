@@ -1,3 +1,4 @@
+import {seedPublishedQuestion} from "../helpers/question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
@@ -38,7 +39,7 @@ const fingerprint = (value) =>
 
 async function db() {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, "0040_assessment_catalogue_eligibility");
+  await applyMigrationsThrough(database, ENV.releaseSha, "0124_question_exposure_families");
   return database;
 }
 
@@ -127,42 +128,7 @@ async function seedFrameworkBlueprintCatalogue(
   const questionId = oid("assessment_question", c);
   const questionVersionId = oid("question_version", c);
   const prompt = `Eligibility capacity question ${c}: choose the safe action.`;
-  await database.transaction(async (transaction) => {
-    await transaction.query(
-      `INSERT INTO assessment_questions(
-         question_id,question_reference,question_status,current_version_id,current_content_fingerprint,
-         created_by_account_id,created_at,updated_at
-       ) VALUES($1,$2,'INACTIVE',NULL,NULL,$3,$4,$4)`,
-      [questionId, `ELIG-Q-${c.toUpperCase()}`, `account_seed_${c}`, NOW]
-    );
-    const hash = fingerprint(prompt);
-    await transaction.query(
-      `INSERT INTO assessment_question_versions(
-         question_version_id,question_id,version_no,question_type,prompt,options_json,
-         answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-         content_fingerprint,created_by_account_id,created_at
-       ) VALUES($1,$2,1,'MULTIPLE_CHOICE',$3,$4::jsonb,$5::jsonb,NULL,$6,
-                'Core','MEDIUM','[]'::jsonb,$7,$8,$9)`,
-      [
-        questionVersionId,
-        questionId,
-        prompt,
-        JSON.stringify(["Stop work", "Continue", "Ignore"]),
-        JSON.stringify("Stop work"),
-        frameworkId,
-        hash,
-        `account_seed_${c}`,
-        NOW
-      ]
-    );
-    await transaction.query(
-      `UPDATE assessment_questions
-          SET current_version_id=$2,current_content_fingerprint=$3,
-              question_status='ACTIVE',updated_at=$4
-        WHERE question_id=$1`,
-      [questionId, questionVersionId, hash, NOW]
-    );
-  });
+  await seedPublishedQuestion(database,{questionId,versionId:questionVersionId,reference:`ELIG-Q-${c.toUpperCase()}`,questionType:"MULTIPLE_CHOICE",prompt,options:["Stop work","Continue","Ignore"],answerKey:"Stop work",frameworkId,domainReference:"Core",difficulty:"MEDIUM",tags:[],fingerprint:fingerprint(prompt),now:NOW});
 
   await database.transaction(async (transaction) => {
     await transaction.query(
@@ -436,7 +402,7 @@ test("M2.06 rejected, changes-requested and another Worker's qualification never
   }
 });
 
-test("M2.06 hides a pending assessment when permanent exposure exhausts unseen blueprint capacity", async () => {
+test("M2.06 denies start but explains restricted capacity when permanent exposure exhausts unseen blueprint capacity", async () => {
   const database = await db();
   try {
     const worker = await seedAccount(database, "o");
@@ -495,6 +461,14 @@ test("M2.06 hides a pending assessment when permanent exposure exhausts unseen b
       await service.findAvailableForCase(worker, second.caseId, NOW_DATE),
       []
     );
+    const restricted = (await service.listUnavailableForWorker(worker, NOW_DATE))
+      .find(entry => entry.caseId === second.caseId);
+    assert.ok(restricted,"Capacity-exhausted pending case must remain visible as restricted.");
+    assert.equal(restricted.eligibilityStatus,"QUESTION_CAPACITY");
+    assert.match(restricted.eligibilityReason,/unused questions/i);
+    assert.equal(restricted.availableAt,null);
+    assert.ok(!JSON.stringify(restricted).includes("assessment_question_"),"Do not leak question identities.");
+    assert.equal((await database.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[second.caseId])).rows[0].case_status,"Assessment pending");
   } finally {
     await database.close();
   }

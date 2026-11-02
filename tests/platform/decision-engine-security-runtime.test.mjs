@@ -9,6 +9,7 @@ function loadDecisionRuntime() {
   const out = mkdtempSync(resolve(tmpdir(), "hse-decision-security-runtime-"));
   for (const sourceFile of [
     "src/lib/auth/auth-domain.ts",
+    "src/lib/auth/recent-mfa-service.ts",
     "src/lib/credential/certification-record-repository.ts",
     "src/lib/credential/credential-issuance-domain.ts",
     "src/lib/credential/credential-issuance-repository.ts",
@@ -21,6 +22,7 @@ function loadDecisionRuntime() {
     let source = readFileSync(sourceFile, "utf8").replace(/^import "server-only";\n?/, "");
     source = source.replace('import { bindTrustedSystemAuditActor } from "../audit/audit-domain";', 'const bindTrustedSystemAuditActor = () => ({ actor: "runtime-test" });');
     source = source.replace('import { getAuditRepository } from "../audit/audit-repository";', 'const getAuditRepository = () => ({ append: async () => {} });');
+    source = source.replace('import { DecisionRepository } from "./decision-engine-repository";', 'class DecisionRepository {}');
     source = source.replace('import { getDatabaseClient } from "../database/database";', '');
     const output = ts.transpileModule(source, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
@@ -32,6 +34,9 @@ function loadDecisionRuntime() {
   const dbTarget = resolve(out, "lib/database/database.js");
   mkdirSync(dirname(dbTarget), { recursive: true });
   writeFileSync(dbTarget, "module.exports={getDatabaseClient:async()=>({})};");
+  // This tenant-isolation test supplies trusted MFA persistence separately;
+  // decision-recent-mfa-runtime.test.mjs exercises the real proof lookup SQL.
+  writeFileSync(resolve(out, "lib/auth/auth-access-repository.js"), "module.exports={getAuthAccessRepository:async()=>({findSessionMfaVerification:async()=>new Date().toISOString()})};");
   return import(`file://${resolve(out, "lib/decision/decision-engine-service.js")}`);
 }
 
@@ -67,7 +72,7 @@ test("decision override runtime keeps tenant boundary and rejects cross-tenant m
       createdAt: new Date().toISOString(),
       mfaVerifiedAt: new Date().toISOString(),
       notificationRequired: false
-    }),
+    }, {sessionId: "session-admin-b", accountId: "admin-b", activeRole: "admin"}),
     /outside the tenant boundary/
   );
 

@@ -1,10 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
 
 const out = mkdtempSync(join(tmpdir(), "hse-assessment-attempt-runtime-"));
+// Isolated modules must resolve the same installed dependencies as the real worker.
+symlinkSync(resolve("node_modules"), resolve(out, "node_modules"), "dir");
 const root = resolve("src", "lib");
 const alias = "@/lib/";
 const entries = [

@@ -44,6 +44,20 @@ async function ensureRuntimeDist() {
   const databaseDestination = resolve(runtimeDist, "database", "database.js");
   await mkdir(dirname(databaseDestination), { recursive: true });
   await writeFile(databaseDestination, "exports.getDatabaseClient = async () => { throw new Error('test injects database'); };\n");
+  // This scanner-only runtime invokes actual outbox persistence, but never
+  // unrelated report/email business finalization. The current outbox module
+  // imports these modules eagerly; fail loudly if a test accidentally routes
+  // to them rather than silently simulating their side effects.
+  for (const [relativePath, exported] of [
+    ["reports/report-generation-finalizer.js", "finalizeReportGenerationFailure"],
+    ["reports/report-email-handler.js", "finalizeReportEmailFailure"],
+    ["email-delivery/assurance-event-email-finalizer.js", "finalizeAssuranceEventEmailFailure"]
+  ]) {
+    const destination = resolve(runtimeDist, relativePath);
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination,
+      `exports.${exported} = async (_database, job) => { if (job.jobType !== "secure_file.scan") throw new Error("Unexpected unrelated finalizer in scanner test"); };\n`);
+  }
 }
 
 await ensureRuntimeDist();
@@ -427,6 +441,68 @@ test("expired stale lease cannot mutate scan result and a reclaimed lease can fi
     const available = await state(context.database, context.file.fileRef);
     assert.equal(available.lifecycle_status, "available");
     assert.equal(available.scan_result_code, "clean");
+  } finally {
+    await closeCase(context);
+  }
+});
+
+test("scanner outage retains quarantine provenance; retry uses same immutable object and can publish only its own clean result", async () => {
+  const accepted = bytes("reviewer-approved-original-scan-object");
+  const context = await setupCase("offlineimmutable", "G", accepted);
+  try {
+    const { scheduled, claimed } = await scheduleAndClaim(context);
+    const expectedDigest = context.file.contentSha256;
+    const failing = await handleSecureFileScanJobWithDependencies({
+      ...dependencies(context),
+      scanner: { scan: async () => { throw new Error("scanner unavailable in controlled outage"); } }
+    }, claimed.job, claimed.lease);
+    assert.equal(failing.kind, "retryable");
+    assert.equal(failing.failure.code, "scanner_error");
+    const waiting = await state(context.database, context.file.fileRef);
+    assert.equal(waiting.lifecycle_status, "scan_pending");
+    assert.equal(waiting.scan_job_id, scheduled.jobId);
+    assert.equal(waiting.scan_result_code, null);
+    assert.equal(waiting.available_at, null);
+    assert.equal(await auditCount(context.database, context.file.fileRef, "secure_file.scan.available"), 0);
+
+    // Concurrent retry or caller replay must not substitute new bytes under
+    // the original accepted private object key, even before scan recovers.
+    await assert.rejects(context.storage.put(context.file.objectKey, bytes("substituted-untrusted-evidence")),
+      error => error?.name === "PrivateObjectConflictError");
+    assert.deepEqual(Buffer.from(await context.storage.read(context.file.objectKey)), Buffer.from(accepted));
+    assert.equal((await context.storage.put(context.file.objectKey, accepted)).sha256, expectedDigest);
+    const blocked = await context.scans.scheduleForPrincipal({
+      principal: context.worker.principal, fileRef: context.file.fileRef
+    });
+    assert.equal(blocked.created, false,"Concurrent scheduling reuses the same pending scan generation and job.");
+    assert.equal(blocked.jobId, scheduled.jobId);
+
+    const retry = await context.outbox.retry(claimed.lease, failing.failure);
+    assert.equal(retry.status, "retry_wait");
+    await forceRetryDue(context.database, scheduled.jobId);
+    const recovered = await context.outbox.claimNext(outboxDomain.createTrustedOutboxWorker());
+    assert.ok(recovered);
+    assert.equal(recovered.job.jobId, scheduled.jobId);
+    assert.equal(recovered.lease.attemptNumber, 2);
+    assert.deepEqual(await handleSecureFileScanJobWithDependencies(
+      dependencies(context), recovered.job, recovered.lease), { kind: "succeeded" });
+    await context.outbox.succeed(recovered.lease);
+    const available = await state(context.database, context.file.fileRef);
+    assert.equal(available.lifecycle_status, "available");
+    assert.equal(available.scan_result_code, "clean");
+    assert.ok(available.available_at);
+    assert.equal(available.scan_generation, waiting.scan_generation);
+    assert.equal(available.scan_job_id, waiting.scan_job_id);
+    assert.equal(await auditCount(context.database, context.file.fileRef, "secure_file.scan.available"), 1);
+    assert.deepEqual(Buffer.from(await context.storage.read(context.file.objectKey)), Buffer.from(accepted));
+    await assert.rejects(context.storage.put(context.file.objectKey, bytes("later-substituted-evidence")),
+      error => error?.name === "PrivateObjectConflictError");
+    await assert.rejects(context.scans.scheduleForPrincipal({
+      principal: context.worker.principal, fileRef: context.file.fileRef
+    }),error=>error?.name === "SecureFileScanConflictError",
+    "An available scanned file can never be scheduled for another scan that might overwrite acceptance.");
+    assert.equal(await auditCount(context.database, context.file.fileRef, "secure_file.scan.available"), 1);
+    console.log("M10603_SCANNER_OUTAGE locked pending file, single idempotent scan generation, storage overwrite denied, recovered clean on same exact bytes and one audit");
   } finally {
     await closeCase(context);
   }

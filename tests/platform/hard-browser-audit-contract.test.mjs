@@ -16,7 +16,6 @@ const requiredCheckpoints = [
   "M2.02 Verifier opens exact evidence detail and secure preview",
   "M2.02 conflict and terminal decision workflow survives refresh",
   "M2.03 Company effective-policy override workflow",
-  "M2.04 Question Bank immutable revision and written rubric workflow",
   "M2.05 Assessment Blueprint create revise status workflow",
   // Responsive acceptance is role-specific: each authenticated portal must retain its own 390x844 overflow proof.
   "Worker mobile layout has no horizontal overflow",
@@ -46,6 +45,23 @@ test("retrospective hard-browser QA names every completed user-facing workflow i
       `missing real-browser checkpoint: ${checkpoint}`
     );
   }
+});
+
+test("maintained browser suites retain Question Bank revision and written rubric recovery coverage", async () => {
+  const [cohortRunner, integrationRunner, authoringTest, scoringTest, packageFile] = await Promise.all([
+    readFile("scripts/run-consumer-cohort-browser-tests.mjs", "utf8"),
+    readFile("scripts/run-masterplan-integration-browser-tests.mjs", "utf8"),
+    readFile("tests/browser/masterplan-admin-authoring-e2e.browser.test.mjs", "utf8"),
+    readFile("tests/browser/written-scoring-recovery.browser.test.mjs", "utf8"),
+    readFile("package.json", "utf8")
+  ]);
+  const criticalBrowser = JSON.parse(packageFile).scripts["test:critical-browser"];
+  assert.match(cohortRunner, /tests\/browser\/masterplan-admin-authoring-e2e\.browser\.test\.mjs/);
+  assert.match(integrationRunner, /tests\/browser\/written-scoring-recovery\.browser\.test\.mjs/);
+  assert.match(authoringTest, /Create a new immutable revision/);
+  assert.match(scoringTest, /Rubric mark Q1:C0/);
+  assert.match(criticalBrowser, /test:consumer-cohorts-browser/);
+  assert.match(criticalBrowser, /test:masterplan-integration-browser/);
 });
 
 test("retrospective browser workflow remains a real Chromium journey with retained evidence", async () => {

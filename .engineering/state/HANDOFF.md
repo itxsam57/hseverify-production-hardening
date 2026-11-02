@@ -1,1 +1,5 @@
-Read CURRENT_TASK.json and WORK_CONTRACT.md first; use authoritative ledger for remaining scenarios. PR20 frozen0d7e98b has7localpasses; account billing blocksCI. Archive actualRED repaired; working native4/27+browser/types/lintPASS, source REVIEW_PASS; exact candidate gates next. Preserve external CI block and do not claim consumer readiness.
+# Current continuation
+
+WORKFLOW-001 on qa/masterplan-release-20261016 in /home/ubuntu/work/hseverify-masterplan-final-20261014. Exact83eb1e6 connected CI failed at emailvisibility browser: test requiredexit0 whileexpectingretry_wait. Unchangedfocusedred andsafeCLIdiagnostic confirmed3successful jobs/exit0 thenintentionalretry_wait/exit1. Workercontractunchanged; one-linebrowsertest nowasserts exactexitpair andreportsstdoutonfailure. BothfullfilebrowsertestsPASS40.34s, includingqueued/retry/controlledprovideracceptance, private rolelinks, unrelatedaccountdenial andlayout. Lint/native and independentreviewPASS; inventoryfoundnoothercontradictoryCLI assertions.
+
+Exact83localfull was explicitlyABORTED andonlyownedprocess tree stopped/verifiedgone beforecodeedit; observerSTOPPED no preview. Commit/push normally thenfreshrawcleanSHA full4+14CI andcandidate-specificrestore/security/bindings/publicbrowserproof. NEXT_ACTION.json holdslive receipts. Preserveoriginaldata/failedreceipts; liveprovideractivation remainsdeferred.

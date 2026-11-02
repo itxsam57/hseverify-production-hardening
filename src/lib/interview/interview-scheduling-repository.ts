@@ -1,5 +1,7 @@
 import "server-only";
 
+import { interviewRequestPolicyValues } from "./interview-policy-service";
+
 import type { DatabaseClient } from "../database/database";
 import type { InterviewRequest, InterviewRequestStatus, InterviewConsole } from "./interview-scheduling-domain";
 import { InterviewSchedulingInputError } from "./interview-scheduling-domain";
@@ -78,8 +80,25 @@ export class InterviewSchedulingRepository {
   }
 
   async insert(tenantId:string, value:InterviewRequest):Promise<InterviewRequest> {
-    const result = await this.database.query<InterviewRow>(`INSERT INTO interview_requests (interview_request_id,case_id,worker_account_id,status,requested_at,scheduled_at,assessor_account_id,timezone,reminder_at,reschedule_reason,tenant_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING ${COLUMNS}`,
-      [value.interviewRequestId,value.caseId,value.workerAccountId,value.status,value.requestedAt,value.scheduledAt,value.assessorAccountId,value.timezone,value.reminderAt,value.rescheduleReason,tenantId]);
+    const policy = await interviewRequestPolicyValues(this.database, tenantId, value.caseId);
+    const values = [value.interviewRequestId,value.caseId,value.workerAccountId,value.status,value.requestedAt,
+      value.scheduledAt,value.assessorAccountId,value.timezone,value.reminderAt,value.rescheduleReason,tenantId];
+    const columns = "interview_request_id,case_id,worker_account_id,status,requested_at,scheduled_at,assessor_account_id,timezone,reminder_at,reschedule_reason,tenant_id";
+    const recordingColumns = policy?.recording ? ",recording_policy,recording_retention_days,recording_consent_required" : "";
+    const result = policy
+      ? await this.database.query<InterviewRow>(
+        `INSERT INTO interview_requests (${columns},trade_scope,qualification_scope,risk_level,language,jurisdiction${recordingColumns})
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16${policy.recording ? ",$17,$18,$19" : ""}
+         FROM assurance_cases WHERE tenant_id=$11 AND case_id=$2 AND worker_account_id=$3
+         RETURNING ${COLUMNS}`,
+        [...values,policy.context.tradeScope,policy.context.qualificationScope,policy.context.riskLevel,
+         policy.context.language,policy.context.jurisdiction,
+         ...(policy.recording ? [policy.recording.policy,policy.recording.retentionDays,policy.recording.consentRequired] : [])]
+      )
+      : await this.database.query<InterviewRow>(
+        `INSERT INTO interview_requests (${columns}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING ${COLUMNS}`,
+        values
+      );
     if (!result.rows[0]) throw new Error("Interview request was not persisted.");
     return mapRequest(result.rows[0]);
   }

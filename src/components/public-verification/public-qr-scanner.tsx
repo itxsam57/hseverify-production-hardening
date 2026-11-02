@@ -3,10 +3,8 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { parsePublicQrValue } from "@/lib/public-verification/public-qr-value";
 
-const DIRECT_IDENTIFIER_PATTERN = /^(?:worker_id|credential_id)_[A-Za-z0-9_-]{24}$/;
-const PUBLIC_ROUTE_PATTERN = /^\/verify\/(?:result|qr)\/([A-Za-z0-9_-]{80,1200})$/;
-const MAX_SCANNED_VALUE_LENGTH = 1600;
 const SCAN_TIMEOUT_MS = 15_000;
 
 interface DetectedBarcode {
@@ -46,25 +44,15 @@ export function PublicQrScanner({
   const [message, setMessage] = useState<string | null>(null);
 
   function acceptScannedValue(rawValue: string): boolean {
-    const value = rawValue.trim();
-    if (value.length < 1 || value.length > MAX_SCANNED_VALUE_LENGTH) {
-      return false;
-    }
-    if (DIRECT_IDENTIFIER_PATTERN.test(value)) {
-      onIdentifier(value);
+    const value = parsePublicQrValue(rawValue, window.location.origin);
+    if (!value) return false;
+    if (value.kind === "identifier") {
+      onIdentifier(value.identifier);
       setMessage("QR code read. Review the ID, then choose Verify.");
-      return true;
+    } else {
+      window.location.assign(value.path);
     }
-
-    try {
-      const url = new URL(value, window.location.origin);
-      if (url.origin !== window.location.origin) return false;
-      if (!PUBLIC_ROUTE_PATTERN.test(url.pathname)) return false;
-      window.location.assign(url.pathname);
-      return true;
-    } catch {
-      return false;
-    }
+    return true;
   }
 
   async function startScanner(): Promise<void> {

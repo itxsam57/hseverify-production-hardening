@@ -3,12 +3,8 @@ import test from "node:test";
 
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
-import {
-  InterviewMediaAccessError,
-  authorizeInterviewMedia,
-  listInterviewMediaSignals,
-  publishInterviewMediaSignal
-} from "../../src/lib/interview/interview-media-service.ts";
+import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
+const {InterviewMediaAccessError,authorizeInterviewMedia,listInterviewMediaSignals,publishInterviewMediaSignal}=loadTs("src/lib/interview/interview-media-service.ts");
 
 const NOW = "2026-09-25T10:00:00.000Z";
 const ENV = {
@@ -41,6 +37,10 @@ function session(accountId, role) {
 async function database() {
   const db = await openScriptDatabase(ENV);
   await applyMigrationsThrough(db, ENV.releaseSha, "0066_interview_live_media");
+  // This legacy isolated 0066 media fixture predates 0070's runtime table.
+  // Supply the minimal later runtime lookup contract; the new End gate
+  // separately uses the real fully migrated schema and runtime transitions.
+  await db.query("CREATE TABLE interview_runtime_sessions (interview_request_id TEXT UNIQUE, status TEXT NOT NULL)");
   return db;
 }
 

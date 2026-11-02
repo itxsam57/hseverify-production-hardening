@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
-import { getWorkerAssessmentApplicationService } from "@/lib/assessment-catalogue/worker-assessment-application-service";
+import { AssessmentReassessmentSourceAccessError, WorkerAssessmentApplicationAccessError, WorkerAssessmentApplicationConflictError, getWorkerAssessmentApplicationService } from "@/lib/assessment-catalogue/worker-assessment-application-service";
 import {
   applyWorkerPayAction,
   confirmSandboxWorkerPaymentAction,
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function WorkerAssessmentApplicationsPage({
   searchParams
 }: {
-  searchParams: Promise<{ status?: string; error?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; error?: string; q?: string; sourceAppealId?: string | string[] }>;
 }): Promise<React.JSX.Element> {
   const principal = await requirePlatformPermission({
     expectedRole: "worker",
@@ -22,11 +22,20 @@ export default async function WorkerAssessmentApplicationsPage({
   const service = await getWorkerAssessmentApplicationService();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim().slice(0, 160) : "";
-  const [offerings, companies, applications] = await Promise.all([
-    service.listOfferings(principal),
+  const sourceRequested=params.sourceAppealId!==undefined;
+  const sourceAppealId=typeof params.sourceAppealId==="string" ? params.sourceAppealId.trim() : "";
+  const [ordinaryOfferings, companies, applications] = await Promise.all([
+    sourceRequested ? Promise.resolve([]) : service.listOfferings(principal),
     service.listFundingCompanies(principal),
     service.listApplications(principal, new Date(), query)
   ]);
+
+  let offerings=ordinaryOfferings;
+  let sourceError: string | null=null;
+  if(sourceRequested) {
+    try { offerings=await service.listReassessmentOfferings(principal,sourceAppealId); }
+    catch(error) { if(error instanceof AssessmentReassessmentSourceAccessError || error instanceof WorkerAssessmentApplicationAccessError || error instanceof WorkerAssessmentApplicationConflictError) sourceError=error.message; else throw error; }
+  }
 
   const statusMessage =
     params.status === "payment-required"
@@ -50,6 +59,8 @@ export default async function WorkerAssessmentApplicationsPage({
         </div>
       </div>
 
+      {sourceRequested && !sourceError ? <p role="status">Reassessment for appeal: <code>{sourceAppealId}</code>. The new case retains the original scope and follows the current policy.</p> : null}
+      {sourceError ? <p className="status-banner status-error" role="alert">{sourceError}</p> : null}
       {statusMessage ? <p className="status-banner status-success" role="status">{statusMessage}</p> : null}
       {params.error ? <p className="status-banner status-error" role="alert">{params.error}</p> : null}
 
@@ -73,20 +84,23 @@ export default async function WorkerAssessmentApplicationsPage({
                 Verified qualifications: {item.verifiedQualificationCount} / {item.minimumVerifiedQualifications} required
               </p>
               <p className="muted-copy">Effective policy: {item.policyReference}</p>
+              {item.eligibilityReason ? <p role="status">{item.eligibilityReason}</p> : null}
+              {item.availableAt ? <p>Available from <time dateTime={item.availableAt}>{item.availableAt}</time></p> : null}
             </div>
 
             <div className="two-column-grid">
               <form action={applyWorkerPayAction} className="content-stack">
                 <input type="hidden" name="catalogueVersionId" value={item.catalogueVersionId} />
+                {sourceRequested ? <input type="hidden" name="sourceAppealId" value={sourceAppealId} /> : null}
                 <h4>Pay myself</h4>
                 <p className="muted-copy">
                   Sandbox funding only. No real card or money is charged until a production payment
                   provider is connected.
                 </p>
-                <button type="submit">Apply — worker pays</button>
+                <button type="submit" disabled={item.eligibilityStatus !== "AVAILABLE"}>Apply — worker pays</button>
               </form>
 
-              <form action={requestCompanyFundingAction} className="content-stack">
+              {!sourceRequested ? <form action={requestCompanyFundingAction} className="content-stack">
                 <input type="hidden" name="catalogueVersionId" value={item.catalogueVersionId} />
                 <h4>Request Company funding</h4>
                 {companies.length === 0 ? (
@@ -95,7 +109,7 @@ export default async function WorkerAssessmentApplicationsPage({
                   <>
                     <label>
                       Funding Company
-                      <select name="companyFunding" required defaultValue="">
+                      <select name="companyFunding" required defaultValue="" disabled={item.eligibilityStatus !== "AVAILABLE"}>
                         <option value="" disabled>Select Company</option>
                         {companies.map((company) => (
                           <option
@@ -107,10 +121,10 @@ export default async function WorkerAssessmentApplicationsPage({
                         ))}
                       </select>
                     </label>
-                    <button type="submit">Request 1 assessment credit</button>
+                    <button type="submit" disabled={item.eligibilityStatus !== "AVAILABLE"}>Request 1 assessment credit</button>
                   </>
                 )}
-              </form>
+              </form> : null}
             </div>
           </article>
         ))}
@@ -129,6 +143,7 @@ export default async function WorkerAssessmentApplicationsPage({
               <h3>{item.title}</h3>
               <p>Status: {item.status.replaceAll("_", " ")}</p>
               <p>Funding: {item.fundingMode === "WORKER_PAY" ? "Worker pays" : "Company request"}</p>
+              {item.sourceAppealId ? <p>Reassessment appeal: <code>{item.sourceAppealId}</code></p> : null}
               {item.companyName ? <p>Company: {item.companyName}</p> : null}
               {item.sandboxPaymentReference ? (
                 <p>Sandbox payment reference: <code>{item.sandboxPaymentReference}</code></p>

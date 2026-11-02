@@ -1,11 +1,13 @@
 import "server-only";
+import { evaluateWorkerAssessmentHistory } from "../assessment-catalogue/assessment-eligibility-policy-service";
 
 import { runTenantScopedCommand } from "../authorization/tenant-scoped-command-guard";
+import { unreservedCompanyCreditUnits } from "../billing/company-credit-availability";
 import { deriveTrustedTenantScope, type TenantPermissionPrincipal } from "../authorization/tenant-scoped-resource-domain";
 import { bindTrustedAuditActor } from "../audit/audit-domain";
 import { DatabaseAuditRepository } from "../audit/audit-repository";
 import type { DatabaseClient } from "../database/database";
-import { pinAssuranceCasePolicySnapshot, validateAssurancePolicySelection } from "../policy/effective-policy-service";
+import { pinAssuranceCasePolicySnapshot, validateAssurancePolicySelection, resolveEffectivePolicy } from "../policy/effective-policy-service";
 import {
   ASSURANCE_ORDER_MANAGE_PERMISSION, ASSURANCE_ORDER_READ_PERMISSION,
   AssuranceOrderAccessError, AssuranceOrderConflictError, AssuranceOrderInputError, AssuranceOrderNotFoundError,
@@ -15,6 +17,7 @@ import {
   type AssuranceOrderRecord, type AssuranceOrderWorkerRecord, type AssuranceValidationResult,
   type AssuranceCaseStatus, type AssurancePendingOwner
 } from "./assurance-order-domain";
+import { EffectivePolicyConflictError } from "../policy/effective-policy-domain";
 import { AssuranceOrderRepository } from "./assurance-order-repository";
 
 const companyOrdersManage = "company.orders.manage" as const;
@@ -102,6 +105,17 @@ async function initialCaseStateForWorker(
     permanentWorkerId
   });
 }
+async function workerAssessmentPolicyReason(database:DatabaseClient,order:AssuranceOrderRecord,workerAccountId:string,now:Date):Promise<string|null>{
+  if(!order.effectivePolicyReference||order.assessmentFrameworkReferences.length===0)return null;
+  try {
+    const policy=await resolveEffectivePolicy(database,{tenantId:order.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now});
+    const decision=await evaluateWorkerAssessmentHistory(database,{workerAccountId,frameworkId:policy.frameworkId,policyValues:policy.effectiveValue,now,lockWorker:true});
+    return decision.eligibilityReason;
+  } catch(error) {
+    if(error instanceof EffectivePolicyConflictError)return error.message;
+    throw error;
+  }
+}
 async function audit(database:DatabaseClient,principal:AssuranceOrderManagePrincipal,action:Parameters<DatabaseAuditRepository["append"]>[1]["action"],reference:string,metadata:Record<string,unknown>={}):Promise<void>{
   await new DatabaseAuditRepository(Promise.resolve(database)).append(bindTrustedAuditActor(principal),{action,outcome:"succeeded",target:{type:"resource",reference},metadata});
 }
@@ -155,12 +169,14 @@ export class AssuranceOrderService {
       await assertVerifiedCompany(database,scope.tenantId); const repository=new AssuranceOrderRepository(database); const order=await repository.lockOrder(scope.tenantId,id); if(!order) throw new AssuranceOrderNotFoundError(); if(!["DRAFT","VALIDATION_FAILED","READY"].includes(order.orderStatus)) throw new AssuranceOrderConflictError("Submitted Assurance Order cannot be revalidated as a draft.");
       const errors:string[]=[...(await assertActiveUnit(database,scope.tenantId,order.siteId,order.departmentId))]; const targets=await repository.listTargets(scope.tenantId,id,true); const targetResults:{targetId:string;eligible:boolean;reason:string|null}[]=[];
       if(targets.length===0) errors.push("Add at least one active linked Worker before validation.");
-      for(const target of targets){ const live=await activeLink(database,scope.tenantId,target.workerLinkId,true); const reason=!live?"Worker link is no longer active for this Company.":null; targetResults.push({targetId:target.targetId,eligible:reason===null,reason}); if(reason) errors.push(`${target.workerAccountId}: ${reason}`); }
+      for(const target of targets){ const live=await activeLink(database,scope.tenantId,target.workerLinkId,true); const reason=!live?"Worker link is no longer active for this Company.":await workerAssessmentPolicyReason(database,order,target.workerAccountId,now); targetResults.push({targetId:target.targetId,eligible:reason===null,reason}); if(reason) errors.push(`${target.workerAccountId}: ${reason}`); }
+      const companyFundedTargets=targets.filter(target=>target.fundingMethod==="company").length;
+      if(companyFundedTargets>0 && await unreservedCompanyCreditUnits(database,scope.tenantId)<companyFundedTargets) {
+        errors.push("Company has insufficient unreserved assessment credits for the selected Company-funded Workers.");
+      }
       errors.push(...await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now}));
-      // Credential issuance is now owned by later release bricks; submitted assurance cases keep this field explicit until certification activation.
-      if(order.credentialTarget) errors.push("Credential target dependency is not yet available in M2.01.");
+      // Positive final decisions issue the retained credential target through the credential engine.
       // interviewRequired remains an explicit M2.01 boundary field; Interview scheduling is integrated through M2.11+ without changing the M2.01 order boundary.
-      // Interview scheduling dependency is not yet available in M2.01.
       if(order.deadline && Date.parse(order.deadline)<=now.getTime()) errors.push("Assurance Order deadline must be in the future.");
       const normalized=Object.freeze([...new Set(errors)]); const ready=normalized.length===0; const updated=await repository.recordValidation({tenantId:scope.tenantId,orderId:id,ready,errors:normalized,targetResults,now:now.toISOString()}); if(!updated) throw new AssuranceOrderConflictError();
       await repository.insertTimeline({eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,caseId:null,eventType:"order_validated",fromStatus:order.orderStatus,toStatus:ready?"READY":"VALIDATION_FAILED",owner:"company",nextAction:ready?"Submit the validated Assurance Order.":"Resolve every validation error and validate again.",actorAccountId:scope.accountId,actorRole:"company",now:now.toISOString()});
@@ -175,6 +191,13 @@ export class AssuranceOrderService {
       const targets=await repository.listTargets(scope.tenantId,id,true); if(targets.length===0||targets.some(t=>t.targetStatus!=="eligible")) throw new AssuranceOrderConflictError("Assurance Order eligibility changed; validate again.");
       for(const target of targets){ if(!await activeLink(database,scope.tenantId,target.workerLinkId,true)) throw new AssuranceOrderConflictError("A Worker link changed; validate the Assurance Order again."); }
       const policyErrors=await validateAssurancePolicySelection(database,{tenantId:scope.tenantId,frameworkReferences:order.assessmentFrameworkReferences,policyReference:order.effectivePolicyReference,referenceTime:now});if(policyErrors.length>0)throw new AssuranceOrderConflictError(`Effective policy changed; validate again. ${policyErrors.join(" ")}`);
+
+      for(const target of targets){const reason=await workerAssessmentPolicyReason(database,order,target.workerAccountId,now);if(reason)throw new AssuranceOrderConflictError(reason);}
+      // Serialize against all other Company orders AND Worker-requested funding
+      // approvals by rechecking under the shared tenant row lock at submission.
+      const companyFundedTargets=targets.filter(target=>target.fundingMethod==="company").length;
+      if(companyFundedTargets>0 && await unreservedCompanyCreditUnits(database,scope.tenantId)<companyFundedTargets)
+        throw new AssuranceOrderConflictError("Company has insufficient unreserved assessment credits for this Assurance Order.");
 
       // The worker target rows are part of submitted scope. Move them to their
       // terminal submitted target state while the parent order is still READY;
@@ -215,7 +238,67 @@ export class AssuranceOrderService {
 
   async cancelDraft(principal:AssuranceOrderManagePrincipal,orderId:string,now=new Date()):Promise<void>{ await this.cancel(principal,orderId,false,now); }
   async cancelSubmittedOrder(principal:AssuranceOrderManagePrincipal,orderId:string,now=new Date()):Promise<void>{ await this.cancel(principal,orderId,true,now); }
-  private async cancel(principal:AssuranceOrderManagePrincipal,orderId:string,submitted:boolean,now:Date):Promise<void>{ const id=normalizeAssuranceReference(orderId,"assurance_order"); if(!id) throw new AssuranceOrderInputError("Assurance Order reference is invalid."); await runTenantScopedCommand({database:this.database,principal,permission:ASSURANCE_ORDER_MANAGE_PERMISSION,now,operation:async({database,scope})=>{ const repository=new AssuranceOrderRepository(database); const order=await repository.lockOrder(scope.tenantId,id); if(!order) throw new AssuranceOrderNotFoundError(); const allowed=submitted?["SUBMITTED","PARTIALLY_FUNDED","ACTIVE"]:["DRAFT","VALIDATION_FAILED","READY"]; if(!allowed.includes(order.orderStatus)) throw new AssuranceOrderConflictError("Assurance Order cannot be cancelled from its current state."); const nowIso=now.toISOString(); await database.query(`UPDATE assurance_orders SET order_status='CANCELLED',cancelled_at=$3,updated_at=$3 WHERE tenant_id=$1 AND order_id=$2`,[scope.tenantId,id,nowIso]); if(submitted){ const cases=await repository.listCases(scope.tenantId,id); for(const item of cases){ if(item.caseStatus!=="Closed"){ await database.query(`UPDATE assurance_cases SET case_status='Closed',owner_kind=NULL,next_action=NULL,closed_at=$3,updated_at=$3 WHERE tenant_id=$1 AND case_id=$2`,[scope.tenantId,item.caseId,nowIso]); await repository.insertTimeline({eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,caseId:item.caseId,eventType:"case_cancelled",fromStatus:item.caseStatus,toStatus:"Closed",owner:null,nextAction:null,actorAccountId:scope.accountId,actorRole:"company",now:nowIso}); await audit(database,principal,"assurance_case.status.changed",item.caseId,{caseStatus:"Closed"}); } } await database.query(`UPDATE assurance_action_items SET action_status='resolved',updated_at=$3 WHERE tenant_id=$1 AND order_id=$2 AND action_status<>'resolved'`,[scope.tenantId,id,nowIso]); } await repository.insertTimeline({eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,caseId:null,eventType:"order_cancelled",fromStatus:order.orderStatus,toStatus:"CANCELLED",owner:null,nextAction:null,actorAccountId:scope.accountId,actorRole:"company",now:nowIso}); await audit(database,principal,"assurance_order.cancelled",id,{submitted}); }}); }
+  private async cancel(
+    principal: AssuranceOrderManagePrincipal,
+    orderId: string,
+    submitted: boolean,
+    now: Date
+  ): Promise<void> {
+    const id=normalizeAssuranceReference(orderId,"assurance_order");
+    if(!id) throw new AssuranceOrderInputError("Assurance Order reference is invalid.");
+    await runTenantScopedCommand({
+      database:this.database,principal,permission:ASSURANCE_ORDER_MANAGE_PERMISSION,now,
+      operation:async({database,scope})=>{
+        const repository=new AssuranceOrderRepository(database);
+        const order=await repository.lockOrder(scope.tenantId,id);
+        if(!order) throw new AssuranceOrderNotFoundError();
+        const allowed=submitted?["SUBMITTED","PARTIALLY_FUNDED","ACTIVE"]:["DRAFT","VALIDATION_FAILED","READY"];
+        if(!allowed.includes(order.orderStatus)) throw new AssuranceOrderConflictError("Assurance Order cannot be cancelled from its current state.");
+        const cases=submitted?await repository.listCases(scope.tenantId,id):[];
+        // Orders can be ACTIVE while one Worker has already received a final
+        // decision. Cancellation must never rewrite that outcome to Closed
+        // or leave an issued credential inconsistent with the case timeline.
+        if(cases.some(item=>
+          ["Approved","Conditionally approved","Rejected"].includes(item.caseStatus)
+          || item.decisionReference!==null || item.credentialReference!==null
+        )) throw new AssuranceOrderConflictError(
+          "This Assurance Order has finalized Worker decisions or credentials and cannot be cancelled."
+        );
+        const nowIso=now.toISOString();
+        await database.query(
+          "UPDATE assurance_orders SET order_status='CANCELLED',cancelled_at=$3,updated_at=$3 WHERE tenant_id=$1 AND order_id=$2",
+          [scope.tenantId,id,nowIso]
+        );
+        if(submitted) {
+          for(const item of cases) {
+            if(item.caseStatus==="Closed") continue;
+            await database.query(
+              "UPDATE assurance_cases SET case_status='Closed',owner_kind=NULL,next_action=NULL,closed_at=$3,updated_at=$3 WHERE tenant_id=$1 AND case_id=$2",
+              [scope.tenantId,item.caseId,nowIso]
+            );
+            await repository.insertTimeline({
+              eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,
+              caseId:item.caseId,eventType:"case_cancelled",fromStatus:item.caseStatus,
+              toStatus:"Closed",owner:null,nextAction:null,actorAccountId:scope.accountId,
+              actorRole:"company",now:nowIso
+            });
+            await audit(database,principal,"assurance_case.status.changed",item.caseId,{caseStatus:"Closed"});
+          }
+          await database.query(
+            "UPDATE assurance_action_items SET action_status='resolved',updated_at=$3 WHERE tenant_id=$1 AND order_id=$2 AND action_status<>'resolved'",
+            [scope.tenantId,id,nowIso]
+          );
+        }
+        await repository.insertTimeline({
+          eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,
+          caseId:null,eventType:"order_cancelled",fromStatus:order.orderStatus,
+          toStatus:"CANCELLED",owner:null,nextAction:null,actorAccountId:scope.accountId,
+          actorRole:"company",now:nowIso
+        });
+        await audit(database,principal,"assurance_order.cancelled",id,{submitted});
+      }
+    });
+  }
 
   async listOrders(principal:AssuranceOrderReadPrincipal):Promise<readonly AssuranceOrderRecord[]>{ if(principal.authorizedTenantPermission!==ASSURANCE_ORDER_READ_PERMISSION) throw new AssuranceOrderAccessError(); const scope=deriveTrustedTenantScope(principal as TenantPermissionPrincipal<"company.orders.read">); return new AssuranceOrderRepository(this.database).listOrders(scope.tenantId); }
   async findOrder(principal:AssuranceOrderReadPrincipal,orderId:string):Promise<AssuranceOrderRecord|null>{ const id=normalizeAssuranceReference(orderId,"assurance_order"); if(!id) return null; const scope=deriveTrustedTenantScope(principal); return new AssuranceOrderRepository(this.database).findOrder(scope.tenantId,id); }

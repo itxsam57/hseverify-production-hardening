@@ -1,33 +1,35 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { loadWrittenScoringRuntime } from "../helpers/written-scoring-runtime-loader.mjs";
 
-const { WrittenScoringService } = await loadWrittenScoringRuntime();
+import { fixture } from "../helpers/written-scoring-authority-fixture.mjs";
 
-test("written scoring production runtime denies tenant and reviewer isolation violations", async () => {
-  const state = { review: { id: "review_1", reviewer: "reviewer_1", tenant: "tenant_1" } };
-  const database = {
-    async query(sql, params) {
-      if (sql.includes("SELECT review_id FROM written_score_reviews")) {
-        return {
-          rows: state.review.id === params[0] && state.review.reviewer === params[1] && state.review.tenant === params[2]
-            ? [{ review_id: state.review.id }]
-            : []
-        };
-      }
-      throw new Error(`Unexpected runtime query: ${sql}`);
-    }
-  };
+test("written scoring production boundary denies reviewer and tenant isolation violations", async () => {
+  const x = await fixture("security-production");
+  try {
+    await assert.rejects(
+      () => x.service.finalize({
+        reviewId: x.reviewId,
+        reviewerAccountId: "account_foreign_reviewer",
+        tenantId: x.tenantId
+      }),
+      /Actual written scoring actor session is required\./
+    );
 
-  const service = new WrittenScoringService(database);
+    await assert.rejects(
+      () => x.service.finalize({
+        reviewId: x.reviewId,
+        reviewerAccountId: x.actor.accountId,
+        tenantId: "tenant_foreign_production"
+      }),
+      /Reviewer does not own this scoring review\./
+    );
 
-  await assert.rejects(
-    service.finalize({ reviewId: "review_1", reviewerAccountId: "reviewer_other", tenantId: "tenant_1" }),
-    /Invalid review scope\./
-  );
-
-  await assert.rejects(
-    service.finalize({ reviewId: "review_1", reviewerAccountId: "reviewer_1", tenantId: "tenant_other" }),
-    /Invalid review scope\./
-  );
+    const retained = (await x.db.query(
+      "SELECT status FROM written_score_reviews WHERE review_id=$1",
+      [x.reviewId]
+    )).rows[0];
+    assert.equal(retained.status, "DRAFT");
+  } finally {
+    await x.db.close();
+  }
 });

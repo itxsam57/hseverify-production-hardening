@@ -79,12 +79,18 @@ async function prepareCertificationStore(database) {
 
 const startedAt = new Date().toISOString();
 const snapshot = await runCertificationDrills({
-  concurrency: () =>
+  concurrency: () => [
     executeCommand(
-      "High-risk concurrency/load regression",
+      "High-risk native concurrency regression",
       process.execPath,
       ["scripts/run-phase1-retrospective-performance.mjs"]
     ),
+    executeCommand(
+      "Authenticated five-role 50-request real-server load",
+      process.execPath,
+      ["scripts/run-authenticated-mixed-role-burst.mjs"]
+    )
+  ].join("; "),
   tenant_isolation: () =>
     executeCommand(
       "Tenant isolation regression",

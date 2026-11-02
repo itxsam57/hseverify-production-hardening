@@ -42,12 +42,13 @@ test("database audit action constraint accepts every declared action and rejects
     await applyPendingMigrations(database, env.releaseSha);
     const actions = await declaredAuditActions();
 
+    // Test action-key compatibility without fabricating successful business events.
     for (const [index, action] of actions.entries()) {
       await database.query(
         `INSERT INTO platform_audit_events (
            audit_event_id, source_kind, action_key, outcome,
            target_type, target_reference, metadata
-         ) VALUES ($1, 'native', $2, 'succeeded', 'resource', $3, '{}'::jsonb)`,
+         ) VALUES ($1, 'native', $2, 'denied', 'resource', $3, '{}'::jsonb)`,
         [
           `audit_action_sync_${String(index).padStart(3, "0")}`,
           action,
@@ -62,6 +63,19 @@ test("database audit action constraint accepts every declared action and rejects
        WHERE audit_event_id LIKE 'audit_action_sync_%'`
     );
     assert.equal(inserted.rows[0]?.count, actions.length);
+
+    // Successful submission remains subject to the real immutable-source guard.
+    await assert.rejects(
+      database.query(
+        `INSERT INTO platform_audit_events (
+           audit_event_id, source_kind, action_key, outcome,
+           target_type, target_reference, metadata
+         ) VALUES ('audit_action_sync_forged_submission', 'native',
+           'worker_evidence.version.submitted', 'succeeded', 'resource',
+           'audit-action-sync-missing-evidence', '{}'::jsonb)`
+      ),
+      (error) => error?.code === "23514" && /Invalid assurance notification source/.test(error.message)
+    );
 
     await assert.rejects(
       database.query(
