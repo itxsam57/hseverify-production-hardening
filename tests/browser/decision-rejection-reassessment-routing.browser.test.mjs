@@ -82,7 +82,10 @@ test("M2.13.03 Rejected and Reassessment Required show truthful correction paths
     await worker.goto(url+"/worker/assurance-cases/"+cases.rejected.caseId,{waitUntil:"domcontentloaded"});
     await worker.getByText("Status: Rejected",{exact:true}).waitFor({timeout:20000});
     assert.equal(await worker.locator("p").filter({has:worker.getByText("Next action:",{exact:true})}).count(),0,"Closed rejected case must not show an empty next action");
-    const correction=worker.getByRole("link",{name:"Request help with rejected case",exact:true});
+    const formal=worker.getByRole("link",{name:"Appeal this rejected case",exact:true});
+    await formal.waitFor({timeout:10000});
+    assert.equal(await formal.getAttribute("href"),"/worker/case-appeals?caseId="+cases.rejected.caseId);
+    const correction=worker.getByRole("link",{name:"Contact support about this case",exact:true});
     await correction.waitFor({timeout:10000});
     assert.equal(await correction.getAttribute("href"),"/contact");
     await correction.click();

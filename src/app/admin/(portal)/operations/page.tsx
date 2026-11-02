@@ -48,6 +48,7 @@ export default async function AdminOperationsPage({
           <li><Link href="/admin/operations/duplicate-identities">Duplicate identity review</Link></li>
           <li><Link href="/admin/operations/review-quality">Review quality and workload</Link></li>
           <li><Link href="/admin/operations/scoring-assignments">Assessment review assignments</Link></li>
+          <li><Link href="/admin/case-appeals">Rejected Assurance Case appeals</Link></li>
           <li><Link href="/admin/company-verifications">Companies and cases</Link></li>
           <li><a href="/admin/frameworks">Rules and policy</a></li>
           <li><a href="/admin/question-bank">Calibration inputs</a></li>

@@ -12,6 +12,7 @@ const links = [
   { href: "/worker/passport", label: "Digital passport", icon: "▣" },
   { href: "/worker/reports", label: "Reports", icon: "▤" },
   { href: "/worker/appeals", label: "Credential appeals", icon: "⚖" },
+  { href: "/worker/case-appeals", label: "Case appeals", icon: "⚖" },
   { href: "/worker/assessment-applications", label: "Assessment applications", icon: "＋" },
   { href: "/worker/available-assessments", label: "Available assessments", icon: "▦" },
   { href: "/worker/company-access", label: "Company access", icon: "↔" },
