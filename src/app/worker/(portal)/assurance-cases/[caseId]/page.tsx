@@ -14,10 +14,19 @@ export default async function WorkerAssuranceCasePage({params}:{params:Promise<{
   <article className="panel content-stack" id={record.caseId}>
    <p>Case: {record.caseId}</p>
    <p><strong>Status:</strong> {record.status}</p>
-   <p><strong>Next action:</strong> {record.nextAction}</p>
+   {record.nextAction?<p><strong>Next action:</strong> {record.nextAction}</p>:null}
    <p>Updated {formatDateTime(record.updatedAt)}</p>
    {record.credentialReference?<Link className="button button-primary" href={"/worker/passport#"+encodeURIComponent(record.credentialReference)}>Open issued credential</Link>:null}
    {record.status==="Evidence pending"?<Link className="button button-primary" href="/worker/evidence">Add or correct requested evidence</Link>:null}
+   {record.status==="Reassessment required"?<>
+    <p>Reassessment requires a new eligible assessment application. Current policy, attempt limits, waiting periods and funding rules still apply; the original case stays in your history.</p>
+    <Link className="button button-primary" href="/worker/assessment-applications">Check reassessment eligibility</Link>
+   </>:null}
+   {record.status==="Rejected"?<>
+    <p>This decision closed the case. You can request help with the rejection or check eligibility for a new assessment. Credential appeals apply only to issued credentials; contacting support does not create a formal appeal.</p>
+    <Link className="button button-primary" href="/contact">Request help with rejected case</Link>
+    <Link className="button button-secondary" href="/worker/assessment-applications">Check new assessment eligibility</Link>
+   </>:null}
    <Link className="button button-secondary" href="/worker/available-assessments">Available assessments</Link>
   </article>
  </section>;
