@@ -155,7 +155,7 @@ async function submitScoringAction(page,button,stage){
   assert.ok(response.ok(),stage+" scoring Server Action did not complete: HTTP "+response.status());
 }
 
-async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,markReason}){
+async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,markReason},serverOutput=()=>""){
   await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
   let row=page.locator("tbody tr").filter({hasText:caseId}).first();await row.waitFor({timeout:20000});
   const reviewId=await row.getAttribute("id");
@@ -185,13 +185,18 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   // Confirm React's authoritative result first, then a cold reload. This
   // proves the decision persisted, not merely a transient local UI state.
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
-  await page.reload({waitUntil:"domcontentloaded"});
+  const coldReload=await page.reload({waitUntil:"domcontentloaded"});
+  const status=coldReload?.status()??"no response";
+  assert.ok(coldReload?.ok(),"Final written-scoring cold reload was not HTTP 2xx: "+status);
   row=persistedReviewRow();
   try {
+    await page.getByRole("heading",{name:"Written scoring review",exact:true}).waitFor({timeout:20000});
     await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   } catch (error) {
-    throw new Error("Final scoring server action returned but final status missing after cold reload. URL="+
-      page.url()+"\nPAGE:\n"+await page.locator("body").innerText(),{cause:error});
+    throw new Error("Final scoring result unavailable after cold reload. HTTP "+status+
+      " URL="+page.url()+"\nBODY:\n"+(await page.locator("body").innerText())+
+      "\nHTML:\n"+(await page.content()).slice(0,3500)+
+      "\nSERVER:\n"+serverOutput().slice(-6000),{cause:error});
   }
   console.log("ACTUAL_SCORING_SERVER_ACTIONS mark, decision and final reviewed as completed POSTs; persisted FINAL survives reload");
 }
@@ -730,7 +735,7 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
               mark:0,decision:"FAIL",
               reason:CONTENT_MODE === "WRITTEN_ONLY" ? "The retained written response does not demonstrate the required hazard control reasoning." : "The pinned written question was unanswered and does not demonstrate the required hazard control reasoning.",
               markReason:CONTENT_MODE === "WRITTEN_ONLY" ? "Insufficient hazard control reasoning in the retained written response." : "The required written response was omitted at the natural deadline."
-            });
+            },output);
             console.log("ACTUAL_WRITTEN_REVIEW_BROWSER pinned questions and omitted response reviewed by assigned Verifier; human FAIL finalized");
             return {attemptId};
           }
@@ -974,7 +979,7 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
 
           if(CONTENT_MODE!=="MCQ_ONLY") {
           if(!["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE)) await login(verifier,baseUrl,credentials.verifier,"verifier");
-          await finalizeWrittenReview(verifier,baseUrl,journeyCaseId,{mark:92,decision:"PASS",reason:"Written response demonstrates correct hazard isolation and verification sequence.",markReason:"The response identifies isolation, controlled verification and safe restart conditions against the pinned rubric."});
+          await finalizeWrittenReview(verifier,baseUrl,journeyCaseId,{mark:92,decision:"PASS",reason:"Written response demonstrates correct hazard isolation and verification sequence.",markReason:"The response identifies isolation, controlled verification and safe restart conditions against the pinned rubric."},output);
 
           }
           if(process.env.HSE_MASTERPLAN_TIMING !== "true" && !INTERVIEW_POLICY) await login(admin,baseUrl,credentials.admin,"admin");
@@ -1226,7 +1231,7 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
           await worker.getByText("Assessment submitted",{exact:true}).waitFor({timeout:20000});
           if(CONTENT_MODE!=="MCQ_ONLY") {
           await login(verifier,baseUrl,credentials.verifier,"verifier");
-          await finalizeWrittenReview(verifier,baseUrl,reassessmentCaseId,{mark:92,decision:"PASS",reason:"Written response demonstrates correct hazard isolation and verification sequence.",markReason:"Fresh reassessment response meets the pinned hazard-control rubric with complete isolation and restart reasoning."});
+          await finalizeWrittenReview(verifier,baseUrl,reassessmentCaseId,{mark:92,decision:"PASS",reason:"Written response demonstrates correct hazard isolation and verification sequence.",markReason:"Fresh reassessment response meets the pinned hazard-control rubric with complete isolation and restart reasoning."},output);
 
           }
           await login(admin,baseUrl,credentials.admin,"admin");
