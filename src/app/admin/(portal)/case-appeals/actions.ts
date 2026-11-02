@@ -1,5 +1,6 @@
 "use server";
 import {revalidatePath} from "next/cache";
+import {CaseAppealEvidenceFollowupService} from "@/lib/assurance/case-appeal-evidence-followup-service";
 import {redirect} from "next/navigation";
 import {requirePlatformPermission} from "@/lib/authorization/authorization-service";
 import {CaseAppealService,CaseAppealConflictError,CaseAppealAccessError} from "@/lib/assurance/case-appeal-service";
@@ -21,4 +22,19 @@ export async function reviewCaseAppealAction(form:FormData):Promise<void>{
  }
  revalidatePath("/admin/case-appeals");revalidatePath("/worker/case-appeals");
  redirect("/admin/case-appeals?status=updated");
+}
+
+
+export async function requestCaseAppealEvidenceAction(form:FormData):Promise<void>{
+ const principal=await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});
+ const appealId=field(form,"appealId"),version=Number(field(form,"expectedVersion")),reason=field(form,"reason");
+ try{await new CaseAppealEvidenceFollowupService().request(principal,{appealId,expectedVersion:version,reason});}
+ catch(e){
+  if(e instanceof CaseAppealConflictError)redirect("/admin/case-appeals?error=conflict");
+  if(e instanceof CaseAppealAccessError)redirect("/admin/case-appeals?error=independence");
+  if(e instanceof Error&&e.message===RECENT_MFA_ERROR)redirect("/admin/case-appeals?error=mfa");
+  throw e;
+ }
+ revalidatePath("/admin/case-appeals");revalidatePath("/worker/case-appeals");
+ redirect("/admin/case-appeals?status=evidence-requested");
 }
