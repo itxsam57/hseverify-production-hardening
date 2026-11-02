@@ -49,6 +49,8 @@ test("No eligible reviewer retains submission and Admin can assign it after cali
   const review=(await f.database.query("SELECT * FROM written_score_reviews WHERE attempt_id=$1",[f.attemptId])).rows[0];
   assert.equal(review.reviewer_account_id,reviewer);
   assert.equal((await f.database.query("SELECT owner_kind FROM assurance_cases WHERE case_id=$1",[f.sourceCase.case_id])).rows[0].owner_kind,"reviewer");
+  const action=(await f.database.query("SELECT owner_kind,deep_link FROM assurance_action_items WHERE case_id=$1 AND action_status='open'",[f.sourceCase.case_id])).rows;
+  assert.deepEqual(action.map(item=>[item.owner_kind,item.deep_link]),[["reviewer","/verifier/reviews/scoring"]],"Next-actor review action must link to Verifier scoring instead of Company portal");
   await assert.rejects(service.assign(admin,input),/changed|reload/i);
   const audit=(await f.database.query("SELECT metadata FROM platform_audit_events WHERE metadata->>'assessmentReviewAssignment'=$1",[review.review_id])).rows;
   assert.equal(audit.length,1);
