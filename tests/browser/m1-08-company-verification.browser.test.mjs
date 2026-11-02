@@ -376,9 +376,20 @@ async function runBrowserAcceptance(baseUrl, output) {
     await gotoOk(companyPage, baseUrl, "/company/team", "Company Team");
     await companyPage.getByLabel("Staff email").fill("team.member.m108@example.test");
     await companyPage.getByLabel("Company Team role").selectOption("viewer");
+    const teamSubmission=await companyPage.getByRole("button", { name: "Create Company Team invitation" })
+      .locator("xpath=ancestor::form").evaluate((form)=>Object.fromEntries(
+        [...new FormData(form)].map(([name,value])=>[name,String(value)])
+      ));
+    assert.equal(teamSubmission.membershipRole,"viewer","Company Team role did not persist before submit.");
+    console.log("ACTUAL_COMPANY_TEAM_SUBMITTED_ROLE",teamSubmission.membershipRole);
     await companyPage.getByRole("button", { name: "Create Company Team invitation" }).click();
     const teamInvitation = companyPage.locator("article").filter({ hasText: "team.member.m108@example.test" }).first();
-    await teamInvitation.waitFor({ state: "visible", timeout: 15_000 });
+    try {
+      await teamInvitation.waitFor({ state: "visible", timeout: 15_000 });
+    } catch (error) {
+      throw new Error("Company Team invitation was not visible after the action. PAGE:\n" +
+        await companyPage.locator("body").innerText(), { cause: error });
+    }
     await teamInvitation.getByRole("button", { name: "Cancel invitation" }).click();
     await companyPage.getByRole("dialog").getByRole("button", { name: "Cancel invitation", exact: true }).click();
     await companyPage.reload({ waitUntil: "domcontentloaded" });
