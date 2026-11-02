@@ -187,7 +187,16 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   const coldReload=await page.reload({waitUntil:"domcontentloaded"});
   const status=coldReload?.status()??"no response";
-  assert.ok(coldReload?.ok(),"Final written-scoring cold reload was not HTTP 2xx: "+status);
+  if (!coldReload?.ok()) {
+    // Do not retry or mask the failure. Preserve the actual Next server
+    // response and the scoped server trace so the 500 has a diagnosable cause.
+    let serverResponse = "";
+    try { serverResponse = (await coldReload?.text())?.slice(0,5000) ?? ""; }
+    catch (error) { serverResponse = "Response body unreadable: " + String(error); }
+    throw new Error("Final written-scoring cold reload failed: HTTP "+status+
+      " URL="+page.url()+"\nHTTP BODY:\n"+serverResponse+
+      "\nSERVER TRACE:\n"+serverOutput().slice(-12000));
+  }
   row=persistedReviewRow();
   try {
     await page.getByRole("heading",{name:"Written scoring review",exact:true}).waitFor({timeout:20000});
