@@ -1,6 +1,8 @@
 import "server-only";
 import { bindAssessmentReassessmentSource, resolveAssessmentReassessmentSource, recheckAssessmentReassessmentSource, AssessmentReassessmentSourceAccessError } from "./assessment-reassessment-source-service";
+import {bindCaseAppealReassessmentSource,resolveCaseAppealReassessmentSource,recheckCaseAppealReassessmentSource,CaseAppealReassessmentSourceAccessError} from "./case-appeal-reassessment-source-service";
 export { AssessmentReassessmentSourceAccessError } from "./assessment-reassessment-source-service";
+export { CaseAppealReassessmentSourceAccessError } from "./case-appeal-reassessment-source-service";
 import { evaluateWorkerAssessmentHistory, type AssessmentEligibilityDecision } from "./assessment-eligibility-policy-service";
 
 import { enqueueAssessmentFundingNotification } from "../notifications/assessment-funding-notification-projector";
@@ -52,6 +54,7 @@ export type WorkerFundingCompany = Readonly<{
 export type WorkerAssessmentApplication = Readonly<{
   applicationId: string;
   sourceAppealId: string | null;
+  sourceCaseAppealId: string | null;
   workerAccountId: string;
   permanentWorkerId: string;
   catalogueVersionId: string;
@@ -85,6 +88,7 @@ type OfferingRow = {
 type ApplicationRow = {
   application_id: string;
   source_appeal_id?: string | null;
+  source_case_appeal_id?: string | null;
   worker_account_id: string;
   permanent_worker_id: string;
   catalogue_version_id: string;
@@ -139,6 +143,7 @@ function application(row: ApplicationRow): WorkerAssessmentApplication {
   return Object.freeze({
     applicationId: row.application_id,
     sourceAppealId: row.source_appeal_id ?? null,
+    sourceCaseAppealId: row.source_case_appeal_id ?? null,
     workerAccountId: row.worker_account_id,
     permanentWorkerId: row.permanent_worker_id,
     catalogueVersionId: row.catalogue_version_id,
@@ -551,6 +556,12 @@ export class WorkerAssessmentApplicationService {
     return Object.freeze((await eligibleOfferings(this.database,principal.accountId,now,source.tenantId)).filter(item=>item.frameworkId===source.frameworkId));
   }
 
+  async listCaseAppealReassessmentOfferings(principal:AuthorizationPrincipal,sourceCaseAppealId:string,now=new Date()):Promise<readonly WorkerAssessmentOffering[]> {
+    await assertLiveWorker(this.database,principal,"worker.assessments.read",now);
+    const workerId=await permanentWorkerId(this.database,principal.accountId);
+    const source=await resolveCaseAppealReassessmentSource(this.database,{sourceCaseAppealId,workerAccountId:principal.accountId,permanentWorkerId:workerId});
+    return Object.freeze((await eligibleOfferings(this.database,principal.accountId,now,source.tenantId)).filter(item=>item.frameworkId===source.frameworkId));
+  }
   async listFundingCompanies(
     principal: AuthorizationPrincipal,
     now = new Date()
@@ -592,7 +603,10 @@ export class WorkerAssessmentApplicationService {
       `SELECT applications.*,catalogue.title,tenants.display_name AS company_name,
                 (SELECT event.detail_json->>'sourceAppealId' FROM worker_assessment_application_events event
                   WHERE event.application_id=applications.application_id AND event.from_status IS NULL
-                    AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_appeal_id
+                    AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_appeal_id,
+                (SELECT event.detail_json->>'sourceCaseAppealId' FROM worker_assessment_application_events event
+                  WHERE event.application_id=applications.application_id AND event.from_status IS NULL
+                    AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_case_appeal_id
          FROM worker_assessment_applications AS applications
          JOIN assessment_catalogue_versions AS catalogue
            ON catalogue.catalogue_version_id=applications.catalogue_version_id
@@ -612,16 +626,21 @@ export class WorkerAssessmentApplicationService {
     principal: AuthorizationPrincipal,
     catalogueVersionId: string,
     now = new Date(),
-    input: { sourceAppealId?: string } = {}
+    input: { sourceAppealId?: string; sourceCaseAppealId?: string } = {}
   ): Promise<WorkerAssessmentApplication> {
     await assertLiveWorker(this.database, principal, "worker.self.manage", now);
     const workerId = await permanentWorkerId(this.database, principal.accountId);
     return this.database.transaction(async (database) => {
       await closeCompletedApplications(database, principal.accountId, now);
       // Read eligibility after the existing Worker lock so completed attempts cannot stale this mutation.
-      const source = input.sourceAppealId !== undefined
+      if(input.sourceAppealId!==undefined&&input.sourceCaseAppealId!==undefined)throw new CaseAppealReassessmentSourceAccessError();
+      const credentialSource=input.sourceAppealId!==undefined
         ? await resolveAssessmentReassessmentSource(database,{sourceAppealId:input.sourceAppealId,workerAccountId:principal.accountId,permanentWorkerId:workerId,lock:true})
         : null;
+      const caseSource=input.sourceCaseAppealId!==undefined
+        ? await resolveCaseAppealReassessmentSource(database,{sourceCaseAppealId:input.sourceCaseAppealId,workerAccountId:principal.accountId,permanentWorkerId:workerId,lock:true})
+        : null;
+      const source=credentialSource??caseSource;
       const selected = await findEligibleOffering(database, principal.accountId, catalogueVersionId.trim(), now, source?.tenantId);
       if(source && source.frameworkId!==selected.frameworkId) throw new AssessmentReassessmentSourceAccessError();
       const id = createIdentifier("assessment_application");
@@ -658,13 +677,15 @@ export class WorkerAssessmentApplicationService {
         toStatus: "PAYMENT_REQUIRED",
         actorAccountId: principal.accountId,
         actorRole: "worker",
-        detail: { providerMode: "sandbox", catalogueVersionId: selected.catalogueVersionId, ...(source ? {sourceAppealId:source.sourceAppealId} : {}) },
+        detail: { providerMode: "sandbox", catalogueVersionId: selected.catalogueVersionId, ...(credentialSource?{sourceAppealId:credentialSource.sourceAppealId}:{}),...(caseSource?{sourceCaseAppealId:caseSource.sourceCaseAppealId}:{}) },
         occurredAt: nowIso
       });
-      if(source) await bindAssessmentReassessmentSource(database,id,source,nowIso);
+      if(credentialSource) await bindAssessmentReassessmentSource(database,id,credentialSource,nowIso);
+      if(caseSource) await bindCaseAppealReassessmentSource(database,id,caseSource,nowIso);
       return application({
         application_id: id,
-        source_appeal_id: source?.sourceAppealId ?? null,
+        source_appeal_id: credentialSource?.sourceAppealId ?? null,
+        source_case_appeal_id: caseSource?.sourceCaseAppealId ?? null,
         worker_account_id: principal.accountId,
         permanent_worker_id: workerId,
         catalogue_version_id: selected.catalogueVersionId,
@@ -705,6 +726,9 @@ export class WorkerAssessmentApplicationService {
                 (SELECT event.detail_json->>'sourceAppealId' FROM worker_assessment_application_events event
                   WHERE event.application_id=applications.application_id AND event.from_status IS NULL
                     AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_appeal_id,
+                (SELECT event.detail_json->>'sourceCaseAppealId' FROM worker_assessment_application_events event
+                  WHERE event.application_id=applications.application_id AND event.from_status IS NULL
+                    AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_case_appeal_id,
                 entries.catalogue_reference,catalogue.description,catalogue.framework_id,
                 frameworks.framework_reference,catalogue.blueprint_version_id,
                 policies.policy_reference,catalogue.minimum_verified_qualifications,
@@ -733,9 +757,12 @@ export class WorkerAssessmentApplicationService {
           "This sandbox payment is no longer available."
         );
       }
+      if(row.source_appeal_id&&row.source_case_appeal_id)throw new CaseAppealReassessmentSourceAccessError();
       const source = row.source_appeal_id ? await recheckAssessmentReassessmentSource(database,row.application_id,{
         sourceAppealId:row.source_appeal_id,workerAccountId:principal.accountId,permanentWorkerId:row.permanent_worker_id,frameworkId:row.framework_id
-      }) : null;
+      }) : row.source_case_appeal_id ? await recheckCaseAppealReassessmentSource(database,row.application_id,{
+        sourceCaseAppealId:row.source_case_appeal_id,workerAccountId:principal.accountId,permanentWorkerId:row.permanent_worker_id,frameworkId:row.framework_id
+      }):null;
       const selected = await findEligibleOffering(
         database,
         principal.accountId,

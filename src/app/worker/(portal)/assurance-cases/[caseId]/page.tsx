@@ -23,8 +23,9 @@ export default async function WorkerAssuranceCasePage({params}:{params:Promise<{
     <Link className="button button-primary" href="/worker/assessment-applications">Check reassessment eligibility</Link>
    </>:null}
    {record.status==="Rejected"?<>
-    <p>This decision closed the case. You can request help with the rejection or check eligibility for a new assessment. Credential appeals apply only to issued credentials; contacting support does not create a formal appeal.</p>
-    <Link className="button button-primary" href="/contact">Request help with rejected case</Link>
+    <p>This decision closed the case. You may request an independent review. The original rejected decision stays preserved during review; reassessment still requires separate approval and policy checks.</p>
+    <Link className="button button-primary" href={"/worker/case-appeals?caseId="+encodeURIComponent(record.caseId)}>Appeal this rejected case</Link>
+    <Link className="button button-secondary" href="/contact">Contact support about this case</Link>
     <Link className="button button-secondary" href="/worker/assessment-applications">Check new assessment eligibility</Link>
    </>:null}
    <Link className="button button-secondary" href="/worker/available-assessments">Available assessments</Link>
