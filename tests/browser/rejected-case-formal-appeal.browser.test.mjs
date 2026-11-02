@@ -9,6 +9,9 @@ import { createServer } from "node:net";
 import { chromium } from "playwright";
 import { PGlite } from "@electric-sql/pglite";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
+import {seedConsoleFile,seedConsoleEvidence} from "../helpers/interview-console-file-fixture.mjs";
+import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
+const {createRuntimePrivateObjectStorage}=loadWorkerRegistrationTs("src/lib/secure-files/private-object-storage.ts");
 
 function totp(secret) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -56,9 +59,10 @@ async function decision(page,url,c,state){
 test("M2.13.03 rejected unissued case appeal preserves source and requires independent MFA reviewer",{timeout:240000},async()=>{
  const root=await mkdtemp(join(tmpdir(),"hse-case-appeal-")),dir=join(root,"db"),credsFile=join(root,"creds.json"),port=await freePort(),url="http://127.0.0.1:"+port;
  const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dir,HSE_AUDIT_CREDENTIALS_PATH:credsFile,HSE_RELEASE_SHA:"m21303-case-appeal",HSE_SESSION_SECRET:"m21303-case-appeal-session-secret-long-2026",HSE_AUTH_PEPPER:"m21303-case-appeal-pepper-secret-long-2026",HSE_ENABLE_AUTH_SANDBOX:"false",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
+ let file;
  try{
-  for(const file of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
-   const result=spawnSync(process.execPath,[file],{env:environment,encoding:"utf8"});
+  for(const migration of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
+   const result=spawnSync(process.execPath,[migration],{env:environment,encoding:"utf8"});
    assert.equal(result.status,0,result.stderr||result.stdout);
   }
   const creds=JSON.parse(await readFile(credsFile,"utf8"));
@@ -66,7 +70,7 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
   const second={...creds.admin,accountId:secondAccount,email:secondEmail};
   const foreignAccount="case_appeal_foreign_worker_2026",foreignEmail="case.appeal.other@example.test";
   const foreign={...creds.worker,accountId:foreignAccount,email:foreignEmail,totpSecret:null};
-  const db=new PGlite(dir);let c;
+  const db=new PGlite(dir);let c,record,foreignEvidence;
   try{
    c=(await fixtureCases(db,creds)).rejected;
    const now=new Date().toISOString();
@@ -78,6 +82,11 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
      SELECT $1,$2,'Unrelated Worker','active',password_hash,$3,$3,$3,$3 FROM auth_accounts WHERE account_id=$4`,
      [foreignAccount,foreignEmail,now,creds.worker.accountId]);
    await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'worker')",[foreignAccount]);
+   file=await seedConsoleFile(db,creds.worker.accountId,"case-appeal-retained-scanned-20261103");
+   record=await seedConsoleEvidence(db,creds.worker.accountId,"qualification","case-appeal-owned-20261103",{file});
+   const foreignFile=await seedConsoleFile(db,foreignAccount,"case-appeal-foreign-scanned-20261103");
+   foreignEvidence=await seedConsoleEvidence(db,foreignAccount,"qualification","case-appeal-foreign-20261103",{file:foreignFile});
+   await createRuntimePrivateObjectStorage("test").put(file.objectKey,file.bytes);
    await db.query(`INSERT INTO auth_mfa_factors(factor_id,account_id,factor_type,encrypted_secret,factor_status,created_at,activated_at)
     SELECT $1,$2,factor_type,encrypted_secret,'active',clock_timestamp(),clock_timestamp() FROM auth_mfa_factors WHERE account_id=$3 AND factor_status='active'`,
     ["independent_case_appeal_factor",secondAccount,creds.admin.accountId]);
@@ -99,6 +108,16 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
     await worker.getByRole("link",{name:"Appeal this rejected case"}).click();
     await worker.waitForURL(url+"/worker/case-appeals?caseId="+c.caseId,{timeout:20000});
     await worker.getByLabel("Appeal grounds").fill("The rejected competence determination overlooked submitted evidence and must be independently reconsidered.");
+    const ownBox=worker.locator('input[name="evidenceRecordIds"][value="'+record.recordId+'"]');
+    await ownBox.waitFor({timeout:10000});
+    await ownBox.check();
+    await ownBox.evaluate((input,foreignId)=>{input.value=foreignId;},foreignEvidence.recordId);
+    await worker.getByRole("button",{name:"Submit case appeal"}).click();
+    await worker.waitForURL("**/worker/case-appeals?error=unavailable",{timeout:20000});
+    console.log("M21303_FOREIGN_SCANNED_EVIDENCE_SUBMISSION_DENIED");
+    await worker.goto(url+"/worker/case-appeals?caseId="+c.caseId,{waitUntil:"domcontentloaded"});
+    await worker.getByLabel("Appeal grounds").fill("The rejected competence determination overlooked submitted evidence and must be independently reconsidered.");
+    await worker.locator('input[name="evidenceRecordIds"][value="'+record.recordId+'"]').check();
     await worker.getByRole("button",{name:"Submit case appeal"}).click();
     await worker.waitForURL("**/worker/case-appeals?status=submitted",{timeout:20000});
     await worker.getByText("Case appeal submitted for independent Admin review.",{exact:true}).waitFor();
@@ -118,9 +137,19 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
     await originalForm.getByLabel("Independent review reason").fill("The original decision maker is not allowed to review their own case appeal.");
     await originalForm.getByRole("button",{name:"Record case appeal review"}).click();
     await originalAdmin.waitForURL("**/admin/case-appeals?error=independence",{timeout:20000});
+    await originalAdmin.getByText("Evidence restricted: original decision maker cannot inspect independent appeal files.",{exact:true}).waitFor();
+    const blockedPreview=await originalAdmin.request.get(url+"/admin/case-appeals/"+appealId+"/files/"+file.fileId);
+    assert.equal(blockedPreview.status(),404,"Original decision maker must not preview frozen case appeal evidence");
     console.log("M21303_ORIGINAL_DECISION_ADMIN_DENIED");
     const independent=await browser.newPage();await login(independent,url,second,"admin");
     await independent.goto(url+"/admin/case-appeals",{waitUntil:"domcontentloaded"});
+    const fileLink=independent.getByRole("link",{name:"Open retained supporting file "+record.recordId});
+    await fileLink.waitFor({timeout:20000});
+    const preview=await independent.request.get(url+await fileLink.getAttribute("href"));
+    assert.equal(preview.status(),200,"Independent Admin should preview the exact retained scanned PDF");
+    assert.deepEqual(Buffer.from(await preview.body()),file.bytes);
+    assert.match(preview.headers()["cache-control"],/private.*no-store/);
+    console.log("M21303_INDEPENDENT_ADMIN_RETAINED_PDF_EXACT_BYTES");
     let form=independent.getByRole("form",{name:"Review case appeal "+appealId});
     await form.getByLabel("Review outcome").selectOption("under_review");
     await form.getByLabel("Independent review reason").fill("Independent evaluation opened and original case evidence retained.");
@@ -150,6 +179,10 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
    const appeals=(await verify.query("SELECT appeal_id,status,version,reviewer_account_id,case_id,decision_id FROM assurance_case_appeals WHERE case_id=$1",[c.caseId])).rows;
    assert.equal(appeals.length,1);assert.equal(appeals[0].status,"accepted");
    assert.equal(Number(appeals[0].version),3);assert.equal(appeals[0].reviewer_account_id,secondAccount);
+   const frozen=(await verify.query("SELECT record_id,version_id,file_id,content_sha256,byte_size FROM assurance_case_appeal_evidence WHERE appeal_id=$1",[appeals[0].appeal_id])).rows;
+   assert.equal(frozen.length,1);assert.equal(frozen[0].record_id,record.recordId);assert.equal(frozen[0].version_id,record.versionId);
+   assert.equal(frozen[0].file_id,file.fileId);assert.equal(Number(frozen[0].byte_size),file.bytes.byteLength);
+   await assert.rejects(verify.query("UPDATE assurance_case_appeal_evidence SET file_id='forged_file' WHERE appeal_id=$1",[appeals[0].appeal_id]),/immutable/i);
    const events=(await verify.query("SELECT version,status FROM assurance_case_appeal_events WHERE appeal_id=$1 ORDER BY version",[appeals[0].appeal_id])).rows;
    assert.deepEqual(events.map(e=>[Number(e.version),e.status]),[[1,"submitted"],[2,"under_review"],[3,"accepted"]]);
    const source=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[c.caseId])).rows[0];
@@ -158,5 +191,8 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
    await assert.rejects(verify.query("UPDATE assurance_case_appeal_events SET reason='tamper with immutable history' WHERE appeal_id=$1",[appeals[0].appeal_id]),/immutable/i);
    console.log("M21303_PERSISTENCE 1 appeal 3 immutable events original rejected decision unchanged");
   }finally{await verify.close()}
- }finally{await rm(root,{recursive:true,force:true})}
+ }finally{
+  if(file)await createRuntimePrivateObjectStorage("test").delete(file.objectKey);
+  await rm(root,{recursive:true,force:true});
+ }
 });

@@ -1,11 +1,15 @@
 import Link from "next/link";
 import {requirePlatformPermission} from "@/lib/authorization/authorization-service";
-import {CaseAppealService} from "@/lib/assurance/case-appeal-service";
+import {CaseAppealService,CaseAppealAccessError} from "@/lib/assurance/case-appeal-service";
 import {reviewCaseAppealAction} from "./actions";
 export const dynamic="force-dynamic";
 export default async function AdminCaseAppealsPage({searchParams}:{searchParams:Promise<{status?:string;error?:string}>}):Promise<React.JSX.Element>{
  const actor=await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});
- const params=await searchParams,appeals=await new CaseAppealService().listForAdmin(actor);
+ const params=await searchParams,service=new CaseAppealService(),appeals=await service.listForAdmin(actor);
+ const evidence=new Map(await Promise.all(appeals.map(async appeal=>{
+   try{return [appeal.appealId,await service.listEvidence(actor,appeal.appealId)] as const;}
+   catch(error){if(error instanceof CaseAppealAccessError)return [appeal.appealId,null] as const;throw error;}
+ })));
  return <section className="page-stack">
   <header className="page-heading"><div><p className="eyebrow">Admin</p><h1>Assurance Case appeals</h1>
    <p>Review rejected unissued cases independently of the original decision maker. Case history and reasons are retained. <Link href="/admin/appeals">Issued credential appeals</Link> are separate.</p></div></header>
@@ -15,6 +19,15 @@ export default async function AdminCaseAppealsPage({searchParams}:{searchParams:
    {appeals.length===0?<p>No Assurance Case appeals yet.</p>:appeals.map(a=><article className="panel content-stack" key={a.appealId} id={a.appealId}>
     <h3>{a.caseId}</h3><p>Worker: {a.workerAccountId}</p><p>Status: {a.status.replaceAll("_"," ")} · Version {a.version}</p>
     <p>Grounds: {a.grounds}</p><p>Original decision: {a.decisionId}</p>
+    <div aria-label={"Supporting evidence "+a.appealId}><h4>Frozen supporting evidence</h4>
+      {evidence.get(a.appealId)===null?<p>Evidence restricted: original decision maker cannot inspect independent appeal files.</p>:
+       (evidence.get(a.appealId)?.length??0)===0?<p>No supporting files selected.</p>:
+       evidence.get(a.appealId)?.map(file=><p key={file.fileId}>
+        <a href={"/admin/case-appeals/"+encodeURIComponent(a.appealId)+"/files/"+encodeURIComponent(file.fileId)} target="_blank" rel="noopener noreferrer">
+         Open retained supporting file {file.recordId}
+        </a> · Version {file.versionId} · {file.byteSize} bytes
+       </p>)}
+    </div>
     {a.reviewReason?<p>Review outcome: {a.reviewReason}</p>:null}
     {a.status==="submitted"||a.status==="under_review"?<form action={reviewCaseAppealAction} className="form-grid" aria-label={"Review case appeal "+a.appealId}>
      <input type="hidden" name="appealId" value={a.appealId}/><input type="hidden" name="expectedVersion" value={a.version}/>
