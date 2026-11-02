@@ -1,3 +1,5 @@
+import {getDatabaseClient} from "@/lib/database/database";
+import {WorkerEvidenceService} from "@/lib/worker-evidence/worker-evidence-service";
 import Link from "next/link";
 import {requirePortalAuthorization} from "@/lib/authorization/authorization-service";
 import {CaseAppealService} from "@/lib/assurance/case-appeal-service";
@@ -7,6 +9,9 @@ export const dynamic="force-dynamic";
 export default async function WorkerCaseAppealsPage({searchParams}:{searchParams:Promise<{caseId?:string;status?:string;error?:string}>}):Promise<React.JSX.Element>{
  const principal=await requirePortalAuthorization("worker"),params=await searchParams;
  const cases=new CaseAppealService(),history=await cases.listForWorker(principal);
+ const evidence=await new WorkerEvidenceService(getDatabaseClient()).listCurrent(principal);
+ const supporting=evidence.filter(item=>item.lifecycleStatus!=="inactive"&&item.currentVersion.status==="submitted");
+ const snapshots=new Map(await Promise.all(history.map(async a=>[a.appealId,await cases.listEvidence(principal,a.appealId)] as const)));
  const caseId=typeof params.caseId==="string"?params.caseId.trim():"";
  const record=caseId?await findWorkerAssuranceCase(principal,caseId):null;
  const eligible=record?.status==="Rejected"&&!record.credentialReference;
@@ -19,6 +24,13 @@ export default async function WorkerCaseAppealsPage({searchParams}:{searchParams
    {eligible?<form action={submitCaseAppealAction} className="form-grid">
     <p>Rejected case: <code>{record.caseId}</code></p><input type="hidden" name="caseId" value={record.caseId}/>
     <label>Appeal grounds<textarea name="grounds" required minLength={10} maxLength={4000} rows={5} placeholder="Explain what should be reconsidered and why."/></label>
+    <fieldset><legend>Supporting evidence from existing submitted Worker records (optional)</legend>
+     {supporting.length===0?<p>No submitted Worker evidence records are available. You can submit grounds without files.</p>:supporting.map(item=><label key={item.recordId}>
+      <input type="checkbox" name="evidenceRecordIds" value={item.recordId}/>
+      {item.kind.replaceAll("_"," ")} · {item.recordId}
+     </label>)}
+     <p>Only your submitted, available scanned files can be attached. The selected version and file hashes are retained for independent review.</p>
+    </fieldset>
     <button type="submit">Submit case appeal</button>
    </form>:<p>Select a rejected case without an issued credential from your assurance history to open its appeal form.</p>}
   </section>
@@ -27,6 +39,7 @@ export default async function WorkerCaseAppealsPage({searchParams}:{searchParams
     <h3><Link href={"/worker/assurance-cases/"+a.caseId}>{a.caseId}</Link></h3>
     <p>Status: {a.status.replaceAll("_"," ")} · Version {a.version}</p>
     <p>Grounds: {a.grounds}</p>
+    <p>Supporting scanned files: {snapshots.get(a.appealId)?.length??0}</p>
     {a.reviewReason?<p>Independent review outcome: {a.reviewReason}</p>:null}
     {a.status==="accepted"?<>
       <p>Appeal accepted. A new reassessment is required under current eligibility and funding policy. The rejected case remains preserved.</p>

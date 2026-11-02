@@ -7,7 +7,8 @@ function field(form:FormData,key:string){const x=form.get(key);return typeof x==
 export async function submitCaseAppealAction(form:FormData):Promise<void>{
  const principal=await requirePortalAuthorization("worker");
  const caseId=field(form,"caseId"),grounds=field(form,"grounds");
- try{await new CaseAppealService().submit(principal,{caseId,grounds});}
+ const evidenceRecordIds=form.getAll("evidenceRecordIds").filter((x):x is string=>typeof x==="string").map(x=>x.trim()).filter(Boolean);
+ try{await new CaseAppealService().submit(principal,{caseId,grounds,evidenceRecordIds});}
  catch(e){
   if(e instanceof CaseAppealAccessError)redirect("/worker/case-appeals?error=unavailable");
   if(e instanceof CaseAppealConflictError)redirect("/worker/case-appeals?error=conflict");
