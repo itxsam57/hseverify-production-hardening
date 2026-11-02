@@ -1,0 +1,12 @@
+ACTUAL_M10701_EMPTY_BROWSER incomplete identity submission refused: Complete these identity requirements before submitting: Legal first name, Legal last name, Date of birth, Nationality, Country of residence, identity document, profile ph
+ACTUAL_M10701_DRAFT_BROWSER accepted partial draft and retained exact fields after rejected submit and cold reload at 390px
+ACTUAL_M10701_DB version remains draft with original incomplete details; no review task or permanent Worker ID issued
+✔ M1.07.01 incomplete Worker identity remains editable and cannot enter verification (24187.774933ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 24759.465268

@@ -1,0 +1,14 @@
+JOURNEY: identity and evidence verified
+JOURNEY: funded assessment case created
+ACTUAL_A13_DEVICE_DENIAL_DIAGNOSTIC {"httpStatus":404,"questionVisible":false,"excerpt":"HV\nHSE Verify\n\nNOT AVAILABLE\n\nThe requested record could not be shown.\n\nThe identifier may be invalid, private, unavailable or no longer approved for public display.\n\nReturn to HSE Verify"}
+ACTUAL_A13_BROWSER unbound fresh authenticated Worker context sees only generic denial; original bound session retains its question
+ACTUAL_A13_DB denied cross-device read left original attempt IN_PROGRESS
+✔ A13 fresh authenticated unbound browser cannot view an active Worker exam (86380.921165ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87852.73503

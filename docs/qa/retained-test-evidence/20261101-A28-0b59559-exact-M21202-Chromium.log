@@ -1,0 +1,10 @@
+ACTUAL_M21202_BROWSER TOTP Assessor mobile 390px real Questions tab and approved follow-up form -> version 2 persisted across reload; Worker blocked; old v1 intact in reopened migrated DB.
+✔ M2.12.02 real mobile Assessor approved follow-up creates new question version, survives reload, Worker cannot access console (31650.806818ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33777.892635

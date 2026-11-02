@@ -1,0 +1,13 @@
+SCENARIO: correct and resubmit experience
+SCENARIO: correct and resubmit skill
+ACTUAL_M11108_BROWSER independently approved skill 1 verified -> inactive preserved three versions and dashboard 0 verified after cold reload
+ACTUAL_M11108_DB inactive skill retains three versions and past reviews but contributes zero current approved competencies
+✔ independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI (155553.287659ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156896.215696

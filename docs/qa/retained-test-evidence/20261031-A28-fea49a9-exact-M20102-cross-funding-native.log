@@ -1,0 +1,10 @@
+ACTUAL_M20102_CREDIT_CROSS_FLOW real 1-credit sandbox purchase: direct Company order holds one, second direct and Worker funding denied; cancelling pending order releases hold; Worker funding reserves once and creates case; stale READY direct submission denied, no duplicate ledger debit
+✔ M2.01 shared Company credits cannot fund direct orders and Worker requests twice; pending cancellation releases order hold (11411.676901ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13797.171648

@@ -1,0 +1,14 @@
+TESTED_SOURCE_SHA:79584bf1c1d32eb26e603f68f3ba88ee18b9409d
+ACTUAL_M305_TWO_COMPANIES_BROWSER distinct paid sandbox invoices and credit balances visible only to their owners
+ACTUAL_M305_RECEIPT_BROWSER own paid receipts 200, both foreign guessed URLs 404, no invoice details
+ACTUAL_M305_FOREIGN_REFUND_BROWSER forged cross-tenant invoice ID rejected without disclosing invoice details
+ACTUAL_M305_TENANT_DB independent invoices, credit ledger and zero forged cross-tenant refund writes
+✔ M3.05 two independent Company browser sessions isolate paid invoices and deny cross-tenant refund (34195.832683ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35849.705827

@@ -1,0 +1,10 @@
+ACTUAL_M21003_BROWSER 390px first Verifier ADDITIONAL_REVIEW -> Admin MFA reassignment -> independent Verifier PASS -> case Interview pending
+✔ real Verifier -> Admin MFA -> different Verifier additional-review flow retains both scoring decisions (33685.397125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35973.782652

@@ -1,0 +1,11 @@
+FOREIGN_DOC_DIAGNOSTIC {"status":200,"url":"http://127.0.0.1:46079/access-denied","contentType":"text/html; charset=utf-8","bytes":15974,"hasPdfHeader":false}
+TWO_ACCOUNT_CORRECTION_CHROMIUM first Worker real correction form then separate matching second Worker login, negative assessment path, Admin verified-parent private review and reasoned disposition, no second ID, original Worker ID preserved
+✔ actual two authenticated Workers: correction preserves original ID; matching second account requires Admin duplicate review (49481.077023ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 51316.805082

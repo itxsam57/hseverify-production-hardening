@@ -1,0 +1,10 @@
+ACTUAL_M21207_BROWSER real independent Assessor/Worker WebRTC fake devices live; real End stopped original 4 device tracks without Worker navigation, closed both signed-in GET and POST signaling, Worker cannot restart; final PASS locks and advances.
+✔ M2.12.07 Assessor End stops own media and remote Worker camera/mic without Worker reload; final submission locks and advances case (41700.780973ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 43780.949338

@@ -1,0 +1,10 @@
+ACTUAL_M21204_NATIVE active full policy, saved draft, wrong-role and duplicate pause denied; PAUSED -> ACTIVE -> TECHNICAL_HOLD -> ACTIVE -> TECHNICAL_HOLD, old notes/score/frozen question rows/runtime events retained, closed old session denies save, Worker sees separately scheduled replacement and audit.
+✔ M2.12.04 active scored interview pause/resume/technical hold/replacement preserves immutable archived evidence and new separate appointment (11697.90083ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13373.996803

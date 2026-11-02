@@ -1,0 +1,15 @@
+JOURNEY: identity and evidence verified
+JOURNEY: funded assessment case created
+ACTUAL_M205_POST_TRANSPORT POST text/x-component
+ACTUAL_ASSESSMENT_TRANSPORT_BROWSER checked 3 Worker GET/POST HTML/RSC/JSON payloads for question IDs, answer keys and grading rubrics
+ACTUAL_M205_FUTURE_QUESTION_BROWSER real Worker HTML/RSC/GET/POST transport hides next written question, bank IDs, answer keys, scoring rubric; current MCQ draft persists and attempt remains open
+ACTUAL_M205_FUTURE_QUESTION_DB only position 1 answered, both immutable bank question versions pinned, question 2 hidden, attempt IN_PROGRESS
+✔ Masterplan preserved Worker journey: register to credential, share and appeal on one record (85705.092114ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87198.288457

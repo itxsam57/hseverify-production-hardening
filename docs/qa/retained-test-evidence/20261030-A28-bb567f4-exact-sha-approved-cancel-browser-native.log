@@ -1,0 +1,30 @@
+TESTED_COMMIT_SHA:bb567f48e0459e0141ddb20f528326dc081ce662
+ACTUAL_COMPANY_CANCEL_DECISION_BROWSER denied with inline reason; approved Worker and sibling remain visible
+ACTUAL_COMPANY_CANCEL_DECISION_DB preserved ACTIVE Company order, approved decision, second Worker and zero cancellation audit/timeline events
+✔ Company cannot cancel partially finalized order or hide an approved Worker case (23513.855419ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 24103.427364
+BROWSER_EXIT:0
+✔ M2.01 real runtime creates one durable Assurance Case and Action Centre obligation per Worker (4613.958158ms)
+✔ M2.01 concurrent submit race produces exactly one submission and no duplicate cases/actions (2975.663083ms)
+✔ M2.01 copied IDs cannot cross tenants and stale Worker links fail closed (2860.952301ms)
+✔ M2.01 database rejects submitted-scope mutation and timeline update/delete tampering (2780.303339ms)
+✔ M2.01 submitted cancellation closes cases, resolves actions and preserves immutable history (2881.038316ms)
+✔ M2.01 partial completed order cannot cancel already-approved Worker outcome (2806.460993ms)
+✔ M2.01 cancellation fails closed for conditional, rejected and referenced credentials (8266.264357ms)
+✔ M2.01 Action Centre blocks unsafe assignment and snoozing of live worker obligations (2752.45921ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30219.220511
+NATIVE_EXIT:0

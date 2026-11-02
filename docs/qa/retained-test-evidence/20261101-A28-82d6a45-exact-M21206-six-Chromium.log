@@ -1,0 +1,20 @@
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"admin","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes PASS and exposes case routing (81718.060728ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"admin","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes CONDITIONAL_PASS and exposes case routing (81991.44739ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes ADDITIONAL_EVIDENCE_REQUIRED and exposes case routing (73573.825395ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes REASSESSMENT_REQUIRED and exposes case routing (77218.906678ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"admin","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes SECOND_INTERVIEW_REQUIRED and exposes case routing (78959.314429ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes FAIL and exposes case routing (73322.861148ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 468885.636359

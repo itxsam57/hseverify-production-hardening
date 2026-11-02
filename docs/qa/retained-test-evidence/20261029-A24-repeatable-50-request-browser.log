@@ -1,0 +1,9 @@
+
+> hseverify@0.1.0 test:authenticated-load
+> node scripts/run-authenticated-mixed-role-burst.mjs
+
+A24 fresh isolated PGlite migrations applied; no production DB.
+A24 audited authenticated 50-request mixed-role browser subprocess started.
+PASS 50-request authenticated mixed-role real-server burst in 12235ms
+A24 burst subprocess result {"code":0,"signal":null}
+A24 audited authenticated 50-request mixed-role test completed, server stopped.

@@ -1,0 +1,13 @@
+✔ real scoring finalization routes PASS to the correct next owner (5962.277165ms)
+✔ real scoring finalization routes FAIL to the correct next owner (4280.789842ms)
+✔ real scoring finalization routes CHANGES_REQUESTED to the correct next owner (4260.776429ms)
+✔ ADDITIONAL_REVIEW is a distinct supported outcome, never an alias for Worker changes (1.151608ms)
+✔ reasoned additional written review routes to Admin and a second independent calibrated Verifier with immutable original (5000.332516ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21036.817324

@@ -1,0 +1,10 @@
+ACTUAL_M21101_NATIVE checks eight matching denials, PAUSED, FAILED, time-expired CURRENT, renewed CURRENT, persisted eligible selection and retry denied
+✔ M2.11.01 pinned scope/language/jurisdiction/risk/availability/workload/calibration and exclusion lead to one eligible assignment (12368.060984ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13943.19906

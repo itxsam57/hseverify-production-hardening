@@ -1,0 +1,10 @@
+ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending
+✔ Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end (77123.0092ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 78039.742908

@@ -1,0 +1,28 @@
+✔ Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end (77584.749636ms)
+SCENARIO: correct and resubmit experience
+SCENARIO: correct and resubmit skill
+SCENARIO: qualification revision -> REJECTED
+SCENARIO: qualification revision -> CHANGES_REQUESTED
+SCENARIO: qualification revision -> APPROVED
+SCENARIO: experience revision -> REJECTED
+SCENARIO: experience revision -> CHANGES_REQUESTED
+SCENARIO: experience revision -> APPROVED
+SCENARIO: skill revision -> REJECTED
+SCENARIO: skill revision -> CHANGES_REQUESTED
+SCENARIO: skill revision -> APPROVED
+SCENARIO: employment revision -> REJECTED
+SCENARIO: employment revision -> CHANGES_REQUESTED
+SCENARIO: employment revision -> APPROVED
+SCENARIO: verified identity correction
+SCENARIO: identity correction -> REJECTED preserves verified parent
+SCENARIO: identity correction -> CHANGES_REQUESTED preserves verified parent
+SCENARIO: identity correction -> UNABLE_TO_VERIFY preserves verified parent
+✔ independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI (516687.510814ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 596575.297724

@@ -1,0 +1,45 @@
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"admin","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes CONDITIONAL_PASS and exposes case routing (81088.293046ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes ADDITIONAL_EVIDENCE_REQUIRED and exposes case routing (74806.35194ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes REASSESSMENT_REQUIRED and exposes case routing (72470.114127ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"admin","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes SECOND_INTERVIEW_REQUIRED and exposes case routing (78742.947771ms)
+Projected recommendation recipients: [{"notification_type":"interview.recommended","recipient_role":"company","title":"Interview recommendation submitted"},{"notification_type":"interview.recommended","recipient_role":"worker","title":"Interview recommendation submitted"}]
+✔ Real Assessor form finalizes FAIL and exposes case routing (73371.238872ms)
+ACTUAL_STAFF_ROLE_BROWSER {"role":"company","login":"passed","path":"/company/dashboard"}
+ACTUAL_STAFF_ROLE_BROWSER {"role":"assessor","login":"passed","path":"/assessor/dashboard"}
+ACTUAL_STAFF_ROLE_BROWSER {"role":"verifier","login":"passed","path":"/verifier/dashboard"}
+ACTUAL_STAFF_ROLE_BROWSER {"role":"admin","login":"passed","path":"/admin/dashboard"}
+ACTUAL_STAFF_ROLE_BROWSER {"role":"root","login":"passed","path":"/root/dashboard"}
+ACTUAL_STAFF_ROLE_DB {"role":"company","accepted":true,"sessions":[{"role":"company","revoked":false}]}
+ACTUAL_STAFF_ROLE_DB {"role":"assessor","accepted":true,"sessions":[{"role":"assessor","revoked":false}]}
+ACTUAL_STAFF_ROLE_DB {"role":"verifier","accepted":true,"sessions":[{"role":"verifier","revoked":false}]}
+ACTUAL_STAFF_ROLE_DB {"role":"admin","accepted":true,"sessions":[{"role":"admin","revoked":false}]}
+ACTUAL_STAFF_ROLE_DB {"role":"root","accepted":true,"sessions":[{"role":"root","revoked":false}]}
+✔ Five invited staff roles activate MFA, retain fixed role and sign in through their portal (53710.6833ms)
+CACHED_UNEXPIRED_CONTROL_ACTUAL_PROFILE_SUCCESS
+ACTUAL_EXPIRED_FRESH_AND_CACHED_STAFF_DENIED company profile
+ACTUAL_EXPIRED_FRESH_AND_CACHED_STAFF_DENIED assessor valid_mfa
+ACTUAL_EXPIRED_FRESH_AND_CACHED_STAFF_DENIED verifier profile
+ACTUAL_EXPIRED_FRESH_AND_CACHED_STAFF_DENIED admin valid_mfa
+ACTUAL_EXPIRED_FRESH_AND_CACHED_STAFF_DENIED root profile
+ACTUAL_EXPIRED_STAFF_DB_NO_ACCEPTANCE_SESSION_OR_PREMATURE_ACCOUNT
+✔ All staff roles reject fresh and cached enrollment after persisted invitation expiry (45426.483404ms)
+ACTUAL_UNKNOWN_STAFF_TOKEN_NO_PERSISTED_EFFECTS
+✔ Unknown invitation token creates no enrollment, account, session or audit acceptance (17414.415873ms)
+ACTUAL_BROWSER_REVOKED_FRESH_AND_CACHED_PROFILE_DENIED
+ACTUAL_BROWSER_REVOKED_CACHED_VALID_MFA_DENIED
+ACTUAL_DB_REVOKED_CANCELLED_NO_ACCOUNT_AND_IMMUTABLE_AUDIT
+✔ Issuer revocation blocks a fresh token and an already-open enrollment (29511.790716ms)
+✔ Verifier actual conflict control removes private review access and reaches Admin recovery (28852.315368ms)
+✔ Verifier actual amendment control retains final evidence and requires fresh rubric and explicit progression (26820.325443ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 588233.699159

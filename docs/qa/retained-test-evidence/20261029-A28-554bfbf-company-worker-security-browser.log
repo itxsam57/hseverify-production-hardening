@@ -1,0 +1,35 @@
+ACTUAL_SIX_ROLE_SESSION_BROWSER worker foreign tamper denied, own other revoked, self signout and protected-page denial
+ACTUAL_SIX_ROLE_SESSION_BROWSER company foreign tamper denied, own other revoked, self signout and protected-page denial
+ACTUAL_SIX_ROLE_SESSION_BROWSER assessor foreign tamper denied, own other revoked, self signout and protected-page denial
+ACTUAL_SIX_ROLE_SESSION_BROWSER verifier foreign tamper denied, own other revoked, self signout and protected-page denial
+ACTUAL_SIX_ROLE_SESSION_BROWSER admin foreign tamper denied, own other revoked, self signout and protected-page denial
+ACTUAL_SIX_ROLE_SESSION_BROWSER root foreign tamper denied, own other revoked, self signout and protected-page denial
+ACTUAL_SIX_ROLE_SESSION_DB exact owned revocations, foreign sessions retained, self metadata and immutable completion audits
+✔ Six-role active sessions preserve foreign accounts, revoke owned other and current sessions (66971.24302ms)
+ACTUAL_COMPANY_UNITS site and department create/edit/archive/restore persisted across reloads
+ACTUAL_ASSIGNED_UNIT_ARCHIVE staff/Worker placements removed, forged archived placement denied, restore does not recreate placement
+ACTUAL_STAFF_PERMISSION_CEILING own live admin session cannot grant absent permission or owner role; permitted viewer invitation succeeds
+ACTUAL_COMPANY_STAFF_SUSPENSION existing signed-in session loses Company tenant dashboard access
+ACTUAL_COMPANY_STAFF_REVOCATION reactivated signed-in session loses Company tenant dashboard access on revocation
+ACTUAL_BILLING_INVALID_SIGNATURE rejected before capture
+ACTUAL_BILLING_CAPTURE_REPLAY duplicate accepted idempotently; changed signed payload denied; balance remains10
+ACTUAL_BILLING_FULL_REFUND partial2000 then remaining3000; full refund confirmed with balance0
+ACTUAL_BILLING_NEW_PURCHASE distinct second checkout remains provider-pending and grants no unpaid credits
+ACTUAL_UNIT_ARCHIVE_HISTORY same Worker/link source retained, two immutable prior-scope events and ended staff assignment
+ACTUAL_STAFF_PERMISSION_DB forged grants/roles leave no invitation; legitimate viewer invitation persisted
+ACTUAL_COMPANY_STAFF_DENIAL_DB revoked membership, same authenticated session, persisted denials with complete audit mirrors
+ACTUAL_BILLING_DB exact original capture and two retained refund ledger entries, no replay double-credit or double-refund
+✔ Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium (124606.673095ms)
+ACTUAL_COMPANY_HEADER_SEARCH desktop/mobile keyboard submit, scoped report, matching foreign Worker excluded, forged scope ignored, SQL-like query unmatched
+ACTUAL_FILTERED_PAGINATION_BROWSER active26 excludesrevoked throughNextRefreshPrevious
+ACTUAL_COMPANY_SEARCH_LIVE_DENIAL existing session retains portal, search hidden and direct result route denied after permission removal
+✔ Company filtered directory preserves status through Next, refresh and Previous (42955.125628ms)
+✔ Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance (29584.831544ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 266561.501234

@@ -1,0 +1,10 @@
+ACTUAL_M21204_BROWSER real signed-in Assessor mobile pause/resume/tech/resume/re-save/hold/request replacement, archived private note+scores and 5 runtime events retained, Worker sees separate scheduled appointment, owner case+audit correct.
+✔ M2.12.04 Assessor browser pause/resume technical hold recovery then replacement and Worker new schedule preserve archived score and notes (44592.901065ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 46677.259301

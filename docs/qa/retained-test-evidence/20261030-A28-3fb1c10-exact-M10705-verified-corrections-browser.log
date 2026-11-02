@@ -1,0 +1,15 @@
+SCENARIO: verified identity correction
+SCENARIO: identity correction -> REJECTED preserves verified parent
+SCENARIO: identity correction -> CHANGES_REQUESTED preserves verified parent
+SCENARIO: identity correction -> UNABLE_TO_VERIFY preserves verified parent
+ACTUAL_M10705_BROWSER initial verified, accepted corrected name, REJECTED/CHANGES_REQUESTED/UNABLE_TO_VERIFY further corrections, original identity and permanent Worker ID preserved after cold reload
+ACTUAL_M10705_DB five retained exact-version reviews, unchanged original and approved evidence, one permanent Worker ID and only accepted correction active
+✔ independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI (165288.851115ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166620.466256

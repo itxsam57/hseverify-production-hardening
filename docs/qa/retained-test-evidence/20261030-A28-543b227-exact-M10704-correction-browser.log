@@ -1,0 +1,12 @@
+SCENARIO: initial identity changes requested -> revised submission -> approval
+ACTUAL_M10704_BROWSER initial CHANGES_REQUESTED -> revision -> corrected submission -> independent APPROVED -> permanent Worker ID
+ACTUAL_M10704_DB immutable original and corrected versions, independent dispositions and one permanent Worker ID
+✔ independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI (117474.073805ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 118826.533892

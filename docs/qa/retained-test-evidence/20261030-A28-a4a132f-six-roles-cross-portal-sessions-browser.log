@@ -1,0 +1,15 @@
+Verified authentication boundaries for worker
+Verified authentication boundaries for company
+Verified authentication boundaries for assessor
+Verified authentication boundaries for verifier
+Verified authentication boundaries for admin
+Verified authentication boundaries for root
+✔ All six role sessions reject invalid credentials and cross-portal access and distinguish Exit from sign-out (81486.908726ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82486.262064

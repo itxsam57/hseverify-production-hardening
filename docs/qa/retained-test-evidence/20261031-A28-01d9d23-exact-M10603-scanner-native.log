@@ -1,0 +1,16 @@
+✔ clean scan becomes available exactly once even if handler repeats before outbox success (6159.902509ms)
+✔ EICAR fixture becomes unsafe and never available (4393.02742ms)
+✔ retry-once remains scan_pending then succeeds on the second leased attempt (4375.689823ms)
+✔ retry exhaustion terminalizes the linked file instead of leaving scan_pending (4369.584502ms)
+✔ missing or tampered private object fails closed and never becomes available (8434.473372ms)
+✔ expired stale lease cannot mutate scan result and a reclaimed lease can finish safely (4216.040077ms)
+M10603_SCANNER_OUTAGE locked pending file, single idempotent scan generation, storage overwrite denied, recovered clean on same exact bytes and one audit
+✔ scanner outage retains quarantine provenance; retry uses same immutable object and can publish only its own clean result (4231.935543ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 37285.366045

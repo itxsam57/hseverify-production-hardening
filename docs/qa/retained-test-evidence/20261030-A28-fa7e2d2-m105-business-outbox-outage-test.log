@@ -1,0 +1,13 @@
+✔ outbox migration creates durable deduplicated history and lifecycle audit vocabulary (6088.91483ms)
+✔ state, outbox work and audit facts roll back and commit as one transaction (4166.93901ms)
+✔ retry then success preserves attempts and rejects stale completion (4136.56224ms)
+ACTUAL_M105_OUTBOX_DB committed business approval survives delayed delivery, idempotent one job, failed+success attempts, stale lease denied
+✔ M1.05 notification delivery outage does not roll back committed business state, duplicate, or erase retry attempts (4162.787779ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18787.250651

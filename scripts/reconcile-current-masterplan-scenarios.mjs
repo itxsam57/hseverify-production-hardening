@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -9,6 +10,22 @@ assert.equal(original.length, 218, "The frozen expanded scenario matrix must con
 assert.equal(new Set(original.map(row => row.id)).size, 218, "Scenario identities must be unique");
 assert.equal(new Set(original.map(row => row.brick)).size, 37, "All 37 frozen Masterplan bricks must be represented");
 const currentSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+
+// Retained local historical test artifacts must be reproducible in a clean
+// checkout. A checksum proves these are the same imported logs; it does not
+// transfer their old-SHA assertions to this release candidate.
+const retainedEvidenceRoot = resolve("docs/qa/retained-test-evidence");
+const retainedEvidenceManifest = JSON.parse(readFileSync(resolve(retainedEvidenceRoot, "manifest.json"), "utf8"));
+function readRetainedEvidence(file) {
+  const expectedDigest = retainedEvidenceManifest.sha256?.[file];
+  assert.match(expectedDigest ?? "", /^[a-f0-9]{64}$/, "Missing retained test evidence digest: " + file);
+  const path = resolve(retainedEvidenceRoot, file);
+  assert(existsSync(path), "Missing retained historical test evidence: " + file);
+  const contents = readFileSync(path);
+  assert.equal(createHash("sha256").update(contents).digest("hex"), expectedDigest,
+    "Retained test evidence checksum mismatch: " + file);
+  return contents.toString("utf8");
+}
 
 // These retained A26 logs were produced on the exact code candidate tested
 // before this audit/runner change. Do not silently rebind them to later heads.
@@ -37,7 +54,7 @@ const evidence = {
 };
 for (const [id, [file]] of Object.entries(evidence)) {
   assert(original.some(row => row.id === id), "Unexpected frozen scenario " + id);
-  assert(existsSync(resolve(".autopilot/artifacts", file)), "Missing actual test evidence: " + file);
+  readRetainedEvidence(file);
 }
 const burstPath = resolve(".autopilot/artifacts/mixed-role-http-burst.json");
 let burstSameSha = false;
@@ -1127,16 +1144,12 @@ const browserClauseMap = {
 const nativeRunNames = new Set(["m21208RecordingNative", "m21207EndMediaNative", "m21206SixNative", "m21205FinalizeNative", "m21204RetentionNative", "m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
-    const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
-    assert(existsSync(fixtureProof), "Missing isolated M3.11 full-drill receipt");
-    const receipt = JSON.parse(readFileSync(fixtureProof, "utf8"));
+    const receipt = JSON.parse(readRetainedEvidence("20261029-A28-fe9bc28-M3-11-isolated-certification.json"));
     assert(receipt.status === "certified" && receipt.drills?.length === 4 &&
       receipt.drills.every(drill => drill.status === "passed"),
       "M3.11 isolated certification did not persist all four passing drills");
   }
-  const pathname = resolve(".autopilot/artifacts", run.file);
-  assert(existsSync(pathname), "Missing exact-candidate test evidence: " + pathname);
-  const log = readFileSync(pathname, "utf8");
+  const log = readRetainedEvidence(run.file);
   assert(log.includes(run.passed) && log.includes(run.failed),
     "Scoped test run " + name + " did not complete with expected passing count");
 }
@@ -1159,21 +1172,21 @@ const records = original.map(row => {
       provenance: "ACTUAL_NATIVE_MIGRATED_PGLITE_TEST",
       observed_code_sha: browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha,
       code_head_matches_observation: currentSha === (browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha),
-      log: ".autopilot/artifacts/" + browserRuns[name].file,
+      log: "docs/qa/retained-test-evidence/" + browserRuns[name].file,
       proven_clause_only: provenClause
     })),
     scoped_exact_browser_observations: browserClauses.filter(([name]) => !nativeRunNames.has(name)).map(([name, provenClause]) => ({
       provenance: "ACTUAL_CHROMIUM_LOCAL_TEST",
       observed_code_sha: browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha,
       code_head_matches_observation: currentSha === (browserRuns[name].observedCodeSha ?? browserEvidenceHeadSha),
-      log: ".autopilot/artifacts/" + browserRuns[name].file,
+      log: "docs/qa/retained-test-evidence/" + browserRuns[name].file,
       proven_clause_only: provenClause
     })),
     scoped_local_evidence: local ? {
       disposition: "CLAUSE_ONLY_NOT_WHOLE_SCENARIO",
       observed_code_sha: legacyScopedRunSha,
       code_head_matches_observation: scopedEvidenceOnCurrentHead,
-      log: ".autopilot/artifacts/" + local[0],
+      log: "docs/qa/retained-test-evidence/" + local[0],
       remaining: local[1],
       ...(row.id === "M3.11.05" ? { exact_sha_50_get_burst: burstSameSha ? "PASS" : "NOT_VERIFIED_ON_HEAD" } : {})
     } : null

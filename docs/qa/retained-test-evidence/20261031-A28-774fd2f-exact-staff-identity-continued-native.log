@@ -1,0 +1,11 @@
+✔ Duplicate identity staff recovery is authenticated, stale-safe, reasoned and issues only the target Worker ID (6646.940378ms)
+✔ Verified Worker stays a duplicate candidate while their identity correction is pending (4850.087276ms)
+✔ Migration 0125 rollback restores original duplicate-signal guard and reapply preserves data (4267.440243ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17039.085207

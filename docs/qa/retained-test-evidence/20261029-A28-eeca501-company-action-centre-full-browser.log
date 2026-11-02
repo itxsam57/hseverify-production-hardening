@@ -1,0 +1,23 @@
+ACTUAL_COMPANY_UNITS site and department create/edit/archive/restore persisted across reloads
+ACTUAL_ASSIGNED_UNIT_ARCHIVE staff/Worker placements removed, forged archived placement denied, restore does not recreate placement
+ACTUAL_STAFF_PERMISSION_CEILING own live admin session cannot grant absent permission or owner role; permitted viewer invitation succeeds
+ACTUAL_COMPANY_STAFF_SUSPENSION existing signed-in session loses Company tenant dashboard access
+ACTUAL_COMPANY_STAFF_REVOCATION reactivated signed-in session loses Company tenant dashboard access on revocation
+ACTUAL_BILLING_INVALID_SIGNATURE rejected before capture
+ACTUAL_BILLING_CAPTURE_REPLAY duplicate accepted idempotently; changed signed payload denied; balance remains10
+ACTUAL_BILLING_FULL_REFUND partial2000 then remaining3000; full refund confirmed with balance0
+ACTUAL_BILLING_NEW_PURCHASE distinct second checkout remains provider-pending and grants no unpaid credits
+ACTUAL_UNIT_ARCHIVE_HISTORY same Worker/link source retained, two immutable prior-scope events and ended staff assignment
+ACTUAL_STAFF_PERMISSION_DB forged grants/roles leave no invitation; legitimate viewer invitation persisted
+ACTUAL_COMPANY_STAFF_DENIAL_DB revoked membership, same authenticated session, persisted denials with complete audit mirrors
+ACTUAL_BILLING_DB exact original capture and two retained refund ledger entries, no replay double-credit or double-refund
+✔ Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium (125955.70429ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126714.293495
+

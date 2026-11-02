@@ -1,0 +1,16 @@
+TESTED_CODE_SHA:f15f8c6c608a7f621f1d1a9cebece50d4c8279be
+ACTUAL_M303_DENIAL_BROWSER public HTML and JSON must render identical neutral denial with no internal reason.
+ACTUAL_M303_DENIAL_BROWSER expired recipient denied neutrally via page and API
+ACTUAL_M303_DENIAL_BROWSER revoked recipient denied neutrally via page and API
+ACTUAL_M303_DENIAL_BROWSER altered HMAC cannot distinguish existing active share record
+ACTUAL_M303_SCOPED_PUBLIC_BROWSER owner-approved Worker ID vs employer detail scopes do not leak each other's unselected data
+ACTUAL_M303_AUDIT_DB selected fields/purpose/expiry persisted; allowed, expired and revoked recipient accesses audited privately
+✔ M3.03 share-link API boundary is reachable through real Chromium (20219.397853ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21085.089658

@@ -1,0 +1,11 @@
+ACTUAL_M10804_BROWSER actual Company submits scanned registration PDF, Admin rejects exact submitted version; Company remains rejected with pending-tenant notice, immutable details/evidence after reload, no edit/resubmit, case leaves Admin queue
+ACTUAL_M10804_DB rejected exact submitted Company version and original scanned PDF retained; tenant pending/not activated; only one version and rejection audit persisted
+✔ M1.08 real Chromium acceptance covers Company registration, correction, evidence review and activation (43250.121924ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44227.453647

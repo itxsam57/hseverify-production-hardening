@@ -1,0 +1,15 @@
+TESTED_CODE_SHA:011b2290855ba1d475de9efee849368905d66b9c
+ACTUAL_M106_UPLOAD_BROWSER 10MB+1 oversized file denied by server
+ACTUAL_M106_UPLOAD_BROWSER declared PDF with genuine PNG bytes denied despite browser file selection
+ACTUAL_M106_UPLOAD_BROWSER unsupported executable extension/MIME denied by server
+ACTUAL_M106_UPLOAD_REJECTED_BROWSER invalid bytes never displayed as pending or accepted evidence after reload
+ACTUAL_M106_DB rejected uploads create zero permanent reservations and zero Worker evidence attachments
+✔ M1.06 Worker upload browser rejects oversized, MIME-spoofed, and unsupported files without reservations (27887.472684ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 28484.590337

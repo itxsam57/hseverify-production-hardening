@@ -1,0 +1,23 @@
+A09_END_LINK_BROWSER Company reasoned revocation -> Worker historical link, active access removed, authenticated Worker retained
+A09_END_LINK_DB immutable single audit and Worker principal unchanged
+✔ Company ends active Worker relationship while Worker retains identity and prior Company history (29045.839892ms)
+ACTUAL_INITIAL_IDENTITY_REJECTION retained rejected state/reason, no invented correction/submit route
+ACTUAL_INITIAL_IDENTITY_REJECTION_DB one preserved submitted version, exact reasoned human decision, no permanent ID
+✔ Initial identity rejection preserves submitted version, reason and terminal policy (52488.118513ms)
+ACTUAL_DUPLICATE_WORKER_BROWSER: three contact conflicts denied
+ACTUAL_RECOVERY_REJECTION_DB: decrement and failure audit committed; password, session and identity unchanged
+ACTUAL_WORKER_RECOVERY_BROWSER: wrong-code denial, valid recovery, old-session denial, old-password denial, replacement login
+ACTUAL_WORKER_RECOVERY_DB: unchanged identity/evidence, consumed flow/challenge, remaining attempts, exact immutable failure/completion audit and session revocation
+✔ Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions (59669.550709ms)
+ACTUAL_CAPTURED_OTP_EXPIRY email captured pre-expiry normal POST rejected by backend; fresh live UI remains tested
+ACTUAL_CAPTURED_OTP_EXPIRY phone captured pre-expiry normal POST rejected by backend; fresh live UI remains tested
+✔ Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts (47402.433144ms)
+✔ Worker browser five rejected codes per channel cannot activate; fresh challenge recovers (27493.110896ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 219202.100608

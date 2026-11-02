@@ -1,0 +1,11 @@
+✔ permanent Worker ID owns immutable question exposure, not a caller-chosen account key (10536.798872ms)
+✔ 0126 reversible backfill preserves already exposed immutable question history (9672.046365ms)
+✔ two separately issued permanent Worker IDs have separate Exposure Family histories without an account merge (9416.680068ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31130.725709

@@ -1,0 +1,13 @@
+✔ built-in interview media is scoped to the exact Worker and assigned Assessor (4890.305257ms)
+✔ offer, answer and ICE signaling are peer-only and durable (3274.276279ms)
+✔ interview media rejects malformed signaling instead of trusting browser payloads (3229.527059ms)
+ACTUAL_M21207_NATIVE real End while request still ASSIGNED, both role media GET/POST denied, existing signal history retained unchanged.
+✔ M2.12.07 ended runtime denies BOTH participants media polling and all new signaling before recommendation is submitted (10932.261061ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 25078.080237

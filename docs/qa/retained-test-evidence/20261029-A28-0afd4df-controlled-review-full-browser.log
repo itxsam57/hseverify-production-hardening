@@ -1,0 +1,15 @@
+JOURNEY: identity and evidence verified
+JOURNEY: funded assessment case created
+JOURNEY: CONTROLLED_REVIEW question 1 revision and flagging
+JOURNEY: CONTROLLED_REVIEW question 2 revision and flagging
+ACTUAL_A17_SCOPED_SHARE_BROWSER Worker creates, opens, revokes; revoked capability denied after reload
+JOURNEY: credential, sharing and appeal completed
+✔ Masterplan preserved Worker journey: register to credential, share and appeal on one record (183726.607712ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 185198.282776

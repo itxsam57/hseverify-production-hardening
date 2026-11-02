@@ -1,0 +1,11 @@
+ACTUAL_M20106_REJECTED_BROWSER Verifier terminal rejection reached both Worker and Company after cold reload, case never auto-progressed
+ACTUAL_M20106_REJECTED_DB one retained original Worker qualification version, terminal Verifier REJECTED exact source-linked task and Company case with no owner; Company order remains SUBMITTED
+✔ Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end (67453.116195ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 68428.411328

@@ -1,0 +1,47 @@
+
+> hseverify@0.1.0 test:provider-integrations
+> node --test tests/platform/provider-health-runtime.test.mjs tests/platform/provider-execution-gateway-runtime.test.mjs tests/platform/interview-live-media-runtime.test.mjs
+
+✔ built-in interview media is scoped to the exact Worker and assigned Assessor (4856.427528ms)
+✔ offer, answer and ICE signaling are peer-only and durable (3558.815362ms)
+✔ interview media rejects malformed signaling instead of trusting browser payloads (3458.105695ms)
+(node:4111368) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/ubuntu/work/hseverify-masterplan-release/src/lib/integrations/provider-execution-gateway.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/ubuntu/work/hseverify-masterplan-release/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ HSE-X03 provider gateway rejects unknown callers and replays safely (1.59425ms)
+✔ HSE-X03 missing external provider configuration fails closed (0.294882ms)
+✔ HSE-X03 provider gateway rejects callers without provider execution authority (0.280882ms)
+✔ HSE-X03 built-in video adapter is executable without external provider credentials (0.321322ms)
+✔ HSE-X03 production gateway rejects local fixture providers but keeps built-in video (0.506123ms)
+(node:4111375) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/ubuntu/work/hseverify-masterplan-release/src/lib/integrations/provider-health-domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/ubuntu/work/hseverify-masterplan-release/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ production never describes disabled fixtures as available (1.421889ms)
+✔ complete actual email and SMS settings are configuration, not delivery evidence (0.536403ms)
+✔ partial provider settings cannot enable a provider (0.263762ms)
+✔ development fixtures and built-in video remain explicitly limited (0.289602ms)
+✔ all six adapter boundaries and development activation remain explicit (1.167168ms)
+✔ preview selects real scanner rather than test fixture and never certifies it (0.232242ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12852.899921
+(node:4111387) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/ubuntu/work/hseverify-masterplan-release/src/lib/integrations/provider-adapter-service.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/ubuntu/work/hseverify-masterplan-release/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ M3.10 provider adapters execute locally and fail closed when configuration is missing (1.913053ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 146.783133

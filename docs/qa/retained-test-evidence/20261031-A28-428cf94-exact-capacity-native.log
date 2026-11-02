@@ -1,0 +1,15 @@
+✔ M2.06 zero-prerequisite catalogue is available only for the authenticated Worker's owned pending case (6149.776378ms)
+✔ M2.06 Worker availability requires a live active Worker session and Worker-only permission (4207.196729ms)
+✔ M2.06 case snapshot, framework, catalogue status and stable blueprint status all fail closed (4481.970731ms)
+✔ M2.06 minimum one requires exact-current submitted APPROVED qualification lineage (4672.289712ms)
+✔ M2.06 rejected, changes-requested and another Worker's qualification never qualify (4999.12763ms)
+✔ M2.06 denies start but explains restricted capacity when permanent exposure exhausts unseen blueprint capacity (4300.423181ms)
+✔ M2.06 availability DTO is secret-safe and reads create no forms or case mutations (4249.999869ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33950.117867

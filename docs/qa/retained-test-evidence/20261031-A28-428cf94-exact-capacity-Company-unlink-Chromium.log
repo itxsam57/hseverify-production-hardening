@@ -1,0 +1,17 @@
+M20503_READY two valid paid separate cases; separate published stable question IDs share immutable family
+ACTUAL_M20503_WORKER_BROWSER first question displayed and never answered before quit
+ACTUAL_M20503_WORKER_BROWSER emergency exit left an INTERRUPTED resumable attempt
+ACTUAL_M20503_COMPANY_BROWSER verified Company revoked its Worker relationship without altering Worker assessment.
+ACTUAL_M20503_CAPACITY_UX_BROWSER paid second case remains visible with no Start button and generic unused-question explanation
+ACTUAL_M20503_WORKER_BROWSER distinct authenticated device cannot repeat exposed family or hijack bound attempt
+ACTUAL_M20503_EMPLOYER_UNLINK_DB previous Company relationship revoked but permanent Worker account, family reservation, unpaid answer and second case remained intact
+ACTUAL_M20503_WORKER_DB real displayed unanswered reserved family survived interruption and fresh login; second case and funds unchanged
+✔ M2.05.03 real Worker displays an unanswered question, emergency exits, and another device cannot obtain its Exposure Family (56335.142279ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 58185.468385

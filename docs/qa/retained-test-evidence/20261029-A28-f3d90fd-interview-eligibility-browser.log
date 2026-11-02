@@ -1,0 +1,20 @@
+ACTUAL_ELIGIBILITY_BROWSER Worker owned wait/date+disabled action->forged submit server denial; Company READY submit server denial; real clock threshold->owned pinned case Start assessment/precheck.
+✔ Actual Worker waiting/date, forged apply and Company submit denial become later eligible under pinned policy (48656.064181ms)
+ACTUAL_ELIGIBILITY_CONTEXT_BROWSER configured qualification->forged Worker submit and Company submit denied->original Verifier claim/approve->Worker apply/confirm->exact case pinned precheck.
+✔ Configured qualification gates Worker and Company until original Verifier approval, then self-payment pins and starts the exact case (42487.014972ms)
+ACTUAL_RESCHEDULE_NOTICE_BROWSER real reschedule -> actual compiled CLI12 -> old6suppressed/new3notices+3acceptedemails -> Worker Assessor Company Open links show revised time and no private reason;390px nooverflow
+ACTUAL_RESCHEDULE_BROWSER initial schedule -> required reason -> persisted new time/reason and12 durable jobs -> Worker private record refresh; 390px no overflow
+✔ Assessor reschedules through the real form and Worker sees the persisted appointment (97179.24846ms)
+ACTUAL_UTC_SCHEDULE_BROWSER {"selected":"2026-10-30T05:24","expected":"2026-10-30T05:24:00.000Z","actual":"2026-10-30T05:24:00.000Z","recordTimezone":"UTC","displayedIncludesActual":true}
+✔ Assessor UTC schedule is independent of server and browser timezones (23681.53247ms)
+ACTUAL_AVAILABILITY_BROWSER Worker authenticated form -> persisted UTC window -> refresh -> Assessor sees window -> outside rejection -> inside actual appointment -> Worker retains current appointment; 390px no overflow
+✔ Worker availability survives refresh and controls Assessor scheduling through actual forms (32002.850863ms)
+✔ Worker technical reporting is hidden before scheduling and persists inside the join window (32743.723354ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 285221.632648

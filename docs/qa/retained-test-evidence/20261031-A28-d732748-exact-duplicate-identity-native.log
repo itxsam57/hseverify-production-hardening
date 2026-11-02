@@ -1,0 +1,23 @@
+✔ S5 eligibility authority is server-created and cannot be forged by object shape (1.53441ms)
+✔ S5 duplicate signals are deterministic, bounded and contain no compared personal values (13.967213ms)
+✔ S5 duplicate normalization handles only bounded deterministic equivalence (0.664764ms)
+✔ S5 permanent Worker-ID eligibility is fail-closed for unresolved duplicate dispositions (0.244802ms)
+✔ S5 identifiers and reason codes are opaque and constrained (1.050167ms)
+✔ S5 duplicate eligibility schema and migration checksum survive PGlite close and reopen (4610.922183ms)
+✔ S5 rollback is monotonic and deterministic reapply preserves accepted lower-layer data (2602.532243ms)
+✔ S5 eligibility tables are append-only and Worker-ID rows reject mutation (2315.304637ms)
+✔ S5 clear duplicate evaluation permits one opaque idempotent permanent Worker ID (4227.290171ms)
+✔ S5 duplicate signals never merge accounts and unresolved recovery dispositions block Worker ID (2891.445498ms)
+✔ S5 re-evaluation supersedes an older clear result when a later duplicate appears (2718.165817ms)
+✔ S5 later matching account invalidates staff-cleared duplicate review until another authorized evaluation (2900.911601ms)
+✔ S5 nonmatching later account does not invalidate a valid unchanged clear check (2781.999444ms)
+✔ S5 Worker eligibility read is own-session scoped and never exposes duplicate candidate facts (2671.241861ms)
+✔ S5 permanent Worker ID refuses issuance before verified identity status (2623.494062ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30921.213308

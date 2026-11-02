@@ -1,0 +1,12 @@
+ACTUAL_ELIGIBILITY_BROWSER Worker owned wait/date+disabled action->forged submit server denial; Company READY submit server denial; real clock threshold->owned pinned case Start assessment/precheck.
+✔ Actual Worker waiting/date, forged apply and Company submit denial become later eligible under pinned policy (48689.358527ms)
+ACTUAL_ELIGIBILITY_CONTEXT_BROWSER configured qualification->forged Worker submit and Company submit denied->original Verifier claim/approve->Worker apply/confirm->exact case pinned precheck.
+✔ Configured qualification gates Worker and Company until original Verifier approval, then self-payment pins and starts the exact case (42269.694095ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 93579.013353

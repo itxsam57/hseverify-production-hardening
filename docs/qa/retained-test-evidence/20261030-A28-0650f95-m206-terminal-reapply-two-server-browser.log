@@ -1,0 +1,13 @@
+ACTUAL_M206_FIRST_WORKER_APPLICATION_BROWSER sandbox self-funded original assessment case
+TEST_SETUP_M206_TERMINAL_CASE original assessment marked Closed in persisted DB between app runs; independent Verifier terminal action not tested
+ACTUAL_M206_REAPPLICATION_BROWSER fresh Worker application and sandbox-funded case after terminal original, via actual portal
+ACTUAL_M206_REAPPLY_DB original terminal case and application/audit preserved, distinct new funded case and policy pin
+✔ M2.06 terminal Worker case permits new application while retaining complete original history (37719.734973ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39376.02362

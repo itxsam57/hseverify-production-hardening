@@ -1,0 +1,11 @@
+ACTUAL_M20102_NO_CREDIT_BROWSER real Company selects two active linked Workers with Company funding and zero paid credits, receives actionable VALIDATION_FAILED after cold reload, no Submit Order allowed
+ACTUAL_M20102_NO_CREDIT_DB two company-funded targets preserved in editable VALIDATION_FAILED draft, no submitted status, no case/action/submission and no credit reservation or billing history
+✔ M2.01 actual two Worker cases keep scope/site/deadline and stale second submit cannot duplicate cases (25312.352151ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 25894.406743

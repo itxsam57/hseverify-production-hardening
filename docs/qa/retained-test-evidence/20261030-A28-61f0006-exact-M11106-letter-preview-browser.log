@@ -1,0 +1,16 @@
+ACTUAL_M11105_EMPLOYMENT_SUBMITTED Employer Alpha alpha-employment.png
+ACTUAL_M11105_EMPLOYMENT_SUBMITTED Employer Beta beta-employment.png
+ACTUAL_M11106_REPLACEMENT_BROWSER original and replacement scanned and bound to Alpha alone; Beta unchanged
+ACTUAL_M11106_PRIVATE_PREVIEW alpha-leaving-v1.png matching original bytes; anonymous denied
+ACTUAL_M11106_PRIVATE_PREVIEW alpha-leaving-v2.png matching original bytes; anonymous denied
+ACTUAL_M11106_BROWSER Alpha ended with two historical private letter previews, Beta active and isolated
+ACTUAL_M11106_DB two exact Alpha ended-employment version bound letter rows, original superseded, replacement active, immutable hashes, Beta zero letters
+✔ M1.11.06 leaving letter replacement preserves versioned exact employment binding and per-file private previews (43746.268233ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44393.42783

@@ -1,0 +1,10 @@
+ACTUAL_M21202_NATIVE configured mandatory/random/high risk selected and frozen; approved follow-up version 2 retains exact version 1, invalid/duplicate/role denied, direct UPDATE and DELETE immutable.
+✔ M2.12.02 configured mandatory and approved follow-up versions retain exact immutable history (11002.135653ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12844.233863

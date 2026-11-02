@@ -1,0 +1,12 @@
+✔ M2.10.05 FAILED blocks live scoring, marks, calibration notes, reviewer selection and leaves a recoverable case (6335.758375ms)
+✔ M2.10.05 EXPIRED blocks live scoring, marks, calibration notes, reviewer selection and leaves a recoverable case (4617.223081ms)
+✔ M2.10.05 SUSPENDED blocks live scoring, marks, calibration notes, reviewer selection and leaves a recoverable case (4568.281597ms)
+✔ M2.10.05 CURRENT_BUT_TIME_EXPIRED blocks live scoring, marks, calibration notes, reviewer selection and leaves a recoverable case (4548.475987ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21630.022728
