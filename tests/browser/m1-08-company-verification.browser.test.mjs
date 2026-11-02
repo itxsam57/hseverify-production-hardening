@@ -376,12 +376,28 @@ async function runBrowserAcceptance(baseUrl, output) {
     await gotoOk(companyPage, baseUrl, "/company/team", "Company Team");
     await companyPage.getByLabel("Staff email").fill("team.member.m108@example.test");
     await companyPage.getByLabel("Company Team role").selectOption("viewer");
+    // Selecting a narrower role re-renders its permission ceiling. The browser
+    // must wait for that controlled transition before submitting the form;
+    // otherwise a fast automation click can pair viewer with owner permissions.
+    await companyPage.waitForFunction(() => {
+      const role=document.querySelector('select[name="membershipRole"]');
+      const checkboxes=[...document.querySelectorAll('fieldset input[name="permissions"]')];
+      const expected=["company.tenant.read","company.workforce.read","company.orders.read","company.reports.read"];
+      return role?.value==="viewer" &&
+        checkboxes.length===expected.length &&
+        checkboxes.every(box=>expected.includes(box.value) && box.checked);
+    },null,{timeout:15000});
     const teamSubmission=await companyPage.getByRole("button", { name: "Create Company Team invitation" })
       .locator("xpath=ancestor::form").evaluate((form)=>Object.fromEntries(
         [...new FormData(form)].map(([name,value])=>[name,String(value)])
       ));
     assert.equal(teamSubmission.membershipRole,"viewer","Company Team role did not persist before submit.");
-    console.log("ACTUAL_COMPANY_TEAM_SUBMITTED_ROLE",teamSubmission.membershipRole);
+    const viewerPermissionSet=["company.tenant.read","company.workforce.read","company.orders.read","company.reports.read"];
+    const submittedPermissions=await companyPage.getByRole("button", { name: "Create Company Team invitation" })
+      .locator("xpath=ancestor::form").evaluate(form=>new FormData(form).getAll("permissions"));
+    assert.deepEqual([...submittedPermissions].sort(),[...viewerPermissionSet].sort(),
+      "Submitted permissions did not match viewer role's authorization ceiling.");
+    console.log("ACTUAL_COMPANY_TEAM_SUBMITTED_ROLE",teamSubmission.membershipRole,submittedPermissions);
     await companyPage.getByRole("button", { name: "Create Company Team invitation" }).click();
     const teamInvitation = companyPage.locator("article").filter({ hasText: "team.member.m108@example.test" }).first();
     try {

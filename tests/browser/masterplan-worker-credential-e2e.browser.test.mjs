@@ -158,6 +158,9 @@ async function submitScoringAction(page,button,stage){
 async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,markReason}){
   await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
   let row=page.locator("tbody tr").filter({hasText:caseId}).first();await row.waitFor({timeout:20000});
+  const reviewId=await row.getAttribute("id");
+  assert.ok(reviewId && reviewId.length > 8,"The scored review row must have an immutable review ID.");
+  const persistedReviewRow=()=>page.locator('tbody tr[id="'+reviewId+'"]');
   const integrity=row.locator('select[name="integrityDisposition"]');
   if(await integrity.count()){
     assert.ok(process.env.HSE_MASTERPLAN_OFFLINE_TABS==="true"||process.env.HSE_MASTERPLAN_OFFLINE_OPENER==="true"||["resume","replacement"].includes(process.env.HSE_MASTERPLAN_RECOVERY_MODE),"Unexpected integrity concern must not be silently cleared by the journey fixture.");
@@ -171,20 +174,25 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   await rubricForm.getByLabel("Mark reason").fill(markReason);
   await submitScoringAction(page,rubricForm.getByRole("button",{name:"Save mark",exact:true}),"Rubric mark");
   await page.reload({waitUntil:"domcontentloaded"});
-  row=page.locator("tbody tr").filter({hasText:caseId}).first();
+  row=persistedReviewRow();
   const scoringForm=row.locator("form").filter({hasText:"Save scoring decision"}).first();
   await scoringForm.getByLabel("Decision").selectOption(decision);
   await scoringForm.getByRole("textbox",{name:"Reason",exact:true}).fill(reason);
   await submitScoringAction(page,scoringForm.getByRole("button",{name:"Save scoring decision",exact:true}),"Decision draft");
   await page.reload({waitUntil:"domcontentloaded"});
-  row=page.locator("tbody tr").filter({hasText:caseId}).first();
+  row=persistedReviewRow();
   await submitScoringAction(page,row.getByRole("button",{name:"Finalize review",exact:true}),"Final review");
   // Confirm React's authoritative result first, then a cold reload. This
   // proves the decision persisted, not merely a transient local UI state.
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   await page.reload({waitUntil:"domcontentloaded"});
-  row=page.locator("tbody tr").filter({hasText:caseId}).first();
-  await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
+  row=persistedReviewRow();
+  try {
+    await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
+  } catch (error) {
+    throw new Error("Final scoring server action returned but final status missing after cold reload. URL="+
+      page.url()+"\nPAGE:\n"+await page.locator("body").innerText(),{cause:error});
+  }
   console.log("ACTUAL_SCORING_SERVER_ACTIONS mark, decision and final reviewed as completed POSTs; persisted FINAL survives reload");
 }
 async function publishInterviewPolicy(page,baseUrl,credential) {

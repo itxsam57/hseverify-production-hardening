@@ -40,7 +40,16 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
             await page.getByRole("heading",{name:"My profile",exact:true}).waitFor();
           };
           const save=async()=>page.getByRole("button",{name:"Save changes",exact:true}).click();
-          const waitSaved=async section=>page.locator('.profile-step-navigation a[href*="section='+section+'"] small').getByText("Complete",{exact:true}).waitFor({timeout:20000});
+          const waitSaved=async section=>{
+            try {
+              await page.locator('.profile-step-navigation a[href*="section='+section+'"] small')
+                .getByText("Complete",{exact:true}).waitFor({timeout:20000});
+            } catch (error) {
+              throw new Error("Saved section not visible as Complete: "+section+
+                "\nURL: "+page.url()+"\nPAGE:\n"+await page.locator("body").innerText()+
+                "\nBROWSER ERRORS:\n"+fatal.join("\n")+"\nSERVER:\n"+output(),{cause:error});
+            }
+          };
           const feedback=page.getByRole("alert");
           await visit("personal");
           await page.getByLabel("Legal first name",{exact:true}).fill("Navin");
@@ -69,6 +78,10 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           assert.equal(await page.locator('input[name="city"]').count(),1,"Contact City field disappeared on "+page.url());
           assert.equal(await page.locator('input[name="city"]').inputValue(),"X","Rejected Contact save lost invalid city.");
           await page.locator('input[name="city"]').fill("Lahore");
+          const correctedContactForm=await page.getByRole("button",{name:"Save changes",exact:true}).locator("xpath=ancestor::form").evaluate(form=>Object.fromEntries(new FormData(form)));
+          assert.equal(correctedContactForm.phoneCountryCode,"+92","Corrected Contact country code changed before submit.");
+          assert.equal(correctedContactForm.city,"Lahore","Corrected Contact city changed before submit.");
+          console.log("ACTUAL_PROFILE_CORRECTED_FORM validated actual country code and corrected city");
           await save();
           await waitSaved("contact");
           await visit("professional");
@@ -79,7 +92,16 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await page.getByLabel("I am willing to relocate for suitable work.").check();
           await save();
           await feedback.getByText("Correct the highlighted fields and try again.",{exact:true}).waitFor({timeout:15000});
-          assert.equal(await page.getByLabel("Primary occupation or trade",{exact:true}).inputValue(),"Safety Officer","Rejected Professional save lost occupation.");
+          let occupationAfterRejection;
+           try {
+             occupationAfterRejection=await page.getByLabel("Primary occupation or trade",{exact:true}).inputValue({timeout:10000});
+           } catch (error) {
+             throw new Error("Professional draft field missing after rejected save. URL="+page.url()+
+               "\nPAGE:\n"+await page.locator("body").innerText()+
+               "\nBROWSER ERRORS:\n"+fatal.join("\n")+
+               "\nSERVER:\n"+output(),{cause:error});
+           }
+           assert.equal(occupationAfterRejection,"Safety Officer","Rejected Professional save lost occupation.");
           assert.equal(await page.getByLabel("Years of experience",{exact:true}).inputValue(),"70","Rejected Professional save lost years.");
           assert.equal(await page.getByLabel("I am willing to relocate for suitable work.").isChecked(),true);
           await page.getByLabel("Years of experience",{exact:true}).fill("8");
