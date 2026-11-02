@@ -38,6 +38,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           const visit=async section=>{
             await page.goto(base+"/worker/profile?section="+section,{waitUntil:"domcontentloaded"});
             await page.getByRole("heading",{name:"My profile",exact:true}).waitFor();
+            await page.locator('form.profile-form[data-hydrated="ready"]').waitFor({timeout:20000});
           };
           const save=async()=>page.getByRole("button",{name:"Save changes",exact:true}).click();
           const waitSaved=async section=>{
@@ -51,6 +52,12 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
             }
           };
           const feedback=page.getByRole("alert");
+          const expectInvalid=async phase=>{
+            try {await feedback.getByText("Correct the highlighted fields and try again.",{exact:true}).waitFor({timeout:15000});}
+            catch(error){throw new Error("Expected invalid section feedback missing: "+phase+
+              "\nURL "+page.url()+"\nPAGE:\n"+await page.locator("body").innerText()+
+              "\nSERVER:\n"+output(),{cause:error});}
+          };
           await visit("personal");
           await page.getByLabel("Legal first name",{exact:true}).fill("Navin");
           await page.getByLabel("Legal last name",{exact:true}).fill("Worker");
@@ -60,7 +67,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await page.getByLabel("Country of residence",{exact:true}).fill("Pakistan");
           await page.getByLabel("Primary language",{exact:true}).fill("Urdu");
           await save();
-          await feedback.getByText("Correct the highlighted fields and try again.",{exact:true}).waitFor({timeout:15000});
+          await expectInvalid("section recheck");
           assert.equal(await page.getByLabel("Legal first name",{exact:true}).inputValue(),"Navin","Rejected Personal save lost a valid typed field.");
           assert.equal(await page.getByLabel("Preferred name").inputValue(),"X","Rejected Personal save lost invalid typed draft.");
           await page.getByLabel("Preferred name").fill("Nav");
@@ -73,7 +80,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await page.getByLabel("City",{exact:true}).fill("X");
           await page.getByLabel("Region or province").fill("Punjab");
           await save();
-          await feedback.getByText("Correct the highlighted fields and try again.",{exact:true}).waitFor({timeout:15000});
+          await expectInvalid("section recheck");
           assert.equal(await page.getByLabel("Address line 1",{exact:true}).inputValue(),"123 Safety Street","Rejected Contact save erased address.");
           assert.equal(await page.locator('input[name="city"]').count(),1,"Contact City field disappeared on "+page.url());
           assert.equal(await page.locator('input[name="city"]').inputValue(),"X","Rejected Contact save lost invalid city.");
@@ -91,7 +98,7 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await page.getByLabel("Preferred work countries").fill("Saudi Arabia, Pakistan");
           await page.getByLabel("I am willing to relocate for suitable work.").check();
           await save();
-          await feedback.getByText("Correct the highlighted fields and try again.",{exact:true}).waitFor({timeout:15000});
+          await expectInvalid("section recheck");
           let occupationAfterRejection;
            try {
              occupationAfterRejection=await page.getByLabel("Primary occupation or trade",{exact:true}).inputValue({timeout:10000});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
@@ -88,14 +88,24 @@ function FormActions({ hasNext }: { hasNext: boolean }): React.JSX.Element {
   );
 }
 
+// Server-rendered controlled inputs must not accept typing before React
+// hydrates, or a late hydration commit can overwrite the user's draft.
+const subscribeHydration = (): (() => void) => () => {};
+const clientHydrated = (): boolean => true;
+const serverHydrated = (): boolean => false;
+function useProfileFormHydrated(): boolean {
+  return useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
+}
+
 function PersonalForm({ record }: { record: WorkerProfileRecord }): React.JSX.Element {
+  const hydrated = useProfileFormHydrated();
   const [state, action] = useActionState(saveWorkerProfileSectionAction, INITIAL_PROFILE_ACTION_STATE);
   useRefreshAfterAction(state);
   const [draft, setDraft] = useState(() => record.personal);
   const locked = record.sensitiveFieldsLocked;
 
   return (
-    <form action={action} className="profile-form" noValidate onReset={event => event.preventDefault()}>
+    <form action={action} className="profile-form" data-hydrated={hydrated ? "ready" : "loading"} inert={!hydrated} aria-busy={!hydrated} noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="section" value="personal" />
       <input type="hidden" name="expectedVersion" value={record.version} />
 
@@ -155,12 +165,13 @@ function PersonalForm({ record }: { record: WorkerProfileRecord }): React.JSX.El
 }
 
 function ContactForm({ record }: { record: WorkerProfileRecord }): React.JSX.Element {
+  const hydrated = useProfileFormHydrated();
   const [state, action] = useActionState(saveWorkerProfileSectionAction, INITIAL_PROFILE_ACTION_STATE);
   useRefreshAfterAction(state);
   const [draft, setDraft] = useState(() => record.contact);
 
   return (
-    <form action={action} className="profile-form" noValidate onReset={event => event.preventDefault()}>
+    <form action={action} className="profile-form" data-hydrated={hydrated ? "ready" : "loading"} inert={!hydrated} aria-busy={!hydrated} noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="section" value="contact" />
       <input type="hidden" name="expectedVersion" value={record.version} />
       <div className="profile-field-grid">
@@ -207,12 +218,13 @@ function ContactForm({ record }: { record: WorkerProfileRecord }): React.JSX.Ele
 }
 
 function ProfessionalForm({ record }: { record: WorkerProfileRecord }): React.JSX.Element {
+  const hydrated = useProfileFormHydrated();
   const [state, action] = useActionState(saveWorkerProfileSectionAction, INITIAL_PROFILE_ACTION_STATE);
   useRefreshAfterAction(state);
   const [draft, setDraft] = useState(() => ({ ...record.professional, employmentStatus: String(record.professional.employmentStatus), yearsExperience: record.professional.yearsExperience?.toString() ?? "" }));
 
   return (
-    <form action={action} className="profile-form" noValidate onReset={event => event.preventDefault()}>
+    <form action={action} className="profile-form" data-hydrated={hydrated ? "ready" : "loading"} inert={!hydrated} aria-busy={!hydrated} noValidate onReset={event => event.preventDefault()}>
       <input type="hidden" name="section" value="professional" />
       <input type="hidden" name="expectedVersion" value={record.version} />
       <div className="profile-field-grid">
