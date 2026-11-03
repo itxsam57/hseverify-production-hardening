@@ -51,6 +51,10 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  a28RestoreNative: {"file": "20261104-a8a2653-restore.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 1", "failed": "\u2139 fail 0"},
+  a28PrivacyNative: {"file": "20261104-a8a2653-privacy.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 14", "failed": "\u2139 fail 0"},
+  a28ReplayNative: {"file": "20261104-a8a2653-replay.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 3", "failed": "\u2139 fail 0"},
+  a28ReportsNative: {"file": "20261104-a8a2653-reports.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 11", "failed": "\u2139 fail 0"},
   a28DecisionsNative: {"file": "20261104-a8a2653-decisions.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 11", "failed": "\u2139 fail 0"},
   a28EnvironmentNative: {"file": "20261104-a8a2653-environment.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 11", "failed": "\u2139 fail 0"},
   m21208RecordingNative: {
@@ -1039,6 +1043,11 @@ const browserClauseMap = {
   "M2.13.07": [["m21304CredentialLifecycleViews", "Public UI, credential JSON, signed PDF, Worker Passport and scoped share were checked against persisted lifecycle states. Company and certification display parity remain open."]],
   "M3.07.06": [["m21304CredentialLifecycleViews", "Independent Admin accepted a renewal appeal and issued a replacement under the published validity policy while preserving the original signed expiry and history. Waiting and permanent exposure across renewal remain open."]],
   "M3.10.03": [["m21203WebrtcReconnectBrowser", "Two authenticated Chromium peers connected using fake devices, left media and established a second encrypted WebRTC connection with the original draft preserved. Production hardware and TURN/provider failure remain open."]],
+  "M3.06.05": [["a28ReportsNative", "Saved report revisions are immutable; the local HTTP email transport received the owner delivery and revoked access blocked dispatch. Scheduled triggers remain open."]],
+  "M3.08.04": [["a28ReplayNative", "Native Case Replay reconstructed the submitted case and retained pinned review revisions, with revoked and demoted Admin access denied."]],
+  "M3.09.03": [["a28PrivacyNative", "Native approved accommodation applied only to its Worker case. Rejected outcomes and browser presentation remain open."]],
+  "M3.09.05": [["a28PrivacyNative", "Native consent history was append-only and versioned. Scoped withdrawal revoked the owned link while preserving unrelated grants and denying foreign targets."]],
+  "M3.12.04": [["a28RestoreNative", "Local cold database and private object restore recovered Worker assessment and evidence. Protected staging incident and rollback remain open."]],
   "M3.07.05": [["m30705ReassessmentBrowser", "Chromium completed the independent appeal, paid reassessment, second interview and replacement credential. Public verification showed the original revoked and the replacement valid, with both PDFs and retained Passport history. Local synthetic data; staging and production providers remain open."]],
   "M3.07.03": [
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
@@ -1143,7 +1152,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["a28DecisionsNative", "a28EnvironmentNative", "m21208RecordingNative", "m21207EndMediaNative", "m21206SixNative", "m21205FinalizeNative", "m21204RetentionNative", "m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["a28RestoreNative", "a28PrivacyNative", "a28ReplayNative", "a28ReportsNative", "a28DecisionsNative", "a28EnvironmentNative", "m21208RecordingNative", "m21207EndMediaNative", "m21206SixNative", "m21205FinalizeNative", "m21204RetentionNative", "m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
