@@ -78,6 +78,11 @@ const browserRuns = {
     observedCodeSha: "82d6a451feb16e2dce9c8cd3c768abf1337030a9",
     passed: "ℹ pass 6", failed: "ℹ fail 0"
   },
+  m30705ReassessmentBrowser: {
+    file: "20261103-scoring-final-policy-and-build.log",
+    observedCodeSha: "3011d847e56f5f21840f4236add34a31b5e93c87",
+    passed: "ℹ pass 1", failed: "ℹ fail 0"
+  },
   m21206SixBrowser: {
     file: "20261101-A28-82d6a45-exact-M21206-six-Chromium.log",
     observedCodeSha: "82d6a451feb16e2dce9c8cd3c768abf1337030a9",
@@ -1021,6 +1026,7 @@ const browserClauseMap = {
   "M3.06.06": [["reportCredential", "Worker report forged-owner, cross-Worker, Company, anonymous and revoked downloads and stale settings updates denied; CSV formula/path manipulation not exhausted"]],
 
   "M3.07.01": [["appealIntegrityFixed", "Worker attached scanned submitted evidence version to an independently requested appeal follow-up; wrong eligibility/duplicate appeal matrix not completed"]],
+  "M3.07.05": [["m30705ReassessmentBrowser", "Chromium completed the independent appeal, paid reassessment, second interview and replacement credential. Public verification showed the original revoked and the replacement valid, with both PDFs and retained Passport history. Local synthetic data; staging and production providers remain open."]],
   "M3.07.03": [
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
     ["appealIntegrityFixed", "Real Admin requested scanned evidence response and reviewed original PNG bytes in separate private tab; Worker received reasoned rejection, and independent appeal interview path Admin→Worker readiness→Assessor→final appeal executed"]
