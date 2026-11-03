@@ -151,7 +151,9 @@ async function submitScoringAction(page,button,stage){
   {timeout:30000});
   await button.click();
   const response=await responseReady;
-  await response.finished();
+  // A Next action can leave its RSC response stream open after the commit.
+  // Callers verify persisted values on a fresh document instead of waiting
+  // indefinitely for transport EOF.
   assert.ok(response.ok(),stage+" scoring Server Action did not complete: HTTP "+response.status());
 }
 
@@ -175,12 +177,18 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   await submitScoringAction(page,rubricForm.getByRole("button",{name:"Save mark",exact:true}),"Rubric mark");
   await page.reload({waitUntil:"domcontentloaded"});
   row=persistedReviewRow();
+  const persistedRubric=row.locator('form[aria-label^="Rubric mark "]').first();
+  assert.equal(await persistedRubric.getByLabel("Criterion mark").inputValue(),String(mark),"Rubric mark did not persist after cold reload.");
+  assert.equal(await persistedRubric.getByLabel("Mark reason").inputValue(),markReason,"Rubric reason did not persist after cold reload.");
   const scoringForm=row.locator("form").filter({hasText:"Save scoring decision"}).first();
   await scoringForm.getByLabel("Decision").selectOption(decision);
   await scoringForm.getByRole("textbox",{name:"Reason",exact:true}).fill(reason);
   await submitScoringAction(page,scoringForm.getByRole("button",{name:"Save scoring decision",exact:true}),"Decision draft");
   await page.reload({waitUntil:"domcontentloaded"});
   row=persistedReviewRow();
+  const persistedDecision=row.locator("form").filter({hasText:"Save scoring decision"}).first();
+  assert.equal(await persistedDecision.getByLabel("Decision").inputValue(),decision,"Scoring decision did not persist after cold reload.");
+  assert.equal(await persistedDecision.getByRole("textbox",{name:"Reason",exact:true}).inputValue(),reason,"Scoring reason did not persist after cold reload.");
   await submitScoringAction(page,row.getByRole("button",{name:"Finalize review",exact:true}),"Final review");
   // Confirm React's authoritative result first, then a cold reload. This
   // proves the decision persisted, not merely a transient local UI state.
