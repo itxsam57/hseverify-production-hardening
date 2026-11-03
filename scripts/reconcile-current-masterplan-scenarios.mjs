@@ -1027,6 +1027,7 @@ const browserClauseMap = {
 
   "M3.07.01": [["appealIntegrityFixed", "Worker attached scanned submitted evidence version to an independently requested appeal follow-up; wrong eligibility/duplicate appeal matrix not completed"]],
   "M3.07.02": [["m30705ReassessmentBrowser", "The original issuing Admin received HTTP 403 when attempting to decide the appeal. The Worker still saw the submitted version after reload. A separately authenticated Admin opened and accepted the appeal, and SQL verified the reviewer differed from the original decision actor. This covers review and decision independence, with no separate claim operation exercised."]],
+  "M3.07.04": [["m30705ReassessmentBrowser", "After an independent appeal accepted reassessment and the replacement credential was issued, anonymous public verification showed the old credential revoked and the replacement valid. The Worker Passport retained credential history after reload. Company synchronization was outside this run."]],
   "M3.07.05": [["m30705ReassessmentBrowser", "Chromium completed the independent appeal, paid reassessment, second interview and replacement credential. Public verification showed the original revoked and the replacement valid, with both PDFs and retained Passport history. Local synthetic data; staging and production providers remain open."]],
   "M3.07.03": [
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
