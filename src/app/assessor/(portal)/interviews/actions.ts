@@ -1,6 +1,7 @@
 "use server";
 import {requireLiveReviewActor} from "@/lib/review/review-calibration-authority";
 import {findAppealInterviewContext} from "@/lib/credential/appeal-interview-context";
+import {CaseAppealEvidenceFollowupService} from "@/lib/assurance/case-appeal-evidence-followup-service";
 import {CredentialAppealFollowupService} from "@/lib/credential/credential-appeal-followup-service";
 
 import { revalidatePath } from "next/cache";
@@ -248,7 +249,8 @@ export async function submitInterviewConsoleAction(formData: FormData): Promise<
       "INSERT INTO interview_recommendation_events(event_id,interview_request_id,tenant_id,case_id,assessor_account_id,recommendation) VALUES($1,$2,$3,$4,$5,$6)",
       [eventId,input.interviewRequestId,request.tenantId,request.caseId,actor.accountId,recommendation]
     );
-    if(appealContext)await new CredentialAppealFollowupService(Promise.resolve(transaction)).respondInterview({principal:actor,interviewRequestId:input.interviewRequestId,recommendationEventId:eventId});
+    if(appealContext?.kind==="credential")await new CredentialAppealFollowupService(Promise.resolve(transaction)).respondInterview({principal:actor,interviewRequestId:input.interviewRequestId,recommendationEventId:eventId});
+    else if(appealContext?.kind==="case")await new CaseAppealEvidenceFollowupService(Promise.resolve(transaction)).respondInterview(actor,{interviewRequestId:input.interviewRequestId,recommendationEventId:eventId});
     else await transaction.query("SELECT platform_enqueue_assurance_event_notifications($1,$2)",["interview.recommended","recommendation:"+eventId]);
     });
   } catch (error) {

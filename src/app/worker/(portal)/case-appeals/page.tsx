@@ -14,6 +14,7 @@ export default async function WorkerCaseAppealsPage({searchParams}:{searchParams
  const supporting=evidence.filter(item=>item.lifecycleStatus!=="inactive"&&item.currentVersion.status==="submitted");
  const snapshots=new Map(await Promise.all(history.map(async a=>[a.appealId,await cases.listEvidence(principal,a.appealId)] as const)));
  const followups=new CaseAppealEvidenceFollowupService(),requests=new Map(await Promise.all(history.map(async a=>[a.appealId,await followups.list(principal,a.appealId)] as const)));
+ const interviews=new Map(await Promise.all(history.map(async a=>[a.appealId,await followups.listInterviews(principal,a.appealId)] as const)));
  const caseId=typeof params.caseId==="string"?params.caseId.trim():"";
  const record=caseId?await findWorkerAssuranceCase(principal,caseId):null;
  const eligible=record?.status==="Rejected"&&!record.credentialReference;
@@ -43,6 +44,12 @@ export default async function WorkerCaseAppealsPage({searchParams}:{searchParams
     <p>Status: {a.status.replaceAll("_"," ")} · Version {a.version}</p>
     <p>Grounds: {a.grounds}</p>
     <p>Supporting scanned files: {snapshots.get(a.appealId)?.length??0}</p>
+    {(interviews.get(a.appealId)??[]).map(interview=><section className="content-stack" key={interview.interviewRequestId}>
+     <h4>Independent appeal interview requested</h4><p>{interview.reason}</p>
+     {interview.recommendation?<p>Assessor recommendation: {interview.recommendation}</p>:interview.assessorId?
+      <Link href={"/worker/interviews/"+encodeURIComponent(interview.interviewRequestId)}>Open independent appeal interview</Link>:
+      <p>Waiting for an eligible Assessor assignment.</p>}
+    </section>)}
     {(requests.get(a.appealId)??[]).map(req=><section key={req.requestId} className="content-stack">
       <h4>Additional evidence requested</h4><p>{req.reason}</p>
       <p>{req.responded?"Response received":"Response required"}</p>

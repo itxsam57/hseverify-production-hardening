@@ -93,7 +93,12 @@ export class InterviewConsoleContextService {
     if (!result.rows[0]) throw new InterviewConsoleContextAccessError();
   if(!await interviewCalibrationCurrent(db,actor.accountId,requestId))throw new InterviewConsoleContextAccessError();
     const row=result.rows[0];
-    if(!row.current_request && await findAppealInterviewContext(db,requestId))return {...row,current_request:true,case_status:"Appeal interview",next_action:"Complete the independent appeal interview; the original credential and case remain retained."};
+    if(!row.current_request){
+      const appeal=await findAppealInterviewContext(db,requestId);
+      if(appeal)return {...row,current_request:true,case_status:"Appeal interview",next_action:appeal.kind==="case"
+       ?"Complete the independent rejected-case appeal interview; the original case remains rejected."
+       :"Complete the independent credential appeal interview; the original credential and case remain retained."};
+    }
     return row;
   }
 

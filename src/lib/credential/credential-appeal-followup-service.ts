@@ -95,9 +95,9 @@ export class CredentialAppealFollowupService {
  async respondInterview(input:{principal:AuthorizationPrincipal;interviewRequestId:string;recommendationEventId:string}):Promise<void>{
   const db=await this.clientPromise;return db.transaction(async transaction=>{
    const check=await live(transaction,input.principal,"assessor");
-   const preliminary=await findAppealInterviewContext(transaction,input.interviewRequestId);if(!preliminary)throw new AppealFollowupConflictError();
+   const preliminary=await findAppealInterviewContext(transaction,input.interviewRequestId);if(!preliminary||preliminary.kind!=="credential")throw new AppealFollowupConflictError();
    await transaction.query("SELECT case_id FROM assurance_cases WHERE case_id=$1 AND tenant_id=$2 FOR UPDATE",[preliminary.case_id,preliminary.tenant_id]);
-   const context=await findAppealInterviewContext(transaction,input.interviewRequestId,true);if(!context)throw new AppealFollowupConflictError();
+   const context=await findAppealInterviewContext(transaction,input.interviewRequestId,true);if(!context||context.kind!=="credential")throw new AppealFollowupConflictError();
    const appeal=await lockedAppeal(transaction,context.appeal_id,Number(context.appeal_version));
    const result=await transaction.query<{recommendation:string;scorecard:Record<string,unknown>}>(`SELECT event.recommendation,draft.scorecard FROM interview_recommendation_events event
     JOIN interview_requests request ON request.interview_request_id=event.interview_request_id AND request.assessor_account_id=event.assessor_account_id AND request.status='COMPLETED'
