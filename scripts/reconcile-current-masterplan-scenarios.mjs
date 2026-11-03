@@ -51,6 +51,8 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  a28DecisionsNative: {"file": "20261104-a8a2653-decisions.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 11", "failed": "\u2139 fail 0"},
+  a28EnvironmentNative: {"file": "20261104-a8a2653-environment.log", "observedCodeSha": "a8a2653b378f9e67619b9207a25b8c968a1bbf12", "passed": "\u2139 pass 11", "failed": "\u2139 fail 0"},
   m21208RecordingNative: {
     file: "20261101-A28-729e2e9-exact-M21208-native.log",
     observedCodeSha: "729e2e9c76bea6f122850bbd3c10068833f7d1be",
@@ -1032,6 +1034,11 @@ const browserClauseMap = {
   "M3.08.05": [["m30705ReassessmentBrowser", "The registered outbox projected Worker notifications while ten email records stayed in retry_wait with provider_unconfigured. No real provider delivery or Admin health and retry controls were exercised."]],
   "M3.08.03": [["m30705ReassessmentBrowser", "Independent Admin reviewed and accepted the credential appeal with a reason. Worker notification links opened the owned decision, credential and appeal. Other operations in this scenario remain open."]],
   "M2.13.03": [["m30705ReassessmentBrowser", "Accepted appeal moved the Worker Passport to reassessment required. The Worker continued from the appeal into a separate funded reassessment linked to its original source. The rejected decision branch was outside this run."]],
+  "M1.01.01": [["a28EnvironmentNative", "Validated synthetic production settings in application and scripts. Rejected demo, sandbox, PGlite, missing and short secrets, invalid database URL and missing release identity. Startup on deployed infrastructure remains open."]],
+  "M2.13.01": [["a28DecisionsNative", "Native decision progression suite exercised atomic APPROVED issuance with credential, certification and Living Record. Conditional prerequisites and all missing-input permutations require separate evidence."]],
+  "M2.13.07": [["m21304CredentialLifecycleViews", "Public UI, credential JSON, signed PDF, Worker Passport and scoped share were checked against persisted lifecycle states. Company and certification display parity remain open."]],
+  "M3.07.06": [["m21304CredentialLifecycleViews", "Independent Admin accepted a renewal appeal and issued a replacement under the published validity policy while preserving the original signed expiry and history. Waiting and permanent exposure across renewal remain open."]],
+  "M3.10.03": [["m21203WebrtcReconnectBrowser", "Two authenticated Chromium peers connected using fake devices, left media and established a second encrypted WebRTC connection with the original draft preserved. Production hardware and TURN/provider failure remain open."]],
   "M3.07.05": [["m30705ReassessmentBrowser", "Chromium completed the independent appeal, paid reassessment, second interview and replacement credential. Public verification showed the original revoked and the replacement valid, with both PDFs and retained Passport history. Local synthetic data; staging and production providers remain open."]],
   "M3.07.03": [
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
@@ -1136,7 +1143,7 @@ const browserClauseMap = {
 // Preserve honest evidence provenance: the M1.05 outage drill is migrated
 // native PGlite/SQL, NOT Chromium. It contributes one scoped local scenario,
 // but never increments the number of browser-tested scenarios or observations.
-const nativeRunNames = new Set(["m21208RecordingNative", "m21207EndMediaNative", "m21206SixNative", "m21205FinalizeNative", "m21204RetentionNative", "m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
+const nativeRunNames = new Set(["a28DecisionsNative", "a28EnvironmentNative", "m21208RecordingNative", "m21207EndMediaNative", "m21206SixNative", "m21205FinalizeNative", "m21204RetentionNative", "m21203DraftRecoveryNative", "m21202PlaybookNative", "m21106JoinNative", "m21105LateNoShowNative", "m21104ConflictPrivateNative", "m21101MatchingNative", "m21005LiveCalibrationNative", "m21003AdditionalNative", "m21003WrittenOwnerRoutingNative", "m20905IntegrityNative", "m20305AccommodationNative", "m20204CaseSupersessionNative", "m10603ScannerOutageNative", "m205PermanentOwnerNative", "m205PermanentOwnerPostgres", "m10707SeparateStaffContinueNative", "m10707CorrectionParentNative", "m10707CorrectionParentPostgres", "m10707PostgresIssuanceRace", "m10707StaleDuplicateNative", "m10707StaffReviewNative", "m205CapacityNative", "m205FamilyNative", "m205FormMatrixNative", "outboxBusinessRecovery", "m20104CompetingFundingNative", "m20102CrossFundingNative", "m305RefundCreditBoundariesNative", "m203PolicyNative", "m203PinnedEligibilityNative"]);
 for (const [name, run] of Object.entries(browserRuns)) {
   if (name === "certification") {
     const fixtureProof = resolve(".autopilot/artifacts/20261029-A28-fe9bc28-M3-11-isolated-certification.json");
