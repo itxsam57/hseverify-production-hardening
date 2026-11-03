@@ -203,6 +203,8 @@ export function assertEmailDeliveryJob(job:OutboxJobRecord):EmailDeliveryOutboxJ
   const sourceRole:Readonly<Record<AssuranceEventEmailPayload["eventType"],AuthRole|null>>={
    "evidence.submitted":"worker","evidence.reviewed":"verifier","evidence.unable":"verifier","evidence.escalated":"verifier","evidence.returned":"admin", "integrity.escalated":"verifier", "assessment.review.conflict":"verifier", "evidence.second_review.requested":"verifier", "assessment.review.assigned":"admin", "integrity.returned":"admin","evidence.additional.requested":"verifier",
    "interview.recommended":"assessor","decision.recorded":"admin","credential.issued":null,"appeal.submitted":"worker","appeal.updated":"admin","appeal.evidence.submitted":"worker","appeal.interview.submitted":"assessor",
+   "case.appeal.submitted":"worker","case.appeal.evidence.requested":"admin","case.appeal.evidence.submitted":"worker",
+   "case.appeal.interview.requested":"admin","case.appeal.interview.submitted":"assessor","case.appeal.reviewed":"admin",
    "assessment.funding.requested":"worker","assessment.funding.approved":"company"
   };
   const sealed=payload.eventType==="credential.issued" && job.enqueuedBySystemComponent==="outbox-worker" && job.enqueuedByAccountId===null && job.enqueuedByRole===null && job.tenantId===null && job.membershipId===null;
