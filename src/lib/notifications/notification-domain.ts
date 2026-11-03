@@ -16,7 +16,7 @@ export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
 } as const;
 
 export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES), ...ASSURANCE_EVENT_TYPES] as const;
-export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review", "admin.scoring.assignment", "admin.review.quality"] as const;
+export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "case.appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review", "admin.scoring.assignment", "admin.review.quality"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -200,6 +200,12 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "appeal.evidence.submitted":
     case "appeal.interview.submitted":
     case "appeal.updated":
+    case "case.appeal.submitted":
+    case "case.appeal.evidence.requested":
+    case "case.appeal.evidence.submitted":
+    case "case.appeal.interview.requested":
+    case "case.appeal.interview.submitted":
+    case "case.appeal.reviewed":
       if (!value || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value)!==Object.prototype || Object.keys(value).length!==1 || !Object.hasOwn(value,"eventRef")) throw new NotificationContractError("Assurance notification metadata is invalid.");
       normalized = Object.freeze({eventRef:normalizeAssuranceEventNotificationPayload({eventType:notificationType,eventRef:(value as {eventRef:unknown}).eventRef}).eventRef});
       break;
@@ -261,6 +267,12 @@ export const ASSURANCE_EVENT_CONTENT: Readonly<Record<AssuranceEventType,{title:
   },
   "appeal.evidence.submitted":{title:"Appeal evidence submitted",body:"Open the record for the current status and next action."},
   "appeal.interview.submitted":{title:"Appeal interview submitted",body:"Open the record for the current status and next action."},
+  "case.appeal.submitted": {title:"Rejected-case appeal submitted",body:"Open the record for the current status and next action."},
+  "case.appeal.evidence.requested": {title:"Additional case appeal evidence requested",body:"Open the record for the current status and next action."},
+  "case.appeal.evidence.submitted": {title:"Case appeal evidence submitted",body:"Open the record for the current status and next action."},
+  "case.appeal.interview.requested": {title:"Independent appeal interview requested",body:"Open the record for the current status and next action."},
+  "case.appeal.interview.submitted": {title:"Appeal interview recommendation submitted",body:"Open the record for the current status and next action."},
+  "case.appeal.reviewed": {title:"Case appeal review completed",body:"Open the record for the current status and next action."},
   "appeal.submitted": {
     "title": "Appeal submitted",
     "body": "Open the record for the current status and next action."
@@ -283,7 +295,7 @@ function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetRe
   "assessment.review.conflict":["admin"],"evidence.second_review.requested":["verifier","admin"],
   "assessment.review.assigned":["verifier"],"integrity.escalated":["admin"],"integrity.returned":["verifier"],
   "evidence.submitted":["worker","verifier"],"evidence.unable":["worker"],"evidence.escalated":["worker","admin"],"evidence.returned":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
-  "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"],"appeal.evidence.submitted":["worker","admin"],"appeal.interview.submitted":["worker","admin"]
+  "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"],"appeal.evidence.submitted":["worker","admin"],"appeal.interview.submitted":["worker","admin"],"case.appeal.submitted":["worker","admin"],"case.appeal.evidence.requested":["worker"],"case.appeal.evidence.submitted":["worker","admin"],"case.appeal.interview.requested":["worker","assessor","admin"],"case.appeal.interview.submitted":["worker","admin"],"case.appeal.reviewed":["worker","admin"]
  };
  if(!roles[type].includes(context.role))throw new NotificationContractError("Assurance recipient role is invalid.");
  if(type==="assessment.review.conflict")return "admin.scoring.assignment";
@@ -292,6 +304,7 @@ function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetRe
  if(type==="assessment.review.assigned" || type==="integrity.returned")return "verifier.integrity.review";
  if(type==="evidence.escalated" && context.role==="admin")return "admin.review.escalation";
  if(type==="interview.recommended")return context.role==="company"?"company.assurance.case":context.role==="admin"?"admin.interview.case":"worker.assurance.case";
+ if(type.startsWith("case.appeal."))return type==="case.appeal.interview.requested"&&context.role==="assessor"?"interview.record":"case.appeal.record";
  if(type.startsWith("appeal."))return "appeal.record";
  if(type==="decision.recorded")return context.role==="company"?"company.assurance.case":"worker.assurance.case";
  if(type==="credential.issued")return "worker.credential.record";
@@ -326,6 +339,12 @@ export function notificationContent(notificationType: NotificationType, context?
     case "appeal.evidence.submitted":
     case "appeal.interview.submitted":
     case "appeal.updated":
+    case "case.appeal.submitted":
+    case "case.appeal.evidence.requested":
+    case "case.appeal.evidence.submitted":
+    case "case.appeal.interview.requested":
+    case "case.appeal.interview.submitted":
+    case "case.appeal.reviewed":
     {
       if(!context)throw new NotificationContractError("Assurance notification target context is required.");
       const target=assuranceTarget(notificationType,context);
@@ -483,6 +502,11 @@ export function resolveNotificationHref(input: {
   if(input.target==="worker.credential.record"){
     if(!["worker"].includes(input.role) || !input.targetReference || !/^credential_id_[A-Za-z0-9_-]{1,160}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
     return "/worker/passport#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="case.appeal.record"){
+    if(!["worker","admin"].includes(input.role)||!input.targetReference||
+       !/^case_appeal_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Case appeal target is invalid.");
+    return "/"+input.role+"/case-appeals#"+encodeURIComponent(input.targetReference);
   }
   if(input.target==="appeal.record"){
     if(!["worker","admin"].includes(input.role) || !input.targetReference || !/^appeal_[A-Za-z0-9_-]{1,160}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");

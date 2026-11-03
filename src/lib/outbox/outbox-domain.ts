@@ -90,7 +90,7 @@ export type ReportReadyEmailPayload = Readonly<{ deliveryRef: string }>;
 
 export const ASSURANCE_EVENT_TYPES = [
   "evidence.submitted", "evidence.reviewed", "evidence.additional.requested", "evidence.unable", "evidence.escalated", "evidence.returned",
-  "assessment.review.conflict", "evidence.second_review.requested", "assessment.review.assigned", "integrity.escalated", "integrity.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated", "appeal.evidence.submitted", "appeal.interview.submitted"
+  "assessment.review.conflict", "evidence.second_review.requested", "assessment.review.assigned", "integrity.escalated", "integrity.returned", "interview.recommended", "decision.recorded", "credential.issued", "appeal.submitted", "appeal.updated", "appeal.evidence.submitted", "appeal.interview.submitted", "case.appeal.submitted", "case.appeal.evidence.requested", "case.appeal.evidence.submitted", "case.appeal.interview.requested", "case.appeal.interview.submitted", "case.appeal.reviewed"
 ] as const;
 export type AssuranceEventType = (typeof ASSURANCE_EVENT_TYPES)[number];
 export type AssuranceFundingEventType = "assessment.funding.requested" | "assessment.funding.approved";
@@ -133,6 +133,13 @@ function normalizeAssuranceSource(input: Record<string, unknown>, email: boolean
     "appeal.submitted": "appeal",
     "appeal.updated": "appeal",
     "appeal.evidence.submitted": "appeal_followup", "appeal.interview.submitted": "appeal_followup",
+    "case.appeal.submitted": "case_appeal",
+    "case.appeal.evidence.requested": "case_appeal",
+    "case.appeal.evidence.submitted": "case_appeal",
+    "case.appeal.interview.requested": "case_appeal",
+    "case.appeal.interview.submitted": "case_appeal",
+    "case.appeal.reviewed": "case_appeal",
+
     "assessment.funding.requested": "funding",
     "assessment.funding.approved": "funding"
   };
@@ -142,7 +149,7 @@ function normalizeAssuranceSource(input: Record<string, unknown>, email: boolean
     throw new OutboxContractError("Assurance event reference is invalid.");
   }
   const parts = eventRef.split(":");
-  const versioned = type === "credential.issued" || type === "appeal.submitted" || type === "appeal.updated";
+  const versioned = type === "credential.issued" || type === "appeal.submitted" || type === "appeal.updated" || type.startsWith("case.appeal.");
   if (parts.length !== (versioned ? 3 : 2) || parts[0] !== prefixes[type] ||
       !/^[A-Za-z0-9_-]{1,160}$/.test(parts[1]) ||
       (versioned && (!/^[1-9][0-9]{0,15}$/.test(parts[2]) ||
