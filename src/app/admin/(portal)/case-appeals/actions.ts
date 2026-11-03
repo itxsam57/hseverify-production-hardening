@@ -38,3 +38,19 @@ export async function requestCaseAppealEvidenceAction(form:FormData):Promise<voi
  revalidatePath("/admin/case-appeals");revalidatePath("/worker/case-appeals");
  redirect("/admin/case-appeals?status=evidence-requested");
 }
+
+
+export async function requestCaseAppealInterviewAction(form:FormData):Promise<void>{
+ const principal=await requirePlatformPermission({expectedRole:"admin",permission:"platform.operations.manage"});
+ const appealId=field(form,"appealId"),version=Number(field(form,"expectedVersion")),reason=field(form,"reason");
+ try{await new CaseAppealEvidenceFollowupService().requestInterview(principal,{appealId,expectedVersion:version,reason});}
+ catch(e){
+  if(e instanceof CaseAppealConflictError)redirect("/admin/case-appeals?error=conflict");
+  if(e instanceof CaseAppealAccessError)redirect("/admin/case-appeals?error=independence");
+  if(e instanceof Error&&e.message===RECENT_MFA_ERROR)redirect("/admin/case-appeals?error=mfa");
+  throw e;
+ }
+ revalidatePath("/admin/case-appeals");revalidatePath("/worker/case-appeals");
+ revalidatePath("/assessor/interviews");
+ redirect("/admin/case-appeals?status=interview-requested");
+}

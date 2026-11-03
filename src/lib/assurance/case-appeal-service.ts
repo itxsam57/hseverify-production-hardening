@@ -181,6 +181,11 @@ export class CaseAppealService {
        AND NOT EXISTS(SELECT 1 FROM assurance_case_appeal_evidence_responses response WHERE response.request_id=request.request_id) LIMIT 1`,[input.appealId]);
      if(pending.rows.length)throw new CaseAppealConflictError("Worker must respond to the requested evidence before final review.");
    }
+   if(input.status!=="under_review"){
+     const interview=await tx.query(`SELECT 1 FROM assurance_case_appeal_interview_requests request WHERE request.appeal_id=$1
+       AND NOT EXISTS(SELECT 1 FROM assurance_case_appeal_interview_outcomes result WHERE result.interview_request_id=request.interview_request_id) LIMIT 1`,[input.appealId]);
+     if(interview.rows.length)throw new CaseAppealConflictError("The assigned Assessor must complete the requested interview before final review.");
+   }
    const original=await tx.query<{worker_account_id:string;actor_account_id:string|null;override_actor:string|null}>(`
     SELECT cases.worker_account_id,
       (SELECT event.actor_account_id FROM assurance_case_timeline_events event

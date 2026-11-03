@@ -13,7 +13,7 @@ export function actualInterviewActions(database,principal){
  new Function("exports","require","module",output)(record.exports,localRequire,record);return record.exports;
 }
 export function recommendationForm(requestId,sessionId){const form=new FormData();form.set("interviewRequestId",requestId);form.set("interviewSessionId",sessionId);for(const dimension of dimensions)form.set(dimension,"3");form.set("comments",scores().comments);form.set("recommendation","PASS");return form;}
-export async function appealInterviewFixture({decisionState="APPROVED",decisionExplanation="Completed assessment and interview permit the original credential decision."}={}){
+export async function appealInterviewFixture({decisionState="APPROVED",decisionExplanation="Completed assessment and interview permit the original credential decision.",caseAppeal=false}={}){
  const f=await integrityAssessmentFixture();try{
  const db=f.database;await f.attempts.submitCurrentAnswer(f.worker,{attemptId:f.attemptId,position:1,answer:"Stop and assess"},new Date(),null);
  const review=(await db.query("SELECT review_id,reviewer_account_id,status FROM written_score_reviews WHERE attempt_id=$1",[f.attemptId])).rows[0];
@@ -35,10 +35,16 @@ export async function appealInterviewFixture({decisionState="APPROVED",decisionE
  const runtime=new InterviewRuntimeService(Promise.resolve(db)),session=await runtime.claim(assessor,originalRequest.interviewRequestId);await new InterviewPlaybookService(Promise.resolve(db)).ensure(assessor,originalRequest.interviewRequestId);await runtime.markWorkerReady(f.worker,originalRequest.interviewRequestId,{cameraReady:true,microphoneReady:true,connectionReady:true,identityConfirmed:true,recordingConsent:false});await runtime.admit(assessor,originalRequest.interviewRequestId);await runtime.start(assessor,originalRequest.interviewRequestId);
  await scheduling.saveConsoleState({tenantId:f.sourceCase.tenant_id,interviewSessionId:session.interviewSessionId,interviewRequestId:originalRequest.interviewRequestId,notes:[],scorecard:scores(),recommendation:null,submitted:false,updatedAt:new Date().toISOString()});await runtime.end(assessor,originalRequest.interviewRequestId);await actualInterviewActions(db,assessor).submitInterviewConsoleAction(recommendationForm(originalRequest.interviewRequestId,session.interviewSessionId));
  const {DecisionRepository}=load("decision/decision-engine-repository"),{createDecision}=load("decision/decision-engine-domain");
- const key="appeal-interview-signing-secret-more-than-thirty-two";const decision=createDecision({tenantId:f.sourceCase.tenant_id,caseId:f.sourceCase.case_id,state:decisionState,reasonCode:"assessment_passed",explanation:decisionExplanation,ruleVersion:"appeal-interview-v1",inputReferences:[f.attemptId],createdAt:new Date().toISOString()});await new DecisionRepository(Promise.resolve(db),key).saveDecisionAndProgressCase(decision,f.credentials.admin.accountId);
+ const key="appeal-interview-signing-secret-more-than-thirty-two";const decision=createDecision({tenantId:f.sourceCase.tenant_id,caseId:f.sourceCase.case_id,state:caseAppeal?"REJECTED":decisionState,reasonCode:"assessment_passed",explanation:decisionExplanation,ruleVersion:"appeal-interview-v1",inputReferences:[f.attemptId],createdAt:new Date().toISOString()});await new DecisionRepository(Promise.resolve(db),key).saveDecisionAndProgressCase(decision,f.credentials.admin.accountId);
  const row=(await db.query("SELECT * FROM assurance_cases WHERE case_id=$1",[f.sourceCase.case_id])).rows[0];
- const {CredentialAppealsService}=load("credential/credential-appeals-service"),appeals=new CredentialAppealsService(Promise.resolve(db),key);const appeal=await appeals.submit({credentialId:row.credential_reference,workerId:row.permanent_worker_id,reason:"Please independently reconsider the original competency evidence and interview me.",createdAt:new Date().toISOString()},"independent-interview");
- const {CredentialAppealFollowupService}=load("credential/credential-appeal-followup-service");const followups=new CredentialAppealFollowupService(Promise.resolve(db));
- return {...f,row,key,admin,assessor,appeal,appeals,followups};
+ const {CredentialAppealsService}=load("credential/credential-appeals-service"),appeals=new CredentialAppealsService(Promise.resolve(db),key);
+ const {CredentialAppealFollowupService}=load("credential/credential-appeal-followup-service");
+ const {CaseAppealService}=load("assurance/case-appeal-service");
+ const {CaseAppealEvidenceFollowupService}=load("assurance/case-appeal-evidence-followup-service");
+ const appeal=caseAppeal
+  ? await new CaseAppealService(Promise.resolve(db)).submit(f.worker,{caseId:row.case_id,grounds:"Independent appeal requests a separate calibrated Assessor interview of the retained rejected case."})
+  : await appeals.submit({credentialId:row.credential_reference,workerId:row.permanent_worker_id,reason:"Please independently reconsider the original competency evidence and interview me.",createdAt:new Date().toISOString()},"independent-interview");
+ const followups=caseAppeal?new CaseAppealEvidenceFollowupService(Promise.resolve(db)):new CredentialAppealFollowupService(Promise.resolve(db));
+ return {...f,row,key,admin,assessor,appeal,appeals,followups,caseAppeal};
  }catch(error){await f.cleanup();throw error;}
 }

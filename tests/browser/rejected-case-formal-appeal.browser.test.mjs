@@ -71,9 +71,9 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
   const second={...creds.admin,accountId:secondAccount,email:secondEmail};
   const foreignAccount="case_appeal_foreign_worker_2026",foreignEmail="case.appeal.other@example.test";
   const foreign={...creds.worker,accountId:foreignAccount,email:foreignEmail,totpSecret:null};
-  const db=new PGlite(dir);let c,record,followRecord,foreignEvidence;
+  const db=new PGlite(dir);let c,interviewCase,record,followRecord,foreignEvidence;
   try{
-   c=(await fixtureCases(db,creds)).rejected;
+   const cases=await fixtureCases(db,creds);c=cases.rejected;interviewCase=cases.reassessment;
    const now=new Date().toISOString();
    await db.query(`INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at)
      SELECT $1,$2,'Independent case appeal reviewer','active',password_hash,$3,$3,$3,$3 FROM auth_accounts WHERE account_id=$4`,
@@ -171,7 +171,7 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
     console.log("M21303_DUPLICATE_ADMIN_REQUEST_DENIED");
     console.log("M21303_ADMIN_REQUESTED_FOLLOWUP");
     await independent.goto(url+"/admin/case-appeals",{waitUntil:"domcontentloaded"});
-    await independent.getByText("Awaiting requested Worker evidence before final appeal review.",{exact:true}).waitFor();
+    await independent.getByText("Awaiting requested Worker evidence or Assessor interview recommendation before final appeal review.",{exact:true}).waitFor();
     assert.equal(await independent.getByRole("form",{name:"Review case appeal "+appealId}).count(),0);
     const pendingForm=staleDecision.getByRole("form",{name:"Review case appeal "+appealId});
     await pendingForm.locator('input[name="expectedVersion"]').evaluate(node=>{node.value="2";});
@@ -229,6 +229,33 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
     const finished=worker.locator("article[id='"+appealId+"']");
     await finished.getByText("Status: accepted",{exact:false}).waitFor();
     console.log("M21303_INDEPENDENT_REVIEW_ACCEPTED_AND_STALE_DENIED");
+    await decision(originalAdmin,url,interviewCase,"REJECTED");
+    await originalAdmin.getByRole("heading",{name:"REJECTED",exact:true}).waitFor({timeout:20000});
+    await worker.goto(url+"/worker/assurance-cases/"+interviewCase.caseId,{waitUntil:"domcontentloaded"});
+    await worker.getByRole("link",{name:"Appeal this rejected case"}).click();
+    await worker.waitForURL("**/worker/case-appeals?caseId="+interviewCase.caseId,{timeout:20000});
+    await worker.getByLabel("Appeal grounds").fill("An independent Assessor interview is needed to reconsider the second rejected case.");
+    await worker.getByRole("button",{name:"Submit case appeal"}).click();
+    await worker.waitForURL("**/worker/case-appeals?status=submitted",{timeout:20000});
+    const secondArticle=worker.locator("article").filter({hasText:interviewCase.caseId});
+    const interviewAppealId=await secondArticle.getAttribute("id");
+    assert.match(interviewAppealId,/^case_appeal_/);
+    await independent.goto(url+"/admin/case-appeals",{waitUntil:"domcontentloaded"});
+    const requestInterview=independent.getByRole("form",{name:"Request independent appeal interview "+interviewAppealId});
+    await requestInterview.getByLabel("Interview request reason").fill("The retained assessment record requires an additional calibrated Assessor interview.");
+    await requestInterview.getByRole("button",{name:"Request independent interview"}).click();
+    await independent.waitForURL("**/admin/case-appeals?status=interview-requested",{timeout:20000});
+    await worker.goto(url+"/worker/case-appeals",{waitUntil:"domcontentloaded"});
+    const listedInterview=worker.locator("article[id='"+interviewAppealId+"']");
+    await listedInterview.getByText("Independent appeal interview requested",{exact:true}).waitFor();
+    const waiting=listedInterview.getByText("Waiting for an eligible Assessor assignment.",{exact:true});
+    const assigned=listedInterview.getByRole("link",{name:"Open independent appeal interview"});
+    assert.equal(await waiting.count()+await assigned.count(),1,"Worker must get exactly one truthful interview destination or pending assignment");
+    await independent.goto(url+"/admin/case-appeals",{waitUntil:"domcontentloaded"});
+    await independent.getByText("Awaiting requested Worker evidence or Assessor interview recommendation before final appeal review.",{exact:true}).waitFor();
+    const blocked=await independent.getByRole("form",{name:"Review case appeal "+interviewAppealId}).count();
+    assert.equal(blocked,0,"A pending Assessor interview must suppress final decision action");
+    console.log("M21303_INTERVIEW_BROWSER: independent Admin requested; Worker status, Assessor matching and final-review wait verified");
    }finally{await browser.close()}
   }});
   const verify=new PGlite(dir);
@@ -249,6 +276,10 @@ test("M2.13.03 rejected unissued case appeal preserves source and requires indep
    await assert.rejects(verify.query("UPDATE assurance_case_appeal_evidence_requests SET reason='tamper with immutable followup' WHERE request_id=$1",[request[0].request_id]),/immutable/i);
    await assert.rejects(verify.query("UPDATE assurance_case_appeal_evidence_responses SET reason='tamper with immutable followup response' WHERE request_id=$1",[request[0].request_id]),/immutable/i);
    await assert.rejects(verify.exec(readFileSync("database/migrations/0133_case_appeal_followup_evidence.down.sql","utf8")),/followup histories must be retained/i);
+   const extra=(await verify.query("SELECT a.appeal_id,i.interview_request_id FROM assurance_case_appeals a JOIN assurance_case_appeal_interview_requests i ON i.appeal_id=a.appeal_id WHERE a.case_id=$1",[interviewCase.caseId])).rows;
+   assert.equal(extra.length,1);
+   const secondSource=(await verify.query("SELECT case_status,credential_reference FROM assurance_cases WHERE case_id=$1",[interviewCase.caseId])).rows[0];
+   assert.equal(secondSource.case_status,"Rejected");assert.equal(secondSource.credential_reference,null);
    const source=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[c.caseId])).rows[0];
    assert.equal(source.case_status,"Rejected");assert.equal(source.decision_reference,appeals[0].decision_id);assert.equal(source.credential_reference,null);
    assert.equal((await verify.query("SELECT COUNT(*)::integer AS n FROM platform_decisions WHERE case_id=$1",[c.caseId])).rows[0].n,1);
