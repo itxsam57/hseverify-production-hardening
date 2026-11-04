@@ -193,7 +193,9 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   // Confirm React's authoritative result first, then a cold reload. This
   // proves the decision persisted, not merely a transient local UI state.
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
-  const coldReload=await page.reload({waitUntil:"domcontentloaded"});
+  // A native form submission can leave the document on a POST entry.
+  // Navigate with GET to read persisted state without resubmitting the form.
+  const coldReload=await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
   const status=coldReload?.status()??"no response";
   row=persistedReviewRow();
   try {
