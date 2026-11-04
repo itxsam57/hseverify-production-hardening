@@ -51,6 +51,7 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  a28PassportDistinctionBrowser: {"file": "20261104-passport-distinction-browser.log", "observedCodeSha": "7ad40a579900715a70b6eac84fb94dd48de44919", "passed": "\u2139 pass 1", "failed": "\u2139 fail 0"},
   a28CompanyReadinessBrowser: {"file": "20261104-81cdaa2-readiness-report-browser.log", "observedCodeSha": "81cdaa287613ce2c42efde72d41cf2cda227e46b", "passed": "\u2139 pass 1", "failed": "\u2139 fail 0"},
   a28CandidateBuildNative: {"file": "20261103-scoring-synthetic-production-build.log", "observedCodeSha": "3011d847e56f5f21840f4236add34a31b5e93c87", "passed": "\u2139 pass 2", "failed": "\u2139 fail 0"},
   a28RetentionExecutionNative: {"file": "20261104-a531801-privacy-execution.log", "observedCodeSha": "a531801443ee06f3a5c19e7070b67effd19ec876", "passed": "\u2139 pass 24", "failed": "\u2139 fail 0"},
@@ -1070,6 +1071,7 @@ const browserClauseMap = {
   "M3.02.05": [["m205EmployerTransferBrowser", "Chromium exercised Company A unlink and Worker acceptance of Company B invitation. Database retained the same Worker account and prior exposure reservation; a fresh device could not reuse the exposed question family. Company B verification used a fixture."]],
   "M3.12.01": [["a28CandidateBuildNative", "The optimized Next build and two shard contract checks passed on the scoring candidate source with synthetic configuration. This covers the build clause only. Deployed startup, migrations and health on a single release SHA remain open."]],
   "M3.04.05": [["a28CompanyReadinessBrowser", "Signed-in Company saved a site-scoped readiness report, previewed its captured rows, and exported its original snapshot after the site changed. Dashboard totals against mixed credential states remain unverified."]],
+  "M3.02.01": [["a28PassportDistinctionBrowser", "The full Worker browser journey showed the qualification and issuer in the qualification table and the separately issued competency in the assessed competencies list. The source qualification title was absent from that assessed list."]],
   "M3.07.05": [["m30705ReassessmentBrowser", "Chromium completed the independent appeal, paid reassessment, second interview and replacement credential. Public verification showed the original revoked and the replacement valid, with both PDFs and retained Passport history. Local synthetic data; staging and production providers remain open."]],
   "M3.07.03": [
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
