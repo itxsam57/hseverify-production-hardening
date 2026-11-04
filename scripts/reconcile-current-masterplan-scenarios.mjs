@@ -51,6 +51,7 @@ if (existsSync(burstPath)) {
 // none is a full multi-environment Masterplan release certification.
 const browserEvidenceHeadSha = "99f40a1c18a74b50cf7ebca6c54b512c921e8b2c";
 const browserRuns = {
+  a28TimingAuthoringBrowser: {"file": "20261104-3011d84-assessment-timing-reproduction.log", "observedCodeSha": "3011d847e56f5f21840f4236add34a31b5e93c87", "passed": "\u2139 pass 2", "failed": "\u2139 fail 0"},
   a28HandoverNative: {"file": "20261104-6096614-handover.log", "observedCodeSha": "6096614662d951633dcb1b48bebb6005c22eeb05", "passed": "\u2139 pass 3", "failed": "\u2139 fail 0"},
   a28PublicDisplayNative: {"file": "20261104-6096614-public-runner.log", "observedCodeSha": "6096614662d951633dcb1b48bebb6005c22eeb05", "passed": "\u2139 pass 51", "failed": "\u2139 fail 0"},
   a28IdentityRunnerNative: {"file": "20261104-142d856-run-worker-identity-tests.log", "observedCodeSha": "142d8565e6955826f5b3fad9d552f6d1b2f83e44", "passed": "\u2139 pass 9", "failed": "\u2139 fail 0"},
@@ -1061,6 +1062,7 @@ const browserClauseMap = {
   "M3.05.05": [["a28BillingRunnerNative", "Native tests verified tenant-scoped subscription lifecycle, provider-pending checkout and truthful sandbox labeling. Enterprise invoice and live unavailable states remain open."]],
   "M3.01.05": [["a28PublicDisplayNative", "The native public verification suite checked live credential status, conditional disclosure and exclusion of private fields. Browser disclaimer presentation remains open."]],
   "M3.12.02": [["a28HandoverNative", "Native handover service persisted and audited readiness checks, rejected stale and unauthorized updates and rolled back a failed audit write. Operational monitoring, alerts and runbook drills remain open."]],
+  "M3.08.02": [["a28TimingAuthoringBrowser", "Admin and independent reviewer authored and published questions, revised the timing policy and pinned a catalogue to its revised blueprint. Database checks preserved both policy versions. Calibration administration was outside this run."]],
   "M3.07.05": [["m30705ReassessmentBrowser", "Chromium completed the independent appeal, paid reassessment, second interview and replacement credential. Public verification showed the original revoked and the replacement valid, with both PDFs and retained Passport history. Local synthetic data; staging and production providers remain open."]],
   "M3.07.03": [
     ["supervisorPrivacyAppeal", "Admin reasoned rejected appeal preserves original credential and stale form cannot overwrite newer decision; other appeal outcomes open"],
