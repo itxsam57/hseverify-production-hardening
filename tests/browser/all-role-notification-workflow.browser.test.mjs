@@ -11,9 +11,6 @@ import { PGlite } from "@electric-sql/pglite";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 
 const ROLES = ["worker","company","assessor","verifier","admin","root"];
-const roleFilter = process.env.HSE_NOTIFICATION_ROLE ?? null;
-if (roleFilter && !ROLES.includes(roleFilter)) throw new Error("Invalid notification test role filter");
-const testedRoles = roleFilter ? [roleFilter] : ROLES;
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function decodeBase32(value) {
@@ -53,7 +50,7 @@ async function login(page, baseUrl, role, credential) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-test("every portal notification bell creates, opens, deep-links and marks persisted notifications read", { timeout: 600_000 }, async () => {
+test("every portal notification bell creates, opens, deep-links and marks persisted notifications read", { timeout: 300_000 }, async () => {
   const root = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-role-notifications-"));
   const port = await freePort();
@@ -85,7 +82,7 @@ test("every portal notification bell creates, opens, deep-links and marks persis
       probe: async () => {
         const browser = await chromium.launch({ headless: true });
         try {
-          for (const role of testedRoles) {
+          for (const role of ROLES) {
             const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
             const page = await context.newPage();
             await login(page, baseUrl, role, credentials[role]);
@@ -105,21 +102,17 @@ test("every portal notification bell creates, opens, deep-links and marks persis
             await bell.locator(".notification-panel").waitFor({ state: "visible" });
             const unreadItem = bell.getByRole("button", { name: /Unread: Notification foundation ready/ });
             await unreadItem.waitFor({ state: "visible" });
-            // The deep link points to the dashboard we are already viewing.
-            // URL equality does not mean the Server Action committed.
-            const completedOpenAction = page.waitForResponse(response =>
-              response.request().method() === "POST" &&
-              new URL(response.url()).pathname === `/${role}/dashboard`,
-              { timeout: 30_000 }
-            );
+            // The target is the current dashboard, so waitForURL alone resolves
+            // immediately and a reload can cancel the pending read action.
+            const opened = page.waitForResponse(response =>
+              response.request().method() === "POST"
+              && new URL(response.url()).pathname === `/${role}/dashboard`,
+            { timeout: 15_000 });
             await unreadItem.click();
-            const openResponse = await completedOpenAction;
-            await openResponse.finished();
-            assert.ok(openResponse.ok(),
-              role + " notification open did not complete: HTTP " + openResponse.status());
-            await page.waitForURL(`**/${role}/dashboard`, { timeout: 15_000 });
-            await page.locator('details.notification-menu > summary[aria-label="0 unread notifications"]')
-              .waitFor({ timeout: 15_000 });
+            const openResponse = await opened;
+            assert.ok(openResponse.ok(), `${role} notification open action failed: HTTP ${openResponse.status()}`);
+            await page.locator('details.notification-menu > summary[aria-label="0 unread notifications"]').waitFor();
+
             await page.reload({ waitUntil: "networkidle" });
             assert.equal(await page.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");
 
@@ -150,15 +143,15 @@ test("every portal notification bell creates, opens, deep-links and marks persis
     const database = new PGlite(databaseDirectory);
     try {
       const rows = (await database.query("SELECT recipient_role, read_at FROM platform_notifications WHERE notification_type='platform.foundation.ready'")).rows;
-      assert.equal(rows.length, testedRoles.length * 4);
-      for (const role of testedRoles) {
+      assert.equal(rows.length, 24);
+      for (const role of ROLES) {
         const owned = rows.filter(row => row.recipient_role === role);
         assert.equal(owned.length, 4);
         assert.ok(owned.every(row => row.read_at));
       }
       const audits = (await database.query("SELECT actor_role, target_reference FROM platform_audit_events WHERE action_key='notification.read'")).rows;
-      assert.equal(audits.length, testedRoles.length * 4);
-      assert.equal(new Set(audits.map(row => row.target_reference)).size, testedRoles.length * 4);
+      assert.equal(audits.length, 24);
+      assert.equal(new Set(audits.map(row => row.target_reference)).size, 24);
     } finally { await database.close(); }
 
   } finally {

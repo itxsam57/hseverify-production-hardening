@@ -1,3 +1,4 @@
+import { RubricMarkForm, ScoringDecisionForm } from "@/components/review/scoring-action-form";
 import {ScoringRecoveryForm} from "@/components/review/scoring-recovery-form";
 import {IntegrityReviewForm} from "@/components/review/integrity-review-form";
 import { IntegrityReviewService } from "@/lib/integrity/integrity-review-service";
@@ -154,32 +155,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                         ) : null}
                       </section>
                       {review.status === "DRAFT" && review.canReview && criterionKeys.length>0 ? (
-                        <form action={saveWrittenScoreDecisionAction} className="content-stack">
-                          <input type="hidden" name="reviewId" value={review.review_id} />
-                          <input type="hidden" name="expectedRevision" value={review.draft_revision} />
-                          <p><strong>Overall score:</strong> {review.score ?? (allCriteriaMarked ? "Ready to calculate from rubric marks" : "Save every rubric criterion first")}</p>
-                          <label>
-                            Decision
-                            <select name="decision" required defaultValue={review.decision ?? ""}>
-                              <option value="" disabled>Select decision</option>
-                              <option value="PASS">PASS</option>
-                              <option value="FAIL">FAIL</option>
-                              <option value="CHANGES_REQUESTED">CHANGES REQUESTED</option>
-                              <option value="ADDITIONAL_REVIEW">ADDITIONAL REVIEW — independent second Verifier</option>
-                            </select>
-                          </label>
-                          <label>
-                            Reason
-                            <textarea
-                              name="reason"
-                              required
-                              minLength={5}
-                              maxLength={4000}
-                              defaultValue={review.reason}
-                            />
-                          </label>
-                          <button type="submit" disabled={!allCriteriaMarked}>Save scoring decision</button>
-                        </form>
+                        <ScoringDecisionForm action={saveWrittenScoreDecisionAction} reviewId={review.review_id} revision={review.draft_revision} score={review.score} allCriteriaMarked={allCriteriaMarked} decision={review.decision} reason={review.reason} />
                       ) : (
                         <>
                           {review.score ?? "—"} · {review.decision ?? "Pending"}
@@ -192,15 +168,7 @@ export default async function WrittenScoringQueuePage(): Promise<React.JSX.Eleme
                           {review.questions.flatMap(question=>question.rubricCriteria.map((criterion,index)=>{
                             const key=`Q${question.position}:C${index}`;
                             const current=review.rubricMarks.find(mark=>mark.criterion===key);
-                            return <form action={addWrittenScoreRubricMarkAction} className="content-stack" aria-label={`Rubric mark ${key}`} key={key}>
-                              <input type="hidden" name="reviewId" value={review.review_id} />
-                              <input type="hidden" name="criterion" value={key} />
-                              <input type="hidden" name="expectedRevision" value={review.draft_revision} />
-                              <strong>{key} · {criterion.description} ({criterion.points} points)</strong>
-                              <label>Criterion mark<input name="mark" type="number" min="0" max="100" required defaultValue={current?.mark ?? ""} /></label>
-                              <label>Mark reason<textarea name="markReason" minLength={5} maxLength={4000} required defaultValue={current?.reason ?? ""} /></label>
-                              <button type="submit">Save mark</button>
-                            </form>;
+                            return <RubricMarkForm key={key} action={addWrittenScoreRubricMarkAction} reviewId={review.review_id} revision={review.draft_revision} criterion={key} description={criterion.description} points={criterion.points} mark={current?.mark ?? null} reason={current?.reason ?? ""} />;
                           }))}
                         </div>
                       ) : review.rubricMarks.length>0 ? (

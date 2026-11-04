@@ -312,7 +312,7 @@ jobs:
 
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
         if: ${{ matrix.shard == 4 }}
-        run: node --test tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
+        run: node --test --test-concurrency=1 tests/browser/scoring-draft-hydration.browser.test.mjs tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
 
       - name: Partly finalized Company order cancellation preserves approved Worker decisions
         if: ${{ matrix.shard == 1 }}

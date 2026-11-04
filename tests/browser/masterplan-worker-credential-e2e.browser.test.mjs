@@ -151,7 +151,9 @@ async function submitScoringAction(page,button,stage){
   {timeout:30000});
   await button.click();
   const response=await responseReady;
-  await response.finished();
+  // A Next action can leave its RSC response stream open after the commit.
+  // Callers verify persisted values on a fresh document instead of waiting
+  // indefinitely for transport EOF.
   assert.ok(response.ok(),stage+" scoring Server Action did not complete: HTTP "+response.status());
 }
 
@@ -175,30 +177,29 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   await submitScoringAction(page,rubricForm.getByRole("button",{name:"Save mark",exact:true}),"Rubric mark");
   await page.reload({waitUntil:"domcontentloaded"});
   row=persistedReviewRow();
+  const persistedRubric=row.locator('form[aria-label^="Rubric mark "]').first();
+  assert.equal(await persistedRubric.getByLabel("Criterion mark").inputValue(),String(mark),"Rubric mark did not persist after cold reload.");
+  assert.equal(await persistedRubric.getByLabel("Mark reason").inputValue(),markReason,"Rubric reason did not persist after cold reload.");
   const scoringForm=row.locator("form").filter({hasText:"Save scoring decision"}).first();
   await scoringForm.getByLabel("Decision").selectOption(decision);
   await scoringForm.getByRole("textbox",{name:"Reason",exact:true}).fill(reason);
   await submitScoringAction(page,scoringForm.getByRole("button",{name:"Save scoring decision",exact:true}),"Decision draft");
   await page.reload({waitUntil:"domcontentloaded"});
   row=persistedReviewRow();
+  const persistedDecision=row.locator("form").filter({hasText:"Save scoring decision"}).first();
+  assert.equal(await persistedDecision.getByLabel("Decision").inputValue(),decision,"Scoring decision did not persist after cold reload.");
+  assert.equal(await persistedDecision.getByRole("textbox",{name:"Reason",exact:true}).inputValue(),reason,"Scoring reason did not persist after cold reload.");
   await submitScoringAction(page,row.getByRole("button",{name:"Finalize review",exact:true}),"Final review");
   // Confirm React's authoritative result first, then a cold reload. This
   // proves the decision persisted, not merely a transient local UI state.
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
-  const coldReload=await page.reload({waitUntil:"domcontentloaded"});
+  // A native form submission can leave the document on a POST entry.
+  // Navigate with GET to read persisted state without resubmitting the form.
+  const coldReload=await page.goto(`${baseUrl}/verifier/reviews/scoring`,{waitUntil:"domcontentloaded"});
   const status=coldReload?.status()??"no response";
-  if (!coldReload?.ok()) {
-    // Do not retry or mask the failure. Preserve the actual Next server
-    // response and the scoped server trace so the 500 has a diagnosable cause.
-    let serverResponse = "";
-    try { serverResponse = (await coldReload?.text())?.slice(0,5000) ?? ""; }
-    catch (error) { serverResponse = "Response body unreadable: " + String(error); }
-    throw new Error("Final written-scoring cold reload failed: HTTP "+status+
-      " URL="+page.url()+"\nHTTP BODY:\n"+serverResponse+
-      "\nSERVER TRACE:\n"+serverOutput().slice(-12000));
-  }
   row=persistedReviewRow();
   try {
+    assert.ok(coldReload?.ok(),"Final written-scoring cold reload was not HTTP 2xx: "+status);
     await page.getByRole("heading",{name:"Written scoring review",exact:true}).waitFor({timeout:20000});
     await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   } catch (error) {
@@ -1017,7 +1018,15 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${journeyCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();try{await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});}catch(error){throw new Error("Final decision failed at actual browser boundary.\nADMIN URL: "+admin.url()+"\nADMIN:\n"+await admin.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
           if(COMPANY_CREDENTIAL_TARGET_MODE){await company.reload();await company.getByText("COMPANY-CREDENTIAL-TARGET-BROWSER · COMPLETED",{exact:true}).waitFor();console.log("ACTUAL_COMPANY_ORDER_COMPLETED_BROWSER original Company order completed after real final decision");}
-          await worker.goto(`${baseUrl}/worker/passport`);await worker.getByText(ISSUED_QUALIFICATION,{exact:true}).first().waitFor({timeout:20000});await worker.getByText((COMPLETE_REASSESSMENT||COMPANY_CREDENTIAL_TARGET_MODE)?/valid · expires \d{4}-\d{2}-\d{2}/i:/valid · no expiry recorded/i).waitFor();
+          await worker.goto(`${baseUrl}/worker/passport`);
+          const qualificationRecords = worker.getByRole("region", { name: "Qualification passport records" });
+          const qualificationRow = qualificationRecords.getByRole("row").filter({ hasText: "Masterplan Safety Certificate" });
+          await qualificationRow.getByText("HSE Institute", { exact: true }).waitFor({ timeout: 20000 });
+          const assessedCompetencies = worker.getByRole("list", { name: "Assessed competencies" });
+          await assessedCompetencies.getByText(ISSUED_QUALIFICATION, { exact: true }).waitFor({ timeout: 20000 });
+          assert.equal(await assessedCompetencies.getByText("Masterplan Safety Certificate", { exact: true }).count(), 0);
+          console.log("ACTUAL_PASSPORT_DISTINCTION_BROWSER source qualification and assessed competency appear in separate sections");
+          await worker.getByText(ISSUED_QUALIFICATION,{exact:true}).first().waitFor({timeout:20000});await worker.getByText((COMPLETE_REASSESSMENT||COMPANY_CREDENTIAL_TARGET_MODE)?/valid · expires \d{4}-\d{2}-\d{2}/i:/valid · no expiry recorded/i).waitFor();
           await worker.goto(`${baseUrl}/worker/appeals`);const credentialOption=worker.locator('select[name="credentialId"] option').filter({hasText:ISSUED_QUALIFICATION});const credentialId=await credentialOption.getAttribute("value");assert.ok(credentialId?.startsWith("credential_id_"));
           const publicPage=await workerContext.newPage();const publicResponse=await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});assert.equal(publicResponse?.status(),200);await publicPage.getByText(ISSUED_QUALIFICATION,{exact:true}).waitFor();const publicApi=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}`);assert.equal(publicApi.status(),200);const publicCredential=await publicApi.json();assert.equal(publicCredential.status,"valid");assert.equal(publicCredential.qualification,ISSUED_QUALIFICATION);if(COMPANY_CREDENTIAL_TARGET_MODE){assert.ok(publicCredential.expiresAt);assert.equal(new Date(publicCredential.expiresAt).getTime()-new Date(publicCredential.issuedAt).getTime(),365*86400000);}
           const pdf=await publicPage.request.get(`${baseUrl}/api/credentials/${credentialId}/pdf`);assert.equal(pdf.status(),200);assert.match(pdf.headers()["content-type"],/application\/pdf/);const pdfBody=await pdf.body();assert.ok(pdfBody.subarray(0,8).toString().startsWith("%PDF-1.4"));if(COMPANY_CREDENTIAL_TARGET_MODE){const text=extractCredentialPdf(pdfBody);assert.ok(text.includes(ISSUED_QUALIFICATION));assert.ok(text.includes("Expiry: "+publicCredential.expiresAt));}await publicPage.close();
