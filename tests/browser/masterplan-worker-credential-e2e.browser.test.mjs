@@ -195,9 +195,9 @@ async function finalizeWrittenReview(page,baseUrl,caseId,{mark,decision,reason,m
   await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   const coldReload=await page.reload({waitUntil:"domcontentloaded"});
   const status=coldReload?.status()??"no response";
-  assert.ok(coldReload?.ok(),"Final written-scoring cold reload was not HTTP 2xx: "+status);
   row=persistedReviewRow();
   try {
+    assert.ok(coldReload?.ok(),"Final written-scoring cold reload was not HTTP 2xx: "+status);
     await page.getByRole("heading",{name:"Written scoring review",exact:true}).waitFor({timeout:20000});
     await row.getByText("FINAL",{exact:true}).waitFor({timeout:20000});
   } catch (error) {
