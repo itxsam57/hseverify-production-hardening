@@ -1,0 +1,23 @@
+{
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "review_mode": "Independent read-only tool inspection",
+  "disposition": "ACCEPTED",
+  "reviewed_at": "2026-11-05T14:41:45.826853+00:00",
+  "scope": [
+    "Fractional software verification plan and structural promotion gates",
+    "B00 case plans only; execution evidence is not yet verified"
+  ],
+  "findings_addressed": [
+    "Independent accepted review metadata enforced for plan, each case or exception and final scenario",
+    "Concrete per-scenario variants required before execution and all planned variants required before promotion",
+    "Health requires authenticated action, persisted record and unexpected-error-free server/database logs",
+    "Real prior-artifact rollback and return, existing sessions, history and private files included"
+  ],
+  "case_plan_digests": {
+    "M1.01.01": "fd2e5b43c4d255eadbdc8f268795b6c45b0829fb418215c6e6b1d9a4f15fb709",
+    "M1.01.02": "3983fae94f76632ff01c0c020453eb82f78daa6b4a938e6e8a59564df568a92c",
+    "M1.01.03": "25d00d0724bc77226b0ff5eef8b44d0bca81a7206a85f9825c0af458b1ac83b0",
+    "M1.01.04": "21a80c21cbcd535b7a8d9ef907b75c9a8aab732ea26293d412b36d1af97a2a71"
+  }
+}

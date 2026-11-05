@@ -430,7 +430,79 @@
           "scope": "Observed accepted exact heads and canonical audits",
           "environment_isolation_native": ".autopilot/artifacts/20261006-next-foundation-prepared.txt"
         },
-        "notes": "Not an actual production deployment or liveprovider certification"
+        "notes": "Not an actual production deployment or liveprovider certification",
+        "software_verification": {
+          "status": "PARTIAL",
+          "cases": {},
+          "evidence": [
+            {
+              "kind": "PRECOMMIT_SCOPED_OBSERVATION",
+              "source_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
+              "artifact": ".autopilot/artifacts/20261105-B00-baseline-native.log",
+              "artifact_sha256": "91d1483cc034e8943a1e680236d089185c4f23226a28a1eda868ff059a38e4f0",
+              "test_count": 27,
+              "whole_scenario_verified": false,
+              "runtime": "PGlite/native environment validation; QA plan/validator workspace changes pending commit"
+            }
+          ],
+          "case_plan": {
+            "status": "ACCEPTED",
+            "variants": [
+              {
+                "id": "M1.01.01.positive.1",
+                "category": "positive",
+                "action": "Start with valid production PostgreSQL configuration and independent secrets",
+                "expected_outcome": "Application and script validators accept the configuration and the server starts",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.01.invalid_input.1",
+                "category": "invalid_input",
+                "action": "Remove each required secret and enable each prohibited production sandbox/demo option separately",
+                "expected_outcome": "Each invalid configuration is rejected before serving protected product behavior",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.01.permission_isolation.1",
+                "category": "permission_isolation",
+                "action": "Attempt to expose server-only secrets through public responses and enter privileged portals without their role",
+                "expected_outcome": "Responses omit secret values and unauthorized portal access is denied",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.01.retry_recovery.1",
+                "category": "retry_recovery",
+                "action": "Restart from a stopped valid configuration and repeat failed startup after correcting its configuration",
+                "expected_outcome": "Valid startup succeeds and the failed attempt leaves no duplicate process or misleading ready state",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.01.persistence.1",
+                "category": "persistence",
+                "action": "Restart with the same configured signing key, authentication pepper and database",
+                "expected_outcome": "Stored identities and signed credential verification retain their original authority",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.01.downstream_outcome.1",
+                "category": "downstream_outcome",
+                "action": "Compare configured environment and release identity with runtime/operations evidence",
+                "expected_outcome": "Operators see the actual environment and degraded provider state, with synthetic capabilities identified",
+                "runtime": "isolated-postgresql-and-server"
+              }
+            ],
+            "production_deferred": [
+              "Live customer deployment, external provider delivery and physical-device certification"
+            ],
+            "review": {
+              "disposition": "ACCEPTED",
+              "reviewer": "/root/review_software_plan",
+              "builder": "/root",
+              "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
+              "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
+            }
+          }
+        }
       },
       {
         "id": "M1.01.02",
@@ -447,7 +519,79 @@
           "scope": "Observed accepted exact heads and canonical audits",
           "environment_isolation_native": null
         },
-        "notes": "No every-migration rollback/refusal mapping yet"
+        "notes": "No every-migration rollback/refusal mapping yet",
+        "software_verification": {
+          "status": "PARTIAL",
+          "cases": {},
+          "evidence": [
+            {
+              "kind": "PRECOMMIT_SCOPED_OBSERVATION",
+              "source_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
+              "artifact": ".autopilot/artifacts/20261105-B00-baseline-native.log",
+              "artifact_sha256": "91d1483cc034e8943a1e680236d089185c4f23226a28a1eda868ff059a38e4f0",
+              "test_count": 27,
+              "whole_scenario_verified": false,
+              "runtime": "PGlite/native environment validation; QA plan/validator workspace changes pending commit"
+            }
+          ],
+          "case_plan": {
+            "status": "ACCEPTED",
+            "variants": [
+              {
+                "id": "M1.01.02.positive.1",
+                "category": "positive",
+                "action": "Apply the complete ordered migration set to a fresh isolated PostgreSQL database",
+                "expected_outcome": "Every migration is recorded with the expected checksum and schema",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.02.invalid_input.1",
+                "category": "invalid_input",
+                "action": "Introduce an unapproved checksum mismatch in an isolated migration-history fixture",
+                "expected_outcome": "Migration processing refuses the unknown mismatch without rewriting its history",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.02.permission_isolation.1",
+                "category": "permission_isolation",
+                "action": "Request destructive rollback in production mode even with the local acknowledgement flag",
+                "expected_outcome": "Production rollback is refused and applied migration state remains intact",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.02.retry_recovery.1",
+                "category": "retry_recovery",
+                "action": "Repeat migration application and retry an interrupted supported migration path",
+                "expected_outcome": "No duplicate history or partial committed schema is created",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.02.persistence.1",
+                "category": "persistence",
+                "action": "Exercise supported down/up paths against populated synthetic fixtures",
+                "expected_outcome": "Protected identities, histories and business records meet each migration rollback contract",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.02.downstream_outcome.1",
+                "category": "downstream_outcome",
+                "action": "Restore a database and private files containing an active assessment and evidence records",
+                "expected_outcome": "The same actor can recover the saved answer and access the same authorized evidence bytes",
+                "runtime": "isolated-postgresql-and-server"
+              }
+            ],
+            "production_deferred": [
+              "Live customer deployment, external provider delivery and physical-device certification"
+            ],
+            "review": {
+              "disposition": "ACCEPTED",
+              "reviewer": "/root/review_software_plan",
+              "builder": "/root",
+              "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
+              "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
+            }
+          }
+        }
       },
       {
         "id": "M1.01.03",
@@ -467,7 +611,69 @@
           "scope": "Observed accepted exact heads and canonical audits",
           "environment_isolation_native": null
         },
-        "notes": "Bounded observed candidateheads/canonicalexecution; no rerunrequired"
+        "notes": "Bounded observed candidateheads/canonicalexecution; no rerunrequired",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "ACCEPTED",
+            "variants": [
+              {
+                "id": "M1.01.03.positive.1",
+                "category": "positive",
+                "action": "Fetch the exact PR head and its completed required hosted checks",
+                "expected_outcome": "The receipt identifies the same candidate and every required check passed",
+                "runtime": "github-and-isolated-guard-fixture"
+              },
+              {
+                "id": "M1.01.03.invalid_input.1",
+                "category": "invalid_input",
+                "action": "Validate receipt fixtures with wrong SHA, missing checks and failed checks",
+                "expected_outcome": "Each incomplete or mismatched CI receipt is rejected",
+                "runtime": "github-and-isolated-guard-fixture"
+              },
+              {
+                "id": "M1.01.03.permission_isolation.1",
+                "category": "permission_isolation",
+                "action": "Attempt a guarded commit in a valid isolated fixture without an attributed audit session",
+                "expected_outcome": "The guard refuses the commit; workflow repository permissions remain read-only",
+                "runtime": "github-and-isolated-guard-fixture"
+              },
+              {
+                "id": "M1.01.03.retry_recovery.1",
+                "category": "retry_recovery",
+                "action": "Read and validate the same complete CI receipt repeatedly",
+                "expected_outcome": "The result is stable and no duplicate certification entry is produced",
+                "runtime": "github-and-isolated-guard-fixture"
+              },
+              {
+                "id": "M1.01.03.persistence.1",
+                "category": "persistence",
+                "action": "Retain the exact-head check receipt and its digest, then reload it",
+                "expected_outcome": "The stored identity, outcomes and artifact bytes are unchanged",
+                "runtime": "github-and-isolated-guard-fixture"
+              },
+              {
+                "id": "M1.01.03.downstream_outcome.1",
+                "category": "downstream_outcome",
+                "action": "Compare the checked source identity to the artifact selected for isolated staging",
+                "expected_outcome": "A mismatched source/artifact identity is refused before its evidence can be accepted",
+                "runtime": "github-and-isolated-guard-fixture"
+              }
+            ],
+            "production_deferred": [
+              "Live customer deployment, external provider delivery and physical-device certification"
+            ],
+            "review": {
+              "disposition": "ACCEPTED",
+              "reviewer": "/root/review_software_plan",
+              "builder": "/root",
+              "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
+              "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
+            }
+          }
+        }
       },
       {
         "id": "M1.01.04",
@@ -484,7 +690,76 @@
           "scope": "Observed accepted exact heads and canonical audits",
           "environment_isolation_native": null
         },
-        "notes": "Actual productionconfiguration/deployedhealth/candidateboundexecutedrollback stillunverified"
+        "notes": "Actual productionconfiguration/deployedhealth/candidateboundexecutedrollback stillunverified",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "ACCEPTED",
+            "variants": [
+              {
+                "id": "M1.01.04.positive.1",
+                "category": "positive",
+                "action": "Start the selected standalone build against isolated PostgreSQL, sign in, create and reload a Company unit through its actual form, then inspect its persisted row and server/database logs",
+                "expected_outcome": "The authenticated action and stored row agree with the selected source; unexpected server errors fail the case; HTTP 200 alone is insufficient",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.04.invalid_input.1",
+                "category": "invalid_input",
+                "action": "Start with invalid environment, unavailable database or a mismatched release manifest",
+                "expected_outcome": "Startup or readiness fails truthfully and protected records are not exposed",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.04.permission_isolation.1",
+                "category": "permission_isolation",
+                "action": "Access staging without perimeter authentication and invoke privileged routes with a Worker session",
+                "expected_outcome": "Perimeter and product-role boundaries both deny unauthorized access",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.04.retry_recovery.1",
+                "category": "retry_recovery",
+                "action": "Restart a verified build after a controlled process failure",
+                "expected_outcome": "The service returns with the same database and authorized actor state",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.04.persistence.1",
+                "category": "persistence",
+                "action": "Back up and cold-restore the populated synthetic database and private objects",
+                "expected_outcome": "Stored cases, answers, evidence and immutable history remain consistent",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.04.downstream_outcome.1",
+                "category": "downstream_outcome",
+                "action": "Execute the restored Worker/Company read and next action from the recovered build",
+                "expected_outcome": "The receiving role sees the recovered result; actual production traffic rollback remains separately deferred",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M1.01.04.retry_recovery.2",
+                "category": "retry_recovery",
+                "action": "Switch the controlled candidate to a retained prior verified build and back using compatible PostgreSQL state, unchanged secrets and the same private files; reload the existing authenticated session and perform the next authorized action after each switch",
+                "expected_outcome": "The real prior artifact serves successfully, its authorized action persists, case/history/private-file bytes survive, and return to the candidate preserves the same records and session authority",
+                "runtime": "isolated-postgresql-private-files-and-two-verified-builds"
+              }
+            ],
+            "production_deferred": [
+              "Live customer deployment, external provider delivery and physical-device certification"
+            ],
+            "review": {
+              "disposition": "ACCEPTED",
+              "reviewer": "/root/review_software_plan",
+              "builder": "/root",
+              "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
+              "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
+            }
+          }
+        }
       },
       {
         "id": "M1.02.01",
@@ -505,7 +780,18 @@
           "public_native_regression": ".autopilot/artifacts/20261006-public-inquiry-working-public-native.txt",
           "accepted_pr26_ci": ".autopilot/artifacts/20261006-pr26-ci-exact-ecf2ccf.json"
         },
-        "notes": "Actual desktop/mobile home links reach all six public routes, both registration forms and all six role sign-in forms. Contact and Request Demo now submit into a real private Admin/Root queue with persistent requests and immutable audit; actual valid credential-concern submission remains operative. Browser proves SSR readiness, rejected-draft retention and Worker/public denial destinations. Native tests prove validation, duplicate/purpose boundaries, quota exhaustion, required-audit rollback/retry and current staff authority. Integrated six working cohorts pass (native54, public-native38, two browsers, types, lint). This is functional intake for manual follow-up, not proof of staff responding or live email/meeting delivery. Committed exact gates and fresh candidate CI/review still required before merge; production proxy/abuse configuration remains unverified."
+        "notes": "Actual desktop/mobile home links reach all six public routes, both registration forms and all six role sign-in forms. Contact and Request Demo now submit into a real private Admin/Root queue with persistent requests and immutable audit; actual valid credential-concern submission remains operative. Browser proves SSR readiness, rejected-draft retention and Worker/public denial destinations. Native tests prove validation, duplicate/purpose boundaries, quota exhaustion, required-audit rollback/retry and current staff authority. Integrated six working cohorts pass (native54, public-native38, two browsers, types, lint). This is functional intake for manual follow-up, not proof of staff responding or live email/meeting delivery. Committed exact gates and fresh candidate CI/review still required before merge; production proxy/abuse configuration remains unverified.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.02.02",
@@ -516,7 +802,18 @@
         ],
         "scenario": "Every role header/search/bell/help/account/language/Exit/Sign Out",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.02.03",
@@ -527,7 +824,18 @@
         ],
         "scenario": "Empty/loading/validation/denial/error/retry/success states across scenario pages",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.02.04",
@@ -538,7 +846,18 @@
         ],
         "scenario": "Responsive desktop/mobile forms/tables/dialogs and route transitions",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.02.05",
@@ -549,7 +868,18 @@
         ],
         "scenario": "Keyboard focus/navigation/labels and unsaved-input protection",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.01",
@@ -570,7 +900,18 @@
           "candidate": "97ca1278f54214eab8156b9713a587aef7b18219",
           "current_ci": ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json"
         },
-        "notes": "Exact19b04b1 real browser rejects invalid fields, each missing acceptance/country and password mismatch, preserving drafts. Delayed initial scripts hold controls disabled until React owns state. Runtime enforces strict acceptance/country and immutable transactional server-dated/versioned history, resume/cancellation retention and audit destination failure rollback. Complete Worker, second-credential reassessment, Company/code/invitation, type/lint/build/preview pass. PR8 merged291b61a after scoped Gatekeeper ACCEPT and nine actual CI checks; private job logs independently establish distinct second credential at syntheticmergee2e4fae. Artifact ZIP contents not inspected. Remaining boundary combinations/live adapters and legal adequacy unverified; partial. PR17 independently ACCEPTED and merged36d5862; exact97ca127 five local and eight applicable PR checks PASS, syntheticmerge4dceabb exact candidate/base. Defined Worker registration scope and bounded six-role password/session/email recovery plus five-role one-time recovery-code login are verified. Broader privileged reason/recent-MFA operations, Root emergency administration, live providers and PostgreSQL concurrency remain separately unverified. M1.03.02 remains partial."
+        "notes": "Exact19b04b1 real browser rejects invalid fields, each missing acceptance/country and password mismatch, preserving drafts. Delayed initial scripts hold controls disabled until React owns state. Runtime enforces strict acceptance/country and immutable transactional server-dated/versioned history, resume/cancellation retention and audit destination failure rollback. Complete Worker, second-credential reassessment, Company/code/invitation, type/lint/build/preview pass. PR8 merged291b61a after scoped Gatekeeper ACCEPT and nine actual CI checks; private job logs independently establish distinct second credential at syntheticmergee2e4fae. Artifact ZIP contents not inspected. Remaining boundary combinations/live adapters and legal adequacy unverified; partial. PR17 independently ACCEPTED and merged36d5862; exact97ca127 five local and eight applicable PR checks PASS, syntheticmerge4dceabb exact candidate/base. Defined Worker registration scope and bounded six-role password/session/email recovery plus five-role one-time recovery-code login are verified. Broader privileged reason/recent-MFA operations, Root emergency administration, live providers and PostgreSQL concurrency remain separately unverified. M1.03.02 remains partial.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.02",
@@ -613,7 +954,18 @@
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
         },
-        "notes": "Working-tree actual Worker browser email and phone wrong/expired/resend/stale-form/verified boundaries pass. Server stopped before synthetic persisted expiry/cooldown dates; browser/server clock unchanged. Cached no-JS normal-POST contexts prevent dev HMR from refreshing old forms. Intermediate pending states/no sessions and final both-contact activation, exact4challenge invalidated/consumed pairs, counters4/5 and issued4/failed2/verified2 persist. UI cooldown disabled; forged early-resend POST and attempt exhaustion remain unverified. Company/staff OTP and live delivery unverified; exact candidate/review/CI pending. Prepared next slice adds real Worker early-resend direct POST/cross-origin/missing-origin denial for both channels and five-rejection browser exhaustion with direct correct exhausted-code replay denied;fresh challenges recover only correct stages, zero sessions. Five native Worker boundary/required-audit rollback cases and Company cooldown exact boundary/expiry recovery pass. Company new expiry/cooldown proof is native; actual Company expiry browser/staff OTP/live delivery remain unverified. Next exact candidate and fresh CI still required. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario."
+        "notes": "Working-tree actual Worker browser email and phone wrong/expired/resend/stale-form/verified boundaries pass. Server stopped before synthetic persisted expiry/cooldown dates; browser/server clock unchanged. Cached no-JS normal-POST contexts prevent dev HMR from refreshing old forms. Intermediate pending states/no sessions and final both-contact activation, exact4challenge invalidated/consumed pairs, counters4/5 and issued4/failed2/verified2 persist. UI cooldown disabled; forged early-resend POST and attempt exhaustion remain unverified. Company/staff OTP and live delivery unverified; exact candidate/review/CI pending. Prepared next slice adds real Worker early-resend direct POST/cross-origin/missing-origin denial for both channels and five-rejection browser exhaustion with direct correct exhausted-code replay denied;fresh challenges recover only correct stages, zero sessions. Five native Worker boundary/required-audit rollback cases and Company cooldown exact boundary/expiry recovery pass. Company new expiry/cooldown proof is native; actual Company expiry browser/staff OTP/live delivery remain unverified. Next exact candidate and fresh CI still required. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.03",
@@ -634,7 +986,18 @@
           "artifact": ".autopilot/artifacts/20261005-recovery-strengthened-green-v2.txt",
           "scope": "Three actual contact conflicts denied; existing nonempty identity/version/skill/evidence and role/account/Worker reference unchanged; wrong recovery OTP persists decrement/failure audit without password/session changes; real sandbox code resets password, consumes flow/challenge, revokes old session and permits replacement-password login."
         },
-        "notes": "PR12 independently accepted and merged at f78af3a; exact candidate f6c7af0 focused gates and eight applicable actual CI checks passed. Broad local npm check intentionally incomplete. No live provider or whole-project claim."
+        "notes": "PR12 independently accepted and merged at f78af3a; exact candidate f6c7af0 focused gates and eight applicable actual CI checks passed. Broad local npm check intentionally incomplete. No live provider or whole-project claim.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.04",
@@ -664,7 +1027,18 @@
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
         },
-        "notes": "PR13 scoped independent ACCEPT and merged baaa711. Candidate d9ac5ca nine exact local commands and eight applicable actual CI checks passed. Pending tenant/email/MFA/exact owner/session proven in actual CI. Company approval/high-risk operations, OTP expiry/resend and live delivery remain outside this row."
+        "notes": "PR13 scoped independent ACCEPT and merged baaa711. Candidate d9ac5ca nine exact local commands and eight applicable actual CI checks passed. Pending tenant/email/MFA/exact owner/session proven in actual CI. Company approval/high-risk operations, OTP expiry/resend and live delivery remain outside this row.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.05",
@@ -685,7 +1059,18 @@
           "artifact": ".autopilot/artifacts/20261005-staff-lifecycle-working-final.txt",
           "scope": "Actual Root-issued five roles activate mandatory MFA and log in with exactly one invited-role session; preactivation sign-in and used token rejected. Five fresh expiry denials, three cached profile and two cached valid-MFA expiry denials. Unknown/malformed token browser requests leave all six table baselines unchanged. Revocation repair accepted/merged PR10 with runtime9/browser1,13exact/nineactualCI. New lifecycle exact/review/CI gate mandatory before next merge."
         },
-        "notes": "Expiry test holds real SSR forms across intentional server restart with stable test-owned action encryption key, no clock mocking, normal POSTs and successful unexpired control. Company tenant setup, real PostgreSQL concurrency and live adapters are outside this scoped authentication evidence. PR11 exact candidate0370b75 passed eight local commands and eight applicable CI checks; independent scoped ACCEPT; canonical mergece8468a."
+        "notes": "Expiry test holds real SSR forms across intentional server restart with stable test-owned action encryption key, no clock mocking, normal POSTs and successful unexpired control. Company tenant setup, real PostgreSQL concurrency and live adapters are outside this scoped authentication evidence. PR11 exact candidate0370b75 passed eight local commands and eight applicable CI checks; independent scoped ACCEPT; canonical mergece8468a.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.06",
@@ -713,7 +1098,18 @@
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
         },
-        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge."
+        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.07",
@@ -730,7 +1126,18 @@
         "scenario": "Exit Portal preserves session; Sign Out revokes it",
         "status": "passed",
         "evidence": ".autopilot/artifacts/20261004-auth-boundaries-permanent-v2-working.txt",
-        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge."
+        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.03.08",
@@ -762,7 +1169,18 @@
           "boundary_candidate": "97ca1278f54214eab8156b9713a587aef7b18219",
           "boundary_ci_artifact": ".autopilot/artifacts/20261005-account-security-boundaries-ci-97ca127.json"
         },
-        "notes": "PR12 scoped Worker recovery merged; runtime10 verifies six-role sequential reset/replay/exhaustion and recovery audit rollback. PR14 accepted/merged ecf5545; exact788c172 nine local/nine applicable PR CI checks passed. Six-role password-change browser verifies wrong current password/MFA, current-session preservation, other-session revocation, old-password denial and replacement login with exact native audit/session state. Five-role MFA browser verifies code-generation hashes, factor replacement/old-factor denial/new login/challenge consumption/audits; prior-code-set invalidation and fresh-counter old-factor denial also passed. Actual recovery browser reproduced early resend; repository timestamp normalization working repair passes six-role normal email recovery, cooldown/mismatch/wrong-code denial, retained original-cookie replay rejection, prior session/password denial, unchanged MFA policy and exact DB state. Three new native cases cover cooldown, expiry and ISO/null boundaries. PR15 timestamp exactcc34a55 nine local/eight applicable PR checks passed and independently ACCEPTED; merged08eb353. Recovery-code one-time consumption/login, notification/live delivery, PostgreSQL concurrency and broader privileged recovery remain unverified. Producer-fault tests do not certify complete AccountSecurityService password/session fault rollback. Notification repair working native4 passed including real worker/retry/queue rollback/direct SQL source and scope boundaries; six-role password and five-role MFA notice read/open browser proof passes. Six-role recovery notice browser also passes. Exact notification candidate/CI pending. PR16 security notifications accepted/mergedc189624; exactfc6e3ab14 genuine local/eight PR checks pass. Real normal login already supports unused recovery codes through AuthLoginService/AuthAccessRepository (earlier no-caller inference applied only to a separate unused method). Working five-role consumption/replay/old-set/foreign-code/wrong-password, six-role own/foreign session management and actual password/session business rollback probes pass; permanent candidate/CI pending. PR17 independently ACCEPTED and merged36d5862; exact97ca127 five local and eight applicable PR checks PASS, syntheticmerge4dceabb exact candidate/base. Defined Worker registration scope and bounded six-role password/session/email recovery plus five-role one-time recovery-code login are verified. Broader privileged reason/recent-MFA operations, Root emergency administration, live providers and PostgreSQL concurrency remain separately unverified. M1.03.02 remains partial."
+        "notes": "PR12 scoped Worker recovery merged; runtime10 verifies six-role sequential reset/replay/exhaustion and recovery audit rollback. PR14 accepted/merged ecf5545; exact788c172 nine local/nine applicable PR CI checks passed. Six-role password-change browser verifies wrong current password/MFA, current-session preservation, other-session revocation, old-password denial and replacement login with exact native audit/session state. Five-role MFA browser verifies code-generation hashes, factor replacement/old-factor denial/new login/challenge consumption/audits; prior-code-set invalidation and fresh-counter old-factor denial also passed. Actual recovery browser reproduced early resend; repository timestamp normalization working repair passes six-role normal email recovery, cooldown/mismatch/wrong-code denial, retained original-cookie replay rejection, prior session/password denial, unchanged MFA policy and exact DB state. Three new native cases cover cooldown, expiry and ISO/null boundaries. PR15 timestamp exactcc34a55 nine local/eight applicable PR checks passed and independently ACCEPTED; merged08eb353. Recovery-code one-time consumption/login, notification/live delivery, PostgreSQL concurrency and broader privileged recovery remain unverified. Producer-fault tests do not certify complete AccountSecurityService password/session fault rollback. Notification repair working native4 passed including real worker/retry/queue rollback/direct SQL source and scope boundaries; six-role password and five-role MFA notice read/open browser proof passes. Six-role recovery notice browser also passes. Exact notification candidate/CI pending. PR16 security notifications accepted/mergedc189624; exactfc6e3ab14 genuine local/eight PR checks pass. Real normal login already supports unused recovery codes through AuthLoginService/AuthAccessRepository (earlier no-caller inference applied only to a separate unused method). Working five-role consumption/replay/old-set/foreign-code/wrong-password, six-role own/foreign session management and actual password/session business rollback probes pass; permanent candidate/CI pending. PR17 independently ACCEPTED and merged36d5862; exact97ca127 five local and eight applicable PR checks PASS, syntheticmerge4dceabb exact candidate/base. Defined Worker registration scope and bounded six-role password/session/email recovery plus five-role one-time recovery-code login are verified. Broader privileged reason/recent-MFA operations, Root emergency administration, live providers and PostgreSQL concurrency remain separately unverified. M1.03.02 remains partial.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.04.01",
@@ -774,7 +1192,18 @@
         "scenario": "Role-bound session rejects every cross-portal combination",
         "status": "passed",
         "evidence": ".autopilot/artifacts/20261004-auth-boundaries-permanent-v2-working.txt",
-        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge."
+        "notes": "Synthetic six-role real browser/server journey: thirty wrong-role form sign-ins and direct cross-portal denials, six wrong passwords/five MFA failures, signed-out redirect, Exit/cancel preserve session, portal Sign Out revokes it. Exact persisted denial/failure events and one revoked role-bound session per account. Registration/provisioning/recovery and tenant/resource actions remain separate. Working-tree proof; exact candidate/CI gate mandatory before merge.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.04.02",
@@ -785,7 +1214,18 @@
         ],
         "scenario": "Tenant-scoped resources, filters, files and exports do not disclose other tenant",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.04.03",
@@ -796,7 +1236,18 @@
         ],
         "scenario": "Cross-worker IDs, copied capabilities and direct actions denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.04.04",
@@ -807,7 +1258,18 @@
         ],
         "scenario": "Role elevation, stale permissions, revoked session and membership fail closed",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.05.01",
@@ -818,7 +1280,18 @@
         ],
         "scenario": "Every material transition retains actor, resource, reason and immutable history",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.05.02",
@@ -829,7 +1302,18 @@
         ],
         "scenario": "New submission/decision/assignment sends next actor correct authorized deep link",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.05.03",
@@ -855,7 +1339,18 @@
             "merge_source_identity": ".autopilot/artifacts/20261006-pr28-merge-verified.json"
           }
         },
-        "notes": "Working prepared slice: actual six-role login, committed outbox projection, bell deep-link/read, individual read and mark-all of two unread notices with reload;24 retained notification rows and24 distinct required read audits. Native live session/account/current-role/exact Company membership guards, revoked/locked/expired authority denial, foreign account/role/tenant isolation, first read date/idempotence, whole-batch required audit rollback/retry and pending Company owner security notification pass. Exact next candidate/freshCI/acceptance still required before canonical promotion. No live delivery or PostgreSQL contention claim. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario."
+        "notes": "Working prepared slice: actual six-role login, committed outbox projection, bell deep-link/read, individual read and mark-all of two unread notices with reload;24 retained notification rows and24 distinct required read audits. Native live session/account/current-role/exact Company membership guards, revoked/locked/expired authority denial, foreign account/role/tenant isolation, first read date/idempotence, whole-batch required audit rollback/retry and pending Company owner security notification pass. Exact next candidate/freshCI/acceptance still required before canonical promotion. No live delivery or PostgreSQL contention claim. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.05.04",
@@ -881,7 +1376,18 @@
             "merge_source_identity": ".autopilot/artifacts/20261006-pr28-merge-verified.json"
           }
         },
-        "notes": "Prepared next working security notification regression executes real recovery/outbox projection, exact idempotence, required enqueue failure atomic rollback and actual projection outage/retry without undoing accepted password/session state. This verifies recovery security notifications and common queue behavior; every business handoff notification/provider outage remains unverified. Exact next candidate/freshCI acceptance required; no whole-row promotion. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario."
+        "notes": "Prepared next working security notification regression executes real recovery/outbox projection, exact idempotence, required enqueue failure atomic rollback and actual projection outage/retry without undoing accepted password/session state. This verifies recovery security notifications and common queue behavior; every business handoff notification/provider outage remains unverified. Exact next candidate/freshCI acceptance required; no whole-row promotion. Accepted bounded PR28 exact6c21282 after23 local cohorts, six fresh CI runs/four QA jobs and independent ACCEPT; canonical0a78e32 source identical. Broader/live requirements remain open; prepared next Company/identity/expiry/billing tests do not promote this scenario.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.06.01",
@@ -895,7 +1401,18 @@
         ],
         "scenario": "PDF/PNG/JPEG accepted through scan and exact record binding",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.06.02",
@@ -909,7 +1426,18 @@
         ],
         "scenario": "Missing, oversize, mismatched MIME and unsafe file denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.06.03",
@@ -923,7 +1451,18 @@
         ],
         "scenario": "Scanner unavailable remains quarantined; retry cannot replace safe file",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.06.04",
@@ -937,7 +1476,18 @@
         ],
         "scenario": "Replace attachment: prior version retained, correct preview context",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.06.05",
@@ -951,7 +1501,18 @@
         ],
         "scenario": "Preview denied before claim and across worker/tenant; expired token",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.07.01",
@@ -964,7 +1525,18 @@
         ],
         "scenario": "Incomplete profile and identity submission blocked with input retained",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.07.02",
@@ -977,7 +1549,18 @@
         ],
         "scenario": "Profile drafts persist through navigation, validation and retry",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.07.03",
@@ -1001,6 +1584,17 @@
             "verified_merge": ".autopilot/artifacts/20261006-pr29-merge-verified.json",
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1015,7 +1609,18 @@
         "scenario": "Initial rejection/changes requested corrected and resubmitted",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
-        "notes": "Additional-information revision/resubmission now passes. Initial rejection remains terminal by the existing policy and its browser branch still needs separate verification. Reviewer reason projection under investigation."
+        "notes": "Additional-information revision/resubmission now passes. Initial rejection remains terminal by the existing policy and its browser branch still needs separate verification. Reviewer reason projection under investigation.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.07.05",
@@ -1028,7 +1633,18 @@
         ],
         "scenario": "Verified correction accepted, rejected and changes requested",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.07.06",
@@ -1041,7 +1657,18 @@
         ],
         "scenario": "Permanent Worker ID and original evidence retained across corrections",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.07.07",
@@ -1054,7 +1681,18 @@
         ],
         "scenario": "Duplicate document/contact signals require independent resolution",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.08.01",
@@ -1066,7 +1704,18 @@
         ],
         "scenario": "Registration to pending dashboard and submitted scanned evidence",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.08.02",
@@ -1078,7 +1727,18 @@
         ],
         "scenario": "Pending tenant high-risk actions denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.08.03",
@@ -1090,7 +1750,18 @@
         ],
         "scenario": "Admin changes requested to corrected version to verification",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.08.04",
@@ -1102,7 +1773,18 @@
         ],
         "scenario": "Admin rejection remains pending and preserves original history",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.08.05",
@@ -1114,7 +1796,18 @@
         ],
         "scenario": "Approval activates tenant; stale/double decision denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.09.01",
@@ -1136,6 +1829,17 @@
             ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
           ],
           "scope": "Actual site/department create/edit/archive/restore with persisted names and revisions."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1158,6 +1862,17 @@
             ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
           ],
           "scope": "Actual staff/Worker live placements removed on archive, same Worker/code lineage and immutable prior scope retained; restore creates no assignments."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1180,6 +1895,17 @@
             ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
           ],
           "scope": "Actual forged archived site placement denied; native archived site/department assignments rejected."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1202,6 +1928,17 @@
             ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
           ],
           "scope": "Actual invited Company staff password/MFA activation and live owner-driven role/permission updates."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1224,6 +1961,17 @@
             ".autopilot/artifacts/20261005-company-staff-denial-ci-4b12999.json"
           ],
           "scope": "Actual suspension/reactivation/revocation of same authenticated Company staff session; explicit access-denied; exact persisted membership/session-bound security events and audit mirrors."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1246,6 +1994,17 @@
             ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
           ],
           "scope": "Actual admin cannot grant absent permission or owner role; denied requests persist no invitations; permitted viewer invitation succeeds."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1258,7 +2017,18 @@
         ],
         "scenario": "Single invitation accepted, resent, revoked, expired and replayed",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.10.02",
@@ -1270,7 +2040,18 @@
         ],
         "scenario": "Bulk CSV mixed valid/invalid rows and duplicate recovery",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.10.03",
@@ -1282,7 +2063,18 @@
         ],
         "scenario": "Company code expiry/usage limit/default site and department",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.10.04",
@@ -1294,7 +2086,18 @@
         ],
         "scenario": "Unlinked/wrong Worker cannot accept another person's invitation",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.10.05",
@@ -1306,7 +2109,18 @@
         ],
         "scenario": "Worker joins, moves placement, ends relationship and retains identity",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.10.06",
@@ -1318,7 +2132,18 @@
         ],
         "scenario": "Second company link preserves first employer's history and isolation",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.01",
@@ -1331,7 +2156,18 @@
         ],
         "scenario": "Qualification approval/rejection/changes requested to correction and re-review",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.02",
@@ -1344,7 +2180,18 @@
         ],
         "scenario": "Experience approval/rejection/changes requested to correction and re-review",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.03",
@@ -1357,7 +2204,18 @@
         ],
         "scenario": "Skill approval/rejection/changes requested to correction and re-review",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.04",
@@ -1370,7 +2228,18 @@
         ],
         "scenario": "Employment approval/rejection/changes requested to correction and re-review",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt"
+        "evidence": ".autopilot/artifacts/20261003-initial-identity-more-info-green.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.05",
@@ -1383,7 +2252,18 @@
         ],
         "scenario": "Multiple employment records; end exact employment without deleting history",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.06",
@@ -1396,7 +2276,18 @@
         ],
         "scenario": "Leaving-letter replacement and preview bound to exact employment",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.07",
@@ -1409,7 +2300,18 @@
         ],
         "scenario": "Supervisor assignment, signed observation, Worker acknowledgement and independent review",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.11.08",
@@ -1422,7 +2324,18 @@
         ],
         "scenario": "Inactive skill/history never falsely counted as current competency",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.12.01",
@@ -1435,7 +2348,18 @@
         ],
         "scenario": "Worker and credential lookup through safe opaque capabilities",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.12.02",
@@ -1448,7 +2372,18 @@
         ],
         "scenario": "Missing, malformed, tampered and expired identifiers fail neutrally",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.12.03",
@@ -1461,7 +2396,18 @@
         ],
         "scenario": "Private identity/answers/reviewer notes absent from public response",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.12.04",
@@ -1474,7 +2420,18 @@
         ],
         "scenario": "Concern form validation, evidence upload, staff intake and reasoned resolution",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M1.12.05",
@@ -1487,7 +2444,18 @@
         ],
         "scenario": "Abuse/rate limit and expired signed preview deny safely",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.01",
@@ -1502,7 +2470,18 @@
         ],
         "scenario": "Draft save/edit, add linked Workers, validate and submit",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.02",
@@ -1517,7 +2496,18 @@
         ],
         "scenario": "Invalid/unlinked/ineligible Worker and missing funding explained",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.03",
@@ -1532,7 +2522,18 @@
         ],
         "scenario": "Multi-worker cases created once with correct scope/site/deadline",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.04",
@@ -1547,7 +2548,18 @@
         ],
         "scenario": "Duplicate submission and competing credit reservations stay idempotent",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.05",
@@ -1562,7 +2574,18 @@
         ],
         "scenario": "Worker/company/mixed funding reaches assessment and final credential",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.06",
@@ -1577,7 +2600,18 @@
         ],
         "scenario": "Changes requested and rejection propagate to Company and Worker",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.07",
@@ -1592,7 +2626,18 @@
         ],
         "scenario": "Draft/submitted cancellation preserves cases, payments and decisions",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.01.08",
@@ -1607,7 +2652,18 @@
         ],
         "scenario": "Completed order readiness and reports derive from actual case outcomes",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.02.01",
@@ -1621,7 +2677,18 @@
         ],
         "scenario": "All submitted evidence kinds queue with correct identity/source file context",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.02.02",
@@ -1635,7 +2702,18 @@
         ],
         "scenario": "Claim/conflict/reassignment/finalization preserve source and history",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.02.03",
@@ -1649,7 +2727,18 @@
         ],
         "scenario": "Approve/reject/changes/unable/escalate return exact next action to Worker/Company",
         "status": "partially-verified",
-        "evidence": "Company case CHANGES_REQUESTED returns Evidence pending; Worker revised certificate; Company requeues exact case; Verifier approves and Worker reaches Assessment pending. Other outcomes pending."
+        "evidence": "Company case CHANGES_REQUESTED returns Evidence pending; Worker revised certificate; Company requeues exact case; Verifier approves and Worker reaches Assessment pending. Other outcomes pending.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.02.04",
@@ -1663,7 +2752,18 @@
         ],
         "scenario": "Correction resubmission supersedes stale open task but keeps terminal decisions",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.02.05",
@@ -1677,7 +2777,18 @@
         ],
         "scenario": "Second review/calibration/scope/workload govern sensitive task access",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.03.01",
@@ -1692,7 +2803,18 @@
         ],
         "scenario": "Create versioned framework and publish policy",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.03.02",
@@ -1707,7 +2829,18 @@
         ],
         "scenario": "Weaker company override denied; valid override snapshotted",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.03.03",
@@ -1722,7 +2855,18 @@
         ],
         "scenario": "Case policy remains pinned after later publication",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.03.04",
@@ -1737,7 +2881,18 @@
         ],
         "scenario": "Waiting period, attempt limits, jurisdiction and risk eligibility",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.03.05",
@@ -1761,6 +2916,17 @@
             ".autopilot/artifacts/20261005-assessment-timing-exact-04bc788.json",
             ".autopilot/artifacts/20261005-assessment-timing-ci-04bc788.json"
           ]
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -1776,7 +2942,18 @@
         ],
         "scenario": "Credential validity and renewal derive from pinned rule",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.04.01",
@@ -1789,7 +2966,18 @@
         ],
         "scenario": "MCQ and written authoring validate answers/rubrics",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.04.02",
@@ -1802,7 +2990,18 @@
         ],
         "scenario": "Draft/review/changes/approval/publication workflow",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.04.03",
@@ -1815,7 +3014,18 @@
         ],
         "scenario": "Published revision preserves exact old question and rubric",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.04.04",
@@ -1828,7 +3038,18 @@
         ],
         "scenario": "Pause/retire/archive excludes future forms, preserves prior attempts",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.04.05",
@@ -1841,7 +3062,18 @@
         ],
         "scenario": "Bulk import reports invalid rows without partial corruption",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.04.06",
@@ -1854,7 +3086,18 @@
         ],
         "scenario": "Capacity metrics update after publication/exposure",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.05.01",
@@ -1867,7 +3110,18 @@
         ],
         "scenario": "Unseen randomized blueprint-equivalent MCQ-only, written-only and combined forms",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.05.02",
@@ -1880,7 +3134,18 @@
         ],
         "scenario": "Permanent non-repetition across exit, device change, retake and company change",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.05.03",
@@ -1893,7 +3158,18 @@
         ],
         "scenario": "Exposure families and displayed unanswered questions excluded",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.05.04",
@@ -1906,7 +3182,18 @@
         ],
         "scenario": "Insufficient unseen capacity blocks cleanly without entitlement corruption",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.05.05",
@@ -1919,7 +3206,18 @@
         ],
         "scenario": "Option order and question versions pinned across refresh",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.05.06",
@@ -1932,7 +3230,18 @@
         ],
         "scenario": "Future questions, answer keys and rubrics absent from candidate payload",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.01",
@@ -1945,7 +3254,18 @@
         ],
         "scenario": "Verified/unverified qualification eligibility and unavailable reasons",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.02",
@@ -1958,7 +3278,18 @@
         ],
         "scenario": "Self sandbox payment to funded case, safe duplicate confirmation",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.03",
@@ -1971,7 +3302,18 @@
         ],
         "scenario": "Company request approved, rejected and retried/self-funded",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.04",
@@ -1984,7 +3326,18 @@
         ],
         "scenario": "Insufficient credits to checkout/capture to approved assessment",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.05",
@@ -1997,7 +3350,18 @@
         ],
         "scenario": "Link revoked before approval prevents funding and case creation",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.06",
@@ -2010,7 +3374,18 @@
         ],
         "scenario": "Waiting/attempt limits/current credential/reassessment affect availability",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.06.07",
@@ -2023,7 +3398,18 @@
         ],
         "scenario": "Fresh reapplication after terminal case preserves earlier records",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.07.01",
@@ -2036,7 +3422,18 @@
         ],
         "scenario": "Browser/device/media/consent prechecks deny or allow truthfully",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.07.02",
@@ -2049,7 +3446,18 @@
         ],
         "scenario": "Strict progression: required answer, confirmed save, no backtracking",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.07.03",
@@ -2062,7 +3470,18 @@
         ],
         "scenario": "Controlled Review: prior answer revisit, flag and versioned change",
         "status": "passed",
-        "evidence": "Controlled Review revises and flags both answer types, then submits, scores, interviews and issues credential; post-submit review denied."
+        "evidence": "Controlled Review revises and flags both answer types, then submits, scores, interviews and issues credential; post-submit review denied.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.07.04",
@@ -2075,7 +3494,18 @@
         ],
         "scenario": "Section Review: within-section navigation and final section lock",
         "status": "passed",
-        "evidence": "Section Review revises/flags before each lock; locked prior section review denied; completed through credential and appeal."
+        "evidence": "Section Review revises/flags before each lock; locked prior section review denied; completed through credential and appeal.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.07.05",
@@ -2106,6 +3536,17 @@
             "verified_merge": ".autopilot/artifacts/20261006-pr29-merge-verified.json",
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -2119,7 +3560,18 @@
         ],
         "scenario": "Technical issue and Emergency Exit never trap candidate",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.07.07",
@@ -2132,7 +3584,18 @@
         ],
         "scenario": "Successful MCQ/written completion reaches human review",
         "status": "passed",
-        "evidence": "Combined, MCQ-only and written-only assessments complete through required scoring, structured interview, Admin approval, credential, sharing and appeal; no seeded outcomes."
+        "evidence": "Combined, MCQ-only and written-only assessments complete through required scoring, structured interview, Admin approval, credential, sharing and appeal; no seeded outcomes.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.01",
@@ -2144,7 +3607,18 @@
         ],
         "scenario": "Ordinary save/exit/resume preserves committed answer",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.02",
@@ -2157,7 +3631,18 @@
         "scenario": "Offline MCQ and written buffer/reconnect persist latest permitted answer",
         "status": "passed",
         "evidence": ".autopilot/artifacts/20261004-fixed-head-resume-results-1ee9b04.json",
-        "notes": "MCQ and written offline reload/reconnect, delayed recovery input lock, retained submitted answer, independent/opener tabs and explicit conflict resolution verified in complete credential/appeal journeys at1ee9b04. Local browser/PGlite evidence; live production persistence remains separate."
+        "notes": "MCQ and written offline reload/reconnect, delayed recovery input lock, retained submitted answer, independent/opener tabs and explicit conflict resolution verified in complete credential/appeal journeys at1ee9b04. Local browser/PGlite evidence; live production persistence remains separate.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.03",
@@ -2178,6 +3663,17 @@
             ".autopilot/artifacts/20261005-assessment-timing-exact-04bc788.json",
             ".autopilot/artifacts/20261005-assessment-timing-ci-04bc788.json"
           ]
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -2190,7 +3686,18 @@
         ],
         "scenario": "Second device/session cannot mutate active bound attempt",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.05",
@@ -2202,7 +3709,18 @@
         ],
         "scenario": "Emergency Exit to recovery request to Verifier allow-resume",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-emergency-recovery.txt"
+        "evidence": ".autopilot/artifacts/20261003-emergency-recovery.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.06",
@@ -2214,7 +3732,18 @@
         ],
         "scenario": "Emergency Exit to approved replacement to unseen form and completed case",
         "status": "passed",
-        "evidence": ".autopilot/artifacts/20261003-replacement-journey.txt"
+        "evidence": ".autopilot/artifacts/20261003-replacement-journey.txt",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.07",
@@ -2227,7 +3756,18 @@
         "scenario": "Exposure and original attempt/answers retained after replacement",
         "status": "passed",
         "evidence": "Replacement preserves original form, exposed questions, committed answer, uncommitted written draft and authorization lineage; new form excludes all exposed questions.",
-        "notes": "Original form, committed answer, replacement lineage and nonrepeating questions asserted. Original uncommitted draft assertion still pending."
+        "notes": "Original form, committed answer, replacement lineage and nonrepeating questions asserted. Original uncommitted draft assertion still pending.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.08.08",
@@ -2239,7 +3779,18 @@
         ],
         "scenario": "Lost/repeated submit response returns same receipt",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.09.01",
@@ -2253,7 +3804,18 @@
         ],
         "scenario": "Green/Yellow/Red signals reach correct human queue without automatic guilt",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.09.02",
@@ -2267,7 +3829,18 @@
         ],
         "scenario": "Fullscreen/tab/paste/network/device events preserve authoritative timeline",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.09.03",
@@ -2281,7 +3854,18 @@
         ],
         "scenario": "Media/liveness failure is degraded evidence, never clean integrity",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.09.04",
@@ -2295,7 +3879,18 @@
         ],
         "scenario": "Human review pass/additional evidence/fail reaches case decision",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.09.05",
@@ -2309,7 +3904,18 @@
         ],
         "scenario": "Accommodation privacy and controls survive monitoring",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.01",
@@ -2323,7 +3929,18 @@
         ],
         "scenario": "Candidate answer/version/rubric displayed only to authorized reviewer",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.02",
@@ -2337,7 +3954,18 @@
         ],
         "scenario": "Criterion marks save, finalize and amendment preserve originals",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.03",
@@ -2351,7 +3979,18 @@
         ],
         "scenario": "PASS/FAIL/ADDITIONAL_REVIEW flows reach correct next owner",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.04",
@@ -2365,7 +4004,18 @@
         ],
         "scenario": "Claim race, stale source, conflict declaration and reassignment",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.05",
@@ -2379,7 +4029,18 @@
         ],
         "scenario": "Expired/failed calibration blocks live tasks",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.06",
@@ -2393,7 +4054,18 @@
         ],
         "scenario": "AI available/unavailable advisory never overrides human outcome",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.10.07",
@@ -2407,7 +4079,18 @@
         ],
         "scenario": "Unable-to-verify, escalation and draft notes remain reasoned and auditable",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.11.01",
@@ -2421,7 +4104,18 @@
         ],
         "scenario": "Scope/calibration/language/workload match and assignment",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.11.02",
@@ -2435,7 +4129,18 @@
         ],
         "scenario": "Worker availability selection and timezone-safe scheduling",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.11.03",
@@ -2449,7 +4154,18 @@
         ],
         "scenario": "Reschedule with reason and downstream notification/deep link",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.11.04",
@@ -2463,7 +4179,18 @@
         ],
         "scenario": "Assessor conflict to reassignment without disclosure",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.11.05",
@@ -2477,7 +4204,18 @@
         ],
         "scenario": "No-show/late/technical failure to review/reschedule",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.11.06",
@@ -2491,7 +4229,18 @@
         ],
         "scenario": "Outside-window/unready/unassigned Worker cannot join",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.01",
@@ -2504,7 +4253,18 @@
         ],
         "scenario": "Consent/readiness to claim/admit/start with live case context",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.02",
@@ -2517,7 +4277,18 @@
         ],
         "scenario": "Mandatory/playbook/follow-up questions retained with versions",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.03",
@@ -2530,7 +4301,18 @@
         ],
         "scenario": "Draft scores/notes survive tabs, refresh and media reconnect",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.04",
@@ -2543,7 +4325,18 @@
         ],
         "scenario": "Pause/resume/technical issue/reconnect/reschedule preserve evidence",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.05",
@@ -2556,7 +4349,18 @@
         ],
         "scenario": "Missing scorecard/recommendation cannot finalize",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.06",
@@ -2569,7 +4373,18 @@
         ],
         "scenario": "Each recommendation: Pass, Conditional, Evidence, Reassessment, Second Interview, Fail",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.07",
@@ -2582,7 +4397,18 @@
         ],
         "scenario": "Final recommendation locks, stops media and advances actual case",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.12.08",
@@ -2595,7 +4421,18 @@
         ],
         "scenario": "Recording policy/jurisdiction/withdrawal stays truthful and scoped",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.01",
@@ -2610,7 +4447,18 @@
         ],
         "scenario": "Approved and Conditional issuance require completed inputs",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.02",
@@ -2625,7 +4473,18 @@
         ],
         "scenario": "Pending Review, Additional Evidence and Interview Pending route next responsible actor",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.03",
@@ -2640,7 +4499,18 @@
         ],
         "scenario": "Rejected and Reassessment Required route permitted correction/appeal",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.04",
@@ -2655,7 +4525,18 @@
         ],
         "scenario": "Suspended, Revoked and Expired synchronize current downstream status",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.05",
@@ -2670,7 +4551,18 @@
         ],
         "scenario": "Privileged override: recent MFA, reason, evidence and preserved original",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.06",
@@ -2685,7 +4577,18 @@
         ],
         "scenario": "Repeated/unauthorized/stale decision or issuance denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M2.13.07",
@@ -2700,7 +4603,18 @@
         ],
         "scenario": "Company, Worker, public, share and certification display agree",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.01.01",
@@ -2713,7 +4627,18 @@
         ],
         "scenario": "Signed credential/QR/PDF issuance derives policy issue/expiry",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.01.02",
@@ -2726,7 +4651,18 @@
         ],
         "scenario": "Download/copy/view credential and live public status",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.01.03",
@@ -2739,7 +4675,18 @@
         ],
         "scenario": "Conditional/expired/suspended/revoked display across page/API/PDF",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.01.04",
@@ -2752,7 +4699,18 @@
         ],
         "scenario": "Duplicate issuance returns original; replacement retains old credential",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.01.05",
@@ -2765,7 +4723,18 @@
         ],
         "scenario": "Public credential contains permitted display facts and disclaimer",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.02.01",
@@ -2778,7 +4747,18 @@
         ],
         "scenario": "Verified qualification vs competency assessment clearly distinct",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.02.02",
@@ -2791,7 +4771,18 @@
         ],
         "scenario": "Restrictions/conditions/status/expiry and previous versions displayed",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.02.03",
@@ -2805,7 +4796,18 @@
         "scenario": "Suspension/revocation/reassessment retain original history",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-reassessment-permanent-working.txt",
-        "notes": "Reassessment preserves original valid/reassessment-required Living Record versions through a distinct new credential. Suspension/revocation variants remain unverified."
+        "notes": "Reassessment preserves original valid/reassessment-required Living Record versions through a distinct new credential. Suspension/revocation variants remain unverified.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.02.04",
@@ -2819,7 +4821,18 @@
         "scenario": "Renewal/replacement updates current credential without erasing former",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-reassessment-permanent-working.txt",
-        "notes": "Distinct new credential after complete reassessment, anonymous public status/PDF, original history and unseen-question separation pass. Renewal rules/current replacement association remain unverified."
+        "notes": "Distinct new credential after complete reassessment, anonymous public status/PDF, original history and unseen-question separation pass. Renewal rules/current replacement association remain unverified.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.02.05",
@@ -2832,7 +4845,18 @@
         ],
         "scenario": "Company changes never remove permanent identity/exposure",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.03.01",
@@ -2845,7 +4869,18 @@
         ],
         "scenario": "Each approved field selection matches actual recipient output",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.03.02",
@@ -2858,7 +4893,18 @@
         ],
         "scenario": "Scope never reveals unselected/private fields or other employers",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.03.03",
@@ -2871,7 +4917,18 @@
         ],
         "scenario": "Purpose/recipient/expiry preserved; access logged",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.03.04",
@@ -2894,7 +4951,18 @@
           "actual_ci": ".autopilot/artifacts/20261005-pr24-ci-exact-270c72d.json",
           "independent_accept": ".autopilot/artifacts/20261005-pr24-independent-accept-270c72d.json"
         },
-        "notes": "Accepted PR24 proves direct revocation uses server time, retains the persisted first outcome with millisecond precision, updates owner UI immediately and denies a previously working recipient; real natural expiry denies the same recipient twice with exact access outcomes while unrelated sharing stays valid. Ten exact local checks, applicable actual CI and independent ACCEPT passed; merged3e594b7. This bounded scenario closure does not certify all Masterplan workflows."
+        "notes": "Accepted PR24 proves direct revocation uses server time, retains the persisted first outcome with millisecond precision, updates owner UI immediately and denies a previously working recipient; real natural expiry denies the same recipient twice with exact access outcomes while unrelated sharing stays valid. Ten exact local checks, applicable actual CI and independent ACCEPT passed; merged3e594b7. This bounded scenario closure does not certify all Masterplan workflows.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.03.05",
@@ -2907,7 +4975,18 @@
         ],
         "scenario": "Tampered token and enumeration attempt fail neutrally",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.04.01",
@@ -2920,7 +4999,18 @@
         ],
         "scenario": "Search/filter/pagination show only authorized workforce",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.04.02",
@@ -2933,7 +5023,18 @@
         ],
         "scenario": "Placement/update/end relationship actions synchronize Worker and Company",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.04.03",
@@ -2946,7 +5047,18 @@
         ],
         "scenario": "Case funding/evidence/assessment/interview/decision feeds next exact action",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.04.04",
@@ -2959,7 +5071,18 @@
         ],
         "scenario": "Assign owner/snooze/acknowledge source deep links without false completion",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.04.05",
@@ -2972,7 +5095,18 @@
         ],
         "scenario": "Readiness/gaps/expiry totals reflect real live credential state",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.05.01",
@@ -3003,6 +5137,17 @@
             "verified_merge": ".autopilot/artifacts/20261006-pr29-merge-verified.json",
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -3016,7 +5161,18 @@
         ],
         "scenario": "Funding approval/rejection and concurrent overspend prevention",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.05.03",
@@ -3029,7 +5185,18 @@
         ],
         "scenario": "Invoice/receipt/usage scoped to right Company",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.05.04",
@@ -3060,6 +5227,17 @@
             "verified_merge": ".autopilot/artifacts/20261006-pr29-merge-verified.json",
             "scope": "Billing recovery/Company resend exhaustion/actual identity rejection and natural MCQ-written expiry; live delivery/separate-phase/PG contention remain unverified"
           }
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -3073,7 +5251,18 @@
         ],
         "scenario": "Subscription/enterprise invoice/payment unavailable states truthful",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.05.06",
@@ -3095,6 +5284,17 @@
             ".autopilot/artifacts/20261005-company-workflows-ci-08cd920.json"
           ],
           "scope": "Company sandbox bad signature and changed signed replay denied; exact callback replay idempotent; no unpaid or duplicate entitlement."
+        },
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
         }
       },
       {
@@ -3108,7 +5308,18 @@
         ],
         "scenario": "Worker identity/qualification/assessment/interview/credential/history reports",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.06.02",
@@ -3121,7 +5332,18 @@
         ],
         "scenario": "Company workforce/readiness/gaps/expiry/completion/failed/billing reports",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.06.03",
@@ -3134,7 +5356,18 @@
         ],
         "scenario": "Preview/PDF/CSV/print/download respect filters and permissions",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.06.04",
@@ -3147,7 +5380,18 @@
         ],
         "scenario": "Queue/process/complete/fail/retry produces genuine report file",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.06.05",
@@ -3160,7 +5404,18 @@
         ],
         "scenario": "Email/saved definition/schedule triggers authorized delivery",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.06.06",
@@ -3173,7 +5428,18 @@
         ],
         "scenario": "Cross-tenant/report/path/CSV-formula manipulation denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.07.01",
@@ -3187,7 +5453,18 @@
         ],
         "scenario": "Eligible/ineligible/duplicate appeal and evidence validation",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.07.02",
@@ -3201,7 +5478,18 @@
         ],
         "scenario": "Independent claim/review cannot be original conflicted decision maker",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.07.03",
@@ -3215,7 +5503,18 @@
         ],
         "scenario": "Accepted/rejected/further-evidence/further-interview reasoned outcomes",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.07.04",
@@ -3229,7 +5528,18 @@
         ],
         "scenario": "Appeal changes synchronize credential/Living Record and Company/public",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.07.05",
@@ -3243,7 +5553,18 @@
         ],
         "scenario": "Complete reassessment through new assessment/interview/replacement credential",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.07.06",
@@ -3257,7 +5578,18 @@
         ],
         "scenario": "Renewal/reverification respects rules, waiting and permanent exposure",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.08.01",
@@ -3269,7 +5601,18 @@
         ],
         "scenario": "Worker/company/staff search and scoped management",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.08.02",
@@ -3281,7 +5624,18 @@
         ],
         "scenario": "Question/policy/catalogue/calibration administration persists",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.08.03",
@@ -3293,7 +5647,18 @@
         ],
         "scenario": "Assignments/decisions/appeals/billing/notifications operations",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.08.04",
@@ -3305,7 +5670,18 @@
         ],
         "scenario": "Case Replay reconstructs exact versions without changing source",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.08.05",
@@ -3317,7 +5693,18 @@
         ],
         "scenario": "Integrations/health/queue retry cannot falsely mark live delivery",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.08.06",
@@ -3329,7 +5716,18 @@
         ],
         "scenario": "Root invitation/permissions/MFA/recovery remain separate from routine case work",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.01",
@@ -3359,7 +5757,18 @@
           },
           "pr26_accepted": ".autopilot/artifacts/20261006-pr26-independent-accept-ecf2ccf.json"
         },
-        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion. PR25 independently accepted/merged: access and export processing/completion prepare owner-authenticated current-data JSON downloads including owned provided profile sections, assessment answers/revisions and explicit record metadata. Foreign/public/staff/open requests denied; required history failure rolls status/marker back. Other request operations and legal completeness remain open. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified."
+        "notes": "All eight request types reach staff intake and reasoned rejection with persistent review history. PR23 accepted owned share-link fulfilment: actual Worker selection, Admin processing/completion, recipient denial and unrelated sharing preserved. Native tests prove ownership, server-derived purpose, required review rollback/retry, repeat denial and legacy future metadata preservation. Other privacy fulfilment kinds remain unimplemented or unverified; no full-row promotion. PR25 independently accepted/merged: access and export processing/completion prepare owner-authenticated current-data JSON downloads including owned provided profile sections, assessment answers/revisions and explicit record metadata. Foreign/public/staff/open requests denied; required history failure rolls status/marker back. Other request operations and legal completeness remain open. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.02",
@@ -3375,7 +5784,18 @@
         "scenario": "Restriction/withdrawal/revocation has operative future-sharing effect",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified."
+        "notes": "Scoped-link consent withdrawal atomically revokes recipient access, backfills prior owned withdrawals and preserves other links. Other consent categories and restriction effects remain unverified. PR23 accepted owned share-link request fulfilment with actual recipient denial and unrelated sharing retained. PR24 accepted direct server-dated revocation, legacy metadata preservation, exact first outcome and immediate owner UI with actual browser and CI evidence; restriction and other consent effects remain open. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.03",
@@ -3391,7 +5811,18 @@
         "scenario": "Accommodation approved/rejected with reason and Worker outcome",
         "status": "passed",
         "evidence": ".autopilot/artifacts/20261004-decline-review-revision-working.txt",
-        "notes": "Actual approval and decline browser reasons return to Worker; corrected downstream assertions prove declined ID has null case/adjustment and zero overlays, approved case retains exactly one overlay. Actual adjusted delivery remains separately unverified in M3.09.04."
+        "notes": "Actual approval and decline browser reasons return to Worker; corrected downstream assertions prove declined ID has null case/adjustment and zero overlays, approved case retains exactly one overlay. Actual adjusted delivery remains separately unverified in M3.09.04.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.04",
@@ -3406,7 +5837,18 @@
         ],
         "scenario": "Approved adjustment reaches actual assessment/interview delivery",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.05",
@@ -3422,7 +5864,18 @@
         "scenario": "Consent grant/withdraw history remains versioned and need-to-know",
         "status": "partially-verified",
         "evidence": ".autopilot/artifacts/20261004-consent-privacy-9c57932.txt",
-        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified."
+        "notes": "Scoped-link grant/withdraw append-only history, owned-target enforcement, Worker denied Admin review route, and rollback passed. Full need-to-know matrix across other roles/categories remains unverified. PR26 accepted scoped-consent request proof: Worker selects owned optional sharing consent, Admin processes/completes a real withdrawal, Worker sees version2 WITHDRAWN, prior recipient denied and unrelated consent/link preserved. Native required-history failure rolls back consent version/revocation/request status and retry succeeds; server-derived purposes and foreign/required-consent denial proven. PR26 independently accepted and merged260e6f0 after15 exact cohorts and actual allCI; other categories and restriction/deletion/correction/retention operations remain unverified.",
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.06",
@@ -3437,7 +5890,18 @@
         ],
         "scenario": "Keyboard, responsive layouts, inline errors and screen-reader labels",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.09.07",
@@ -3452,7 +5916,18 @@
         ],
         "scenario": "Retention/holds preserve lawful history and appeals",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.10.01",
@@ -3465,7 +5940,18 @@
         ],
         "scenario": "Email/SMS sandbox/outage/retry and live delivery accurately distinguished",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.10.02",
@@ -3478,7 +5964,18 @@
         ],
         "scenario": "Payment forgery/failure never creates paid entitlement",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.10.03",
@@ -3491,7 +5988,18 @@
         ],
         "scenario": "Built-in media handshake/reconnect and optional TURN/provider failure",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.10.04",
@@ -3504,7 +6012,18 @@
         ],
         "scenario": "Liveness/scan/storage failure remains safely pending",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.10.05",
@@ -3517,7 +6036,18 @@
         ],
         "scenario": "Provider health/credentials/webhook/circuit-breaker state accurate",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.11.01",
@@ -3528,7 +6058,18 @@
         ],
         "scenario": "Concurrent registration/save/claim/submit/payment/issuance isolation",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.11.02",
@@ -3539,7 +6080,18 @@
         ],
         "scenario": "Cross-worker/tenant/role/direct-endpoint adversarial journeys",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.11.03",
@@ -3550,7 +6102,18 @@
         ],
         "scenario": "Malicious file/input/XSS/CSRF/signed-token abuse denied",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.11.04",
@@ -3561,7 +6124,18 @@
         ],
         "scenario": "Authorized physical database/object restore and incident recovery",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.11.05",
@@ -3572,7 +6146,18 @@
         ],
         "scenario": "Baseline latency/load does not lose active answers or handoffs",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.12.01",
@@ -3584,7 +6169,18 @@
         ],
         "scenario": "Candidate build/start/migrations/health correspond to exact SHA",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.12.02",
@@ -3596,7 +6192,18 @@
         ],
         "scenario": "Monitoring/alerts/support/rollback runbooks match executable operations",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.12.03",
@@ -3608,7 +6215,18 @@
         ],
         "scenario": "Production provider disabled/sandbox or genuinely activated",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       },
       {
         "id": "M3.12.04",
@@ -3620,7 +6238,18 @@
         ],
         "scenario": "Backup/incident/rollback preserves active consumer cases",
         "status": "not-yet-verified-in-expanded-run",
-        "evidence": null
+        "evidence": null,
+        "software_verification": {
+          "status": "UNREVIEWED",
+          "cases": {},
+          "evidence": [],
+          "case_plan": {
+            "status": "NEEDS_CASE_DESIGN",
+            "variants": [],
+            "production_deferred": [],
+            "review": null
+          }
+        }
       }
     ],
     "continued_at": "2026-10-06",
@@ -3751,6 +6380,411 @@
         "scope": "Actual integrated public contact/demo -> private Admin/Root queue, immutable downstream records, existing credential concern, responsive public navigation; working source, committed exact CI acceptance pending"
       }
     ],
-    "updated_at": "2026-10-06T11:58:59.131097+00:00"
+    "updated_at": "2026-10-06T11:58:59.131097+00:00",
+    "software_verification_phase": {
+      "id": "SOFTWARE-VERIFY-20261105",
+      "requested_at": "2026-11-05T14:27:40.718241+00:00",
+      "baseline_source_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
+      "owner_scope": "Complete existing software features and connected workflows before adding finalized production services.",
+      "production_activation": "DEFERRED_BY_OWNER",
+      "deferred_requirements": [
+        "Live provider account activation and external delivery certification",
+        "Physical camera/microphone/screen and restrictive-network certification",
+        "Production launch and final owner acceptance"
+      ],
+      "required_cases": [
+        "positive",
+        "invalid_input",
+        "permission_isolation",
+        "retry_recovery",
+        "persistence",
+        "downstream_outcome"
+      ],
+      "additional_acceptance": [
+        "Actual browser actions for UI behavior; empty/loading/error states, keyboard and responsive checks where applicable",
+        "Persisted database/file/outbox/audit outcome assertions and recipient views where authorized",
+        "Explicit permission rejection for unauthorized recipients; preserve private appeal grounds",
+        "Server and database logs checked; HTTP200 alone is insufficient",
+        "Actual PostgreSQL concurrency, restore and performance boundaries for operational certification"
+      ],
+      "evidence_policy": "SOFTWARE_VERIFIED is phase-only. Each required case needs PASS with source SHA, immutable artifact digest and exact assertion, or independently reviewed NOT_APPLICABLE with a specific reason. Historical statuses and aggregate CI never auto-promote a row. Product changes invalidate affected evidence. Metadata-only equivalence requires an explicit product-tree proof.",
+      "completion_rule": "All 218 rows have all applicable software cases independently reviewed; no software failures or unknown critical handoffs; controlled staging security/load/restore criteria met. Deferred production certification remains open.",
+      "execution_rule": "Continue through dependency-ready bricks automatically; fix reproduced defects before advancing affected scope; one resource-heavy workstation job at a time.",
+      "batches": [
+        {
+          "id": "B00",
+          "title": "Environment, migrations and verification baseline",
+          "bricks": [
+            "M1.01"
+          ],
+          "scenario_ids": [
+            "M1.01.01",
+            "M1.01.02",
+            "M1.01.03",
+            "M1.01.04"
+          ],
+          "scenario_count": 4,
+          "status": "IN_PROGRESS",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B01",
+          "title": "Appeals, credentials, Living Record and authorized Company/public propagation",
+          "bricks": [
+            "M3.01",
+            "M3.02",
+            "M3.03",
+            "M3.07"
+          ],
+          "scenario_ids": [
+            "M3.01.01",
+            "M3.01.02",
+            "M3.01.03",
+            "M3.01.04",
+            "M3.01.05",
+            "M3.02.01",
+            "M3.02.02",
+            "M3.02.03",
+            "M3.02.04",
+            "M3.02.05",
+            "M3.03.01",
+            "M3.03.02",
+            "M3.03.03",
+            "M3.03.04",
+            "M3.03.05",
+            "M3.07.01",
+            "M3.07.02",
+            "M3.07.03",
+            "M3.07.04",
+            "M3.07.05",
+            "M3.07.06"
+          ],
+          "scenario_count": 21,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B02",
+          "title": "Global UI, authentication, authorization, audit and notifications",
+          "bricks": [
+            "M1.02",
+            "M1.03",
+            "M1.04",
+            "M1.05"
+          ],
+          "scenario_ids": [
+            "M1.02.01",
+            "M1.02.02",
+            "M1.02.03",
+            "M1.02.04",
+            "M1.02.05",
+            "M1.03.01",
+            "M1.03.02",
+            "M1.03.03",
+            "M1.03.04",
+            "M1.03.05",
+            "M1.03.06",
+            "M1.03.07",
+            "M1.03.08",
+            "M1.04.01",
+            "M1.04.02",
+            "M1.04.03",
+            "M1.04.04",
+            "M1.05.01",
+            "M1.05.02",
+            "M1.05.03",
+            "M1.05.04"
+          ],
+          "scenario_count": 21,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B03",
+          "title": "Worker uploads, identity, evidence, observations and public verification",
+          "bricks": [
+            "M1.06",
+            "M1.07",
+            "M1.11",
+            "M1.12"
+          ],
+          "scenario_ids": [
+            "M1.06.01",
+            "M1.06.02",
+            "M1.06.03",
+            "M1.06.04",
+            "M1.06.05",
+            "M1.07.01",
+            "M1.07.02",
+            "M1.07.03",
+            "M1.07.04",
+            "M1.07.05",
+            "M1.07.06",
+            "M1.07.07",
+            "M1.11.01",
+            "M1.11.02",
+            "M1.11.03",
+            "M1.11.04",
+            "M1.11.05",
+            "M1.11.06",
+            "M1.11.07",
+            "M1.11.08",
+            "M1.12.01",
+            "M1.12.02",
+            "M1.12.03",
+            "M1.12.04",
+            "M1.12.05"
+          ],
+          "scenario_count": 25,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B04",
+          "title": "Company verification, organization, Team, links and assurance orders",
+          "bricks": [
+            "M1.08",
+            "M1.09",
+            "M1.10",
+            "M2.01"
+          ],
+          "scenario_ids": [
+            "M1.08.01",
+            "M1.08.02",
+            "M1.08.03",
+            "M1.08.04",
+            "M1.08.05",
+            "M1.09.01",
+            "M1.09.02",
+            "M1.09.03",
+            "M1.09.04",
+            "M1.09.05",
+            "M1.09.06",
+            "M1.10.01",
+            "M1.10.02",
+            "M1.10.03",
+            "M1.10.04",
+            "M1.10.05",
+            "M1.10.06",
+            "M2.01.01",
+            "M2.01.02",
+            "M2.01.03",
+            "M2.01.04",
+            "M2.01.05",
+            "M2.01.06",
+            "M2.01.07",
+            "M2.01.08"
+          ],
+          "scenario_count": 25,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B05",
+          "title": "Framework policy, question bank, exposure, eligibility and funding",
+          "bricks": [
+            "M2.03",
+            "M2.04",
+            "M2.05",
+            "M2.06"
+          ],
+          "scenario_ids": [
+            "M2.03.01",
+            "M2.03.02",
+            "M2.03.03",
+            "M2.03.04",
+            "M2.03.05",
+            "M2.03.06",
+            "M2.04.01",
+            "M2.04.02",
+            "M2.04.03",
+            "M2.04.04",
+            "M2.04.05",
+            "M2.04.06",
+            "M2.05.01",
+            "M2.05.02",
+            "M2.05.03",
+            "M2.05.04",
+            "M2.05.05",
+            "M2.05.06",
+            "M2.06.01",
+            "M2.06.02",
+            "M2.06.03",
+            "M2.06.04",
+            "M2.06.05",
+            "M2.06.06",
+            "M2.06.07"
+          ],
+          "scenario_count": 25,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B06",
+          "title": "Evidence handoffs, assessment delivery, recovery, integrity and scoring",
+          "bricks": [
+            "M2.02",
+            "M2.07",
+            "M2.08",
+            "M2.09",
+            "M2.10"
+          ],
+          "scenario_ids": [
+            "M2.02.01",
+            "M2.02.02",
+            "M2.02.03",
+            "M2.02.04",
+            "M2.02.05",
+            "M2.07.01",
+            "M2.07.02",
+            "M2.07.03",
+            "M2.07.04",
+            "M2.07.05",
+            "M2.07.06",
+            "M2.07.07",
+            "M2.08.01",
+            "M2.08.02",
+            "M2.08.03",
+            "M2.08.04",
+            "M2.08.05",
+            "M2.08.06",
+            "M2.08.07",
+            "M2.08.08",
+            "M2.09.01",
+            "M2.09.02",
+            "M2.09.03",
+            "M2.09.04",
+            "M2.09.05",
+            "M2.10.01",
+            "M2.10.02",
+            "M2.10.03",
+            "M2.10.04",
+            "M2.10.05",
+            "M2.10.06",
+            "M2.10.07"
+          ],
+          "scenario_count": 32,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B07",
+          "title": "Interview scheduling, console, decisions and issuance handoff",
+          "bricks": [
+            "M2.11",
+            "M2.12",
+            "M2.13"
+          ],
+          "scenario_ids": [
+            "M2.11.01",
+            "M2.11.02",
+            "M2.11.03",
+            "M2.11.04",
+            "M2.11.05",
+            "M2.11.06",
+            "M2.12.01",
+            "M2.12.02",
+            "M2.12.03",
+            "M2.12.04",
+            "M2.12.05",
+            "M2.12.06",
+            "M2.12.07",
+            "M2.12.08",
+            "M2.13.01",
+            "M2.13.02",
+            "M2.13.03",
+            "M2.13.04",
+            "M2.13.05",
+            "M2.13.06",
+            "M2.13.07"
+          ],
+          "scenario_count": 21,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B08",
+          "title": "Company Action Centre, billing, reports, administration, privacy and accessibility",
+          "bricks": [
+            "M3.04",
+            "M3.05",
+            "M3.06",
+            "M3.08",
+            "M3.09"
+          ],
+          "scenario_ids": [
+            "M3.04.01",
+            "M3.04.02",
+            "M3.04.03",
+            "M3.04.04",
+            "M3.04.05",
+            "M3.05.01",
+            "M3.05.02",
+            "M3.05.03",
+            "M3.05.04",
+            "M3.05.05",
+            "M3.05.06",
+            "M3.06.01",
+            "M3.06.02",
+            "M3.06.03",
+            "M3.06.04",
+            "M3.06.05",
+            "M3.06.06",
+            "M3.08.01",
+            "M3.08.02",
+            "M3.08.03",
+            "M3.08.04",
+            "M3.08.05",
+            "M3.08.06",
+            "M3.09.01",
+            "M3.09.02",
+            "M3.09.03",
+            "M3.09.04",
+            "M3.09.05",
+            "M3.09.06",
+            "M3.09.07"
+          ],
+          "scenario_count": 30,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        },
+        {
+          "id": "B09",
+          "title": "Adapter failure truthfulness, adversarial security, load and operational recovery",
+          "bricks": [
+            "M3.10",
+            "M3.11",
+            "M3.12"
+          ],
+          "scenario_ids": [
+            "M3.10.01",
+            "M3.10.02",
+            "M3.10.03",
+            "M3.10.04",
+            "M3.10.05",
+            "M3.11.01",
+            "M3.11.02",
+            "M3.11.03",
+            "M3.11.04",
+            "M3.11.05",
+            "M3.12.01",
+            "M3.12.02",
+            "M3.12.03",
+            "M3.12.04"
+          ],
+          "scenario_count": 14,
+          "status": "PLANNED",
+          "subtask_unit": "One frozen Masterplan brick, then one uncovered acceptance case at a time"
+        }
+      ],
+      "case_design_gate": "Before opening each brick, enumerate its scenario-specific actions, expected outcomes, runtimes and authorized recipients; obtain independent acceptance. Verify every planned variant and independently approve every exception before SOFTWARE_VERIFIED.",
+      "review": {
+        "disposition": "ACCEPTED",
+        "reviewer": "/root/review_software_plan",
+        "builder": "/root",
+        "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
+        "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
+      }
+    }
   }
 }

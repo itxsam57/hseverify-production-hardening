@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "task_id": "WORKFLOW-001",
-  "stage": "INTEGRATING_AND_VERIFYING",
+  "task_id": "SOFTWARE-VERIFY-20261105",
+  "stage": "TESTING_B00",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
-  "branch": "qa/masterplan-release-20261016",
-  "worktree": "/home/ubuntu/work/hseverify-masterplan-final-20261014",
-  "last_verified_sha": "e7f4a1cb03e4bad769b5fc4b15556228bc813925",
+  "branch": "qa/masterplan-release-squash-20261102",
+  "worktree": "/home/ubuntu/work/hseverify-release-squash",
+  "last_verified_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
   "canonical_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "requirements": [
-    "M1.03.02",
-    "M1.03.04",
-    "M1.05.04",
-    "M3.12.01"
+    "M1.01.01",
+    "M1.01.02",
+    "M1.01.03",
+    "M1.01.04"
   ],
-  "last_verified_action": "Exact83connectedCI failed: emailvisibility assertedexit0 whileexpectingretry_wait. Unchangedfocusedred reproduced; safediagnostic3success/exit0 thenretry_wait/exit1. One-line testexitexpectationfixed, workerunchanged. Fullfile2browser testsPASS40.34s includingconfiguredcontrolledacceptance/privateURLs; lint/native and independentreviewPASS. CLIassertioninventoryfoundnoadditionalconflicts. PriorfullABORTED ownedtreegone beforeedit.",
+  "last_verified_action": "Current source and 20 hosted checks reconciled; 218 IDs assigned to 10 batches/37 bricks; plan and B00 concrete case plans independently accepted; 7 promotion-contract tests passed. Software cases have not yet been certified.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -69,21 +69,17 @@
     ".autopilot/artifacts/20261016-verifier-search-native-v2.json",
     ".autopilot/artifacts/20261016-final-dirty-batch-independent-review.json"
   ],
-  "next_action": "Normalguarded commit/push minimalemailtestcontractfix; freshrawcleanSHA full4+14CI, ownrestore/security/proofbindings then actualpublicpreview onlyafterPASS.",
+  "next_action": "Run B00 environment, migration/checksum and populated restore tests; inspect actual assertions, classify per-variant coverage and fill the next missing test. Then advance to B01 M3.07.04.",
   "revision_attempt": 0,
-  "blockers": [
-    "Fresh cleanSHA full4/PG/14CI/security/exactbuild preserveddata preview and ownerverification pending"
-  ],
+  "blockers": [],
   "unknowns": [
-    "Current exact-SHA full37brick/218scenario evidence reconciliation",
-    "Fresh expected14 hostedCI checks",
-    "Data-preserving bound-build public preview and owner verification",
-    "Live provider activation/physical device network and production operational acceptance deferred"
+    "Per-scenario software evidence still requires execution and independent review",
+    "Live-provider/hardware certification deferred by owner"
   ],
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "TESTING",
-  "updated_at": "2026-10-17T02:07:27.888148+00:00",
+  "updated_at": "2026-11-05T14:41:45.826853+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -111,5 +107,13 @@
   "owner_required": false,
   "current_candidate_base_sha": "1a5f6beb66ef9f6bf911d90e1e26d99fe3738097",
   "whole_project_complete": false,
-  "current_candidate_base_sha_qualification": "Committed base only; prepared source is dirty and not release-certified"
+  "current_candidate_base_sha_qualification": "Committed base only; prepared source is dirty and not release-certified",
+  "previous_checkpoint": {
+    "task_id": "WORKFLOW-001",
+    "stage": "INTEGRATING_AND_VERIFYING",
+    "branch": "qa/masterplan-release-20261016",
+    "worktree": "/home/ubuntu/work/hseverify-masterplan-final-20261014",
+    "last_verified_sha": "e7f4a1cb03e4bad769b5fc4b15556228bc813925",
+    "next_action": "Normalguarded commit/push minimalemailtestcontractfix; freshrawcleanSHA full4+14CI, ownrestore/security/proofbindings then actualpublicpreview onlyafterPASS."
+  }
 }

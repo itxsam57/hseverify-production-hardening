@@ -73,7 +73,7 @@
     "test:secure-scan-handler-runtime": "node scripts/run-secure-scan-handler-runtime-tests.mjs",
     "test:email-delivery-runtime": "node scripts/run-email-delivery-runtime-tests.mjs",
     "test:m1-05-final": "node --test tests/platform/m1-05-final-acceptance.test.mjs tests/platform/m1-05-final-concurrency.test.mjs tests/platform/m1-05-final-role-matrix.test.mjs",
-    "test:platform": "node --test tests/platform/platform-foundation.test.mjs",
+    "test:platform": "node --test tests/platform/platform-foundation.test.mjs tests/platform/software-verification-ledger-contract.test.mjs",
     "test:auth-platform": "node --test tests/platform/authentication-foundation.test.mjs",
     "test:authorization-platform": "node --test tests/platform/authorization-tenant-foundation.test.mjs tests/platform/authorization-policy-ceiling.test.mjs tests/platform/authorization-membership-context.test.mjs tests/platform/authorization-session-context.test.mjs",
     "test:tenant-scope": "node --test tests/platform/authorization-tenant-scope-repository.test.mjs tests/platform/authorization-tenant-scope-concurrency.test.mjs",

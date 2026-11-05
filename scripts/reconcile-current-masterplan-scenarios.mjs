@@ -4,7 +4,11 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { validateSoftwareVerificationPhase } from "./lib/software-verification-ledger.mjs";
+
 const source = JSON.parse(readFileSync(resolve("docs/qa/2026-10-02-evidence.json"), "utf8"));
+const softwarePhase = source.expanded_scenario_verification.software_verification_phase
+  ? validateSoftwareVerificationPhase(source.expanded_scenario_verification) : null;
 const original = source.expanded_scenario_verification.scenarios;
 assert.equal(original.length, 218, "The frozen expanded scenario matrix must contain 218 entries");
 assert.equal(new Set(original.map(row => row.id)).size, 218, "Scenario identities must be unique");
@@ -1194,6 +1198,7 @@ const records = original.map(row => {
 });
 const result = {
   report_type: "A28_CONSERVATIVE_NON_RELEASE_SCENARIO_RECONCILIATION",
+  software_verification_phase: softwarePhase,
   generated_at: new Date().toISOString(),
   current_head_sha: currentSha,
   historical_source_sha: source.expanded_scenario_verification.base_sha,
@@ -1228,6 +1233,7 @@ mkdirSync(resolve(".autopilot/artifacts"), { recursive: true });
 writeFileSync(path, JSON.stringify(result, null, 2) + "\n");
 console.log(JSON.stringify({
   current_head_sha: currentSha, original_scenarios: records.length, fully_certified: 0,
+  software_verification_phase: softwarePhase,
   scoped_local_evidence: result.with_scoped_recent_local_evidence,
   scope_evidence_from_exact_head: result.scoped_local_evidence_from_exact_head,
   scope_evidence_from_prior_head: result.scoped_local_evidence_from_prior_head,
