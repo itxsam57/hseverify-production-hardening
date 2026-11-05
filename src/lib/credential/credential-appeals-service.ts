@@ -102,7 +102,7 @@ export class CredentialAppealsService {
       if (status === "submitted" || status === "withdrawn") {
         throw new Error("Appeal review status is invalid.");
       }
-      await repository.assertIndependentReviewer(current, reviewerId);
+      await repository.assertIndependentReviewer(current, reviewerId, { lockSourceForMutation: true });
       const reviewed = reviewCredentialAppeal(current, {
         status,
         reviewerId,
@@ -130,7 +130,7 @@ export class CredentialAppealsService {
       const current = await appeals.find(appeal.appealId);
       if (!current) throw new Error("Appeal not found.");
       if (current.version !== appeal.version) throw new Error("Appeal update conflict.");
-      await appeals.assertIndependentReviewer(current, input.reviewerId);
+      await appeals.assertIndependentReviewer(current, input.reviewerId, { lockSourceForMutation: true });
 
       const reviewedAt = input.reviewedAt ?? new Date().toISOString();
       const updated = reviewCredentialAppeal(current, {

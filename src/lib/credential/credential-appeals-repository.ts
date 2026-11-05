@@ -61,7 +61,11 @@ export class CredentialAppealsRepository {
 
   // Account IDs and permanent Worker IDs are different namespaces. Resolve both
   // ownership and decision provenance at the persisted boundary before review.
-  async assertIndependentReviewer(appeal: CredentialAppeal, reviewerId: string): Promise<void> {
+  async assertIndependentReviewer(
+    appeal: CredentialAppeal,
+    reviewerId: string,
+    options: Readonly<{ lockSourceForMutation?: boolean }> = {}
+  ): Promise<void> {
     const client = await this.clientPromise;
     if (!reviewerId || reviewerId !== reviewerId.trim()) {
       throw new CredentialAppealReviewAuthorizationError("An authenticated independent reviewer is required.");
@@ -84,7 +88,8 @@ export class CredentialAppealsRepository {
            ON credential.credential_id=cases.credential_reference
           AND credential.worker_id=cases.permanent_worker_id
         WHERE cases.credential_reference=$1 AND credential.worker_id=$2
-        FOR SHARE OF cases,credential`,
+        FOR ${options.lockSourceForMutation ? "UPDATE" : "SHARE"} OF cases
+        FOR SHARE OF credential`,
       [appeal.credentialId, appeal.workerId]
     );
     if (source.rows.length !== 1) throw new CredentialAppealReviewAuthorizationError("Independent review requires valid credential ownership provenance.");

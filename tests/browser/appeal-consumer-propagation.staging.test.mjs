@@ -9,6 +9,8 @@ import {withOwnedStagingServer} from "../helpers/owned-staging-server.mjs";
 
 test("protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart",{timeout:180000},async()=>{
  assert.ok(process.env.HSE_SOFTWARE_STAGE_CONFIG,"Explicit isolated staging config is required");
+ const outcomeAction=process.env.HSE_STAGE_APPEAL_ACTION??"reassessment";
+ assert.ok(["reassessment","suspend","revoke"].includes(outcomeAction));
  const config=JSON.parse(await readFile(process.env.HSE_SOFTWARE_STAGE_CONFIG,"utf8"));
  assert.equal(config.syntheticOnly,true);
  assert.equal(new URL(config.url).protocol,"https:");
@@ -45,7 +47,7 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await withOwnedStagingServer(config,async({restart})=>{
    const anonymous=await fetch(config.url+"/company/login");
    assert.equal(anonymous.status,401,"Perimeter must deny missing Basic authentication");
-   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,httpCredentials:{username:config.user,password:config.password},restart});
+   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,httpCredentials:{username:config.user,password:config.password},restart});
   });
   assert.deepEqual((await db.query("SELECT * FROM assurance_cases WHERE case_id=$1",[fixture.caseId])).rows[0],originalCase,"Appeal and restart retain original decision history");
   const events=(await db.query("SELECT status FROM credential_appeal_events WHERE appeal_id IN (SELECT appeal_id FROM credential_appeals WHERE credential_id=$1) ORDER BY version",[credentialId])).rows;
@@ -54,6 +56,6 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
    const output=(await readFile(path)).subarray(offsets[path]).toString("utf8");
    assert.doesNotMatch(output,/deadlock detected|⨯|unhandled rejection|uncaught exception|(?:^|\n)(?:Error|TypeError|ReferenceError|SyntaxError):|\b(?:ERROR|FATAL|PANIC):/i,"Unexpected stage application/database error");
   }
-  console.log("PROTECTED_POSTGRES_APPEAL_PASS production build; Worker/Admin/Company/public; existing capability and sessions survive restart");
+  console.log("PROTECTED_POSTGRES_APPEAL_PASS",outcomeAction,"production build; Worker/Admin/Company/public; existing capability and sessions survive restart");
  }finally{await db.close();}
 });

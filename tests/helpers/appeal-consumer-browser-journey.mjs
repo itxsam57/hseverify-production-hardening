@@ -35,7 +35,9 @@ async function login(page, baseUrl, credential, role) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,evidenceRecordId=null,httpCredentials,restart,output=()=>""}){
+export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,evidenceRecordId=null,httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
+          assert.ok(["reassessment","suspend","revoke"].includes(outcomeAction));
+          const currentStatus={reassessment:"reassessment_required",suspend:"suspended",revoke:"revoked"}[outcomeAction];
           const browser = await chromium.launch({ headless: true });
           const workerContext = await browser.newContext({ httpCredentials, viewport: { width: 1440, height: 1000 } });
           const adminContext = await browser.newContext({ httpCredentials, viewport: { width: 1440, height: 1000 } });
@@ -105,39 +107,39 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             await review.getByText(/Status: under review/i).waitFor();
 
             await review.getByLabel("Review status").selectOption("accepted");
-            await review.getByLabel("Accepted-outcome action").selectOption("reassessment");
+            await review.getByLabel("Accepted-outcome action").selectOption(outcomeAction);
             await review.getByLabel("Reasoned review outcome").fill(
-              "Appeal accepted. The competency requires reassessment before the Living Record can return to valid."
+              outcomeAction==="reassessment" ? "Appeal accepted. The competency requires reassessment before the Living Record can return to valid." : "Appeal accepted. PRIVATE_REVIEW_STAGE_"+outcomeAction+" must remain private."
             );
             await review.getByRole("button", { name: "Record appeal review" }).click();
             await admin.waitForURL(/\/admin\/appeals\?status=updated/, { timeout: 20_000 });
             review = admin.locator("article").filter({ hasText: credentialId }).first();
             await review.getByText(/Status: accepted/i).waitFor();
-            await review.getByText(/Outcome action: reassessment/i).waitFor();
+            await review.getByText(new RegExp("Outcome action: "+outcomeAction,"i")).waitFor();
 
             await worker.goto(`${baseUrl}/worker/appeals`, { waitUntil: "domcontentloaded" });
             const outcome = worker.locator("article").filter({ hasText: credentialId }).first();
             await outcome.getByText(/Status: accepted/i).waitFor();
             await outcome.getByText(/Review outcome: Appeal accepted/i).waitFor();
-            await outcome.getByText(/Credential\/Living Record action: reassessment/i).waitFor();
+            await outcome.getByText(new RegExp("Credential/Living Record action: "+outcomeAction,"i")).waitFor();
 
             await worker.goto(`${baseUrl}/worker/passport`, { waitUntil: "domcontentloaded" });
             await worker.getByRole("heading", { name: "Living Record", exact: true }).waitFor();
             await worker.getByText("HSE Operational Assurance", { exact: true }).first().waitFor();
-            await worker.getByText(/reassessment required · no expiry recorded/i).waitFor();
-            await worker.getByText(/Version 2 · reassessment required/i).waitFor();
+            await worker.getByText(new RegExp(currentStatus.replaceAll("_"," ")+" · no expiry recorded","i")).waitFor();
+            await worker.getByText(new RegExp("Version 2 · "+currentStatus.replaceAll("_"," "),"i")).waitFor();
             if(restart){
               restarting=true;
               for(const request of inFlight)if(request.method()==="GET")outageRequests.add(request);
               try{await restart();}finally{restarting=false;}
             }
             await publicPage.goto(existingPublicUrl,{waitUntil:"domcontentloaded"});
-            await publicPage.getByText("Reassessment required",{exact:true}).waitFor();
+            await publicPage.getByText(currentStatus==="reassessment_required"?"Reassessment required":currentStatus==="suspended"?"Suspended":"Revoked",{exact:true}).waitFor();
             await company.reload({waitUntil:"domcontentloaded"});
-            await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText("reassessment required",{exact:true}).waitFor();
+            await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText(currentStatus.replaceAll("_"," "),{exact:true}).waitFor();
             for(const recipient of [company,publicPage]){
               const content=await recipient.content();
-              assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid/);
+              assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid|PRIVATE_REVIEW_STAGE_/);
             }
 
 

@@ -5589,6 +5589,19 @@
                 "Rendered HTML privacy assertions do not establish all-network-body privacy coverage",
                 "Not whole M3.07.04 or release certification"
               ]
+            },
+            {
+              "kind": "PRECOMMIT_SCOPED_LOCK_REPAIR",
+              "base_sha": "61fe70ec7e3f05ca41f50c122aacb61ef89dbdc3",
+              "product_tree_sha256": "fe969390c7734d34b894cc7f8cc8d343e4dcddbb09a015eb2c02aebeb486b87f",
+              "artifact": "docs/qa/retained-test-evidence/appeal-postgres-contention-review.json",
+              "artifact_sha256": "7a7fbd2fa6c40d339e49aaec66b4bf75df31c157d331ae0cc8b53fc1bcbfc335",
+              "whole_scenario_verified": false,
+              "limitations": [
+                "Production build and three protected browser outcomes must be rerun after this source change",
+                "Review-versus-reassessment replacement contention remains open",
+                "Not global deadlock freedom or whole M3.07.04 certification"
+              ]
             }
           ],
           "case_plan": {
