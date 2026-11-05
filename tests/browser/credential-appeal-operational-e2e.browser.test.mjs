@@ -1,39 +1,17 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHmac, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
-import { chromium } from "playwright";
+import { verifyAppealConsumerJourney } from "../helpers/appeal-consumer-browser-journey.mjs";
 
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { seedCredentialDecisionFixture } from "../helpers/credential-decision-fixture.mjs";
-
-const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-
-function decodeBase32(value) {
-  const clean = value.toUpperCase().replace(/=+$/g, "");
-  let bits = "";
-  for (const char of clean) bits += B32.indexOf(char).toString(2).padStart(5, "0");
-  const bytes = [];
-  for (let index = 0; index + 8 <= bits.length; index += 8) {
-    bytes.push(Number.parseInt(bits.slice(index, index + 8), 2));
-  }
-  return Buffer.from(bytes);
-}
-
-function totp(secret) {
-  const counter = Math.floor(Date.now() / 30_000);
-  const buffer = Buffer.alloc(8);
-  buffer.writeBigUInt64BE(BigInt(counter));
-  const digest = createHmac("sha1", decodeBase32(secret)).update(buffer).digest();
-  const offset = digest.at(-1) & 15;
-  return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
-}
 
 async function freePort() {
   return new Promise((resolve, reject) => {
@@ -50,16 +28,6 @@ async function freePort() {
   });
 }
 
-async function login(page, baseUrl, credential, role) {
-  await page.goto(`${baseUrl}/${role}/login`, { waitUntil: "domcontentloaded" });
-  await page.getByLabel("Email address").fill(credential.email);
-  await page.getByLabel("Password").fill(credential.password);
-  if (credential.totpSecret) {
-    await page.getByLabel("Authenticator code").fill(totp(credential.totpSecret));
-  }
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
-}
 
 test(
   "Worker submits credential appeal, Admin independently reviews it, and accepted reassessment supersedes Living Record state",
@@ -168,109 +136,7 @@ test(
         probeUrl: `${baseUrl}/worker/login`,
         projectRoot: root,
         environment,
-        probe: async ({ output }) => {
-          const browser = await chromium.launch({ headless: true });
-          const workerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-          const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-          const companyContext=await browser.newContext();
-          const publicContext=await browser.newContext();
-          const company=await companyContext.newPage();
-          const publicPage=await publicContext.newPage();
-          const worker = await workerContext.newPage();
-          const admin = await adminContext.newPage();
-          const errors = [];
-          for (const page of [worker, admin, company, publicPage]) {
-            page.on("pageerror", (error) => errors.push(error.message));
-            page.on("console", (message) => {
-              if (message.type() === "error") errors.push(message.text());
-            });
-          }
-
-          try {
-            await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});
-            await publicPage.getByText("Valid",{exact:true}).waitFor();
-            const existingPublicUrl=publicPage.url();
-            await login(company,baseUrl,credentials.company,"company");
-            await company.goto(`${baseUrl}/company/workers/company_worker_link_${"q".repeat(24)}`,{waitUntil:"domcontentloaded"});
-            await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText("valid",{exact:true}).waitFor();
-            await login(worker, baseUrl, credentials.worker, "worker");
-            await worker.goto(`${baseUrl}/worker/appeals`, { waitUntil: "domcontentloaded" });
-            await worker.getByRole("heading", { name: "Credential appeals", exact: true }).waitFor();
-
-            await worker.getByLabel("Credential").selectOption(credentialId);
-            await worker.getByLabel("Appeal grounds").fill(
-              "The issued competency should be reassessed because the retained qualification evidence was interpreted incorrectly."
-            );
-            await worker.locator(`input[name="evidenceRecordIds"][value="${evidenceRecordId}"]`).check();
-            await worker.getByRole("button", { name: "Submit credential appeal" }).click();
-            await worker.waitForURL(/\/worker\/appeals\?status=submitted/, { timeout: 20_000 });
-            await worker.getByText("Appeal submitted for independent review.", { exact: true }).waitFor();
-            const workerAppeal = worker.locator("article").filter({ hasText: credentialId }).first();
-            await workerAppeal.getByText(/Status: submitted/i).waitFor();
-            await workerAppeal.getByText(new RegExp(evidenceRecordId)).waitFor();
-
-            await login(admin, baseUrl, credentials.admin, "admin");
-            await admin.goto(`${baseUrl}/admin/appeals`, { waitUntil: "domcontentloaded" });
-            await admin.getByRole("heading", { name: "Credential appeals", exact: true }).waitFor();
-            let review = admin.locator("article").filter({ hasText: credentialId }).first();
-            await review.getByText(/Status: submitted/i).waitFor();
-
-            await review.getByLabel("Review status").selectOption("under_review");
-            await review.getByLabel("Accepted-outcome action").selectOption("none");
-            await review.getByLabel("Reasoned review outcome").fill(
-              "Independent review opened against the original credential, appeal grounds and retained qualification evidence."
-            );
-            await review.getByRole("button", { name: "Record appeal review" }).click();
-            await admin.waitForURL(/\/admin\/appeals\?status=updated/, { timeout: 20_000 });
-            await admin.getByText("Appeal review recorded.", { exact: true }).waitFor();
-            review = admin.locator("article").filter({ hasText: credentialId }).first();
-            await review.getByText(/Status: under review/i).waitFor();
-
-            await review.getByLabel("Review status").selectOption("accepted");
-            await review.getByLabel("Accepted-outcome action").selectOption("reassessment");
-            await review.getByLabel("Reasoned review outcome").fill(
-              "Appeal accepted. The competency requires reassessment before the Living Record can return to valid."
-            );
-            await review.getByRole("button", { name: "Record appeal review" }).click();
-            await admin.waitForURL(/\/admin\/appeals\?status=updated/, { timeout: 20_000 });
-            review = admin.locator("article").filter({ hasText: credentialId }).first();
-            await review.getByText(/Status: accepted/i).waitFor();
-            await review.getByText(/Outcome action: reassessment/i).waitFor();
-
-            await worker.goto(`${baseUrl}/worker/appeals`, { waitUntil: "domcontentloaded" });
-            const outcome = worker.locator("article").filter({ hasText: credentialId }).first();
-            await outcome.getByText(/Status: accepted/i).waitFor();
-            await outcome.getByText(/Review outcome: Appeal accepted/i).waitFor();
-            await outcome.getByText(/Credential\/Living Record action: reassessment/i).waitFor();
-
-            await worker.goto(`${baseUrl}/worker/passport`, { waitUntil: "domcontentloaded" });
-            await worker.getByRole("heading", { name: "Living Record", exact: true }).waitFor();
-            await worker.getByText("HSE Operational Assurance", { exact: true }).first().waitFor();
-            await worker.getByText(/reassessment required · no expiry recorded/i).waitFor();
-            await worker.getByText(/Version 2 · reassessment required/i).waitFor();
-            await publicPage.goto(existingPublicUrl,{waitUntil:"domcontentloaded"});
-            await publicPage.getByText("Reassessment required",{exact:true}).waitFor();
-            await company.reload({waitUntil:"domcontentloaded"});
-            await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText("reassessment required",{exact:true}).waitFor();
-            for(const recipient of [company,publicPage]){
-              const content=await recipient.content();
-              assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid/);
-            }
-
-
-            assert.deepEqual(
-              errors.filter((message) => !message.includes("favicon")),
-              [],
-              `Browser errors:\n${errors.join("\n")}\n${output()}`
-            );
-          } finally {
-            await companyContext.close();
-            await publicContext.close();
-            await workerContext.close();
-            await adminContext.close();
-            await browser.close();
-          }
-        }
+        probe: ({output}) => verifyAppealConsumerJourney({baseUrl,credentials,credentialId,evidenceRecordId,output})
       });
       assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
 

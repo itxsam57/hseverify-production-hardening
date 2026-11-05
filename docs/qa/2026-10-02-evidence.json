@@ -5574,6 +5574,21 @@
                 "Same-tenant restricted membership, wrong-owner/no-credential, restart and remaining declared variants remain open",
                 "Browser privacy assertion checks rendered content; complete network-body coverage remains open"
               ]
+            },
+            {
+              "kind": "INDEPENDENTLY_REVIEWED_PROTECTED_POSTGRES_RUNTIME",
+              "source_sha": "d2bff6c9de5d0addbfb0d838810c9d23585a96e1",
+              "artifact": "docs/qa/retained-test-evidence/appeal-protected-staging-review.json",
+              "artifact_sha256": "b5206fbdf2339fef3eadc7d0939b85e82892073a32e1141f730d32e1a9f9b3ef",
+              "whole_scenario_verified": false,
+              "scope": "Reassessment only: protected HTTPS, production standalone, isolated PostgreSQL, actual Worker/Admin/Company/public actions and owned restart",
+              "limitations": [
+                "Synthetic dedicated fixture; excludes live providers and hardware",
+                "Suspend/revoke protected browser paths remain open",
+                "PostgreSQL concurrency and remaining permission/privacy variants remain open",
+                "Rendered HTML privacy assertions do not establish all-network-body privacy coverage",
+                "Not whole M3.07.04 or release certification"
+              ]
             }
           ],
           "case_plan": {
