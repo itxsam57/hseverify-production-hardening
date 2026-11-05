@@ -59,6 +59,8 @@ export async function runTenantScopedCommand<
   principal: TenantPermissionPrincipal<P>;
   permission: P;
   now?: Date;
+  // Shared authorization locks still block revocation. Mutations retain exclusive locks.
+  readOnly?: boolean;
   operation: (input: {
     database: DatabaseClient;
     scope: TrustedTenantScope;
@@ -73,7 +75,9 @@ export async function runTenantScopedCommand<
 
   return input.database.transaction(async (database) => {
     const locked = await database.query<TenantCommandScopeRow>(
-      TENANT_COMMAND_SCOPE_SQL,
+      input.readOnly
+        ? TENANT_COMMAND_SCOPE_SQL.replace("FOR UPDATE OF", "FOR SHARE OF")
+        : TENANT_COMMAND_SCOPE_SQL,
       [
         scope.membershipId,
         scope.tenantId,

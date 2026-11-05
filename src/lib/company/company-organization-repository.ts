@@ -118,7 +118,7 @@ export class DatabaseCompanyOrganizationRepository implements CompanyOrganizatio
 
   async list(principal: TenantPermissionPrincipal<typeof READ_PERMISSION>, kind: CompanyUnitKind): Promise<readonly CompanyUnitRecord[]> {
     return runTenantScopedCommand({
-      database: await this.client(), principal, permission: READ_PERMISSION,
+      database: await this.client(), principal, permission: READ_PERMISSION, readOnly: true,
       operation: async ({ database, scope }) => {
         const result = await database.query<UnitRow>(
           `SELECT ${columns(kind)} FROM ${table(kind)} WHERE tenant_id = $1 ORDER BY CASE WHEN ${statusColumn(kind)} = 'active' THEN 0 ELSE 1 END, lower(name), ${idColumn(kind)}`,
