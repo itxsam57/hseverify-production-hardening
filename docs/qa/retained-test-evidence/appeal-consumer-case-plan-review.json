@@ -1,0 +1,15 @@
+{
+  "disposition": "ACCEPTED",
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "reviewed_at": "2026-11-05T17:36:25.064628+00:00",
+  "scenario": "M3.07.04",
+  "scope": "Six-category concrete producer-to-consumer verification design; execution separately reviewed",
+  "constraints": [
+    "Preserve historical case decision and signed issuance authenticity",
+    "Current-state propagation uses exact credential and Worker ownership",
+    "No private grounds, review reasons or evidence references in recipient projections",
+    "Revoked/suspended/replaced and expiry precedence retained",
+    "Company active-link and authorization scopes enforced; no credential means unavailable"
+  ]
+}

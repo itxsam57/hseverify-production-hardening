@@ -250,7 +250,7 @@ const publicAuthoritySource = publicBoundarySource.replace(
 );
 forbidPattern(
   publicAuthoritySource,
-  /reviewer[^\n]{0,120}(?:approve|reject|decision)|assessment[^\n]{0,100}(?:deliver|answer|score)|credential[^\n]{0,100}(?:\bissue\b|\bissuance\b)|\bissueCredential\s*\(|\.issue\s*\(|\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+")\s*\.\s*)?"?credential_issuances\b"?|living.?record|scoped.?share/i,
+  /reviewer[^\n]{0,120}(?:approve|reject|decision)|assessment[^\n]{0,100}(?:deliver|answer|score)|credential[^\n]{0,100}(?:\bissue\b|\bissuance\b)|\bissueCredential\s*\(|\.issue\s*\(|\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:(?:[A-Za-z_][A-Za-z0-9_]*|"[^"]+")\s*\.\s*)?"?(?:credential_issuances|living_record_competencies|living_record_versions)\b"?|living.?record(?!_(?:competencies|versions)\b)|scoped.?share/i,
   "M1.12 production boundary",
   "later M2/M3 workflow authority"
 );

@@ -10,6 +10,7 @@ function publicStatusLabel(status: string): string {
   switch (status) {
     case "valid": return "Valid";
     case "expired": return "Expired";
+    case "reassessment_required": return "Reassessment required";
     case "suspended": return "Suspended";
     case "revoked": return "Revoked";
     default: return "Not verified";
@@ -19,7 +20,8 @@ function publicStatusLabel(status: string): string {
 function publicStatusClass(status: string): string {
   switch (status) {
     case "valid": return "status-positive";
-    case "expired": return "status-warning";
+    case "expired":
+    case "reassessment_required": return "status-warning";
     case "suspended":
     case "revoked": return "status-critical";
     default: return "status-neutral";

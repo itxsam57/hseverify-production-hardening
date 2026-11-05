@@ -5556,14 +5556,173 @@
         "status": "not-yet-verified-in-expanded-run",
         "evidence": null,
         "software_verification": {
-          "status": "UNREVIEWED",
+          "status": "PARTIAL",
           "cases": {},
-          "evidence": [],
+          "evidence": [
+            {
+              "kind": "PRECOMMIT_REVIEWED_SCOPED_RUNTIME",
+              "base_sha": "c5bd537b200d001d9e53aa86769dfcd0ad709ed2",
+              "product_tree_sha256": "cdbde797dc9b8776bdc63288358b8a6e36e85410beeb45b3184e39b2d1add9a7",
+              "whole_scenario_verified": false,
+              "artifact": "docs/qa/retained-test-evidence/appeal-consumer-propagation-review.json",
+              "artifact_sha256": "726c76faaae10c0a113a79e9f34f339fb83ad762fcc65f7efc8078abd16663a1",
+              "reviewer": "/root/review_software_plan",
+              "limitations": [
+                "No whole M3.07.04 certification",
+                "No final protected PostgreSQL HTTPS cross-role consumer certification yet",
+                "Queued PGlite commands do not prove PostgreSQL concurrency",
+                "Same-tenant restricted membership, wrong-owner/no-credential, restart and remaining declared variants remain open",
+                "Browser privacy assertion checks rendered content; complete network-body coverage remains open"
+              ]
+            }
+          ],
           "case_plan": {
-            "status": "NEEDS_CASE_DESIGN",
-            "variants": [],
-            "production_deferred": [],
-            "review": null
+            "status": "ACCEPTED",
+            "variants": [
+              {
+                "id": "M3.07.04.positive.1",
+                "category": "positive",
+                "action": "Independent Admin accepts reassessment after actual issuance and Worker appeal; resolve existing public capability and authorized Company search/detail",
+                "expected_outcome": "Current reliance state propagates; historical case and signed credential bytes remain intact; no private appeal markers",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.positive.2",
+                "category": "positive",
+                "action": "Independent Admin accepts suspend after actual issuance and Worker appeal; resolve existing public capability and authorized Company search/detail",
+                "expected_outcome": "Current reliance state propagates; historical case and signed credential bytes remain intact; no private appeal markers",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.positive.3",
+                "category": "positive",
+                "action": "Independent Admin accepts revoke after actual issuance and Worker appeal; resolve existing public capability and authorized Company search/detail",
+                "expected_outcome": "Current reliance state propagates; historical case and signed credential bytes remain intact; no private appeal markers",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.invalid_input.1",
+                "category": "invalid_input",
+                "action": "Attempt appeal completion with stale appeal version; compare all source and consumer state before/after",
+                "expected_outcome": "Reject without changing appeal, issuance, Living Record or recipient state",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.invalid_input.2",
+                "category": "invalid_input",
+                "action": "Attempt appeal completion with unsupported outcome; compare all source and consumer state before/after",
+                "expected_outcome": "Reject without changing appeal, issuance, Living Record or recipient state",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.invalid_input.3",
+                "category": "invalid_input",
+                "action": "Attempt appeal completion with missing credential; compare all source and consumer state before/after",
+                "expected_outcome": "Reject without changing appeal, issuance, Living Record or recipient state",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.invalid_input.4",
+                "category": "invalid_input",
+                "action": "Attempt appeal completion with credential Worker ownership mismatch; compare all source and consumer state before/after",
+                "expected_outcome": "Reject without changing appeal, issuance, Living Record or recipient state",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.permission_isolation.1",
+                "category": "permission_isolation",
+                "action": "Request current outcome using unrelated tenant; plant unique private grounds/review/evidence markers",
+                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.permission_isolation.2",
+                "category": "permission_isolation",
+                "action": "Request current outcome using restricted site or department; plant unique private grounds/review/evidence markers",
+                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.permission_isolation.3",
+                "category": "permission_isolation",
+                "action": "Request current outcome using inactive Worker relationship; plant unique private grounds/review/evidence markers",
+                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.permission_isolation.4",
+                "category": "permission_isolation",
+                "action": "Request current outcome using unauthorized reviewer or original decision actor; plant unique private grounds/review/evidence markers",
+                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.retry_recovery.1",
+                "category": "retry_recovery",
+                "action": "Execute replay stale accepted decision, then retry through actual transaction",
+                "expected_outcome": "No duplicate or partially propagated versions; legitimate retry succeeds after rollback",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.retry_recovery.2",
+                "category": "retry_recovery",
+                "action": "Execute competing independent decisions, then retry through actual transaction",
+                "expected_outcome": "No duplicate or partially propagated versions; legitimate retry succeeds after rollback",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.retry_recovery.3",
+                "category": "retry_recovery",
+                "action": "Execute injected failure between appeal update and Living Record append, then retry through actual transaction",
+                "expected_outcome": "No duplicate or partially propagated versions; legitimate retry succeeds after rollback",
+                "runtime": "real-producer-and-consumer-runtime"
+              },
+              {
+                "id": "M3.07.04.persistence.1",
+                "category": "persistence",
+                "action": "Reconnect database/restart server and resolve pre-existing public capability and scoped share after each accepted outcome",
+                "expected_outcome": "Current state survives; original issuance, append-only appeal and Living Record histories remain intact",
+                "runtime": "isolated-postgresql-and-server"
+              },
+              {
+                "id": "M3.07.04.downstream_outcome.1",
+                "category": "downstream_outcome",
+                "action": "Worker submission -> independent Admin decision -> fresh Company page -> existing public capability -> authorized scoped Passport for reassessment",
+                "expected_outcome": "All authorized views agree on safe current reliance state; pending/rejected leaves prior state; private grounds remain hidden",
+                "runtime": "authenticated-cross-role-browser-and-postgresql"
+              },
+              {
+                "id": "M3.07.04.downstream_outcome.2",
+                "category": "downstream_outcome",
+                "action": "Worker submission -> independent Admin decision -> fresh Company page -> existing public capability -> authorized scoped Passport for suspend",
+                "expected_outcome": "All authorized views agree on safe current reliance state; pending/rejected leaves prior state; private grounds remain hidden",
+                "runtime": "authenticated-cross-role-browser-and-postgresql"
+              },
+              {
+                "id": "M3.07.04.downstream_outcome.3",
+                "category": "downstream_outcome",
+                "action": "Worker submission -> independent Admin decision -> fresh Company page -> existing public capability -> authorized scoped Passport for revoke",
+                "expected_outcome": "All authorized views agree on safe current reliance state; pending/rejected leaves prior state; private grounds remain hidden",
+                "runtime": "authenticated-cross-role-browser-and-postgresql"
+              },
+              {
+                "id": "M3.07.04.downstream_outcome.4",
+                "category": "downstream_outcome",
+                "action": "Worker submission -> independent Admin decision -> fresh Company page -> existing public capability -> authorized scoped Passport for pending or rejected appeal",
+                "expected_outcome": "All authorized views agree on safe current reliance state; pending/rejected leaves prior state; private grounds remain hidden",
+                "runtime": "authenticated-cross-role-browser-and-postgresql"
+              }
+            ],
+            "production_deferred": [
+              "Live external-provider delivery and physical-device certification deferred by owner"
+            ],
+            "review": {
+              "disposition": "ACCEPTED",
+              "reviewer": "/root/review_software_plan",
+              "builder": "/root",
+              "artifact": "docs/qa/retained-test-evidence/appeal-consumer-case-plan-review.json",
+              "artifact_sha256": "e984cc40a7a902372da5775711b829ff4b9c56beaf23b94be6499299993a2893"
+            }
           }
         }
       },

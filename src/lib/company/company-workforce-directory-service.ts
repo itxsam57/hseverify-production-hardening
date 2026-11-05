@@ -15,6 +15,7 @@ export type CompanyWorkerDirectoryRow = Readonly<{
   department: string | null;
   assessmentReference: string | null;
   assuranceStatus: string | null;
+  currentCompetencyStatus: string | null;
   nextAction: string | null;
 }>;
 
@@ -100,17 +101,37 @@ export class CompanyWorkforceDirectoryService {
             assessment_reference: string | null;
             case_status: string | null;
             next_action: string | null;
+            current_competency_status: string | null;
           }>(
             `SELECT links.link_id,links.worker_account_id,accounts.display_name,accounts.email_normalized,
                     links.permanent_worker_id,links.link_status,
                     sites.name AS site_name,departments.name AS department_name,
-                    links.assessment_reference,latest_case.case_status,latest_case.next_action
+                    links.assessment_reference,latest_case.case_status,latest_case.next_action,latest_case.current_competency_status
                FROM company_worker_links AS links
                JOIN auth_accounts AS accounts ON accounts.account_id=links.worker_account_id
                LEFT JOIN company_sites AS sites ON sites.tenant_id=links.tenant_id AND sites.site_id=links.site_id
                LEFT JOIN company_departments AS departments ON departments.tenant_id=links.tenant_id AND departments.department_id=links.department_id
                LEFT JOIN LATERAL (
-                 SELECT cases.case_status,cases.next_action
+                 SELECT cases.case_status,cases.next_action,
+                   CASE WHEN links.link_status='active' THEN (
+                     SELECT CASE WHEN credentials.status <> 'valid' THEN credentials.status
+                                 WHEN credentials.expires_at IS NOT NULL AND credentials.expires_at <= CURRENT_TIMESTAMP THEN 'expired'
+                                 ELSE current_version.status END
+                       FROM credential_issuances credentials
+                       JOIN living_record_competencies competency
+                         ON competency.source_credential_id=credentials.credential_id
+                        AND competency.worker_id=credentials.worker_id
+                       JOIN LATERAL (
+                         SELECT versions.status FROM living_record_versions versions
+                          WHERE versions.competency_id=competency.competency_id
+                          ORDER BY versions.version DESC LIMIT 1
+                       ) current_version ON TRUE
+                      WHERE credentials.credential_id=cases.credential_reference
+                        AND credentials.worker_id=cases.permanent_worker_id
+                      ORDER BY CASE current_version.status WHEN 'revoked' THEN 0 WHEN 'suspended' THEN 1 WHEN 'expired' THEN 2 WHEN 'reassessment_required' THEN 3 ELSE 4 END,
+                               competency.competency_id
+                      LIMIT 1
+                   ) END AS current_competency_status
                    FROM assurance_cases AS cases
                   WHERE cases.tenant_id=links.tenant_id
                     AND cases.worker_account_id=links.worker_account_id
@@ -151,6 +172,7 @@ export class CompanyWorkforceDirectoryService {
             department: row.department_name,
             assessmentReference: row.assessment_reference,
             assuranceStatus: row.case_status,
+            currentCompetencyStatus: row.current_competency_status,
             nextAction: row.next_action
           }))),
           total: Number(count.rows[0]?.count ?? 0),
@@ -174,18 +196,37 @@ export class CompanyWorkforceDirectoryService {
           link_id: string; worker_account_id: string; display_name: string; email_normalized: string;
           permanent_worker_id: string | null; link_status: string; site_name: string | null;
           department_name: string | null; assessment_reference: string | null;
-          case_status: string | null; next_action: string | null;
+          case_status: string | null; next_action: string | null; current_competency_status: string | null;
         }>(
           `SELECT links.link_id,links.worker_account_id,accounts.display_name,accounts.email_normalized,
                   links.permanent_worker_id,links.link_status,sites.name AS site_name,
                   departments.name AS department_name,links.assessment_reference,
-                  latest_case.case_status,latest_case.next_action
+                  latest_case.case_status,latest_case.next_action,latest_case.current_competency_status
              FROM company_worker_links AS links
              JOIN auth_accounts AS accounts ON accounts.account_id=links.worker_account_id
              LEFT JOIN company_sites AS sites ON sites.tenant_id=links.tenant_id AND sites.site_id=links.site_id
              LEFT JOIN company_departments AS departments ON departments.tenant_id=links.tenant_id AND departments.department_id=links.department_id
              LEFT JOIN LATERAL (
-               SELECT cases.case_status,cases.next_action
+               SELECT cases.case_status,cases.next_action,
+                   CASE WHEN links.link_status='active' THEN (
+                     SELECT CASE WHEN credentials.status <> 'valid' THEN credentials.status
+                                 WHEN credentials.expires_at IS NOT NULL AND credentials.expires_at <= CURRENT_TIMESTAMP THEN 'expired'
+                                 ELSE current_version.status END
+                       FROM credential_issuances credentials
+                       JOIN living_record_competencies competency
+                         ON competency.source_credential_id=credentials.credential_id
+                        AND competency.worker_id=credentials.worker_id
+                       JOIN LATERAL (
+                         SELECT versions.status FROM living_record_versions versions
+                          WHERE versions.competency_id=competency.competency_id
+                          ORDER BY versions.version DESC LIMIT 1
+                       ) current_version ON TRUE
+                      WHERE credentials.credential_id=cases.credential_reference
+                        AND credentials.worker_id=cases.permanent_worker_id
+                      ORDER BY CASE current_version.status WHEN 'revoked' THEN 0 WHEN 'suspended' THEN 1 WHEN 'expired' THEN 2 WHEN 'reassessment_required' THEN 3 ELSE 4 END,
+                               competency.competency_id
+                      LIMIT 1
+                   ) END AS current_competency_status
                  FROM assurance_cases AS cases
                 WHERE cases.tenant_id=links.tenant_id AND cases.worker_account_id=links.worker_account_id
                 ORDER BY cases.updated_at DESC,cases.created_at DESC LIMIT 1
@@ -205,6 +246,7 @@ export class CompanyWorkforceDirectoryService {
           department: row.department_name,
           assessmentReference: row.assessment_reference,
           assuranceStatus: row.case_status,
+            currentCompetencyStatus: row.current_competency_status,
           nextAction: row.next_action
         }) : null;
       }

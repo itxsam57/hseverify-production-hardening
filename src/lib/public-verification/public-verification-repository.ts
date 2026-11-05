@@ -387,9 +387,20 @@ export class PublicVerificationRepository {
     const result = await this.database.query<{
       credential_id: string; qualification: string; status: PublicCredentialVerificationSource["status"];
       worker_id: string; version: number; public_status_url: string; qr_payload: string; signature: string; pdf_url: string;
-      issued_at: string | Date; expires_at: string | Date | null; conditional: boolean;
+      issued_at: string | Date; expires_at: string | Date | null; conditional: boolean; reassessment_required: boolean;
     }>(`SELECT credential_id,worker_id,qualification,status,issued_at,expires_at,version,
                public_status_url,qr_payload,signature,pdf_url,
+               EXISTS(
+                 SELECT 1 FROM living_record_competencies competency
+                 JOIN LATERAL (
+                   SELECT versions.status FROM living_record_versions versions
+                    WHERE versions.competency_id=competency.competency_id
+                    ORDER BY versions.version DESC LIMIT 1
+                 ) current_version ON TRUE
+                 WHERE competency.source_credential_id=credentials.credential_id
+                   AND competency.worker_id=credentials.worker_id
+                   AND current_version.status='reassessment_required'
+               ) AS reassessment_required,
                COALESCE((SELECT decisions.state='CONDITIONALLY_APPROVED'
                   FROM assurance_cases cases JOIN platform_decisions decisions
                     ON decisions.decision_id=cases.decision_reference AND decisions.tenant_id=cases.tenant_id
@@ -406,7 +417,7 @@ export class PublicVerificationRepository {
     const replaced = schema.rows[0]?.present ? Boolean((await this.database.query("SELECT 1 FROM credential_replacements WHERE old_credential_id=$1 AND disposition='REPLACED' LIMIT 1",[row.credential_id])).rows[0]) : false;
     return Object.freeze({ credentialId: row.credential_id, qualification: row.qualification,
       status: row.status, issuedAt: timestamp(row.issued_at), expiresAt: row.expires_at ? timestamp(row.expires_at) : null,
-      conditional: row.conditional, authentication, replaced });
+      conditional: row.conditional, authentication, replaced, reassessmentRequired: row.reassessment_required });
   }
 
   async findReceivedConcern(concernReference: string): Promise<Readonly<{

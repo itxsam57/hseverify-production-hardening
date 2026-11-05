@@ -1,14 +1,14 @@
 {
   "state": "AUTO_CONTINUE",
-  "task": "SOFTWARE-VERIFY-20261105/B00",
-  "status": "TESTING",
-  "verified_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
-  "last_verified_action": "Plan and first brick case designs independently accepted; no scenario has been promoted",
-  "next_action": "Run and inspect B00 tests, complete missing case variants, then test Company/public appeal propagation",
+  "task": "SOFTWARE-VERIFY-20261105/M3.07.04",
+  "status": "VERIFYING",
+  "verified_sha": null,
+  "last_verified_action": "Retained reviewed B00 staging rollback in c5bd537. Reproduced and repaired public/Company appeal propagation. Precommit13/13 native,1/1 Worker/Admin/Company/public development browser,55/55 public regressions,typecheck,focused lint pass.",
+  "next_action": "Commit reviewed appeal propagation fix; production-build current candidate, then execute PostgreSQL/protected HTTPS consumer workflows and remaining declared M3.07.04 cases.",
   "owner_required": false,
   "revision": 34,
   "blocker": null,
-  "updated_at": "2026-11-05T14:41:45.826853+00:00",
+  "updated_at": "2026-11-05T17:47:27.148553+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -70,5 +70,21 @@
   "current_candidate_base_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "candidate_branch": "qa/masterplan-release-20261016",
   "candidate_pr": "https://github.com/itxsam57/hseverify-production-hardening/pull/37",
-  "preserved_integration_branch": "qa/masterplan-final-20261014"
+  "preserved_integration_branch": "qa/masterplan-final-20261014",
+  "software_phase": {
+    "total_scenarios": 218,
+    "fully_verified": 0,
+    "historical_evidence_not_certification": true,
+    "current_partial_scenarios": [
+      "M1.01.01",
+      "M1.01.02",
+      "M1.01.04",
+      "M3.07.04"
+    ],
+    "deferred_by_owner": [
+      "Live provider verification",
+      "Physical device proctoring",
+      "Final operational owner acceptance"
+    ]
+  }
 }

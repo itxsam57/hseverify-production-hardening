@@ -36,6 +36,7 @@ export default async function CompanyWorkerDetailPage({
           <div><dt>Department</dt><dd>{worker.department ?? "Not assigned"}</dd></div>
           <div><dt>Assessment pre-assignment</dt><dd>{worker.assessmentReference ?? "None"}</dd></div>
           <div><dt>Latest assurance state</dt><dd>{worker.assuranceStatus ?? "No active case"}</dd></div>
+          <div><dt>Current competency state</dt><dd>{worker.currentCompetencyStatus?.replaceAll("_", " ") ?? "Unavailable"}</dd></div>
           <div><dt>Next action</dt><dd>{worker.nextAction ?? "No action currently required"}</dd></div>
         </dl>
         {worker.workerId ? <Link href={`/verify/worker/${encodeURIComponent(worker.workerId)}`}>Open public verification</Link> : null}

@@ -35,6 +35,7 @@ test("M1.12 public status and identifier vocabularies are fixed and bounded", ()
   assert.deepEqual(domain.PUBLIC_VERIFICATION_STATUSES, [
     "valid",
     "expired",
+    "reassessment_required",
     "suspended",
     "revoked",
     "not_found_or_invalid",

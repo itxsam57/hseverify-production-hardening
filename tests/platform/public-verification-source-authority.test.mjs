@@ -30,6 +30,10 @@ for (const authority of [
   'DELETE FROM public.credential_issuances WHERE credential_id=$1',
   'issueCredential(principal)',
   'repository.issue(principal)',
+  'INSERT INTO living_record_versions (competency_id) VALUES ($1)',
+  'UPDATE public.living_record_competencies SET worker_id=$1',
+  'DELETE FROM "living_record_versions" WHERE competency_id=$1',
+  'import { LivingRecordRepository } from "@/lib/living-record/living-record-repository";',
 ]) test(`public boundary rejects workflow mutation: ${authority}`, () => {
   const result = runWith(`\n${authority}\n`);
   assert.equal(result.status, 1);

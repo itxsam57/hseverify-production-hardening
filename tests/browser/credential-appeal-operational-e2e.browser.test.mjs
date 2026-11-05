@@ -114,7 +114,7 @@ test(
       const originalFixture=await seedCredentialDecisionFixture(fixtureDatabase,{
         qualification:"HSE Operational Assurance",policy:{credentialValidity:"no_expiry"},
         workerAccountId:credentials.worker.accountId,permanentWorkerId:workerId,
-        signingSecret:environment.HSE_CREDENTIAL_SIGNING_SECRET
+        signingSecret:environment.HSE_CREDENTIAL_SIGNING_SECRET,tenantId:credentials.company.tenantId
       });
       try {
         const originalActor="account_original_appeal_browser_admin";
@@ -124,6 +124,12 @@ test(
         credentialId=(await originalFixture.database.query("SELECT credential_reference FROM assurance_cases WHERE case_id=$1",[originalFixture.caseId])).rows[0].credential_reference;
         competencyId=(await originalFixture.database.query("SELECT competency_id FROM living_record_competencies WHERE source_credential_id=$1",[credentialId])).rows[0].competency_id;
         assert.notEqual(originalActor,credentials.admin.accountId);
+        const invitationId="worker_invitation_"+"q".repeat(24),linkId="company_worker_link_"+"q".repeat(24);
+        await originalFixture.database.query(`INSERT INTO company_worker_invitations(invitation_id,tenant_id,email_normalized,token_hash,invitation_status,payment_responsibility,invited_by_membership_id,accepted_by_worker_account_id,resend_available_at,expires_at,accepted_at,created_at,updated_at)
+          VALUES($1,$2,$3,'synthetic-appeal-link','accepted','company',$4,$5,$6,'2099-01-01',$6,$6,$6)`,[invitationId,credentials.company.tenantId,credentials.worker.email,credentials.company.membershipId,credentials.worker.accountId,issuedAt]);
+        await originalFixture.database.query(`INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,link_source,invitation_id,link_status,payment_responsibility,requested_by_membership_id,worker_accepted_at,activated_at,created_at,updated_at)
+          VALUES($1,$2,$3,'invitation',$4,'active','company',$5,$6,$6,$6,$6)`,[linkId,credentials.company.tenantId,credentials.worker.accountId,invitationId,credentials.company.membershipId,issuedAt]);
+
       } finally { await originalFixture.database.close(); }
       const database = new PGlite(databaseDirectory);
       try {
@@ -166,10 +172,14 @@ test(
           const browser = await chromium.launch({ headless: true });
           const workerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const companyContext=await browser.newContext();
+          const publicContext=await browser.newContext();
+          const company=await companyContext.newPage();
+          const publicPage=await publicContext.newPage();
           const worker = await workerContext.newPage();
           const admin = await adminContext.newPage();
           const errors = [];
-          for (const page of [worker, admin]) {
+          for (const page of [worker, admin, company, publicPage]) {
             page.on("pageerror", (error) => errors.push(error.message));
             page.on("console", (message) => {
               if (message.type() === "error") errors.push(message.text());
@@ -177,6 +187,12 @@ test(
           }
 
           try {
+            await publicPage.goto(`${baseUrl}/verify/result/${credentialId}`,{waitUntil:"domcontentloaded"});
+            await publicPage.getByText("Valid",{exact:true}).waitFor();
+            const existingPublicUrl=publicPage.url();
+            await login(company,baseUrl,credentials.company,"company");
+            await company.goto(`${baseUrl}/company/workers/company_worker_link_${"q".repeat(24)}`,{waitUntil:"domcontentloaded"});
+            await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText("valid",{exact:true}).waitFor();
             await login(worker, baseUrl, credentials.worker, "worker");
             await worker.goto(`${baseUrl}/worker/appeals`, { waitUntil: "domcontentloaded" });
             await worker.getByRole("heading", { name: "Credential appeals", exact: true }).waitFor();
@@ -232,6 +248,15 @@ test(
             await worker.getByText("HSE Operational Assurance", { exact: true }).first().waitFor();
             await worker.getByText(/reassessment required · no expiry recorded/i).waitFor();
             await worker.getByText(/Version 2 · reassessment required/i).waitFor();
+            await publicPage.goto(existingPublicUrl,{waitUntil:"domcontentloaded"});
+            await publicPage.getByText("Reassessment required",{exact:true}).waitFor();
+            await company.reload({waitUntil:"domcontentloaded"});
+            await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText("reassessment required",{exact:true}).waitFor();
+            for(const recipient of [company,publicPage]){
+              const content=await recipient.content();
+              assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid/);
+            }
+
 
             assert.deepEqual(
               errors.filter((message) => !message.includes("favicon")),
@@ -239,6 +264,8 @@ test(
               `Browser errors:\n${errors.join("\n")}\n${output()}`
             );
           } finally {
+            await companyContext.close();
+            await publicContext.close();
             await workerContext.close();
             await adminContext.close();
             await browser.close();
