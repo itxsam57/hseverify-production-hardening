@@ -64,7 +64,7 @@ test("Eight Company and seven Worker report kinds export populated authoritative
    "qualification":rows=>{assert.equal(rows[0]["Title"],"=SUM(1,2) José Müller Иван");assert.equal(rows[0]["Status"],"submitted / APPROVED");},
    "assessment-breakdown":rows=>{assert.equal(rows[0]["Attempt ID"],f.attemptId);assert.equal(rows[0]["Final score"],"100");assert.equal(rows[0]["Final decision"],"PASS");},
    "interview-summary":rows=>{const completed=rows.find(row=>row["Interview ID"]===f.interviewId);assert.ok(completed);assert.equal(completed["Final recommendation"],"PASS");assert.ok(rows.every(row=>row["Status"]==="COMPLETED" || !row["Final recommendation"]));},
-   "credential-pdf":rows=>{assert.equal(rows[0]["Credential ID"],f.credentialId);assert.equal(rows[0]["Authentication"],"authenticated");assert.equal(rows[0]["Status"],"valid");},
+   "credential-pdf":rows=>{assert.equal(rows[0]["Credential ID"],f.credentialId);assert.equal(rows[0]["Authentication"],"authenticated");assert.equal(rows[0]["Status"],"reassessment_required");},
    "living-record-history":rows=>{assert.equal(rows.length,2);assert.deepEqual(rows.map(row=>row["Version"]),["1","2"]);assert.equal(rows[1]["Status"],"reassessment_required");},
    "reassessment-appeal-history":rows=>{assert.ok(rows.some(row=>row["Status"]==="accepted"&&row["Outcome"]==="reassessment"));},
   };

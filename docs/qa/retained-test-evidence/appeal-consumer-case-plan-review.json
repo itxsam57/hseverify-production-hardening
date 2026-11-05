@@ -11,5 +11,19 @@
     "No private grounds, review reasons or evidence references in recipient projections",
     "Revoked/suspended/replaced and expiry precedence retained",
     "Company active-link and authorization scopes enforced; no credential means unavailable"
-  ]
+  ],
+  "authority_model_revision": {
+    "disposition": "ACCEPTED",
+    "reviewer": "/root/review_software_plan",
+    "builder": "/root",
+    "reviewed_at": "2026-11-05T18:27:30.687545+00:00",
+    "reason": "Canonical masterplan defines tenant, link and live Team permission authority. Site/department assignments are metadata and search filters; they do not define row access for this consumer.",
+    "sources": [
+      "src/lib/authorization/authorization-context-domain.ts",
+      "src/lib/authorization/tenant-scoped-command-guard.ts",
+      "src/lib/company/company-team-service.ts"
+    ],
+    "required_variant": "Reuse a cached Company principal after persisted permission denial, membership suspension and session revocation; find/search reject without business mutation, and authorized recovery succeeds.",
+    "not_applicable_subscope": "Assignment-based site/department row restriction for this workforce consumer is not specified; do not invent a new authorization feature."
+  }
 }

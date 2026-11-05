@@ -132,6 +132,36 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
     const {CompanyWorkforceDirectoryService}=loadTs("src/lib/company/company-workforce-directory-service.ts");
     const company=new CompanyWorkforceDirectoryService(Promise.resolve(db));
     assert.equal((await company.find(principal,linkId)).currentCompetencyStatus,expected);
+    const backupOwner="account_company_backup_owner",backupMembership="membership_"+"k".repeat(24);
+    await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'backup-owner@example.test','Synthetic backup owner','active','test-only',$2,$2,$2,$2)",[backupOwner,at]);
+    await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'company',$2)",[backupOwner,at]);
+    await db.query("INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at) VALUES($1,$2,$3,'company','owner','active',$4,$5,$5,$5)",[backupMembership,accounts.company.tenantId,backupOwner,accounts.company.accountId,at]);
+    const businessSnapshot=async()=>JSON.stringify(await Promise.all(["credential_appeals","credential_appeal_events","credential_issuances","credential_lifecycle_events","living_record_versions"].map(async table=>(await db.query("SELECT * FROM "+table+" ORDER BY 1,2")).rows)));
+    const unchanged=await businessSnapshot();
+    const denied=async()=>{
+      await assert.rejects(company.find(principal,linkId),error=>error.name==="TenantScopeDeniedError");
+      await assert.rejects(company.search(principal,{}),error=>error.name==="TenantScopeDeniedError");
+      assert.equal(await businessSnapshot(),unchanged,"Denied reads must not change appeal or competency history");
+    };
+    const recovered=async(actor=principal)=>{
+      assert.equal((await company.find(actor,linkId)).currentCompetencyStatus,expected);
+      assert.equal((await company.search(actor,{})).rows.find(row=>row.linkId===linkId).currentCompetencyStatus,expected);
+    };
+    await db.query("INSERT INTO auth_tenant_permission_overrides(membership_id,membership_role,permission_key,effect,reason) VALUES($1,'owner','company.workforce.manage','deny','Synthetic live permission revocation')",[accounts.company.membershipId]);
+    await denied();
+    await db.query("DELETE FROM auth_tenant_permission_overrides WHERE membership_id=$1 AND permission_key='company.workforce.manage'",[accounts.company.membershipId]);
+    await recovered();
+    await db.query("UPDATE auth_tenant_memberships SET membership_status='suspended',suspended_at=clock_timestamp(),updated_at=clock_timestamp() WHERE membership_id=$1",[accounts.company.membershipId]);
+    await denied();
+    await db.query("UPDATE auth_tenant_memberships SET membership_status='active',suspended_at=NULL,updated_at=clock_timestamp() WHERE membership_id=$1",[accounts.company.membershipId]);
+    await recovered();
+    await db.query("UPDATE auth_sessions SET revoked_at=clock_timestamp(),revocation_reason='Synthetic stale-session probe' WHERE session_id=$1",[sessionId]);
+    await denied();
+    const replacementSession=sessionId+"_replacement";
+    await db.query("INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) VALUES($1,$2,'company','synthetic-replacement-token','synthetic-replacement-csrf',$3,$3,$4)",[replacementSession,accounts.company.accountId,at,expiresAt]);
+    await recovered({...principal,sessionId:replacementSession});
+    await denied();
+
     assert.deepEqual((await db.query("SELECT * FROM assurance_cases WHERE case_id=$1",[fixture.caseId])).rows[0],originalCase);
     for(const path of [config.appLog,config.postgresLog]){
       const output=(await readFile(path)).subarray(offsets[path]).toString("utf8");

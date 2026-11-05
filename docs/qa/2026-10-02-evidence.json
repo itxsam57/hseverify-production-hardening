@@ -5602,6 +5602,15 @@
                 "Review-versus-reassessment replacement contention remains open",
                 "Not global deadlock freedom or whole M3.07.04 certification"
               ]
+            },
+            {
+              "kind": "INDEPENDENTLY_REVIEWED_REPAIRED_CANDIDATE_RUNTIME",
+              "source_sha": "92875b6909ea90851bc76df3f0ff9542580577ce",
+              "artifact": "docs/qa/retained-test-evidence/appeal-repaired-candidate-review.json",
+              "artifact_sha256": "9b85ae84c78e4a8835169b846fb3c2ae1f2ebfd8ee26837d41b1f6d11fba7bfa",
+              "whole_scenario_verified": false,
+              "reviewer": "/root/review_software_plan",
+              "scope": "Three protected browser outcomes with restart and PostgreSQL contention and live Company authority checks. Report fixture regression passed separately."
             }
           ],
           "case_plan": {
@@ -5666,8 +5675,8 @@
               {
                 "id": "M3.07.04.permission_isolation.2",
                 "category": "permission_isolation",
-                "action": "Request current outcome using restricted site or department; plant unique private grounds/review/evidence markers",
-                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "action": "Reuse a valid cached Company principal after persisted permission deny, membership suspension and session revocation; remove deny or use a new authorized session to recover",
+                "expected_outcome": "Both directory find and search reject revoked live authority without exposing competency/private appeal data or changing business history; authorized reads recover while the old session remains denied",
                 "runtime": "real-producer-and-consumer-runtime"
               },
               {
@@ -5749,8 +5758,10 @@
               "reviewer": "/root/review_software_plan",
               "builder": "/root",
               "artifact": "docs/qa/retained-test-evidence/appeal-consumer-case-plan-review.json",
-              "artifact_sha256": "e984cc40a7a902372da5775711b829ff4b9c56beaf23b94be6499299993a2893"
-            }
+              "artifact_sha256": "bbfff627c194c01ba267ed889323b3f96020b42a9950b57bd9e24e7e24aa0f9d"
+            },
+            "authority_model_note": "Canonical masterplan defines tenant, link and live Team permission authority. Site/department assignments are metadata and search filters; they do not define row access for this consumer.",
+            "not_applicable_subscope": "Assignment-based site/department row restriction for this workforce consumer is not specified; do not invent a new authorization feature."
           }
         }
       },
