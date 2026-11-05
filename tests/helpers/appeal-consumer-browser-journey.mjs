@@ -74,6 +74,18 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             await company.goto(`${baseUrl}/company/workers/company_worker_link_${"q".repeat(24)}`,{waitUntil:"domcontentloaded"});
             await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText("valid",{exact:true}).waitFor();
             await login(worker, baseUrl, credentials.worker, "worker");
+            let existingShareUrl;
+            if (restart) {
+              await worker.goto(baseUrl + "/worker/share-links");
+              await worker.getByLabel("Purpose", { exact: true }).fill("Appeal outcome competency verification");
+              await worker.getByLabel("Competencies", { exact: true }).check();
+              await worker.getByRole("button", { name: "Create secure link", exact: true }).click();
+              const share = worker.getByRole("link", { name: "Open secure share link", exact: true });
+              await share.waitFor();
+              existingShareUrl = new URL(await share.getAttribute("href"), baseUrl).href;
+              await publicPage.goto(existingShareUrl);
+              await publicPage.getByRole("list", { name: "Shared competencies" }).getByText("valid · no expiry recorded", { exact: true }).waitFor();
+            }
             await worker.goto(`${baseUrl}/worker/appeals`, { waitUntil: "domcontentloaded" });
             await worker.getByRole("heading", { name: "Credential appeals", exact: true }).waitFor();
 
@@ -94,6 +106,19 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             await admin.getByRole("heading", { name: "Credential appeals", exact: true }).waitFor();
             let review = admin.locator("article").filter({ hasText: credentialId }).first();
             await review.getByText(/Status: submitted/i).waitFor();
+            if (restart) {
+              const appealId = await review.getAttribute("id");
+              assert.ok(appealId);
+              const response = await admin.request.post(baseUrl + "/api/credentials/appeals/" + encodeURIComponent(appealId), {
+                headers: { origin: baseUrl },
+                data: { status: "accepted", reason: "Synthetic invalid outcome probe", outcomeAction: "unsupported" },
+              });
+              assert.equal(response.status(), 400);
+              assert.deepEqual(await response.json(), { error: "invalid_appeal_outcome_action" });
+              await admin.reload({ waitUntil: "domcontentloaded" });
+              await review.getByText(/Status: submitted/i).waitFor();
+            }
+
 
             await review.getByLabel("Review status").selectOption("under_review");
             await review.getByLabel("Accepted-outcome action").selectOption("none");
@@ -137,8 +162,13 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             await publicPage.getByText(currentStatus==="reassessment_required"?"Reassessment required":currentStatus==="suspended"?"Suspended":"Revoked",{exact:true}).waitFor();
             await company.reload({waitUntil:"domcontentloaded"});
             await company.locator("dt").filter({hasText:"Current competency state"}).locator("..").getByText(currentStatus.replaceAll("_"," "),{exact:true}).waitFor();
-            for(const recipient of [company,publicPage]){
-              const content=await recipient.content();
+            const publicCredentialContent = await publicPage.content();
+            if (existingShareUrl) {
+              await publicPage.goto(existingShareUrl);
+              const competency = publicPage.getByRole("list", { name: "Shared competencies" }).getByRole("listitem").filter({ hasText: "HSE Operational Assurance" });
+              await competency.getByText(currentStatus.replaceAll("_", " ") + " · no expiry recorded", { exact: true }).waitFor();
+            }
+            for(const content of [await company.content(), publicCredentialContent, await publicPage.content()]){
               assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid|PRIVATE_REVIEW_STAGE_/);
             }
 

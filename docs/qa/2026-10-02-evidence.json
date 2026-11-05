@@ -5611,6 +5611,14 @@
               "whole_scenario_verified": false,
               "reviewer": "/root/review_software_plan",
               "scope": "Three protected browser outcomes with restart and PostgreSQL contention and live Company authority checks. Report fixture regression passed separately."
+            },
+            {
+              "kind": "PROTECTED_POSTGRES_SCOPED_SHARE_RUNTIME",
+              "source_sha": "92875b6909ea90851bc76df3f0ff9542580577ce",
+              "artifact": "docs/qa/retained-test-evidence/appeal-scoped-share-restart.json",
+              "artifact_sha256": "0cb76363d7e3010b341f4b47a861f1590a8b30e8dbfa5be3cf8655d802bcd6e7",
+              "whole_scenario_verified": false,
+              "scope": "Worker-created competency share reopened after restart for all three accepted outcomes. Unsupported Admin API outcome returned 400 and appeal remained submitted."
             }
           ],
           "case_plan": {
