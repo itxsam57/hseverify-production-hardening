@@ -85,7 +85,7 @@ const commandGuard = requireMarkers(
     "sessions.expires_at > $5::timestamptz",
     "ceiling.permission_key = $6",
     "denied_override.effect = 'deny'",
-    "FOR UPDATE OF memberships, tenants, accounts, sessions",
+    "FOR UPDATE OF accounts, sessions, memberships, tenants",
     "authorizedTenantPermission !== input.permission",
     "database.transaction"
   ]

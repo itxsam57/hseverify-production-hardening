@@ -229,7 +229,7 @@ test("cross-tenant, missing and malformed identifiers are non-enumerating for ev
 
 test("transactional authorization revalidation denies every accepted lifecycle and permission race", async () => {
   const sql = await contracts();
-  assert.match(sql.guard, /FOR UPDATE OF memberships, tenants, accounts, sessions/);
+  assert.match(sql.guard, /FOR UPDATE OF accounts, sessions, memberships, tenants/);
   const database = await openScriptDatabase(TEST_ENVIRONMENT);
   try {
     await applyPendingMigrations(database, TEST_ENVIRONMENT.releaseSha);

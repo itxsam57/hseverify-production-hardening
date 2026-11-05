@@ -62,7 +62,7 @@ function text(value: string, label: string, min: number, max: number): string {
 async function liveCompany(db: DatabaseClient, principal: SupervisorObservationCreatePrincipal): Promise<void> {
   const scope = deriveTrustedTenantScope(principal);
   if (principal.authorizedTenantPermission !== "company.orders.manage") throw new SupervisorObservationInputError("Company access is required.");
-  const live = await db.query(TENANT_COMMAND_SCOPE_SQL.replace("sessions.expires_at > $5::timestamptz", "sessions.expires_at > clock_timestamp() AND $5::timestamptz IS NOT NULL").replace("FOR UPDATE OF memberships, tenants, accounts, sessions", "FOR UPDATE OF memberships, tenants, accounts, sessions, account_roles, ceiling"),
+  const live = await db.query(TENANT_COMMAND_SCOPE_SQL.replace("sessions.expires_at > $5::timestamptz", "sessions.expires_at > clock_timestamp() AND $5::timestamptz IS NOT NULL").replace("FOR UPDATE OF accounts, sessions, memberships, tenants", "FOR UPDATE OF accounts, sessions, memberships, tenants, account_roles, ceiling"),
     [scope.membershipId, scope.tenantId, scope.accountId, scope.sessionId, new Date().toISOString(), "company.orders.manage"]);
   if (!live.rows[0]) throw new SupervisorObservationInputError("Company access is unavailable.");
 }

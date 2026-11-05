@@ -69,7 +69,7 @@ WHERE sessions.session_id = $1
   AND accounts.account_status = 'active'
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > CURRENT_TIMESTAMP
-FOR UPDATE OF sessions, accounts`;
+FOR UPDATE OF accounts, sessions`;
 
 export const SECURE_FILE_COMPANY_SCOPE_GUARD_SQL = `
 SELECT memberships.membership_id

@@ -238,7 +238,7 @@ async function runWorkerCommand<Result>(input: {
        WHERE sessions.session_id=$1 AND sessions.account_id=$2 AND sessions.active_role='worker'
          AND sessions.revoked_at IS NULL AND sessions.expires_at>$3::timestamptz
          AND accounts.account_status='active'
-       FOR UPDATE OF sessions, accounts`,
+       FOR UPDATE OF accounts, sessions`,
       [principal.sessionId, principal.accountId, input.now.toISOString()]
     );
     const row = live.rows[0];

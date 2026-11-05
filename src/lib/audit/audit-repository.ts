@@ -59,7 +59,7 @@ WHERE sessions.session_id = $1
   AND accounts.account_status = 'active'
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > $4::timestamptz
-FOR UPDATE OF sessions, accounts`;
+FOR UPDATE OF accounts, sessions`;
 
 export const AUDIT_PLATFORM_LIST_SQL = `
 SELECT audit_sequence, audit_event_id, source_kind, source_event_id,

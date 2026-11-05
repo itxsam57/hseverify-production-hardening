@@ -89,6 +89,36 @@ test("PostgreSQL tenant readers coexist and account disablement waits", { skip: 
         const sql = extractSql(source, "TENANT_COMMAND_SCOPE_SQL");
         const parameters = [context.membershipId, context.tenantId, context.accountId, context.sessionId, NOW, "company.settings.manage"];
         const principal = { accountId: context.accountId, sessionId: context.sessionId, activeRole: "company", accountStatus: "active", authorizedTenantPermission: "company.tenant.read", tenantMembership: { tenantId: context.tenantId, membershipId: context.membershipId, tenantStatus: "active", status: "active" } };
+        const secureSource = await readFile("src/lib/secure-files/secure-file-repository.ts", "utf8");
+        const secureSql = extractSql(secureSource, "SECURE_FILE_SESSION_GUARD_SQL");
+        for (const [statement, args] of [[sql, parameters], [secureSql, [context.sessionId, context.accountId, "company"]]]) {
+            let competing;
+            let failure;
+            try {
+                await db.transaction(async (first) => {
+                    await first.query("SELECT account_id FROM auth_accounts WHERE account_id=$1 FOR UPDATE", [context.accountId]);
+                    competing = other.query(statement, args);
+                    competing.catch(() => { });
+                    let waiting = false;
+                    const deadline = Date.now() + 5000;
+                    while (!waiting && Date.now() < deadline) {
+                        waiting = (await admin.query("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=$1 AND wait_event_type='Lock') AS blocked", [name])).rows[0].blocked;
+                        if (!waiting)
+                            await new Promise(resolve => setTimeout(resolve, 25));
+                    }
+                    assert.equal(waiting, true, "Competing guard must reach its account lock");
+                    await first.execute("SET LOCAL lock_timeout='600ms'");
+                    await first.query("SELECT session_id FROM auth_sessions WHERE session_id=$1 FOR UPDATE", [context.sessionId]);
+                    await first.query("SELECT membership_id FROM auth_tenant_memberships WHERE membership_id=$1 FOR UPDATE", [context.membershipId]);
+                    await first.query("SELECT tenant_id FROM platform_tenants WHERE tenant_id=$1 FOR UPDATE", [context.tenantId]);
+                });
+            }
+            catch (error) {
+                failure = error;
+            }
+            await competing?.catch(() => { });
+            assert.ifError(failure);
+        }
         let disablement;
         let changed = false;
         await runTenantScopedCommand({ database: db, principal, permission: "company.tenant.read", readOnly: true, now: new Date(NOW), operation: async () => {

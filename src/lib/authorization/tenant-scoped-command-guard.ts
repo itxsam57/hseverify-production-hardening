@@ -43,7 +43,7 @@ WHERE memberships.membership_id = $1
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > $5::timestamptz
   AND denied_override.membership_id IS NULL
-FOR UPDATE OF memberships, tenants, accounts, sessions`;
+FOR UPDATE OF accounts, sessions, memberships, tenants`;
 
 type TenantCommandScopeRow = {
   tenant_id: string;
