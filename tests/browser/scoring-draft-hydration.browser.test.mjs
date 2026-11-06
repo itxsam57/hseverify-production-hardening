@@ -66,13 +66,15 @@ test("Verifier scoring drafts retain exact reason text across cold hydration and
   await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/verifier/login",projectRoot:process.cwd(),environment:f.environment,probe:async({output})=>{
    const browser=await chromium.launch({headless:true});
    try{
-    const page=await browser.newPage();await login(page,baseUrl,f.credentials.verifier,"verifier");
+    const page=await browser.newPage();
+    page.setDefaultTimeout(20000);
+    await login(page,baseUrl,f.credentials.verifier,"verifier");
     await page.goto(baseUrl+"/verifier/reviews/scoring",{waitUntil:"domcontentloaded"});
     const mark=page.getByRole("form",{name:"Rubric mark Q1:C0"});
     const markReason="Exact criterion reason retained independently of defaults.";
     await mark.getByLabel("Criterion mark").fill("80");await mark.getByLabel("Mark reason").fill(markReason);
     await mark.getByRole("button",{name:"Save mark",exact:true}).click();
-    await page.waitForFunction(()=>document.querySelector('input[name="expectedRevision"]')?.value==="1");
+    await mark.locator('input[name="expectedRevision"][value="1"]').waitFor({state:"attached"});
     await page.reload({waitUntil:"domcontentloaded"});
     assert.equal(await mark.getByLabel("Criterion mark").inputValue(),"80");
     assert.equal(await mark.getByLabel("Mark reason").inputValue(),markReason);
@@ -80,7 +82,7 @@ test("Verifier scoring drafts retain exact reason text across cold hydration and
     const reason="Exact replacement scoring reason without prior default text.";
     await select.selectOption("PASS");await form.locator('textarea[name="reason"]').fill(reason);
     await form.getByRole("button",{name:"Save scoring decision",exact:true}).click();
-    await page.waitForFunction(()=>document.querySelector('input[name="expectedRevision"]')?.value==="2");
+    await form.locator('input[name="expectedRevision"][value="2"]').waitFor({state:"attached"});
     await page.reload({waitUntil:"domcontentloaded"});
     assert.equal(await select.inputValue(),"PASS");assert.equal(await form.locator('textarea[name="reason"]').inputValue(),reason);
     console.log("SCORING_DRAFT_EXACT_BROWSER mark and both reason strings survived cold document reloads without appended defaults");
