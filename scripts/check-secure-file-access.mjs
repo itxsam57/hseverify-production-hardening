@@ -86,6 +86,7 @@ const [
   auditAdapter,
   core,
   service,
+  privateStorage,
   http,
   requestBoundary,
   issueRoute,
@@ -100,6 +101,7 @@ const [
   source("src/lib/secure-files/secure-file-access-audit.ts"),
   source("src/lib/secure-files/secure-file-access-core.ts"),
   source("src/lib/secure-files/secure-file-access-service.ts"),
+  source("src/lib/secure-files/private-object-storage.ts"),
   source("src/lib/secure-files/secure-file-access-http.ts"),
   source("src/lib/secure-files/secure-file-access-request.ts"),
   source("src/app/api/secure-files/access/route.ts"),
@@ -190,18 +192,31 @@ for (const header of [
 mustNotContain(core, /public[_A-Z-]?url|https?:\/\//i,
   "Core must never produce a public object URL.");
 
-mustContain(service, /function requireLocalTestStorageEnvironment/,
-  "Storage support must be decided by one server-owned fail-closed helper.");
-mustContain(service, /value !== "development" && value !== "test"/,
-  "Unsupported production/preview storage environments must fail closed.");
-mustContain(service, /authorizeSecureFileAccess[\s\S]*requireLocalTestStorageEnvironment\(environment\.appEnvironment\)[\s\S]*authorizeSecureFileAccessCore/,
-  "Authorization issuance must refuse environments without an accepted private storage provider.");
-mustContain(service, /readSecureFileAccess[\s\S]*requireLocalTestStorageEnvironment\([\s\S]*environment\.appEnvironment[\s\S]*\)[\s\S]*readSecureFileAccessCore/,
-  "Content use must refuse environments without an accepted private storage provider.");
+// The M1.06 signed-access boundary must handle preview/production only when a
+// server-configured private object volume is present. A missing provider denies
+// authorization and byte serving rather than issuing a capability.
+mustContain(service, /function requireConfiguredPrivateStorage\(/,
+  "Signed access must use a single server-owned private-storage boundary.");
+mustContain(service, /return createRuntimePrivateObjectStorage\(appEnvironment\)/,
+  "Private storage must be resolved using the complete trusted environment.");
+mustContain(service, /error instanceof PrivateObjectStorageError[\s\S]*throw new SecureFileAccessDeniedError\(\)/,
+  "Missing/invalid provider must deny signed access rather than leak configuration.");
+mustContain(service, /authorizeSecureFileAccess[\s\S]*requireConfiguredPrivateStorage\(environment\.appEnvironment\)[\s\S]*authorizeSecureFileAccessCore/,
+  "Authorization must validate configured storage before signing any capability.");
+mustContain(service, /readSecureFileAccess[\s\S]*requireConfiguredPrivateStorage\(environment\.appEnvironment\)[\s\S]*readSecureFileAccessCore/,
+  "Read must validate configured storage before returning bytes.");
 mustContain(service, /environment\.sessionSecret/,
   "Signed access must reuse the server session secret through domain-separated HMAC.");
-mustContain(service, /createLocalTestPrivateObjectStorage\(storageEnvironment\)/,
-  "Only accepted local/test private storage may serve bytes in this subunit.");
+mustNotContain(service, /createLocalTestPrivateObjectStorage\(/,
+  "Signed access must never bypass the runtime storage factory.");
+mustContain(privateStorage, /appEnvironment === "development" \|\| appEnvironment === "test"[\s\S]*return createLocalTestPrivateObjectStorage\(appEnvironment\)/,
+  "Only development/test may select local test storage.");
+mustContain(privateStorage, /process\.env\.HSE_PRIVATE_OBJECT_STORAGE_ROOT\?\.trim\(\)/,
+  "Preview/production storage must require the server-owned private volume path.");
+mustContain(privateStorage, /if \(!configuredRoot\)[\s\S]*throw new PrivateObjectStorageError\(/,
+  "Missing preview/production volume must fail closed.");
+mustContain(privateStorage, /return new FilesystemPrivateObjectStorage\(/,
+  "Configured production storage must stay private and filesystem-backed.");
 mustContain(service, /action: "secure_file\.access\.authorized"/,
   "Successful authorization must be audited before the signed capability is returned.");
 mustContain(service, /action: "secure_file\.access\.served"/,
