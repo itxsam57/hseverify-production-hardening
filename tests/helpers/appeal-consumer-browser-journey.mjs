@@ -250,7 +250,7 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
 
 
             for(const message of consoleErrors){
-              const expected=message.text==="Failed to load resource: the server responded with a status of 502 ()"&&expectedOutages.find(outage=>!outage.consumed&&outage.page===message.page&&outage.url===message.url&&Math.abs(outage.at-message.at)<=1500);
+              const expected=/^Failed to load resource: the server responded with a status of 502 \((?:Bad Gateway)?\)$/.test(message.text)&&expectedOutages.find(outage=>!outage.consumed&&outage.page===message.page&&outage.url===message.url&&Math.abs(outage.at-message.at)<=1500);
               if(expected)expected.consumed=true;
               else errors.push(message.text);
             }

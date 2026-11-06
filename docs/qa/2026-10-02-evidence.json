@@ -5545,14 +5545,14 @@
           "evidence": [
             {
               "kind": "INDEPENDENTLY_ACCEPTED_SCOPED_REPAIR",
-              "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+              "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
               "artifact": "docs/qa/retained-test-evidence/appeal-api-evidence-ownership-review.json",
-              "artifact_sha256": "a208ac67abf745d0c10bb3782ba2d1763726105d8d5ca56423d027c63c84e071",
+              "artifact_sha256": "597c731689a30df520d1c74d0f2dbbebff04b4e55ff838aa93fecfb05cbce531",
               "whole_scenario_verified": false,
               "open": [
-                "Positive API submission with owned evidence and without optional evidence",
-                "Policy eligibility and evidence lifecycle rules",
-                "Sequential and concurrent duplicate submission",
+                "Positive API without optional evidence and explicit sequence collision",
+                "Rules Engine eligibility and evidence lifecycle",
+                "Restart while the appeal is still submitted",
                 "Remaining independent case-plan review"
               ]
             }

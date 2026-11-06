@@ -44,9 +44,47 @@
     }
   ],
   "open": [
-    "Positive API submission with owned evidence and without optional evidence",
-    "Policy eligibility and evidence lifecycle rules",
-    "Sequential and concurrent duplicate submission",
+    "Positive API without optional evidence and explicit sequence collision",
+    "Rules Engine eligibility and evidence lifecycle",
+    "Restart while the appeal is still submitted",
     "Remaining independent case-plan review"
-  ]
+  ],
+  "duplicate_submission": {
+    "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+    "independent_disposition": "ACCEPTED_SCOPED",
+    "runtime": "Isolated PostgreSQL and loopback HTTPS with a fixture-specific certificate pin.",
+    "invocation": "HSE_STAGE_APPEAL_SUBMISSION_API=true HSE_STAGE_APPEAL_ACTION=reassessment node --test tests/browser/appeal-consumer-propagation.staging.test.mjs",
+    "observations": [
+      {
+        "artifact": ".autopilot/artifacts/20261106-78fe43e-appeal-duplicate-red-reassessment-1.log",
+        "artifact_sha256": "f91530dde0f5873f8eccdd5388df214bde8a33067c504795906b2970ec7061cb",
+        "source_sha": "78fe43eb50e11d10fa63f355c9aeb343d88ead8e",
+        "scope": "Concurrent submissions returned 201 and 500."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-appeal-duplicate-native.log",
+        "artifact_sha256": "8a1c3468d17680a2da567403521e6d9e1a38cc60711454f687f3441ec2a1cc8f",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Sixteen native appeal regressions passed on the candidate source before commit."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-494d6fa-appeal-duplicate-green-final.log",
+        "artifact_sha256": "f576f1ab8fc8a9d65aeb4d329d9e3d14f1846b15b4a5b513b46b6707d6c2fed8",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Positive API owned evidence, parallel 201/409, sequential 409, one submitted event, and protected recipient restart passed. QA console matching adjustment present."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-494d6fa-protected-access.log",
+        "artifact_sha256": "4c4a27830dacb1d7ec50d0f96820f1a6bb92d9724dcb697a8c23044a9ed01b99",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Exact build startup, protected roles, recovery and session retention passed on loopback HTTPS."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-494d6fa-release-record-negative.log",
+        "artifact_sha256": "9102cd40ef1c21c38697a6d5c849817244235caf4928252685929d8105b2f694",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Mismatched release SHA and unavailable PostgreSQL prevented release recording."
+      }
+    ]
+  }
 }
