@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {spawnSync} from "node:child_process";
+import {mkdtempSync,rmSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join,resolve} from "node:path";
 import {validateScriptEnvironment} from "../../scripts/lib/environment.mjs";
 import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
 const {validateRuntimeEnvironment}=loadTs("src/lib/config/environment.ts");
@@ -22,6 +26,8 @@ const cases=[
  ["authentication sandbox",{HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:"isolated-sandbox-access-key"},/sandbox/i],
  ["PGlite",{HSE_DATABASE_DRIVER:"pglite"},/PGlite/i],
  ["database URL",{DATABASE_URL:undefined},/DATABASE_URL/i],
+ ["missing credential signing secret",{HSE_CREDENTIAL_SIGNING_SECRET:undefined},/HSE_CREDENTIAL_SIGNING_SECRET/i],
+ ["short credential signing secret",{HSE_CREDENTIAL_SIGNING_SECRET:"short"},/HSE_CREDENTIAL_SIGNING_SECRET/i],
  ["missing session secret",{HSE_SESSION_SECRET:undefined},/HSE_SESSION_SECRET/i],
  ["short session secret",{HSE_SESSION_SECRET:"short"},/HSE_SESSION_SECRET/i],
  ["missing auth pepper",{HSE_AUTH_PEPPER:undefined},/HSE_AUTH_PEPPER/i],
@@ -31,4 +37,26 @@ const cases=[
 for(const [name,change,error] of cases)test("production rejects only the independently invalid "+name,()=>{
  const env={...base,...change};for(const key of Object.keys(env))if(env[key]===undefined)delete env[key];
  for(const validate of [validateScriptEnvironment,validateRuntimeEnvironment])assert.throws(()=>validate(env),error);
+});
+
+
+test("production entry point rejects missing secrets and prohibited flags before listening", () => {
+  const entry = resolve("scripts/start-production.mjs");
+  const directory = mkdtempSync(join(tmpdir(), "hse-invalid-start-"));
+  try {
+    for (const [name, change, error] of cases) {
+      const env = {...base, ...change, HOSTNAME: "127.0.0.1"};
+      for (const key of Object.keys(env)) if (env[key] === undefined) delete env[key];
+      const result = spawnSync(process.execPath, [entry], {
+        cwd: directory, env, encoding: "utf8", timeout: 3000,
+      });
+      assert.ifError(result.error);
+      assert.equal(result.status, 1, name);
+      assert.match(result.stderr, error, name);
+      assert.doesNotMatch(result.stderr, /Cannot find module/, name);
+      assert.doesNotMatch(result.stdout, /Ready|Starting/, name);
+    }
+  } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
 });

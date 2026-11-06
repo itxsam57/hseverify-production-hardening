@@ -1,4 +1,9 @@
 import { isAbsolute, resolve } from "node:path";
+import { readProjectEnvironment } from "./lib/environment.mjs";
+
+// Match the standalone server mode before validating or opening a listener.
+process.env.NODE_ENV = "production";
+readProjectEnvironment();
 
 const projectRoot = process.cwd();
 const standaloneRoot = resolve(projectRoot, ".next", "standalone");
