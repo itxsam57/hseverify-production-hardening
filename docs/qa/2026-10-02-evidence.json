@@ -5627,6 +5627,14 @@
               "artifact_sha256": "4c6e2e4a2e0833e9c25488075bab33f92b1e5d1c6076a6a94686d8f84b6c65e0",
               "whole_scenario_verified": false,
               "scope": "Pending and rejected appeal retain valid Company, public and scoped share views. Worker submission rejects missing and foreign-owned credential fixtures without creating appeals. Direct recipient HTML response bodies and rendered pages omit private appeal text."
+            },
+            {
+              "kind": "POSTGRES_REPLACEMENT_SUPERSESSION_REGRESSION",
+              "base_sha": "e1646f015fc8bbc720ee95c9b1624cae0e7a4e63",
+              "scope": "PostgreSQL replacement blocked on a newer accepted review. Fresh eligibility check rejects the superseded source and rolls back replacement, decision and issuance.",
+              "artifact": "docs/qa/retained-test-evidence/appeal-replacement-supersession.json",
+              "artifact_sha256": "4beac149a50e121aa24615f5594b616874b9bed8ec096ff402887ee5ab53f8ab",
+              "whole_scenario_verified": false
             }
           ],
           "case_plan": {

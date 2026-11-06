@@ -1,6 +1,7 @@
 import { seedPublishedQuestion } from "./question-publication-fixture.mjs";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { workerAssessmentSearchFixture } from "./worker-assessment-search-fixture.mjs";
 import { seedPermanentWorkerId } from "./permanent-worker-id-fixture.mjs";
@@ -28,10 +29,10 @@ export async function fundingPrincipal(database, identity, role = "worker") {
     ...(role === "company" ? { authorizedTenantPermission: "company.billing.manage" } : {}) };
 }
 
-export async function assessmentFundingFixture({policyValues={pass_mark:70},startingCreditUnits=3}={}) {
+export async function assessmentFundingFixture({policyValues={pass_mark:70},startingCreditUnits=3,stage}={}) {
   assert(Number.isSafeInteger(startingCreditUnits) && startingCreditUnits>=0,"Fixture credit quantity must be a non-negative integer");
-  const fixture = await workerAssessmentSearchFixture();
-  const database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+  const fixture = await workerAssessmentSearchFixture(stage);
+  const database = stage ? await openScriptDatabase({databaseDriver:"postgres",databaseUrl:stage.applicationEnvironment.DATABASE_URL}) : await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
   try {
     const now = new Date().toISOString(), admin = fixture.credentials.admin.accountId;
     const workerId = await seedPermanentWorkerId(database, fixture.credentials.worker, "f", now);

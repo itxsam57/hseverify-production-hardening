@@ -58,6 +58,21 @@ export async function resolveAssessmentReassessmentSource(database: DatabaseClie
     if(!links.rows[0]) throw new AssessmentReassessmentSourceAccessError();
     workerLinkId=links.rows[0].link_id;
   } else if(input.workerLinkId && input.workerLinkId!==workerLinkId) throw new AssessmentReassessmentSourceAccessError();
+  if (input.lock) {
+    // A statement that waited for a row lock can still use its old snapshot
+    // for the newer-appeal and replacement predicates. Recheck under the locks.
+    const current = await resolveAssessmentReassessmentSource(database, {
+      ...input,
+      lock: false,
+      sourceAppealVersion: Number(row.version),
+      workerLinkId
+    });
+    if (current.sourceCaseId !== row.case_id || current.credentialId !== row.credential_reference ||
+        current.decisionId !== row.decision_reference || current.tenantId !== row.tenant_id) {
+      throw new AssessmentReassessmentSourceAccessError();
+    }
+    return current;
+  }
   return Object.freeze({sourceAppealId:row.appeal_id,sourceAppealVersion:Number(row.version),sourceCaseId:row.case_id,
     tenantId:row.tenant_id,frameworkId:row.framework_id,credentialId:row.credential_reference,decisionId:row.decision_reference,
     workerAccountId:row.worker_account_id,permanentWorkerId:row.permanent_worker_id,workerLinkId});

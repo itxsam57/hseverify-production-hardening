@@ -1,0 +1,80 @@
+{
+  "base_sha": "e1646f015fc8bbc720ee95c9b1624cae0e7a4e63",
+  "whole_scenario_verified": false,
+  "reviewer": "/root/review_software_plan",
+  "scope": "PostgreSQL replacement blocked on a newer accepted review. Fresh eligibility check rejects the superseded source and rolls back replacement, decision and issuance.",
+  "artifacts": [
+    {
+      "path": ".autopilot/artifacts/20261106-replacement-race-red.log",
+      "sha256": "cb1c2e92606edb0a0e460771892a18310237945343bd954dd794d29f431a3d19",
+      "tail": [
+        "  ''",
+        "  ",
+        "      at TestContext.<anonymous> (file:///home/ubuntu/work/hseverify-release-squash/tests/platform/credential-reassessment-replacement-race.staging.test.mjs:85:12)",
+        "      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+        "      at async Test.run (node:internal/test_runner/test:1404:7)",
+        "      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {",
+        "    generatedMessage: true,",
+        "    code: 'ERR_ASSERTION',",
+        "    actual: '',",
+        "    expected: /selected reassessment appeal is unavailable/i,",
+        "    operator: 'match',",
+        "    diff: 'simple'",
+        "  }",
+        "EXIT_CODE=1"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261106-replacement-race-final.log",
+      "sha256": "70d94776ba5cc648940cf2f838e5e3690d048cc74cc04aba0975528c04e12040",
+      "tail": [
+        "  file: 'scansup.c',",
+        "  line: '99',",
+        "  routine: 'truncate_identifier'",
+        "}",
+        "\u2714 replacement rechecks its source after a newer appeal review commits (4091.187227ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 6917.535913",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261106-replacement-adjacent.log",
+      "sha256": "fa18b111a8c7681acdbe09f88653faee7ee5f83885b40af8dcb2d2d7193aaf4b",
+      "tail": [
+        "\u2714 Actual positive issuer finalizes only the explicitly associated accepted reassessment and retains old signed history (13722.787561ms)",
+        "\u2714 Explicit reassessment issuer rejects owner review, lost Company access, missing validity and unauthenticated original without partial replacement (50407.68647ms)",
+        "\u2714 Timeout-submitted reassessment with actual FINAL PASS can complete approval (13952.315123ms)",
+        "\u2139 tests 3",
+        "\u2139 suites 0",
+        "\u2139 pass 3",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 79897.592492",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261106-replacement-types.log",
+      "sha256": "cbc43507cc46f90a4d644cecf8ee99d2c01c83d50f46ccebe408d76c67c485a6",
+      "tail": [
+        "",
+        "> hseverify@0.1.0 typecheck",
+        "> node scripts/typecheck-project.mjs",
+        "",
+        "Generating route types...",
+        "\u2713 Types generated successfully",
+        "Isolated Next type generation and strict TypeScript validation passed.",
+        "EXIT_CODE=0"
+      ]
+    }
+  ]
+}
