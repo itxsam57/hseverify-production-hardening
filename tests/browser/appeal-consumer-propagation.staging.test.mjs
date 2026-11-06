@@ -33,6 +33,12 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'original-stage-admin@example.test','Synthetic original decision admin','active','test-only',$2,$2,$2,$2)",[actor,issuedAt]);
   await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[actor,issuedAt]);
   await fixture.repo.saveDecisionAndProgressCase(fixture.decision,actor);
+  const evidenceRecordId = "worker_evidence_PRIVATE_EVIDENCE_STAGE";
+  const evidenceVersionId = "worker_evidence_version_PRIVATE_EVIDENCE_STAGE";
+  await db.query("INSERT INTO worker_evidence_records(record_id,worker_account_id,record_kind,lifecycle_status,created_at,updated_at) VALUES($1,$2,'qualification','active',$3,$3)", [evidenceRecordId,accounts.worker.accountId,issuedAt]);
+  await db.query("INSERT INTO worker_evidence_versions(version_id,record_id,version_number,revision,version_status,created_at,updated_at,submitted_at) VALUES($1,$2,1,1,'submitted',$3,$3,$3)", [evidenceVersionId,evidenceRecordId,issuedAt]);
+  await db.query("INSERT INTO worker_qualification_versions(version_id,qualification_title,category,issuing_organization,certificate_number,issue_date,qualification_level,country,declaration_accepted) VALUES($1,'Synthetic appeal evidence','Occupational Safety','Synthetic issuer','PRIVATE_EVIDENCE_STAGE_CERT','2026-01-15','Level 3','Pakistan',true)", [evidenceVersionId]);
+  await db.query("UPDATE worker_evidence_records SET current_version_id=$2 WHERE record_id=$1", [evidenceRecordId,evidenceVersionId]);
   const originalCase=(await db.query("SELECT * FROM assurance_cases WHERE case_id=$1",[fixture.caseId])).rows[0];
   const latest=(await db.query("SELECT case_id,credential_reference FROM assurance_cases WHERE tenant_id=$1 AND worker_account_id=$2 ORDER BY updated_at DESC,created_at DESC LIMIT 1",[accounts.company.tenantId,accounts.worker.accountId])).rows[0];
   assert.equal(latest.case_id,fixture.caseId,"Dedicated fixture must be the selected latest Company case");
@@ -64,7 +70,7 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await withOwnedStagingServer(config,async({restart})=>{
    const anonymous=await fetch(config.url+"/company/login");
    assert.equal(anonymous.status,401,"Perimeter must deny missing Basic authentication");
-   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,httpCredentials:{username:config.user,password:config.password},restart:async()=>{
+   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,evidenceRecordId,httpCredentials:{username:config.user,password:config.password},restart:async()=>{
      const before=await snapshot();
      assert.deepEqual(await signedFields(),originalSignedFields);
      await restart();

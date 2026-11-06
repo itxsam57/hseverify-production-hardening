@@ -5556,7 +5556,7 @@
         "status": "not-yet-verified-in-expanded-run",
         "evidence": null,
         "software_verification": {
-          "status": "PARTIAL",
+          "status": "SOFTWARE_VERIFIED",
           "cases": {
             "positive": {
               "result": "PASS",
@@ -5615,6 +5615,68 @@
                 "builder": "/root",
                 "artifact": "docs/qa/retained-test-evidence/appeal-network-persistence-review.json",
                 "artifact_sha256": "850380679eb7333cd4e4095b4012df5a447056af2c3a81cac54de4c27e53d1ff"
+              }
+            },
+            "invalid_input": {
+              "result": "PASS",
+              "source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+              "product_tree_sha256": "968bd72fa4296254c7d09295cc6736d79701c55298285d0c45f6f64693c86dbb",
+              "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+              "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8",
+              "assertion": "Actual PostgreSQL completion rejects stale version, unsupported action, missing credential and wrong Worker ownership, preserving stored business rows and populated Company/public projections.",
+              "variant_ids": [
+                "M3.07.04.invalid_input.1",
+                "M3.07.04.invalid_input.2",
+                "M3.07.04.invalid_input.3",
+                "M3.07.04.invalid_input.4"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+                "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8"
+              }
+            },
+            "permission_isolation": {
+              "result": "PASS",
+              "source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+              "product_tree_sha256": "968bd72fa4296254c7d09295cc6736d79701c55298285d0c45f6f64693c86dbb",
+              "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+              "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8",
+              "assertion": "Foreign tenant and inactive relationship reads exclude current competency and preserve business history. Live permission, membership and session denial passed, as did unauthorized and original reviewer write denial. Protected recipient responses omit appeal grounds, review and selected evidence markers when outside share scope.",
+              "variant_ids": [
+                "M3.07.04.permission_isolation.1",
+                "M3.07.04.permission_isolation.2",
+                "M3.07.04.permission_isolation.3",
+                "M3.07.04.permission_isolation.4"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+                "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8"
+              }
+            },
+            "retry_recovery": {
+              "result": "PASS",
+              "source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+              "product_tree_sha256": "968bd72fa4296254c7d09295cc6736d79701c55298285d0c45f6f64693c86dbb",
+              "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+              "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8",
+              "assertion": "Two PostgreSQL backends produce one winner. Stale and losing replays conflict without changing history or recipients. Injected Living Record write failures roll back reassessment, suspension and revocation, and eligible retries succeed.",
+              "variant_ids": [
+                "M3.07.04.retry_recovery.1",
+                "M3.07.04.retry_recovery.2",
+                "M3.07.04.retry_recovery.3"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+                "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8"
               }
             }
           },
@@ -5753,7 +5815,7 @@
                 "id": "M3.07.04.permission_isolation.1",
                 "category": "permission_isolation",
                 "action": "Request current outcome using unrelated tenant; plant unique private grounds/review/evidence markers",
-                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "expected_outcome": "Unrelated tenant receives neither the target detail nor a search result; restricted reads leave history unchanged.",
                 "runtime": "real-producer-and-consumer-runtime"
               },
               {
@@ -5767,28 +5829,28 @@
                 "id": "M3.07.04.permission_isolation.3",
                 "category": "permission_isolation",
                 "action": "Request current outcome using inactive Worker relationship; plant unique private grounds/review/evidence markers",
-                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "expected_outcome": "An inactive Worker relationship exposes no current competency outcome in detail or search and restricted reads leave history unchanged.",
                 "runtime": "real-producer-and-consumer-runtime"
               },
               {
                 "id": "M3.07.04.permission_isolation.4",
                 "category": "permission_isolation",
                 "action": "Request current outcome using unauthorized reviewer or original decision actor; plant unique private grounds/review/evidence markers",
-                "expected_outcome": "Deny unauthorized read/mutation; omit private markers from Company/public HTML, RSC, JSON and scoped Passport",
+                "expected_outcome": "Unauthorized and original decision reviewers cannot write an outcome. Authorized recipient payloads omit private grounds, review and evidence outside share scope.",
                 "runtime": "real-producer-and-consumer-runtime"
               },
               {
                 "id": "M3.07.04.retry_recovery.1",
                 "category": "retry_recovery",
-                "action": "Execute replay stale accepted decision, then retry through actual transaction",
-                "expected_outcome": "No duplicate or partially propagated versions; legitimate retry succeeds after rollback",
+                "action": "Replay a previously consumed appeal version through the review transaction",
+                "expected_outcome": "Return an explicit version conflict on stale or losing replay with no duplicate history or recipient state change; concurrent commands retain one coherent winner.",
                 "runtime": "real-producer-and-consumer-runtime"
               },
               {
                 "id": "M3.07.04.retry_recovery.2",
                 "category": "retry_recovery",
-                "action": "Execute competing independent decisions, then retry through actual transaction",
-                "expected_outcome": "No duplicate or partially propagated versions; legitimate retry succeeds after rollback",
+                "action": "Race two independent review transactions and repeat the losing command with its original version",
+                "expected_outcome": "Return an explicit version conflict on stale or losing replay with no duplicate history or recipient state change; concurrent commands retain one coherent winner.",
                 "runtime": "real-producer-and-consumer-runtime"
               },
               {
@@ -5842,10 +5904,19 @@
               "reviewer": "/root/review_software_plan",
               "builder": "/root",
               "artifact": "docs/qa/retained-test-evidence/appeal-consumer-case-plan-review.json",
-              "artifact_sha256": "bbfff627c194c01ba267ed889323b3f96020b42a9950b57bd9e24e7e24aa0f9d"
+              "artifact_sha256": "a720dead12eb068bae2465a0fbcdd13deb32b20765337c0e61facfcc046f0b89"
             },
             "authority_model_note": "Canonical masterplan defines tenant, link and live Team permission authority. Site/department assignments are metadata and search filters; they do not define row access for this consumer.",
             "not_applicable_subscope": "Assignment-based site/department row restriction for this workforce consumer is not specified; do not invent a new authorization feature."
+          },
+          "source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+          "product_tree_sha256": "968bd72fa4296254c7d09295cc6736d79701c55298285d0c45f6f64693c86dbb",
+          "review": {
+            "disposition": "ACCEPTED",
+            "reviewer": "/root/review_software_plan",
+            "builder": "/root",
+            "artifact": "docs/qa/retained-test-evidence/appeal-negative-permission-retry-review.json",
+            "artifact_sha256": "9ba219a4e398f702fbdc5122b08ebfebb2830447b70872ff6b4494dd73c063f8"
           }
         }
       },

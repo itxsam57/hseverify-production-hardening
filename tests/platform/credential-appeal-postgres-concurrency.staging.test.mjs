@@ -48,10 +48,53 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
 
   const {CredentialAppealsService}=loadTs("src/lib/credential/credential-appeals-service.ts");
   const service=new CredentialAppealsService(Promise.resolve(db),environment.HSE_CREDENTIAL_SIGNING_SECRET);
-  const appeal=await service.submit({credentialId,workerId,reason:"Concurrent independent decisions must remain coherent",createdAt:new Date().toISOString()},"postgres-race");
+  const appeal=await service.submit({credentialId,workerId,reason:"PRIVATE_GROUNDS_STAGE_concurrent decisions",evidence:["PRIVATE_EVIDENCE_STAGE_reference"],createdAt:new Date().toISOString()},"postgres-race");
   const secondReviewer="account_appeal_stage_reviewer_two";
   await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'second-stage-reviewer@example.test','Synthetic reviewer two','active','test-only',$2,$2,$2,$2)",[secondReviewer,issuedAt]);
   await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'admin',$2)",[secondReviewer,issuedAt]);
+  const {PublicVerificationRepository}=loadTs("src/lib/public-verification/public-verification-repository.ts");
+  const {PublicVerificationService}=loadTs("src/lib/public-verification/public-verification-service.ts");
+  const publicService=new PublicVerificationService(new PublicVerificationRepository(db),environment.HSE_SESSION_SECRET,[environment.HSE_CREDENTIAL_SIGNING_SECRET]);
+  const fingerprint="a".repeat(64),lookup=await publicService.lookupPublicVerification({rawIdentifier:credentialId,requestFingerprint:fingerprint});
+  assert.equal(lookup.kind,"redirect");
+  const at=new Date().toISOString(),expiresAt=new Date(Date.now()+3600000).toISOString(),sessionId="session_postgres_concurrent_company";
+  await db.query("INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) VALUES($1,$2,'company','synthetic-race-token','synthetic-race-csrf',$3,$3,$4)",[sessionId,accounts.company.accountId,at,expiresAt]);
+  const principal={accountId:accounts.company.accountId,sessionId,activeRole:"company",accountStatus:"active",email:accounts.company.email,displayName:"Synthetic Company",createdAt:at,lastSeenAt:at,expiresAt,authorizedTenantPermission:"company.workforce.manage",tenantMembership:{tenantId:accounts.company.tenantId,tenantStatus:"active",membershipId:accounts.company.membershipId,role:"owner",status:"active",overrides:[]}};
+  const {CompanyWorkforceDirectoryService}=loadTs("src/lib/company/company-workforce-directory-service.ts");
+  const company=new CompanyWorkforceDirectoryService(Promise.resolve(db));
+  const businessSnapshot=async()=>JSON.stringify(await Promise.all(["credential_appeals","credential_appeal_events","credential_issuances","credential_lifecycle_events","living_record_competencies","living_record_versions","assurance_cases"].map(async table=>(await db.query("SELECT * FROM "+table+" ORDER BY 1,2")).rows)));
+
+  const publicProjection=()=>publicService.resolvePublicVerificationCapability({publicToken:lookup.publicToken,requestFingerprint:fingerprint,now:new Date(at)});
+  const recipientSnapshot=async()=>{
+    const projection=await publicProjection();
+    const detail=await company.find(principal,linkId);
+    const listing=await company.search(principal,{});
+    assert.equal(projection.kind,"projection");
+    assert.ok(detail);
+    assert.ok(listing.rows.some(row=>row.linkId===linkId));
+    return {public:projection.projection,company:detail,listing};
+  };
+  const reviewCommand={status:"accepted",reviewerId:accounts.admin.accountId,reason:"PRIVATE_REVIEW_STAGE_probe",outcomeAction:"suspend"};
+  const assertNoMutation=async(operation, pattern)=>{
+    const before=await businessSnapshot();
+    const recipients=await recipientSnapshot();
+    await assert.rejects(operation,pattern);
+    assert.equal(await businessSnapshot(),before);
+    assert.deepEqual(await recipientSnapshot(),recipients);
+    assert.doesNotMatch(JSON.stringify(recipients),/PRIVATE_(?:GROUNDS|REVIEW|EVIDENCE)_STAGE/);
+  };
+  await assertNoMutation(()=>service.reviewOutcome(appeal,{...reviewCommand,outcomeAction:"unsupported"}),/outcome action is invalid/i);
+  await assertNoMutation(()=>service.reviewOutcome(appeal,{...reviewCommand,reviewerId:accounts.company.accountId}),/authorized authenticated reviewer/i);
+  await assertNoMutation(()=>service.reviewOutcome(appeal,{...reviewCommand,reviewerId:actor}),/independent reviewer/i);
+  // Seed malformed historical rows without using the live submission workflow.
+  // Completion must still fail closed when legacy provenance is invalid.
+  const {CredentialAppealsRepository}=loadTs("src/lib/credential/credential-appeals-repository.ts");
+  const seedMalformed=async(id, credential, worker)=>{
+    await db.query("INSERT INTO credential_appeals(appeal_id,credential_id,worker_id,reason,status,version,created_at,updated_at) VALUES($1,$2,$3,'PRIVATE_GROUNDS_STAGE_legacy','submitted',1,$4,$4)",[id,credential,worker,at]);
+    return new CredentialAppealsRepository(Promise.resolve(db)).find(id);
+  };
+  const missing=await seedMalformed("appeal_missing_completion_probe","credential_id_missing_completion_probe",workerId);
+  await assertNoMutation(()=>service.reviewOutcome(missing,reviewCommand),/ownership provenance/i);
   const clients=[];
   try{for(let index=0;index<2;index++)clients.push(await openScriptDatabase({databaseDriver:"postgres",databaseUrl:environment.DATABASE_URL}));}
   catch(error){await Promise.all(clients.map(client=>client.close()));throw error;}
@@ -93,7 +136,7 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
       const commands=new CredentialAppealsService(Promise.resolve(database),environment.HSE_CREDENTIAL_SIGNING_SECRET);
       return raceKind==="review-withdraw"&&index===1
         ? commands.withdraw(appeal,workerId)
-        : commands.reviewOutcome(appeal,{status:"accepted",reviewerId:index?secondReviewer:accounts.admin.accountId,reason:"Independent racing "+(index?"revoke":"suspend")+" decision",outcomeAction:index?"revoke":"suspend",reviewedAt:new Date().toISOString()});
+        : commands.reviewOutcome(appeal,{status:"accepted",reviewerId:index?secondReviewer:accounts.admin.accountId,reason:"PRIVATE_REVIEW_STAGE_independent racing "+(index?"revoke":"suspend")+" decision",outcomeAction:index?"revoke":"suspend",reviewedAt:new Date().toISOString()});
     }));
     assert.ok(reached.size>0);
     if(raceKind==="reviewers")assert.equal(reached.size,2,"Both reviewers must eventually attempt the real version-guarded update");
@@ -118,25 +161,22 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
     assert.deepEqual(living.map(row=>row.status),withdrawn?["valid"]:[expected,"valid"]);
     assert.equal(Number((await db.query("SELECT count(*) AS n FROM credential_appeal_events WHERE appeal_id=$1",[appeal.appealId])).rows[0].n),2);
     assert.equal(Number((await db.query("SELECT count(*) AS n FROM credential_lifecycle_events WHERE credential_id=$1",[credentialId])).rows[0].n),withdrawn?1:2);
-    const {PublicVerificationRepository}=loadTs("src/lib/public-verification/public-verification-repository.ts");
-    const {PublicVerificationService}=loadTs("src/lib/public-verification/public-verification-service.ts");
-    const publicService=new PublicVerificationService(new PublicVerificationRepository(db),environment.HSE_SESSION_SECRET,[environment.HSE_CREDENTIAL_SIGNING_SECRET]);
-    const fingerprint="a".repeat(64),lookup=await publicService.lookupPublicVerification({rawIdentifier:credentialId,requestFingerprint:fingerprint});
-    assert.equal(lookup.kind,"redirect");
-    const resolved=await publicService.resolvePublicVerificationCapability({publicToken:lookup.publicToken,requestFingerprint:fingerprint});
-    assert.equal(resolved.projection.status,expected);
-    assert.deepEqual((await db.query("SELECT signature,qr_payload FROM credential_issuances WHERE credential_id=$1",[credentialId])).rows[0],signedBefore);
-    const at=new Date().toISOString(),expiresAt=new Date(Date.now()+3600000).toISOString(),sessionId="session_postgres_concurrent_company";
-    await db.query("INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) VALUES($1,$2,'company','synthetic-race-token','synthetic-race-csrf',$3,$3,$4)",[sessionId,accounts.company.accountId,at,expiresAt]);
-    const principal={accountId:accounts.company.accountId,sessionId,activeRole:"company",accountStatus:"active",email:accounts.company.email,displayName:"Synthetic Company",createdAt:at,lastSeenAt:at,expiresAt,authorizedTenantPermission:"company.workforce.manage",tenantMembership:{tenantId:accounts.company.tenantId,tenantStatus:"active",membershipId:accounts.company.membershipId,role:"owner",status:"active",overrides:[]}};
-    const {CompanyWorkforceDirectoryService}=loadTs("src/lib/company/company-workforce-directory-service.ts");
-    const company=new CompanyWorkforceDirectoryService(Promise.resolve(db));
+    assert.equal((await publicProjection()).projection.status,expected);
     assert.equal((await company.find(principal,linkId)).currentCompetencyStatus,expected);
+    assert.deepEqual((await db.query("SELECT signature,qr_payload FROM credential_issuances WHERE credential_id=$1",[credentialId])).rows[0],signedBefore);
+    await assertNoMutation(()=>service.reviewOutcome(appeal,reviewCommand),/update conflict/i);
+    const loserIndex=results.findIndex(result=>result.status==="rejected");
+    const repeatLoser=()=>raceKind==="review-withdraw" && loserIndex===1
+      ? service.withdraw(appeal,workerId)
+      : service.reviewOutcome(appeal,{...reviewCommand,reviewerId:loserIndex?secondReviewer:accounts.admin.accountId,outcomeAction:loserIndex?"revoke":"suspend"});
+    await assertNoMutation(repeatLoser,/update conflict/i);
+
+    const wrongOwner=await seedMalformed("appeal_foreign_completion_probe",credentialId,"worker_id_foreign_completion_probe");
+    await assertNoMutation(()=>service.reviewOutcome(wrongOwner,reviewCommand),/ownership provenance/i);
     const backupOwner="account_company_backup_owner",backupMembership="membership_"+"k".repeat(24);
     await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'backup-owner@example.test','Synthetic backup owner','active','test-only',$2,$2,$2,$2)",[backupOwner,at]);
     await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'company',$2)",[backupOwner,at]);
     await db.query("INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at) VALUES($1,$2,$3,'company','owner','active',$4,$5,$5,$5)",[backupMembership,accounts.company.tenantId,backupOwner,accounts.company.accountId,at]);
-    const businessSnapshot=async()=>JSON.stringify(await Promise.all(["credential_appeals","credential_appeal_events","credential_issuances","credential_lifecycle_events","living_record_versions"].map(async table=>(await db.query("SELECT * FROM "+table+" ORDER BY 1,2")).rows)));
     const unchanged=await businessSnapshot();
     const denied=async()=>{
       await assert.rejects(company.find(principal,linkId),error=>error.name==="TenantScopeDeniedError");

@@ -25,5 +25,11 @@
     ],
     "required_variant": "Reuse a cached Company principal after persisted permission denial, membership suspension and session revocation; find/search reject without business mutation, and authorized recovery succeeds.",
     "not_applicable_subscope": "Assignment-based site/department row restriction for this workforce consumer is not specified; do not invent a new authorization feature."
+  },
+  "final_variant_clarification": {
+    "disposition": "ACCEPTED",
+    "reviewer": "/root/review_software_plan",
+    "builder": "/root",
+    "scope": "Replay is rejected without duplicates. Eligible retry after rollback is separately required. Tenant and inactive relationship cases exercise recipient reads; reviewer cases exercise denied writes and recipient privacy."
   }
 }

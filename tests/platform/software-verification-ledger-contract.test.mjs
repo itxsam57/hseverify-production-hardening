@@ -39,7 +39,10 @@ test("software plan assigns all 218 scenarios and 37 bricks", () => {
 });
 
 test("accepted schema fixture passes the structural gate", () => {
-  assert.equal(validateSoftwareVerificationPhase(acceptedSchemaFixture()).counts.SOFTWARE_VERIFIED, 1);
+  const verifiedBefore = validateSoftwareVerificationPhase(matrix).counts.SOFTWARE_VERIFIED ?? 0;
+  const alreadyVerified = matrix.scenarios[0].software_verification.status === "SOFTWARE_VERIFIED";
+  assert.equal(validateSoftwareVerificationPhase(acceptedSchemaFixture()).counts.SOFTWARE_VERIFIED,
+    verifiedBefore + (alreadyVerified ? 0 : 1));
 });
 
 test("scenario promotion requires independent review of the plan and every case", () => {

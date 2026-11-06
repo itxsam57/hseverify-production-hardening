@@ -78,6 +78,7 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             if (restart) {
               await worker.goto(baseUrl + "/worker/share-links");
               await worker.getByLabel("Purpose", { exact: true }).fill("Appeal outcome competency verification");
+              await worker.getByLabel("Qualifications", { exact: true }).uncheck();
               await worker.getByLabel("Competencies", { exact: true }).check();
               await worker.getByRole("button", { name: "Create secure link", exact: true }).click();
               const share = worker.getByRole("link", { name: "Open secure share link", exact: true });
@@ -206,6 +207,7 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
               const credentialPayload = await credentialJson.json();
               const sharePayload = await shareJson.json();
               assert.equal(credentialPayload.status, currentStatus);
+              assert.equal(sharePayload.projection.qualifications, undefined);
               assert.equal(sharePayload.projection.competencies.find(item => item.title === "HSE Operational Assurance").status, currentStatus);
               responseBodies.push(await credentialJson.text(), await shareJson.text());
 
@@ -217,7 +219,7 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
               }
             }
             for(const content of [await company.content(), publicCredentialContent, await publicPage.content(), publicResponseBody, ...responseBodies]){
-              assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid|PRIVATE_REVIEW_STAGE_/);
+              assert.ok(!/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid|PRIVATE_REVIEW_STAGE_|PRIVATE_EVIDENCE_STAGE/.test(content),"Recipient response exposed a private appeal marker");
             }
 
 

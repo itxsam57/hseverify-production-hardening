@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "SOFTWARE-VERIFY-20261105",
-  "stage": "REPAIRING_M30704_POSTGRES_CONTENTION",
+  "stage": "VERIFYING_B00_CI_CANDIDATE",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
   "branch": "qa/masterplan-release-squash-20261102",
@@ -9,9 +9,9 @@
   "last_verified_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
   "canonical_sha": "ae064c82ff17f88677fce5b7ec13569cd839d7bc",
   "requirements": [
-    "M3.07.04"
+    "M1.01.03"
   ],
-  "last_verified_action": "All three appeal outcomes passed protected PostgreSQL/HTTPS cross-role restart journeys on d2 product. Actual two-backend contention then reproduced a deadlock; mutation-only source-case lock repair now passes its focused PostgreSQL race. Adjacent regressions are running; candidate remains unverified after this source change.",
+  "last_verified_action": "M3.07.04 independently accepted across all six software categories on product source 58ae6ff. Hosted CI is tracked separately.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -66,7 +66,7 @@
     ".autopilot/artifacts/20261016-verifier-search-native-v2.json",
     ".autopilot/artifacts/20261016-final-dirty-batch-independent-review.json"
   ],
-  "next_action": "Complete adjacent appeal/renewal/followup/reassessment regressions, actual review-vs-withdraw PostgreSQL test and independent review; commit, rebuild and rerun all three protected cross-role outcomes on the repaired candidate.",
+  "next_action": "Resume B00 environment and release verification at M1.01.03. Retain exact candidate CI evidence and execute the receipt mismatch, audit authorization, replay, persistence, and staging source-binding variants.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -75,8 +75,8 @@
   ],
   "awaiting_owner": false,
   "auto_resume": true,
-  "status": "VERIFYING_LOCK_REPAIR",
-  "updated_at": "2026-11-05T18:14:20.810593+00:00",
+  "status": "VERIFYING_SOFTWARE_BASELINE",
+  "updated_at": "2026-11-06T02:19:16.468999+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {

@@ -1,0 +1,69 @@
+{
+  "source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+  "product_tree_sha256": "968bd72fa4296254c7d09295cc6736d79701c55298285d0c45f6f64693c86dbb",
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "disposition": "ACCEPTED",
+  "cases": {
+    "invalid_input": "Actual PostgreSQL completion rejects stale version, unsupported action, missing credential and wrong Worker ownership, preserving stored business rows and populated Company/public projections.",
+    "permission_isolation": "Foreign tenant and inactive relationship reads exclude current competency and preserve business history. Live permission, membership and session denial passed, as did unauthorized and original reviewer write denial. Protected recipient responses omit appeal grounds, review and selected evidence markers when outside share scope.",
+    "retry_recovery": "Two PostgreSQL backends produce one winner. Stale and losing replays conflict without changing history or recipients. Injected Living Record write failures roll back reassessment, suspension and revocation, and eligible retries succeed."
+  },
+  "scope": "M3.07.04 software staging",
+  "artifacts": [
+    {
+      "path": ".autopilot/artifacts/20261106-appeal-negative-replay.log",
+      "sha256": "868881e4fc3b82bd4a6c6e680f808e369ab42c913dbf1961400608c246dad2db",
+      "tail": [
+        "}",
+        "POSTGRES_APPEAL_RACE_PASS reviewers distinct transaction backends; one commit, one conflict; coherent histories and public state",
+        "\u2714 PostgreSQL appeal race reviewers review-first commits one coherent result (3021.456082ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 3448.27217",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261106-appeal-final-native.log",
+      "sha256": "1f6d412efcc589221cfeea30f8084648bff9ab796ef37ae4aacc326b94c58299",
+      "tail": [
+        "\u2714 suspend failure before Living Record append rolls back all changes and permits legitimate retry (3560.666544ms)",
+        "\u2714 revoke failure before Living Record append rolls back all changes and permits legitimate retry (3547.906339ms)",
+        "\u2714 competing accepted appeal outcomes commit exactly one coherent result (3632.14842ms)",
+        "\u2139 tests 13",
+        "\u2139 suites 0",
+        "\u2139 pass 13",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 46543.963672",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261106-58ae6ff-scoped-evidence-marker-reassessment-1.log",
+      "sha256": "520ca4539fd67325a7d3ce5cc08030dc2bf2daf7374d36d0e739b2d681b9cbbd",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS reassessment production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (25759.943884ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 26630.658813",
+        "EXIT_CODE=0"
+      ]
+    }
+  ]
+}

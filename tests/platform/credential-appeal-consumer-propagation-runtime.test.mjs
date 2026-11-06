@@ -110,12 +110,19 @@ test("authorized Company receives "+action+" separately from original assurance 
     assert.equal((await directory.find(principal,linkId)).currentCompetencyStatus,"suspended","Most restrictive current competency wins regardless of ID ordering");
     assert.equal((await directory.search(principal,{})).rows.find(row=>row.linkId===linkId).currentCompetencyStatus,"suspended");
   }
+  const snapshot=async()=>Promise.all(["credential_appeals","credential_appeal_events","credential_issuances","credential_lifecycle_events","living_record_versions"].map(async table=>(await db.query("SELECT * FROM "+table+" ORDER BY 1,2")).rows));
+  const beforeRestrictedReads=await snapshot();
   const foreign=await seedCompany(db,"f");
   const foreignPrincipal={...settingsPrincipal(foreign),authorizedTenantPermission:"company.workforce.manage"};
   assert.equal(await directory.find(foreignPrincipal,linkId),null);
   assert.equal((await directory.search(foreignPrincipal,{})).total,0);
   await db.query("UPDATE company_worker_links SET link_status='revoked',revoked_at=clock_timestamp() WHERE link_id=$1",[linkId]);
   assert.equal((await directory.find(principal,linkId)).currentCompetencyStatus,null,"Ended relationship receives no current competency state");
+  const inactiveListing=(await directory.search(principal,{})).rows.find(row=>row.linkId===linkId);
+  assert.equal(inactiveListing?.currentCompetencyStatus??null,null);
+  assert.doesNotMatch(JSON.stringify(inactiveListing??{}),/PRIVATE_GROUNDS|PRIVATE_REVIEW/);
+  assert.deepEqual(await snapshot(),beforeRestrictedReads);
+
  } finally {await db.close();}
 });
 
