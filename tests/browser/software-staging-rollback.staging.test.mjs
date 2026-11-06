@@ -6,6 +6,7 @@ import { readFile, writeFile, readdir, readlink, realpath } from "node:fs/promis
 import { join, resolve } from "node:path";
 import test from "node:test";
 import { chromium } from "playwright";
+import { stageBrowserArgs } from "../helpers/owned-staging-server.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 
 if (!process.env.HSE_SOFTWARE_STAGE_CONFIG) {
@@ -49,7 +50,7 @@ test("authenticated staging rollback preserves Company actions, cases, audit and
   assert.equal(await realpath(environment.HSE_PRIVATE_OBJECT_STORAGE_ROOT), join(stageRoot, "private-objects"));
   const logOffsets = Object.fromEntries(await Promise.all([config.appLog, config.postgresLog].map(async path => [path, (await readFile(path)).length])));
   const database = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl: environment.DATABASE_URL });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, args: stageBrowserArgs(config) });
   const context = await browser.newContext({
     httpCredentials: { username: config.user, password: config.password }
   });
@@ -148,7 +149,8 @@ test("authenticated staging rollback preserves Company actions, cases, audit and
     const descriptor = openSync(config.appLog, "a", 0o600);
     let startupError;
     try {
-      activeChild = spawn(process.execPath, [join(bundle, "server.js")], {
+      const entry = sha === config.candidateSha ? resolve(config.projectRoot, "scripts/start-production.mjs") : join(bundle, "server.js");
+      activeChild = spawn(process.execPath, [entry], {
         cwd: config.projectRoot, env: { ...environment, HSE_RELEASE_SHA: sha },
         stdio: ["ignore", descriptor, descriptor]
       });

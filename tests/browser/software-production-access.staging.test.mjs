@@ -21,6 +21,15 @@ test("production browser roles and public responses isolate runtime secrets acro
   const secrets = [env.HSE_SESSION_SECRET, env.HSE_AUTH_PEPPER, env.HSE_CREDENTIAL_SIGNING_SECRET];
   assert.ok(secrets.every(value => typeof value === "string" && value.length >= 32));
   assert.equal(new Set(secrets).size, secrets.length);
+  const operator = spawnSync(process.execPath, [resolve(config.projectRoot, "scripts/validate-environment.mjs")], {
+    cwd: config.projectRoot, env, encoding: "utf8", timeout: 5000,
+  });
+  assert.ifError(operator.error);
+  assert.equal(operator.status, 0);
+  assert.match(config.candidateSha, /^[a-f0-9]{40}$/);
+  assert.ok(operator.stdout.includes("Environment valid: production, database=postgres, release=" + config.candidateSha + "."));
+  assert.ok(secrets.every(secret => !operator.stdout.includes(secret)));
+  console.log("OPERATOR_RUNTIME_IDENTITY_PASS production PostgreSQL", config.candidateSha);
   const credentials = JSON.parse(await readFile(config.accountsPath, "utf8"));
   const browser = await chromium.launch({ headless: true, args: stageBrowserArgs(config) });
   const options = { httpCredentials: { username: config.user, password: config.password } };

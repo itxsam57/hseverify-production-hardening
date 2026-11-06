@@ -3,6 +3,7 @@ import test from "node:test";
 import { randomBytes } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { seedCredentialDecisionFixture } from "../helpers/credential-decision-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyPendingMigrations, listMigrations, rollbackLatestMigration } from "../../scripts/lib/migrations.mjs";
 
@@ -67,6 +68,36 @@ test("isolated PostgreSQL applies migrations atomically and refuses a checksum m
     process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK = "true";
     await assert.rejects(rollbackLatestMigration(database, { appEnvironment: "production" }), /rollback is prohibited/i);
     assert.deepEqual(await readHistory(), history);
+
+    const fixture = await seedCredentialDecisionFixture(database);
+    const actionId = "assurance_action_" + "r".repeat(24);
+    const readAction = async () => (await database.query(
+      "SELECT row_to_json(action) AS action FROM assurance_action_items action WHERE action_id=$1", [actionId]
+    )).rows[0].action;
+    const readCase = async () => (await database.query(
+      "SELECT row_to_json(assurance_case) AS assurance_case FROM assurance_cases assurance_case WHERE case_id=$1", [fixture.caseId]
+    )).rows[0].assurance_case;
+    await database.query(`
+      INSERT INTO assurance_action_items (action_id,tenant_id,order_id,case_id,worker_account_id,severity,reason,owner_kind,allowed_action,deep_link)
+      SELECT $1,tenant_id,order_id,case_id,worker_account_id,'warning','Synthetic retained Worker action','worker','provide-evidence',$2
+      FROM assurance_cases WHERE case_id=$3
+    `, [actionId, "/worker/assurance-cases/" + fixture.caseId, fixture.caseId]);
+    const action = await readAction();
+    const assuranceCase = await readCase();
+    const latest = "0129_assurance_role_action_destinations";
+    assert.equal(await rollbackLatestMigration(database, { appEnvironment: "test" }), latest);
+    assert.equal((await readHistory()).length, history.length - 1);
+    const restoredAction = { ...action, deep_link: "/company/assurance-orders/" + action.order_id + "#" + fixture.caseId };
+    assert.deepEqual(await readAction(), restoredAction);
+    assert.deepEqual(await readCase(), assuranceCase);
+    assert.deepEqual(await applyPendingMigrations(database, config.candidateSha), [latest]);
+    assert.deepEqual(await readAction(), restoredAction);
+    assert.deepEqual(await readCase(), assuranceCase);
+    const reappliedHistory = await readHistory();
+    assert.deepEqual(reappliedHistory.map(row => [row.migration_id, row.checksum, row.release_sha]),
+      migrations.map(item => [item.id, item.checksum, config.candidateSha]));
+    console.log("POSTGRES_POPULATED_DOWN_UP_PASS", latest);
+
     await database.query("UPDATE hse_schema_migrations SET checksum=$1 WHERE migration_id=$2",
       ["0".repeat(64), history[0].migration_id]);
     const mismatchedHistory = await readHistory();

@@ -432,8 +432,117 @@
         },
         "notes": "Not an actual production deployment or liveprovider certification",
         "software_verification": {
-          "status": "PARTIAL",
-          "cases": {},
+          "status": "SOFTWARE_VERIFIED",
+          "cases": {
+            "positive": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+              "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f",
+              "assertion": "App and script validators accepted valid configuration and the owned production entry point started with independent secrets on PostgreSQL.",
+              "variant_ids": [
+                "M1.01.01.positive.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+                "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
+              }
+            },
+            "invalid_input": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+              "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f",
+              "assertion": "Each missing secret and each prohibited production demo or sandbox setting failed entry-point validation before a listener started.",
+              "variant_ids": [
+                "M1.01.01.invalid_input.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+                "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
+              }
+            },
+            "permission_isolation": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+              "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f",
+              "assertion": "Protected perimeter, Worker denial of Admin access, authorized Admin access, and omission of configured secrets and database URL from sampled responses passed.",
+              "variant_ids": [
+                "M1.01.01.permission_isolation.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+                "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
+              }
+            },
+            "retry_recovery": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+              "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f",
+              "assertion": "Invalid startup returned an outage, corrected startup recovered on the same fixture, and graceful and forced restart released and reacquired the owned listener.",
+              "variant_ids": [
+                "M1.01.01.retry_recovery.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+                "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
+              }
+            },
+            "persistence": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+              "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f",
+              "assertion": "Worker and Admin sessions survived restart. The same signing key authenticated the original credential before and after restart with unchanged signed fields and a working public verification capability.",
+              "variant_ids": [
+                "M1.01.01.persistence.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+                "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
+              }
+            },
+            "downstream_outcome": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+              "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f",
+              "assertion": "Operator validation printed production, PostgreSQL and the matching release identity. Admin operations identified disabled email/SMS, built-in video, and configured but unverified scanning.",
+              "variant_ids": [
+                "M1.01.01.downstream_outcome.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+                "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
+              }
+            }
+          },
           "evidence": [
             {
               "kind": "PRECOMMIT_SCOPED_OBSERVATION",
@@ -447,7 +556,7 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
+              "artifact_sha256": "497906c863308001d58a31735426cf50f9e551b15dec2c19da89831f72f609f6",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [
                 "positive.1",
@@ -455,9 +564,7 @@
                 "permission_isolation.1",
                 "retry_recovery.1"
               ],
-              "open": [
-                "Signed credential authority and operator environment/release presentation across corrected startup"
-              ]
+              "open": []
             }
           ],
           "case_plan": {
@@ -516,6 +623,15 @@
               "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
               "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
             }
+          },
+          "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+          "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+          "review": {
+            "disposition": "ACCEPTED",
+            "reviewer": "/root/review_software_plan",
+            "builder": "/root",
+            "artifact": "docs/qa/retained-test-evidence/software-environment-startup-review.json",
+            "artifact_sha256": "32691fe9463b6aa5de7bd45fc161f34614ecfe2999041dd8e072876439a16c1f"
           }
         }
       },
@@ -551,7 +667,7 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
+              "artifact_sha256": "497906c863308001d58a31735426cf50f9e551b15dec2c19da89831f72f609f6",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [
                 "positive.1",
@@ -650,7 +766,7 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
+              "artifact_sha256": "497906c863308001d58a31735426cf50f9e551b15dec2c19da89831f72f609f6",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [],
               "open": [
@@ -765,7 +881,7 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
+              "artifact_sha256": "497906c863308001d58a31735426cf50f9e551b15dec2c19da89831f72f609f6",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [
                 "positive.1",
@@ -775,8 +891,8 @@
                 "retry_recovery.1"
               ],
               "open": [
-                "Corrected candidate rollback and recovered receiving-role outcome",
-                "Unavailable database and release-manifest mismatch startup probes"
+                "Recovered receiving-role outcome",
+                "Startup/runtime unavailable database and artifact mismatch behavior beyond release recorder"
               ]
             }
           ],
@@ -5604,9 +5720,17 @@
         "status": "not-yet-verified-in-expanded-run",
         "evidence": null,
         "software_verification": {
-          "status": "UNREVIEWED",
+          "status": "PARTIAL",
           "cases": {},
-          "evidence": [],
+          "evidence": [
+            {
+              "kind": "INDEPENDENTLY_ACCEPTED_SCOPED_RUNTIME",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "artifact": "docs/qa/retained-test-evidence/appeal-interview-runtime-scoped-review.json",
+              "artifact_sha256": "ee3a8de6181919733a09a1eb73bd0cda50f967f618929f0f0f7a8b7d25c04d63",
+              "whole_scenario_verified": false
+            }
+          ],
           "case_plan": {
             "status": "NEEDS_CASE_DESIGN",
             "variants": [],

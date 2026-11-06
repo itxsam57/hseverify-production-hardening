@@ -6,6 +6,7 @@ import {openScriptDatabase} from "../../scripts/lib/database.mjs";
 import {seedCredentialDecisionFixture} from "../helpers/credential-decision-fixture.mjs";
 import {verifyAppealConsumerJourney} from "../helpers/appeal-consumer-browser-journey.mjs";
 import {stageBrowserArgs,withOwnedStagingServer} from "../helpers/owned-staging-server.mjs";
+import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
 
 test("protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart",{timeout:180000},async()=>{
  assert.ok(process.env.HSE_SOFTWARE_STAGE_CONFIG,"Explicit isolated staging config is required");
@@ -59,6 +60,13 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
     [credentialId]
   )).rows[0];
   const originalSignedFields = await signedFields();
+  const {CredentialIssuanceRepository}=loadTs("src/lib/credential/credential-issuance-repository.ts");
+  const {credentialAuthentication}=loadTs("src/lib/credential/credential-issuance-domain.ts");
+  const issuance = new CredentialIssuanceRepository(Promise.resolve(db));
+  const assertSigningAuthority = async () => {
+    assert.equal(credentialAuthentication(await issuance.findPublic(credentialId), environment.HSE_CREDENTIAL_SIGNING_SECRET), "authenticated");
+  };
+  await assertSigningAuthority();
   const snapshot = async () => ({
     issuance: (await db.query("SELECT * FROM credential_issuances WHERE credential_id=$1", [credentialId])).rows,
     appeals: (await db.query("SELECT * FROM credential_appeals WHERE credential_id=$1 ORDER BY appeal_id", [credentialId])).rows,
@@ -83,6 +91,7 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
      const before=await snapshot();
      assert.deepEqual(await signedFields(),originalSignedFields);
      await restart();
+     await assertSigningAuthority();
      assert.deepEqual(await snapshot(),before);
    }});
   });

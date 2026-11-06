@@ -44,9 +44,8 @@
           "scope": "Protected production wrapper denied invalid startup and corrected successfully. SIGKILL caused expected 502 and fresh owned process preserved Worker and Admin sessions. Revised QA browser assertion was pending commit."
         }
       ],
-      "open": [
-        "Signed credential authority and operator environment/release presentation across corrected startup"
-      ]
+      "open": [],
+      "superseded_by": "docs/qa/retained-test-evidence/software-environment-startup-review.json"
     },
     "M1.01.02": {
       "accepted_variants": [
@@ -68,6 +67,12 @@
           "artifact_sha256": "7a18831bc250d64b370db3518672b985aa02dfdda0d87390963284b1236a4ee3",
           "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
           "scope": "Actual PostgreSQL custom archive and private filesystem restore retained saved answer, draft, question version, Worker identity and evidence, owner-only signed bytes. PGlite control also passed. QA fixture edits were present."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-8041d83-populated-migration.log",
+          "artifact_sha256": "a20c841391356d593c515492544729c0c69d0e052f34305029732153a87147c2",
+          "scope": "134 migrations and populated 0129 down/up preserved case and all action fields except the expected link rewrite. Separate Worker report archive restore passed.",
+          "product_or_receipt_source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa"
         }
       ],
       "open": [
@@ -144,11 +149,23 @@
           "artifact_sha256": "ebac0b87b1b0db25748f91f4a8f901dec495f3e9ac97d7f8c1843ada62eb6608",
           "product_or_receipt_source_sha": "692391cc25a5f98864ad9a8081ad6f8296a94199",
           "scope": "Protected production wrapper denied invalid startup and corrected successfully. SIGKILL caused expected 502 and fresh owned process preserved Worker and Admin sessions. Revised QA browser assertion was pending commit."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-8041d83-rollback-exact.log",
+          "artifact_sha256": "64573c7a42989385dfa21dcd7a51269a70f51d38932676fdb1b50051bbeaaa21",
+          "scope": "Exact 8041d83 startup entry point switched to retained 45275a7 and returned. Company mutations and original case, history and private bytes were retained.",
+          "product_or_receipt_source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa"
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-494d6fa-release-record-negative.log",
+          "artifact_sha256": "9102cd40ef1c21c38697a6d5c849817244235caf4928252685929d8105b2f694",
+          "scope": "Mismatched manifest and unavailable PostgreSQL stopped release recording. The recorder is the scoped boundary.",
+          "product_or_receipt_source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1"
         }
       ],
       "open": [
-        "Corrected candidate rollback and recovered receiving-role outcome",
-        "Unavailable database and release-manifest mismatch startup probes"
+        "Recovered receiving-role outcome",
+        "Startup/runtime unavailable database and artifact mismatch behavior beyond release recorder"
       ]
     }
   }
