@@ -10,7 +10,7 @@ import {withOwnedStagingServer} from "../helpers/owned-staging-server.mjs";
 test("protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart",{timeout:180000},async()=>{
  assert.ok(process.env.HSE_SOFTWARE_STAGE_CONFIG,"Explicit isolated staging config is required");
  const outcomeAction=process.env.HSE_STAGE_APPEAL_ACTION??"reassessment";
- assert.ok(["reassessment","suspend","revoke"].includes(outcomeAction));
+ assert.ok(["reassessment","suspend","revoke","rejected"].includes(outcomeAction));
  const config=JSON.parse(await readFile(process.env.HSE_SOFTWARE_STAGE_CONFIG,"utf8"));
  assert.equal(config.syntheticOnly,true);
  assert.equal(new URL(config.url).protocol,"https:");
@@ -39,6 +39,10 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   assert.equal(latest.credential_reference,originalCase.credential_reference);
   const credentialId=originalCase.credential_reference;
   assert.ok(credentialId);
+  const foreignCredentialId = "credential_id_foreign_appeal_fixture";
+  await db.query(`INSERT INTO credential_issuances(credential_id,worker_id,qualification,issued_at,expires_at,status,version,public_status_url,qr_payload,signature,pdf_url)
+    SELECT $1,'worker_foreign_appeal_fixture',qualification,issued_at,expires_at,status,version,public_status_url,qr_payload,signature,pdf_url FROM credential_issuances WHERE credential_id=$2`, [foreignCredentialId,credentialId]);
+
   const invitationId="worker_invitation_"+"q".repeat(24),linkId="company_worker_link_"+"q".repeat(24);
   await db.query(`INSERT INTO company_worker_invitations(invitation_id,tenant_id,email_normalized,token_hash,invitation_status,payment_responsibility,invited_by_membership_id,accepted_by_worker_account_id,resend_available_at,expires_at,accepted_at,created_at,updated_at)
    VALUES($1,$2,$3,'synthetic-stage-link','accepted','company',$4,$5,$6,'2099-01-01',$6,$6,$6)`,[invitationId,accounts.company.tenantId,accounts.worker.email,accounts.company.membershipId,accounts.worker.accountId,issuedAt]);
@@ -47,11 +51,13 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await withOwnedStagingServer(config,async({restart})=>{
    const anonymous=await fetch(config.url+"/company/login");
    assert.equal(anonymous.status,401,"Perimeter must deny missing Basic authentication");
-   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,httpCredentials:{username:config.user,password:config.password},restart});
+   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,httpCredentials:{username:config.user,password:config.password},restart});
   });
   assert.deepEqual((await db.query("SELECT * FROM assurance_cases WHERE case_id=$1",[fixture.caseId])).rows[0],originalCase,"Appeal and restart retain original decision history");
   const events=(await db.query("SELECT status FROM credential_appeal_events WHERE appeal_id IN (SELECT appeal_id FROM credential_appeals WHERE credential_id=$1) ORDER BY version",[credentialId])).rows;
-  assert.deepEqual(events.map(row=>row.status),["submitted","under_review","accepted"]);
+  const invalid = await db.query("SELECT credential_id FROM credential_appeals WHERE credential_id IN ($1,$2)", [foreignCredentialId,"credential_id_missing_appeal_fixture"]);
+  assert.equal(invalid.rows.length,0);
+  assert.deepEqual(events.map(row=>row.status),["submitted","under_review",outcomeAction === "rejected" ? "rejected" : "accepted"]);
   for(const path of [config.appLog,config.postgresLog]){
    const output=(await readFile(path)).subarray(offsets[path]).toString("utf8");
    assert.doesNotMatch(output,/deadlock detected|⨯|unhandled rejection|uncaught exception|(?:^|\n)(?:Error|TypeError|ReferenceError|SyntaxError):|\b(?:ERROR|FATAL|PANIC):/i,"Unexpected stage application/database error");

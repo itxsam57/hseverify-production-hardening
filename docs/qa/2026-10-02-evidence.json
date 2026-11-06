@@ -5619,6 +5619,14 @@
               "artifact_sha256": "0cb76363d7e3010b341f4b47a861f1590a8b30e8dbfa5be3cf8655d802bcd6e7",
               "whole_scenario_verified": false,
               "scope": "Worker-created competency share reopened after restart for all three accepted outcomes. Unsupported Admin API outcome returned 400 and appeal remained submitted."
+            },
+            {
+              "kind": "PROTECTED_POSTGRES_PENDING_REJECTED_OWNERSHIP_RUNTIME",
+              "source_sha": "92875b6909ea90851bc76df3f0ff9542580577ce",
+              "artifact": "docs/qa/retained-test-evidence/appeal-pending-rejected-ownership.json",
+              "artifact_sha256": "4c6e2e4a2e0833e9c25488075bab33f92b1e5d1c6076a6a94686d8f84b6c65e0",
+              "whole_scenario_verified": false,
+              "scope": "Pending and rejected appeal retain valid Company, public and scoped share views. Worker submission rejects missing and foreign-owned credential fixtures without creating appeals. Direct recipient HTML response bodies and rendered pages omit private appeal text."
             }
           ],
           "case_plan": {
