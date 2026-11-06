@@ -1,0 +1,14 @@
+ACTUAL_DUPLICATE_WORKER_BROWSER: three contact conflicts denied
+ACTUAL_RECOVERY_REJECTION_DB: decrement and failure audit committed; password, session and identity unchanged
+ACTUAL_WORKER_RECOVERY_REPLAY_BROWSER stolen old recovery cookie and consumed OTP cannot reset password twice
+ACTUAL_WORKER_RECOVERY_BROWSER: wrong-code denial, valid recovery, old-session denial, old-password denial, replacement login
+ACTUAL_WORKER_RECOVERY_DB: unchanged identity/evidence, consumed flow/challenge, remaining attempts, exact immutable failure/completion audit and session revocation
+✔ Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions (59494.679707ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 60103.601478

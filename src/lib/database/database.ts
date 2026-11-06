@@ -111,6 +111,15 @@ class PostgresDatabaseClient implements DatabaseClient {
       max: 5,
       idle_timeout: 20,
       connect_timeout: 10,
+      // Query parameters already encode JSON; preserve text for inferred json/jsonb OIDs.
+      types: {
+        json: {
+          to: 114,
+          from: [114, 3802],
+          serialize: (value: unknown) => typeof value === "string" ? value : JSON.stringify(value),
+          parse: JSON.parse
+        }
+      },
       prepare: false
     });
   }

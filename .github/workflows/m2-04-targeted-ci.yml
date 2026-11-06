@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
       - run: node --test tests/platform/question-bank-contract.test.mjs
       - if: success()

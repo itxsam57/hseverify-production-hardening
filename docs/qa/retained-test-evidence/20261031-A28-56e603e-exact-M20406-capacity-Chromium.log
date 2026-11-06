@@ -1,0 +1,14 @@
+ACTUAL_M204_BULK_IMPORT_BROWSER row2 invalid rejects entire batch, two valid independent-approval drafts persist after cold reload
+ACTUAL_M204_CAPACITY_BROWSER published inventory 0->1->0->1 after real Admin publish/retire/re-publish, global never reserved matches
+ACTUAL_TWO_ADMIN_QUESTION_BROWSER independent login author Draft submit reviewer approval publication request-changes revision old-live pause-resume retire archive
+ACTUAL_ADMIN_TIMING_BROWSER combined120 authored, immutable revision to separate section90, catalogue pins revised version
+ACTUAL_ADMIN_TIMING_DB original combined and revised separate policies retained independently
+✔ Admin authors a policy, revises a question, publishes a blueprint and connects a versioned catalogue in Chromium (48989.544428ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50498.483553

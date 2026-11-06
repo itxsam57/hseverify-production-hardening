@@ -9,6 +9,7 @@ const { InterviewSchedulingService } = loadTs("src/lib/interview/interview-sched
 test("interview repository keeps lifecycle isolated by tenant database boundary", async () => {
   const rows = [];
   const database = { async query(sql, params) {
+    if(sql.includes("information_schema.columns"))return {rows:[{present:false}]};
     if (sql.startsWith("SELECT")) return { rows: rows.filter((row) => row.tenant_id === params[0] && row.case_id === params[1]) };
     const row = { interview_request_id: params[0], case_id: params[1], worker_account_id: params[2], status: params[3], requested_at: params[4], scheduled_at: params[5], assessor_account_id: params[6], timezone: params[7], reminder_at: params[8], reschedule_reason: params[9], tenant_id: params[10] };
     rows.push(row);
@@ -23,6 +24,7 @@ test("interview repository keeps lifecycle isolated by tenant database boundary"
 test("interview service creates and assigns a tenant-scoped assessor workflow", async () => {
   const rows = [];
   const database = { async query(sql, params) {
+    if(sql.includes("information_schema.columns"))return {rows:[{present:false}]};
     if (sql.startsWith("SELECT")) {
       if (sql.includes("assessor_account_id=$1")) {
         return { rows: rows.filter((row) => row.assessor_account_id === params[0]) };
@@ -61,6 +63,7 @@ test("assessor assignment lookup derives tenant scope from the assigned record",
     tenant_id: "tenant-assigned"
   }];
   const database = { async query(sql, params) {
+    if(sql.includes("information_schema.columns"))return {rows:[{present:false}]};
     if (sql.includes("assessor_account_id=$1")) {
       return { rows: rows.filter((row) => row.assessor_account_id === params[0]) };
     }

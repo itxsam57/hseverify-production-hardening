@@ -1,0 +1,10 @@
+ACTUAL_TWO_WORKER_OTP_SIGNUPS both email+phone real sandbox deliveries consumed; independent signins, matching legal identity blocked second permanent ID and assessment application
+✔ two real Worker registrations verify email+phone OTP and cannot duplicate Worker ID or apply for exams (49034.83101ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50862.830531

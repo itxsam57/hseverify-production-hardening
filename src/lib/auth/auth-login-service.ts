@@ -142,7 +142,7 @@ export class AuthLoginService {
     password: string;
     verificationCode?: string | null;
     requestFingerprint: string;
-  }): Promise<{ accountId: string; role: AuthRole }> {
+  }): Promise<{ accountId: string; role: AuthRole; mfaEventId: string | null }> {
     let email: string;
     try {
       email = normalizeEmail(input.email);
@@ -250,6 +250,7 @@ export class AuthLoginService {
         return null;
       }
 
+      let mfaEventId: string | null = null;
       if (roleRequiresMfa(input.role)) {
         const factor = await repository.findActiveMfaFactorForUpdate(
           account.accountId
@@ -338,8 +339,9 @@ export class AuthLoginService {
           });
           return null;
         }
+        mfaEventId = createIdentifier("event");
         await repository.authentication.insertSecurityEvent({
-          eventId: createIdentifier("event"),
+          eventId: mfaEventId,
           accountId: account.accountId,
           eventType: "mfa_succeeded",
           activeRole: input.role,
@@ -353,7 +355,7 @@ export class AuthLoginService {
         account.accountId,
         nowIso
       );
-      return { accountId: account.accountId, role: input.role } as const;
+      return { accountId: account.accountId, role: input.role, mfaEventId } as const;
     });
 
     if (!result) throw genericInvalidCredentials();

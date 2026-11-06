@@ -1,0 +1,61 @@
+{
+  "source_sha": "92875b6909ea90851bc76df3f0ff9542580577ce",
+  "whole_scenario_verified": false,
+  "scope": "Worker-created competency share reopened after restart for all three accepted outcomes. Unsupported Admin API outcome returned 400 and appeal remained submitted.",
+  "artifacts": [
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-share-invalid-reassessment.log",
+      "sha256": "2c82f0cd563679883e1e5138470285f65a6423e558d96f212a4db95000c449a4",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS reassessment production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (24134.323042ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 25035.726145",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-share-invalid-suspend.log",
+      "sha256": "9385de87c7b1907d03a186049981fbe7df8d04dc71fea409f2cb0f31f8107204",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS suspend production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (18242.89081ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 19116.58997",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-share-invalid-retry-revoke.log",
+      "sha256": "7e8fe37866b1d0db949932870872ba1328e2091910b0f182518e0cb67b2473f5",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS revoke production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (19971.219909ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 20841.71709",
+        "EXIT_CODE=0"
+      ]
+    }
+  ]
+}

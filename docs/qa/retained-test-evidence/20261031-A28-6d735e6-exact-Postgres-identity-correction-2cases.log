@@ -1,0 +1,57 @@
+'::text, ''''company.assurance.case''''::text])) OR (target_key = ANY (ARRAY[''''company.billing.funding''''::text, ''''worker.assessment.case''''::text])) OR (target_key = ANY (ARRAY[''''worker.evidence.record''''::text, ''''worker.identity.record''''::text, ''''worker.observation.record''''::text, ''''verifier.review.task''''::text, ''''worker.assurance.case''''::text, ''''worker.credential.record''''::text, ''''appeal.record''''::text])) OR (target_key = ''''admin.review.escalation''''::text)))"}, {"kind": "constraint", "name": "platform_email_deliveries_delivery_type_check", "table": "platform_email_deliveries", "definition": "CHECK (((delivery_type = ''''platform.foundation.email''''::text) OR (delivery_type = ''''interview.scheduled''''::text) OR (delivery_type = ''''interview.reminder''''::text) OR (delivery_type = ANY (ARRAY[''''evidence.submitted''''::text, ''''evidence.reviewed''''::text, ''''evidence.additional.requested''''::text, ''''decision.recorded''''::text, ''''credential.issued''''::text, ''''appeal.submitted''''::text, ''''appeal.updated''''::text, ''''assessment.funding.requested''''::text, ''''assessment.funding.approved''''::text])) OR (delivery_type = ANY (ARRAY[''''evidence.unable''''::text, ''''evidence.escalated''''::text, ''''evidence.returned''''::text]))))"}, {"kind": "index", "name": "platform_notifications_legacy_source_job_idx", "definition": "CREATE UNIQUE INDEX platform_notifications_legacy_source_job_idx ON public.platform_notifications USING btree (source_job_id) WHERE (notification_type <> ALL (ARRAY[''''assessment.funding.requested''''::text, ''''assessment.funding.approved''''::text, ''''evidence.submitted''''::text, ''''evidence.reviewed''''::text, ''''evidence.unable''''::text, ''''evidence.escalated''''::text, ''''evidence.returned''''::text, ''''evidence.additional.requested''''::text, ''''decision.recorded''''::text, ''''credential.issued''''::text, ''''appeal.submitted''''::text, ''''appeal.updated''''::text]))"}, {"kind": "index", "name": "platform_notifications_assurance_source_recipient_idx", "definition": "CREATE UNIQUE INDEX platform_notifications_assurance_source_recipient_idx ON public.platform_notifications USING btree (source_job_id, recipient_account_id, recipient_role, COALESCE(tenant_id, ''''''''::text), COALESCE(membership_id, ''''''''::text)) WHERE (notification_type = ANY (ARRAY[''''evidence.submitted''''::text, ''''evidence.reviewed''''::text, ''''evidence.unable''''::text, ''''evidence.escalated''''::text, ''''evidence.returned''''::text, ''''evidence.additional.requested''''::text, ''''decision.recorded''''::text, ''''credential.issued''''::text, ''''appeal.submitted''''::text, ''''appeal.updated''''::text]))"}, {"kind": "function", "reference": "platform_email_attempt_validate_insert()", "definition": "CREATE OR REPLACE FUNCTION public.platform_email_attempt_validate_insert()\\\\\\\\n RETURNS trigger\\\\\\\\n LANGUAGE plpgsql\\\\\\\\nAS $function$\\\\\\\\nDECLARE\\\\\\\\n  source_attempt platform_outbox_job_attempts%ROWTYPE;\\\\\\\\n  source_job platform_outbox_jobs%ROWTYPE;\\\\\\\\n  delivery platform_email_deliveries%ROWTYPE;\\\\\\\\nBEGIN\\\\\\\\n  SELECT * INTO delivery\\\\\\\\n  FROM platform_email_deliveries\\\\\\\\n  WHERE delivery_id = NEW.delivery_id;\\\\\\\\n\\\\\\\\n  SELECT * INTO source_attempt\\\\\\\\n  FROM platform_outbox_job_attempts\\\\\\\\n  WHERE attempt_id = NEW.source_outbox_attempt_id;\\\\\\\\n\\\\\\\\n  SELECT * INTO source_job\\\\\\\\n  FROM platform_outbox_jobs\\\\\\\\n  WHERE job_id = NEW.source_job_id;\\\\\\\\n\\\\\\\\n  IF delivery.delivery_id IS NULL OR\\\\\\\\n     delivery.source_job_id IS DISTINCT FROM NEW.source_job_id OR\\\\\\\\n     delivery.status NOT IN (''''queued'''', ''''retry_wait'''') THEN\\\\\\\\n    RAISE EXCEPTION USING\\\\\\\\n      ERRCODE = ''''23514'''',\\\\\\\\n      MESSAGE = ''''Email delivery attempt requires a queued or retrying delivery.'''';\\\\\\\\n  END IF;\\\\\\\\n\\\\\\\\n  IF source_attempt.attempt_id IS NULL OR\\\\\\\\n     source_attempt.job_id IS DISTINCT FROM NEW.source_job_id OR\\\\\\\\n     source_attempt.attempt_number IS DISTINCT FROM NEW.attempt_number OR\\\\\\\\n     source_attempt.worker_id IS DISTINCT FROM NEW.worker_id OR\\\\\\\\n     source_attempt.lease_id IS DISTINCT FROM NEW.lease_id OR\\\\\\\\n     source_attempt.outcome <> ''''running'''' THEN\\\\\\\\n    RAISE EXCEPTION USING\\\\\\\\n      ERRCODE = ''''23514'''',\\\\\\\\n      MESSAGE = ''''Email delivery attempt must bind to the active outbox attempt.'''';\\\\\\\\n  END IF;\\\\\\\\n\\\\\\\\n  IF source_job.job_id IS NULL OR\\\\\\\\n     source_job.job_type NOT IN (''''email.delivery.foundation'''',''''email.interview.scheduled'''',''''email.interview.reminder'''',''''email.assurance.event'''') OR\\\\\\\\n     source_job.status <> ''''leased'''' OR\\\\\\\\n     source_job.lease_id IS DISTINCT FROM NEW.lease_id OR\\\\\\\\n     source_job.worker_id IS DISTINCT FROM NEW.worker_id OR\\\\\\\\n     source_job.lease_expires_at <= clock_timestamp() THEN\\\\\\\\n    RAISE EXCEPTION USING\\\\\\\\n      ERRCODE = ''''23514'''',\\\\\\\\n      MESSAGE = ''''Email delivery attempt requires the currently owned unexpired outbox lease.'''';\\\\\\\\n  END IF;\\\\\\\\n\\\\\\\\n\\\\\\\\n  IF (delivery.delivery_type IN (''''interview.scheduled'''',''''interview.reminder'''',''''evidence.submitted'''',''''evidence.reviewed'''',''''evidence.unable'''',''''evidence.escalated'''',''''evidence.returned'''',''''evidence.additional.requested'''',''''decision.recorded'''',''''credential.issued'''',''''appeal.submitted'''',''''appeal.updated'''',''''assessment.funding.requested'''',''''assessment.funding.approved'''') AND NEW.adapter_key <> ''''resend'''') OR\\\\\\\\n     (delivery.delivery_type = ''''platform.foundation.email'''' AND NEW.adapter_key <> ''''local_test'''') THEN\\\\\\\\n   RAISE EXCEPTION ''''Email adapter does not match its fixed delivery type'''' USING ERRCODE=''''23514'''';\\\\\\\\n  END IF;\\\\\\\\n  RETURN NEW;\\\\\\\\nEND;\\\\\\\\n$function$\\\\\\\\n"}, {"kind": "function", "reference": "platform_email_attempt_guard_update()", "definition": "CREATE OR REPLACE FUNCTION public.platform_email_attempt_guard_update()\\\\\\\\n RETURNS trigger\\\\\\\\n LANGUAGE plpgsql\\\\\\\\nAS $function$\\\\\\\\nBEGIN\\\\\\\\n  IF NEW.email_attempt_id IS DISTINCT FROM OLD.email_attempt_id OR\\\\\\\\n     NEW.attempt_sequence IS DISTINCT FROM OLD.attempt_sequence OR\\\\\\\\n     NEW.delivery_id IS DISTINCT FROM OLD.delivery_id OR\\\\\\\\n     NEW.source_job_id IS DISTINCT FROM OLD.source_job_id OR\\\\\\\\n     NEW.source_outbox_attempt_id IS DISTINCT FROM OLD.source_outbox_attempt_id OR\\\\\\\\n     NEW.attempt_number IS DISTINCT FROM OLD.attempt_number OR\\\\\\\\n     NEW.worker_id IS DISTINCT FROM OLD.worker_id OR\\\\\\\\n     NEW.lease_id IS DISTINCT FROM OLD.lease_id OR\\\\\\\\n     NEW.adapter_key IS DISTINCT FROM OLD.adapter_key OR\\\\\\\\n     NEW.dispatch_key IS DISTINCT FROM OLD.dispatch_key OR\\\\\\\\n     NEW.started_at IS DISTINCT FROM OLD.started_at THEN\\\\\\\\n    RAISE EXCEPTION USING\\\\\\\\n      ERRCODE = ''''55000'''',\\\\\\\\n      MESSAGE = ''''Email delivery attempt identity and lease binding are immutable.'''';\\\\\\\\n  END IF;\\\\\\\\n\\\\\\\\n  IF OLD.outcome <> ''''running'''' OR\\\\\\\\n     NOT EXISTS(SELECT 1 FROM platform_email_deliveries deliveries WHERE deliveries.delivery_id=NEW.delivery_id AND\\\\\\\\n   ((deliveries.delivery_type IN (''''interview.scheduled'''',''''interview.reminder'''',''''evidence.submitted'''',''''evidence.reviewed'''',''''evidence.unable'''',''''evidence.escalated'''',''''evidence.returned'''',''''evidence.additional.requested'''',''''decision.recorded'''',''''credential.issued'''',''''appeal.submitted'''',''''appeal.updated'''',''''assessment.funding.requested'''',''''assessment.funding.approved'''') AND NEW.adapter_key=''''resend'''' AND\\\\\\\\n     NEW.outcome IN (''''accepted'''',''''suppressed'''',''''retryable_failure'''',''''terminal_failure'''',''''lease_expired'''')) OR\\\\\\\\n    (deliveries.delivery_type=''''platform.foundation.email'''' AND NEW.adapter_key=''''local_test'''' AND\\\\\\\\n     NEW.outcome IN (''''delivered'''',''''retryable_failure'''',''''terminal_failure'''',''''lease_expired'''')))) THEN\\\\\\\\n    RAISE EXCEPTION USING\\\\\\\\n      ERRCODE = ''''55000'''',\\\\\\\\n      MESSAGE = ''''Email delivery attempt outcome is immutable after finalization.'''';\\\\\\\\n  END IF;\\\\\\\\n\\\\\\\\n  NEW.finished_at := CURRENT_TIMESTAMP;\\\\\\\\n  RETURN NEW;\\\\\\\\nEND;\\\\\\\\n$function$\\\\\\\\n"}, {"kind": "function", "reference": "platform_assurance_event_assert_job(platform_outbox_jobs)", "definition": "CREATE OR REPLACE FUNCTION public.platform_assurance_event_assert_job(job platform_outbox_jobs)\\\\\\\\n RETURNS void\\\\\\\\n LANGUAGE plpgsql\\\\\\\\nAS $function$\\\\\\\\nDECLARE source `... 9922 more characters,
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42622',
+  message: 'identifier "platform_assurance_event_recipients_before_interview_recommendation" will be truncated to "platform_assurance_event_recipients_before_interview_recommenda"',
+  where: 'SQL function "platform_assurance_event_recipients"',
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42622',
+  message: 'identifier "platform_interview_recommendation_notification_rollback_contract" will be truncated to "platform_interview_recommendation_notification_rollback_contrac"',
+  where: 'compilation of PL/pgSQL function "inline_code_block" near line 4',
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42622',
+  message: 'identifier "platform_interview_recommendation_notification_rollback_contract" will be truncated to "platform_interview_recommendation_notification_rollback_contrac"',
+  position: '9690',
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42622',
+  message: 'identifier "platform_interview_recommendation_notification_rollback_contract" will be truncated to "platform_interview_recommendation_notification_rollback_contrac"',
+  where: 'SQL statement "SELECT * FROM jsonb_array_elements(platform_interview_recommendation_notification_rollback_contract())"\n' +
+    'PL/pgSQL function inline_code_block line 4 at FOR over SELECT rows',
+  file: 'scansup.c',
+  line: '99',
+  routine: 'truncate_identifier'
+}
+ACTUAL_POSTGRES_PENDING_CORRECTION duplicate-check parent retained in draft+submitted, approved identity stable, second ID denied
+✔ actual PostgreSQL 16: verified identity remains a duplicate candidate throughout pending corrections (3584.189406ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9589.136543
+Isolated PostgreSQL stopped: True

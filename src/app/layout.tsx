@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+
+import { FORM_HISTORY_TRACKING_SCRIPT } from "@/components/ui/form-history-tracking";
 
 import "@/app/globals.css";
 import "@/app/design-system.css";
@@ -23,7 +26,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Script id="hse-form-history" strategy="beforeInteractive">{FORM_HISTORY_TRACKING_SCRIPT}</Script>
+        {children}
+      </body>
     </html>
   );
 }

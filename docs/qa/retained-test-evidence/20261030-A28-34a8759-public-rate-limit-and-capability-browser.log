@@ -1,0 +1,17 @@
+TESTED_SOURCE_SHA:34a87599dba595d1116a13a9dd3fce0af9d31e7d
+ACTUAL_M112_PUBLIC_BROWSER genuine credential resolves to short-lived opaque token and permitted projection only
+ACTUAL_M112_INVALID_PUBLIC_BROWSER missing valid-shape identifier denied neutrally with no credential data
+ACTUAL_M112_INVALID_PUBLIC_BROWSER malformed identifier denied neutrally with no credential data
+ACTUAL_M112_INVALID_PUBLIC_BROWSER guessed unsupported identifier denied neutrally with no credential data
+ACTUAL_M112_INVALID_PUBLIC_BROWSER tampered signed capability denied neutrally with no credential data
+ACTUAL_M112_INVALID_PUBLIC_BROWSER expired signed capability denied neutrally with no credential data
+ACTUAL_M112_PUBLIC_RATE_LIMIT_BROWSER repeated credential lookups blocked safely, no private projection on limited result
+✔ M1.12 public valid credential and missing/tampered/malformed/expired capability are non-enumerating (26619.039555ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 27680.157896

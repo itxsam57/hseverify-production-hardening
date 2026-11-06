@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { InterviewAccommodationSupport } from "./interview-accommodation-support";
+
+class InterviewMediaClosedError extends Error {}
 
 type MediaRole = "worker" | "assessor";
 type SignalKind = "offer" | "answer" | "ice" | "leave";
@@ -51,12 +54,12 @@ export function LiveInterviewMedia({
   const processingRef = useRef(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
-  const recordingSegmentStartedAtRef = useRef<string | null>(null);
 
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState("Not connected");
   const [error, setError] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const [closed, setClosed] = useState(false);
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const [recordingStatus, setRecordingStatus] = useState("Not recording");
@@ -123,7 +126,6 @@ export function LiveInterviewMedia({
     }
     recorderRef.current = null;
     recordingStreamRef.current = null;
-    recordingSegmentStartedAtRef.current = null;
     setRecordingStatus("Not recording");
   }, []);
 
@@ -163,11 +165,13 @@ export function LiveInterviewMedia({
         : new MediaRecorder(sourceStream);
       recorderRef.current = recorder;
       recordingStreamRef.current = sourceStream;
-      recordingSegmentStartedAtRef.current = new Date().toISOString();
+      // Keep segment timing scoped to this recorder. Its final callback is
+      // asynchronous and must retain the capture start after stop().
+      let segmentStartedAt = new Date().toISOString();
       recorder.addEventListener("dataavailable", (event) => {
         const endedAt = new Date().toISOString();
-        const startedAt = recordingSegmentStartedAtRef.current ?? endedAt;
-        recordingSegmentStartedAtRef.current = endedAt;
+        const startedAt = segmentStartedAt;
+        segmentStartedAt = endedAt;
         void uploadRecordingSegment(event.data, startedAt, endedAt)
           .then(() => setRecordingStatus("Recording active — latest segment stored"))
           .catch((uploadError) => {
@@ -301,6 +305,9 @@ export function LiveInterviewMedia({
     const body = (await response.json().catch(() => null)) as
       | (MediaPollResponse & { error?: string })
       | null;
+    if ([401, 403, 404, 409].includes(response.status)) {
+      throw new InterviewMediaClosedError(body?.error ?? "Interview media access has ended.");
+    }
     if (!response.ok || !body) {
       throw new Error(body?.error ?? "Interview media is unavailable.");
     }
@@ -333,7 +340,7 @@ export function LiveInterviewMedia({
   );
 
   const startMedia = useCallback(async (): Promise<void> => {
-    if (!enabled || !consent || started) return;
+    if (!enabled || closed || !consent || started) return;
     setError(null);
     setStatus("Checking interview access");
 
@@ -399,6 +406,15 @@ export function LiveInterviewMedia({
         void readSignals()
           .then((result) => handleSignals(result.signals))
           .catch((pollError) => {
+            if (pollError instanceof InterviewMediaClosedError) {
+              // The remote participant can remain on this page after the
+              // Assessor ends the runtime. Release devices without a reload.
+              void stopMedia(false).then(() => {
+                setClosed(true);
+                setStatus("Interview media ended");
+              });
+              return;
+            }
             setError(
               pollError instanceof Error
                 ? pollError.message
@@ -416,6 +432,7 @@ export function LiveInterviewMedia({
     }
   }, [
     consent,
+    closed,
     enabled,
     handleSignals,
     readSignals,
@@ -424,6 +441,13 @@ export function LiveInterviewMedia({
     started,
     stopMedia
   ]);
+
+  useEffect(() => {
+    if (!enabled && started) {
+      const timer = window.setTimeout(() => { void stopMedia(false); }, 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [enabled, started, stopMedia]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -461,6 +485,7 @@ export function LiveInterviewMedia({
 
   return (
     <div className="interview-media-panel">
+      {enabled ? <InterviewAccommodationSupport interviewRequestId={interviewRequestId} role={role} /> : null}
       <div className="interview-media-status" role="status" aria-live="polite">
         <strong>Live interview media</strong>
         <span>{status}</span>
@@ -502,7 +527,7 @@ export function LiveInterviewMedia({
           <button
             type="button"
             className="button button-primary"
-            disabled={!enabled || !consent}
+            disabled={!enabled || closed || !consent}
             onClick={() => void startMedia()}
           >
             Enable camera & microphone

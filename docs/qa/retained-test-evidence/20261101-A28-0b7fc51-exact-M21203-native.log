@@ -1,0 +1,10 @@
+ACTUAL_M21203_NATIVE actual Assessor form saves partial draft, technical hold/resume preserves original notes and score, forged session rejected, revision persists same active runtime.
+✔ M2.12.03 interview draft survives actual technical hold and resume; stale session cannot overwrite notes/scores (11359.997985ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13161.105441

@@ -1,0 +1,25 @@
+{
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "disposition": "ACCEPTED_SCOPED",
+  "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+  "whole_scenario_verified": false,
+  "observations": [
+    {
+      "artifact": ".autopilot/artifacts/20261106-8041d83-appeal-interview-final.log",
+      "artifact_sha256": "f48e9b0f269f4d59830d7891f0db42d4011c0067d9cd98935a6066ae35603d64",
+      "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+      "scope": "Six native tests cover original/replacement interview, withdrawal, live failed calibration, retained draft/finalization denial and ended media closure."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-494d6fa-appeal-followups-native.log",
+      "artifact_sha256": "71c46fa3d9747fe47ec2424c2daeb3439b73ba29ec98180f2f1f3c3c4948d36d",
+      "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+      "scope": "Owned evidence and early finalization passed. Initial interview fixture assertions exposed ended-media precedence and were corrected in the separate run."
+    }
+  ],
+  "open": [
+    "Full accepted/rejected/evidence/interview outcome matrix",
+    "Protected restart, actual browser recipient and concurrent/retry outcomes"
+  ]
+}

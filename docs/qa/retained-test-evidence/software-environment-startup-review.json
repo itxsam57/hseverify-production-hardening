@@ -1,0 +1,44 @@
+{
+  "disposition": "ACCEPTED",
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+  "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+  "reviewed_at": "2026-11-06T07:50:00.458156+00:00",
+  "product_tree_scheme": "SHA-256 over Git-tracked paths in src, database, public, scripts, package.json, package-lock.json and next.config.ts, byte-sorted. Each path, NUL, then raw SHA-256 of its content.",
+  "scope": "M1.01.01 exact product and isolated PostgreSQL/loopback TLS. QA assertions were prepared locally. Live provider availability and production hosting are separate.",
+  "cases": {
+    "positive": "App and script validators accepted valid configuration and the owned production entry point started with independent secrets on PostgreSQL.",
+    "invalid_input": "Each missing secret and each prohibited production demo or sandbox setting failed entry-point validation before a listener started.",
+    "permission_isolation": "Protected perimeter, Worker denial of Admin access, authorized Admin access, and omission of configured secrets and database URL from sampled responses passed.",
+    "retry_recovery": "Invalid startup returned an outage, corrected startup recovered on the same fixture, and graceful and forced restart released and reacquired the owned listener.",
+    "persistence": "Worker and Admin sessions survived restart. The same signing key authenticated the original credential before and after restart with unchanged signed fields and a working public verification capability.",
+    "downstream_outcome": "Operator validation printed production, PostgreSQL and the matching release identity. Admin operations identified disabled email/SMS, built-in video, and configured but unverified scanning."
+  },
+  "observations": [
+    {
+      "artifact": ".autopilot/artifacts/20261106-8041d83-environment-native.log",
+      "artifact_sha256": "8cd94f76640221afc02061a86ffb49c15b822398f262d8d7180387ecd0abd657",
+      "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+      "scope": "14 environment and production entry point checks passed."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-8041d83-operator-access.log",
+      "artifact_sha256": "db594ea15716c0e2819502f3b6a90900a2a5ea742728e9a1dfec34b0f2d486dc",
+      "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+      "scope": "Exact production configuration, operators, role denial, outage and retained sessions passed."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-8041d83-signed-appeal-restart.log",
+      "artifact_sha256": "5f8ca45c98c2dc1513953ce42a2ed59a97f5aad0623ca0e36dd5744be8a369b4",
+      "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+      "scope": "Exact credential signature authority, retained signed fields, existing public capability and recipient continuity passed."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-8041d83-stage-source-binding.json",
+      "artifact_sha256": "8b521f79c2b6d089064774047319b5072f4ca1ce7139fdb2cc9e218c87ea665b",
+      "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+      "scope": "Compiled standalone manifest and process source agreed."
+    }
+  ]
+}

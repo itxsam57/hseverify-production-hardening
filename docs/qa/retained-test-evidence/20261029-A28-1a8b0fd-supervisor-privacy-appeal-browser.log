@@ -1,0 +1,26 @@
+✔ Actual rejected appeal retains original issuance and stale Admin form cannot overwrite newer review (31776.37179ms)
+ACTUAL_RESTRICTION_BROWSER valid link -> trusted request -> unauthorized Worker review denied -> Admin completion -> recipient denial -> disabled form and real403 issuance refusal
+✔ Worker optional sharing restriction reaches Admin fulfilment, recipient denial and server-enforced new-link refusal (36424.903001ms)
+ACTUAL_ALIAS_SHARING earlier browser link -> approved permanent ID fixture -> earlier link retained -> real DELETE200 revocation -> old recipient denied, new recipient granted
+✔ Worker retains and revokes an earlier sharing link after permanent ID issuance while a new link stays active (41672.488801ms)
+SCENARIO demonstrated -> APPROVED -> Worker/Company feedback persisted
+SCENARIO demonstrated -> REJECTED -> Worker/Company feedback persisted
+SCENARIO demonstrated -> CHANGES_REQUESTED -> Worker/Company feedback persisted
+SCENARIO partially_demonstrated -> APPROVED -> Worker/Company feedback persisted
+SCENARIO partially_demonstrated -> REJECTED -> Worker/Company feedback persisted
+SCENARIO partially_demonstrated -> CHANGES_REQUESTED -> Worker/Company feedback persisted
+SCENARIO not_demonstrated -> APPROVED -> Worker/Company feedback persisted
+SCENARIO not_demonstrated -> REJECTED -> Worker/Company feedback persisted
+SCENARIO not_demonstrated -> CHANGES_REQUESTED -> Worker/Company feedback persisted
+MIXED ACK preserved ESCALATED existing owner and route
+MIXED ACK preserved UNABLE_TO_VERIFY existing owner and route
+MIXED ACK preserved CHANGES_REQUESTED existing owner and route
+✔ Company signed observation -> Worker acknowledgement -> Verifier outcomes -> retained feedback (183808.342129ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 295751.060585

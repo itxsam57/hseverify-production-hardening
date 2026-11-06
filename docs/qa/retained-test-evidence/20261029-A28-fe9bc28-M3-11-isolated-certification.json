@@ -1,0 +1,30 @@
+{
+  "releaseSha": "certification-browser-disposable-test",
+  "environment": "test",
+  "startedAt": "2026-10-29T04:56:05.577Z",
+  "completedAt": "2026-10-29T04:57:28.128Z",
+  "status": "certified",
+  "drills": [
+    {
+      "name": "concurrency",
+      "status": "passed",
+      "evidence": "High-risk native concurrency regression passed in 6214ms using /usr/bin/node scripts/run-phase1-retrospective-performance.mjs; Authenticated five-role 50-request real-server load passed in 63228ms using /usr/bin/node scripts/run-authenticated-mixed-role-burst.mjs"
+    },
+    {
+      "name": "tenant_isolation",
+      "status": "passed",
+      "evidence": "Tenant isolation regression passed in 210ms using npm run test:tenant-scope"
+    },
+    {
+      "name": "restore",
+      "status": "passed",
+      "evidence": "Physical database backup/restore drill passed in 12844ms using /usr/bin/node scripts/run-m3-11-restore-drill.mjs"
+    },
+    {
+      "name": "incident",
+      "status": "passed",
+      "evidence": "Operational failure rollback and recovery regression passed in 52ms using /usr/bin/node --test tests/platform/production-launch-handover-runtime.test.mjs"
+    }
+  ],
+  "generatedAt": "2026-10-29T04:57:28.126Z"
+}

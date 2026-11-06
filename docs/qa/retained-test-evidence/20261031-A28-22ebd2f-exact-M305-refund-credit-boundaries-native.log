@@ -1,0 +1,13 @@
+ACTUAL_M305_REFUND_RESERVATION funding-first-refund-denied
+ACTUAL_M305_REFUND_RESERVATION refund-pending-funding-denied
+✔ M3.05 refunded credits cannot exceed unreserved Company assessment commitments in either order (21676.197726ms)
+ACTUAL_M305_DIRECT_ORDER_REFUND PENDING Company-funded case prevents refund of its only paid credit; case cancellation closes order and releases balance for one provider-pending refund, ledger stays immutable
+✔ M3.05 Company direct-order reserved credit is not refundable until pending order is cancelled (9729.729937ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33818.965252

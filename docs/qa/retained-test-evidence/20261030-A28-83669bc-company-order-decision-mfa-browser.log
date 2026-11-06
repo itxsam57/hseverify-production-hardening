@@ -1,0 +1,20 @@
+JOURNEY: identity and evidence verified
+ACTUAL_COMPANY_CREDENTIAL_ORDER_BROWSER unique target, verified linked Worker selected, real draft/READY/submit, exact framework policy pinned
+JOURNEY: submitted Company assessment case created
+ACTUAL_COMPANY_ORDER_COMPLETED_BROWSER original Company order completed after real final decision
+ACTUAL_A17_SCOPED_SHARE_BROWSER Worker creates, opens, revokes; revoked capability denied after reload
+JOURNEY: credential, sharing and appeal completed
+ACTUAL_COMPANY_CREDENTIAL_TARGET_DB exact Company target issued to verified permanent Worker, completed order with required interview and immutable policy snapshot
+✔ Masterplan preserved Worker journey: register to credential, share and appeal on one record (189070.172788ms)
+ACTUAL_BROWSER stale authenticated session plus forged current MFA timestamp denied
+ACTUAL_BROWSER completed recovery-code MFA login permitted override
+ACTUAL_DB trusted completed MFA timestamp persisted with decision, Assurance Case timeline and audit
+✔ Real MFA login permits decision override; stale session and forged browser timestamp produce no mutation (48523.863788ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 239708.48929

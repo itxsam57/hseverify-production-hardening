@@ -42,6 +42,7 @@ export default async function ReviewerQueuePage({
                 <th>Version</th>
                 <th>Attachment</th>
                 <th>Status</th>
+                <th>Live eligibility</th>
                 <th>Open</th>
               </tr>
             </thead>
@@ -60,6 +61,7 @@ export default async function ReviewerQueuePage({
                   <td>{task.sourceVersionId}</td>
                   <td>{task.secureFileId ? "File attached" : "Structured evidence only"}</td>
                   <td>{task.taskStatus}</td>
+                  <td>{task.eligibility?.eligible ? "Eligible" : task.eligibility?.reason.replaceAll("_", " ").toLowerCase()}</td>
                   <td><Link href={`/verifier/reviews/${task.taskId}`}>Review</Link></td>
                 </tr>
               ))}

@@ -1,0 +1,10 @@
+ACTUAL_M21105_NATIVE early 15m guard, late Worker READY denies no-show, unauthorized Worker denies marking, valid genuine no-show => unique unscheduled replacement + immutable prior runtime/audit.
+✔ M2.11.05 early no-show rejected; late ready Worker protected; genuine no-show and technical hold retain history and request fresh schedule (11154.307256ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12771.109904

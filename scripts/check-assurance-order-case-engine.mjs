@@ -88,10 +88,15 @@ for (const marker of ["createDraft","saveDraft","addWorkerTarget","removeWorkerT
 requirePattern(source.service, /transaction boundary/i, paths.service, "explicit trusted transactional command boundary");
 requireMarker(source.service, "company_verification_cases", paths.service);
 requireMarker(source.service, "company_worker_links", paths.service);
-for (const laterDependency of [
-  "Interview scheduling dependency is not yet available in M2.01.",
-  "Credential target dependency is not yet available in M2.01."
-]) requireMarker(source.service, laterDependency, paths.service);
+forbidPattern(source.service, /Credential target dependency is not yet available in M2\.01\.|Interview scheduling dependency is not yet available in M2\.01\./, paths.service, "obsolete credential/interview blockers after their engines were integrated");
+requireMarker(source.domain, "credentialTarget", paths.domain);
+requireMarker(source.repository, "credential_target", paths.repository);
+const credentialProgression = read("src/lib/decision/decision-engine-repository.ts");
+for (const marker of ["orders.credential_target", "row.credential_target.trim()", "derivePinnedCredentialValidity", "issueCredential", "Credential signing key is not configured.", "credential_reference=$4"])
+  requireMarker(credentialProgression, marker, "Company target final-decision integration");
+const targetProducerTest = read("tests/platform/company-credential-target-producer-runtime.test.mjs");
+for (const marker of ["service.createDraft", "service.addWorkerTarget", "service.validateOrder", "service.submitOrder", "saveDecisionAndProgressCase", "credentialAuthentication", "living_record_versions", "REJECTED", "missing effective policy"])
+  requireMarker(targetProducerTest, marker, "Company target real producer regression");
 for (const m203Integration of ["validateAssurancePolicySelection","pinAssuranceCasePolicySnapshot"])
   requireMarker(source.service, m203Integration, paths.service);
 forbidPattern(source.service, /Assessment framework dependency is not yet available in M2\.01\.|Effective policy dependency is not yet available in M2\.01\./, paths.service, "obsolete M2.01 framework/policy blocker after M2.03");
@@ -133,4 +138,4 @@ forbidPattern(m201Production, /question_bank|assessment_questions|assessment_for
 forbidPattern(m201Production, /issueCredential|credential_issuance|living.?record|scoped.?share/i, "M2.01 production boundary", "M3 credential/living-record/share-link authority");
 forbidPattern(m201Production, /approveEvidence|rejectEvidence|changesRequestedEvidence|reviewerQueue/i, "M2.01 production boundary", "M2.02 evidence decision authority");
 
-console.log("M2.01 Assurance Order and Case Engine source contract passed: tenant-scoped draft/validation/submission, one case per Worker, immutable timeline, explicit Action Centre ownership, safe commands, concurrency hard tests, centralized audit, M2.03 policy integration and remaining later-brick fail-closed boundaries are present.");
+console.log("M2.01 Assurance Order and Case Engine source contract passed: tenant-scoped draft/validation/submission, one case per Worker, immutable timeline, explicit Action Centre ownership, safe commands, concurrency hard tests, centralized audit, M2.03 policy integration and credential-target final-decision integration are present.");

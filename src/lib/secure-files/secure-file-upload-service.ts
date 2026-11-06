@@ -10,7 +10,7 @@ import {
 } from "./secure-file-domain";
 import {
   PrivateObjectConflictError,
-  createLocalTestPrivateObjectStorage,
+  createRuntimePrivateObjectStorage,
   type PrivateObjectStorage
 } from "./private-object-storage";
 import {
@@ -92,16 +92,13 @@ let service: SecureFileUploadService | null = null;
 export function getSecureFileUploadService(): SecureFileUploadService {
   if (service) return service;
   const environment = getServerEnvironment();
-  if (
-    environment.appEnvironment !== "development" &&
-    environment.appEnvironment !== "test"
-  ) {
-    throw new SecureFileUploadValidationError("invalid_policy");
-  }
+  // Fail closed before acquiring repository work if production private storage
+  // has not been explicitly configured.
+  const storage = createRuntimePrivateObjectStorage(environment.appEnvironment);
   service = new SecureFileUploadService(
     getSecureFileService(),
     getSecureFileUploadRepository(),
-    createLocalTestPrivateObjectStorage(environment.appEnvironment)
+    storage
   );
   return service;
 }

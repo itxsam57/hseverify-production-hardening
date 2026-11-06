@@ -1,0 +1,79 @@
+
+> hseverify@0.1.0 test:secure-upload-runtime
+> node scripts/run-secure-upload-runtime-tests.mjs
+
+✔ real quarantine repository commits metadata and one audit fact and replays idempotently (5868.747605ms)
+✔ audit persistence failure rolls the quarantine transition back atomically (4148.550796ms)
+✔ copied file ids and revoked trusted sessions fail before quarantine mutation (4212.59198ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15101.473523
+
+> hseverify@0.1.0 test:secure-access-runtime
+> node scripts/run-secure-access-runtime-tests.mjs
+
+✔ signed access authorization and serve use immutable bounded audit facts (5889.11986ms)
+✔ signed access audit vocabulary rollback is monotonic and reapply-safe (13598.004551ms)
+✔ signed secure file HTTP surface is exactly authorize, preview and download (7.106008ms)
+✔ Worker signed access reuses safely while live and fails after session revocation (5712.674451ms)
+✔ Company signed access is bound to exact active tenant membership at issue and use time (4166.423914ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30661.873129
+
+> hseverify@0.1.0 test:secure-scan-handler-runtime
+> node scripts/run-secure-scan-handler-runtime-tests.mjs
+
+✔ clean scan becomes available exactly once even if handler repeats before outbox success (5956.84223ms)
+✔ EICAR fixture becomes unsafe and never available (4236.360418ms)
+✔ retry-once remains scan_pending then succeeds on the second leased attempt (4267.893828ms)
+✔ retry exhaustion terminalizes the linked file instead of leaving scan_pending (4278.528058ms)
+✔ missing or tampered private object fails closed and never becomes available (8378.803094ms)
+✔ expired stale lease cannot mutate scan result and a reclaimed lease can finish safely (4158.979865ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 32342.173115
+✔ M1.08 Company verification evidence lifecycle remains functional on the latest Phase 1 schema (4604.689141ms)
+✔ M1.08 registration creates a pending Company, verifies email/TOTP and blocks exact duplicate registration claims (4335.228914ms)
+✔ M1.08 pending Company evidence requires an immutable application claim while generic tenant authority stays closed (2655.176171ms)
+✔ M1.08 same-tenant Company admins cannot rewrite the registration-verified business email (2697.26669ms)
+✔ M1.08 same-tenant Company admins can submit tenant evidence bound by another authorized manager (2604.269834ms)
+✔ M1.08 live manager guards reject forged cross-tenant authority, foreign evidence and stale membership state (2747.485104ms)
+✔ M1.08 live manager guards reject expired and revoked Company sessions (2657.883989ms)
+✔ M1.08 admin evidence preview cannot cross verification-case boundaries (2734.280616ms)
+✔ M1.08 review transitions reject duplicate begin-review and decision replay (2599.877924ms)
+✔ M1.08 Company verification preserves submitted history, creates correction lineage and activates tenant only after server review (2694.778914ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30814.309781
+✔ A26 production secure-file consumers fail closed without private storage configuration (1544.406004ms)
+✔ A26 configured production volume persists real validated bytes, isolates Worker owner and disallows overwrite (20.602937ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2255.46944
+A26_REGRESSION_ALL_PASS

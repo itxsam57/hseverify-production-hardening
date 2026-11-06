@@ -1,0 +1,41 @@
+ACTUAL_HUMAN_SUPPORT_BROWSER assigned Assessor typed caption/Spanish interpretation -> same Worker -> reload; plaintext escaped; Worker/unassigned/cross-origin/oversized/extra-field/anonymous denied; no automatic provider claim.
+✔ both browser roles deliver human captions and interpretation with escaped text and scoped API denies (36149.68587ms)
+✔ approved support without exact active human language capability is honestly unavailable in the Worker browser (24291.89098ms)
+ACTUAL_ENDED_SUPPORT_BROWSER existing terminal media prop -> panel unmounted -> both roles zero support GETs and strict clean console.
+✔ ended runtime unmounts human support in both existing role pages without stale polling (37129.086872ms)
+ACTUAL_MFA_MANAGEMENT_BROWSER company old code set replaced, replacement confirmed
+ACTUAL_MFA_MANAGEMENT_BROWSER assessor old code set replaced, replacement confirmed
+ACTUAL_MFA_MANAGEMENT_BROWSER verifier old code set replaced, replacement confirmed
+ACTUAL_MFA_MANAGEMENT_BROWSER admin old code set replaced, replacement confirmed
+ACTUAL_MFA_MANAGEMENT_BROWSER root old code set replaced, replacement confirmed
+ACTUAL_FRESH_OLD_FACTOR_DENIAL company fresh old factor denied and new factor accepted
+ACTUAL_FRESH_OLD_FACTOR_DENIAL assessor fresh old factor denied and new factor accepted
+ACTUAL_FRESH_OLD_FACTOR_DENIAL verifier fresh old factor denied and new factor accepted
+ACTUAL_FRESH_OLD_FACTOR_DENIAL admin fresh old factor denied and new factor accepted
+ACTUAL_FRESH_OLD_FACTOR_DENIAL root fresh old factor denied and new factor accepted
+ACTUAL_FIVE_ROLE_MFA_MANAGEMENT_DB: exact ten code hashes, old revoked/new active factors, consumed challenge and immutable role-bound completion audits
+ACTUAL_FIVE_ROLE_RECOVERY_CODE_LOGIN company wrong password denied without consumption; fresh code accepted once; replay, old set and foreign account code denied
+ACTUAL_FIVE_ROLE_RECOVERY_CODE_LOGIN assessor wrong password denied without consumption; fresh code accepted once; replay, old set and foreign account code denied
+ACTUAL_FIVE_ROLE_RECOVERY_CODE_LOGIN verifier wrong password denied without consumption; fresh code accepted once; replay, old set and foreign account code denied
+ACTUAL_FIVE_ROLE_RECOVERY_CODE_LOGIN admin wrong password denied without consumption; fresh code accepted once; replay, old set and foreign account code denied
+ACTUAL_FIVE_ROLE_RECOVERY_CODE_LOGIN root wrong password denied without consumption; fresh code accepted once; replay, old set and foreign account code denied
+ACTUAL_RECOVERY_CODE_LOGIN_DB exact one used/nine unused codes, one method-bound MFA audit and one new role-bound session per account
+ACTUAL_SECURITY_NOTIFICATION_BROWSER company 2 normal producer, real worker, unread/read and authenticated deep link
+ACTUAL_SECURITY_NOTIFICATION_BROWSER assessor 2 normal producer, real worker, unread/read and authenticated deep link
+ACTUAL_SECURITY_NOTIFICATION_BROWSER verifier 2 normal producer, real worker, unread/read and authenticated deep link
+ACTUAL_SECURITY_NOTIFICATION_BROWSER admin 2 normal producer, real worker, unread/read and authenticated deep link
+ACTUAL_SECURITY_NOTIFICATION_BROWSER root 2 normal producer, real worker, unread/read and authenticated deep link
+ACTUAL_SECURITY_NOTIFICATION_DB exact recipients, authoritative source events, read persistence and successful jobs
+✔ Five MFA-protected roles rotate recovery codes and replace authenticators with exact persisted audit and factor state (249920.181794ms)
+ACTUAL_RETENTION_INQUIRY_BROWSER Worker request -> Admin processing/response -> owned refreshed outcome/history; no purge or legal-policy certification
+✔ Worker retention inquiry reaches an actual Admin response and returns the persisted outcome to its owner (29819.4475ms)
+✔ Unsaved evidence metadata is protected through navigation; history fallback=false (37991.251138ms)
+✔ Unsaved evidence metadata is protected through navigation; history fallback=true (36431.053233ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 460204.517742

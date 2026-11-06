@@ -1,0 +1,12 @@
+✔ Company HTTP export must refuse a queue item with no generated private artifact (22622.030542ms)
+✔ Company reports distinguish automatic retries and let the owner recover a terminal failure (50367.396452ms)
+✔ An exhausted Company report offers a new request instead of another retry (35528.804276ms)
+✔ Worker report browser distinguishes automatic retry and performs bounded owner recovery with actual bytes (49639.851016ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 163730.212802

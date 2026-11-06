@@ -1,0 +1,11 @@
+ACTUAL_M11201_PUBLIC_WORKER_BROWSER genuine Worker ID from independent Verifier resolves to opaque short-lived URL, allowed Worker status, no private projection; invalid ID neutral; legacy raw Worker route redirects safely
+ACTUAL_M11201_PUBLIC_WORKER_DB verified Worker-ID version bound and persisted public lookup throttling
+✔ independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI (106610.686431ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107982.121781

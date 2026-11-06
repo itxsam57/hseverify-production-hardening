@@ -1,0 +1,12 @@
+✔ real scoring finalization routes PASS to the correct next owner (6071.330457ms)
+✔ real scoring finalization routes FAIL to the correct next owner (4245.877074ms)
+✔ real scoring finalization routes CHANGES_REQUESTED to the correct next owner (4271.780125ms)
+✔ ADDITIONAL_REVIEW is not a supported written-scoring disposition and must not be reported as tested (1.368609ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16064.275277

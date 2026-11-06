@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
 import { CredentialAppealsService } from "@/lib/credential/credential-appeals-service";
-import { APPEAL_OUTCOME_ACTIONS, type AppealOutcomeAction } from "@/lib/credential/credential-appeals-domain";
+import { CredentialAppealReviewAuthorizationError, APPEAL_OUTCOME_ACTIONS, type AppealOutcomeAction } from "@/lib/credential/credential-appeals-domain";
 import { requireRoleSession } from "@/lib/auth/auth-session-service";
 
 export async function POST(request: Request, context: { params: Promise<{ appealId: string }> }) {
@@ -10,9 +10,11 @@ export async function POST(request: Request, context: { params: Promise<{ appeal
   const body = await request.json() as {
     status?: "under_review" | "accepted" | "rejected";
     reason?: string;
+    expectedVersion?: number;
     outcomeAction?: AppealOutcomeAction;
   };
-  if (!body.status || !body.reason?.trim()) {
+  if (!body.status || !body.reason?.trim() ||
+      (body.expectedVersion !== undefined && (!Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 1))) {
     return NextResponse.json({ error: "invalid_appeal_review_request" }, { status: 400 });
   }
   if (body.outcomeAction && !APPEAL_OUTCOME_ACTIONS.includes(body.outcomeAction)) {
@@ -21,12 +23,25 @@ export async function POST(request: Request, context: { params: Promise<{ appeal
 
   const appeal = await new CredentialAppealsRepository().find(appealId);
   if (!appeal) return NextResponse.json({ error: "appeal_not_found" }, { status: 404 });
+  if (body.expectedVersion !== undefined && appeal.version !== body.expectedVersion) {
+    return NextResponse.json({ error: "appeal_review_conflict" }, { status: 409 });
+  }
 
-  const updated = await new CredentialAppealsService().reviewOutcome(appeal, {
-    status: body.status,
-    reviewerId: session.accountId,
-    reason: body.reason,
-    outcomeAction: body.outcomeAction
-  });
-  return NextResponse.json(updated);
+  try {
+    const updated = await new CredentialAppealsService().reviewOutcome(appeal, {
+      status: body.status,
+      reviewerId: session.accountId,
+      reason: body.reason,
+      outcomeAction: body.outcomeAction
+    });
+    return NextResponse.json(updated);
+  } catch (error) {
+    if (error instanceof CredentialAppealReviewAuthorizationError) {
+      return NextResponse.json({ error: "appeal_review_forbidden" }, { status: 403 });
+    }
+    if (error instanceof Error && error.message === "Appeal update conflict.") {
+      return NextResponse.json({ error: "appeal_review_conflict" }, { status: 409 });
+    }
+    throw error;
+  }
 }

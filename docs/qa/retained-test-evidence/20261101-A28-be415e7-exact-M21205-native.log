@@ -1,0 +1,10 @@
+ACTUAL_M21205_NATIVE real pinned high-risk policy, 8 incomplete End denials, 8 invalid or forged Submit denials, frozen case+draft, complete PASS decision advances once, duplicate denied.
+✔ M2.12.05 missing scorecard or missing recommendation never finalizes and a valid finalization changes decision once (12694.154392ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14372.728806

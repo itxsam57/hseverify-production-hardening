@@ -1,0 +1,21 @@
+✔ recovery retains serious concern independently of monitoring state (1.814732ms)
+✔ actual objective assessment submission with retained concern requires human review (11234.451892ms)
+✔ reasoned assigned integrity disposition CLEAR is immutable and controls progression (10105.90918ms)
+✔ reasoned assigned integrity disposition CONCERN_CONFIRMED is immutable and controls progression (10112.220345ms)
+✔ reasoned assigned integrity disposition UNABLE is immutable and controls progression (10239.246068ms)
+✔ reasoned assigned integrity disposition ESCALATE is immutable and controls progression (10252.881162ms)
+✔ new retained evidence can be cleared by an append-only integrity amendment (10082.877998ms)
+✔ Admin returns escalated integrity for calibrated independent review with retained history and recent MFA (10529.443038ms)
+✔ empty integrity notification rollback restores the prior contract and reapplies without losing history (4863.065259ms)
+✔ scoring acquires case and attempt before review to match integrity resolution (10208.640556ms)
+✔ integrity clearance does not turn an incorrect objective answer into a pass (9863.260951ms)
+✔ forged saved objective score cannot bypass pinned scoring at finalization (9949.909007ms)
+✔ monitoring signal ingestion never persists Worker accommodation disclosures or free-text details (10147.678759ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 119463.297107

@@ -1,0 +1,13 @@
+✔ approved 1.5 delivery reaches the real attempt producer and immutable 450-second Worker clock (11669.829924ms)
+✔ approved finite break hides questions and denies real writes until the server-owned end (9829.919687ms)
+✔ extended server expiry ignores the old deadline and closes only at the reserved deadline (9717.998091ms)
+✔ separate phases share one approved break budget and rest denies review, progression and revoked sessions (10001.833064ms)
+✔ approved adjustment increases delivery time but cannot lower the pinned objective pass mark (9624.905057ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 52053.390793

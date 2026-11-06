@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EndWorkerRelationshipForm } from "@/components/company/end-worker-relationship-form";
 import { notFound } from "next/navigation";
 
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
@@ -35,10 +36,16 @@ export default async function CompanyWorkerDetailPage({
           <div><dt>Department</dt><dd>{worker.department ?? "Not assigned"}</dd></div>
           <div><dt>Assessment pre-assignment</dt><dd>{worker.assessmentReference ?? "None"}</dd></div>
           <div><dt>Latest assurance state</dt><dd>{worker.assuranceStatus ?? "No active case"}</dd></div>
+          <div><dt>Current competency state</dt><dd>{worker.currentCompetencyStatus?.replaceAll("_", " ") ?? "Unavailable"}</dd></div>
           <div><dt>Next action</dt><dd>{worker.nextAction ?? "No action currently required"}</dd></div>
         </dl>
         {worker.workerId ? <Link href={`/verify/worker/${encodeURIComponent(worker.workerId)}`}>Open public verification</Link> : null}
       </section>
+      {worker.status === "active" ? (
+        <EndWorkerRelationshipForm linkId={linkId} today={new Date().toISOString().slice(0, 10)} />
+      ) : worker.status === "revoked" ? (
+        <p role="status">This Company relationship has ended. The Worker identity and prior history remain intact.</p>
+      ) : null}
     </div>
   );
 }

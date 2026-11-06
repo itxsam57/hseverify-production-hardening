@@ -94,7 +94,7 @@ for (const marker of [
   "accounts.account_status = 'active'",
   "sessions.revoked_at IS NULL",
   "sessions.expires_at > CURRENT_TIMESTAMP",
-  "FOR UPDATE OF sessions, accounts",
+  "FOR UPDATE OF accounts, sessions",
   "worker_account_id = $1",
   "ON CONFLICT (worker_account_id) DO NOTHING",
   "AUDIT_APPEND_SQL",

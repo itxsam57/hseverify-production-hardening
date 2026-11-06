@@ -1,0 +1,14 @@
+✔ Actual submitted PASS recommendation persists routing and immutable history (11895.374774ms)
+✔ Actual submitted CONDITIONAL_PASS recommendation persists routing and immutable history (10138.671924ms)
+✔ Actual submitted ADDITIONAL_EVIDENCE_REQUIRED recommendation persists routing and immutable history (10154.482152ms)
+✔ Actual submitted REASSESSMENT_REQUIRED recommendation persists routing and immutable history (10108.254232ms)
+✔ Actual submitted SECOND_INTERVIEW_REQUIRED recommendation persists routing and immutable history (10155.126475ms)
+✔ Actual submitted FAIL recommendation persists routing and immutable history (10241.098788ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64338.473863

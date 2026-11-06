@@ -1,0 +1,21 @@
+✔ M2.02 runtime queues exactly one immutable evidence-version task and advances case ownership (5855.353133ms)
+✔ M2.02 employment review preserves the current leaving-letter secure file on the exact queued version (4102.972841ms)
+✔ M2.02 runtime claim race has exactly one winner and copied assigned IDs are non-enumerating (4228.540364ms)
+✔ M2.02 runtime conflict declaration releases an assignment and permanently blocks that verifier (4291.354386ms)
+✔ M2.02 runtime denies a decision when the exact reviewed source version becomes stale (4146.655894ms)
+✔ M2.02 runtime allows exactly one terminal decision under concurrency and keeps decision history append-only (4207.738983ms)
+✔ M2.02 CHANGES_REQUESTED returns the case to the Worker while preserving reviewed-version lineage (4200.140212ms)
+M20204_CASE_CORRECTION retained prior terminal evidence decision, superseded stale assigned version, new live versions queued, replay idempotent and stale decision denied.
+✔ M2.02.04 corrected case evidence supersedes assigned stale work but preserves terminal decision history (4317.875642ms)
+✔ M2.02 history-preserving rollback and repeat-safe reapply keep review rows intact (4007.571757ms)
+✔ Another task approval preserves the correct next actor for UNABLE_TO_VERIFY (4386.19842ms)
+✔ Another task approval preserves the correct next actor for ESCALATED (4391.414775ms)
+✔ Another task changes-requested preserves the correct next actor for ESCALATED (4398.706383ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 54155.275317

@@ -1,0 +1,18 @@
+ACTUAL_A14_BROWSER BLOCK synthetic permission rejection; retained four signals; attempt IN_PROGRESS
+ACTUAL_A14_BROWSER REVIEW synthetic permission rejection; retained four signals; attempt IN_PROGRESS
+ACTUAL_A14_BROWSER PARTIAL_BLOCK synthetic permission rejection; retained four signals; attempt IN_PROGRESS
+ACTUAL_A14_BROWSER STOPPED_SCREEN_BLOCK synthetic permission rejection; retained four signals; attempt IN_PROGRESS
+ACTUAL_A14_BROWSER POLICY_OUTAGE synthetic permission rejection; retained four signals; attempt IN_PROGRESS
+✔ A14 real Worker browser enforces media permission denial, partial acquisition cleanup, BLOCK and REVIEW policies (135727.723746ms)
+ACTUAL_A14_BROWSER submitted receipt served with owner-bound no-monitoring policy after reload
+✔ A14 submitted Worker assessment receipt does not demand monitoring after a validated submission (27217.34314ms)
+✔ Admin actual duplicate identity outcomes preserve separate people and unblock only the cleared Worker (39193.541928ms)
+✔ Worker evidence resolves without approval and escalation returns through the actual Admin form (64721.279711ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 272344.136866

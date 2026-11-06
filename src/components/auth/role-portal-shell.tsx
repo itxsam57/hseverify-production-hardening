@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { UnsavedChangesGuard } from "@/components/ui/unsaved-changes-guard";
+
 import { signOutCurrentPortal } from "@/app/auth/actions";
 import { RootInvitationSearch } from "@/components/auth/root-invitation-search";
 import { RoleNavigation } from "@/components/auth/role-navigation";
@@ -36,6 +38,7 @@ export async function RolePortalShell({
 
   return (
     <div className="portal-shell">
+      <UnsavedChangesGuard />
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
@@ -116,6 +119,7 @@ export async function RolePortalShell({
                 <Link href={`${basePath}/dashboard`}>Dashboard</Link>
                 <Link href={`${basePath}/notifications`}>Notifications</Link>
                 <Link href="/account/security">Security</Link>
+                <Link href="/account/security#interface-language">Language: English</Link>
                 <Link href="/account/sessions">Active sessions</Link>
                 <Link href="/contact">Help and support</Link>
                 <Link href="/">Exit portal</Link>

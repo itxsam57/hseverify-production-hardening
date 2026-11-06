@@ -1,0 +1,16 @@
+ACTUAL_M206_REVOKE_BROWSER Company ended active Worker relationship before pending funding approval
+ACTUAL_M206_APPROVAL_DENIED_BROWSER pending request rejected server-side after revoked link, even while Company has credits
+ACTUAL_M206_REVOKED_FUNDING_DB no reserved credits, no funding approval and no Worker case created
+✔ M2.06 revoked Company–Worker relationship cannot approve a pending funding request or create a case (32736.527367ms)
+ACTUAL_M206_ZERO_CREDIT_BROWSER valid Company request denied with no credit reservation or case
+ACTUAL_M206_CREDIT_PURCHASE_BROWSER unpaid request remained pending; real Company sandbox checkout captured 1 credit and approved matching Worker assessment to precheck
+ACTUAL_M206_CREDIT_DB exactly one paid sandbox credit, one reservation, one funded Worker case, no double funding
+✔ M2.06 Company zero credits rejects funding, then genuine sandbox checkout allows owned Worker case (30369.239076ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64726.150266

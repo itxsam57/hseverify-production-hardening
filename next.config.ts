@@ -82,7 +82,12 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   output: "standalone",
   deploymentId: process.env.HSE_DEPLOYMENT_ID || process.env.HSE_RELEASE_SHA,
-  serverExternalPackages: ["@electric-sql/pglite"],
+  serverExternalPackages: ["@electric-sql/pglite", "pdfkit", "fontkit"],
+  outputFileTracingIncludes: {
+    "/api/company/reports/**": ["./src/lib/reports/fonts/*"],
+    "/api/worker/reports/**": ["./src/lib/reports/fonts/*"],
+    "/api/credentials/**": ["./src/lib/reports/fonts/*"]
+  },
   ...commandBoundary,
   experimental: {
     serverActions: {
@@ -108,6 +113,28 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(self), microphone=(self), geolocation=()"
+          }
+        ]
+      },
+      {
+        // Private exports keep their stricter headers after the global rules.
+        source: "/api/company/reports/:reportId/export",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox"
+          }
+        ]
+      },
+      {
+        // Private exports keep their stricter headers after the global rules.
+        source: "/api/worker/reports/:reportId/export",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox"
           }
         ]
       }

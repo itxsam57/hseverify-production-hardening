@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { LiveInterviewMedia } from "@/components/interview/live-interview-media";
+import { InterviewConsoleTabs, InterviewConsoleTimer } from "@/components/interview/interview-console-tabs";
+import { createInterviewContextPanels } from "@/components/interview/interview-console-context-panels";
+import { InterviewConsoleContextService, InterviewConsoleContextAccessError } from "@/lib/interview/interview-console-context-service";
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
 import { getInterviewPlaybookService } from "@/lib/interview/interview-playbook-service";
+import { eligibleInterviewQuestions, normalizeInterviewPolicy, type InterviewSelectionContext } from "@/lib/interview/interview-policy-domain";
 import { InterviewRuntimeService } from "@/lib/interview/interview-runtime-service";
 import { createInterviewConsole, createInterviewSession } from "@/lib/interview/interview-scheduling-domain";
 import { InterviewAssignmentAccessError, InterviewSchedulingService } from "@/lib/interview/interview-scheduling-service";
@@ -55,7 +59,7 @@ export default async function AssessorInterviewConsolePage({
   params, searchParams
 }: {
   params: Promise<{ interviewRequestId: string }>;
-  searchParams: Promise<{recoveryError?:string; consoleError?:string}>;
+  searchParams: Promise<{recoveryError?:string; consoleError?:string;consoleMessage?:string}>;
 }): Promise<React.JSX.Element> {
   const actor = await requirePlatformPermission({
     expectedRole: "assessor",
@@ -73,7 +77,7 @@ export default async function AssessorInterviewConsolePage({
     throw error;
   });
   const runtimeService = new InterviewRuntimeService(Promise.resolve(database));
-  const [runtime, saved, playbook, accommodation] = await Promise.all([
+  const [runtime, saved, playbook, accommodation, context] = await Promise.all([
     runtimeService.view(actor, interviewRequestId),
     scheduling.loadLatestConsoleDraft({
       tenantId: request.tenantId,
@@ -83,7 +87,11 @@ export default async function AssessorInterviewConsolePage({
     new CaseAccommodationService(Promise.resolve(database)).resolveForWorker(
       request.caseId,
       request.workerAccountId
-    )
+    ),
+    new InterviewConsoleContextService(database).load(actor,interviewRequestId).catch((error:unknown) => {
+      if (error instanceof InterviewConsoleContextAccessError) notFound();
+      throw error;
+    })
   ]);
 
   const newSession = createInterviewSession({
@@ -108,6 +116,14 @@ export default async function AssessorInterviewConsolePage({
     recommendation: saved?.recommendation ?? initialConsole.recommendation,
     submitted: saved?.submitted ?? initialConsole.submitted
   };
+
+  const interviewPolicy = playbook?.sourceContext.policyMode === "CONFIGURED"
+    ? normalizeInterviewPolicy(playbook.sourceContext.interviewPolicy) : null;
+  const approvedFollowUps = interviewPolicy && playbook
+    ? eligibleInterviewQuestions(interviewPolicy,playbook.sourceContext.selectionContext as InterviewSelectionContext)
+      .filter(question => question.kind === "FOLLOW_UP" && !playbook.questions.some(asked => asked.templateId === question.templateId))
+    : [];
+  const findingsLocked = runtime.status === "ENDED" || consoleState.submitted;
 
   const locked = consoleState.submitted || ["COMPLETED","CANCELLED"].includes(request.status);
   const runtimeClosed = request.status === "CANCELLED" || runtime.status === "ENDED" || runtime.status === "NO_SHOW";
@@ -149,6 +165,7 @@ export default async function AssessorInterviewConsolePage({
       </header>
 
 
+      {messages.consoleError==="policy" ? <p role="alert">{messages.consoleMessage?.slice(0,2000) ?? "Complete the pinned interview policy requirements before continuing."}</p> : null}
       {messages.consoleError==="closed" ? <p role="alert">This interview is closed. Your changes were not saved. Open the current interview from your assignments.</p> : null}
       {messages.recoveryError==="invalid" ? <p role="alert">Provide a reason between 10 and 1000 characters. Only the current no-show or technical hold can request a replacement.</p> : null}
       {request.status==="CANCELLED" ? <p role="status">This interview is archived. Check interview assignments for the replacement; unmatched requests await an eligible Assessor.</p> : null}
@@ -166,13 +183,15 @@ export default async function AssessorInterviewConsolePage({
 
       <section className="dashboard-section" aria-labelledby="runtime-heading">
         <h2 id="runtime-heading">Interview runtime</h2>
+        <InterviewConsoleTimer seconds={context?.elapsedSeconds ?? 0} running={context?.timerRunning ?? false} />
         <dl className="compact-definition-list">
-          <div><dt>Worker</dt><dd>{request.workerAccountId}</dd></div>
+          <div><dt>Worker</dt><dd>{context?.profile.name ?? request.workerAccountId}</dd></div>
           <div><dt>Scheduled</dt><dd>{request.scheduledAt ?? "Awaiting schedule"}</dd></div>
           <div><dt>Request status</dt><dd>{request.status}</dd></div>
           <div><dt>Runtime state</dt><dd>{runtime.status ?? "Not opened"}</dd></div>
           <div><dt>Worker ready</dt><dd>{runtime.workerReadyAt ?? "Not ready"}</dd></div>
           <div><dt>Recording policy</dt><dd>{runtime.recordingPolicy.replaceAll("_", " ")}</dd></div>
+          {interviewPolicy ? <div><dt>Minimum active duration</dt><dd>{interviewPolicy.minimumActiveSeconds !== undefined ? interviewPolicy.minimumActiveSeconds + " seconds, excluding pauses and technical holds" : "No minimum duration configured in this pinned policy"}</dd></div> : null}
           <div><dt>Recording consent</dt><dd>{runtime.recordingConsentRequired ? runtime.recordingConsentedAt ?? "Required — not recorded" : "Not required"}</dd></div>
           <div><dt>Approved time allowance</dt><dd>{accommodation.adjustment.timeMultiplier}×</dd></div>
           <div><dt>Extra break allowance</dt><dd>{accommodation.adjustment.extraBreakMinutes} minutes</dd></div>
@@ -259,44 +278,10 @@ export default async function AssessorInterviewConsolePage({
         />
       </section>
 
-      <section className="dashboard-section" aria-labelledby="playbook-heading">
-        <h2 id="playbook-heading">Structured interview playbook</h2>
-        {!playbook ? (
-          <p className="muted-copy">
-            Claim the interview to freeze the candidate-specific playbook for this session.
-          </p>
-        ) : (
-          <div className="content-stack">
-            <p>
-              Question set <code>{playbook.questionSetId}</code> · version {playbook.versionNo}
-            </p>
-            <ol>
-              {playbook.questions.map((question) => (
-                <li key={question.questionId}>
-                  <strong>{question.kind.replaceAll("_", " ")}</strong>
-                  {question.topic ? " · " + question.topic : ""}
-                  <p>{question.prompt}</p>
-                  <p className="muted-copy">Source: {question.source}</p>
-                </li>
-              ))}
-            </ol>
-            {!locked ? (
-              <form action={addInterviewFollowUpAction} className="form-grid">
-                <input type="hidden" name="interviewRequestId" value={request.interviewRequestId} />
-                <label>
-                  Assessor follow-up question
-                  <textarea name="prompt" rows={3} minLength={10} maxLength={1000} required />
-                </label>
-                <button className="button button-secondary" type="submit">
-                  Add versioned follow-up
-                </button>
-              </form>
-            ) : null}
-          </div>
-        )}
-      </section>
-
-      <section className="dashboard-section" aria-labelledby="capture-heading">
+      {!context ? <p role="status">Case context is unavailable for this archived appointment. Open the current interview from your assignments.</p> : null}
+      <InterviewConsoleTabs panels={[
+        {id:"notes",label:"Notes and scoring",content:(
+<section className="dashboard-section" aria-labelledby="capture-heading">
         <h2 id="capture-heading">Notes, scorecard and recommendation</h2>
         <p className="muted-copy">
           Scores are 0–5. Every dimension must be saved before End. The final recommendation
@@ -304,6 +289,44 @@ export default async function AssessorInterviewConsolePage({
         </p>
         <form key={JSON.stringify(saved ?? { interviewSessionId })} action={saveInterviewConsoleAction} className="form-grid">
           <input type="hidden" name="interviewSessionId" value={interviewSessionId} />
+          {interviewPolicy && playbook ? <>
+            <input type="hidden" name="questionSetId" value={playbook.questionSetId} />
+            <input type="hidden" name="questionSetVersion" value={playbook.versionNo} />
+            <fieldset>
+              <legend>Question and topic coverage</legend>
+              <p>Required topics: {interviewPolicy.minimumTopics?.join(", ") || "No topic minimum configured"}. Cover every mandatory question before End.</p>
+              {playbook.questions.map(question => (
+                <label key={question.questionId}>
+                  <input type="checkbox" name="coveredQuestionId" value={question.questionId}
+                    defaultChecked={consoleState.scorecard.coveredQuestionIds?.includes(question.questionId) ?? false}
+                    disabled={locked || findingsLocked} />
+                  {question.topic ?? "Follow-up"} — {question.prompt}{question.mandatory ? " (mandatory)" : ""}
+                </label>
+              ))}
+              {findingsLocked ? consoleState.scorecard.coveredQuestionIds?.map(id => <input key={id} type="hidden" name="coveredQuestionId" value={id} />) : null}
+            </fieldset>
+            {(interviewPolicy.safetyCriteria ?? []).length > 0 ? <fieldset>
+              <legend>Automatic-fail safety findings</legend>
+              <p>Record whether each statement was observed. Confirmed findings require comments and the Fail recommendation. Coverage and findings lock at End.</p>
+              {(interviewPolicy.safetyCriteria ?? []).map(criterion => {
+                const finding = consoleState.scorecard.safetyFindings?.find(item => item.criterionId === criterion.criterionId);
+                return <div key={criterion.criterionId}>
+                  <label>{criterion.statement}
+                    <select name={"safety:" + criterion.criterionId} defaultValue={finding?.status ?? ""} required disabled={locked || findingsLocked}>
+                      <option value="">Not reviewed</option>
+                      <option value="NOT_OBSERVED">Not observed</option>
+                      <option value="CONFIRMED">Confirmed automatic fail</option>
+                    </select>
+                  </label>
+                  {findingsLocked && finding ? <input type="hidden" name={"safety:" + criterion.criterionId} value={finding.status} /> : null}
+                  <label>Safety finding comments
+                    <textarea name={"safetyComments:" + criterion.criterionId} maxLength={2000} rows={2}
+                      defaultValue={finding?.comments ?? ""} disabled={locked} readOnly={findingsLocked} />
+                  </label>
+                </div>;
+              })}
+            </fieldset> : null}
+          </> : null}
           <input type="hidden" name="interviewRequestId" value={request.interviewRequestId} />
           <label>
             Notes
@@ -329,6 +352,8 @@ export default async function AssessorInterviewConsolePage({
             <textarea
               name="comments"
               aria-label="Scorecard comments"
+              required
+              maxLength={4000}
               rows={4}
               defaultValue={consoleState.scorecard.comments ?? ""}
               disabled={locked}
@@ -380,6 +405,57 @@ export default async function AssessorInterviewConsolePage({
           )}
         </form>
       </section>
+        )},
+        {id:"questions",label:"Questions",content:(
+<section className="dashboard-section" aria-labelledby="playbook-heading">
+        <h2 id="playbook-heading">Structured interview playbook</h2>
+        {!playbook ? (
+          <p className="muted-copy">
+            Claim the interview to freeze the candidate-specific playbook for this session.
+          </p>
+        ) : (
+          <div className="content-stack">
+            <p>
+              Question set <code>{playbook.questionSetId}</code> · version {playbook.versionNo}
+            </p>
+            {interviewPolicy ? <>
+              <p>Approved policy version: <code>{String(playbook.sourceContext.policyVersionId)}</code>.</p>
+              {interviewPolicy.scoringGuidance ? <p>Scoring guidance: {interviewPolicy.scoringGuidance}</p> : null}
+              <p>Minimum topics: {interviewPolicy.minimumTopics?.join(", ") || "None configured"}.</p>
+            </> : <p>This legacy case uses the retained platform playbook. No policy-specific duration or topic minimum is configured.</p>}
+            <ol>
+              {playbook.questions.map((question) => (
+                <li key={question.questionId}>
+                  <strong>{question.kind.replaceAll("_", " ")}</strong>
+                  {question.topic ? " · " + question.topic : ""}
+                  <p>{question.prompt}</p>
+                  <p className="muted-copy">Source: {question.source}</p>
+                  {question.scoringGuidance ? <p>Scoring guidance: {question.scoringGuidance}</p> : null}
+                </li>
+              ))}
+            </ol>
+            {!locked && !runtimeClosed && (!interviewPolicy || approvedFollowUps.length > 0) ? (
+              <form action={addInterviewFollowUpAction} className="form-grid">
+                <input type="hidden" name="interviewRequestId" value={request.interviewRequestId} />
+                <label>
+                  {interviewPolicy ? "Approved follow-up question" : "Assessor follow-up question"}
+                  {interviewPolicy ? <select name="prompt" required>
+                    <option value="">Choose an approved template</option>
+                    {approvedFollowUps.map(question => <option key={question.templateId} value={question.templateId}>{question.prompt}</option>)}
+                  </select> : <textarea name="prompt" rows={3} minLength={10} maxLength={1000} required />}
+                </label>
+                <button className="button button-secondary" type="submit">
+                  Add versioned follow-up
+                </button>
+              </form>
+            ) : null}
+          </div>
+        )}
+      </section>
+        )},
+        ...(context ? createInterviewContextPanels(context,request.interviewRequestId) : [])
+      ]} />
+
     </div>
   );
 }

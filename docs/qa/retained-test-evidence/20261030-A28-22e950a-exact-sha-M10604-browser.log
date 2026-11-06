@@ -1,0 +1,13 @@
+ACTUAL_M10604_REPLACEMENT_BROWSER two genuine different PNG uploads, old superseded, new active after cold reload
+ACTUAL_M10604_PREVIEW_BROWSER signed same-session certificate-v1.png exact content and anonymous denial
+ACTUAL_M10604_PREVIEW_BROWSER signed same-session certificate-v2.png exact content and anonymous denial
+ACTUAL_M10604_DB old/current immutable secure file versions and distinct SHA256 hashes retained
+✔ M1.06.04 Worker replacement keeps prior private bytes, current version and signed preview scoped (27926.432781ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 28507.809542

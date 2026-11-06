@@ -1,0 +1,11 @@
+ACTUAL_DUAL_COMPANY_BROWSER Worker sees two independent employers, each Company forbidden foreign case, Company B termination retains A active and B history
+ACTUAL_DUAL_COMPANY_DB first tenant link active, second revoked, single tenant-bound audit, Worker identity not merged
+✔ M1.10 dual-employer browser protects each tenant while preserving Worker history (33209.316361ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33795.203325

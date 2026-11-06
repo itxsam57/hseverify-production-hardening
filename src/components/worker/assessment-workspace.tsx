@@ -17,6 +17,7 @@ import { Alert } from "@/components/ui/feedback";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import type { AssessmentAttemptClientView } from "@/lib/assessment-attempt/assessment-attempt-domain";
 import { useAssessmentDraftAutosave } from "./use-assessment-draft-autosave";
+import { ApprovedBreakControl,ApprovedBreakRest } from "./approved-assessment-break";
 
 const INITIAL_STATE: AssessmentAnswerActionState = Object.freeze({
   status: "idle",
@@ -224,6 +225,7 @@ function ProgressionReviewGate({
         </div>
       </div>
       <section className="panel page-section content-stack">
+        <ApprovedBreakControl view={view} />
         <ReviewLinks view={view} />
         {state.message ? <Alert tone="danger" role="alert">{state.message}</Alert> : null}
         <form action={formAction}>
@@ -367,6 +369,7 @@ function ActiveAssessmentWorkspace({
           Progression: {view.progressionMode.replaceAll("_", " ")}
           {view.sectionTitle ? ` · ${view.sectionTitle}` : ""}
         </p>
+        <ApprovedBreakControl view={view} onPrepare={flushExactCurrentEdit} />
         <ReviewLinks view={view} />
 
         <form action={action} className="content-stack">
@@ -531,5 +534,6 @@ function TimedAssessmentWorkspace({ view }: { view: AssessmentAttemptClientView 
 
 
 export function AssessmentWorkspace({ view }: { view: AssessmentAttemptClientView }): React.JSX.Element {
+  if(view.accommodationBreak?.active)return <ApprovedBreakRest view={view} />;
   return <TimedAssessmentWorkspace key={(view.timing?.deadlineAt ?? "untimed") + ":" + (view.timing?.remainingSeconds ?? 0)} view={view} />;
 }

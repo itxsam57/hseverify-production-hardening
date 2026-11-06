@@ -1,0 +1,116 @@
+{
+  "source_sha": "92875b6909ea90851bc76df3f0ff9542580577ce",
+  "reviewer": "/root/review_software_plan",
+  "whole_scenario_verified": false,
+  "scope": "Three protected browser outcomes with restart and PostgreSQL contention and live Company authority checks. Report fixture regression passed separately.",
+  "artifacts": [
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-production-build.log",
+      "sha256": "d16a25c1009eb85f1386059856cf903e1a21a06e94b4aa9dbe78f728eb135af3",
+      "tail": [
+        "\u251c \u0192 /worker/security",
+        "\u251c \u0192 /worker/share-links",
+        "\u2514 \u25cb /workers",
+        "",
+        "",
+        "\u0192 Proxy (Middleware)",
+        "",
+        "\u25cb  (Static)   prerendered as static content",
+        "\u0192  (Dynamic)  server-rendered on demand",
+        "",
+        "Deterministic Next production build passed without source configuration changes.",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-protected-reassessment.log",
+      "sha256": "5edeb0106ae4b1ccaef4789917d7baa445c16b275cfade8a3f2cb6d898269f99",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS reassessment production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (21751.274347ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 22619.021327",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-protected-suspend.log",
+      "sha256": "0aaed30fbb6c70b3cdd82872a61de187588f366d88d8a0cff561c6c70828be75",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS suspend production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (15584.7815ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 16454.349894",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-protected-revoke.log",
+      "sha256": "4d02d0ab568aaa05b3cf7d365db577f35bb46bfcf0c70b61f874b403745a8817",
+      "tail": [
+        "OWNED_STAGE_TEARDOWN child exited and listener released",
+        "PROTECTED_POSTGRES_APPEAL_PASS revoke production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+        "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (16797.593955ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 17648.604667",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-92875b6-live-authority-final.log",
+      "sha256": "41f688cbe2196f85d8fb7b7e7b758866b070eadf5498253d020b345a3401aace",
+      "tail": [
+        "}",
+        "POSTGRES_APPEAL_RACE_PASS reviewers distinct transaction backends; one commit, one conflict; coherent histories and public state",
+        "\u2714 PostgreSQL appeal race reviewers review-first commits one coherent result (2709.625973ms)",
+        "\u2139 tests 1",
+        "\u2139 suites 0",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 3131.618852",
+        "EXIT_CODE=0"
+      ]
+    },
+    {
+      "path": ".autopilot/artifacts/20261105-appeal-report-regression.log",
+      "sha256": "1b97f36890de7b49eb6e4dc977fe835c75635e94481da1489f3419acd9b919a8",
+      "tail": [
+        "  \u2714 Worker reassessment-appeal-history (50.820415ms)",
+        "  \u2714 A revised qualification cannot inherit the previous version's approval (65.303511ms)",
+        "\u2714 Eight Company and seven Worker report kinds export populated authoritative sources through real generation and private storage (17460.911913ms)",
+        "\u2139 tests 18",
+        "\u2139 suites 0",
+        "\u2139 pass 18",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 20449.276607",
+        "EXIT_CODE=0"
+      ]
+    }
+  ]
+}

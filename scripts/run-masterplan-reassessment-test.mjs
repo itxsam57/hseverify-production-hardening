@@ -10,6 +10,12 @@ Object.assign(environment, {
   HSE_MASTERPLAN_CONTENT_MODE: "COMBINED",
   HSE_MASTERPLAN_DELIVERY_MODE: "STRICT"
 });
+if (process.argv.includes("--interview-policy")) {
+  environment.HSE_MASTERPLAN_INTERVIEW_POLICY = "true";
+}
+if (process.argv.includes("--assurance-notifications")) {
+  environment.HSE_MASTERPLAN_ASSURANCE_NOTIFICATIONS = "true";
+}
 const result = spawnSync(process.execPath, [
   "--test", "tests/browser/masterplan-worker-credential-e2e.browser.test.mjs"
 ], { stdio: "inherit", env: environment });

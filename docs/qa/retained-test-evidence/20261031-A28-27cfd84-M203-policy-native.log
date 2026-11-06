@@ -1,0 +1,29 @@
+✔ M2.03 schema owns versioned frameworks, policies, tenant overrides and immutable case snapshots (1.866412ms)
+✔ M2.03 resolver owns authority and fails closed instead of accepting resolved browser state (2.332615ms)
+✔ M2.03 replaces M2.01 temporary framework/effective-policy blockers with real validation (0.326482ms)
+✔ M2.03 exposes separately authorized platform and Company surfaces (0.384643ms)
+✔ M2.03 makes the exact locked case policy visible through a tenant-scoped read path (0.346082ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 92.642616
+✔ M2.03 admin service publishes a real version only from a live fixed-role admin session (4494.599795ms)
+✔ M2.03 admin publication rejects revoked sessions and overlapping version windows (2746.906882ms)
+✔ M2.03 resolves global policy and a permitted tightening Company override (4368.028792ms)
+✔ M2.03 rejects disallowed and weakening overrides and never leaks them across tenants (2878.468718ms)
+✔ M2.03 fails closed on policy gaps and overlapping active versions (2739.247511ms)
+✔ M2.03 concurrent snapshot pinning creates one immutable snapshot and later policy rows cannot rewrite it (2688.582494ms)
+✔ M2.03 M2.01 integration validates a real policy and pins it to every submitted case (2887.477177ms)
+✔ M2.03 history-preserving down/reapply retains pinned snapshots (2647.734342ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26413.445958

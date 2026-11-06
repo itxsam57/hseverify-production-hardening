@@ -1,0 +1,10 @@
+ACTUAL_M21005_BROWSER Admin FAILED -> Verifier denied and Worker Review pending -> reinstated -> time-expired denied -> renewed -> Verifier final PASS and Worker Interview pending
+✔ M2.10.05 real Admin calibration FAILED and time-expired CURRENT block Verifier and show Worker holding state; live renewal restores review (41650.740829ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 43960.491478

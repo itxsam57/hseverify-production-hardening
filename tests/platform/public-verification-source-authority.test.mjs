@@ -30,8 +30,25 @@ for (const authority of [
   'DELETE FROM public.credential_issuances WHERE credential_id=$1',
   'issueCredential(principal)',
   'repository.issue(principal)',
+  'INSERT INTO living_record_versions (competency_id) VALUES ($1)',
+  'UPDATE public.living_record_competencies SET worker_id=$1',
+  'DELETE FROM "living_record_versions" WHERE competency_id=$1',
+  'import { LivingRecordRepository } from "@/lib/living-record/living-record-repository";',
 ]) test(`public boundary rejects workflow mutation: ${authority}`, () => {
   const result = runWith(`\n${authority}\n`);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /workflow authority/);
+});
+
+test("public projection permits only named read-only credential helpers", () => {
+  const result = runWith("\nimport { credentialFromRow as readRecord, credentialAuthentication as authenticateRecord } from \"@/lib/credential/credential-issuance-domain\";\n");
+  assert.equal(result.status, 0, result.stderr);
+});
+for (const statement of [
+  "import { credentialAuthentication, issueCredential } from \"@/lib/credential/credential-issuance-domain\";",
+  "import * as credentials from \"@/lib/credential/credential-issuance-domain\";"
+]) test(`public boundary rejects credential issuance imports: ${statement}`, () => {
+  const result = runWith(`\n${statement}\n`);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /workflow authority/);
 });

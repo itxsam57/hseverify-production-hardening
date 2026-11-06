@@ -84,10 +84,13 @@ test("Actual Admin operations exposes required scheduling email health from pers
    await page.goto(baseUrl+"/admin/operations",{waitUntil:"domcontentloaded"});
    assert.equal(await page.getByRole("heading",{name:"Interview email delivery",exact:true}).count(),1,"Required operational scheduling email health is not visible");
    await page.getByText("Queued: 3",{exact:true}).waitFor();
+   const providers = page.getByRole("list", {name:"Provider integrations", exact:true});
+   await providers.getByText("email: ready (sandbox) — local_fixture_available. Live availability: not checked.", {exact:true}).waitFor();
+   await providers.getByText("sms: disabled (external_unavailable) — external_configuration_required. Live availability: not checked.", {exact:true}).waitFor();
   }});
   const build=spawnSync(process.execPath,["scripts/build-outbox-worker.mjs"],{encoding:"utf8"});assert.equal(build.status,0,build.stderr);
   for(let i=0;i<6;i++) {
-   const job=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});assert.equal(job.status,0,job.stderr);
+   const job=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});assert.equal(job.status,i<3?0:1,job.stderr||job.stdout);
    assert.match(job.stdout,i<3?/"status":"succeeded"/:/"status":"retry_wait"/);
   }
   const detail=async(label)=>(await page.getByText(label,{exact:true}).locator("..").locator("dd").textContent()).trim();
@@ -112,6 +115,8 @@ test("Actual Admin operations exposes required scheduling email health from pers
    assert.equal(await detail("Attempt failure rate in the last 24 hours"),"50%");assert.equal(await detail("Completed send attempts (accepted or failed) in the last 24 hours"),"6");
    assert.notEqual(await detail("Last provider acceptance"),"None recorded");assert.equal(await detail("Next scheduled retry"),"None scheduled");
    await page.getByText("Configuration: Configured (Resend)",{exact:true}).waitFor();
+   await page.getByRole("list", {name:"Provider integrations", exact:true}).getByText("email: configured (external) — configured_not_verified. Live availability: not checked.", {exact:true}).waitFor();
+   await page.getByText("Configuration and local test adapters do not confirm live availability or delivery. No provider check is performed by this page.", {exact:true}).waitFor();
    assert.equal(await detail("Delivery confirmation"),"Unavailable");assert.doesNotMatch(await page.locator("body").innerText(),/configured-operations-key|notifications@example.test/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
    const foreign=await browser.newContext(),foreignPage=await foreign.newPage();await login(foreignPage,baseUrl,fixture.credentials.worker,"worker");
@@ -120,4 +125,3 @@ test("Actual Admin operations exposes required scheduling email health from pers
   console.log("ACTUAL_ADMIN_EMAIL_HEALTH_BROWSER real producer and CLI queued3 -> retry3/100%attemptfailure -> Sent3/50%; configured is not provider health or confirmed delivery; 390px no overflow");
  }finally{await browser.close();await fixture.cleanup();await rm(temporary,{recursive:true,force:true});}
 });
-

@@ -1,0 +1,27 @@
+{
+  "source_sha": "b4003116c8e0e39ed9cb60da0fa2449fb6154fd3",
+  "disposition": "PASS_SCOPED",
+  "whole_scenario_verified": false,
+  "observations": [
+    {
+      "artifact": ".autopilot/artifacts/20261107-b400311-appeal-submitted-restart.log",
+      "artifact_sha256": "7db4befc7fff9b154808a013f3d949e0d7d07d28d095b2f7ccfe8ef91e7cf7d2",
+      "scope": "Submitted Worker appeal with evidence survived restart, then accepted reassessment propagated to recipients."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261107-b400311-appeal-no-evidence.log",
+      "artifact_sha256": "6bd306c570d0ca7d6e33a2ffdcb59c66a6dfd16fcacd4c11eab77caa9e21ff2a",
+      "scope": "Valid API submission without optional evidence survived restart and reached independent rejection."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261107-b400311-appeal-closed-sequence.log",
+      "artifact_sha256": "6c58cfbde112650764e6171a847d463bc8dbba7530e070d930897a3b8a359962",
+      "scope": "Explicit sequence replay after rejection returned 409. Concurrent and sequential duplicate attempts retained one submitted event."
+    }
+  ],
+  "open": [
+    "Rules Engine eligibility configuration and enforcement",
+    "Evidence lifecycle eligibility beyond ownership",
+    "Complete independently accepted case plan"
+  ]
+}

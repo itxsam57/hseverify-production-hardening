@@ -1,0 +1,16 @@
+JOURNEY: identity and evidence verified
+JOURNEY: funded assessment case created
+ACTUAL_A12_BROWSER empty MCQ rejected without advancing
+ACTUAL_A12_BROWSER empty written rejected; saved draft restored; failed autosave retried and restored
+ACTUAL_A12_BROWSER slow final POST retains pending disabled state then commits once
+ACTUAL_A12_BROWSER submission verified after failure and retry
+ACTUAL_A12_DB two persisted answers after invalid attempts, transport failure and retries
+✔ A12 real Worker exam invalid answers, autosave retry and durable submission (98585.848575ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 100017.507706

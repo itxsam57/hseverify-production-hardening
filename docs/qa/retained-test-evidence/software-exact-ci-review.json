@@ -1,0 +1,35 @@
+{
+  "disposition": "ACCEPTED",
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "reviewed_at": "2026-11-06T19:01:41.111131+00:00",
+  "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+  "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+  "scope": "Software verification on pinned source. The cold restore next-action assertion was a pending QA change. Production deployment remains separate.",
+  "variants": {
+    "M1.01.03.positive.1": "All 20 checks passed on the same exact commit as the protected build.",
+    "M1.01.03.invalid_input.1": "Incomplete, unsuccessful, cancelled and mismatched CI receipts were rejected.",
+    "M1.01.03.permission_isolation.1": "A real guarded commit without a current audit was refused. The compliance workflow uses repository read access.",
+    "M1.01.03.retry_recovery.1": "Repeated exact receipt validation returned the same identity and check count without adding a certification record.",
+    "M1.01.03.persistence.1": "Retained GitHub receipt, deployment manifest digest and the matching protected process log were independently reloaded and verified.",
+    "M1.01.03.downstream_outcome.1": "The verifier rejected the real 8041d83 CI receipt when given the newer 81fcd16 staging source."
+  },
+  "observations": [
+    {
+      "artifact": "docs/qa/retained-test-evidence/20261106-8041d83-ci-final.json",
+      "artifact_sha256": "ec79cf84159c441e446d87bf5c0117b6b2910bd6dadb696d5fa110f4a91bbc94"
+    },
+    {
+      "artifact": "docs/qa/retained-test-evidence/20261106-8041d83-stage-source-binding.json",
+      "artifact_sha256": "8b521f79c2b6d089064774047319b5072f4ca1ce7139fdb2cc9e218c87ea665b"
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-ci-audit-denial-final.log",
+      "artifact_sha256": "8d33ef52647aa94d1bcdd499c467da84d68430f9653da339f81bf363ba8295ce"
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-ci-receipt-tests.log",
+      "artifact_sha256": "9bdc78343909a570e20f896f4e26a36fc777f9eb6e9dd314d2e502e7a80976ef"
+    }
+  ]
+}

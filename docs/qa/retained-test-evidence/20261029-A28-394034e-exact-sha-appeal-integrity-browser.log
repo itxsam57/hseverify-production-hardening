@@ -1,0 +1,11 @@
+✔ Actual appeal scanned evidence response opens exact bytes for independent Admin review (54345.324929ms)
+✔ Actual Admin appeal interview -> Worker readiness -> Assessor console -> retained response -> independent final appeal (63504.94234ms)
+✔ Worker browser signal and submitted answer reach reasoned Verifier integrity form (137014.96351ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 261852.690646

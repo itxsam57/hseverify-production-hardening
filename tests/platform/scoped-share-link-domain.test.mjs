@@ -1,13 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  ScopedShareLinkManager
-} from "../../src/lib/share-links/scoped-share-link-domain.ts";
-import {
-  buildDigitalPassport,
-  createLivingCompetencyRecord
-} from "../../src/lib/living-record/living-record-domain.ts";
+import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
+const { ScopedShareLinkManager } = loadTs("src/lib/share-links/scoped-share-link-domain.ts");
+const { buildDigitalPassport, createLivingCompetencyRecord } = loadTs("src/lib/living-record/living-record-domain.ts");
 
 const secret = "fixture-share-secret-0123456789-abcdefghijklmnopqrstuvwxyz";
 

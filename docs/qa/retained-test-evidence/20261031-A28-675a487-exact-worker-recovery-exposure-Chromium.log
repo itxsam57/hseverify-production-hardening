@@ -1,0 +1,10 @@
+WORKER_RECOVERY_EXPOSURE_BROWSER real password reset email OTP/revocation/new sign-in retained same permanent Worker ID and immutable previous Exposure Family, retake capacity not restored
+✔ real Worker password recovery retains permanent Worker ID, previous question family, and blocks retake (31593.905647ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33453.105703

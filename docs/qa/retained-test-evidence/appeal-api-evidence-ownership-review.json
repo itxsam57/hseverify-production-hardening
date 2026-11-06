@@ -1,0 +1,90 @@
+{
+  "kind": "M3_07_01_SCOPED_REPAIR",
+  "recorded_at": "2026-11-06T07:25:58.199924+00:00",
+  "builder": "/root",
+  "reviewer": "/root/review_software_plan",
+  "disposition": "ACCEPTED_SCOPED",
+  "whole_scenario_verified": false,
+  "observations": [
+    {
+      "artifact": ".autopilot/artifacts/20261106-692391c-appeal-api-red-reassessment-1.log",
+      "artifact_sha256": "827f3c59454d59478d35c72f3d78c0ea14a5ce0995f70a70e3b0761b93d64066",
+      "source_sha": "692391cc25a5f98864ad9a8081ad6f8296a94199",
+      "scope": "Old API returned 201 for nonexistent evidence."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-e3743a1-build.log",
+      "artifact_sha256": "b622bc05d99cab4d7646f1e12feefb349460ebed40de297f0926df9f387f2e11",
+      "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+      "scope": "Production build and typecheck passed."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-e3743a1-appeal-api-green-reassessment-1.log",
+      "artifact_sha256": "a483db7609b859353420e28c43eb6a41665daec98030ea298c6a348409877b67",
+      "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+      "scope": "Protected PostgreSQL route denies nonexistent, foreign-owned and malformed evidence, then accepts the owned-evidence Worker form. Recipients and restart checked for reassessment."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-e3743a1-appeal-api-green-suspend-1.log",
+      "artifact_sha256": "1d02817a3766e506525b768c349364cfbbfd8bc1e5dc3f0f33e53968e0d50227",
+      "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+      "scope": "Protected PostgreSQL route denies nonexistent, foreign-owned and malformed evidence, then accepts the owned-evidence Worker form. Recipients and restart checked for suspend."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-e3743a1-appeal-api-green-revoke-1.log",
+      "artifact_sha256": "4a4d639e73b3aa950f69e07ccd0ab78ea54a353cb6fdea163a65e75c01721a8c",
+      "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+      "scope": "Protected PostgreSQL route denies nonexistent, foreign-owned and malformed evidence, then accepts the owned-evidence Worker form. Recipients and restart checked for revoke."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-e3743a1-appeal-api-green-rejected-1.log",
+      "artifact_sha256": "1d54d4e82676dfe5866e340d0a29784282b1cfa30daee0e283f02e02f839955a",
+      "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+      "scope": "Protected PostgreSQL route denies nonexistent, foreign-owned and malformed evidence, then accepts the owned-evidence Worker form. Recipients and restart checked for rejected."
+    }
+  ],
+  "open": [
+    "Positive API without optional evidence and explicit sequence collision",
+    "Rules Engine eligibility and evidence lifecycle",
+    "Restart while the appeal is still submitted",
+    "Remaining independent case-plan review"
+  ],
+  "duplicate_submission": {
+    "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+    "independent_disposition": "ACCEPTED_SCOPED",
+    "runtime": "Isolated PostgreSQL and loopback HTTPS with a fixture-specific certificate pin.",
+    "invocation": "HSE_STAGE_APPEAL_SUBMISSION_API=true HSE_STAGE_APPEAL_ACTION=reassessment node --test tests/browser/appeal-consumer-propagation.staging.test.mjs",
+    "observations": [
+      {
+        "artifact": ".autopilot/artifacts/20261106-78fe43e-appeal-duplicate-red-reassessment-1.log",
+        "artifact_sha256": "f91530dde0f5873f8eccdd5388df214bde8a33067c504795906b2970ec7061cb",
+        "source_sha": "78fe43eb50e11d10fa63f355c9aeb343d88ead8e",
+        "scope": "Concurrent submissions returned 201 and 500."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-appeal-duplicate-native.log",
+        "artifact_sha256": "8a1c3468d17680a2da567403521e6d9e1a38cc60711454f687f3441ec2a1cc8f",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Sixteen native appeal regressions passed on the candidate source before commit."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-494d6fa-appeal-duplicate-green-final.log",
+        "artifact_sha256": "f576f1ab8fc8a9d65aeb4d329d9e3d14f1846b15b4a5b513b46b6707d6c2fed8",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Positive API owned evidence, parallel 201/409, sequential 409, one submitted event, and protected recipient restart passed. QA console matching adjustment present."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-494d6fa-protected-access.log",
+        "artifact_sha256": "4c4a27830dacb1d7ec50d0f96820f1a6bb92d9724dcb697a8c23044a9ed01b99",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Exact build startup, protected roles, recovery and session retention passed on loopback HTTPS."
+      },
+      {
+        "artifact": ".autopilot/artifacts/20261106-494d6fa-release-record-negative.log",
+        "artifact_sha256": "9102cd40ef1c21c38697a6d5c849817244235caf4928252685929d8105b2f694",
+        "source_sha": "494d6fa7c1df55f93dfdc542a3b942938884a8a1",
+        "scope": "Mismatched release SHA and unavailable PostgreSQL prevented release recording."
+      }
+    ]
+  }
+}

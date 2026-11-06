@@ -86,10 +86,14 @@ async function recordSessionCreation(input: {
   userAgent: string | null;
   ipAddress: string | null;
   requestFingerprint: string | null;
+  mfaEventId?: string | null;
   pepper: string;
   now: Date;
 }): Promise<void> {
   const nowIso = input.now.toISOString();
+  if (input.mfaEventId) {
+    await input.repository.requireUnboundMfaEvent({ eventId: input.mfaEventId, accountId: input.accountId, role: input.role, now: nowIso });
+  }
   await input.repository.authentication.insertSession({
     sessionId: input.sessionId,
     accountId: input.accountId,
@@ -128,7 +132,7 @@ async function recordSessionCreation(input: {
       input.pepper,
       "auth-sign-in-request"
     ),
-    metadata: { sessionId: input.sessionId },
+    metadata: { sessionId: input.sessionId, mfaEventId: input.mfaEventId ?? null },
     occurredAt: nowIso
   });
 }
@@ -139,6 +143,7 @@ export async function createAuthenticationSession(input: {
   userAgent: string | null;
   ipAddress: string | null;
   requestFingerprint?: string | null;
+  mfaEventId?: string | null;
   now?: Date;
 }): Promise<{ sessionId: string; token: string }> {
   const repository = await getAuthAccessRepository();
@@ -159,6 +164,7 @@ export async function createAuthenticationSession(input: {
       userAgent: input.userAgent,
       ipAddress: input.ipAddress,
       requestFingerprint: input.requestFingerprint ?? null,
+      mfaEventId: input.mfaEventId,
       pepper: environment.authPepper,
       now
     })
@@ -173,6 +179,7 @@ export async function establishAuthenticationSession(input: {
   userAgent: string | null;
   ipAddress: string | null;
   requestFingerprint?: string | null;
+  mfaEventId?: string | null;
 }): Promise<string> {
   const created = await createAuthenticationSession(input);
   await writeAuthSessionToken(created.token);

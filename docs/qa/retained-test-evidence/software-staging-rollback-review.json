@@ -1,0 +1,22 @@
+{
+  "disposition": "ACCEPTED",
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "reviewed_at": "2026-11-05T17:24:54.126729+00:00",
+  "source_sha": "5234c61d348f077a48b9270a5a1e77c451bd5501",
+  "test": "tests/browser/software-staging-rollback.staging.test.mjs",
+  "test_sha256": "1d94810cd4cc4925ee60b6e6a9073cd826efdeacc8c39b40852c647f6bf48640",
+  "runtime_artifact": ".autopilot/artifacts/20261105-B00-complete-history-rollback.log",
+  "runtime_sha256": "fdc8b9bf61a84c62a4e6c9109e9a6e9a57710271311150ceafc545d5ec5b89ae",
+  "result": "1/1 PASS; exit 0",
+  "accepted_variant_scope": [
+    "M1.01.04.positive.1",
+    "M1.01.04.retry_recovery.2"
+  ],
+  "limitations": [
+    "Company site creation is the authenticated health action; no cold restore claimed",
+    "Private bytes are a synthetic sentinel, not all private evidence objects",
+    "Build identity support does not prove mismatch rejection",
+    "No whole-scenario or B00 completion"
+  ]
+}

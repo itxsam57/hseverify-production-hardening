@@ -1,0 +1,13 @@
+ACTUAL_M21208_NATIVE policy GB AUDIO_ONLY, consent readiness, source and owner checks, 60-day private retention, dedupe, legitimate End flush, forged future post-End clip denied.
+✔ M2.12.08 pinned GB audio-only recording requires consent and source, preserves 60-day retention and rejects fabricated post-End clips (10877.134995ms)
+✔ M2.12.08 pinned recording PROHIBITED denies uploads even from assigned Worker and Assessor (9365.051632ms)
+✔ M2.12.08 VIDEO_AUDIO policy accepts private video/audio segments and retains policy expiry (9489.140147ms)
+✔ M2.12.08 NOTES_ONLY policy rejects private recordings for both assigned participants (9564.577832ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 41033.229888

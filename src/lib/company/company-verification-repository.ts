@@ -49,7 +49,7 @@ WHERE sessions.session_id = $1
   AND memberships.membership_status = 'active'
   AND memberships.membership_role IN ('owner', 'admin')
   AND tenants.tenant_status IN ('pending', 'active')
-FOR UPDATE OF sessions, accounts, memberships, tenants`;
+FOR UPDATE OF accounts, sessions, memberships, tenants`;
 
 export const COMPANY_VERIFICATION_DECIDER_GUARD_SQL = `
 SELECT sessions.session_id
@@ -66,7 +66,7 @@ WHERE sessions.session_id = $1
   AND accounts.account_status = 'active'
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > CURRENT_TIMESTAMP
-FOR UPDATE OF sessions, accounts`;
+FOR UPDATE OF accounts, sessions`;
 
 const CASE_COLUMNS = `
   case_id, tenant_id, owner_account_id, current_version_id, case_status,

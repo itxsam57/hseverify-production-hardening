@@ -1,0 +1,21 @@
+{
+  "source_sha": "92875b6909ea90851bc76df3f0ff9542580577ce",
+  "whole_scenario_verified": false,
+  "scope": "Pending and rejected appeal retain valid Company, public and scoped share views. Worker submission rejects missing and foreign-owned credential fixtures without creating appeals. Direct recipient HTML response bodies and rendered pages omit private appeal text.",
+  "runtime_log": ".autopilot/artifacts/20261105-92875b6-pending-rejected-ownership-rejected.log",
+  "runtime_log_sha256": "01d537715dce7181d305652ed2cf19a2dc9da0fc4044e5e2e7482ef6ba327ffa",
+  "tail": [
+    "OWNED_STAGE_TEARDOWN child exited and listener released",
+    "PROTECTED_POSTGRES_APPEAL_PASS rejected production build; Worker/Admin/Company/public; existing capability and sessions survive restart",
+    "\u2714 protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart (25601.080521ms)",
+    "\u2139 tests 1",
+    "\u2139 suites 0",
+    "\u2139 pass 1",
+    "\u2139 fail 0",
+    "\u2139 cancelled 0",
+    "\u2139 skipped 0",
+    "\u2139 todo 0",
+    "\u2139 duration_ms 26489.427656",
+    "EXIT_CODE=0"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "source_sha": "5d78715fec39ffcfdcf5299a0ff02a1369c5355e",
+  "disposition": "PASS_SCOPED",
+  "whole_scenario_verified": false,
+  "observations": [
+    {
+      "artifact": ".autopilot/artifacts/20261107-stale-admin-review-red.log",
+      "artifact_sha256": "d7fb68de32165e7c592b6b63ea966021d48baec86a682ae6d6e8c4a6cc42f31d",
+      "scope": "An authorized review using an old supplied version previously returned 200 and committed."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261107-stale-admin-review-green.log",
+      "artifact_sha256": "8124d0ec8e87f353c561fa306dfc25c0ae3591157cc8fd4072e72298492c17f8",
+      "scope": "Native route denied the stale supplied version with 409 and retained the full snapshot."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261107-5d78715-appeal-claim-race-final.log",
+      "artifact_sha256": "9b2c922cdd2da977adb9e728641c2a14e978a0cf9596bcf94e098e63fb80b190",
+      "scope": "Two PostgreSQL backends read the same original version. One retained claimant and event won. Exact losing replay failed without mutation."
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261107-5d78715-appeal-claim-restart.log",
+      "artifact_sha256": "dfedd376ed3140f7879362b03ec9fd7c4a5c95c50c71abc4c703fbc07e9d3a30",
+      "scope": "Protected PostgreSQL app retained the claimant, Worker view and stored state across restart; stale API returned 409."
+    }
+  ],
+  "open": [
+    "Live reviewer authority loss after opening the appeal",
+    "Rules for an independent reviewer taking over a claim at the current version",
+    "Versionless review API calls retain the existing latest-version behavior"
+  ]
+}

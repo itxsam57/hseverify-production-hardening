@@ -109,7 +109,7 @@ async function requireLiveAdmin(
        AND sessions.revoked_at IS NULL
        AND sessions.expires_at > $3::timestamptz
        AND accounts.account_status = 'active'
-     FOR UPDATE OF sessions, accounts`,
+     FOR UPDATE OF accounts, sessions`,
     [principal.sessionId, principal.accountId, now.toISOString()]
   );
   if (!result.rows[0]) throw new ReleaseHandoverAccessError();

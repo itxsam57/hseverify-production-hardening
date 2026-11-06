@@ -1,0 +1,33 @@
+✔ every portal notification bell creates, opens, deep-links and marks persisted notifications read (81781.754806ms)
+ACTUAL_FUNDING_OFFERING ASSESSMENT-FUNDING
+
+Funded safety assessment
+
+Funding workflow fixture
+
+Verified qualifications: 0 / 0 required
+
+Effective policy: ASSESSMENT-FUNDING
+
+Pay myself
+
+Sandbox funding only. No real card or money is charged until a production payment provider is connected.
+
+Apply — worker pays
+Request Company funding
+Funding Company
+Select Company
+Independent Audit Company
+Request 1 assessment credit
+ACTUAL_FUNDING_CLI_TARGET assessment.funding.requested delivered after 1 real CLI jobs
+ACTUAL_FUNDING_CLI_TARGET assessment.funding.approved delivered after 2 real CLI jobs
+ACTUAL_FUNDING_BROWSER Worker request action -> committed event job -> built CLI -> authorized Company bell/request anchor -> Company approval action -> owned assessment case -> built CLI -> Worker bell/case anchor -> Start assessment/prechecks; read persists and unrelated Worker receives none.
+✔ Actual Worker request and Company approval deliver actionable bells through the built worker (64300.265382ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148718.624533

@@ -17,7 +17,8 @@ import {
 } from "@/lib/secure-files/secure-file-domain";
 import {
   PrivateObjectConflictError,
-  createLocalTestPrivateObjectStorage,
+  createRuntimePrivateObjectStorage,
+  PrivateObjectStorageError,
   type PrivateObjectStorage
 } from "@/lib/secure-files/private-object-storage";
 import {
@@ -271,18 +272,19 @@ let service: PublicConcernFileService | null = null;
 export async function getPublicConcernFileService(): Promise<PublicConcernFileService> {
   if (service) return service;
   const environment = getServerEnvironment();
-  if (
-    environment.appEnvironment !== "development" &&
-    environment.appEnvironment !== "test"
-  ) {
-    // Production private object storage/scanner adapters remain provider-owned;
-    // do not silently fall back to local disk.
-    throw new SecureFileUploadValidationError("invalid_policy");
+  let storage: PrivateObjectStorage;
+  try {
+    storage = createRuntimePrivateObjectStorage(environment.appEnvironment);
+  } catch (error) {
+    if (error instanceof PrivateObjectStorageError) {
+      throw new SecureFileUploadValidationError("invalid_policy");
+    }
+    throw error;
   }
   const database = await getDatabaseClient();
   service = new PublicConcernFileService(
     new PublicVerificationRepository(database),
-    createLocalTestPrivateObjectStorage(environment.appEnvironment)
+    storage
   );
   return service;
 }

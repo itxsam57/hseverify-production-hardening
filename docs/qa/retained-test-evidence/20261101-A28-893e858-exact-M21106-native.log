@@ -1,0 +1,10 @@
+ACTUAL_M21106_NATIVE early/late/unassigned/unauthorized direct join blocked with zero writes; in-window join, incomplete readiness and pre-ready admission denied; compliant assigned Worker admitted.
+✔ M2.11.06 actual assigned Worker can only join within time window and after readiness; unrelated or unassigned cannot initialize runtime (10959.071024ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12587.652798

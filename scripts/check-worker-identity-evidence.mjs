@@ -87,7 +87,7 @@ for (const marker of [
 for (const marker of [
   "WORKER_IDENTITY_EVIDENCE_LIVE_AUTHORITY_SQL", "sessions.active_role = 'worker'",
   "accounts.account_status = 'active'", "sessions.revoked_at IS NULL",
-  "sessions.expires_at > CURRENT_TIMESTAMP", "FOR UPDATE OF sessions, accounts",
+  "sessions.expires_at > CURRENT_TIMESTAMP", "FOR UPDATE OF accounts, sessions",
   "CURRENT_EDITABLE_VERSION_FOR_UPDATE_SQL", "FOR UPDATE OF identities, versions",
   "BINDABLE_SECURE_FILE_SQL", "lifecycle_status = 'available'", "owner_role = 'worker'",
   "tenant_id IS NULL", "membership_id IS NULL", "expectedActiveBindingId",

@@ -23,12 +23,11 @@ test("retention rejects invalid dates before repository execution", async()=>{
  await assert.rejects(()=>service.scheduleRetention({id:"j",tenantId:"t1",resourceType:"evidence",before:"bad"}));
 });
 
-test("retention completion crosses service repository boundary only from pending", async()=>{
+test("retention completion requires explicit authorized execution instead of a status-only write", async()=>{
  const calls=[];
  const service=new PrivacyOperationsService({completeRetentionJob:async x=>calls.push(x)});
- const result=await service.completeRetention({id:"j1",tenantId:"t1",status:"PENDING"});
- assert.equal(result.status,"COMPLETED");
- assert.deepEqual(calls,[{id:"j1",tenantId:"t1",status:"COMPLETED"}]);
+ await assert.rejects(service.completeRetention({id:"j1",tenantId:"t1",status:"PENDING"}),/authorized Admin approval/);
+ assert.deepEqual(calls,[]);
 });
 
 test("retention completion rejects already closed jobs", async()=>{

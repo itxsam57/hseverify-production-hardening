@@ -69,7 +69,7 @@ WHERE sessions.session_id = $1
   AND accounts.account_status = 'active'
   AND sessions.revoked_at IS NULL
   AND sessions.expires_at > CURRENT_TIMESTAMP
-FOR UPDATE OF sessions, accounts`;
+FOR UPDATE OF accounts, sessions`;
 
 export const SECURE_FILE_COMPANY_SCOPE_GUARD_SQL = `
 SELECT memberships.membership_id
@@ -136,7 +136,7 @@ WHERE file_id = $1
     )
   )`;
 
-type SecureFileRow = {
+export type SecureFileRow = {
   file_sequence: number | string;
   file_id: string;
   schema_version: number | string;
@@ -181,7 +181,7 @@ function validMime(
   return value === null || value === "application/pdf" || value === "image/png" || value === "image/jpeg";
 }
 
-function secureFileFromRow(row: SecureFileRow): SecureFileRecord {
+export function secureFileFromRow(row: SecureFileRow): SecureFileRecord {
   if (
     Number(row.schema_version) !== SECURE_FILE_SCHEMA_VERSION ||
     !isSecureFileLifecycleStatus(row.lifecycle_status) ||

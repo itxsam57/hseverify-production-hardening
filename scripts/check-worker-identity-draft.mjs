@@ -123,7 +123,7 @@ for (const marker of [
   "accounts.account_status = 'active'",
   "sessions.revoked_at IS NULL",
   "sessions.expires_at > CURRENT_TIMESTAMP",
-  "FOR UPDATE OF sessions, accounts",
+  "FOR UPDATE OF accounts, sessions",
   "requireVerifiedContacts",
   "ON CONFLICT (identity_version_id) DO NOTHING",
   "draft_revision = draft_revision + 1",

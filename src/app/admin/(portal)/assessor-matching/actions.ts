@@ -61,18 +61,17 @@ export async function saveAssessorMatchingProfileAction(formData: FormData): Pro
 }
 
 export async function runAssessorMatchingAction(formData: FormData): Promise<never> {
+  let outcome: "assigned" | "no-eligible-assessor";
   try {
     const principal = await admin();
     const result = await (await getInterviewAssignmentService()).matchAndAssign(
       principal,
       text(formData, "interviewRequestId")
     );
-    redirect(
-      `/admin/assessor-matching?result=${encodeURIComponent(
-        result.selectedAssessorAccountId ? "assigned" : "no-eligible-assessor"
-      )}`
-    );
+    outcome = result.selectedAssessorAccountId ? "assigned" : "no-eligible-assessor";
   } catch (error) {
     redirectError(error);
   }
+  // Next redirect throws by design; never catch a successful result as an operation error.
+  redirect(`/admin/assessor-matching?result=${encodeURIComponent(outcome)}`);
 }

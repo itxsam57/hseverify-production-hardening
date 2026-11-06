@@ -1,0 +1,10 @@
+ACTUAL_M21208_BROWSER required Worker consent, actual Assessor audio recording with fake Chromium mic, final segment private storage and 60-day retention.
+✔ M2.12.08 real Worker required audio consent and two-party browser audio recording final chunk is retained privately on End (45331.784133ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 47439.396014

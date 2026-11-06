@@ -1,0 +1,21 @@
+✔ M2.05 cross-case same-Worker generation race leaves one exposure and returns a safe loser error (6045.470124ms)
+✔ M2.05 unmatched database uniqueness races are translated to a safe domain error (2.169134ms)
+✔ M2.05 never repeats a stable question for the same Worker, even after question revision (6202.752449ms)
+✔ M2.05 permits different Workers to receive the same stable question (4288.59424ms)
+✔ M2.05 insufficient unseen pool fails closed with no partial form (4421.834965ms)
+✔ M2.05 requires a locked policy snapshot with the same framework (4325.092322ms)
+✔ M2.05 concurrent generation converges to one immutable form and item set (4544.40362ms)
+NATIVE_M205_MATRIX_MCQ_ONLY complete reserved form, original idempotent, second tenant/case fails closed
+NATIVE_M205_MATRIX_WRITTEN_ONLY complete reserved form, original idempotent, second tenant/case fails closed
+NATIVE_M205_MATRIX_MIXED complete reserved form, original idempotent, second tenant/case fails closed
+✔ M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real generation, permanent exposure and exhaustion (4606.382191ms)
+ACTUAL_M20503_FAMILY_SQL same-form distinct families, same Worker retake excludes equivalent stable ID, direct DB bypass rejected, exact history immutable, unsafe rollback refused
+✔ M2.05.03 equivalent variants are excluded both within form and across worker retakes (4504.549314ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 40657.877175

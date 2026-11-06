@@ -1,0 +1,13 @@
+ACTUAL_M11105_EMPLOYMENT_SUBMITTED Employer Alpha alpha-employment.png
+ACTUAL_M11105_EMPLOYMENT_SUBMITTED Employer Beta beta-employment.png
+ACTUAL_M11105_BROWSER Alpha alone ended; Beta unchanged; both original files and independent history visible after cold reload.
+ACTUAL_M11105_DB two distinct employment records, only Alpha ended, old submitted history preserved and Beta unchanged.
+✔ M1.11.05 ending one of two submitted employments retains other active record and both immutable histories (38517.148841ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39091.10131

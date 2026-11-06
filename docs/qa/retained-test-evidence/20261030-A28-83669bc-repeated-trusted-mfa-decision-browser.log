@@ -1,0 +1,13 @@
+ACTUAL_BROWSER stale authenticated session plus forged current MFA timestamp denied
+ACTUAL_BROWSER completed recovery-code MFA login permitted override
+ACTUAL_BROWSER repeated stale decision override rejected with trusted MFA still fresh
+ACTUAL_DB trusted completed MFA timestamp persisted with decision, Assurance Case timeline and audit
+✔ Real MFA login permits decision override; stale session and forged browser timestamp produce no mutation (48390.982052ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 48968.907395

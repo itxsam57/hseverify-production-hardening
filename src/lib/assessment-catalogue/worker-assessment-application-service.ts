@@ -1,4 +1,9 @@
 import "server-only";
+import { bindAssessmentReassessmentSource, resolveAssessmentReassessmentSource, recheckAssessmentReassessmentSource, AssessmentReassessmentSourceAccessError } from "./assessment-reassessment-source-service";
+export { AssessmentReassessmentSourceAccessError } from "./assessment-reassessment-source-service";
+import { evaluateWorkerAssessmentHistory, type AssessmentEligibilityDecision } from "./assessment-eligibility-policy-service";
+
+import { enqueueAssessmentFundingNotification } from "../notifications/assessment-funding-notification-projector";
 
 import { createIdentifier } from "../auth/auth-domain";
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
@@ -7,6 +12,7 @@ import type { TenantPermissionPrincipal } from "../authorization/tenant-scoped-r
 import { evaluatePlatformPermission } from "../authorization/authorization-domain";
 import { hasUnseenAssessmentCapacity } from "../assessment-generation/assessment-form-generation-service";
 import { fundingId } from "../billing/funding-domain";
+import { unreservedCompanyCreditUnits } from "../billing/company-credit-availability";
 import { getDatabaseClient, type DatabaseClient } from "../database/database";
 import { createPolicySnapshotId } from "../policy/effective-policy-domain";
 import { resolveEffectivePolicy } from "../policy/effective-policy-service";
@@ -23,7 +29,7 @@ export type WorkerAssessmentApplicationStatus =
   | "REJECTED"
   | "CANCELLED";
 
-export type WorkerAssessmentOffering = Readonly<{
+export type WorkerAssessmentOffering = AssessmentEligibilityDecision & Readonly<{
   catalogueEntryId: string;
   catalogueVersionId: string;
   catalogueReference: string;
@@ -45,6 +51,7 @@ export type WorkerFundingCompany = Readonly<{
 
 export type WorkerAssessmentApplication = Readonly<{
   applicationId: string;
+  sourceAppealId: string | null;
   workerAccountId: string;
   permanentWorkerId: string;
   catalogueVersionId: string;
@@ -77,6 +84,7 @@ type OfferingRow = {
 
 type ApplicationRow = {
   application_id: string;
+  source_appeal_id?: string | null;
   worker_account_id: string;
   permanent_worker_id: string;
   catalogue_version_id: string;
@@ -110,8 +118,9 @@ function iso(value: string | Date): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
-function offering(row: OfferingRow): WorkerAssessmentOffering {
+function offering(row: OfferingRow, decision: AssessmentEligibilityDecision = {eligibilityStatus: "AVAILABLE", eligibilityReason: null, availableAt: null}): WorkerAssessmentOffering {
   return Object.freeze({
+    ...decision,
     catalogueEntryId: row.catalogue_entry_id,
     catalogueVersionId: row.catalogue_version_id,
     catalogueReference: row.catalogue_reference,
@@ -129,6 +138,7 @@ function offering(row: OfferingRow): WorkerAssessmentOffering {
 function application(row: ApplicationRow): WorkerAssessmentApplication {
   return Object.freeze({
     applicationId: row.application_id,
+    sourceAppealId: row.source_appeal_id ?? null,
     workerAccountId: row.worker_account_id,
     permanentWorkerId: row.permanent_worker_id,
     catalogueVersionId: row.catalogue_version_id,
@@ -256,7 +266,8 @@ SELECT entries.catalogue_entry_id,versions.catalogue_version_id,entries.catalogu
 async function eligibleOfferings(
   database: DatabaseClient,
   workerAccountId: string,
-  now: Date
+  now: Date,
+  tenantId = INDEPENDENT_SCOPE_ID
 ): Promise<WorkerAssessmentOffering[]> {
   const rows = await database.query<OfferingRow>(OFFERING_SQL, [
     workerAccountId,
@@ -269,7 +280,15 @@ async function eligibleOfferings(
         blueprintVersionId: row.blueprint_version_id,
         frameworkId: row.framework_id
       });
-      return unseen ? offering(row) : null;
+      if (!unseen) return null;
+      const policy = await resolveEffectivePolicy(database, {
+        tenantId, frameworkReferences: [row.framework_reference],
+        policyReference: row.policy_reference, referenceTime: now
+      });
+      const decision = await evaluateWorkerAssessmentHistory(database, {
+        workerAccountId, frameworkId: row.framework_id, policyValues: policy.effectiveValue, now
+      });
+      return offering(row, decision);
     })
   );
   return filtered.filter((item): item is WorkerAssessmentOffering => item !== null);
@@ -279,10 +298,14 @@ async function findEligibleOffering(
   database: DatabaseClient,
   workerAccountId: string,
   catalogueVersionId: string,
-  now: Date
+  now: Date,
+  tenantId = INDEPENDENT_SCOPE_ID
 ): Promise<WorkerAssessmentOffering> {
-  const available = await eligibleOfferings(database, workerAccountId, now);
+  const available = await eligibleOfferings(database, workerAccountId, now, tenantId);
   const found = available.find((item) => item.catalogueVersionId === catalogueVersionId);
+  if (found && found.eligibilityStatus !== "AVAILABLE") {
+    throw new WorkerAssessmentApplicationConflictError(found.eligibilityReason ?? "This assessment is not eligible.");
+  }
   if (!found) {
     throw new WorkerAssessmentApplicationConflictError(
       "This assessment is no longer eligible or has insufficient unseen question capacity."
@@ -303,12 +326,13 @@ async function appendEvent(
     occurredAt: string;
   }
 ): Promise<void> {
+  const eventId = createIdentifier("assessment_application_event");
   await database.query(
     `INSERT INTO worker_assessment_application_events(
        event_id,application_id,from_status,to_status,actor_account_id,actor_role,detail_json,occurred_at
      ) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8)`,
     [
-      createIdentifier("assessment_application_event"),
+      eventId,
       input.applicationId,
       input.fromStatus,
       input.toStatus,
@@ -318,6 +342,10 @@ async function appendEvent(
       input.occurredAt
     ]
   );
+  if ((input.actorRole === "worker" && input.fromStatus === null && input.toStatus === "FUNDING_REQUESTED") ||
+      (input.actorRole === "company" && input.fromStatus === "FUNDED" && input.toStatus === "CASE_CREATED")) {
+    await enqueueAssessmentFundingNotification(database, eventId);
+  }
 }
 
 async function createFundedCase(
@@ -516,6 +544,13 @@ export class WorkerAssessmentApplicationService {
     return Object.freeze(await eligibleOfferings(this.database, principal.accountId, now));
   }
 
+  async listReassessmentOfferings(principal: AuthorizationPrincipal, sourceAppealId: string, now = new Date()): Promise<readonly WorkerAssessmentOffering[]> {
+    await assertLiveWorker(this.database, principal, "worker.assessments.read", now);
+    const workerId=await permanentWorkerId(this.database,principal.accountId);
+    const source=await resolveAssessmentReassessmentSource(this.database,{sourceAppealId,workerAccountId:principal.accountId,permanentWorkerId:workerId});
+    return Object.freeze((await eligibleOfferings(this.database,principal.accountId,now,source.tenantId)).filter(item=>item.frameworkId===source.frameworkId));
+  }
+
   async listFundingCompanies(
     principal: AuthorizationPrincipal,
     now = new Date()
@@ -554,7 +589,10 @@ export class WorkerAssessmentApplicationService {
   ): Promise<readonly WorkerAssessmentApplication[]> {
     await assertLiveWorker(this.database, principal, "worker.assessments.read", now);
     const result = await this.database.query<ApplicationRow>(
-      `SELECT applications.*,catalogue.title,tenants.display_name AS company_name
+      `SELECT applications.*,catalogue.title,tenants.display_name AS company_name,
+                (SELECT event.detail_json->>'sourceAppealId' FROM worker_assessment_application_events event
+                  WHERE event.application_id=applications.application_id AND event.from_status IS NULL
+                    AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_appeal_id
          FROM worker_assessment_applications AS applications
          JOIN assessment_catalogue_versions AS catalogue
            ON catalogue.catalogue_version_id=applications.catalogue_version_id
@@ -573,18 +611,19 @@ export class WorkerAssessmentApplicationService {
   async applyWorkerPay(
     principal: AuthorizationPrincipal,
     catalogueVersionId: string,
-    now = new Date()
+    now = new Date(),
+    input: { sourceAppealId?: string } = {}
   ): Promise<WorkerAssessmentApplication> {
     await assertLiveWorker(this.database, principal, "worker.self.manage", now);
     const workerId = await permanentWorkerId(this.database, principal.accountId);
-    const selected = await findEligibleOffering(
-      this.database,
-      principal.accountId,
-      catalogueVersionId.trim(),
-      now
-    );
     return this.database.transaction(async (database) => {
       await closeCompletedApplications(database, principal.accountId, now);
+      // Read eligibility after the existing Worker lock so completed attempts cannot stale this mutation.
+      const source = input.sourceAppealId !== undefined
+        ? await resolveAssessmentReassessmentSource(database,{sourceAppealId:input.sourceAppealId,workerAccountId:principal.accountId,permanentWorkerId:workerId,lock:true})
+        : null;
+      const selected = await findEligibleOffering(database, principal.accountId, catalogueVersionId.trim(), now, source?.tenantId);
+      if(source && source.frameworkId!==selected.frameworkId) throw new AssessmentReassessmentSourceAccessError();
       const id = createIdentifier("assessment_application");
       const paymentReference = `sandbox_worker_payment_${id.slice(-24)}`;
       const nowIso = now.toISOString();
@@ -619,11 +658,13 @@ export class WorkerAssessmentApplicationService {
         toStatus: "PAYMENT_REQUIRED",
         actorAccountId: principal.accountId,
         actorRole: "worker",
-        detail: { providerMode: "sandbox", catalogueVersionId: selected.catalogueVersionId },
+        detail: { providerMode: "sandbox", catalogueVersionId: selected.catalogueVersionId, ...(source ? {sourceAppealId:source.sourceAppealId} : {}) },
         occurredAt: nowIso
       });
+      if(source) await bindAssessmentReassessmentSource(database,id,source,nowIso);
       return application({
         application_id: id,
+        source_appeal_id: source?.sourceAppealId ?? null,
         worker_account_id: principal.accountId,
         permanent_worker_id: workerId,
         catalogue_version_id: selected.catalogueVersionId,
@@ -661,6 +702,9 @@ export class WorkerAssessmentApplicationService {
         verified_qualification_count: number | string;
       }>(
         `SELECT applications.*,catalogue.title,catalogue.catalogue_entry_id,
+                (SELECT event.detail_json->>'sourceAppealId' FROM worker_assessment_application_events event
+                  WHERE event.application_id=applications.application_id AND event.from_status IS NULL
+                    AND event.to_status='PAYMENT_REQUIRED' ORDER BY event.occurred_at,event.event_id LIMIT 1) AS source_appeal_id,
                 entries.catalogue_reference,catalogue.description,catalogue.framework_id,
                 frameworks.framework_reference,catalogue.blueprint_version_id,
                 policies.policy_reference,catalogue.minimum_verified_qualifications,
@@ -689,11 +733,15 @@ export class WorkerAssessmentApplicationService {
           "This sandbox payment is no longer available."
         );
       }
+      const source = row.source_appeal_id ? await recheckAssessmentReassessmentSource(database,row.application_id,{
+        sourceAppealId:row.source_appeal_id,workerAccountId:principal.accountId,permanentWorkerId:row.permanent_worker_id,frameworkId:row.framework_id
+      }) : null;
       const selected = await findEligibleOffering(
         database,
         principal.accountId,
         row.catalogue_version_id,
-        now
+        now,
+        source?.tenantId
       );
       const nowIso = now.toISOString();
       await database.query(
@@ -719,8 +767,8 @@ export class WorkerAssessmentApplicationService {
         workerAccountId: principal.accountId,
         permanentWorkerId: row.permanent_worker_id,
         offering: selected,
-        tenantId: INDEPENDENT_SCOPE_ID,
-        workerLinkId: `worker_self_link_${row.application_id.slice(-24)}`,
+        tenantId: source?.tenantId ?? INDEPENDENT_SCOPE_ID,
+        workerLinkId: source?.workerLinkId ?? `worker_self_link_${row.application_id.slice(-24)}`,
         fundingMethod: "worker",
         createdByMembershipId: "worker-self-service",
         actorAccountId: principal.accountId,
@@ -766,6 +814,17 @@ export class WorkerAssessmentApplicationService {
         );
       }
 
+      const companyPolicy = await resolveEffectivePolicy(database, {
+        tenantId: company.tenant_id, frameworkReferences: [selected.frameworkReference],
+        policyReference: selected.policyReference, referenceTime: now
+      });
+      const companyEligibility = await evaluateWorkerAssessmentHistory(database, {
+        workerAccountId: principal.accountId, frameworkId: selected.frameworkId,
+        policyValues: companyPolicy.effectiveValue, now, lockWorker: true
+      });
+      if (companyEligibility.eligibilityStatus !== "AVAILABLE") {
+        throw new WorkerAssessmentApplicationConflictError(companyEligibility.eligibilityReason ?? "This assessment is not eligible.");
+      }
       const id = createIdentifier("assessment_application");
       const requestId = fundingId();
       const nowIso = now.toISOString();
@@ -957,20 +1016,7 @@ export class WorkerAssessmentApplicationService {
       if (!activeLink.rows.length) throw new WorkerAssessmentApplicationConflictError("The Worker is no longer linked to this Company.");
       await permanentWorkerId(database, row.worker_account_id);
 
-      const ledger = await database.query<{ balance: number | string }>(
-        `SELECT COALESCE(SUM(credit_delta),0)::int AS balance
-           FROM billing_credit_ledger
-          WHERE tenant_id=$1`,
-        [scope.tenantId]
-      );
-      const reserved = await database.query<{ reserved: number | string }>(
-        `SELECT COALESCE(SUM(reserved_credit_units),0)::int AS reserved
-           FROM funding_requests
-          WHERE tenant_id=$1 AND status='APPROVED'`,
-        [scope.tenantId]
-      );
-      const available =
-        Number(ledger.rows[0]?.balance ?? 0) - Number(reserved.rows[0]?.reserved ?? 0);
+      const available = await unreservedCompanyCreditUnits(database, scope.tenantId);
       if (available < Number(row.credit_units)) {
         throw new WorkerAssessmentApplicationConflictError(
           "The Company does not have enough unreserved assessment credits."
@@ -1005,6 +1051,17 @@ export class WorkerAssessmentApplicationService {
         row.catalogue_version_id,
         now
       );
+      const companyPolicy = await resolveEffectivePolicy(database, {
+        tenantId: scope.tenantId, frameworkReferences: [selected.frameworkReference],
+        policyReference: selected.policyReference, referenceTime: now
+      });
+      const companyEligibility = await evaluateWorkerAssessmentHistory(database, {
+        workerAccountId: row.worker_account_id, frameworkId: selected.frameworkId,
+        policyValues: companyPolicy.effectiveValue, now, lockWorker: true
+      });
+      if (companyEligibility.eligibilityStatus !== "AVAILABLE") {
+        throw new WorkerAssessmentApplicationConflictError(companyEligibility.eligibilityReason ?? "This assessment is not eligible.");
+      }
       await createFundedCase(database, {
         applicationId: row.application_id,
         workerAccountId: row.worker_account_id,

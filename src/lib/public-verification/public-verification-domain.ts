@@ -1,6 +1,7 @@
 export const PUBLIC_VERIFICATION_STATUSES = Object.freeze([
   "valid",
   "expired",
+  "reassessment_required",
   "suspended",
   "revoked",
   "not_found_or_invalid",
@@ -131,6 +132,9 @@ export type PublicCredentialVerificationSource = {
   issuedAt: string;
   expiresAt: string | null;
   conditional: boolean;
+  authentication: "authenticated" | "legacy_unverified";
+  replaced?: boolean;
+  reassessmentRequired?: boolean;
 };
 
 export function projectPublicCredentialVerification(source: PublicCredentialVerificationSource, verifiedAt: string): PublicWorkerVerificationProjection {
@@ -140,9 +144,15 @@ export function projectPublicCredentialVerification(source: PublicCredentialVeri
   return {
     kind: "credential", publicIdentifier: identifier.normalizedIdentifier,
     displayName: "HSE Verify credential", competencyTitle: source.qualification,
-    status: source.status === "valid" && expiresAt && expiresAt <= verifiedAt ? "expired" : source.status,
+    status: source.replaced ? "revoked" : source.status === "valid" && expiresAt && expiresAt <= verifiedAt ? "expired" : source.status === "valid" && source.reassessmentRequired ? "reassessment_required" : source.status,
     issuedAt: normalizeIsoTimestamp(source.issuedAt, "Credential issue timestamp"), expiresAt,
-    restrictions: source.conditional ? ["Conditional approval: conditions apply. Request the Worker’s scoped Passport before relying on this credential."] : [],
+    restrictions: [
+      ...(source.reassessmentRequired ? ["Reassessment required. Do not rely on this competency until reassessment is completed."] : []),
+      ...(source.replaced ? ["This issuance has been replaced. Verify the current credential shared by the Worker."] : []),
+      ...(source.conditional ? ["Conditional approval: conditions apply. Request the Worker’s scoped Passport before relying on this credential."] : []),
+      ...(source.authentication === "legacy_unverified"
+        ? ["Legacy issuance: this record has an unauthenticated checksum. Verify the underlying assessment record before relying on it."] : [])
+    ],
     verifiedAt: normalizeIsoTimestamp(verifiedAt, "Verification timestamp")
   };
 }

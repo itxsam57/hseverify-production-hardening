@@ -4,22 +4,23 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { PGlite } from "@electric-sql/pglite";
 
 const id = (prefix, seed) => prefix + "_" + createHash("sha256").update(seed).digest("hex").slice(0,24);
 
 // Full current migrations plus schema-valid search records; this fixture does
 // not certify identity issuance, catalogue publishing or application creation.
-export async function workerAssessmentSearchFixture() {
+export async function workerAssessmentSearchFixture(stage) {
   const directory = await mkdtemp(join(tmpdir(),"hse-worker-search-"));
   const environment = {...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:join(directory,"db"),HSE_RELEASE_SHA:"worker-assessment-search",HSE_SESSION_SECRET:"worker-search-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"worker-search-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_AUDIT_CREDENTIALS_PATH:join(directory,"credentials.json")};
   try {
-    for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
+    for(const script of stage ? [] : ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
       const result=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});
       assert.equal(result.status,0,result.stderr||result.stdout);
     }
-    const credentials=JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH,"utf8"));
-    const database=await PGlite.create(environment.HSE_PGLITE_DATA_DIR);
+    const credentials=JSON.parse(await readFile(stage?.accountsPath ?? environment.HSE_AUDIT_CREDENTIALS_PATH,"utf8"));
+    const database=stage ? await openScriptDatabase({databaseDriver:"postgres",databaseUrl:stage.applicationEnvironment.DATABASE_URL}) : await PGlite.create(environment.HSE_PGLITE_DATA_DIR);
     const now=new Date().toISOString(),admin=credentials.admin.accountId;
     const framework=id("framework","worker-search"),blueprint=id("assessment_blueprint","worker-search"),version=id("blueprint_version","worker-search");
     const alpha=id("assessment_application","own-alpha"),beta=id("assessment_application","own-beta"),foreign=id("assessment_application","foreign-alpha");

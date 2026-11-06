@@ -1,0 +1,11 @@
+✔ Public contact/demo reaches private staff intake with preserved drafts on rejection (34022.969218ms)
+ACTUAL_PUBLIC_NAVIGATION real desktop/mobile links, both registration entry forms and all six role sign-in forms; demo and general contact fulfilment remain separate
+✔ Public home exposes usable primary routes, registrations and six role destinations on desktop/mobile (33428.500183ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69043.959611
