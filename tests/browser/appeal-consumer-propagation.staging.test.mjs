@@ -87,7 +87,7 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await withOwnedStagingServer(config,async({restart})=>{
    const anonymous=await fetch(config.url+"/company/login");
    assert.equal(anonymous.status,401,"Perimeter must deny missing Basic authentication");
-   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,evidenceRecordId:process.env.HSE_STAGE_APPEAL_WITHOUT_EVIDENCE==="true"?null:evidenceRecordId,foreignEvidenceRecordId,submitViaApi:process.env.HSE_STAGE_APPEAL_SUBMISSION_API==="true",restartSubmitted:process.env.HSE_STAGE_APPEAL_RESTART_SUBMITTED==="true",explicitSubmissionSequence:process.env.HSE_STAGE_APPEAL_EXPLICIT_SEQUENCE==="true"?"synthetic_closed_appeal_replay":undefined,chromiumArgs:stageBrowserArgs(config),httpCredentials:{username:config.user,password:config.password},restart:async()=>{
+   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,evidenceRecordId:process.env.HSE_STAGE_APPEAL_WITHOUT_EVIDENCE==="true"?null:evidenceRecordId,foreignEvidenceRecordId,submitViaApi:process.env.HSE_STAGE_APPEAL_SUBMISSION_API==="true",restartSubmitted:process.env.HSE_STAGE_APPEAL_RESTART_SUBMITTED==="true",restartClaim:process.env.HSE_STAGE_APPEAL_RESTART_CLAIM==="true",explicitSubmissionSequence:process.env.HSE_STAGE_APPEAL_EXPLICIT_SEQUENCE==="true"?"synthetic_closed_appeal_replay":undefined,chromiumArgs:stageBrowserArgs(config),httpCredentials:{username:config.user,password:config.password},restart:async()=>{
      const before=await snapshot();
      assert.deepEqual(await signedFields(),originalSignedFields);
      await restart();

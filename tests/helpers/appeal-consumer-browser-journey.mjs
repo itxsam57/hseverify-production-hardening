@@ -35,7 +35,7 @@ export async function login(page, baseUrl, credential, role) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,submitViaApi=false,restartSubmitted=false,explicitSubmissionSequence,chromiumArgs=[],httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
+export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,submitViaApi=false,restartSubmitted=false,restartClaim=false,explicitSubmissionSequence,chromiumArgs=[],httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
           assert.ok(["reassessment","suspend","revoke","rejected"].includes(outcomeAction));
           const currentStatus={reassessment:"reassessment_required",suspend:"suspended",revoke:"revoked",rejected:"valid"}[outcomeAction];
           const browser = await chromium.launch({ headless: true, args: chromiumArgs });
@@ -51,6 +51,12 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
           const consoleErrors=[];
           const inFlight=new Set(),outageRequests=new WeakSet(),expectedOutages=[];
           let restarting=false;
+          const restartOwned = async () => {
+            assert.equal(typeof restart, "function");
+            restarting = true;
+            for (const request of inFlight) if (request.method() === "GET") outageRequests.add(request);
+            try { await restart(); } finally { restarting = false; }
+          };
           for (const page of [worker, admin, company, publicPage]) {
             page.on("pageerror", (error) => errors.push(error.message));
             page.on("request",request=>{inFlight.add(request);if(restarting&&request.method()==="GET")outageRequests.add(request);});
@@ -145,11 +151,8 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             if(evidenceRecordId) await workerAppeal.getByText(new RegExp(evidenceRecordId)).waitFor();
 
             if (restartSubmitted) {
-              assert.equal(typeof restart, "function");
               const submitted = await workerAppeal.innerText();
-              restarting = true;
-              for (const request of inFlight) if (request.method() === "GET") outageRequests.add(request);
-              try { await restart(); } finally { restarting = false; }
+              await restartOwned();
               await worker.reload({ waitUntil: "domcontentloaded" });
               await workerAppeal.getByText(/Status: submitted/i).waitFor();
               assert.equal(await workerAppeal.innerText(), submitted);
@@ -200,6 +203,20 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
               console.log("STALE_APPEAL_REVIEW_CONFLICT_PASS");
             }
 
+            if (restartClaim) {
+              await review.getByText("Reviewer: " + credentials.admin.accountId, { exact: true }).waitFor();
+              await worker.reload({ waitUntil: "domcontentloaded" });
+              await workerAppeal.getByText(/Status: under review/i).waitFor();
+              const claimed = await workerAppeal.innerText();
+              await restartOwned();
+              await admin.reload({ waitUntil: "domcontentloaded" });
+              await review.getByText("Reviewer: " + credentials.admin.accountId, { exact: true }).waitFor();
+              await review.getByText(/Status: under review/i).waitFor();
+              await worker.reload({ waitUntil: "domcontentloaded" });
+              assert.equal(await workerAppeal.innerText(), claimed);
+              console.log("CLAIMED_APPEAL_RESTART_PASS");
+            }
+
             const finalStatus = outcomeAction === "rejected" ? "rejected" : "accepted";
             if (finalStatus === "rejected") {
               await publicPage.goto(existingPublicUrl);
@@ -231,11 +248,7 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             await worker.getByText("HSE Operational Assurance", { exact: true }).first().waitFor();
             await worker.getByText(new RegExp(currentStatus.replaceAll("_"," ")+" · no expiry recorded","i")).waitFor();
             await worker.getByText(new RegExp((finalStatus === "rejected" ? "Version 1 · " : "Version 2 · ")+currentStatus.replaceAll("_"," "),"i")).waitFor();
-            if(restart){
-              restarting=true;
-              for(const request of inFlight)if(request.method()==="GET")outageRequests.add(request);
-              try{await restart();}finally{restarting=false;}
-            }
+            if (restart) await restartOwned();
             if (explicitSubmissionSequence) {
               assert.equal(finalStatus, "rejected");
               const replay = await postAppeal();

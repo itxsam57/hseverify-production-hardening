@@ -5952,9 +5952,21 @@
         "status": "not-yet-verified-in-expanded-run",
         "evidence": null,
         "software_verification": {
-          "status": "UNREVIEWED",
+          "status": "PARTIAL",
           "cases": {},
-          "evidence": [],
+          "evidence": [
+            {
+              "kind": "SCOPED_ACCEPTANCE_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/appeal-review-claim-scope.json",
+              "artifact_sha256": "5fb02a68847c188329d62d2000b46f61295a57cd2a77b1c6ee4745310383462a",
+              "whole_scenario_verified": false,
+              "open": [
+                "Live reviewer authority loss after opening the appeal",
+                "Rules for an independent reviewer taking over a claim at the current version",
+                "Versionless review API calls retain the existing latest-version behavior"
+              ]
+            }
+          ],
           "case_plan": {
             "status": "NEEDS_CASE_DESIGN",
             "variants": [],

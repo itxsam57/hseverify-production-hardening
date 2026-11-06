@@ -9,7 +9,7 @@ const raceKind=process.env.HSE_STAGE_RACE_KIND??"reviewers";
 const raceOrder=process.env.HSE_STAGE_RACE_ORDER??"review-first";
 test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent result",{timeout:60000},async()=>{
  assert.ok(["review-first","withdraw-first"].includes(raceOrder));
- assert.ok(["reviewers","review-withdraw"].includes(raceKind));
+ assert.ok(["reviewers","review-withdraw","claim"].includes(raceKind));
  assert.ok(process.env.HSE_SOFTWARE_STAGE_CONFIG,"Explicit isolated staging config is required");
  const config=JSON.parse(await readFile(process.env.HSE_SOFTWARE_STAGE_CONFIG,"utf8"));
  assert.equal(config.syntheticOnly,true);
@@ -132,16 +132,24 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
     })
   }));
   try{
+    const claim = raceKind === "claim";
+    const reviewerCommand = index => ({
+      status: claim ? "under_review" : "accepted",
+      reviewerId: index ? secondReviewer : accounts.admin.accountId,
+      reason: "PRIVATE_REVIEW_STAGE_independent racing " + (index ? "revoke" : "suspend") + " decision",
+      outcomeAction: claim ? "none" : index ? "revoke" : "suspend",
+      reviewedAt: at,
+    });
     const results=await Promise.allSettled(wrapped.map((database,index)=>{
       const commands=new CredentialAppealsService(Promise.resolve(database),environment.HSE_CREDENTIAL_SIGNING_SECRET);
       return raceKind==="review-withdraw"&&index===1
         ? commands.withdraw(appeal,workerId)
-        : commands.reviewOutcome(appeal,{status:"accepted",reviewerId:index?secondReviewer:accounts.admin.accountId,reason:"PRIVATE_REVIEW_STAGE_independent racing "+(index?"revoke":"suspend")+" decision",outcomeAction:index?"revoke":"suspend",reviewedAt:new Date().toISOString()});
+        : commands.reviewOutcome(appeal, reviewerCommand(index));
     }));
     assert.ok(reached.size>0);
-    if(raceKind==="reviewers")assert.equal(reached.size,2,"Both reviewers must eventually attempt the real version-guarded update");
+    if(raceKind!=="review-withdraw")assert.equal(reached.size,2,"Both reviewers must eventually attempt the real version-guarded update");
     assert.equal(new Set(pids).size,2,"Distinct backend PIDs must be observed inside the actual transactions");
-    if(raceKind==="reviewers")assert.deepEqual(readVersions,[1,1],"Both transactions must have read the same original version");
+    if(raceKind!=="review-withdraw")assert.deepEqual(readVersions,[1,1],"Both transactions must have read the same original version");
     assert.equal(results.filter(result=>result.status==="fulfilled").length,1);
     const rejected=results.filter(result=>result.status==="rejected");
     assert.equal(rejected.length,1);
@@ -153,14 +161,14 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
       assert.equal(caseAcquisitions[0],firstIndex,"Requested case-lock acquisition order must be observed");
       assert.equal(withdrawn,raceOrder==="withdraw-first","Each forced winner must match its acquisition order");
     }
-    const expected=withdrawn?"valid":winner.outcomeAction==="suspend"?"suspended":"revoked";
-    const stored=(await db.query("SELECT outcome_action,version,status FROM credential_appeals WHERE appeal_id=$1",[appeal.appealId])).rows[0];
+    const expected=withdrawn||claim?"valid":winner.outcomeAction==="suspend"?"suspended":"revoked";
+    const stored=(await db.query("SELECT outcome_action,version,status,reviewer_account_id FROM credential_appeals WHERE appeal_id=$1",[appeal.appealId])).rows[0];
     assert.equal(stored.outcome_action,winner.outcomeAction);assert.equal(stored.status,winner.status);assert.equal(Number(stored.version),2);
     assert.equal((await db.query("SELECT status FROM credential_issuances WHERE credential_id=$1",[credentialId])).rows[0].status,expected);
     const living=(await db.query("SELECT versions.status FROM living_record_versions versions JOIN living_record_competencies competency USING(competency_id) WHERE competency.source_credential_id=$1 ORDER BY versions.version DESC",[credentialId])).rows;
-    assert.deepEqual(living.map(row=>row.status),withdrawn?["valid"]:[expected,"valid"]);
+    assert.deepEqual(living.map(row=>row.status),withdrawn||claim?["valid"]:[expected,"valid"]);
     assert.equal(Number((await db.query("SELECT count(*) AS n FROM credential_appeal_events WHERE appeal_id=$1",[appeal.appealId])).rows[0].n),2);
-    assert.equal(Number((await db.query("SELECT count(*) AS n FROM credential_lifecycle_events WHERE credential_id=$1",[credentialId])).rows[0].n),withdrawn?1:2);
+    assert.equal(Number((await db.query("SELECT count(*) AS n FROM credential_lifecycle_events WHERE credential_id=$1",[credentialId])).rows[0].n),withdrawn||claim?1:2);
     assert.equal((await publicProjection()).projection.status,expected);
     assert.equal((await company.find(principal,linkId)).currentCompetencyStatus,expected);
     assert.deepEqual((await db.query("SELECT signature,qr_payload FROM credential_issuances WHERE credential_id=$1",[credentialId])).rows[0],signedBefore);
@@ -168,8 +176,24 @@ test("PostgreSQL appeal race "+raceKind+" "+raceOrder+" commits one coherent res
     const loserIndex=results.findIndex(result=>result.status==="rejected");
     const repeatLoser=()=>raceKind==="review-withdraw" && loserIndex===1
       ? service.withdraw(appeal,workerId)
-      : service.reviewOutcome(appeal,{...reviewCommand,reviewerId:loserIndex?secondReviewer:accounts.admin.accountId,outcomeAction:loserIndex?"revoke":"suspend"});
+      : service.reviewOutcome(appeal, reviewerCommand(loserIndex));
     await assertNoMutation(repeatLoser,/update conflict/i);
+
+    if (claim) {
+      const events = (await db.query(
+        "SELECT status, reviewer_account_id FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",
+        [appeal.appealId]
+      )).rows;
+      const winnerIndex = results.findIndex(result => result.status === "fulfilled");
+      assert.equal(stored.reviewer_account_id, reviewerCommand(winnerIndex).reviewerId);
+      assert.deepEqual(events, [
+        {status: "submitted", reviewer_account_id: null},
+        {status: "under_review", reviewer_account_id: winnerIndex ? secondReviewer : accounts.admin.accountId},
+      ]);
+      assert.deepEqual((await db.query("SELECT * FROM assurance_cases WHERE case_id=$1", [fixture.caseId])).rows[0], originalCase);
+      console.log("POSTGRES_APPEAL_CLAIM_RACE_PASS", "distinct backends read the same version; one retained claimant and no credential change");
+      return;
+    }
 
     const wrongOwner=await seedMalformed("appeal_foreign_completion_probe",credentialId,"worker_id_foreign_completion_probe");
     await assertNoMutation(()=>service.reviewOutcome(wrongOwner,reviewCommand),/ownership provenance/i);

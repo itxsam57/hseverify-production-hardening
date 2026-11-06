@@ -15,7 +15,7 @@
     "M1.01.04",
     "M3.07.01"
   ],
-  "last_verified_action": "19 native rollback checks and populated PostgreSQL 0128/0129 passed. Three protected appeal API paths verified submitted restart, optional evidence and rejected sequence replay.",
+  "last_verified_action": "Protected 5d78715 stale-version review rejection, concurrent PostgreSQL claim and claimant restart passed. All four identity migration fixture runners passed.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -72,7 +72,7 @@
     "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
     "docs/qa/retained-test-evidence/appeal-api-evidence-ownership-review.json"
   ],
-  "next_action": "Retain exact 81fcd16 hosted CI, review the expanded migration stack, and continue appeal eligibility and independent-review variants. No canonical appeal eligibility policy is configured in the repo.",
+  "next_action": "Retain exact 81fcd16 hosted CI and publish the reviewed branch. Continue populated PostgreSQL migration retention, appeal eligibility, live reviewer revocation and follow-up branches.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -82,7 +82,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "VERIFYING_SOFTWARE_BASELINE",
-  "updated_at": "2026-11-06T19:11:36.970617+00:00",
+  "updated_at": "2026-11-06T19:22:09.248977+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
