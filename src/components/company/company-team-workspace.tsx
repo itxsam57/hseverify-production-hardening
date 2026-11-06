@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
 import {
   cancelCompanyTeamInvitationAction,
   changeCompanyTeamMemberStatusAction,
@@ -24,6 +24,14 @@ import type {
   CompanyTeamMemberRecord
 } from "@/lib/company/company-team-service";
 import { INITIAL_COMPANY_TEAM_ACTION_STATE } from "@/lib/ui/action-initial-states";
+
+const subscribeHydration = (): (() => void) => () => {};
+const clientHydrated = (): boolean => true;
+const serverHydrated = (): boolean => false;
+
+function useTeamFormHydrated(): boolean {
+  return useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
+}
 
 function permissionLabel(value: TenantPermission): string {
   return value.replace("company.", "").replaceAll(".", " · ");
@@ -123,6 +131,7 @@ function MemberCard({
   actorPermissions: readonly TenantPermission[];
   canManage: boolean;
 }): React.JSX.Element {
+  const hydrated = useTeamFormHydrated();
   const [updateState, updateAction, updatePending] = useActionState(
     updateCompanyTeamMemberAction,
     INITIAL_COMPANY_TEAM_ACTION_STATE
@@ -181,7 +190,7 @@ function MemberCard({
       {canEdit ? (
         <div className="content-stack">
           <Feedback state={updateState} />
-          <form action={updateAction} className="profile-form" noValidate>
+          <form action={updateAction} className="profile-form" inert={!hydrated} aria-busy={!hydrated} noValidate>
             <input type="hidden" name="membershipId" value={member.membershipId} />
             <input type="hidden" name="expectedRole" value={member.membershipRole} />
             <input type="hidden" name="expectedStatus" value={member.status} />
@@ -189,6 +198,7 @@ function MemberCard({
               <Select
                 id={`${member.membershipId}-role`}
                 name="membershipRole"
+                disabled={!hydrated}
                 value={selectedRole}
                 onChange={(event) =>
                   setSelectedRole(event.target.value as TenantMembershipRole)
@@ -251,7 +261,7 @@ function MemberCard({
                 </label>
               ))}
             </fieldset>
-            <Button type="submit" disabled={updatePending}>
+            <Button type="submit" disabled={!hydrated || updatePending}>
               {updatePending ? "Saving…" : "Save Team access"}
             </Button>
           </form>
@@ -338,6 +348,7 @@ export function CompanyTeamWorkspace({
   actorPermissions: readonly TenantPermission[];
   canManage: boolean;
 }): React.JSX.Element {
+  const hydrated = useTeamFormHydrated();
   const [inviteState, inviteAction, invitePending] = useActionState(
     inviteCompanyTeamMemberAction,
     INITIAL_COMPANY_TEAM_ACTION_STATE
@@ -380,14 +391,15 @@ export function CompanyTeamWorkspace({
             Your current Company role cannot invite additional Team members.
           </Alert>
         ) : (
-          <form action={inviteAction} className="profile-form" noValidate>
+          <form action={inviteAction} className="profile-form" inert={!hydrated} aria-busy={!hydrated} noValidate>
             <Field htmlFor="team-email" label="Staff email">
-              <Input id="team-email" name="email" type="email" required maxLength={320} />
+              <Input id="team-email" name="email" type="email" disabled={!hydrated} required maxLength={320} />
             </Field>
             <Field htmlFor="team-role" label="Company Team role">
               <Select
                 id="team-role"
                 name="membershipRole"
+                disabled={!hydrated}
                 value={selectedRole}
                 onChange={(event) =>
                   setSelectedRole(event.target.value as TenantMembershipRole)
@@ -437,7 +449,7 @@ export function CompanyTeamWorkspace({
                 </label>
               ))}
             </fieldset>
-            <Button type="submit" disabled={invitePending}>
+            <Button type="submit" disabled={!hydrated || invitePending}>
               {invitePending ? "Creating invitation…" : "Create Company Team invitation"}
             </Button>
           </form>

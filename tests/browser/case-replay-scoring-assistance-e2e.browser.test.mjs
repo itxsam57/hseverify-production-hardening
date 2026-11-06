@@ -191,6 +191,8 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
         const browser = await chromium.launch({ headless: true });
         const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
         const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+        verifierContext.setDefaultTimeout(20000);
+        adminContext.setDefaultTimeout(20000);
         const verifier = await verifierContext.newPage();
         const admin = await adminContext.newPage();
         try {

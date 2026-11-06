@@ -1,14 +1,14 @@
 {
   "state": "AUTO_CONTINUE",
-  "task": "SOFTWARE-VERIFY-20261105/B00",
+  "task": "SOFTWARE-VERIFY-20261105/B00-B01",
   "status": "VERIFYING_SOFTWARE_BASELINE",
   "verified_sha": null,
-  "last_verified_action": "Startup fail-open fixed at 97d6a33; protected browser and isolated PostgreSQL migration and restoration checks passed within scoped B00 evidence.",
-  "next_action": "Continue B00 with exact candidate GitHub evidence, same-fixture startup correction, signed credential restart, populated migration retention and controlled process recovery. Then advance dependency-ready scenario batches.",
+  "last_verified_action": "Protected process recovery passed on 692391c. Appeal evidence ownership repair and four recipient journeys independently accepted on e3743a1. Local scoring and Case Replay browser tests passed on c697fb6.",
+  "next_action": "Continue release baseline with exact candidate CI and protected source binding. Diagnose Company Team selection and rerun the failed cohort. Continue M3.07.01 with accepted API inputs, duplicate contention, and policy checks.",
   "owner_required": false,
-  "revision": 35,
+  "revision": 36,
   "blocker": null,
-  "updated_at": "2026-11-06T07:09:11.612642+00:00",
+  "updated_at": "2026-11-06T07:26:23.882919+00:00",
   "authoritative_state": ".engineering/state/CURRENT_TASK.json",
   "repository": "itxsam57/hseverify-production-hardening",
   "canonical_branch": "qa/masterplan-completion-20260926",
@@ -61,7 +61,8 @@
     ".autopilot/artifacts/20261012-live-media-timer-diagnostic.log",
     ".autopilot/artifacts/20261012-live-media-timer-repair.json",
     ".autopilot/artifacts/20261012-live-media-timer-independent-review.json",
-    "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json"
+    "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
+    "docs/qa/retained-test-evidence/appeal-api-evidence-ownership-review.json"
   ],
   "unknowns": [
     "Final clean-SHA full gate and all218-scenario current evidence reconciliation",

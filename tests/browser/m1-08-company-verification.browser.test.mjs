@@ -380,8 +380,8 @@ async function runBrowserAcceptance(baseUrl, output) {
     // must wait for that controlled transition before submitting the form;
     // otherwise a fast automation click can pair viewer with owner permissions.
     await companyPage.waitForFunction(() => {
-      const role=document.querySelector('select[name="membershipRole"]');
-      const checkboxes=[...document.querySelectorAll('fieldset input[name="permissions"]')];
+      const role=document.querySelector("#team-role");
+      const checkboxes=[...(role?.form?.querySelectorAll('fieldset input[name="permissions"]') ?? [])];
       const expected=["company.tenant.read","company.workforce.read","company.orders.read","company.reports.read"];
       return role?.value==="viewer" &&
         checkboxes.length===expected.length &&
@@ -392,6 +392,7 @@ async function runBrowserAcceptance(baseUrl, output) {
         [...new FormData(form)].map(([name,value])=>[name,String(value)])
       ));
     assert.equal(teamSubmission.membershipRole,"viewer","Company Team role did not persist before submit.");
+    assert.equal(teamSubmission.email, "team.member.m108@example.test", "Company Team email did not persist before submit.");
     const viewerPermissionSet=["company.tenant.read","company.workforce.read","company.orders.read","company.reports.read"];
     const submittedPermissions=await companyPage.getByRole("button", { name: "Create Company Team invitation" })
       .locator("xpath=ancestor::form").evaluate(form=>new FormData(form).getAll("permissions"));
@@ -480,6 +481,7 @@ async function runBrowserAcceptance(baseUrl, output) {
     await publishPolicy.getByLabel("Title").fill("M1.08 Safety Standard");
     await publishPolicy.getByLabel("Effective from").fill("2026-01-01T00:00");
     await publishPolicy.getByRole("button", { name: "Publish immutable version" }).click();
+    await adminSession.page.getByRole("status").filter({ hasText: "Immutable policy version published." }).waitFor({ timeout: 15_000 });
 
     await gotoOk(companyPage, baseUrl, "/company/settings/policy", "Effective policy");
     await companyPage.getByLabel("Policy reference").fill("POLICY-M108");

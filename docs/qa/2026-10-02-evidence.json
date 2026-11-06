@@ -5540,9 +5540,23 @@
         "status": "not-yet-verified-in-expanded-run",
         "evidence": null,
         "software_verification": {
-          "status": "UNREVIEWED",
+          "status": "PARTIAL",
           "cases": {},
-          "evidence": [],
+          "evidence": [
+            {
+              "kind": "INDEPENDENTLY_ACCEPTED_SCOPED_REPAIR",
+              "source_sha": "e3743a164a931169e0ec153c63491f632f16c4ee",
+              "artifact": "docs/qa/retained-test-evidence/appeal-api-evidence-ownership-review.json",
+              "artifact_sha256": "a208ac67abf745d0c10bb3782ba2d1763726105d8d5ca56423d027c63c84e071",
+              "whole_scenario_verified": false,
+              "open": [
+                "Positive API submission with owned evidence and without optional evidence",
+                "Policy eligibility and evidence lifecycle rules",
+                "Sequential and concurrent duplicate submission",
+                "Remaining independent case-plan review"
+              ]
+            }
+          ],
           "case_plan": {
             "status": "NEEDS_CASE_DESIGN",
             "variants": [],
