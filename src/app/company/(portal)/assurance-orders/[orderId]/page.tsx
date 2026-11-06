@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
-import { CURRENT_CREDENTIAL_STATUS_SQL } from "@/lib/credential/current-credential-status-sql";
+import { readAssuranceOrderCredentialStatuses } from "@/lib/credential/assurance-order-credential-status";
 import { AssuranceOrderService } from "@/lib/assurance/assurance-order-service";
 import { listAssuranceOrderPolicySnapshots } from "@/lib/policy/effective-policy-read-service";
 import { AssuranceOrderWorkspace } from "@/components/company/assurance-order-workspace";
@@ -17,12 +17,7 @@ export default async function AssuranceOrderDetailPage({params,searchParams}:{pa
   const cases=await service.listCases(principal,orderId);
   const interviewSchedules=await service.listInterviewSchedules(principal,orderId);
   const policySnapshots=await listAssuranceOrderPolicySnapshots(database,principal,orderId);
-  const credentialRows=await database.query<{case_id:string;credential_status:string|null}>(`
-    SELECT cases.case_id,${CURRENT_CREDENTIAL_STATUS_SQL} AS credential_status FROM assurance_cases AS cases
-    LEFT JOIN credential_issuances AS credentials ON credentials.credential_id=cases.credential_reference
-      AND credentials.worker_id=cases.permanent_worker_id
-    WHERE cases.tenant_id=$1 AND cases.order_id=$2`,[order.tenantId,order.orderId]);
-  const credentialStatuses=Object.fromEntries(credentialRows.rows.map(row=>[row.case_id,row.credential_status]));
+  const credentialStatuses=await readAssuranceOrderCredentialStatuses(database,order.tenantId,order.orderId);
   return <section className="page-stack">
     <div className="page-heading"><div><p className="eyebrow">Company assurance</p><h1>Assurance order</h1><p>{order.orderReference} · {order.orderStatus}</p></div></div>
     {typeof error==="string"&&error?<p role="alert" className="status-banner status-error">{error.slice(0,500)}</p>:null}
