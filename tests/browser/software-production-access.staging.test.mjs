@@ -5,7 +5,7 @@ import { readFile, realpath } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
 import { login } from "../helpers/appeal-consumer-browser-journey.mjs";
-import { withOwnedStagingServer } from "../helpers/owned-staging-server.mjs";
+import { stageBrowserArgs, withOwnedStagingServer } from "../helpers/owned-staging-server.mjs";
 
 test("production browser roles and public responses isolate runtime secrets across restart", { timeout: 90000 }, async () => {
   const path = await realpath(process.env.HSE_SOFTWARE_STAGE_CONFIG);
@@ -22,7 +22,7 @@ test("production browser roles and public responses isolate runtime secrets acro
   assert.ok(secrets.every(value => typeof value === "string" && value.length >= 32));
   assert.equal(new Set(secrets).size, secrets.length);
   const credentials = JSON.parse(await readFile(config.accountsPath, "utf8"));
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, args: stageBrowserArgs(config) });
   const options = { httpCredentials: { username: config.user, password: config.password } };
   try {
     const startupScript = resolve(config.projectRoot, "scripts/start-production.mjs");

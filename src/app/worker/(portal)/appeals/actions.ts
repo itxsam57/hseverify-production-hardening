@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
 import { AppealFollowupAccessError, AppealFollowupConflictError, CredentialAppealFollowupService } from "@/lib/credential/credential-appeal-followup-service";
+import { CredentialAppealSubmissionConflictError } from "@/lib/credential/credential-appeals-domain";
 import { CredentialAppealsRepository } from "@/lib/credential/credential-appeals-repository";
 import { CredentialAppealsService } from "@/lib/credential/credential-appeals-service";
 import { CredentialIssuanceRepository } from "@/lib/credential/credential-issuance-repository";
@@ -54,7 +55,7 @@ export async function submitCredentialAppealAction(formData: FormData): Promise<
       createdAt: new Date().toISOString()
     }, randomBytes(12).toString("hex"));
   } catch (error) {
-    if (error instanceof Error && error.message.includes("already open")) {
+    if (error instanceof CredentialAppealSubmissionConflictError) {
       redirect("/worker/appeals?error=open");
     }
     throw error;

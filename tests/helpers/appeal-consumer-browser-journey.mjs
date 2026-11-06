@@ -35,10 +35,10 @@ export async function login(page, baseUrl, credential, role) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
+export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,submitViaApi=false,chromiumArgs=[],httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
           assert.ok(["reassessment","suspend","revoke","rejected"].includes(outcomeAction));
           const currentStatus={reassessment:"reassessment_required",suspend:"suspended",revoke:"revoked",rejected:"valid"}[outcomeAction];
-          const browser = await chromium.launch({ headless: true });
+          const browser = await chromium.launch({ headless: true, args: chromiumArgs });
           const workerContext = await browser.newContext({ httpCredentials, viewport: { width: 1440, height: 1000 } });
           const adminContext = await browser.newContext({ httpCredentials, viewport: { width: 1440, height: 1000 } });
           const companyContext=await browser.newContext({httpCredentials});
@@ -102,8 +102,8 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
                 await worker.waitForURL(url => url.searchParams.get("error") === "credential");
               }
             }
+            const endpoint = baseUrl + "/api/credentials/" + encodeURIComponent(credentialId) + "/appeals";
             if (foreignEvidenceRecordId) {
-              const endpoint = baseUrl + "/api/credentials/" + encodeURIComponent(credentialId) + "/appeals";
               for (const evidence of [["worker_evidence_nonexistent_appeal_fixture"], [foreignEvidenceRecordId], [42]]) {
                 const response = await worker.request.post(endpoint, {
                   headers: { origin: baseUrl },
@@ -113,14 +113,29 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
                 assert.deepEqual(await response.json(), { error: "invalid_appeal_evidence" });
               }
             }
-            await worker.getByLabel("Credential").selectOption(credentialId);
-            await worker.getByLabel("Appeal grounds").fill(
-              "The issued competency should be reassessed because the retained qualification evidence was interpreted incorrectly."
-            );
-            if(evidenceRecordId) await worker.locator(`input[name="evidenceRecordIds"][value="${evidenceRecordId}"]`).check();
-            await worker.getByRole("button", { name: "Submit credential appeal" }).click();
-            await worker.waitForURL(/\/worker\/appeals\?status=submitted/, { timeout: 20_000 });
-            await worker.getByText("Appeal submitted for independent review.", { exact: true }).waitFor();
+            const appealReason = "The issued competency should be reassessed because the retained qualification evidence was interpreted incorrectly.";
+            if (submitViaApi) {
+              const post = () => worker.request.post(endpoint, {
+                headers: { origin: baseUrl },
+                data: { reason: appealReason, evidence: [evidenceRecordId] },
+              });
+              const concurrent = await Promise.all([post(), post()]);
+              assert.deepEqual(concurrent.map(response => response.status()).sort(), [201, 409]);
+              const accepted = await concurrent.find(response => response.status() === 201).json();
+              assert.equal(accepted.credentialId, credentialId);
+              assert.deepEqual(accepted.evidence, [evidenceRecordId]);
+              const duplicate = await post();
+              assert.equal(duplicate.status(), 409);
+              assert.deepEqual(await duplicate.json(), { error: "credential_appeal_conflict" });
+              await worker.reload({ waitUntil: "domcontentloaded" });
+            } else {
+              await worker.getByLabel("Credential").selectOption(credentialId);
+              await worker.getByLabel("Appeal grounds").fill(appealReason);
+              if (evidenceRecordId) await worker.locator(`input[name="evidenceRecordIds"][value="${evidenceRecordId}"]`).check();
+              await worker.getByRole("button", { name: "Submit credential appeal" }).click();
+              await worker.waitForURL(/\/worker\/appeals\?status=submitted/, { timeout: 20_000 });
+              await worker.getByText("Appeal submitted for independent review.", { exact: true }).waitFor();
+            }
             const workerAppeal = worker.locator("article").filter({ hasText: credentialId }).first();
             await workerAppeal.getByText(/Status: submitted/i).waitFor();
             if(evidenceRecordId) await workerAppeal.getByText(new RegExp(evidenceRecordId)).waitFor();

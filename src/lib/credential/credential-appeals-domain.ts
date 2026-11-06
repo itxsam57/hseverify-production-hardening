@@ -1,3 +1,10 @@
+export class CredentialAppealSubmissionConflictError extends Error {
+  constructor() {
+    super("An appeal is already open for this credential or the submission reference is already used.");
+    this.name = "CredentialAppealSubmissionConflictError";
+  }
+}
+
 export class CredentialAppealReviewAuthorizationError extends Error {
   constructor(message: string) {
     super(message);

@@ -82,8 +82,6 @@ export class CredentialAppealsService {
   ): Promise<CredentialAppeal> {
     const database = await this.clientPromise;
     const repository = new CredentialAppealsRepository(Promise.resolve(database));
-    const existing = await repository.findOpenForCredential(input.credentialId);
-    if (existing) throw new Error("An appeal is already open for this credential.");
     const appeal = submitCredentialAppeal(input, sequence);
     return repository.save(appeal);
   }

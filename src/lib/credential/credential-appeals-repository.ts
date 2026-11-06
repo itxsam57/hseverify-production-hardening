@@ -2,7 +2,7 @@ import "server-only";
 
 import { getDatabaseClient } from "../database/database";
 import type { DatabaseClient } from "../database/database";
-import { CredentialAppealReviewAuthorizationError } from "./credential-appeals-domain";
+import { CredentialAppealReviewAuthorizationError, CredentialAppealSubmissionConflictError } from "./credential-appeals-domain";
 import type { AppealOutcomeAction, CredentialAppeal } from "./credential-appeals-domain";
 
 type AppealRow = {
@@ -110,11 +110,13 @@ export class CredentialAppealsRepository {
   async save(appeal: CredentialAppeal) {
     const client = await this.clientPromise;
     await client.transaction(async (transaction) => {
-      await transaction.query(
+      const inserted = await transaction.query<{ appeal_id: string }>(
         `INSERT INTO credential_appeals (
            appeal_id,credential_id,worker_id,reason,evidence,status,version,created_at,updated_at,
            reviewer_account_id,review_reason,outcome_action,reviewed_at
-         ) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$8,$9,$10,$11,$12)`,
+         ) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$8,$9,$10,$11,$12)
+         ON CONFLICT DO NOTHING
+         RETURNING appeal_id`,
         [
           appeal.appealId,
           appeal.credentialId,
@@ -130,6 +132,7 @@ export class CredentialAppealsRepository {
           appeal.reviewedAt
         ]
       );
+      if (inserted.rows.length === 0) throw new CredentialAppealSubmissionConflictError();
       await transaction.query(
         `INSERT INTO credential_appeal_events(
            appeal_id,version,status,changed_at,reviewer_account_id,review_reason,outcome_action
@@ -215,16 +218,5 @@ export class CredentialAppealsRepository {
          created_at ASC,appeal_id ASC`
     );
     return result.rows.map(mapAppeal);
-  }
-
-  async findOpenForCredential(credentialId: string): Promise<CredentialAppeal | null> {
-    const client = await this.clientPromise;
-    const result = await client.query<AppealRow>(
-      `${SELECT}
-         WHERE credential_id=$1 AND status IN ('submitted','under_review')
-         ORDER BY created_at DESC LIMIT 1`,
-      [credentialId]
-    );
-    return result.rows[0] ? mapAppeal(result.rows[0]) : null;
   }
 }

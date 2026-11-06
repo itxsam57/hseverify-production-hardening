@@ -5,7 +5,7 @@ import {resolve,join} from "node:path";
 import {openScriptDatabase} from "../../scripts/lib/database.mjs";
 import {seedCredentialDecisionFixture} from "../helpers/credential-decision-fixture.mjs";
 import {verifyAppealConsumerJourney} from "../helpers/appeal-consumer-browser-journey.mjs";
-import {withOwnedStagingServer} from "../helpers/owned-staging-server.mjs";
+import {stageBrowserArgs,withOwnedStagingServer} from "../helpers/owned-staging-server.mjs";
 
 test("protected production PostgreSQL appeal outcome reaches Company/public and survives an owned restart",{timeout:180000},async()=>{
  assert.ok(process.env.HSE_SOFTWARE_STAGE_CONFIG,"Explicit isolated staging config is required");
@@ -79,7 +79,7 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await withOwnedStagingServer(config,async({restart})=>{
    const anonymous=await fetch(config.url+"/company/login");
    assert.equal(anonymous.status,401,"Perimeter must deny missing Basic authentication");
-   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,evidenceRecordId,foreignEvidenceRecordId,httpCredentials:{username:config.user,password:config.password},restart:async()=>{
+   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,evidenceRecordId,foreignEvidenceRecordId,submitViaApi:process.env.HSE_STAGE_APPEAL_SUBMISSION_API==="true",chromiumArgs:stageBrowserArgs(config),httpCredentials:{username:config.user,password:config.password},restart:async()=>{
      const before=await snapshot();
      assert.deepEqual(await signedFields(),originalSignedFields);
      await restart();

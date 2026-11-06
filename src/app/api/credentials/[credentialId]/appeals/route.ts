@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
+import { CredentialAppealSubmissionConflictError } from "@/lib/credential/credential-appeals-domain";
 import { CredentialAppealsService } from "@/lib/credential/credential-appeals-service";
 import { requireWorkerSession } from "@/lib/auth/worker-session";
 import { requirePortalAuthorization } from "@/lib/authorization/authorization-service";
@@ -35,12 +36,19 @@ export async function POST(request: Request, context: { params: Promise<{ creden
     const owned = new Set(current.map(record => record.recordId));
     if (evidence.some(recordId => !owned.has(recordId))) return invalidEvidence();
   }
-  const appeal = await new CredentialAppealsService().submit({
-    credentialId,
-    workerId: session.workerId,
-    reason: body.reason,
-    evidence,
-    createdAt: new Date().toISOString()
-  }, body.sequence?.trim() || randomBytes(12).toString("hex"));
-  return NextResponse.json(appeal, { status: 201 });
+  try {
+    const appeal = await new CredentialAppealsService().submit({
+      credentialId,
+      workerId: session.workerId,
+      reason: body.reason,
+      evidence,
+      createdAt: new Date().toISOString()
+    }, body.sequence?.trim() || randomBytes(12).toString("hex"));
+    return NextResponse.json(appeal, { status: 201 });
+  } catch (error) {
+    if (error instanceof CredentialAppealSubmissionConflictError) {
+      return NextResponse.json({ error: "credential_appeal_conflict" }, { status: 409 });
+    }
+    throw error;
+  }
 }

@@ -4,6 +4,13 @@ import {openSync,closeSync} from "node:fs";
 import {readFile,readdir,readlink,realpath} from "node:fs/promises";
 import {join} from "node:path";
 
+export function stageBrowserArgs(config) {
+  if (!config.tlsSpkiPin) return [];
+  assert.equal(new URL(config.url).hostname, "127.0.0.1");
+  assert.match(config.tlsSpkiPin, /^[A-Za-z0-9+/]{43}=$/);
+  return ["--ignore-certificate-errors-spki-list=" + config.tlsSpkiPin];
+}
+
 export async function withOwnedStagingServer(config,run){
  const environment=config.applicationEnvironment;
  let activeChild;
