@@ -210,9 +210,7 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
                     <dd>{formatDateTime(primaryCase.updatedAt)}</dd>
                   </div>
                 </dl>
-                <p className="implementation-boundary-note">
-                  The action destination is intentionally not exposed until its assessment, evidence or interview module has a complete backend contract.
-                </p>
+                <Link className="button button-secondary button-small" href={"/worker/assurance-cases/"+encodeURIComponent(primaryCase.id)}>Open case and next action</Link>
               </article>
             ) : (
               <div className="empty-state">
@@ -304,6 +302,7 @@ export default async function WorkerDashboardPage(): Promise<React.JSX.Element> 
                       label={credential.status}
                       tone={credential.status === "active" ? "positive" : credential.status === "expiring" ? "warning" : "critical"}
                     />
+                    <Link className="button button-secondary button-small" href={"/verify/result/"+encodeURIComponent(credential.id)}>Verify current credential status</Link>
                   </article>
                 ))}
               </div>
