@@ -9,6 +9,9 @@ test("cold database and private object restore recovers the Worker assessment an
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const receipt = JSON.parse(result.stdout.trim().split("\n").at(-1));
   assert.equal(receipt.status, "PASS");
+  const engine = process.env.HSE_RESTORE_STAGE_CONFIG ? "PostgreSQL" : "PGlite";
+  assert.match(receipt.evidence, new RegExp("Cold disposable " + engine));
+  console.log("BUSINESS_RESTORE_PASS", engine, receipt.migrationCount, "migrations");
   assert.deepEqual(receipt.businessRecovery, {
     committedAnswer: true,
     nextQuestionDraft: true,

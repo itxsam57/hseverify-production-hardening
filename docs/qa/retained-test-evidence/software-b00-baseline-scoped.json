@@ -1,0 +1,136 @@
+{
+  "kind": "B00_SCOPED_VERIFICATION",
+  "recorded_at": "2026-11-06T07:09:11.612642+00:00",
+  "builder": "/root",
+  "independent_reviewer": "/root/review_software_plan",
+  "whole_scenario_verified": false,
+  "scenarios": {
+    "M1.01.01": {
+      "accepted_variants": [
+        "positive.1",
+        "invalid_input.1",
+        "permission_isolation.1"
+      ],
+      "observations": [
+        {
+          "artifact": ".autopilot/artifacts/20261106-baseline-invalid-startup-probe.log",
+          "artifact_sha256": "da5e78df23ab74037111c27511b828b3cbfdb7ba6346c09bc9df3380fe44e4c9",
+          "product_or_receipt_source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+          "scope": "Prior entry point reported ready and served public pages without session secret."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-baseline-startup-fix.log",
+          "artifact_sha256": "ab5e5d962f35520306e15cc3fc52009221e587f8b75573c9912b7b2b2e3dd50f",
+          "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
+          "scope": "Native validator and actual production entry-point checks reject invalid production settings before serving."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-97d6a33-build.log",
+          "artifact_sha256": "153a0e7d3f3718e7319f86de56bd5acc83cc02df674f9c5d9026194e0b049f43",
+          "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
+          "scope": "Standalone production build and TypeScript passed."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-97d6a33-wrapper-access-1.log",
+          "artifact_sha256": "3b4513be629e8844500a42cb4b2ba446ef75f542be0fee25eddfd170bfeb98b4",
+          "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
+          "scope": "Owned protected HTTPS wrapper passed perimeter, Worker denial, Admin access, configured provider status, secret omission, restart and session retention."
+        }
+      ],
+      "open": [
+        "Failed-start correction on same runtime fixture",
+        "Signed credential authority and operator environment/release presentation across corrected startup"
+      ]
+    },
+    "M1.01.02": {
+      "accepted_variants": [
+        "positive.1",
+        "invalid_input.1",
+        "permission_isolation.1",
+        "retry_recovery.1",
+        "downstream_outcome.1"
+      ],
+      "observations": [
+        {
+          "artifact": ".autopilot/artifacts/20261106-baseline-pg-final.log",
+          "artifact_sha256": "8b2c7a55013a8867f3319a468c505c6a552dbf3fb87b5fd65dd342020d1e5e36",
+          "product_or_receipt_source_sha": "f3b0c613bdb86e95669563e1d04817f3d09ccc58",
+          "scope": "134 PostgreSQL migrations, validated destination constraint, interrupted DDL atomicity, retries, checksum rejection, production rollback denial, and separate populated Worker report archive restore."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-baseline-business-restore-final.log",
+          "artifact_sha256": "7a18831bc250d64b370db3518672b985aa02dfdda0d87390963284b1236a4ee3",
+          "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
+          "scope": "Actual PostgreSQL custom archive and private filesystem restore retained saved answer, draft, question version, Worker identity and evidence, owner-only signed bytes. PGlite control also passed. QA fixture edits were present."
+        }
+      ],
+      "open": [
+        "Inventory and execute populated down/up retention contracts"
+      ]
+    },
+    "M1.01.03": {
+      "accepted_variants": [],
+      "observations": [
+        {
+          "artifact": ".autopilot/artifacts/20261106-ci-receipt-tests.log",
+          "artifact_sha256": "9bdc78343909a570e20f896f4e26a36fc777f9eb6e9dd314d2e502e7a80976ef",
+          "product_or_receipt_source_sha": "f3b0c613bdb86e95669563e1d04817f3d09ccc58",
+          "scope": "Native receipt validators and compliance suite reject incomplete, mismatched and unsuccessful results."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-ci-audit-denial-final.log",
+          "artifact_sha256": "8d33ef52647aa94d1bcdd499c467da84d68430f9653da339f81bf363ba8295ce",
+          "product_or_receipt_source_sha": "f3b0c613bdb86e95669563e1d04817f3d09ccc58",
+          "scope": "Isolated real commit guard refused a candidate without current audit."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-ci-historical-replay.log",
+          "artifact_sha256": "fa15c19679dda183b5131c988def90280729474150f4edf75bf414331db064cf",
+          "product_or_receipt_source_sha": "6b4a038fa0b70072c4ab83d5a9bdfc8e34d1b6cc",
+          "scope": "Historical 20-check receipt repeated with stable identity and byte digest."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-f3b0c61-ci-pending-validation.log",
+          "artifact_sha256": "d976ff016e1d419bfe8cd7b91e5a50db9154d4e380ab2f72ac61f72fdcf14887",
+          "product_or_receipt_source_sha": "f3b0c613bdb86e95669563e1d04817f3d09ccc58",
+          "scope": "Actual 20-job receipt incomplete during observation. Its mismatched artifact source was refused."
+        }
+      ],
+      "open": [
+        "Complete exact candidate CI, retain/replay receipt and bind it to corresponding staged source. GitHub reported no required check rules."
+      ]
+    },
+    "M1.01.04": {
+      "accepted_variants": [
+        "positive.1",
+        "permission_isolation.1",
+        "retry_recovery.2",
+        "persistence.1"
+      ],
+      "observations": [
+        {
+          "artifact": ".autopilot/artifacts/20261106-b00-rollback-58ae6ff.log",
+          "artifact_sha256": "618145d69eb5da06340af0682268fab0e07383bfbd36880442976353fdcb824b",
+          "product_or_receipt_source_sha": "58ae6ff7193bfb265344c923bdf3f5693425c8f9",
+          "scope": "Protected rollback from 58ae6ff to 45275a7 and back. Owned processes, Company actions, persisted cases/audit history and synthetic private bytes were verified."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-97d6a33-wrapper-access-1.log",
+          "artifact_sha256": "3b4513be629e8844500a42cb4b2ba446ef75f542be0fee25eddfd170bfeb98b4",
+          "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
+          "scope": "Protected HTTPS and role access denial passed through corrected wrapper."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-baseline-business-restore-final.log",
+          "artifact_sha256": "7a18831bc250d64b370db3518672b985aa02dfdda0d87390963284b1236a4ee3",
+          "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
+          "scope": "Actual PostgreSQL custom archive and private filesystem restore retained saved answer, draft, question version, Worker identity and evidence, owner-only signed bytes. PGlite control also passed. QA fixture edits were present."
+        }
+      ],
+      "open": [
+        "Rollback repeat on corrected wrapper source where applicable",
+        "Controlled unplanned process recovery and receiving-role outcomes"
+      ]
+    }
+  }
+}

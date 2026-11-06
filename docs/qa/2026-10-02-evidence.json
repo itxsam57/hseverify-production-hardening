@@ -443,6 +443,21 @@
               "test_count": 27,
               "whole_scenario_verified": false,
               "runtime": "PGlite/native environment validation; QA plan/validator workspace changes pending commit"
+            },
+            {
+              "kind": "B00_SCOPED_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
+              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "whole_scenario_verified": false,
+              "independently_accepted_variants": [
+                "positive.1",
+                "invalid_input.1",
+                "permission_isolation.1"
+              ],
+              "open": [
+                "Failed-start correction on same runtime fixture",
+                "Signed credential authority and operator environment/release presentation across corrected startup"
+              ]
             }
           ],
           "case_plan": {
@@ -532,6 +547,22 @@
               "test_count": 27,
               "whole_scenario_verified": false,
               "runtime": "PGlite/native environment validation; QA plan/validator workspace changes pending commit"
+            },
+            {
+              "kind": "B00_SCOPED_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
+              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "whole_scenario_verified": false,
+              "independently_accepted_variants": [
+                "positive.1",
+                "invalid_input.1",
+                "permission_isolation.1",
+                "retry_recovery.1",
+                "downstream_outcome.1"
+              ],
+              "open": [
+                "Inventory and execute populated down/up retention contracts"
+              ]
             }
           ],
           "case_plan": {
@@ -613,9 +644,20 @@
         },
         "notes": "Bounded observed candidateheads/canonicalexecution; no rerunrequired",
         "software_verification": {
-          "status": "UNREVIEWED",
+          "status": "PARTIAL",
           "cases": {},
-          "evidence": [],
+          "evidence": [
+            {
+              "kind": "B00_SCOPED_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
+              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "whole_scenario_verified": false,
+              "independently_accepted_variants": [],
+              "open": [
+                "Complete exact candidate CI, retain/replay receipt and bind it to corresponding staged source. GitHub reported no required check rules."
+              ]
+            }
+          ],
           "case_plan": {
             "status": "ACCEPTED",
             "variants": [
@@ -718,6 +760,22 @@
                 "Private bytes are a synthetic sentinel, not all private evidence objects",
                 "Build identity support does not prove mismatch rejection",
                 "No whole-scenario or B00 completion"
+              ]
+            },
+            {
+              "kind": "B00_SCOPED_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
+              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "whole_scenario_verified": false,
+              "independently_accepted_variants": [
+                "positive.1",
+                "permission_isolation.1",
+                "retry_recovery.2",
+                "persistence.1"
+              ],
+              "open": [
+                "Rollback repeat on corrected wrapper source where applicable",
+                "Controlled unplanned process recovery and receiving-role outcomes"
               ]
             }
           ],

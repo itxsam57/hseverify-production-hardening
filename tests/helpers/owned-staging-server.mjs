@@ -83,7 +83,7 @@ export async function withOwnedStagingServer(config,run){
     const descriptor = openSync(config.appLog, "a", 0o600);
     let startupError;
     try {
-      activeChild = spawn(process.execPath, [join(bundle, "server.js")], {
+      activeChild = spawn(process.execPath, [config.startupScript ?? join(bundle, "server.js")], {
         cwd: config.projectRoot, env: { ...environment, HSE_RELEASE_SHA: sha },
         stdio: ["ignore", descriptor, descriptor]
       });

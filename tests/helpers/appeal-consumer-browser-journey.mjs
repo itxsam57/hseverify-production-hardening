@@ -24,7 +24,7 @@ function totp(secret) {
   return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
 }
 
-async function login(page, baseUrl, credential, role) {
+export async function login(page, baseUrl, credential, role) {
   await page.goto(`${baseUrl}/${role}/login`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("Email address").fill(credential.email);
   await page.getByLabel("Password").fill(credential.password);

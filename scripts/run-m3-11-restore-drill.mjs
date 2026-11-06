@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 
 import { openScriptDatabase } from "./lib/database.mjs";
 import { applyPendingMigrations } from "./lib/migrations.mjs";
+import { openPostgresRestoreFixture } from "../tests/helpers/postgres-restore-fixture.mjs";
 import { ATTEMPT_NOW_DATE, seedInProgressAttempt, seedWorkerPrincipal } from "../tests/helpers/assessment-attempt-fixture.mjs";
 import { seedConsoleEvidence, seedConsoleIdentity } from "../tests/helpers/interview-console-file-fixture.mjs";
 import { loadAssessmentAttemptRuntime } from "../tests/helpers/assessment-attempt-runtime-loader.mjs";
@@ -19,7 +20,9 @@ const sourceObjects = join(root, "source-objects");
 const backupObjects = join(root, "backup-objects");
 const restoredObjects = join(root, "restored-objects");
 const markerId = "m311_restore_marker";
-const markerEvidence = "M3.11 physical PGlite and private object backup/restore";
+const postgresConfig = process.env.HSE_RESTORE_STAGE_CONFIG;
+const engine = postgresConfig ? "PostgreSQL" : "PGlite";
+const markerEvidence = "M3.11 " + (postgresConfig ? "PostgreSQL archive" : "physical PGlite") + " and private object backup/restore";
 const runtime = loadAssessmentAttemptRuntime([
   "secure-files/private-object-storage-core.ts",
   "secure-files/secure-file-access-core.ts",
@@ -46,8 +49,10 @@ async function history(database, fixture) {
 
 let source = null;
 let restored = null;
+let postgres;
 try {
-  source = await openScriptDatabase(environment(sourceDirectory));
+  if (postgresConfig) postgres = await openPostgresRestoreFixture(postgresConfig, root);
+  source = await (postgres ? postgres.openSource() : openScriptDatabase(environment(sourceDirectory)));
   const applied = await applyPendingMigrations(source, "m3-11-restore-source");
   assert(applied.length > 0, "restore source must execute the real migration stack");
   const principal = await seedWorkerPrincipal(source, "restore-owner");
@@ -105,11 +110,15 @@ try {
   source = null;
 
   // A consistent cold fixture backup: no database writer is running during the copy.
-  await cp(sourceDirectory, backupDirectory, { recursive: true });
   await cp(sourceObjects, backupObjects, { recursive: true });
-  await cp(backupDirectory, restoredDirectory, { recursive: true });
   await cp(backupObjects, restoredObjects, { recursive: true });
-  restored = await openScriptDatabase(environment(restoredDirectory));
+  if (postgres) {
+    restored = await postgres.restore();
+  } else {
+    await cp(sourceDirectory, backupDirectory, { recursive: true });
+    await cp(backupDirectory, restoredDirectory, { recursive: true });
+    restored = await openScriptDatabase(environment(restoredDirectory));
+  }
 
   const marker = (await restored.query(
     "SELECT drill_name,status,evidence FROM operations_certification_drills WHERE drill_id=$1", [markerId]
@@ -159,8 +168,8 @@ try {
   }
   console.log(JSON.stringify({
     status: "PASS", drill: "restore",
-    evidence: "Cold disposable PGlite and private objects restored; actual owned assessment and signed file consumers verified.",
-    scope: "Disposable local fixture; production PostgreSQL backup, storage encryption, RPO and RTO remain separate release gates.",
+    evidence: "Cold disposable " + engine + " and private objects restored; actual owned assessment and signed file consumers verified.",
+    scope: "Disposable local fixture; production backups, storage encryption, RPO and RTO remain separate release gates.",
     migrationCount: expectedMigrationCount,
     businessRecovery: {
       committedAnswer: true, nextQuestionDraft: true, pinnedQuestionHistory: true,
@@ -170,6 +179,10 @@ try {
 } finally {
   await source?.close().catch(() => undefined);
   await restored?.close().catch(() => undefined);
-  await rm(root, { recursive: true, force: true });
-  await rm(runtime, { recursive: true, force: true });
+  try {
+    await postgres?.close();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(runtime, { recursive: true, force: true });
+  }
 }
