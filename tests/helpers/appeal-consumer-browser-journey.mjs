@@ -185,6 +185,20 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             await admin.getByText("Appeal review recorded.", { exact: true }).waitFor();
             review = admin.locator("article").filter({ hasText: credentialId }).first();
             await review.getByText(/Status: under review/i).waitFor();
+            if (restart) {
+              const appealId = await review.getAttribute("id");
+              const version = Number(await review.locator('input[name="expectedVersion"]').first().getAttribute("value"));
+              assert.ok(appealId && Number.isSafeInteger(version) && version > 1);
+              const stale = await admin.request.post(baseUrl + "/api/credentials/appeals/" + encodeURIComponent(appealId), {
+                headers: { origin: baseUrl },
+                data: { status: "accepted", expectedVersion: version - 1, reason: "Stale review must never change the current appeal", outcomeAction: "reassessment" },
+              });
+              assert.equal(stale.status(), 409);
+              assert.deepEqual(await stale.json(), { error: "appeal_review_conflict" });
+              await admin.reload({ waitUntil: "domcontentloaded" });
+              await review.getByText(/Status: under review/i).waitFor();
+              console.log("STALE_APPEAL_REVIEW_CONFLICT_PASS");
+            }
 
             const finalStatus = outcomeAction === "rejected" ? "rejected" : "accepted";
             if (finalStatus === "rejected") {

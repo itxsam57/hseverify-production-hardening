@@ -82,6 +82,16 @@ test("Appeal services reject owner, original decision actor and unauthorized acc
   }
   const reviewed=await service.review(appeal,"under_review",reviewer);
   assert.equal(reviewed.reviewerAccountId,reviewer);
+  authenticatedReviewer = reviewer;
+  const claimedSnapshot = await snapshot();
+  const staleResponse = await route.POST(new Request("https://example.test/api/credentials/appeals/" + appeal.appealId, {
+   method: "POST",
+   headers: {"content-type": "application/json"},
+   body: JSON.stringify({status: "accepted", expectedVersion: appeal.version, reason: "Stale independent review", outcomeAction: "reassessment"})
+  }), {params: Promise.resolve({appealId: appeal.appealId})});
+  assert.equal(staleResponse.status, 409);
+  assert.deepEqual(await staleResponse.json(), {error: "appeal_review_conflict"});
+  assert.equal(await snapshot(), claimedSnapshot);
   const result=await service.reviewOutcome(reviewed,{status:"accepted",reviewerId:reviewer,reason:"Independent reassessment",outcomeAction:"reassessment",reviewedAt:"2026-09-26T12:00:00Z"});
   assert.equal(result.appeal.status,"accepted");
   assert.equal(result.appeal.version,3);
