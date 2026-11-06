@@ -447,15 +447,15 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [
                 "positive.1",
                 "invalid_input.1",
-                "permission_isolation.1"
+                "permission_isolation.1",
+                "retry_recovery.1"
               ],
               "open": [
-                "Failed-start correction on same runtime fixture",
                 "Signed credential authority and operator environment/release presentation across corrected startup"
               ]
             }
@@ -551,7 +551,7 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [
                 "positive.1",
@@ -650,7 +650,7 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [],
               "open": [
@@ -765,17 +765,18 @@
             {
               "kind": "B00_SCOPED_OBSERVATION",
               "artifact": "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
-              "artifact_sha256": "3fcd2315813604dff41e36b4702813bb4c41561615fb424f002eb22881fd17b2",
+              "artifact_sha256": "42e7854f76af95f06ad3355c3b42358675407ee93b8f48f72801e198b643a7ca",
               "whole_scenario_verified": false,
               "independently_accepted_variants": [
                 "positive.1",
                 "permission_isolation.1",
                 "retry_recovery.2",
-                "persistence.1"
+                "persistence.1",
+                "retry_recovery.1"
               ],
               "open": [
-                "Rollback repeat on corrected wrapper source where applicable",
-                "Controlled unplanned process recovery and receiving-role outcomes"
+                "Corrected candidate rollback and recovered receiving-role outcome",
+                "Unavailable database and release-manifest mismatch startup probes"
               ]
             }
           ],

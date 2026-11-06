@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 import { readFile, realpath } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
@@ -25,9 +26,28 @@ test("production browser roles and public responses isolate runtime secrets acro
   const options = { httpCredentials: { username: config.user, password: config.password } };
   try {
     const startupScript = resolve(config.projectRoot, "scripts/start-production.mjs");
-    await withOwnedStagingServer({ ...config, startupScript }, async ({ restart }) => {
-      const anonymous = await fetch(config.url + "/admin/operations", { redirect: "manual" });
-      assert.equal(anonymous.status, 401);
+    const authorization = "Basic " + Buffer.from(config.user + ":" + config.password).toString("base64");
+    const operations = config.url + "/admin/operations";
+    const assertOutage = async () => {
+      const response = await fetch(operations, {
+        headers: { authorization }, redirect: "manual", signal: AbortSignal.timeout(10000),
+      });
+      assert.equal(response.status, 502);
+      const body = await response.text();
+      assert.ok(!body.includes("Admin operations health"));
+      assert.ok(secrets.every(secret => !body.includes(secret)));
+    };
+    const anonymous = await fetch(operations, { redirect: "manual", signal: AbortSignal.timeout(10000) });
+    assert.equal(anonymous.status, 401);
+    const invalid = spawnSync(process.execPath, [startupScript], {
+      cwd: config.projectRoot, env: { ...env, HSE_SESSION_SECRET: "" }, encoding: "utf8", timeout: 5000,
+    });
+    assert.ifError(invalid.error);
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.stderr, /HSE_SESSION_SECRET/);
+    await assertOutage();
+
+    await withOwnedStagingServer({ ...config, startupScript }, async ({ restart, crash }) => {
       const worker = await browser.newPage(options);
       const admin = await browser.newPage(options);
       const checkBody = async response => {
@@ -55,7 +75,14 @@ test("production browser roles and public responses isolate runtime secrets acro
       assert.equal(new URL(worker.url()).pathname, "/worker/dashboard");
       await checkBody(await admin.reload());
       await admin.getByRole("heading", { name: "Admin operations health", exact: true }).waitFor();
-      console.log("PRODUCTION_ACCESS_PASS perimeter, Worker denial, Admin visibility, private configuration and retained sessions");
+      await crash();
+      await assertOutage();
+      await restart();
+      await checkBody(await worker.reload());
+      assert.equal(new URL(worker.url()).pathname, "/worker/dashboard");
+      await checkBody(await admin.reload());
+      await admin.getByRole("heading", { name: "Admin operations health", exact: true }).waitFor();
+      console.log("PRODUCTION_ACCESS_PASS invalid-start rejection and correction, perimeter, roles, secret isolation, graceful restart and forced process recovery");
     });
   } finally {
     await browser.close();

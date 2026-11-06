@@ -60,7 +60,7 @@ export async function withOwnedStagingServer(config,run){
     return identity;
   }
 
-  async function stopApp() {
+  async function stopApp(signal = "SIGTERM") {
     if (!activeChild) return;
     if (activeChild.exitCode === null && activeChild.signalCode === null) {
       await verifyApp(active, false);
@@ -70,7 +70,7 @@ export async function withOwnedStagingServer(config,run){
         if (activeChild.exitCode !== null || activeChild.signalCode !== null) {
           clearTimeout(timer);
           resolveExit();
-        } else activeChild.kill("SIGTERM");
+        } else activeChild.kill(signal);
       });
     }
     assert.equal(await listenerInode(), null, "The owned child must release its port before replacement");
@@ -101,7 +101,12 @@ export async function withOwnedStagingServer(config,run){
  assert.equal(await listenerInode(),null,"Do not reuse or stop another service on the configured port");
  try{
    await deploy(config.candidateBundle,config.candidateSha,"candidate");
-   return await run({restart:()=>deploy(config.candidateBundle,config.candidateSha,"restarted-candidate")});
+   return await run({
+     restart: () => deploy(config.candidateBundle, config.candidateSha, "restarted-candidate"),
+     async crash() {
+       await stopApp("SIGKILL");
+     },
+   });
  }finally{
    await stopApp();
    console.log("OWNED_STAGE_TEARDOWN child exited and listener released");

@@ -9,7 +9,8 @@
       "accepted_variants": [
         "positive.1",
         "invalid_input.1",
-        "permission_isolation.1"
+        "permission_isolation.1",
+        "retry_recovery.1"
       ],
       "observations": [
         {
@@ -35,10 +36,15 @@
           "artifact_sha256": "3b4513be629e8844500a42cb4b2ba446ef75f542be0fee25eddfd170bfeb98b4",
           "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
           "scope": "Owned protected HTTPS wrapper passed perimeter, Worker denial, Admin access, configured provider status, secret omission, restart and session retention."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-692391c-recovery-access-2.log",
+          "artifact_sha256": "ebac0b87b1b0db25748f91f4a8f901dec495f3e9ac97d7f8c1843ada62eb6608",
+          "product_or_receipt_source_sha": "692391cc25a5f98864ad9a8081ad6f8296a94199",
+          "scope": "Protected production wrapper denied invalid startup and corrected successfully. SIGKILL caused expected 502 and fresh owned process preserved Worker and Admin sessions. Revised QA browser assertion was pending commit."
         }
       ],
       "open": [
-        "Failed-start correction on same runtime fixture",
         "Signed credential authority and operator environment/release presentation across corrected startup"
       ]
     },
@@ -94,6 +100,12 @@
           "artifact_sha256": "d976ff016e1d419bfe8cd7b91e5a50db9154d4e380ab2f72ac61f72fdcf14887",
           "product_or_receipt_source_sha": "f3b0c613bdb86e95669563e1d04817f3d09ccc58",
           "scope": "Actual 20-job receipt incomplete during observation. Its mismatched artifact source was refused."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-connected-shard4-diagnostic.log",
+          "artifact_sha256": "d02b745173765235fdb20cfb21141893a6b52b5175ff00f94182bdf305a5515e",
+          "product_or_receipt_source_sha": "c697fb6c5fcf6e607c8669f51b0020b86ef92bb1",
+          "scope": "Local scoring and Case Replay shard component tests passed after scoped wait repair. Hosted results tracked separately."
         }
       ],
       "open": [
@@ -105,7 +117,8 @@
         "positive.1",
         "permission_isolation.1",
         "retry_recovery.2",
-        "persistence.1"
+        "persistence.1",
+        "retry_recovery.1"
       ],
       "observations": [
         {
@@ -125,11 +138,17 @@
           "artifact_sha256": "7a18831bc250d64b370db3518672b985aa02dfdda0d87390963284b1236a4ee3",
           "product_or_receipt_source_sha": "97d6a332f31436d8baf11cc851020d20be9a5708",
           "scope": "Actual PostgreSQL custom archive and private filesystem restore retained saved answer, draft, question version, Worker identity and evidence, owner-only signed bytes. PGlite control also passed. QA fixture edits were present."
+        },
+        {
+          "artifact": ".autopilot/artifacts/20261106-692391c-recovery-access-2.log",
+          "artifact_sha256": "ebac0b87b1b0db25748f91f4a8f901dec495f3e9ac97d7f8c1843ada62eb6608",
+          "product_or_receipt_source_sha": "692391cc25a5f98864ad9a8081ad6f8296a94199",
+          "scope": "Protected production wrapper denied invalid startup and corrected successfully. SIGKILL caused expected 502 and fresh owned process preserved Worker and Admin sessions. Revised QA browser assertion was pending commit."
         }
       ],
       "open": [
-        "Rollback repeat on corrected wrapper source where applicable",
-        "Controlled unplanned process recovery and receiving-role outcomes"
+        "Corrected candidate rollback and recovered receiving-role outcome",
+        "Unavailable database and release-manifest mismatch startup probes"
       ]
     }
   }
