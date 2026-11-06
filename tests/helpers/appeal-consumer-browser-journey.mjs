@@ -192,6 +192,30 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
               await competency.getByText(currentStatus.replaceAll("_", " ") + " · no expiry recorded", { exact: true }).waitFor();
             }
             const responseBodies = await Promise.all([companyResponse, shareResponse].filter(Boolean).map(response => response.text()));
+            if (existingShareUrl) {
+              const shareUrl = new URL(existingShareUrl);
+              const shareApi = new URL("/api/share-links/public", baseUrl);
+              shareApi.searchParams.set("token", decodeURIComponent(shareUrl.pathname.split("/").at(-1)));
+              shareApi.searchParams.set("shareLinkId", shareUrl.searchParams.get("shareLinkId"));
+              const [credentialJson, shareJson] = await Promise.all([
+                publicPage.request.get(baseUrl + "/api/credentials/" + encodeURIComponent(credentialId)),
+                publicPage.request.get(shareApi.href),
+              ]);
+              assert.equal(credentialJson.status(), 200);
+              assert.equal(shareJson.status(), 200);
+              const credentialPayload = await credentialJson.json();
+              const sharePayload = await shareJson.json();
+              assert.equal(credentialPayload.status, currentStatus);
+              assert.equal(sharePayload.projection.competencies.find(item => item.title === "HSE Operational Assurance").status, currentStatus);
+              responseBodies.push(await credentialJson.text(), await shareJson.text());
+
+              for (const [recipient, url] of [[company, company.url()], [publicPage, existingPublicUrl], [publicPage, existingShareUrl]]) {
+                const response = await recipient.request.get(url, { headers: { RSC: "1" } });
+                assert.equal(response.status(), 200);
+                assert.match(response.headers()["content-type"] ?? "", /text\/x-component/);
+                responseBodies.push(await response.text());
+              }
+            }
             for(const content of [await company.content(), publicCredentialContent, await publicPage.content(), publicResponseBody, ...responseBodies]){
               assert.doesNotMatch(content,/retained qualification evidence was interpreted incorrectly|The competency requires reassessment before the Living Record can return to valid|PRIVATE_REVIEW_STAGE_/);
             }

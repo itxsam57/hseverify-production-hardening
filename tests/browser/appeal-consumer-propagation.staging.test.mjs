@@ -39,6 +39,19 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   assert.equal(latest.credential_reference,originalCase.credential_reference);
   const credentialId=originalCase.credential_reference;
   assert.ok(credentialId);
+  const signedFields = async () => (await db.query(
+    "SELECT worker_id,qualification,issued_at,expires_at,public_status_url,qr_payload,signature,pdf_url FROM credential_issuances WHERE credential_id=$1",
+    [credentialId]
+  )).rows[0];
+  const originalSignedFields = await signedFields();
+  const snapshot = async () => ({
+    issuance: (await db.query("SELECT * FROM credential_issuances WHERE credential_id=$1", [credentialId])).rows,
+    appeals: (await db.query("SELECT * FROM credential_appeals WHERE credential_id=$1 ORDER BY appeal_id", [credentialId])).rows,
+    appealEvents: (await db.query("SELECT event.* FROM credential_appeal_events event JOIN credential_appeals appeal USING(appeal_id) WHERE appeal.credential_id=$1 ORDER BY event.appeal_id,event.version", [credentialId])).rows,
+    lifecycle: (await db.query("SELECT * FROM credential_lifecycle_events WHERE credential_id=$1 ORDER BY version", [credentialId])).rows,
+    livingRecord: (await db.query("SELECT version.* FROM living_record_versions version JOIN living_record_competencies competency USING(competency_id) WHERE competency.source_credential_id=$1 ORDER BY competency.competency_id,version.version", [credentialId])).rows,
+  });
+
   const foreignCredentialId = "credential_id_foreign_appeal_fixture";
   await db.query(`INSERT INTO credential_issuances(credential_id,worker_id,qualification,issued_at,expires_at,status,version,public_status_url,qr_payload,signature,pdf_url)
     SELECT $1,'worker_foreign_appeal_fixture',qualification,issued_at,expires_at,status,version,public_status_url,qr_payload,signature,pdf_url FROM credential_issuances WHERE credential_id=$2`, [foreignCredentialId,credentialId]);
@@ -51,7 +64,12 @@ test("protected production PostgreSQL appeal outcome reaches Company/public and 
   await withOwnedStagingServer(config,async({restart})=>{
    const anonymous=await fetch(config.url+"/company/login");
    assert.equal(anonymous.status,401,"Perimeter must deny missing Basic authentication");
-   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,httpCredentials:{username:config.user,password:config.password},restart});
+   await verifyAppealConsumerJourney({baseUrl:config.url,credentials:accounts,credentialId,outcomeAction,foreignCredentialId,httpCredentials:{username:config.user,password:config.password},restart:async()=>{
+     const before=await snapshot();
+     assert.deepEqual(await signedFields(),originalSignedFields);
+     await restart();
+     assert.deepEqual(await snapshot(),before);
+   }});
   });
   assert.deepEqual((await db.query("SELECT * FROM assurance_cases WHERE case_id=$1",[fixture.caseId])).rows[0],originalCase,"Appeal and restart retain original decision history");
   const events=(await db.query("SELECT status FROM credential_appeal_events WHERE appeal_id IN (SELECT appeal_id FROM credential_appeals WHERE credential_id=$1) ORDER BY version",[credentialId])).rows;
