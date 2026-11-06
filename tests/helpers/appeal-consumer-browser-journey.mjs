@@ -35,7 +35,7 @@ export async function login(page, baseUrl, credential, role) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
+export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
           assert.ok(["reassessment","suspend","revoke","rejected"].includes(outcomeAction));
           const currentStatus={reassessment:"reassessment_required",suspend:"suspended",revoke:"revoked",rejected:"valid"}[outcomeAction];
           const browser = await chromium.launch({ headless: true });
@@ -100,6 +100,17 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
                 await worker.getByLabel("Appeal grounds").fill("Synthetic invalid credential probe");
                 await worker.getByRole("button", { name: "Submit credential appeal" }).click();
                 await worker.waitForURL(url => url.searchParams.get("error") === "credential");
+              }
+            }
+            if (foreignEvidenceRecordId) {
+              const endpoint = baseUrl + "/api/credentials/" + encodeURIComponent(credentialId) + "/appeals";
+              for (const evidence of [["worker_evidence_nonexistent_appeal_fixture"], [foreignEvidenceRecordId], [42]]) {
+                const response = await worker.request.post(endpoint, {
+                  headers: { origin: baseUrl },
+                  data: { reason: "Synthetic appeal with an invalid evidence reference", evidence },
+                });
+                assert.equal(response.status(), 400, "Appeal API must reject evidence outside the Worker's current records");
+                assert.deepEqual(await response.json(), { error: "invalid_appeal_evidence" });
               }
             }
             await worker.getByLabel("Credential").selectOption(credentialId);
