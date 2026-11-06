@@ -56,6 +56,17 @@ test("production browser roles and public responses isolate runtime secrets acro
     assert.match(invalid.stderr, /HSE_SESSION_SECRET/);
     await assertOutage();
 
+    const unavailableDatabase = new URL(env.DATABASE_URL);
+    unavailableDatabase.port = String(config.appPort);
+    const unavailable = spawnSync(process.execPath, [startupScript], {
+      cwd: config.projectRoot, env: { ...env, DATABASE_URL: unavailableDatabase.href }, encoding: "utf8", timeout: 12000,
+    });
+    assert.ifError(unavailable.error);
+    assert.equal(unavailable.status, 1);
+    assert.match(unavailable.stderr, /PostgreSQL is unavailable/);
+    assert.ok(!unavailable.stderr.includes(unavailableDatabase.href));
+    await assertOutage();
+
     await withOwnedStagingServer({ ...config, startupScript }, async ({ restart, crash }) => {
       const worker = await browser.newPage(options);
       const admin = await browser.newPage(options);

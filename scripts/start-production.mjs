@@ -1,9 +1,21 @@
 import { isAbsolute, resolve } from "node:path";
+import { openScriptDatabase } from "./lib/database.mjs";
 import { readProjectEnvironment } from "./lib/environment.mjs";
 
 // Match the standalone server mode before validating or opening a listener.
 process.env.NODE_ENV = "production";
-readProjectEnvironment();
+const environment = readProjectEnvironment();
+
+if (environment.appEnvironment === "production" || environment.appEnvironment === "preview") {
+  const database = await openScriptDatabase(environment);
+  try {
+    await database.query("SELECT 1");
+  } catch {
+    throw new Error("PostgreSQL is unavailable. The application did not start.");
+  } finally {
+    await database.close();
+  }
+}
 
 const projectRoot = process.cwd();
 const standaloneRoot = resolve(projectRoot, ".next", "standalone");

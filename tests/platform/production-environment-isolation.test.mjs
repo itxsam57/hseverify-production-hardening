@@ -4,6 +4,8 @@ import {spawnSync} from "node:child_process";
 import {mkdtempSync,rmSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
+import {createServer} from "node:net";
+import {once} from "node:events";
 import {validateScriptEnvironment} from "../../scripts/lib/environment.mjs";
 import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
 const {validateRuntimeEnvironment}=loadTs("src/lib/config/environment.ts");
@@ -57,6 +59,32 @@ test("production entry point rejects missing secrets and prohibited flags before
       assert.doesNotMatch(result.stdout, /Ready|Starting/, name);
     }
   } finally {
+    rmSync(directory, {recursive: true, force: true});
+  }
+});
+
+test("production entry point exits before listening when PostgreSQL is unavailable", async () => {
+  const entry = resolve("scripts/start-production.mjs");
+  const directory = mkdtempSync(join(tmpdir(), "hse-unavailable-start-"));
+  const portReservation = createServer().listen(0, "127.0.0.1");
+  try {
+    await once(portReservation, "listening");
+    const port = portReservation.address().port;
+    await new Promise(resolve => portReservation.close(resolve));
+    const databaseUrl = "postgresql://synthetic:synthetic@127.0.0.1:" + port + "/unavailable";
+    const result = spawnSync(process.execPath, [entry], {
+      cwd: directory,
+      env: {...base, DATABASE_URL: databaseUrl, HOSTNAME: "127.0.0.1"},
+      encoding: "utf8",
+      timeout: 12000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /PostgreSQL is unavailable/);
+    assert.ok(!result.stderr.includes(databaseUrl));
+    assert.doesNotMatch(result.stdout, /Ready|Starting/);
+  } finally {
+    if (portReservation.listening) await new Promise(resolve => portReservation.close(resolve));
     rmSync(directory, {recursive: true, force: true});
   }
 });
