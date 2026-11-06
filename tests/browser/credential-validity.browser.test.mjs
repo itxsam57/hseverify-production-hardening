@@ -7,6 +7,7 @@ import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { chromium } from "playwright";
 import { runDevelopmentServer } from "../../scripts/lib/development-server.mjs";
 import { workerAssessmentSearchFixture } from "../helpers/worker-assessment-search-fixture.mjs";
+import { seedPermanentWorkerId } from "../helpers/permanent-worker-id-fixture.mjs";
 import { loadTs } from "../../scripts/interview-test-ts-loader.mjs";
 
 function pdfText(bytes){
@@ -18,6 +19,7 @@ const KEY="credential-validity-browser-ephemeral-test-signing-key-more-than-32";
 const REVIEWER_EMAIL="independent-validity-reviewer@example.test";
 const REVIEWER_PASSWORD="ValidityReviewer!2026";
 const id=(prefix,seed)=>prefix+"_"+createHash("sha256").update(seed).digest("hex").slice(0,24);
+const COMPANY_WORKER_LINK=id("company_worker_link","validity-browser-active-worker");
 // Same seeded Admin MFA convention as credential-appeal-operational-e2e.
 function totp(secret,offsetSteps=0){
  const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";let bits="";
@@ -37,14 +39,17 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
  const credentials=new CredentialIssuanceRepository(Promise.resolve(database)),repo=new DecisionRepository(Promise.resolve(database),KEY),issued=[];
  let browser,renewalAppeal,reviewerInvitation;
  try{
-  const workerId=(await database.query("SELECT COALESCE((SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1 LIMIT 1),worker_reference) AS worker_id FROM auth_accounts WHERE account_id=$1",[fixture.credentials.worker.accountId])).rows[0].worker_id;
+  const workerId=await seedPermanentWorkerId(database,fixture.credentials.worker,"v");
+  const relationshipTime=new Date().toISOString();
+  await database.query("INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,payment_responsibility,requested_by_membership_id,worker_accepted_at,activated_at,created_at,updated_at) VALUES($1,$2,$3,$4,'permanent_worker_id','active','company',$5,$6,$6,$6,$6)",
+   [COMPANY_WORKER_LINK,fixture.credentials.company.tenantId,fixture.credentials.worker.accountId,workerId,fixture.credentials.company.membershipId,relationshipTime]);
   const renewalReference=new Date().toISOString();
   for(const [name,offset,status] of [["Expired",-31,"expired"],["Current",0,"valid"],["Suspended",-31,"suspended"],["Renewal",-31,"revoked"]]){
    const tenant=fixture.credentials.company.tenantId,caseId=id("assurance_case","validity-browser-"+name),order=id("assurance_order","validity-browser-"+name),target=id("assurance_target","validity-browser-"+name);
    const issueDate=new Date(Date.now()+offset*86400000).toISOString(),expiryDate=new Date(new Date(issueDate).getTime()+30*86400000).toISOString();
    await database.query("INSERT INTO assurance_orders(order_id,tenant_id,created_by_membership_id,order_name,order_reference,credential_target,order_status,submitted_at,created_at,updated_at) VALUES($1,$2,$3,$4,$4,$4,'SUBMITTED',$5,$5,$5)",[order,tenant,fixture.credentials.company.membershipId,"Browser "+name+" Safety",issueDate]);
-   await database.query("INSERT INTO assurance_order_workers(target_id,order_id,tenant_id,worker_link_id,worker_account_id,permanent_worker_id,funding_method,target_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,'company','submitted',$7,$7)",[target,order,tenant,id("company_worker_link",name),fixture.credentials.worker.accountId,workerId,issueDate]);
-   await database.query("INSERT INTO assurance_cases(case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,permanent_worker_id,case_status,owner_kind,next_action,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,'Decision pending','admin','Record decision',$8,$8)",[caseId,order,target,tenant,id("company_worker_link",name),fixture.credentials.worker.accountId,workerId,issueDate]);
+   await database.query("INSERT INTO assurance_order_workers(target_id,order_id,tenant_id,worker_link_id,worker_account_id,permanent_worker_id,funding_method,target_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,'company','submitted',$7,$7)",[target,order,tenant,COMPANY_WORKER_LINK,fixture.credentials.worker.accountId,workerId,issueDate]);
+   await database.query("INSERT INTO assurance_cases(case_id,order_id,target_id,tenant_id,worker_link_id,worker_account_id,permanent_worker_id,case_status,owner_kind,next_action,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,'Decision pending','admin','Record decision',$8,$8)",[caseId,order,target,tenant,COMPANY_WORKER_LINK,fixture.credentials.worker.accountId,workerId,issueDate]);
    if(name==="Renewal"){
     const framework=id("framework",name),policy=id("policy",name),first=id("policy_version",name);
     await database.query("INSERT INTO assurance_frameworks(framework_id,framework_reference,title,created_by_account_id,created_at,updated_at) VALUES($1,'BROWSER-RENEWAL-FRAME','Browser renewal framework',$2,$3,$3)",[framework,fixture.credentials.admin.accountId,issueDate]);
@@ -164,6 +169,18 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
    await page.goto(baseUrl+"/worker/login",{waitUntil:"domcontentloaded"});
    await page.getByLabel("Email address").fill(fixture.credentials.worker.email);await page.getByLabel("Password").fill(fixture.credentials.worker.password);
    await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL("**/worker/dashboard");
+   const workerCredentials=page.locator("#credentials");
+   for(const [name,expected] of [["Expired","expired"],["Suspended","suspended"],["Renewal","revoked"],["Current","expiring"]]){
+    const trusted=issued.find(record=>record.name===name).credentialId;
+    const row=workerCredentials.locator("article").filter({has:page.locator('a[href="/verify/result/'+trusted+'"]')});
+    await row.getByText(expected,{exact:true}).waitFor({timeout:20000});
+    const link=await row.getByRole("link",{name:"Verify current credential status"}).getAttribute("href");
+    assert.equal(link,"/verify/result/"+trusted);
+   }
+   assert.equal(await workerCredentials.locator('a[href="/verify/result/'+forgedId+'"]').count(),0,
+     "Worker dashboard must not display unbacked, invalidly signed credential rows as active");
+   await page.locator("#next-action").getByRole("link",{name:"Open case and next action"}).waitFor();
+   console.log("M21304_WORKER_DASHBOARD: current expired/suspended/revoked/valid credential status and real links PASS");
    await page.goto(baseUrl+"/worker/passport",{waitUntil:"domcontentloaded"});
    const expiredItem=page.getByRole("list",{name:"Assessed competencies"}).locator("li").filter({hasText:"Browser Expired Safety"});
    assert((await expiredItem.innerText()).includes("expired"));
@@ -182,6 +199,39 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
    await currentRenewal.getByRole("link",{name:"Verify credential",exact:true}).click();
    await page.getByRole("heading",{name:"HSE Verify credential",exact:true}).waitFor();assert.equal(await page.locator(".status-badge").innerText(),"Valid");
    await page.reload({waitUntil:"domcontentloaded"});assert.equal(await page.locator(".status-badge").innerText(),"Valid");
+   await page.context().clearCookies();
+   await page.goto(baseUrl+"/company/login",{waitUntil:"domcontentloaded"});
+   await page.getByLabel("Email address").fill(fixture.credentials.company.email);
+   await page.getByLabel("Password").fill(fixture.credentials.company.password);
+   await page.getByLabel("Authenticator code").fill(totp(fixture.credentials.company.totpSecret));
+   await page.getByRole("button",{name:"Sign in",exact:true}).click();
+   await page.waitForURL("**/company/dashboard",{timeout:20000});
+   for(const [name,expected] of [["Expired","expired"],["Suspended","suspended"],["Renewal","revoked"],["Current","valid"]]){
+    const card=page.locator(".record-row").filter({hasText:"Browser "+name+" Safety"});
+    await card.getByText(expected,{exact:true}).waitFor({timeout:20000});
+    const caseState=name==="Suspended"?"Suspended":"Approved";
+    await card.getByText(caseState,{exact:true}).waitFor();
+    const orderId=id("assurance_order","validity-browser-"+name),caseId=id("assurance_case","validity-browser-"+name);
+    await page.goto(baseUrl+"/company/assurance-orders/"+orderId,{waitUntil:"domcontentloaded"});
+    const detail=page.locator("tr[id='"+caseId+"']");
+    await detail.getByText(expected,{exact:true}).waitFor();
+    await detail.getByText(caseState,{exact:true}).waitFor();
+    await page.goto(baseUrl+"/company/dashboard",{waitUntil:"domcontentloaded"});
+   }
+   const attention=page.locator(".metric-card").filter({hasText:"Worker cases"});
+   assert.match(await attention.innerText(),/3 case\(s\) currently require attention or have an adverse state/);
+   const workforceResponse=await page.goto(baseUrl+"/company/workers",{waitUntil:"domcontentloaded"});
+   assert.equal(workforceResponse?.status(),200,"Active verified Company may access its linked Worker directory");
+   await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   assert((await page.locator(".data-table").innerText()).includes("Latest case credential: valid"));
+   const csv=await page.request.get(baseUrl+"/api/company/workers/export");
+   assert.equal(csv.status(),200);
+   const csvText=await csv.text();
+   assert(csvText.includes('"Latest case credential status"') && csvText.includes('"valid"'));
+   await page.goto(baseUrl+"/company/workers/"+COMPANY_WORKER_LINK,{waitUntil:"domcontentloaded"});
+   await page.getByText("Latest case credential",{exact:true}).waitFor();
+   await page.getByText("valid",{exact:true}).waitFor();
+   console.log("M21304_COMPANY_LIVE: Company dashboard, exact historical approved order cases, current expired/suspended/revoked/valid, attention counts, verified linked Worker directory/detail/export PASS");
    const neutral=await page.request.get(baseUrl+"/api/credentials/"+forgedId);assert.equal(neutral.status(),404);assert.deepEqual(await neutral.json(),{status:"not_found_or_invalid"});
    assert.equal((await page.request.get(baseUrl+"/api/credentials/"+forgedId+"/pdf")).status(),404);
    assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
