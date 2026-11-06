@@ -679,6 +679,15 @@
               "open": [
                 "Inventory and execute populated down/up retention contracts"
               ]
+            },
+            {
+              "kind": "SCOPED_ACCEPTANCE_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/software-populated-migration-scope-review.json",
+              "artifact_sha256": "c4e2f7224922349c92bfbd1486056da527190a1870ea4025c3be08a55a6b5348",
+              "whole_scenario_verified": false,
+              "open": [
+                "Remaining populated PostgreSQL migration contracts"
+              ]
             }
           ],
           "case_plan": {
@@ -5907,6 +5916,17 @@
                 "Rules Engine eligibility and evidence lifecycle",
                 "Restart while the appeal is still submitted",
                 "Remaining independent case-plan review"
+              ]
+            },
+            {
+              "kind": "SCOPED_ACCEPTANCE_OBSERVATION",
+              "artifact": "docs/qa/retained-test-evidence/appeal-submission-restart-scope.json",
+              "artifact_sha256": "02b0164489c8cfb26f8d44b48d38dd639c60ccb06d1e926a6f2d8dafdb56f7f3",
+              "whole_scenario_verified": false,
+              "open": [
+                "Rules Engine eligibility configuration and enforcement",
+                "Evidence lifecycle eligibility beyond ownership",
+                "Complete independently accepted case plan"
               ]
             }
           ],

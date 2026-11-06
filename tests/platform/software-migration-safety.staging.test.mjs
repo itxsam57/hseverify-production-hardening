@@ -3,6 +3,7 @@ import test from "node:test";
 import { randomBytes } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { seedWorkerPrincipal } from "../helpers/assessment-attempt-fixture.mjs";
 import { seedCredentialDecisionFixture } from "../helpers/credential-decision-fixture.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 import { applyPendingMigrations, listMigrations, rollbackLatestMigration } from "../../scripts/lib/migrations.mjs";
@@ -90,7 +91,31 @@ test("isolated PostgreSQL applies migrations atomically and refuses a checksum m
     const restoredAction = { ...action, deep_link: "/company/assurance-orders/" + action.order_id + "#" + fixture.caseId };
     assert.deepEqual(await readAction(), restoredAction);
     assert.deepEqual(await readCase(), assuranceCase);
-    assert.deepEqual(await applyPendingMigrations(database, config.candidateSha), [latest]);
+    const author = await seedWorkerPrincipal(database, "populated-playbook-rollback");
+    const interviewId = "interview_request_" + "i".repeat(24);
+    await database.query(`
+      INSERT INTO interview_requests (interview_request_id, tenant_id, case_id, worker_account_id, status, requested_at)
+      VALUES ($1, $2, $3, $4, 'REQUESTED', CURRENT_TIMESTAMP)
+    `, [interviewId, action.tenant_id, fixture.caseId, action.worker_account_id]);
+    const questionSet = "interview_questions_" + "q".repeat(24);
+    await database.query(`
+      INSERT INTO interview_question_sets (question_set_id, tenant_id, interview_request_id, version_no, questions_json, created_by_account_id)
+      VALUES ($1, $3, $4, 1, '["Original question"]', $5),
+             ($2, $3, $4, 2, '["Original question","Follow-up"]', $5)
+    `, [questionSet, "interview_questions_" + "s".repeat(24), action.tenant_id, interviewId, author.accountId]);
+    const readQuestions = async () => (await database.query(
+      "SELECT row_to_json(sets) AS snapshot FROM interview_question_sets sets WHERE interview_request_id=$1 ORDER BY version_no",
+      [interviewId]
+    )).rows;
+    const retainedQuestions = await readQuestions();
+    const playbook = "0128_interview_playbook_append_only";
+    assert.equal(await rollbackLatestMigration(database, { appEnvironment: "test" }), playbook);
+    assert.deepEqual(await readQuestions(), retainedQuestions);
+    assert.equal((await readHistory()).length, history.length - 2);
+    assert.deepEqual(await applyPendingMigrations(database, config.candidateSha), [playbook, latest]);
+    await assert.rejects(database.query("DELETE FROM interview_question_sets WHERE question_set_id=$1", [questionSet]), /append-only/);
+    assert.deepEqual(await readQuestions(), retainedQuestions);
+    console.log("POSTGRES_POPULATED_DOWN_UP_PASS", playbook);
     assert.deepEqual(await readAction(), restoredAction);
     assert.deepEqual(await readCase(), assuranceCase);
     const reappliedHistory = await readHistory();

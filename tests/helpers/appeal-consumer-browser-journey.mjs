@@ -35,7 +35,7 @@ export async function login(page, baseUrl, credential, role) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,submitViaApi=false,chromiumArgs=[],httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
+export async function verifyAppealConsumerJourney({baseUrl,credentials,credentialId,foreignCredentialId,evidenceRecordId=null,foreignEvidenceRecordId=null,submitViaApi=false,restartSubmitted=false,explicitSubmissionSequence,chromiumArgs=[],httpCredentials,restart,outcomeAction="reassessment",output=()=>""}){
           assert.ok(["reassessment","suspend","revoke","rejected"].includes(outcomeAction));
           const currentStatus={reassessment:"reassessment_required",suspend:"suspended",revoke:"revoked",rejected:"valid"}[outcomeAction];
           const browser = await chromium.launch({ headless: true, args: chromiumArgs });
@@ -114,17 +114,21 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
               }
             }
             const appealReason = "The issued competency should be reassessed because the retained qualification evidence was interpreted incorrectly.";
+            const postAppeal = () => worker.request.post(endpoint, {
+              headers: { origin: baseUrl },
+              data: {
+                reason: appealReason,
+                ...(evidenceRecordId ? { evidence: [evidenceRecordId] } : {}),
+                ...(explicitSubmissionSequence ? { sequence: explicitSubmissionSequence } : {}),
+              },
+            });
             if (submitViaApi) {
-              const post = () => worker.request.post(endpoint, {
-                headers: { origin: baseUrl },
-                data: { reason: appealReason, evidence: [evidenceRecordId] },
-              });
-              const concurrent = await Promise.all([post(), post()]);
+              const concurrent = await Promise.all([postAppeal(), postAppeal()]);
               assert.deepEqual(concurrent.map(response => response.status()).sort(), [201, 409]);
               const accepted = await concurrent.find(response => response.status() === 201).json();
               assert.equal(accepted.credentialId, credentialId);
-              assert.deepEqual(accepted.evidence, [evidenceRecordId]);
-              const duplicate = await post();
+              assert.deepEqual(accepted.evidence, evidenceRecordId ? [evidenceRecordId] : []);
+              const duplicate = await postAppeal();
               assert.equal(duplicate.status(), 409);
               assert.deepEqual(await duplicate.json(), { error: "credential_appeal_conflict" });
               await worker.reload({ waitUntil: "domcontentloaded" });
@@ -139,6 +143,18 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
             const workerAppeal = worker.locator("article").filter({ hasText: credentialId }).first();
             await workerAppeal.getByText(/Status: submitted/i).waitFor();
             if(evidenceRecordId) await workerAppeal.getByText(new RegExp(evidenceRecordId)).waitFor();
+
+            if (restartSubmitted) {
+              assert.equal(typeof restart, "function");
+              const submitted = await workerAppeal.innerText();
+              restarting = true;
+              for (const request of inFlight) if (request.method() === "GET") outageRequests.add(request);
+              try { await restart(); } finally { restarting = false; }
+              await worker.reload({ waitUntil: "domcontentloaded" });
+              await workerAppeal.getByText(/Status: submitted/i).waitFor();
+              assert.equal(await workerAppeal.innerText(), submitted);
+              console.log("SUBMITTED_APPEAL_RESTART_PASS");
+            }
 
             await login(admin, baseUrl, credentials.admin, "admin");
             await admin.goto(`${baseUrl}/admin/appeals`, { waitUntil: "domcontentloaded" });
@@ -205,6 +221,13 @@ export async function verifyAppealConsumerJourney({baseUrl,credentials,credentia
               restarting=true;
               for(const request of inFlight)if(request.method()==="GET")outageRequests.add(request);
               try{await restart();}finally{restarting=false;}
+            }
+            if (explicitSubmissionSequence) {
+              assert.equal(finalStatus, "rejected");
+              const replay = await postAppeal();
+              assert.equal(replay.status(), 409);
+              assert.deepEqual(await replay.json(), { error: "credential_appeal_conflict" });
+              console.log("CLOSED_APPEAL_SEQUENCE_REPLAY_PASS");
             }
             const publicResponse = await publicPage.goto(existingPublicUrl,{waitUntil:"domcontentloaded"});
             await publicPage.getByText(currentStatus==="reassessment_required"?"Reassessment required":currentStatus==="suspended"?"Suspended":currentStatus==="valid"?"Valid":"Revoked",{exact:true}).waitFor();
