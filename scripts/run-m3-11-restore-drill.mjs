@@ -166,6 +166,16 @@ try {
     await assert.rejects(() => readSecureFileAccessCore({ ...readInput, principal: foreign }),
       error => error.name === "SecureFileAccessDeniedError");
   }
+  await recoveredService.saveCurrentDraft(principal, {
+    attemptId: fixture.attemptId, position: 2,
+    questionVersionId: fixture.items[1].questionVersionId, value: false,
+    expectedRevision: 1, mutationKey: "restore-next-question-draft-0002",
+  }, ATTEMPT_NOW_DATE);
+  const resumedView = await recoveredService.getOwnedView(principal, fixture.attemptId, ATTEMPT_NOW_DATE);
+  assert.equal(resumedView.currentDraft?.value, false);
+  assert.equal(resumedView.currentDraft?.revision, 2);
+  assert.deepEqual(await history(restored, fixture), beforeHistory);
+
   console.log(JSON.stringify({
     status: "PASS", drill: "restore",
     evidence: "Cold disposable " + engine + " and private objects restored; actual owned assessment and signed file consumers verified.",
@@ -173,7 +183,7 @@ try {
     migrationCount: expectedMigrationCount,
     businessRecovery: {
       committedAnswer: true, nextQuestionDraft: true, pinnedQuestionHistory: true,
-      versionedEvidence: true, privateObjectDigest: true, permanentWorkerId: true, foreignWorkerDenied: true,
+      versionedEvidence: true, privateObjectDigest: true, permanentWorkerId: true, foreignWorkerDenied: true, restoredNextActionPersisted: true,
     },
   }));
 } finally {

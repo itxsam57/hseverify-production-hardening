@@ -1,0 +1,40 @@
+{
+  "disposition": "ACCEPTED",
+  "reviewer": "/root/review_software_plan",
+  "builder": "/root",
+  "reviewed_at": "2026-11-06T19:01:41.111131+00:00",
+  "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+  "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+  "scope": "Software verification on pinned source. The cold restore next-action assertion was a pending QA change. Production deployment remains separate.",
+  "variants": {
+    "M1.01.04.positive.1": "The exact protected build served an authenticated Company create-unit action with a matching row, audit and browser reload.",
+    "M1.01.04.invalid_input.1": "Invalid configuration and unreachable PostgreSQL stopped startup. The release recorder rejected a mismatched manifest before recording.",
+    "M1.01.04.permission_isolation.1": "Missing perimeter credentials and the Worker session were denied Admin access.",
+    "M1.01.04.retry_recovery.1": "The current build recovered from a controlled process failure with the same persisted Worker and Admin sessions.",
+    "M1.01.04.persistence.1": "Cold PostgreSQL and private object restore retained Worker identity, answer, draft, pinned history and authorized evidence bytes. Foreign access stayed denied.",
+    "M1.01.04.downstream_outcome.1": "The recovered Worker saw the same case and next action and saved and reread a new draft revision after cold restore. The returned candidate persisted a new Company action.",
+    "M1.01.04.retry_recovery.2": "Candidate to prior and back retained Company actions, Worker case, audit and private bytes with verified ownership of the active listener."
+  },
+  "observations": [
+    {
+      "artifact": ".autopilot/artifacts/20261106-81fcd16-db-readiness-access.log",
+      "artifact_sha256": "aeba6dcdec9eb1cc6c5faf47bf5e4e79af550c34536761674e858926c876a22f"
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-81fcd16-rollback-recipient.log",
+      "artifact_sha256": "922aa21ff1691fab87f8ed8a3cab8559b8a900f15293f425fc61a4dd9a22e5c6"
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-81fcd16-release-record-negative.log",
+      "artifact_sha256": "9102cd40ef1c21c38697a6d5c849817244235caf4928252685929d8105b2f694"
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-81fcd16-business-restore-next-action.log",
+      "artifact_sha256": "1fc52af91d168db60983ebc6b5271f8daf4e50f64585be44916f9631c34ec099"
+    },
+    {
+      "artifact": ".autopilot/artifacts/20261106-81fcd16-build.log",
+      "artifact_sha256": "2593dc870429b2149f2d18e4a58f7eae75455926b712142c29ea3d521b6546b9"
+    }
+  ]
+}

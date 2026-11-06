@@ -1,0 +1,7 @@
+{
+  "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+  "manifest_sha256": "b7ffb235826999a3c39be08e9e31bca464ff073fcda15d3fd8617af92b151eff",
+  "entry_sha256": "70f7478bfb241cc06499b77ea6191c11c0de24800119a6e3062ecaa967ca08d7",
+  "owned_browser_log_sha256": "db594ea15716c0e2819502f3b6a90900a2a5ea742728e9a1dfec34b0f2d486dc",
+  "scope": "Exact compiled standalone and loopback protected browser process"
+}

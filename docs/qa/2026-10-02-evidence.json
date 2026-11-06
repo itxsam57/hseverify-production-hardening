@@ -760,8 +760,117 @@
         },
         "notes": "Bounded observed candidateheads/canonicalexecution; no rerunrequired",
         "software_verification": {
-          "status": "PARTIAL",
-          "cases": {},
+          "status": "SOFTWARE_VERIFIED",
+          "cases": {
+            "positive": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+              "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e",
+              "assertion": "All 20 checks passed on the same exact commit as the protected build.",
+              "variant_ids": [
+                "M1.01.03.positive.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+                "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
+              }
+            },
+            "invalid_input": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+              "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e",
+              "assertion": "Incomplete, unsuccessful, cancelled and mismatched CI receipts were rejected.",
+              "variant_ids": [
+                "M1.01.03.invalid_input.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+                "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
+              }
+            },
+            "permission_isolation": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+              "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e",
+              "assertion": "A real guarded commit without a current audit was refused. The compliance workflow uses repository read access.",
+              "variant_ids": [
+                "M1.01.03.permission_isolation.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+                "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
+              }
+            },
+            "retry_recovery": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+              "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e",
+              "assertion": "Repeated exact receipt validation returned the same identity and check count without adding a certification record.",
+              "variant_ids": [
+                "M1.01.03.retry_recovery.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+                "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
+              }
+            },
+            "persistence": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+              "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e",
+              "assertion": "Retained GitHub receipt, deployment manifest digest and the matching protected process log were independently reloaded and verified.",
+              "variant_ids": [
+                "M1.01.03.persistence.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+                "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
+              }
+            },
+            "downstream_outcome": {
+              "result": "PASS",
+              "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+              "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+              "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+              "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e",
+              "assertion": "The verifier rejected the real 8041d83 CI receipt when given the newer 81fcd16 staging source.",
+              "variant_ids": [
+                "M1.01.03.downstream_outcome.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+                "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
+              }
+            }
+          },
           "evidence": [
             {
               "kind": "B00_SCOPED_OBSERVATION",
@@ -830,6 +939,15 @@
               "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
               "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
             }
+          },
+          "source_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+          "product_tree_sha256": "782381ca644a42a3933eb3ce7e736220a0ecd959bb1c0a457d7a2d0e8860700b",
+          "review": {
+            "disposition": "ACCEPTED",
+            "reviewer": "/root/review_software_plan",
+            "builder": "/root",
+            "artifact": "docs/qa/retained-test-evidence/software-exact-ci-review.json",
+            "artifact_sha256": "c0ad6ea8af000baf110eeb5fdb2852eb23e0149fcdf09d561b960ca60e5d6b3e"
           }
         }
       },
@@ -850,8 +968,118 @@
         },
         "notes": "Actual productionconfiguration/deployedhealth/candidateboundexecutedrollback stillunverified",
         "software_verification": {
-          "status": "PARTIAL",
-          "cases": {},
+          "status": "SOFTWARE_VERIFIED",
+          "cases": {
+            "positive": {
+              "result": "PASS",
+              "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+              "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+              "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+              "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020",
+              "assertion": "The exact protected build served an authenticated Company create-unit action with a matching row, audit and browser reload.",
+              "variant_ids": [
+                "M1.01.04.positive.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+                "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
+              }
+            },
+            "invalid_input": {
+              "result": "PASS",
+              "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+              "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+              "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+              "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020",
+              "assertion": "Invalid configuration and unreachable PostgreSQL stopped startup. The release recorder rejected a mismatched manifest before recording.",
+              "variant_ids": [
+                "M1.01.04.invalid_input.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+                "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
+              }
+            },
+            "permission_isolation": {
+              "result": "PASS",
+              "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+              "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+              "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+              "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020",
+              "assertion": "Missing perimeter credentials and the Worker session were denied Admin access.",
+              "variant_ids": [
+                "M1.01.04.permission_isolation.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+                "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
+              }
+            },
+            "retry_recovery": {
+              "result": "PASS",
+              "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+              "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+              "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+              "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020",
+              "assertion": "The current build recovered from a controlled process failure with the same persisted Worker and Admin sessions. Candidate to prior and back retained Company actions, Worker case, audit and private bytes with verified ownership of the active listener.",
+              "variant_ids": [
+                "M1.01.04.retry_recovery.1",
+                "M1.01.04.retry_recovery.2"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+                "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
+              }
+            },
+            "persistence": {
+              "result": "PASS",
+              "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+              "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+              "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+              "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020",
+              "assertion": "Cold PostgreSQL and private object restore retained Worker identity, answer, draft, pinned history and authorized evidence bytes. Foreign access stayed denied.",
+              "variant_ids": [
+                "M1.01.04.persistence.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+                "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
+              }
+            },
+            "downstream_outcome": {
+              "result": "PASS",
+              "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+              "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+              "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+              "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020",
+              "assertion": "The recovered Worker saw the same case and next action and saved and reread a new draft revision after cold restore. The returned candidate persisted a new Company action.",
+              "variant_ids": [
+                "M1.01.04.downstream_outcome.1"
+              ],
+              "review": {
+                "disposition": "ACCEPTED",
+                "reviewer": "/root/review_software_plan",
+                "builder": "/root",
+                "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+                "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
+              }
+            }
+          },
           "evidence": [
             {
               "kind": "INDEPENDENTLY_REVIEWED_SCOPED_RUNTIME",
@@ -959,6 +1187,15 @@
               "artifact": "docs/qa/retained-test-evidence/software-verification-plan-review.json",
               "artifact_sha256": "3aabc5348dcbc6f8b1b06808e07ae0316c35630a33e3ffc20ba5e5989b5efae7"
             }
+          },
+          "source_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
+          "product_tree_sha256": "d4c404de7dd32d25ba0d2c7d790406030ec817ee4094ec5578566119df353239",
+          "review": {
+            "disposition": "ACCEPTED",
+            "reviewer": "/root/review_software_plan",
+            "builder": "/root",
+            "artifact": "docs/qa/retained-test-evidence/software-protected-rollback-recovery-review.json",
+            "artifact_sha256": "975a26d24d432d95e857092a671553b71af26efd761cab987a3eeaeaeac93020"
           }
         }
       },

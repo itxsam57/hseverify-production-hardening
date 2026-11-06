@@ -15,7 +15,7 @@
     "M1.01.04",
     "M3.07.01"
   ],
-  "last_verified_action": "M1.01.01 all six cases independently accepted on 8041d83. Exact 8041d83 rollback and populated migration 0129 down/up passed. M3.07.03 six native interview cases passed.",
+  "last_verified_action": "M1.01.03 accepted exact 8041d83 CI and protected source binding. M1.01.04 accepted 81fcd16 protected rollback and cold restore.",
   "evidence": [
     ".autopilot/artifacts/20261006-pr29-ci-exact-e139f87.json",
     ".autopilot/artifacts/20261006-pr29-independent-accept-e139f87.json",
@@ -72,7 +72,7 @@
     "docs/qa/retained-test-evidence/software-b00-baseline-scoped.json",
     "docs/qa/retained-test-evidence/appeal-api-evidence-ownership-review.json"
   ],
-  "next_action": "Collect exact 8041d83 hosted CI and bind the successful receipt to its compiled and protected source. Continue M1.01.02 populated migration contracts, M1.01.04 recovered receiving-role evidence, and B01 appeal eligibility and independent review.",
+  "next_action": "Retain exact 81fcd16 hosted CI. Continue populated migration retention contracts and appeal eligibility, independent review, and follow-up workflows.",
   "revision_attempt": 0,
   "blockers": [],
   "unknowns": [
@@ -82,7 +82,7 @@
   "awaiting_owner": false,
   "auto_resume": true,
   "status": "VERIFYING_SOFTWARE_BASELINE",
-  "updated_at": "2026-11-06T07:50:35.803938+00:00",
+  "updated_at": "2026-11-06T19:01:41.111131+00:00",
   "verified_sha": null,
   "state": "AUTO_CONTINUE",
   "resume": {
@@ -108,9 +108,9 @@
   },
   "blocker": null,
   "owner_required": false,
-  "current_candidate_base_sha": "8041d83b3f903455c5140533cb72f8c6d4c9afaa",
+  "current_candidate_base_sha": "81fcd16fce91dd028ef7378ebf6510b5d50b79e6",
   "whole_project_complete": false,
-  "current_candidate_base_sha_qualification": "Exact build and protected access, signing and rollback passed. Hosted CI separately tracked.",
+  "current_candidate_base_sha_qualification": "Built and protected-test verified 81fcd16. Exact hosted checks are in progress.",
   "previous_checkpoint": {
     "task_id": "WORKFLOW-001",
     "stage": "INTEGRATING_AND_VERIFYING",

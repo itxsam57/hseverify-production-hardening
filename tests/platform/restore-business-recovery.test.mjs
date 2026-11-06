@@ -20,5 +20,6 @@ test("cold database and private object restore recovers the Worker assessment an
     privateObjectDigest: true,
     permanentWorkerId: true,
     foreignWorkerDenied: true,
+    restoredNextActionPersisted: true,
   }, "marker-only recovery does not prove restoration of the actual Worker journey");
 });

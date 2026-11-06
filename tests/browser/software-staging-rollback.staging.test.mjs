@@ -6,6 +6,7 @@ import { readFile, writeFile, readdir, readlink, realpath } from "node:fs/promis
 import { join, resolve } from "node:path";
 import test from "node:test";
 import { chromium } from "playwright";
+import { login } from "../helpers/appeal-consumer-browser-journey.mjs";
 import { stageBrowserArgs } from "../helpers/owned-staging-server.mjs";
 import { openScriptDatabase } from "../../scripts/lib/database.mjs";
 
@@ -54,6 +55,10 @@ test("authenticated staging rollback preserves Company actions, cases, audit and
   const context = await browser.newContext({
     httpCredentials: { username: config.user, password: config.password }
   });
+  const workerContext = await browser.newContext({
+    httpCredentials: { username: config.user, password: config.password }
+  });
+  const worker = await workerContext.newPage();
   let active = {pid: null, bundle: candidate, sha: config.candidateSha, startTime: null};
   let switching = false;
   let failure;
@@ -233,6 +238,20 @@ test("authenticated staging rollback preserves Company actions, cases, audit and
     const original = await createSite("candidate-before");
     const cases = (await database.query("SELECT * FROM assurance_cases ORDER BY case_id")).rows;
     assert.ok(cases.length > 0, "Rollback must preserve populated business cases");
+    const ownedCase = cases.find(row => row.worker_account_id === accounts.worker.accountId);
+    assert.ok(ownedCase, "The receiving Worker must own the populated case");
+    await login(worker, config.url, accounts.worker, "worker");
+    observePage(worker);
+    const readWorkerCase = async () => {
+      const response = await worker.goto(config.url + "/worker/assurance-cases/" + ownedCase.case_id);
+      assert.equal(response.status(), 200);
+      await worker.getByRole("heading", { name: "Assurance case", exact: true }).waitFor();
+      const content = await worker.locator("article").innerText();
+      assert.ok(content.includes(ownedCase.case_id));
+      assert.ok(content.includes(ownedCase.next_action));
+      return content;
+    };
+    const originalWorkerCase = await readWorkerCase();
     const timeline = (await database.query("SELECT * FROM assurance_case_timeline_events ORDER BY timeline_event_id")).rows;
     assert.ok(timeline.length > 0, "Rollback must preserve nonempty case history");
     const audit = (await database.query("SELECT * FROM platform_audit_events WHERE target_reference=$1 ORDER BY audit_sequence", [original.site_id])).rows;
@@ -249,6 +268,7 @@ test("authenticated staging rollback preserves Company actions, cases, audit and
       assert.deepEqual((await database.query("SELECT * FROM platform_audit_events WHERE target_reference=$1 ORDER BY audit_sequence", [original.site_id])).rows, audit);
       assert.deepEqual((await database.query("SELECT * FROM assurance_case_timeline_events ORDER BY timeline_event_id")).rows, timeline);
       assert.equal(hash(await readFile(privatePath)), hash(privateBytes));
+      if (label === "candidate-return") assert.equal(await readWorkerCase(), originalWorkerCase);
     }
     for (const failed of failedRequests) {
       const request = failed.request;
@@ -272,7 +292,7 @@ test("authenticated staging rollback preserves Company actions, cases, audit and
     }
     console.log("EXPECTED_CANCELED_RSC_PREFETCH_READS", canceledPrefetchReads);
     console.log("CANCELED_ACTIONS_WITH_SETTLED_UI_AND_CONFIRMED_PERSISTENCE", canceledCommittedActions);
-    console.log("ROLLBACK_BUSINESS_PASS candidate -> previous -> candidate; authenticated actions, original case/audit/private bytes retained");
+    console.log("ROLLBACK_BUSINESS_PASS candidate -> previous -> candidate; authenticated Company actions and receiving Worker case retained with audit and private bytes");
   } catch (error) {
     failure = error;
   } finally {
