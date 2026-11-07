@@ -277,9 +277,12 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           await row.getByRole("button", { name: "Save scoring decision" }).click({timeout:25000});
           const decisionResponse=await savedDecision;
           replayProgress("decision-post-received-"+decisionResponse.status());
-          await requireCompletedResponse(decisionResponse,"Scoring decision");
-          replayProgress("decision-saved");
-          await verifier.reload({waitUntil:"domcontentloaded"});
+          // A Next Server Action may keep its streamed response open after
+          // acknowledging the POST. The consumer contract is persisted state,
+          // not Playwright Response.finished() on an RSC transport stream.
+          assert.equal(decisionResponse.status(),200,"Scoring decision POST must be accepted.");
+          await verifier.reload({waitUntil:"domcontentloaded",timeout:25000});
+          replayProgress("decision-reload-done");
           const refreshed = verifier.locator("tbody tr").filter({ hasText: fixture.caseId }).first();
           await refreshed.waitFor({ state: "visible", timeout: 15_000 });
           assert.deepEqual(await refreshed.getByRole("spinbutton",{name:"Criterion mark",exact:true}).evaluateAll(inputs=>inputs.map(input=>input.value)),["84","84"]);
