@@ -181,7 +181,7 @@
     "test:privacy-execution": "node --test --test-concurrency=1 tests/platform/privacy-execution-runtime.test.mjs tests/platform/accommodation-delivery-runtime.test.mjs tests/platform/interview-accommodation-support-runtime.test.mjs tests/platform/privacy-accommodation-history-rollback-runtime.test.mjs",
     "test:interview-policy": "node --test --test-concurrency=1 tests/platform/interview-policy-runtime.test.mjs tests/platform/interview-accommodation-origin-runtime.test.mjs",
     "test:report-generation-browser": "node --test --test-concurrency=1 tests/browser/report-company-generation.browser.test.mjs tests/browser/report-worker.browser.test.mjs",
-    "test:funding-notifications-browser": "node --test tests/browser/assessment-funding-notification.browser.test.mjs",
+    "test:funding-notifications-browser": "npm run build:worker && node --test tests/browser/assessment-funding-notification.browser.test.mjs",
     "test:privacy-execution-browser": "node --test --test-concurrency=1 tests/browser/privacy-execution.browser.test.mjs tests/browser/accommodation-delivery.browser.test.mjs tests/browser/interview-accommodation-support.browser.test.mjs",
     "test:interview-policy-browser": "npm run test:approved-break-refresh-browser && node scripts/run-masterplan-reassessment-test.mjs --interview-policy --assurance-notifications",
     "test:assurance-notifications-browser": "node scripts/run-masterplan-reassessment-test.mjs --assurance-notifications",
