@@ -1,5 +1,12 @@
 # HSE Verify — current exact continuation checkpoint
 
+## Final handoff correction at 2026-11-07 10:37:36 UTC
+- The V4 audit session `68328946-01d3-4d36-b888-ff974c7dbdb1` was **CLOSED with outcome HANDOVER** (receipt `AUTOPILOT_V4_SESSION_CLOSED`). Next AI must start a NEW governed session before any mutating source work; do not record to this closed session.
+- The privacy-execution managed browser process `sessionId=ffeaf635-0012-48a1-839f-8f56ef7fd741`, initial PID `428520`, was **still running** at 10:37:36 UTC with no finalized result. It was NOT killed; this is only a snapshot. First action inspect current process and `hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-resume-privacy-execution-browser.log`. Do not double-run. Worktree product SHA remains `f4628888db95eeeb22a74a884e12a77f7378fae6`.
+- Completed separately on this source: retention 1/1; credential validity 1/1; assessment eligibility browser 4/4; assessment eligibility native security 14/14; reports browser 9/9; funding notifications browser 1/1. All exit 0; actual logs retain receipts. These are not full scenario certifications. **FULLY VERIFIED: 0/218; release NO-GO; pentest incomplete.**
+- After privacy result, continue first unrun `npm run test:interview-policy-browser`, then consumer cohorts, credential concerns, masterplan integration; do full cross-role/tenant/API pentest and provider/exact-SHA staging gates. Preserve preexisting uncommitted QA shard edits.
+
+
 ## Most recent live execution handoff — 2026-11-07 approx 10:36Z
 - On source SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, isolated worktree `hseverify-eligibility-guard-20261107`: completed scoped browser groups: retention-inquiry **1/1 exit0**; credential-validity **1/1 exit0**; assessment-eligibility **4/4 exit0**; report-generation **9/9 exit0**; funding-notifications **1/1 exit0**. Focused eligibility native/role-security **14/14 exit0**. Each log resides under that worktree's `.autopilot/artifacts/20261107-A28-resume-<script>.log`. Tests pass on a non-final candidate and do not complete any whole scenario; **FULLY_VERIFIED 0/218**, global pentest incomplete, release NO-GO.
 - Funding evidence: genuine Worker funding request to compiled outbox → Company bell/approve → Worker authenticated case/precheck/bell, no unrelated Worker notice; **sandbox payment only**, no real card/merchant.
