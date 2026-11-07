@@ -1,5 +1,12 @@
 # HSE Verify — current exact continuation checkpoint
 
+## Live handoff updated 2026-11-07 after M3.06 report group
+- Count **FULLY VERIFIED 0/218**, PENTEST incomplete; **NO-GO**. All following are **scoped local test receipts on SHA f4628888db95eeeb22a74a884e12a77f7378fae6**, NOT full scenario certifications.
+- `test:retention-inquiry-browser`: 1/1, exit 0. `test:credential-validity-browser`: 1/1, exit 0. `test:assessment-eligibility-browser`: 4/4, exit 0. `test:assessment-eligibility`: 14/14, exit 0. `test:report-generation-browser`: **9/9, exit 0**, actual Worker/Company CSV/PDF/print, owner/foreign-role denies, private artifact, retry/terminal recovery, email state queue (NOT real email). All logs at `hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-resume-<suite>.log`; exact full report log `20261107-A28-resume-report-generation-browser.log`.
+- **NOW**: `npm run test:funding-notifications-browser`, managed process **session 07111abb-d947-43cc-a0a5-2896bd999a55**, initial PID **428188**, log `hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-resume-funding-notifications-browser.log`. It was RUNNING at start, final exit unknown. **Inspect live PID/owned process output before doing anything else**.
+- NEXT after funding: `test:privacy-execution-browser`, `test:interview-policy-browser`, `test:consumer-cohorts-browser`, `test:credential-concern-browser`, `test:masterplan-integration-browser`. Preserve active worktrees and existing dirty QA shards. V4 session `68328946-01d3-4d36-b888-ff974c7dbdb1` has recorded four completed test groups + focused security and needs status/closure on handoff. Full authenticated, staged, provider-backed security and Owner UAT remain outstanding.
+
+
 ## Latest continuation checkpoint — 2026-11-07 around 10:28 UTC
 - **Fully certified 0/218 (no changes); pentest incomplete; GO NO.** Exact tested application SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, worktree `hseverify-eligibility-guard-20261107`, branch `qa/a28-eligibility-read-guard-20261107`. No source code changed by this continuation; preexisting uncommitted QA workflow/test shard edits left untouched.
 - **M3.09 retention inquiry browser** `npm run test:retention-inquiry-browser` 1/1 PASS exit0. Log `.autopilot/artifacts/20261107-A28-resume-retention-inquiry-browser.log`.
