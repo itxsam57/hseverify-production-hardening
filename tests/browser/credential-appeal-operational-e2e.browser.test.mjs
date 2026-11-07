@@ -106,6 +106,9 @@ test(
       let credentialId;
       const evidenceRecordId = "worker_evidence_record_appeal_browser_01";
       const evidenceVersionId = "worker_evidence_version_appeal_browser_01";
+      const foreignAccountId = "account_appeal_api_foreign_worker";
+      const foreignRecordId = "worker_evidence_record_appeal_foreign_browser";
+      const foreignVersionId = "worker_evidence_version_appeal_foreign_browser";
       let competencyId;
       const issuedAt = "2026-09-20T10:00:00.000Z";
 
@@ -153,6 +156,32 @@ test(
           "UPDATE worker_evidence_records SET current_version_id=$2 WHERE record_id=$1",
           [evidenceRecordId, evidenceVersionId]
         );
+        // A separate Worker owns this current qualification, which the original
+        // Worker must not attach to their appeal through the direct HTTP API.
+        await database.query(
+          "INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,'Foreign Appeal Worker','active','test-only',$3,$3,$3,$3)",
+          [foreignAccountId, "appeal-foreign-evidence@example.test", issuedAt]
+        );
+        await database.query(
+          "INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",
+          [foreignAccountId, issuedAt]
+        );
+        await database.query(
+          "INSERT INTO worker_evidence_records(record_id,worker_account_id,record_kind,lifecycle_status,current_version_id,created_at,updated_at) VALUES($1,$2,'qualification','active',NULL,$3,$3)",
+          [foreignRecordId, foreignAccountId, issuedAt]
+        );
+        await database.query(
+          "INSERT INTO worker_evidence_versions(version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at) VALUES($1,$2,1,1,'submitted',NULL,$3,$3,$3)",
+          [foreignVersionId, foreignRecordId, issuedAt]
+        );
+        await database.query(
+          "INSERT INTO worker_qualification_versions(version_id,qualification_title,category,issuing_organization,certificate_number,issue_date,qualification_level,country,declaration_accepted) VALUES($1,'Foreign qualification','Occupational Safety','Foreign Institute','FOREIGN-APPEAL-001','2026-01-15','Level 3','Pakistan',true)",
+          [foreignVersionId]
+        );
+        await database.query(
+          "UPDATE worker_evidence_records SET current_version_id=$2 WHERE record_id=$1",
+          [foreignRecordId, foreignVersionId]
+        );
       } finally {
         await database.close();
       }
@@ -178,6 +207,48 @@ test(
 
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
+            const appealApi = baseUrl + "/api/credentials/" + encodeURIComponent(credentialId) + "/appeals";
+            const anonymousContext = await browser.newContext();
+            let unauthenticatedStatus = 0;
+            try {
+              const unauthenticated = await anonymousContext.request.post(appealApi, {
+                data: { reason: "An unsigned caller must not create an appeal.", evidence: [evidenceRecordId] },
+                maxRedirects: 0
+              });
+              unauthenticatedStatus = unauthenticated.status();
+              assert.notEqual(unauthenticatedStatus, 201, "Unsigned direct API submissions must never create an appeal.");
+            } finally {
+              await anonymousContext.close();
+            }
+            const spoofedWorker = await workerContext.request.post(appealApi, {
+              data: { workerId: "HSE-REG-FOREIGN-WORKER", reason: "I am spoofing a different Worker identity.", evidence: [evidenceRecordId] }
+            });
+            assert.equal(spoofedWorker.status(), 403, "Forged Worker identifiers must be rejected.");
+            const malformedEvidence = await workerContext.request.post(appealApi, {
+              data: { reason: "Malformed evidence cannot become a valid appeal record.", evidence: { recordId: evidenceRecordId } }
+            });
+            assert.equal(malformedEvidence.status(), 400, "Evidence must be an array of bounded record IDs.");
+            const duplicateEvidence = await workerContext.request.post(appealApi, {
+              data: { reason: "Repeated evidence references must not be stored.", evidence: [evidenceRecordId, evidenceRecordId] }
+            });
+            assert.equal(duplicateEvidence.status(), 400, "Duplicate evidence references must be rejected.");
+            const unsafeSequence = await workerContext.request.post(appealApi, {
+              data: { reason: "An unsafe sequence cannot be used as an appeal identifier.", evidence: [evidenceRecordId], sequence: "../escape" }
+            });
+            assert.equal(unsafeSequence.status(), 400, "Opaque appeal sequence values must not contain traversal-like characters.");
+            const foreign = await workerContext.request.post(appealApi, {
+              data: { reason: "This appeal attempts to attach an actual foreign Worker's qualification.", evidence: [foreignRecordId], sequence: "foreign-evidence-probe" }
+            });
+            console.log("APPEAL_API_FOREIGN_EVIDENCE_STATUS", foreign.status());
+            assert.equal(foreign.status(), 403, "The direct API must deny a current evidence record owned by a different Worker.");
+            const malformed = await workerContext.request.post(appealApi, {
+              data: { reason: 123, evidence: [evidenceRecordId] }
+            });
+            assert.equal(malformed.status(), 400, "Malformed JSON field types must return 400, not crash the API.");
+            const tooShort = await workerContext.request.post(appealApi, {
+              data: { reason: "short", evidence: [evidenceRecordId] }
+            });
+            assert.equal(tooShort.status(), 400, "Direct API grounds must meet the same minimum as the form.");
             await worker.goto(`${baseUrl}/worker/appeals`, { waitUntil: "domcontentloaded" });
             await worker.getByRole("heading", { name: "Credential appeals", exact: true }).waitFor();
 
@@ -192,6 +263,16 @@ test(
             const workerAppeal = worker.locator("article").filter({ hasText: credentialId }).first();
             await workerAppeal.getByText(/Status: submitted/i).waitFor();
             await workerAppeal.getByText(new RegExp(evidenceRecordId)).waitFor();
+            const duplicate = await workerContext.request.post(appealApi, {
+              data: { reason: "A replayed request for the existing credential appeal.", evidence: [evidenceRecordId], sequence: "replayed-appeal-probe" }
+            });
+            assert.equal(duplicate.status(), 409, "A second open appeal must be a conflict, never a server crash or a second retained appeal.");
+            console.log("APPEAL_API_DENIAL_MATRIX", JSON.stringify({
+              unsigned: unauthenticatedStatus, spoofedWorker: spoofedWorker.status(),
+              malformedEvidence: malformedEvidence.status(), duplicateEvidence: duplicateEvidence.status(),
+              unsafeSequence: unsafeSequence.status(), foreignEvidence: foreign.status(),
+              malformedGrounds: malformed.status(), shortGrounds: tooShort.status(), duplicateAppeal: duplicate.status()
+            }));
 
             await login(admin, baseUrl, credentials.admin, "admin");
             await admin.goto(`${baseUrl}/admin/appeals`, { waitUntil: "domcontentloaded" });
@@ -250,9 +331,16 @@ test(
       const verification = new PGlite(databaseDirectory);
       try {
         const appeal = await verification.query(
-          `SELECT status,version,reviewer_account_id,review_reason,outcome_action
+          `SELECT status,version,reviewer_account_id,review_reason,outcome_action,evidence
              FROM credential_appeals WHERE credential_id=$1`,
           [credentialId]
+        );
+        assert.equal(appeal.rows.length, 1, "Forged, malformed and replayed API attempts must not create additional appeal rows.");
+        const storedEvidence = appeal.rows[0]?.evidence;
+        assert.deepEqual(
+          typeof storedEvidence === "string" ? JSON.parse(storedEvidence) : storedEvidence,
+          [evidenceRecordId],
+          "Persisted accepted appeal evidence must contain only the actual authenticated Worker's selected record."
         );
         assert.equal(appeal.rows[0]?.status, "accepted");
         assert.equal(appeal.rows[0]?.version, 3);
