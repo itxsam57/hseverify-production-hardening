@@ -70,6 +70,8 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await expectInvalid("section recheck");
           assert.equal(await page.getByLabel("Legal first name",{exact:true}).inputValue(),"Navin","Rejected Personal save lost a valid typed field.");
           assert.equal(await page.getByLabel("Preferred name").inputValue(),"X","Rejected Personal save lost invalid typed draft.");
+          assert.equal(await page.getByLabel("Date of birth",{exact:true}).inputValue(),"1994-02-14",
+            "Rejected Personal save must retain the valid date input for correction and retry.");
           await page.getByLabel("Preferred name").fill("Nav");
           await save();
           await waitSaved("personal");
