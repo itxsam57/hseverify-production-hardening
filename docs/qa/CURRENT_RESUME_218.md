@@ -1,5 +1,17 @@
 # HSE Verify — current exact continuation checkpoint
 
+## Latest exact continuation 2026-11-07 12:48 UTC
+- **FULLY VERIFIED: 0/218, complete pentest: INCOMPLETE, GO: NO.** These are only scoped isolated tests on product SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, worktree `hseverify-eligibility-guard-20261107`, branch `qa/a28-eligibility-read-guard-20261107`.
+- **Consumer cohorts:** 24/24 fixture groups 0 fail, exit 0, log `.autopilot/artifacts/20261107-A28-resume-consumer-cohorts-browser-2.log`.
+- **Credential concern + responsive portals:** 2/2 pass, exit 0, log `.autopilot/artifacts/20261107-A28-resume-credential-concern-browser-3.log`.
+- **Masterplan integration:** **9/9 fixture groups, 10/10 subtests, exit0**: Worker integrity to Verifier, nine Company supervisor feedback combinations, calibration, Admin written assignment, scoring amendments/recovery, blind quality, duplicate identity, appeal interview and exact scanned bytes. Log `.autopilot/artifacts/20261107-A28-resume-masterplan-integration-browser-3.log`. None are complete release-scenario certifications.
+- **Pentest focused native round 1:** 5/5 suites PASS, 61/61 tests, exit 0; `test:authorization` 18/18, `test:authorization-platform` 13/13, `test:tenant-scope` 5/5, `test:secure-access` 20/20, `test:secure-access-runtime` 5/5. Includes six-role boundary,  tenant/membership ceiling, concurrent transaction revocation, tampered/expired secure file signed capabilities and private storage integrity. Receipts `.autopilot/artifacts/20261107-A28-pentest-authorization-security-status.tsv` plus `20261107-A28-pentest-test-*.log`. This does NOT replace full authenticated six-role staging pentest.
+- **NOW RUNNING:** browser security follow-up managed session ID `72912d4d-9212-4bd3-b779-682681329aa0`, initial PID **444874**. Sequential suites: `security-response-headers.browser.test.mjs`, `company-billing-cross-tenant.browser.test.mjs`, `public-verification-invalid-capability.browser.test.mjs` (stops on first RED). Logs `.autopilot/artifacts/20261107-A28-pentest-browser-<suite>.log`, status `.autopilot/artifacts/20261107-A28-pentest-browser-status.tsv`. **No final result at handoff**. Inspect exact managed PID/log first, never duplicate while active.
+- V4 audit session `75358f78-07c8-4e83-8a9e-c4a2830fd933` ACTIVE. Add findings/current SHA/next exact action and close HANDOVER before ending. Preserve existing dirty QA shard edits.
+- **NEXT:** complete browser pentest three suites, fix first confirmed RED, run exploit & regression retest; then improve security endpoint matrix and full 218 exact release SHA verification. Real email `provider_unconfigured` BLOCKED_EXTERNAL; other genuine provider, realistic staging load/restore and Owner UAT remain outstanding.
+
+
+
 ## LATEST CHECKPOINT — 2026-11-07 12:34 UTC (supersedes previous live PIDs)
 **FULLY VERIFIED 0/218**; pentest incomplete; NO-GO. All below are scoped evidence, not certified IDs. Product worktree `hseverify-eligibility-guard-20261107` on SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, branch `qa/a28-eligibility-read-guard-20261107`.
 - Previous `npm run test:consumer-cohorts-browser` completed **24 of 24 distinct browser fixture files, exit 0, 0 failures**, managed session `91a1bd36-9481-4ad7-bf24-fa70d878476b`; evidence `.autopilot/artifacts/20261107-A28-resume-consumer-cohorts-browser-2.log`. Covers forms/validation/roles/actual Company credential/appeals/auth/search/mobile/UI, but NOT 218 whole release certifications.
