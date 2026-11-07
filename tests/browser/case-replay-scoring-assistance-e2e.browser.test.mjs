@@ -1,5 +1,26 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { appendFileSync } from "node:fs";
+const replayProgress = (step) => {
+  if (process.env.HSE_REPLAY_PROGRESS_FILE) appendFileSync(process.env.HSE_REPLAY_PROGRESS_FILE, `${Date.now()} ${step}\n`);
+};
+
+// A Next action can return a POST response whose streaming body never ends.
+// Treat that as a failed save, not as an indefinitely pending browser test.
+async function requireCompletedResponse(response, label) {
+  let timer;
+  try {
+    const result = await Promise.race([
+      response.finished(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} POST body did not finish within 20 seconds.`)), 20_000);
+      })
+    ]);
+    if (result instanceof Error) throw result;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 import { createHmac } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
@@ -154,6 +175,7 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
       encoding: "utf8"
     });
     assert.equal(migration.status, 0, migration.stderr || migration.stdout);
+    replayProgress("migration-done");
 
     const seed = spawnSync(process.execPath, ["scripts/independent-audit-seed.mjs"], {
       cwd: root,
@@ -161,13 +183,16 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
       encoding: "utf8"
     });
     assert.equal(seed.status, 0, seed.stderr || seed.stdout);
+    replayProgress("seed-done");
     const credentials = JSON.parse(
       await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8")
     );
+    replayProgress("fixture-start");
     const fixture = await seedWrittenReview(
       databaseDirectory,
       credentials.verifier.accountId
     );
+    replayProgress("fixture-done");
     {
       const verificationDb = new PGlite(databaseDirectory);
       try {
@@ -182,12 +207,14 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
       }
     }
 
+    replayProgress("dev-server-start");
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],
       probeUrl: baseUrl + "/verifier/login",
       projectRoot: root,
       environment,
       probe: async () => {
+        replayProgress("browser-start");
         const browser = await chromium.launch({ headless: true });
         const verifierContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
         const adminContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -195,12 +222,14 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
         const admin = await adminContext.newPage();
         try {
           await login(verifier, baseUrl, credentials.verifier, "verifier");
+          replayProgress("verifier-logged-in");
           await verifier.goto(baseUrl + "/verifier/reviews/scoring", { waitUntil: "domcontentloaded" });
           const row = verifier.locator("tbody tr").filter({ hasText: fixture.caseId }).first();
           if (await row.count() === 0) {
             throw new Error("Seeded review missing from Verifier UI: " + (await verifier.locator("main").innerText()));
           }
           await row.waitFor({ state: "visible", timeout: 15_000 });
+          replayProgress("review-row-visible");
 
           const criterionInputs = row.getByRole("spinbutton", { name: "Criterion mark", exact: true });
           assert.equal(await criterionInputs.count(),2);
@@ -208,6 +237,7 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           await row.getByText("Overall score: Save every rubric criterion first",{exact:true}).waitFor();
           await row.getByRole("button", { name: "Generate sandbox AI suggestion" }).click();
           await row.getByText(/SANDBOX · GENERATED/).waitFor({ timeout: 15_000 });
+          replayProgress("generated-suggestion");
           await row.getByText(/Suggested overall: .*guidance only/).waitFor();
           assert.deepEqual(await criterionInputs.evaluateAll(inputs=>inputs.map(input=>input.value)),["",""]);
           await row.getByText("Overall score: Save every rubric criterion first",{exact:true}).waitFor();
@@ -217,25 +247,38 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           );
           await row.getByRole("button", { name: "Record AI guidance review" }).click();
           await row.getByText(/SANDBOX · ACCEPTED AS GUIDANCE/).waitFor({ timeout: 15_000 });
+          replayProgress("accepted-guidance");
           assert.deepEqual(await criterionInputs.evaluateAll(inputs=>inputs.map(input=>input.value)),["",""]);
           await row.getByText("Overall score: Save every rubric criterion first",{exact:true}).waitFor();
 
           for(const criterion of ["Q1:C0","Q1:C1"]){
+            replayProgress("mark-form-start-"+criterion);
             const markForm=row.getByRole("form",{name:"Rubric mark "+criterion,exact:true});
             await markForm.getByLabel("Criterion mark").fill("84");
+            replayProgress("mark-value-filled-"+criterion);
             await markForm.getByLabel("Mark reason").fill("Human reviewer confirms the retained answer meets this pinned rubric criterion.");
-            const saved=verifier.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]));
-            await markForm.getByRole("button",{name:"Save mark",exact:true}).click();
-            await (await saved).finished();
+            replayProgress("mark-reason-filled-"+criterion);
+            const saved=verifier.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]),{timeout:25000});
+            replayProgress("mark-click-start-"+criterion);
+            await markForm.getByRole("button",{name:"Save mark",exact:true}).click({timeout:25000});
+            replayProgress("mark-click-done-"+criterion);
+            const markResponse=await saved;
+            replayProgress("mark-post-received-"+criterion+"-"+markResponse.status());
+            await requireCompletedResponse(markResponse, `Rubric mark ${criterion}`);
+            replayProgress("saved-mark-"+criterion);
             await verifier.reload({waitUntil:"domcontentloaded"});
+            replayProgress("mark-reload-done-"+criterion);
           }
           await row.getByRole("combobox", { name: "Decision", exact: true }).selectOption("PASS");
           await row.getByRole("textbox", { name: "Reason", exact: true }).fill(
             "Human reviewer confirms the written answer meets the locked rubric requirements."
           );
-          const savedDecision=verifier.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]));
-          await row.getByRole("button", { name: "Save scoring decision" }).click();
-          await (await savedDecision).finished();
+          const savedDecision=verifier.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]),{timeout:25000});
+          await row.getByRole("button", { name: "Save scoring decision" }).click({timeout:25000});
+          const decisionResponse=await savedDecision;
+          replayProgress("decision-post-received-"+decisionResponse.status());
+          await requireCompletedResponse(decisionResponse,"Scoring decision");
+          replayProgress("decision-saved");
           await verifier.reload({waitUntil:"domcontentloaded"});
           const refreshed = verifier.locator("tbody tr").filter({ hasText: fixture.caseId }).first();
           await refreshed.waitFor({ state: "visible", timeout: 15_000 });
@@ -244,6 +287,7 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           assert.equal(await refreshed.getByRole("combobox", { name: "Decision", exact: true }).inputValue(), "PASS");
 
           await login(admin, baseUrl, credentials.admin, "admin");
+          replayProgress("admin-logged-in");
           await admin.goto(baseUrl + "/admin/case-replay", { waitUntil: "domcontentloaded" });
           await admin.getByLabel("Assurance Case ID").fill(fixture.caseId);
           await admin.getByLabel("Replay purpose").fill(
@@ -262,6 +306,7 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           await admin.getByText("assessmentAnswers — 1 record(s)", { exact: true }).waitFor();
           await admin.getByText("scoringReviews — 1 record(s)", { exact: true }).waitFor();
           await admin.getByText("scoringAssistance — 1 record(s)", { exact: true }).waitFor();
+          replayProgress("replay-visible");
         } finally {
           await verifierContext.close();
           await adminContext.close();
@@ -270,6 +315,7 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
       }
     });
     assert.equal(result.requestedSignal, "SMOKE_COMPLETE");
+    replayProgress("dev-server-finished");
 
     const db = new PGlite(databaseDirectory);
     try {

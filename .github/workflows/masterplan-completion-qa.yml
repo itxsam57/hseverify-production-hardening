@@ -312,7 +312,19 @@ jobs:
 
       - name: Verifier AI guidance -> human scoring -> Admin Case Replay journey
         if: ${{ matrix.shard == 4 }}
+        # A timed-out Node test can leave a pending browser worker; bound the
+        # step so it never silently occupies the whole 60-minute browser job.
+        timeout-minutes: 8
+        env:
+          HSE_REPLAY_PROGRESS_FILE: ${{ runner.temp }}/hse-case-replay-progress.log
         run: node --test --test-concurrency=1 tests/browser/scoring-draft-hydration.browser.test.mjs tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs
+
+      - name: Show Case Replay progress on error
+        if: ${{ failure() && matrix.shard == 4 }}
+        run: |
+          if [ -f "$RUNNER_TEMP/hse-case-replay-progress.log" ]; then
+            tail -n 40 "$RUNNER_TEMP/hse-case-replay-progress.log"
+          fi
 
       - name: Partly finalized Company order cancellation preserves approved Worker decisions
         if: ${{ matrix.shard == 1 }}
