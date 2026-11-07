@@ -380,8 +380,15 @@ async function runBrowserAcceptance(baseUrl, output) {
     // must wait for that controlled transition before submitting the form;
     // otherwise a fast automation click can pair viewer with owner permissions.
     await companyPage.waitForFunction(() => {
-      const role=document.querySelector('select[name="membershipRole"]');
-      const checkboxes=[...document.querySelectorAll('fieldset input[name="permissions"]')];
+      // The Team page may also show editable existing memberships. Check only
+      // the invitation form, not unrelated role/permission fields elsewhere.
+      const inviteButton=[...document.querySelectorAll("button")].find(
+        button=>button.textContent?.trim()==="Create Company Team invitation"
+      );
+      const form=inviteButton?.closest("form");
+      if(!form)return false;
+      const role=form.querySelector('select[name="membershipRole"]');
+      const checkboxes=[...form.querySelectorAll('fieldset input[name="permissions"]')];
       const expected=["company.tenant.read","company.workforce.read","company.orders.read","company.reports.read"];
       return role?.value==="viewer" &&
         checkboxes.length===expected.length &&

@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import type { WorkerSession } from "@/lib/auth/worker-session";
 import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
+import { CURRENT_CREDENTIAL_STATUS_SQL } from "@/lib/credential/current-credential-status-sql";
 import type {
   AssuranceCaseStatus,
   DashboardTone,
@@ -372,11 +373,17 @@ async function liveProjection(
       [session.sub]
     ),
     database.query<CredentialRow>(
-      `SELECT credential_id,qualification,status,expires_at
-         FROM credential_issuances
-        WHERE worker_id=$1
-        ORDER BY issued_at DESC, credential_id DESC`,
-      [session.workerId]
+      `SELECT credentials.credential_id,credentials.qualification,${CURRENT_CREDENTIAL_STATUS_SQL} AS status,credentials.expires_at
+         FROM credential_issuances AS credentials
+         JOIN assurance_cases AS cases ON cases.credential_reference=credentials.credential_id
+           AND cases.permanent_worker_id=credentials.worker_id AND cases.worker_account_id=$2
+         JOIN platform_decisions AS decisions ON decisions.decision_id=cases.decision_reference
+           AND decisions.case_id=cases.case_id AND decisions.tenant_id=cases.tenant_id
+         JOIN credential_issuance_events AS issuance ON issuance.credential_id=credentials.credential_id
+           AND issuance.version=1 AND issuance.status='valid'
+        WHERE credentials.worker_id=$1
+        ORDER BY credentials.issued_at DESC, credentials.credential_id DESC`,
+      [session.workerId,session.sub]
     ),
     database.query<AppealRow>(
       `SELECT appeal_id,credential_id,status

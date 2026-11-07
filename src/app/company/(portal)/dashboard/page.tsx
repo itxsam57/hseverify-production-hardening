@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requireRoleSession } from "@/lib/auth/auth-session-service";
 import { getDatabaseClient } from "@/lib/database/database";
+import { CURRENT_CREDENTIAL_STATUS_SQL } from "@/lib/credential/current-credential-status-sql";
 import { getNotificationMenu } from "@/lib/notifications/notification-service";
 
 type MembershipRow = {
@@ -37,6 +38,7 @@ type RecentCaseRow = {
   order_name: string;
   permanent_worker_id: string | null;
   case_status: string;
+  credential_status: string | null;
   owner_kind: string | null;
   next_action: string | null;
   updated_at: string | Date;
@@ -113,7 +115,11 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
          (SELECT COUNT(*) FROM assurance_orders WHERE tenant_id=$1)::int AS total_orders,
          (SELECT COUNT(*) FROM assurance_orders WHERE tenant_id=$1 AND order_status NOT IN ('COMPLETED','CANCELLED','CLOSED'))::int AS active_orders,
          (SELECT COUNT(*) FROM assurance_cases WHERE tenant_id=$1 AND case_status <> 'Closed')::int AS active_cases,
-         (SELECT COUNT(*) FROM assurance_cases WHERE tenant_id=$1 AND case_status IN ('Reassessment required','Rejected','Suspended'))::int AS attention_cases,
+         (SELECT COUNT(*) FROM assurance_cases AS cases
+            LEFT JOIN credential_issuances AS credentials ON credentials.credential_id=cases.credential_reference
+              AND credentials.worker_id=cases.permanent_worker_id
+           WHERE cases.tenant_id=$1 AND (cases.case_status IN ('Reassessment required','Rejected','Suspended')
+             OR ${CURRENT_CREDENTIAL_STATUS_SQL} IN ('suspended','revoked','expired')))::int AS attention_cases,
          (SELECT COUNT(*) FROM assurance_action_items WHERE tenant_id=$1 AND action_status <> 'resolved')::int AS open_actions,
          (SELECT COUNT(*) FROM company_sites WHERE tenant_id=$1 AND site_status='active')::int AS sites,
          (SELECT COUNT(*) FROM company_departments WHERE tenant_id=$1 AND department_status='active')::int AS departments`,
@@ -134,6 +140,7 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
               orders.order_name,
               cases.permanent_worker_id,
               cases.case_status,
+              ${CURRENT_CREDENTIAL_STATUS_SQL} AS credential_status,
               cases.owner_kind,
               cases.next_action,
               cases.updated_at
@@ -141,6 +148,8 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
          JOIN assurance_orders AS orders
            ON orders.order_id=cases.order_id
           AND orders.tenant_id=cases.tenant_id
+         LEFT JOIN credential_issuances AS credentials ON credentials.credential_id=cases.credential_reference
+           AND credentials.worker_id=cases.permanent_worker_id
         WHERE cases.tenant_id=$1
         ORDER BY
           CASE WHEN cases.case_status IN ('Approved','Conditionally approved','Rejected','Closed') THEN 1 ELSE 0 END,
@@ -252,6 +261,7 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
                         {item.permanent_worker_id ?? "Worker account"} · {item.order_reference}
                       </p>
                       <p className="muted-copy">{item.next_action ?? "No pending action."}</p>
+                      {item.credential_status ? <p>Current credential: <strong>{item.credential_status}</strong></p> : <p>Credential: Not issued</p>}
                     </div>
                     <div className="record-row-actions">
                       <span className="status-badge status-neutral">{item.case_status}</span>

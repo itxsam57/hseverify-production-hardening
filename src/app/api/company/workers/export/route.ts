@@ -19,9 +19,9 @@ export async function GET(request: Request): Promise<Response> {
     pageSize: 100
   });
   const rows = [
-    ["Name","Email","Worker ID","Site","Department","Link status","Assurance status","Next action"].map(csvCell).join(","),
+    ["Name","Email","Worker ID","Site","Department","Link status","Assurance status","Latest case credential status","Next action"].map(csvCell).join(","),
     ...result.rows.map((row) => [
-      row.name,row.email,row.workerId,row.site,row.department,row.status,row.assuranceStatus,row.nextAction
+      row.name,row.email,row.workerId,row.site,row.department,row.status,row.assuranceStatus,row.credentialStatus,row.nextAction
     ].map(csvCell).join(","))
   ];
   return new Response(rows.join("\n"), {
