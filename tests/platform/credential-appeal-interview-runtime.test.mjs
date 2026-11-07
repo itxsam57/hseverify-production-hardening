@@ -53,6 +53,36 @@ test("A later failed calibration supersedes current calibration for assigned app
  }finally{await f.cleanup();}
 });
 
+
+for(const expired of [false,true])test("Active appeal interview denies both participants' media and signaling after "+(expired?"calibration expiry":"failed calibration"),async()=>{
+ const f=await appealInterviewFixture();try{
+  const db=f.database;
+  const followup=await f.followups.request({principal:f.admin,appealId:f.appeal.appealId,expectedVersion:1,kind:"interview",reason:"Independent appeal media must require the current pinned framework calibration."});
+  const scheduling=new InterviewSchedulingService(db);
+  const request=await scheduling.getAssignedInterview({assessorAccountId:f.assessor.accountId,interviewRequestId:followup.interviewRequestId});
+  await scheduling.scheduleInterview({principal:f.assessor,tenantId:f.row.tenant_id,request,scheduledAt:new Date().toISOString()});
+  const runtime=new InterviewRuntimeService(Promise.resolve(db));
+  await runtime.claim(f.assessor,request.interviewRequestId);
+  await runtime.markWorkerReady(f.worker,request.interviewRequestId,{cameraReady:true,microphoneReady:true,connectionReady:true,identityConfirmed:true,recordingConsent:false});
+  await runtime.admit(f.assessor,request.interviewRequestId);
+  await runtime.start(f.assessor,request.interviewRequestId);
+  const {authorizeInterviewMedia,publishInterviewMediaSignal,listInterviewMediaSignals}=loadWorkerRegistrationTs("src/lib/interview/interview-media-service.ts");
+  const assessorSession={...f.assessor,role:"assessor"},workerSession={...f.worker,role:"worker"};
+  assert.equal((await authorizeInterviewMedia(db,assessorSession,request.interviewRequestId)).role,"assessor");
+  assert.equal((await authorizeInterviewMedia(db,workerSession,request.interviewRequestId)).role,"worker");
+  const calibration=(await db.query("SELECT * FROM staff_calibrations WHERE account_id=$1 AND role='assessor' AND framework_version_id IS NOT NULL ORDER BY valid_from DESC,calibration_sequence DESC LIMIT 1",[f.assessor.accountId])).rows[0];
+  const {StaffCalibrationService}=loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");
+  await new StaffCalibrationService(Promise.resolve(db)).record(f.admin,{accountId:f.assessor.accountId,role:"assessor",frameworkReference:calibration.framework_reference,frameworkVersionId:calibration.framework_version_id,status:expired?"CURRENT":"FAILED",validFrom:new Date(Date.now()-30000),validUntil:expired?new Date(Date.now()-1000):new Date("2099-01-01"),note:"Loss of live calibration closes media while the interview is still active."});
+  for(const principal of [assessorSession,workerSession]){
+   const calibrationDenied=(error)=>error?.status===403&&/calibration/i.test(error.message);
+   await assert.rejects(authorizeInterviewMedia(db,principal,request.interviewRequestId),calibrationDenied);
+   await assert.rejects(listInterviewMediaSignals(db,principal,request.interviewRequestId),calibrationDenied);
+   await assert.rejects(publishInterviewMediaSignal(db,principal,request.interviewRequestId,{kind:"leave",payload:{connectionId:"calibrationDeniedPeer01"}}),calibrationDenied);
+  }
+  assert.equal((await db.query("SELECT COUNT(*)::int AS n FROM interview_media_signals WHERE interview_request_id=$1",[request.interviewRequestId])).rows[0].n,0,"Both revoked participants must leave no new signaling.");
+ }finally{await f.cleanup();}
+});
+
 for(const expired of [false,true])test("Calibration "+(expired?"expiry":"failure")+" closes retained drafts, playbook, runtime and final submission",async()=>{
  const f=await appealInterviewFixture();try{
   const db=f.database,followup=await f.followups.request({principal:f.admin,appealId:f.appeal.appealId,expectedVersion:1,kind:"interview",reason:"Further interview must retain live exact framework calibration through final submission."});
@@ -63,7 +93,7 @@ for(const expired of [false,true])test("Calibration "+(expired?"expiry":"failure
   const actions=actualInterviewActions(db,f.assessor),form=recommendationForm(request.interviewRequestId,session.interviewSessionId);await actions.saveInterviewConsoleAction(form);await runtime.end(f.assessor,request.interviewRequestId);
   const calibration=(await db.query("SELECT * FROM staff_calibrations WHERE account_id=$1 AND role='assessor' AND framework_version_id IS NOT NULL ORDER BY valid_from DESC,calibration_sequence DESC LIMIT 1",[f.assessor.accountId])).rows[0];
   const {StaffCalibrationService}=loadWorkerRegistrationTs("src/lib/review/staff-calibration-service.ts");await new StaffCalibrationService(Promise.resolve(db)).record(f.admin,{accountId:f.assessor.accountId,role:"assessor",frameworkReference:calibration.framework_reference,frameworkVersionId:calibration.framework_version_id,status:expired?"CURRENT":"FAILED",validFrom:new Date(Date.now()-30000),validUntil:expired?new Date(Date.now()-1000):new Date("2099-01-01"),note:"Later effective result removes live interview eligibility before submission."});
-  const {authorizeInterviewMedia}=loadWorkerRegistrationTs("src/lib/interview/interview-media-service.ts");await assert.rejects(authorizeInterviewMedia(db,{...f.assessor,role:"assessor"},request.interviewRequestId),/calibration/i);
+  const {authorizeInterviewMedia}=loadWorkerRegistrationTs("src/lib/interview/interview-media-service.ts");await assert.rejects(authorizeInterviewMedia(db,{...f.assessor,role:"assessor"},request.interviewRequestId),(error)=>error?.status===409&&/media is closed/i.test(error.message));
   const {RecordingAssetService}=loadWorkerRegistrationTs("src/lib/recording/recording-asset-service.ts");await assert.rejects(new RecordingAssetService(Promise.resolve(db),{}).storeInterviewSegment(f.assessor,request.interviewRequestId,{ingestKey:"failed_calibration_recording",source:"VIDEO_AUDIO",mimeType:"video/webm",bytes:new Uint8Array([1]),startedAt:new Date().toISOString(),endedAt:new Date().toISOString()}),/calibration/i);
   const {InterviewAccommodationSupportService}=loadWorkerRegistrationTs("src/lib/privacy/interview-accommodation-support.ts");await assert.rejects(new InterviewAccommodationSupportService(Promise.resolve(db)).read(f.assessor,request.interviewRequestId),/calibration/i);
   await assert.rejects(runtime.view(f.assessor,request.interviewRequestId),/calibration/i);await assert.rejects(runtime.start(f.assessor,request.interviewRequestId),/calibration/i);await assert.rejects(playbook.getAssigned(f.assessor,request.interviewRequestId));await assert.rejects(playbook.ensure(f.assessor,request.interviewRequestId));
