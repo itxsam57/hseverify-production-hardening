@@ -1,5 +1,16 @@
 # HSE Verify — current exact continuation checkpoint
 
+## LATEST CHECKPOINT — 2026-11-07 12:34 UTC (supersedes previous live PIDs)
+**FULLY VERIFIED 0/218**; pentest incomplete; NO-GO. All below are scoped evidence, not certified IDs. Product worktree `hseverify-eligibility-guard-20261107` on SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, branch `qa/a28-eligibility-read-guard-20261107`.
+- Previous `npm run test:consumer-cohorts-browser` completed **24 of 24 distinct browser fixture files, exit 0, 0 failures**, managed session `91a1bd36-9481-4ad7-bf24-fa70d878476b`; evidence `.autopilot/artifacts/20261107-A28-resume-consumer-cohorts-browser-2.log`. Covers forms/validation/roles/actual Company credential/appeals/auth/search/mobile/UI, but NOT 218 whole release certifications.
+- `npm run test:credential-concern-browser` **2/2 PASS, exit 0**; concern from signed issuance/public Verify to independent Admin review and stale-form conflict, responsive all portal navigation; log `.autopilot/artifacts/20261107-A28-resume-credential-concern-browser-3.log`.
+- **CURRENT RUNNING**: `npm run test:masterplan-integration-browser` (9 separate fixtures), process `sessionId=87067279-d7d8-42e4-bf97-b1d576d7007d` initial PID **441429**; current fixture 2 `supervisor-observation-journey.browser.test.mjs`; fixture 1 `integrity-human-review.browser.test.mjs` passed **1/1**, exact SHA same. Log `.autopilot/artifacts/20261107-A28-resume-masterplan-integration-browser-3.log`. NO overall exit yet at 12:34Z; check live PID/log first and do not start a second heavy run.
+- Existing V4 audit session `75358f78-07c8-4e83-8a9e-c4a2830fd933` ACTIVE (status/guard previously checked) with credential concern and cohort recorded. Update final command/exact SHA/evidence and close HANDOVER when ending.
+- **NEXT**: finish 9-fixture integration browser suite; first RED gets root fix and exploit/regression retest. Then run dedicated focused authorized security checks: `npm run test:authorization`, `npm run test:tenant-scope`, `npm run test:secure-access` + actual HTTP security headers/cross-tenant browser cases, one heavy at a time. Complete six-role/tenant/API staging pentest, real providers, 218-row exact SHA acceptance, realistic restore/load and owner UAT. Real email still `provider_unconfigured`: BLOCKED_EXTERNAL, never PASS.
+- Preexisting dirty worktree `.github/workflows/masterplan-completion-qa.yml`, `tests/engineering/masterplan-browser-shards.test.mjs`, audit log, and untracked unrelated artifacts must not be reset or overwritten.
+
+
+
 ## MOST RECENT — 2026-11-07 11:27:27 UTC
 - **Priority invariant:** FULLY VERIFIED **0/218**, comprehensive pentest **incomplete**, release **NO-GO**. No scope-only browser test is counted as whole scenario.
 - **Isolated source:** worktree `hseverify-eligibility-guard-20261107`, branch `qa/a28-eligibility-read-guard-20261107`, exact code SHA **`f4628888db95eeeb22a74a884e12a77f7378fae6`**. Preexisting dirty `.github/workflows/masterplan-completion-qa.yml`, `tests/engineering/masterplan-browser-shards.test.mjs` must NOT be reset/replaced. Audit file locally modified by legitimate session.
