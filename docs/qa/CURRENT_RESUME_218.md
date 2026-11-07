@@ -1,5 +1,13 @@
 # HSE Verify — current exact continuation checkpoint
 
+## Most recent live execution handoff — 2026-11-07 approx 10:36Z
+- On source SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, isolated worktree `hseverify-eligibility-guard-20261107`: completed scoped browser groups: retention-inquiry **1/1 exit0**; credential-validity **1/1 exit0**; assessment-eligibility **4/4 exit0**; report-generation **9/9 exit0**; funding-notifications **1/1 exit0**. Focused eligibility native/role-security **14/14 exit0**. Each log resides under that worktree's `.autopilot/artifacts/20261107-A28-resume-<script>.log`. Tests pass on a non-final candidate and do not complete any whole scenario; **FULLY_VERIFIED 0/218**, global pentest incomplete, release NO-GO.
+- Funding evidence: genuine Worker funding request to compiled outbox → Company bell/approve → Worker authenticated case/precheck/bell, no unrelated Worker notice; **sandbox payment only**, no real card/merchant.
+- **CURRENT active**: `npm run test:privacy-execution-browser` started as managed process `sessionId=ffeaf635-0012-48a1-839f-8f56ef7fd741` PID `428520`. Log `hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-resume-privacy-execution-browser.log`. No final result at last snapshot. Inspect process and log *before* launching other test; avoid duplicate runs and protect other worktrees.
+- Next after privacy: `test:interview-policy-browser`, `test:consumer-cohorts-browser`, `test:credential-concern-browser`, `test:masterplan-integration-browser`. Then run strict exact-SHA 218 reconciliation, full authorized six-role/tenant endpoint pentest, complete staging and provider/restore/owner acceptance. Never call 216 scoped observations fully verified.
+- Existing V4 audit session `68328946-01d3-4d36-b888-ff974c7dbdb1`; refreshed and recorded completed passing groups. Other worktree modifications pre-existed; no product file edits made this continuation.
+
+
 ## Live handoff updated 2026-11-07 after M3.06 report group
 - Count **FULLY VERIFIED 0/218**, PENTEST incomplete; **NO-GO**. All following are **scoped local test receipts on SHA f4628888db95eeeb22a74a884e12a77f7378fae6**, NOT full scenario certifications.
 - `test:retention-inquiry-browser`: 1/1, exit 0. `test:credential-validity-browser`: 1/1, exit 0. `test:assessment-eligibility-browser`: 4/4, exit 0. `test:assessment-eligibility`: 14/14, exit 0. `test:report-generation-browser`: **9/9, exit 0**, actual Worker/Company CSV/PDF/print, owner/foreign-role denies, private artifact, retry/terminal recovery, email state queue (NOT real email). All logs at `hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-resume-<suite>.log`; exact full report log `20261107-A28-resume-report-generation-browser.log`.
