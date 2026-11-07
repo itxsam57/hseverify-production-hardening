@@ -15,7 +15,7 @@ import {
   normalizeWorkerIdentityReference,
   normalizeWorkerIdentityVersionReference
 } from "./worker-identity-domain";
-import { WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL } from "./worker-identity-repository";
+import { WORKER_IDENTITY_READ_SESSION_GUARD_SQL } from "./worker-identity-repository";
 import {
   WorkerIdentityEligibilityConflictError,
   WorkerIdentityWorkerIdBlockedError,
@@ -712,7 +712,7 @@ export class DatabaseWorkerIdentityEligibilityRepository
     const database = await this.client();
     return database.transaction(async (transaction) => {
       const authority = await transaction.query<{ session_id: string }>(
-        WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL,
+        WORKER_IDENTITY_READ_SESSION_GUARD_SQL,
         [worker.sessionId, worker.accountId]
       );
       if (authority.rows.length !== 1) {
