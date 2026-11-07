@@ -20,7 +20,7 @@ import {
   createWorkerIdentityVersionId,
   normalizeWorkerIdentityLockVersion
 } from "./worker-identity-domain";
-import { WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL } from "./worker-identity-repository";
+import { WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL, WORKER_IDENTITY_READ_SESSION_GUARD_SQL } from "./worker-identity-repository";
 import {
   WorkerIdentityCorrectionConflictError,
   WorkerIdentityCorrectionNotFoundError,
@@ -155,11 +155,12 @@ function correctionFromRow(row: CorrectionRow): WorkerIdentityCorrectionRecord {
 
 async function assertLiveWorker(
   database: DatabaseClient,
-  principal: AuthorizationPrincipal
+  principal: AuthorizationPrincipal,
+  lockForMutation = true
 ): Promise<AuthorizationPrincipal & Readonly<{ activeRole: "worker" }>> {
   const worker = assertWorkerIdentityPrincipal(principal);
   const result = await database.query<{ session_id: string }>(
-    WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL,
+    lockForMutation ? WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL : WORKER_IDENTITY_READ_SESSION_GUARD_SQL,
     [worker.sessionId, worker.accountId]
   );
   if (result.rows.length !== 1) throw new WorkerIdentityAccessDeniedError();
@@ -363,7 +364,7 @@ export class DatabaseWorkerIdentityCorrectionRepository
   ): Promise<WorkerIdentityCorrectionRecord | null> {
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      const worker = await assertLiveWorker(transaction, principal);
+      const worker = await assertLiveWorker(transaction, principal, false);
       return loadLatestCorrection(transaction, worker.accountId);
     });
   }

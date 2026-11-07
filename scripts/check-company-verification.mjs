@@ -106,16 +106,30 @@ for (const forbidden of ["clientTenantId", "reviewerId:", "verifierId:", "provid
   forbidMarker(verificationRepository, forbidden, "M1.08 verification repository");
 
 const verificationReviewService = read("src/lib/company/company-verification-review-service.ts");
+const runtimePrivateStorage = read("src/lib/secure-files/private-object-storage.ts");
+// M1.08 preview is permitted in preview/production *only* through the
+// server-configured private volume; absent configuration denies before bytes.
 for (const marker of [
-  "requireLocalTestStorageEnvironment",
-  'value !== "development" && value !== "test"',
-  "createLocalTestPrivateObjectStorage(storageEnvironment)"
-]) requireMarker(verificationReviewService, marker, "M1.08 verification evidence preview storage boundary");
-forbidMarker(
-  verificationReviewService,
-  "createLocalTestPrivateObjectStorage(env.appEnvironment)",
-  "M1.08 verification evidence preview must fail closed outside local/test storage"
-);
+  "requireConfiguredPrivateStorage",
+  "createRuntimePrivateObjectStorage(appEnvironment)",
+  "error instanceof PrivateObjectStorageError",
+  "throw new CompanyVerificationAccessDeniedError();",
+  "await assertLiveDecider(this.database, principal)",
+  "const storage = requireConfiguredPrivateStorage(env.appEnvironment)",
+  "readSecureFileAccessCore({"
+]) requireMarker(verificationReviewService, marker, "M1.08 verification evidence preview private-storage boundary");
+for (const marker of [
+  'appEnvironment === "development" || appEnvironment === "test"',
+  "return createLocalTestPrivateObjectStorage(appEnvironment)",
+  "HSE_PRIVATE_OBJECT_STORAGE_ROOT",
+  "if (!configuredRoot)",
+  "throw new PrivateObjectStorageError(",
+  "return new FilesystemPrivateObjectStorage("
+]) requireMarker(runtimePrivateStorage, marker, "M1.08 server-owned production private volume");
+forbidMarker(verificationReviewService, "createLocalTestPrivateObjectStorage(",
+  "M1.08 verification preview must not bypass configured private storage");
+forbidMarker(verificationReviewService, "new FilesystemPrivateObjectStorage(",
+  "M1.08 verification preview must not bypass runtime private storage policies");
 
 const registrationService = read("src/lib/company/company-registration-service.ts");
 for (const marker of ["verifyTotp", "lastAcceptedCounter: factor.lastAcceptedCounter", "registrationFingerprint: companyRegistrationFingerprint", "createTotpSecret", "pending_email"])

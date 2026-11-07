@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
 import {
   cancelCompanyTeamInvitationAction,
   changeCompanyTeamMemberStatusAction,
@@ -24,6 +24,12 @@ import type {
   CompanyTeamMemberRecord
 } from "@/lib/company/company-team-service";
 import { INITIAL_COMPANY_TEAM_ACTION_STATE } from "@/lib/ui/action-initial-states";
+
+// Keep role-dependent permission forms inactive until client hydration.
+// Early selects could change the DOM role but leave React's permission ceiling stale.
+const subscribeToNothing = (): (() => void) => () => {};
+const hydratedOnClient = (): boolean => true;
+const awaitingHydration = (): boolean => false;
 
 function permissionLabel(value: TenantPermission): string {
   return value.replace("company.", "").replaceAll(".", " · ");
@@ -113,7 +119,8 @@ function MemberCard({
   actorMembershipId,
   actorRole,
   actorPermissions,
-  canManage
+  canManage,
+  hydrated
 }: {
   member: CompanyTeamMemberRecord;
   sites: readonly CompanyUnitRecord[];
@@ -122,6 +129,7 @@ function MemberCard({
   actorRole: TenantMembershipRole;
   actorPermissions: readonly TenantPermission[];
   canManage: boolean;
+  hydrated: boolean;
 }): React.JSX.Element {
   const [updateState, updateAction, updatePending] = useActionState(
     updateCompanyTeamMemberAction,
@@ -189,6 +197,7 @@ function MemberCard({
               <Select
                 id={`${member.membershipId}-role`}
                 name="membershipRole"
+                disabled={!hydrated || updatePending}
                 value={selectedRole}
                 onChange={(event) =>
                   setSelectedRole(event.target.value as TenantMembershipRole)
@@ -206,7 +215,7 @@ function MemberCard({
                 id={`${member.membershipId}-site`}
                 name="siteId"
                 defaultValue={member.siteId ?? ""}
-                disabled={member.status !== "active"}
+                disabled={!hydrated || updatePending || member.status !== "active"}
               >
                 <option value="">No site assignment</option>
                 {activeSites.map((site) => (
@@ -224,7 +233,7 @@ function MemberCard({
                 id={`${member.membershipId}-department`}
                 name="departmentId"
                 defaultValue={member.departmentId ?? ""}
-                disabled={member.status !== "active"}
+                disabled={!hydrated || updatePending || member.status !== "active"}
               >
                 <option value="">No department assignment</option>
                 {activeDepartments.map((department) => (
@@ -234,7 +243,7 @@ function MemberCard({
                 ))}
               </Select>
             </Field>
-            <fieldset className="panel page-section" key={`${member.membershipId}-${selectedRole}`}>
+            <fieldset className="panel page-section" key={`${member.membershipId}-${selectedRole}`} disabled={!hydrated || updatePending}>
               <legend>Effective tenant permissions</legend>
               <p className="muted-copy">
                 Only permissions inside the selected role ceiling and your own current authority can be selected.
@@ -251,7 +260,7 @@ function MemberCard({
                 </label>
               ))}
             </fieldset>
-            <Button type="submit" disabled={updatePending}>
+            <Button type="submit" disabled={!hydrated || updatePending}>
               {updatePending ? "Saving…" : "Save Team access"}
             </Button>
           </form>
@@ -338,6 +347,7 @@ export function CompanyTeamWorkspace({
   actorPermissions: readonly TenantPermission[];
   canManage: boolean;
 }): React.JSX.Element {
+  const hydrated = useSyncExternalStore(subscribeToNothing, hydratedOnClient, awaitingHydration);
   const [inviteState, inviteAction, invitePending] = useActionState(
     inviteCompanyTeamMemberAction,
     INITIAL_COMPANY_TEAM_ACTION_STATE
@@ -388,6 +398,7 @@ export function CompanyTeamWorkspace({
               <Select
                 id="team-role"
                 name="membershipRole"
+                disabled={!hydrated || invitePending}
                 value={selectedRole}
                 onChange={(event) =>
                   setSelectedRole(event.target.value as TenantMembershipRole)
@@ -401,7 +412,7 @@ export function CompanyTeamWorkspace({
               </Select>
             </Field>
             <Field htmlFor="team-site" label="Site scope (optional)">
-              <Select id="team-site" name="siteId" defaultValue="">
+              <Select id="team-site" name="siteId" defaultValue="" disabled={!hydrated || invitePending}>
                 <option value="">No site assignment</option>
                 {activeSites.map((site) => (
                   <option value={site.unitId} key={site.unitId}>
@@ -411,7 +422,7 @@ export function CompanyTeamWorkspace({
               </Select>
             </Field>
             <Field htmlFor="team-department" label="Department scope (optional)">
-              <Select id="team-department" name="departmentId" defaultValue="">
+              <Select id="team-department" name="departmentId" defaultValue="" disabled={!hydrated || invitePending}>
                 <option value="">No department assignment</option>
                 {activeDepartments.map((department) => (
                   <option value={department.unitId} key={department.unitId}>
@@ -420,7 +431,7 @@ export function CompanyTeamWorkspace({
                 ))}
               </Select>
             </Field>
-            <fieldset className="panel page-section" key={`invite-${selectedRole}`}>
+            <fieldset className="panel page-section" key={`invite-${selectedRole}`} disabled={!hydrated || invitePending}>
               <legend>Effective tenant permissions</legend>
               <p className="muted-copy">
                 Only permissions inside the target role ceiling and your own current authority can be selected.
@@ -437,7 +448,7 @@ export function CompanyTeamWorkspace({
                 </label>
               ))}
             </fieldset>
-            <Button type="submit" disabled={invitePending}>
+            <Button type="submit" disabled={!hydrated || invitePending}>
               {invitePending ? "Creating invitation…" : "Create Company Team invitation"}
             </Button>
           </form>
@@ -487,6 +498,7 @@ export function CompanyTeamWorkspace({
               actorRole={actorRole}
               actorPermissions={actorPermissions}
               canManage={canManage}
+              hydrated={hydrated}
             />
           ))
         )}

@@ -51,6 +51,11 @@ WHERE sessions.session_id = $1
   AND sessions.expires_at > CURRENT_TIMESTAMP
 FOR UPDATE OF sessions, accounts`;
 
+// Reads perform current-session authorization without exclusive row locks.
+// Mutations retain the locked SQL to protect revocation and state changes.
+export const WORKER_IDENTITY_READ_SESSION_GUARD_SQL =
+  WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL.replace(/\nFOR UPDATE OF sessions, accounts$/, "");
+
 const WORKER_IDENTITY_SNAPSHOT_SQL = `
 SELECT
   identities.identity_id,
@@ -154,11 +159,12 @@ function snapshotFromRow(row: WorkerIdentitySnapshotRow): WorkerIdentitySnapshot
 
 async function assertLiveWorkerAuthority(
   database: DatabaseClient,
-  principal: AuthorizationPrincipal
+  principal: AuthorizationPrincipal,
+  lockForMutation = true
 ): Promise<void> {
   const worker = assertWorkerIdentityPrincipal(principal);
   const result = await database.query<{ session_id: string }>(
-    WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL,
+    lockForMutation ? WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL : WORKER_IDENTITY_READ_SESSION_GUARD_SQL,
     [worker.sessionId, worker.accountId]
   );
   if (result.rows.length !== 1) {
@@ -240,7 +246,7 @@ export class DatabaseWorkerIdentityRepository implements WorkerIdentityRepositor
   ): Promise<WorkerIdentitySnapshot | null> {
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      await assertLiveWorkerAuthority(transaction, principal);
+      await assertLiveWorkerAuthority(transaction, principal, false);
       return loadSnapshot(transaction, principal.accountId, false);
     });
   }

@@ -105,7 +105,7 @@ export default async function CompanyWorkersPage({
                   <td><code>{row.workerId ?? "Pending"}</code></td>
                   <td>{row.site ?? "—"} / {row.department ?? "—"}</td>
                   <td>{row.status.replaceAll("_", " ")}</td>
-                  <td>{row.assuranceStatus ?? "No active case"}{row.nextAction ? <><br /><span className="muted-copy">{row.nextAction}</span></> : null}</td>
+                  <td>{row.assuranceStatus ?? "No active case"}{row.credentialStatus ? <><br /><strong>Latest case credential: {row.credentialStatus}</strong></> : null}{row.nextAction ? <><br /><span className="muted-copy">{row.nextAction}</span></> : null}</td>
                   <td><Link href={`/company/workers/${row.linkId}`}>View company-scoped report</Link></td>
                 </tr>
               ))}</tbody>

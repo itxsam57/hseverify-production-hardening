@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getDatabaseClient, type DatabaseClient } from "@/lib/database/database";
+import { CURRENT_CREDENTIAL_STATUS_SQL } from "@/lib/credential/current-credential-status-sql";
 import type { CompanyWorkforceManagePrincipal } from "@/lib/company/company-workforce-domain";
 import { runVerifiedCompanyWorkforceCommand } from "@/lib/company/company-workforce-service";
 
@@ -15,6 +16,7 @@ export type CompanyWorkerDirectoryRow = Readonly<{
   department: string | null;
   assessmentReference: string | null;
   assuranceStatus: string | null;
+  credentialStatus: string | null;
   nextAction: string | null;
 }>;
 
@@ -84,7 +86,7 @@ export class CompanyWorkforceDirectoryService {
           AND ($3::text IS NULL OR links.link_status=$3)
           AND ($4::text IS NULL OR links.site_id=$4)
           AND ($5::text IS NULL OR links.department_id=$5)
-          AND ($6::text IS NULL OR latest_case.case_status=$6)
+          AND ($6::text IS NULL OR latest_case.case_status=$6 OR lower(latest_case.credential_status)=lower($6::text))
         `;
 
         const [rows, count] = await Promise.all([
@@ -99,19 +101,22 @@ export class CompanyWorkforceDirectoryService {
             department_name: string | null;
             assessment_reference: string | null;
             case_status: string | null;
+            credential_status: string | null;
             next_action: string | null;
           }>(
             `SELECT links.link_id,links.worker_account_id,accounts.display_name,accounts.email_normalized,
                     links.permanent_worker_id,links.link_status,
                     sites.name AS site_name,departments.name AS department_name,
-                    links.assessment_reference,latest_case.case_status,latest_case.next_action
+                    links.assessment_reference,latest_case.case_status,latest_case.credential_status,latest_case.next_action
                FROM company_worker_links AS links
                JOIN auth_accounts AS accounts ON accounts.account_id=links.worker_account_id
                LEFT JOIN company_sites AS sites ON sites.tenant_id=links.tenant_id AND sites.site_id=links.site_id
                LEFT JOIN company_departments AS departments ON departments.tenant_id=links.tenant_id AND departments.department_id=links.department_id
                LEFT JOIN LATERAL (
-                 SELECT cases.case_status,cases.next_action
+                 SELECT cases.case_status,cases.next_action,${CURRENT_CREDENTIAL_STATUS_SQL} AS credential_status
                    FROM assurance_cases AS cases
+                 LEFT JOIN credential_issuances AS credentials ON credentials.credential_id=cases.credential_reference
+                  AND credentials.worker_id=cases.permanent_worker_id
                   WHERE cases.tenant_id=links.tenant_id
                     AND cases.worker_account_id=links.worker_account_id
                   ORDER BY cases.updated_at DESC,cases.created_at DESC
@@ -127,8 +132,10 @@ export class CompanyWorkforceDirectoryService {
                FROM company_worker_links AS links
                JOIN auth_accounts AS accounts ON accounts.account_id=links.worker_account_id
                LEFT JOIN LATERAL (
-                 SELECT cases.case_status
+                 SELECT cases.case_status,${CURRENT_CREDENTIAL_STATUS_SQL} AS credential_status
                    FROM assurance_cases AS cases
+                 LEFT JOIN credential_issuances AS credentials ON credentials.credential_id=cases.credential_reference
+                  AND credentials.worker_id=cases.permanent_worker_id
                   WHERE cases.tenant_id=links.tenant_id
                     AND cases.worker_account_id=links.worker_account_id
                   ORDER BY cases.updated_at DESC,cases.created_at DESC
@@ -151,6 +158,7 @@ export class CompanyWorkforceDirectoryService {
             department: row.department_name,
             assessmentReference: row.assessment_reference,
             assuranceStatus: row.case_status,
+            credentialStatus: row.credential_status,
             nextAction: row.next_action
           }))),
           total: Number(count.rows[0]?.count ?? 0),
@@ -174,19 +182,21 @@ export class CompanyWorkforceDirectoryService {
           link_id: string; worker_account_id: string; display_name: string; email_normalized: string;
           permanent_worker_id: string | null; link_status: string; site_name: string | null;
           department_name: string | null; assessment_reference: string | null;
-          case_status: string | null; next_action: string | null;
+          case_status: string | null; credential_status: string | null; next_action: string | null;
         }>(
           `SELECT links.link_id,links.worker_account_id,accounts.display_name,accounts.email_normalized,
                   links.permanent_worker_id,links.link_status,sites.name AS site_name,
                   departments.name AS department_name,links.assessment_reference,
-                  latest_case.case_status,latest_case.next_action
+                  latest_case.case_status,latest_case.credential_status,latest_case.next_action
              FROM company_worker_links AS links
              JOIN auth_accounts AS accounts ON accounts.account_id=links.worker_account_id
              LEFT JOIN company_sites AS sites ON sites.tenant_id=links.tenant_id AND sites.site_id=links.site_id
              LEFT JOIN company_departments AS departments ON departments.tenant_id=links.tenant_id AND departments.department_id=links.department_id
              LEFT JOIN LATERAL (
-               SELECT cases.case_status,cases.next_action
+               SELECT cases.case_status,cases.next_action,${CURRENT_CREDENTIAL_STATUS_SQL} AS credential_status
                  FROM assurance_cases AS cases
+                 LEFT JOIN credential_issuances AS credentials ON credentials.credential_id=cases.credential_reference
+                  AND credentials.worker_id=cases.permanent_worker_id
                 WHERE cases.tenant_id=links.tenant_id AND cases.worker_account_id=links.worker_account_id
                 ORDER BY cases.updated_at DESC,cases.created_at DESC LIMIT 1
              ) AS latest_case ON TRUE
@@ -205,6 +215,7 @@ export class CompanyWorkforceDirectoryService {
           department: row.department_name,
           assessmentReference: row.assessment_reference,
           assuranceStatus: row.case_status,
+          credentialStatus: row.credential_status,
           nextAction: row.next_action
         }) : null;
       }

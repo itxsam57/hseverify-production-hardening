@@ -17,13 +17,16 @@ export default async function WorkerIdentityPage(): Promise<React.JSX.Element> {
   const draftService = getWorkerIdentityDraftService();
   const identity = await identityService.ensureDraft(principal);
 
-  const [draft, evidence, checks, eligibility, correction] = await Promise.all([
-    draftService.loadOrInitialize(principal),
-    getWorkerIdentityEvidenceService().list(principal),
-    getWorkerIdentityCheckService().loadOwn(principal),
-    getWorkerIdentityEligibilityService().loadOwnStatus(principal),
-    getWorkerIdentityCorrectionService().loadOwn(principal)
-  ]);
+  // Each repository revalidates the live session within its own transaction.
+  // Running those transactions in parallel can deadlock on auth_sessions in
+  // PostgreSQL when one takes a write lock while another checks the same row.
+  // Read the identity aggregate in a consistent order, without weakening the
+  // authorization locks on later Worker mutations.
+  const draft = await draftService.loadOrInitialize(principal);
+  const evidence = await getWorkerIdentityEvidenceService().list(principal);
+  const checks = await getWorkerIdentityCheckService().loadOwn(principal);
+  const eligibility = await getWorkerIdentityEligibilityService().loadOwnStatus(principal);
+  const correction = await getWorkerIdentityCorrectionService().loadOwn(principal);
 
   const review = await (await getDatabaseClient()).query<{ outcome: string; reason: string }>(
     `SELECT outcome,reason FROM(
