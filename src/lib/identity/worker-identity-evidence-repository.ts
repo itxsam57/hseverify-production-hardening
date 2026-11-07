@@ -38,6 +38,9 @@ WHERE sessions.session_id = $1
   AND sessions.expires_at > CURRENT_TIMESTAMP
 FOR UPDATE OF sessions, accounts`;
 
+const WORKER_IDENTITY_EVIDENCE_READ_AUTHORITY_SQL =
+  WORKER_IDENTITY_EVIDENCE_LIVE_AUTHORITY_SQL.replace(/\nFOR UPDATE OF sessions, accounts$/, "");
+
 const CURRENT_EDITABLE_VERSION_SQL = `
 SELECT
   identities.identity_id,
@@ -162,11 +165,12 @@ function bindingFromRow(row: BindingRow): WorkerIdentityEvidenceBindingRecord {
 
 async function assertLiveWorkerAuthority(
   database: DatabaseClient,
-  principal: AuthorizationPrincipal
+  principal: AuthorizationPrincipal,
+  lockForMutation = true
 ): Promise<void> {
   const worker = assertWorkerIdentityPrincipal(principal);
   const result = await database.query<{ session_id: string }>(
-    WORKER_IDENTITY_EVIDENCE_LIVE_AUTHORITY_SQL,
+    lockForMutation ? WORKER_IDENTITY_EVIDENCE_LIVE_AUTHORITY_SQL : WORKER_IDENTITY_EVIDENCE_READ_AUTHORITY_SQL,
     [worker.sessionId, worker.accountId]
   );
   if (result.rows.length !== 1) {
@@ -268,7 +272,7 @@ export class DatabaseWorkerIdentityEvidenceRepository
     const worker = assertWorkerIdentityPrincipal(principal);
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      await assertLiveWorkerAuthority(transaction, worker);
+      await assertLiveWorkerAuthority(transaction, worker, false);
       const version = await currentVersion(transaction, worker.accountId, false);
       if (!version) return Object.freeze([]);
       const result = await transaction.query<BindingRow>(

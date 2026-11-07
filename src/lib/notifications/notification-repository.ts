@@ -98,6 +98,14 @@ WHERE sessions.session_id = $1
   AND sessions.expires_at > CURRENT_TIMESTAMP
 FOR UPDATE OF sessions`;
 
+// Portal menus and notification reads never mutate authentication or tenant
+// state. Read paths validate current authority without acquiring row locks;
+// write commands retain the original exclusive guards below.
+const NOTIFICATION_ACCOUNT_READ_GUARD_SQL =
+  NOTIFICATION_ACCOUNT_GUARD_SQL.replace(/\nFOR UPDATE$/, "");
+const NOTIFICATION_SESSION_READ_GUARD_SQL =
+  NOTIFICATION_SESSION_GUARD_SQL.replace(/\nFOR UPDATE OF sessions$/, "");
+
 export const NOTIFICATION_COMPANY_SCOPE_GUARD_SQL = `
 SELECT memberships.membership_id
 FROM auth_tenant_memberships AS memberships
@@ -110,6 +118,9 @@ WHERE memberships.membership_id = $1
   AND memberships.membership_status = 'active'
   AND tenants.tenant_status IN ('pending', 'active')
 FOR UPDATE OF memberships, tenants`;
+
+const NOTIFICATION_COMPANY_SCOPE_READ_GUARD_SQL =
+  NOTIFICATION_COMPANY_SCOPE_GUARD_SQL.replace(/\nFOR UPDATE OF memberships, tenants$/, "");
 
 export const NOTIFICATION_LIST_SQL = `
 SELECT *
@@ -296,20 +307,21 @@ function notificationFromRow(row: NotificationRow): NotificationRecord {
 
 async function assertLivePrincipal(
   database: DatabaseClient,
-  principal: AuthorizationPrincipal
+  principal: AuthorizationPrincipal,
+  lockForMutation = true
 ): Promise<void> {
-  // Match other account-sensitive commands: account first, session second.
-  // This prevents concurrent portal notification reads and report actions from
-  // acquiring the same two rows in opposite orders.
+  // Mutations lock account then session; pure reads do not take exclusive
+  // locks. This avoids deadlocks with Worker Identity initialization while
+  // retaining permission and current-session checks for every request.
   const account = await database.query<{ account_id: string }>(
-    NOTIFICATION_ACCOUNT_GUARD_SQL,
+    lockForMutation ? NOTIFICATION_ACCOUNT_GUARD_SQL : NOTIFICATION_ACCOUNT_READ_GUARD_SQL,
     [principal.accountId]
   );
   if (account.rows[0]?.account_id !== principal.accountId) {
     throw new NotificationAccessDeniedError();
   }
   const session = await database.query<{ session_id: string }>(
-    NOTIFICATION_SESSION_GUARD_SQL,
+    lockForMutation ? NOTIFICATION_SESSION_GUARD_SQL : NOTIFICATION_SESSION_READ_GUARD_SQL,
     [principal.sessionId, principal.accountId, principal.activeRole]
   );
   if (session.rows[0]?.session_id !== principal.sessionId) {
@@ -320,7 +332,7 @@ async function assertLivePrincipal(
     const membership = principal.tenantMembership;
     if (!membership) throw new NotificationAccessDeniedError();
     const scope = await database.query<{ membership_id: string }>(
-      NOTIFICATION_COMPANY_SCOPE_GUARD_SQL,
+      lockForMutation ? NOTIFICATION_COMPANY_SCOPE_GUARD_SQL : NOTIFICATION_COMPANY_SCOPE_READ_GUARD_SQL,
       [membership.membershipId, membership.tenantId, principal.accountId]
     );
     if (scope.rows[0]?.membership_id !== membership.membershipId) {
@@ -480,7 +492,7 @@ export class DatabaseNotificationRepository implements NotificationRepository {
     const limit = normalizeNotificationLimit(options.limit);
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      await assertLivePrincipal(transaction, principal);
+      await assertLivePrincipal(transaction, principal, false);
       const scope = scopeParameters(principal);
       const visible:NotificationRecord[]=[];
       let before=cursor;
@@ -499,7 +511,7 @@ export class DatabaseNotificationRepository implements NotificationRepository {
   ): Promise<number> {
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      await assertLivePrincipal(transaction, principal);
+      await assertLivePrincipal(transaction, principal, false);
       const result = await transaction.query<{ unread_count: number | string }>(
         NOTIFICATION_UNREAD_COUNT_SQL,
         scopeParameters(principal)
@@ -523,7 +535,7 @@ export class DatabaseNotificationRepository implements NotificationRepository {
     if (!notificationId) return null;
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      await assertLivePrincipal(transaction, principal);
+      await assertLivePrincipal(transaction, principal, false);
       const scope = scopeParameters(principal);
       const result = await transaction.query<NotificationRow>(
         NOTIFICATION_FIND_SQL,
