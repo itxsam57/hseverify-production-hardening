@@ -24,3 +24,13 @@ This repository is guarded. For every coding, debugging, continuation, CI, UI, d
 
 Routine continuation never requires the owner to type `continue`. A response boundary is not a work boundary.
 <!-- UNIVERSAL-AUTOPILOT-V3:END -->
+
+<!-- HSEVERIFY-218-FULL-PENTEST-MISSION:BEGIN -->
+## HSE Verify mandatory project priority: 218/218 FULL verification + penetration testing
+
+For every new chat, agent, worktree and every "continue": read `docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md`, inspect the current 218-scenario evidence ledger, current candidate SHA, active tests, security findings and next unfinished scenario. **Execute** the next actionable verification/fix/retest; never merely summarize historical work or stop at partial coverage.
+
+Count only fully verified, end-to-end, security-tested scenarios on the final release candidate: `FULLY VERIFIED n/218`. Partial scoped evidence is NOT a pass. Complete penetration testing is mandatory for all relevant pages, APIs, features and six roles, including cross-role and cross-tenant isolation. Final release is NO-GO until 218/218, complete pentest, realistic staging/load/restore, real configured provider gates and owner UAT all pass.
+
+Default status reply is a compact taskbar: `FULLY VERIFIED n/218 | NOW: <scenario ID + precise test> | PENTEST: <verified coverage/status> | BLOCKERS: <count> | NEXT: <action>`. Never invent counts, exploit findings or provider availability. Persist exact evidence, active test state, next action and verified commit to durable handoff before context changes. Preserve other sessions, do not reset active test runs. Follow all existing Autopilot governance.
+<!-- HSEVERIFY-218-FULL-PENTEST-MISSION:END -->
