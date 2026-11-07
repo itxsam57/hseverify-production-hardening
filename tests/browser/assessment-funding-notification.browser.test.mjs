@@ -114,6 +114,7 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       }
       assert(attempt < 12, "The real CLI did not deliver the exact funding bell within its bounded drain.");
       const result = spawnSync(process.execPath, ["scripts/run-outbox-worker.mjs", "--once"], { env: fixture.environment, encoding: "utf8" });
+      assert.ok(result.stdout?.trim(), "Outbox CLI returned no JSON. Build and verify the real worker before this browser test. " + (result.stderr || String(result.error ?? "")));
       const processed = JSON.parse(result.stdout.trim());
       assert.equal(processed.processed, 1, result.stderr || result.stdout);
       assert(["succeeded", "retry_wait"].includes(processed.status), result.stderr || result.stdout);
