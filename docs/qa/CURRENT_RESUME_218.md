@@ -1,5 +1,17 @@
 # HSE Verify — current exact continuation checkpoint
 
+## Latest continuation checkpoint — 2026-11-07 around 10:28 UTC
+- **Fully certified 0/218 (no changes); pentest incomplete; GO NO.** Exact tested application SHA `f4628888db95eeeb22a74a884e12a77f7378fae6`, worktree `hseverify-eligibility-guard-20261107`, branch `qa/a28-eligibility-read-guard-20261107`. No source code changed by this continuation; preexisting uncommitted QA workflow/test shard edits left untouched.
+- **M3.09 retention inquiry browser** `npm run test:retention-inquiry-browser` 1/1 PASS exit0. Log `.autopilot/artifacts/20261107-A28-resume-retention-inquiry-browser.log`.
+- **Credential live validity browser** `npm run test:credential-validity-browser` 1/1 PASS exit0. Log `.autopilot/artifacts/20261107-A28-resume-credential-validity-browser.log`.
+- **Assessment eligibility browser** `npm run test:assessment-eligibility-browser` **4/4 PASS exit0**, including Worker/Company server rejection before approval, actual original Verifier approval, Worker pinned application, accepted reassessment. Log `.autopilot/artifacts/20261107-A28-resume-assessment-eligibility-browser.log`.
+- **Assessment eligibility native/security** `npm run test:assessment-eligibility` **14/14 PASS exit0**, including foreign scope denial, forged owner/assignment/source/type denial, tenant policy weakening denial, terminal attempt race, immutable review history. Log `.autopilot/artifacts/20261107-A28-resume-assessment-eligibility-security-native.log`. These are scoped tests, not a full 218 ID promotion or whole penetration test.
+- **CURRENT managed test** `npm run test:report-generation-browser` initiated in same worktree, process session `3c13abb5-3248-463e-b112-4ee8a9e9c885`, initial PID `426267`. Log `.autopilot/artifacts/20261107-A28-resume-report-generation-browser.log`. **No result yet at checkpoint.** Inspect managed session/PID/log before starting another heavy test; do not interrupt a healthy run.
+- The earlier large `test:critical-browser` was **timeout exit 124** (not a product failure and not a PASS). Above tests are resumed portions; remaining after report: `test:funding-notifications-browser`, `test:privacy-execution-browser`, `test:interview-policy-browser`, `test:consumer-cohorts-browser`, `test:credential-concern-browser`, `test:masterplan-integration-browser`.
+- Audit V4 current session `68328946-01d3-4d36-b888-ff974c7dbdb1`, guarded ACTIVE when last checked, feature A28-ELIGIBILITY-GUARD. Prior tests logged as passes with exact paths; progress/close audit if ending.
+- **NEXT:** observe report suite exit and first genuine failure, investigate/fix/retest if RED, otherwise continue next outstanding browser group. Also run comprehensive authenticated staging role/API pentest and real provider tests before any FULLY_VERIFIED promotion.
+
+
 ## New continuation receipts — 2026-11-07 (after timeout)
 - **Owner rule unchanged:** FULLY VERIFIED **0/218**, release NO-GO, comprehensive pentest incomplete. No count promoted based solely on passing local browser tests.
 - **Root cause of interrupted suite known:** `hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-101-status.tsv` records `npm run test:critical-browser` **exit 124 (timeout)** on source `f4628888db95eeeb22a74a884e12a77f7378fae6`. It stopped after `test:interview-email-manual-retry-browser` (11/11), not a verified overall 42-group pass.
