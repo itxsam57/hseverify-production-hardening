@@ -53,6 +53,9 @@ WHERE sessions.session_id = $1
   AND sessions.expires_at > CURRENT_TIMESTAMP
 FOR UPDATE OF sessions, accounts`;
 
+const WORKER_IDENTITY_CHECK_READ_WORKER_SQL =
+  WORKER_IDENTITY_CHECK_LIVE_WORKER_SQL.replace(/\nFOR UPDATE OF sessions, accounts$/, "");
+
 const CURRENT_SUBMITTED_VERSION_SQL = `
 SELECT
   identities.identity_id,
@@ -189,11 +192,12 @@ function runFromRow(row: RunRow): WorkerIdentityCheckRunRecord {
 
 async function assertLiveWorker(
   database: DatabaseClient,
-  principal: AuthorizationPrincipal
+  principal: AuthorizationPrincipal,
+  lockForMutation = true
 ): Promise<void> {
   const worker = assertWorkerIdentityPrincipal(principal);
   const result = await database.query<{ session_id: string }>(
-    WORKER_IDENTITY_CHECK_LIVE_WORKER_SQL,
+    lockForMutation ? WORKER_IDENTITY_CHECK_LIVE_WORKER_SQL : WORKER_IDENTITY_CHECK_READ_WORKER_SQL,
     [worker.sessionId, worker.accountId]
   );
   if (result.rows.length !== 1) throw new WorkerIdentityAccessDeniedError();
@@ -579,7 +583,7 @@ export class DatabaseWorkerIdentityCheckRepository
     const worker = assertWorkerIdentityPrincipal(principal);
     const database = await this.client();
     return database.transaction(async (transaction) => {
-      await assertLiveWorker(transaction, worker);
+      await assertLiveWorker(transaction, worker, false);
       const current = await transaction.query<IdentityRow>(CURRENT_SUBMITTED_VERSION_SQL, [
         worker.accountId
       ]);
