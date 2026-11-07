@@ -646,6 +646,48 @@ jobs:
       - name: PostgreSQL JSON parameters through script and runtime transactions
         run: npm run test:postgres-json
 
+  production-postgres-https:
+    # Unlike PGlite, PostgreSQL 16 exposes real auth_sessions row-lock
+    # deadlocks; exercise the optimized production build with HTTPS cookies.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      HSE_DISPOSABLE_POSTGRES_QA: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Verify isolated PostgreSQL 16 server and client binaries
+        run: |
+          if [ ! -x /usr/lib/postgresql/16/bin/initdb ] || [ ! -x /usr/bin/psql ]; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-16 postgresql-client-16
+          fi
+          /usr/lib/postgresql/16/bin/initdb --version | grep -Eq '[[:space:]]16\.'
+      - name: Install Chromium for real HTTPS production-session verification
+        run: npx playwright install --with-deps chromium
+      - name: Rebuild exact candidate and test native PostgreSQL, HTTPS, six roles and concurrent Identity GETs
+        timeout-minutes: 10
+        run: |
+          mkdir -p .autopilot/artifacts
+          npm run test:production-postgres-https
+      - name: Retain disposable PostgreSQL regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-postgres-https-${{ github.sha }}
+          path: |
+            .autopilot/artifacts/a27-prodpg-*/result.json
+            .autopilot/artifacts/a27-prodpg-*/postgres.log
+            .autopilot/artifacts/a27-prodpg-*/server.log
+          if-no-files-found: warn
+
   consumer-cohorts:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 60
