@@ -448,6 +448,67 @@ function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+/**
+ * Validate candidate bytes without reserving a permanent file ID or object key.
+ * Worker evidence calls this before an immutable per-version reservation, so
+ * rejected MIME/structure/oversize files cannot poison the slot for clean retry.
+ * Final quarantine independently revalidates after the actual reservation.
+ */
+function inspectSecureFileUploadContent(input: {
+  policy: TrustedSecureFileUploadPolicy;
+  originalFilename: string;
+  declaredMime: string;
+  bytes: Uint8Array;
+}): {
+  extension: SecureFileUploadExtension;
+  declaredMime: SecureFileUploadMime;
+  detectedMime: SecureFileUploadMime;
+  immutableBytes: Uint8Array;
+} {
+  const policy = assertTrustedSecureFileUploadPolicy(input.policy);
+  let filename: string;
+  try {
+    filename = normalizeSecureFileDisplayFilename(input.originalFilename);
+  } catch {
+    throw new SecureFileUploadValidationError("invalid_filename");
+  }
+  if (!(input.bytes instanceof Uint8Array) || input.bytes.byteLength < 1) {
+    throw new SecureFileUploadValidationError("invalid_structure");
+  }
+  if (input.bytes.byteLength > policy.maxBytes) {
+    throw new SecureFileUploadValidationError("oversize");
+  }
+
+  const extension = extensionForFilename(filename);
+  const extensionKind = kindForExtension(extension);
+  if (!policy.allowedKinds.includes(extensionKind)) {
+    throw new SecureFileUploadValidationError("unsupported_type");
+  }
+  const declaredMime = normalizeDeclaredMime(input.declaredMime);
+  const expectedMime = mimeForKind(extensionKind);
+  if (declaredMime !== expectedMime) {
+    throw new SecureFileUploadValidationError("type_mismatch");
+  }
+
+  const immutableBytes = Uint8Array.from(input.bytes);
+  const detectedKind = detectContentKind(immutableBytes);
+  const detectedMime = mimeForKind(detectedKind);
+  if (detectedKind !== extensionKind || detectedMime !== declaredMime) {
+    throw new SecureFileUploadValidationError("type_mismatch");
+  }
+
+  return { extension, declaredMime, detectedMime, immutableBytes };
+}
+
+export function preflightSecureFileUploadContent(input: {
+  policy: TrustedSecureFileUploadPolicy;
+  originalFilename: string;
+  declaredMime: string;
+  bytes: Uint8Array;
+}): void {
+  inspectSecureFileUploadContent(input);
+}
+
 export function validateSecureFileUpload(input: {
   policy: TrustedSecureFileUploadPolicy;
   fileId: string;
@@ -481,30 +542,8 @@ export function validateSecureFileUpload(input: {
   ) {
     throw new SecureFileUploadValidationError("invalid_filename");
   }
-  if (!(input.bytes instanceof Uint8Array) || input.bytes.byteLength < 1) {
-    throw new SecureFileUploadValidationError("invalid_structure");
-  }
-  if (input.bytes.byteLength > policy.maxBytes) {
-    throw new SecureFileUploadValidationError("oversize");
-  }
-
-  const extension = extensionForFilename(originalFilename);
-  const extensionKind = kindForExtension(extension);
-  if (!policy.allowedKinds.includes(extensionKind)) {
-    throw new SecureFileUploadValidationError("unsupported_type");
-  }
-  const declaredMime = normalizeDeclaredMime(input.declaredMime);
-  const expectedMime = mimeForKind(extensionKind);
-  if (declaredMime !== expectedMime) {
-    throw new SecureFileUploadValidationError("type_mismatch");
-  }
-
-  const immutableBytes = Uint8Array.from(input.bytes);
-  const detectedKind = detectContentKind(immutableBytes);
-  const detectedMime = mimeForKind(detectedKind);
-  if (detectedKind !== extensionKind || detectedMime !== declaredMime) {
-    throw new SecureFileUploadValidationError("type_mismatch");
-  }
+  const { extension, declaredMime, detectedMime, immutableBytes } =
+    inspectSecureFileUploadContent(input);
 
   const validated = Object.freeze({
     fileId,

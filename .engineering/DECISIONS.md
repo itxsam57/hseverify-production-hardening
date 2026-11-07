@@ -8,3 +8,5 @@ Existing historical .engineering/CONTINUATION.json points to an older worktree a
 PR5 mergedcanonical1e1ba56 after exactlocalefd checks and inspected privateCIc8f artifact. Candidate/head and tested synthetic merge provenance remain distinct.
 
 PR6 merged canonicald7ef69e after exact locale6dfcf9 privacy/type/lint, six CI checks and scoped Gatekeeper ACCEPT. CI artifact11305603913 tested synthetic mergeff175219. M3.09.01 stays partial. Next contract EF-AUTH-BOUNDARIES-20261004 uses seeded identities only for authentication boundaries, not registration/provisioning.
+
+16 October: the historical verifier-only CURRENT_TASK and its old worktree were reconciled to WORKFLOW-001 on qa/masterplan-release-20261016. CONTINUATION and CURRENT_TASK now point at the current isolated candidate; earlier exact-SHA evidence remains historical and cannot certify dirty source.

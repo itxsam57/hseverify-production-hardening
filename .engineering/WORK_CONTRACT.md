@@ -11,3 +11,22 @@ Prepared26native, actual nonSandbox browser, sandbox5/8, type/lint/security/buil
 Next actual gap: nonSandbox AuthRecoveryService returns a token with no persisted eligible-account flow/challenge. Live inbox/device delivery, real PostgreSQL contention, broader privacy/materialhandoffs/deployment breadth remain unverified. User authorizes finishing workflows before final APIs; continue useful local work without routine credential questions.
 
 Read NEXT_ACTION.json and one current receipt first. Preserve port3000, user-owned work and distinct audits. Use isolated databases/owned processes; avoid rerunning accepted PR29.
+
+## 15 October: verified consolidation and remaining masterplan work
+
+Owner requested both shared histories as context only, canonical source consolidation, and complete independent/connected workflows. Owner confirmed English-only interface. The current isolated branch retains older worktrees and data; no candidate has been published from this session. All claims below remain scoped, with exact release/CI/deployment pending.
+
+Current bounded implementation slice (within WORKFLOW-001):
+- Expose Verifier scoring conflict declaration; lock current draft and revision, remove conflicted authority, route the current case to Admin recovery, retain reason and immutable audit, and reassign using actual calibrated eligibility.
+- Expose safe scoring amendment: retain original final evidence and linked revision; reopen only an eligible unclosed current case with no active interview/issued decision, require actual fresh rubric marking and explicit finalization/progression. Do not expose arbitrary aggregate-score replacement. Deny stale/foreign/conflicted/revoked actions.
+- Implement selected high-risk independent second review, configurable quality sampling and bounded reviewer capacity without silently verifying evidence after only a first required review. Controls must be available to authorized Admin and tested through actual multi-role controls. Preserve case policy/version and immutable review history; disagreeing decisions reach Admin rather than automatic guilt.
+- Select existing Controlled/Section Review, MCQ/written-only, offline/tab conflict, and emergency resume/replacement Chromium workflows in release verification.
+- Repair proven native loader module-cycle failure without weakening product behavior or tests.
+
+Acceptance requires failing-then-passing focused regression evidence, real controls plus downstream records for each new workflow, independent correctness/security/test review, all required checks on the final exact SHA, fresh hosted CI, and a data-preserving exact-build test deployment. Existing 218 scenario counts are stale and must not be promoted from source presence alone. Live provider activation remains separate from controlled local transport/outage proof.
+
+Additional reproduced consumer gap M1.07.07: provide reasoned Admin duplicate-identity dispositions against current submitted version/latest check/CAS revision, retain actor and reason, continue eligible verified Worker ID issuance, preserve both identities and deny stale/foreign/revoked actions. Worker status must never expose candidate facts. Also audit M3.07.03 appeal interview followup runtime/progression before final release.
+
+Current M3.07.03 repair: appeal-bound interview authority follows retained replacement lineage, supports the actual Assessor console/runtime/playbook, appends one immutable response from persisted completed interview evidence, and enables independent final appeal review without reopening or changing the original issued case. Withdrawal cancels unused followup appointments. Enforce latest effective exact pinned framework calibration throughout matching, assigned reads, runtime, playbook, console, media, recording and human support; use a fresh database clock. Prepared native/browser evidence is scoped, not release certification.
+
+Remaining confirmed consumer gap: further-evidence appeal response stores exact version/file hashes but Admin cannot inspect the bound scans. Complete scoped independent Admin preview and real Worker upload→response→Admin review, plus durable next-actor response notification. These and final exact-SHA gates remain open.

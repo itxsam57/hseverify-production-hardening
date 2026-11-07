@@ -72,7 +72,7 @@ test("every portal notification bell creates, opens, deep-links and marks persis
       const result = spawnSync(process.execPath, [script], { cwd: root, env: environment, encoding: "utf8" });
       assert.equal(result.status, 0, result.stderr || result.stdout);
     }
-    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+    const credentials = JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8"));
 
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],
@@ -102,8 +102,16 @@ test("every portal notification bell creates, opens, deep-links and marks persis
             await bell.locator(".notification-panel").waitFor({ state: "visible" });
             const unreadItem = bell.getByRole("button", { name: /Unread: Notification foundation ready/ });
             await unreadItem.waitFor({ state: "visible" });
+            // The target is the current dashboard, so waitForURL alone resolves
+            // immediately and a reload can cancel the pending read action.
+            const opened = page.waitForResponse(response =>
+              response.request().method() === "POST"
+              && new URL(response.url()).pathname === `/${role}/dashboard`,
+            { timeout: 15_000 });
             await unreadItem.click();
-            await page.waitForURL(`**/${role}/dashboard`, { timeout: 15_000 });
+            const openResponse = await opened;
+            assert.ok(openResponse.ok(), `${role} notification open action failed: HTTP ${openResponse.status()}`);
+            await page.locator('details.notification-menu > summary[aria-label="0 unread notifications"]').waitFor();
 
             await page.reload({ waitUntil: "networkidle" });
             assert.equal(await page.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");

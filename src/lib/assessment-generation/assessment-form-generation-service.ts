@@ -43,6 +43,7 @@ type BlueprintVersionRow = {
 
 type CandidateRow = {
   question_id: string;
+  exposure_family_reference: string;
   question_version_id: string;
   question_type: QuestionType;
   options_json: unknown;
@@ -181,33 +182,42 @@ async function loadAssessmentSelectionInputs(
   }
   const selectors = parseSelectors(blueprint.selectors_json);
 
-  const priorResult = await database.query<{ question_id: string }>(
-    `SELECT DISTINCT i.question_id
+  const priorResult = await database.query<{ exposure_family_reference: string }>(
+    `SELECT DISTINCT i.exposure_family_reference
        FROM generated_assessment_forms f
        JOIN generated_assessment_form_items i ON i.form_id=f.form_id
-      WHERE f.worker_account_id=$1`,
+       LEFT JOIN worker_identity_worker_ids historical_owner
+         ON historical_owner.worker_account_id=f.worker_account_id
+      WHERE f.worker_account_id=$1
+         OR historical_owner.permanent_worker_id=(
+           SELECT current_owner.permanent_worker_id
+           FROM worker_identity_worker_ids AS current_owner
+           WHERE current_owner.worker_account_id=$1
+         )`,
     [input.workerAccountId]
   );
-  const excluded = new Set(priorResult.rows.map((row) => row.question_id));
+  const excluded = new Set(priorResult.rows.map((row) => row.exposure_family_reference));
 
   const candidatesResult = await database.query<CandidateRow>(
-    `SELECT q.question_id,v.question_version_id,v.question_type,v.options_json,
+    `SELECT q.question_id,q.exposure_family_reference,v.question_version_id,v.question_type,v.options_json,
             v.domain_reference,v.difficulty,v.tags_json
        FROM assessment_questions q
        JOIN assessment_question_versions v
          ON v.question_version_id=q.current_version_id
         AND v.question_id=q.question_id
-      WHERE q.question_status='ACTIVE'
+       JOIN question_version_workflow w ON w.question_version_id=v.question_version_id AND w.question_id=q.question_id
+      WHERE q.question_status='ACTIVE' AND w.workflow_state='PUBLISHED'
         AND v.framework_id=$1
       ORDER BY q.question_id,v.question_version_id`,
     [blueprint.framework_id]
   );
   const eligibleRows = candidatesResult.rows.filter(
-    (candidate) => !excluded.has(candidate.question_id)
+    (candidate) => !excluded.has(candidate.exposure_family_reference)
   );
   const candidates: AssessmentSelectionCandidate[] = eligibleRows.map((candidate) =>
     Object.freeze({
       questionId: candidate.question_id,
+      exposureFamilyReference: candidate.exposure_family_reference,
       questionVersionId: candidate.question_version_id,
       questionType: candidate.question_type,
       domainReference: candidate.domain_reference,

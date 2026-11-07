@@ -30,6 +30,17 @@ test("Public home exposes usable primary routes, registrations and six role dest
       await page.goto(base);await page.getByRole("navigation",{name:"Public navigation"}).getByRole("link",{name:"Sign in",exact:true}).click();
       await page.getByRole("link",{name:"Open "+role,exact:true}).click();await page.waitForURL(base+"/"+role.toLowerCase()+"/login");await page.getByLabel("Email address").waitFor();
      }
+     await page.goto(base);
+     const contactLink=page.getByRole("navigation",{name:"Public navigation"}).getByRole("link",{name:"Contact",exact:true});
+     let focused=false;
+     for(let step=0;step<14;step++){
+       await page.keyboard.press("Tab");
+       if(await contactLink.evaluate(el=>document.activeElement===el)){focused=true;break;}
+     }
+     assert.equal(focused,true,"Contact must be keyboard reachable");
+     await page.keyboard.press("Enter");
+     await page.waitForURL(base+"/contact");
+     await page.getByLabel("Your name",{exact:true}).waitFor();
      await page.close();
     }
     console.log("ACTUAL_PUBLIC_NAVIGATION real desktop/mobile links, both registration entry forms and all six role sign-in forms; demo and general contact fulfilment remain separate");

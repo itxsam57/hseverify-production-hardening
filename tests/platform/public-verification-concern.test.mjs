@@ -139,7 +139,8 @@ test("M1.12 concern submission derives subject authority only from the opaque pu
   assert.equal(persistedInput.contactPhone, "+923001234567");
   assert.equal(persistedInput.requestFingerprintHash, REQUEST_FINGERPRINT);
 
-  const serialized = JSON.stringify(persistedInput);
+  assert.deepEqual(persistedInput.subjectBinding, { kind: "worker", identifier: WORKER_ID });
+  const serialized = JSON.stringify({ ...persistedInput, subjectBinding: undefined });
   for (const forbidden of [
     WORKER_ID,
     "browser_must_not_select_account",

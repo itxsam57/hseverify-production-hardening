@@ -8,7 +8,11 @@ import {
   readSecureFileAccessCore,
   type SecureFileAccessLookup
 } from "../secure-files/secure-file-access-core";
-import { createLocalTestPrivateObjectStorage } from "../secure-files/private-object-storage";
+import {
+  createRuntimePrivateObjectStorage,
+  PrivateObjectStorageError,
+  type PrivateObjectStorage
+} from "../secure-files/private-object-storage";
 import type { SecureFileRecord } from "../secure-files/secure-file-domain";
 import {
   CompanyVerificationAccessDeniedError,
@@ -109,13 +113,17 @@ function optionalIso(value: string | Date | null): string | null {
   return value === null ? null : iso(value);
 }
 
-function requireLocalTestStorageEnvironment(
-  value: string
-): "development" | "test" {
-  if (value !== "development" && value !== "test") {
-    throw new CompanyVerificationAccessDeniedError();
+function requireConfiguredPrivateStorage(
+  appEnvironment: "development" | "test" | "preview" | "production"
+): PrivateObjectStorage {
+  try {
+    return createRuntimePrivateObjectStorage(appEnvironment);
+  } catch (error) {
+    if (error instanceof PrivateObjectStorageError) {
+      throw new CompanyVerificationAccessDeniedError();
+    }
+    throw error;
   }
-  return value;
 }
 
 async function assertLiveDecider(
@@ -273,9 +281,7 @@ export class CompanyVerificationReviewService {
   ) {
     await assertLiveDecider(this.database, principal);
     const env = getServerEnvironment();
-    const storageEnvironment = requireLocalTestStorageEnvironment(
-      env.appEnvironment
-    );
+    const storage = requireConfiguredPrivateStorage(env.appEnvironment);
 
     const result = await this.database.query<PreviewFileRow>(
       `SELECT files.*
@@ -329,7 +335,7 @@ export class CompanyVerificationReviewService {
       expectedPurpose: "preview",
       signingSecret: env.sessionSecret,
       repository: lookup,
-      storage: createLocalTestPrivateObjectStorage(storageEnvironment),
+      storage,
       now
     });
   }

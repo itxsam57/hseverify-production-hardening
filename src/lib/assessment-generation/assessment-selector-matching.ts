@@ -8,6 +8,7 @@ import type {
 
 export type AssessmentSelectionCandidate = Readonly<{
   questionId: string;
+  exposureFamilyReference?: string;
   questionVersionId: string;
   questionType: QuestionType;
   domainReference: string;
@@ -140,8 +141,13 @@ export function allocateBlueprintCandidates(
       : leftRank.localeCompare(rightRank);
   });
 
+  const families = [...new Set(orderedCandidates.map(
+    candidate => candidate.exposureFamilyReference ?? candidate.questionId
+  ))];
+  const familyIndexes = new Map(families.map((family, index) => [family, index]));
   const source = 0;
-  const candidateStart = 1;
+  const familyStart = 1;
+  const candidateStart = familyStart + families.length;
   const selectorStart = candidateStart + orderedCandidates.length;
   const sink = selectorStart + selectors.length;
   const graph: Edge[][] = Array.from({ length: sink + 1 }, () => []);
@@ -149,10 +155,15 @@ export function allocateBlueprintCandidates(
     Array<{ selectorIndex: number; edge: Edge }>
   > = Array.from({ length: orderedCandidates.length }, () => []);
 
+  for (let familyIndex = 0; familyIndex < families.length; familyIndex += 1) {
+    addEdge(graph, source, familyStart + familyIndex, 1);
+  }
   for (let candidateIndex = 0; candidateIndex < orderedCandidates.length; candidateIndex += 1) {
     const candidate = orderedCandidates[candidateIndex];
     const candidateNode = candidateStart + candidateIndex;
-    addEdge(graph, source, candidateNode, 1);
+    const familyIndex = familyIndexes.get(candidate.exposureFamilyReference ?? candidate.questionId);
+    if (familyIndex === undefined) throw new Error("Assessment candidate has no Exposure Family.");
+    addEdge(graph, familyStart + familyIndex, candidateNode, 1);
 
     const matchingSelectors = selectors
       .map((selector, selectorIndex) => ({ selector, selectorIndex }))

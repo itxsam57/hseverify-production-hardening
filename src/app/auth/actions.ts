@@ -41,6 +41,7 @@ async function signInForRole(
     });
     await establishAuthenticationSession({
       accountId: authenticated.accountId,
+      mfaEventId: authenticated.mfaEventId,
       role,
       userAgent: metadata.userAgent,
       ipAddress: metadata.ipAddress,

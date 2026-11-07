@@ -6,7 +6,7 @@ import {
   createIdentifier,
   type AuthRole
 } from "../auth/auth-domain";
-import { normalizeAccountSecurityNotificationPayload, type AccountSecurityNotificationPayload, type OutboxJobRecord } from "../outbox/outbox-domain";
+import { normalizeAssessmentFundingNotificationPayload, normalizeAccountSecurityNotificationPayload, type AccountSecurityNotificationPayload, type OutboxJobRecord, ASSURANCE_EVENT_TYPES, normalizeAssuranceEventNotificationPayload, type AssuranceEventType, type AssuranceFundingEventType } from "../outbox/outbox-domain";
 
 export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
   password_changed: "account.password.changed",
@@ -15,8 +15,8 @@ export const ACCOUNT_SECURITY_NOTIFICATION_TYPES = {
   mfa_recovery_codes_rotated: "account.recovery_codes.rotated"
 } as const;
 
-export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES)] as const;
-export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case"] as const;
+export const NOTIFICATION_TYPES = ["platform.foundation.ready", "interview.scheduled", "interview.reminder", "assessment.funding.requested", "assessment.funding.approved", ...Object.values(ACCOUNT_SECURITY_NOTIFICATION_TYPES), ...ASSURANCE_EVENT_TYPES] as const;
+export const NOTIFICATION_TARGETS = ["portal.dashboard", "account.security", "interview.record", "company.assurance.case", "company.billing.funding", "worker.assessment.case", "worker.evidence.record", "worker.identity.record", "worker.observation.record", "verifier.review.task", "admin.review.escalation", "worker.assurance.case", "worker.credential.record", "appeal.record", "admin.interview.case", "admin.integrity.review", "verifier.integrity.review", "admin.scoring.assignment", "admin.review.quality"] as const;
 export const NOTIFICATION_SCHEMA_VERSION = 1 as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -26,10 +26,12 @@ export type FoundationNotificationMetadata = Readonly<{
   fixtureRef: string;
 }>;
 
-export type NotificationMetadataByType = Readonly<{
+export type NotificationMetadataByType = Readonly<Record<AssuranceEventType, Readonly<{eventRef:string}>> & {
   "platform.foundation.ready": FoundationNotificationMetadata;
   "interview.scheduled": Readonly<{eventRef:string}>;
   "interview.reminder": Readonly<{eventRef:string}>;
+  "assessment.funding.requested": Readonly<{eventRef:string}>;
+  "assessment.funding.approved": Readonly<{eventRef:string}>;
   "account.password.changed": AccountSecurityNotificationPayload;
   "account.password.reset": AccountSecurityNotificationPayload;
   "account.mfa.replaced": AccountSecurityNotificationPayload;
@@ -168,6 +170,10 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "platform.foundation.ready":
       normalized = normalizeFoundationNotificationMetadata(value);
       break;
+    case "assessment.funding.requested":
+    case "assessment.funding.approved":
+      normalized = normalizeAssessmentFundingNotificationPayload(value);
+      break;
     case "interview.reminder":
     case "interview.scheduled":
     case "account.password.changed":
@@ -175,6 +181,27 @@ export function normalizeNotificationMetadata<T extends NotificationType>(
     case "account.mfa.replaced":
     case "account.recovery_codes.rotated":
       normalized = normalizeAccountSecurityNotificationPayload(value);
+      break;
+    case "evidence.submitted":
+    case "evidence.unable":
+    case "evidence.escalated":
+    case "evidence.returned":
+    case "evidence.reviewed":
+    case "evidence.additional.requested":
+    case "integrity.escalated":
+    case "assessment.review.conflict":
+    case "evidence.second_review.requested":
+    case "assessment.review.assigned":
+    case "integrity.returned":
+    case "interview.recommended":
+    case "decision.recorded":
+    case "credential.issued":
+    case "appeal.submitted":
+    case "appeal.evidence.submitted":
+    case "appeal.interview.submitted":
+    case "appeal.updated":
+      if (!value || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value)!==Object.prototype || Object.keys(value).length!==1 || !Object.hasOwn(value,"eventRef")) throw new NotificationContractError("Assurance notification metadata is invalid.");
+      normalized = Object.freeze({eventRef:normalizeAssuranceEventNotificationPayload({eventType:notificationType,eventRef:(value as {eventRef:unknown}).eventRef}).eventRef});
       break;
     default:
       throw new NotificationContractError(
@@ -201,6 +228,79 @@ const SECURITY_CONTENT = {
   "account.recovery_codes.rotated": { title: "Recovery codes replaced", body: "A new recovery-code set replaced your previous codes. Review your account security if you did not make this change." }
 } as const;
 
+
+export const ASSURANCE_EVENT_CONTENT: Readonly<Record<AssuranceEventType,{title:string;body:string}>> = Object.freeze({
+  "integrity.escalated":{title:"Integrity review escalated",body:"Open the record for the current status and next action."},
+  "assessment.review.conflict":{title:"Assessment scoring conflict",body:"Open the record for the current status and next action."},
+  "evidence.second_review.requested":{title:"Independent evidence review required",body:"Open the record for the current status and next action."},
+  "assessment.review.assigned":{title:"Assessment review assigned",body:"Open the record for the current status and next action."},
+  "integrity.returned":{title:"Integrity review returned",body:"Open the record for the current status and next action."},
+  "evidence.submitted": {
+    "title": "Evidence submitted",
+    "body": "Open the record for the current status and next action."
+  },
+  "evidence.unable": {title:"Evidence could not be verified",body:"Open the record for the current status and next action."},
+  "evidence.escalated": {title:"Evidence review escalated",body:"Open the record for the current status and next action."},
+  "evidence.returned": {title:"Evidence returned to review",body:"Open the record for the current status and next action."},
+  "evidence.reviewed": {
+    "title": "Evidence review recorded",
+    "body": "Open the record for the current status and next action."
+  },
+  "evidence.additional.requested": {
+    "title": "Additional evidence requested",
+    "body": "Open the record for the current status and next action."
+  },
+  "interview.recommended": { title: "Interview recommendation submitted", body: "Open the record for the current status and next action." },
+  "decision.recorded": {
+    "title": "Assurance decision recorded",
+    "body": "Open the record for the current status and next action."
+  },
+  "credential.issued": {
+    "title": "Credential issued",
+    "body": "Open the record for the current status and next action."
+  },
+  "appeal.evidence.submitted":{title:"Appeal evidence submitted",body:"Open the record for the current status and next action."},
+  "appeal.interview.submitted":{title:"Appeal interview submitted",body:"Open the record for the current status and next action."},
+  "appeal.submitted": {
+    "title": "Appeal submitted",
+    "body": "Open the record for the current status and next action."
+  },
+  "appeal.updated": {
+    "title": "Appeal review updated",
+    "body": "Open the record for the current status and next action."
+  }
+});
+
+export function assuranceEventEmailContent(type:AssuranceEventType|AssuranceFundingEventType):Readonly<{title:string;body:string}>{
+ if(type==="assessment.funding.requested")return {title:"Assessment funding requested",body:"A linked Worker requested assessment funding. Open the Company billing request to approve or reject it."};
+ if(type==="assessment.funding.approved")return {title:"Assessment funding approved",body:"Your Company approved assessment funding. Open your available assessment and complete the required pre-assessment checks."};
+ if(!ASSURANCE_EVENT_TYPES.includes(type))throw new NotificationContractError();
+ return ASSURANCE_EVENT_CONTENT[type];
+}
+
+function assuranceTarget(type:AssuranceEventType,context:{role:AuthRole;targetReference:string|null}):NotificationTarget{
+ const roles:Readonly<Record<AssuranceEventType,readonly AuthRole[]>>={
+  "assessment.review.conflict":["admin"],"evidence.second_review.requested":["verifier","admin"],
+  "assessment.review.assigned":["verifier"],"integrity.escalated":["admin"],"integrity.returned":["verifier"],
+  "evidence.submitted":["worker","verifier"],"evidence.unable":["worker"],"evidence.escalated":["worker","admin"],"evidence.returned":["worker","verifier"],"evidence.reviewed":["worker"],"evidence.additional.requested":["worker"],
+  "interview.recommended":["worker","company","admin"],"decision.recorded":["worker","company"],"credential.issued":["worker"],"appeal.submitted":["worker","admin"],"appeal.updated":["worker"],"appeal.evidence.submitted":["worker","admin"],"appeal.interview.submitted":["worker","admin"]
+ };
+ if(!roles[type].includes(context.role))throw new NotificationContractError("Assurance recipient role is invalid.");
+ if(type==="assessment.review.conflict")return "admin.scoring.assignment";
+ if(type==="evidence.second_review.requested")return context.role==="admin"?"admin.review.quality":"verifier.review.task";
+ if(type==="integrity.escalated")return "admin.integrity.review";
+ if(type==="assessment.review.assigned" || type==="integrity.returned")return "verifier.integrity.review";
+ if(type==="evidence.escalated" && context.role==="admin")return "admin.review.escalation";
+ if(type==="interview.recommended")return context.role==="company"?"company.assurance.case":context.role==="admin"?"admin.interview.case":"worker.assurance.case";
+ if(type.startsWith("appeal."))return "appeal.record";
+ if(type==="decision.recorded")return context.role==="company"?"company.assurance.case":"worker.assurance.case";
+ if(type==="credential.issued")return "worker.credential.record";
+ if(context.role==="verifier")return "verifier.review.task";
+ if(context.targetReference?.startsWith("worker_identity_"))return "worker.identity.record";
+ if(context.targetReference?.startsWith("supervisor_observation_"))return "worker.observation.record";
+ return "worker.evidence.record";
+}
+
 export function notificationContent(notificationType: NotificationType, context?: {role: AuthRole; targetReference: string | null}): Readonly<{
   title: string;
   body: string;
@@ -208,6 +308,47 @@ export function notificationContent(notificationType: NotificationType, context?
   targetReference: string | null;
 }> {
   switch (notificationType) {
+    case "evidence.submitted":
+    case "evidence.unable":
+    case "evidence.escalated":
+    case "evidence.returned":
+    case "evidence.reviewed":
+    case "evidence.additional.requested":
+    case "integrity.escalated":
+    case "assessment.review.conflict":
+    case "evidence.second_review.requested":
+    case "assessment.review.assigned":
+    case "integrity.returned":
+    case "interview.recommended":
+    case "decision.recorded":
+    case "credential.issued":
+    case "appeal.submitted":
+    case "appeal.evidence.submitted":
+    case "appeal.interview.submitted":
+    case "appeal.updated":
+    {
+      if(!context)throw new NotificationContractError("Assurance notification target context is required.");
+      const target=assuranceTarget(notificationType,context);
+      resolveNotificationHref({role:context.role,target,targetReference:context.targetReference});
+      return Object.freeze({...ASSURANCE_EVENT_CONTENT[notificationType],target,targetReference:context.targetReference});
+    }
+    case "assessment.funding.requested":
+    case "assessment.funding.approved": {
+      const requested = notificationType === "assessment.funding.requested";
+      if (!context || context.role !== (requested ? "company" : "worker")) {
+        throw new NotificationContractError("Funding notification target context is invalid.");
+      }
+      const target = requested ? "company.billing.funding" : "worker.assessment.case";
+      resolveNotificationHref({ role: context.role, target, targetReference: context.targetReference });
+      return Object.freeze({
+        title: requested ? "Assessment funding requested" : "Assessment funding approved",
+        body: requested
+          ? "A linked Worker requested assessment funding. Open the Company billing request to approve or reject it."
+          : "Your Company approved assessment funding. Open your available assessment and complete the required pre-assessment checks.",
+        target,
+        targetReference: context.targetReference
+      });
+    }
     case "interview.reminder":
     case "interview.scheduled": {
       if (!context) throw new NotificationContractError("Interview notification target context is required.");
@@ -298,6 +439,70 @@ export function resolveNotificationHref(input: {
     throw new NotificationContractError("Notification target is invalid.");
   }
   const recordReference = /^[A-Za-z0-9_-]{1,200}$/;
+  if(input.target==="admin.scoring.assignment" || input.target==="admin.review.quality"){
+    const scoring=input.target==="admin.scoring.assignment";
+    const pattern=scoring?/^assurance_case_[A-Za-z0-9_-]{24}$/:/^evidence_review_[A-Za-z0-9_-]{24}$/;
+    if(input.role!=="admin"||!input.targetReference||!pattern.test(input.targetReference))throw new NotificationContractError();
+    return (scoring?"/admin/operations/scoring-assignments":"/admin/operations/review-quality")+"#"+encodeURIComponent(input.targetReference);
+  }
+
+  if(input.target==="admin.integrity.review" || input.target==="verifier.integrity.review"){
+    const role=input.target==="admin.integrity.review"?"admin":"verifier";
+    if(input.role!==role || !input.targetReference || !/^written_score_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError();
+    return (role==="admin"?"/admin/operations/integrity-reviews":"/verifier/reviews/scoring")+"#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="admin.interview.case"){
+    const parts=input.targetReference?.split("#");
+    if(input.role!=="admin" || parts?.length!==2 || !parts.every(value=>recordReference.test(value)))throw new NotificationContractError();
+    return "/admin/decisions?tenantId="+encodeURIComponent(parts[0])+"&caseId="+encodeURIComponent(parts[1]);
+  }
+  if(input.target==="worker.evidence.record"){
+    if(!["worker"].includes(input.role) || !input.targetReference || !/^evidence_record_[a-f0-9]{32}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/worker/evidence#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="worker.identity.record"){
+    if(!["worker"].includes(input.role) || !input.targetReference || !/^worker_identity_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/worker/identity#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="worker.observation.record"){
+    if(!["worker"].includes(input.role) || !input.targetReference || !/^supervisor_observation_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/worker/observations#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="admin.review.escalation"){
+    if(input.role!=="admin" || !input.targetReference || !/^evidence_review_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Escalation record target is invalid.");
+    return "/admin/operations/review-escalations#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="verifier.review.task"){
+    if(!["verifier"].includes(input.role) || !input.targetReference || !/^evidence_review_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/verifier/reviews/"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="worker.assurance.case"){
+    if(!["worker"].includes(input.role) || !input.targetReference || !/^assurance_case_[A-Za-z0-9_-]{24}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/worker/assurance-cases/"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="worker.credential.record"){
+    if(!["worker"].includes(input.role) || !input.targetReference || !/^credential_id_[A-Za-z0-9_-]{1,160}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/worker/passport#"+encodeURIComponent(input.targetReference);
+  }
+  if(input.target==="appeal.record"){
+    if(!["worker","admin"].includes(input.role) || !input.targetReference || !/^appeal_[A-Za-z0-9_-]{1,160}$/.test(input.targetReference))throw new NotificationContractError("Assurance record target is invalid.");
+    return "/"+input.role+"/appeals#"+encodeURIComponent(input.targetReference);
+  }
+  if (input.target === "company.billing.funding") {
+    if (input.role !== "company" || !input.targetReference ||
+        !/^funding_[A-Za-z0-9_-]{24}$/.test(input.targetReference)) {
+      throw new NotificationContractError("Company funding notification target is invalid.");
+    }
+    return "/company/billing#" + encodeURIComponent(input.targetReference);
+  }
+  if (input.target === "worker.assessment.case") {
+    if (input.role !== "worker" || !input.targetReference ||
+        !/^assurance_case_[A-Za-z0-9_-]{24}$/.test(input.targetReference)) {
+      throw new NotificationContractError("Worker assessment notification target is invalid.");
+    }
+    return "/worker/available-assessments#" + encodeURIComponent(input.targetReference);
+  }
+
   if (input.target === "interview.record") {
     if (!["worker","assessor"].includes(input.role) || !input.targetReference || !recordReference.test(input.targetReference)) {
       throw new NotificationContractError("Interview notification target is invalid.");

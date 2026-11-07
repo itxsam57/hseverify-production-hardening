@@ -94,10 +94,10 @@ async function duplicate(page, baseUrl, email, phone) {
   await page.getByRole("alert").getByText("Registration cannot be started with these details. Check the information or use Worker sign in.", {exact:true}).waitFor();
   assert.equal(new URL(page.url()).pathname, "/worker/register");
 }
-async function reset(page, code) {
+async function reset(page, code, password=NEW_PASSWORD) {
   await page.getByLabel("Recovery code", {exact:true}).fill(code);
-  await page.getByLabel("New password", {exact:true}).fill(NEW_PASSWORD);
-  await page.getByLabel("Confirm new password").fill(NEW_PASSWORD);
+  await page.getByLabel("New password", {exact:true}).fill(password);
+  await page.getByLabel("Confirm new password").fill(password);
   await page.getByRole("button", {name:"Reset password and revoke sessions", exact:true}).click();
 }
 test("Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions", {timeout:240000}, async()=>{
@@ -166,8 +166,17 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
     await phase(async()=>{
       page=await recoveryContext.newPage();oldPage=await oldContext.newPage();
       await page.goto(baseUrl+"/auth/recover/verify?portal=worker");
+      const replayContext=await browser.newContext();
+      await replayContext.addCookies(await recoveryContext.cookies());
+      const replayPage=await replayContext.newPage();
+      await replayPage.goto(baseUrl+"/auth/recover/verify?portal=worker");
       await reset(page,code);
       await page.waitForURL("**/worker/login?reason=password-reset");
+      await reset(replayPage,code,"ReplayMustNotReplace!Password2026");
+      await replayPage.getByRole("alert").getByText("This recovery request is no longer available.",{exact:true}).waitFor({timeout:15000});
+      assert.equal(new URL(replayPage.url()).pathname,"/auth/recover/verify");
+      await replayContext.close();
+      console.log("ACTUAL_WORKER_RECOVERY_REPLAY_BROWSER stolen old recovery cookie and consumed OTP cannot reset password twice");
       await oldPage.goto(baseUrl+"/worker/dashboard");
       assert.equal(new URL(oldPage.url()).pathname,"/worker/login");
       await page.getByLabel("Email address").fill(worker.email);await page.getByLabel("Password").fill(worker.password);

@@ -25,8 +25,15 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          package-manager-cache: false
       - run: npm ci --no-audit --no-fund
+      - name: Install PDF text verifier for real credential assertions
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends poppler-utils
+          fi
+          pdftotext -v
       - name: Configure ephemeral test secrets and evidence directory
         shell: bash
         run: |
@@ -34,7 +41,7 @@ jobs:
           import os, pathlib, secrets
           pathlib.Path(".engineering/evidence").mkdir(parents=True, exist_ok=True)
           with open(os.environ["GITHUB_ENV"], "a") as stream:
-              for key in ("HSE_SESSION_SECRET", "HSE_AUTH_PEPPER"):
+              for key in ("HSE_SESSION_SECRET", "HSE_AUTH_PEPPER", "HSE_CREDENTIAL_SIGNING_SECRET"):
                   stream.write(key + "=" + secrets.token_hex(32) + "\n")
           PY
       - name: Complete reassessment through a distinct credential in Chromium

@@ -1,3 +1,10 @@
+export class CredentialAppealReviewAuthorizationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CredentialAppealReviewAuthorizationError";
+  }
+}
+
 export const APPEAL_STATUSES = Object.freeze(["submitted", "under_review", "accepted", "rejected", "withdrawn"] as const);
 export type AppealStatus = (typeof APPEAL_STATUSES)[number];
 

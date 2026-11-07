@@ -40,9 +40,12 @@ const ENV = {
 };
 const oid = (prefix, c) => `${prefix}_${c.repeat(24)}`;
 
-async function db() {
+async function db(withFunding=false) {
   const database = await openScriptDatabase(ENV);
-  await applyMigrationsThrough(database, ENV.releaseSha, MIGRATION);
+  // Refund reservations share the live M2.01 funding/assurance schema;
+  // keep historical 0045-only migration/rollback tests at their original ceiling.
+  await applyMigrationsThrough(database, ENV.releaseSha,
+    withFunding ? "0095_assessment_funding_notifications" : MIGRATION);
   return database;
 }
 
@@ -354,7 +357,7 @@ test("M3.05 a new provider event ID for an already captured checkout is harmless
 });
 
 test("M3.05 refunds are bounded/idempotent and provider success preserves financial history", async () => {
-  const database = await db();
+  const database = await db(true);
   try {
     const company = await seedCompany(database, "D");
     const service = new BillingService(database, new SandboxBillingProvider());
@@ -384,7 +387,7 @@ test("M3.05 refunds are bounded/idempotent and provider success preserves financ
 });
 
 test("M3.05 idempotency keys cannot be reused with different financial data and tenants cannot refund each other's invoices", async () => {
-  const database = await db();
+  const database = await db(true);
   try {
     const a = await seedCompany(database,"G");
     const b = await seedCompany(database,"H");
@@ -413,7 +416,7 @@ test("M3.05 idempotency keys cannot be reused with different financial data and 
 });
 
 test("M3.05 concurrent refund reservations cannot over-refund an invoice", async () => {
-  const database = await db();
+  const database = await db(true);
   try {
     const company = await seedCompany(database,"I");
     const service = new BillingService(database,new SandboxBillingProvider());
@@ -482,7 +485,7 @@ test("M3.05 reconciliation records discrepancies without silently rewriting immu
 });
 
 test("M3.05 reconciliation detects refund, provider-event and credit-ledger inconsistencies without repairing them", async () => {
-  const database=await db();
+  const database=await db(true);
   try {
     const company=await seedCompany(database,"K");
     const service=new BillingService(database,new SandboxBillingProvider());

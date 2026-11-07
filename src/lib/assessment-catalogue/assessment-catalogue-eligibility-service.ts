@@ -1,4 +1,5 @@
 import "server-only";
+import { evaluateWorkerAssessmentHistory, type AssessmentEligibilityDecision } from "./assessment-eligibility-policy-service";
 
 import type { AuthorizationPrincipal } from "../authorization/authorization-context-domain";
 import { evaluatePlatformPermission } from "../authorization/authorization-domain";
@@ -37,6 +38,7 @@ type AvailabilityRow = {
   minimum_verified_qualifications: number | string;
   verified_qualification_count: number | string;
   case_id: string;
+  effective_value_json: Record<string, unknown>;
 };
 
 const CASE_ID_PATTERN = /^assurance_case_[A-Za-z0-9_-]{24}$/;
@@ -141,7 +143,8 @@ function availabilitySql(forCase: boolean): string {
     versions.blueprint_version_id,
     versions.minimum_verified_qualifications,
     COALESCE(qualifications.qualification_count, 0)::int AS verified_qualification_count,
-    cases.case_id
+    cases.case_id,
+    snapshots.effective_value_json
   FROM assurance_cases AS cases
   JOIN assurance_case_policy_snapshots AS snapshots
     ON snapshots.case_id = cases.case_id
@@ -170,10 +173,16 @@ function availabilitySql(forCase: boolean): string {
 async function capacityFilteredAvailability(
   database: DatabaseClient,
   workerAccountId: string,
-  rows: readonly AvailabilityRow[]
+  rows: readonly AvailabilityRow[],
+  now: Date
 ): Promise<readonly AssessmentCatalogueAvailability[]> {
   const checked = await Promise.all(
     rows.map(async (row) => {
+      const decision = await evaluateWorkerAssessmentHistory(database, {
+        workerAccountId, frameworkId: row.framework_id,
+        policyValues: row.effective_value_json, excludeCaseId: row.case_id, now, lockWorker: true
+      });
+      if (decision.eligibilityStatus !== "AVAILABLE") return null;
       const available = await hasUnseenAssessmentCapacity(database, {
         workerAccountId,
         blueprintVersionId: row.blueprint_version_id,
@@ -204,8 +213,38 @@ export class AssessmentCatalogueEligibilityService {
     return capacityFilteredAvailability(
       this.database,
       principal.accountId,
-      result.rows
+      result.rows,
+      now
     );
+  }
+
+  async listUnavailableForWorker(
+    principal: AuthorizationPrincipal,
+    now = new Date()
+  ): Promise<readonly (AssessmentCatalogueAvailability & AssessmentEligibilityDecision)[]> {
+    await assertLiveWorker(this.database, principal, now);
+    const result = await this.database.query<AvailabilityRow>(availabilitySql(false), [principal.accountId]);
+    const decisions = await Promise.all(result.rows.map(async (row) => {
+      const decision = await evaluateWorkerAssessmentHistory(this.database, {
+        workerAccountId: principal.accountId, frameworkId: row.framework_id,
+        policyValues: row.effective_value_json, excludeCaseId: row.case_id, now
+      });
+      if (decision.eligibilityStatus !== "AVAILABLE") return {...toAvailability(row), ...decision};
+      const hasCapacity = await hasUnseenAssessmentCapacity(this.database, {
+        workerAccountId: principal.accountId,
+        blueprintVersionId: row.blueprint_version_id,
+        frameworkId: row.framework_id
+      });
+      return {
+        ...toAvailability(row),
+        ...(hasCapacity ? decision : {
+          eligibilityStatus: "QUESTION_CAPACITY" as const,
+          eligibilityReason: "This assessment cannot start because enough unused questions are not currently available. Your assessment history is preserved. Contact your assessment coordinator for next steps.",
+          availableAt: null
+        })
+      };
+    }));
+    return Object.freeze(decisions.filter(row => row.eligibilityStatus !== "AVAILABLE"));
   }
 
   async findAvailableForCase(
@@ -224,7 +263,8 @@ export class AssessmentCatalogueEligibilityService {
     return capacityFilteredAvailability(
       this.database,
       principal.accountId,
-      result.rows
+      result.rows,
+      now
     );
   }
 }

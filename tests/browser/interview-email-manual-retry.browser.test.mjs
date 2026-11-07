@@ -87,7 +87,7 @@ test("Actual Admin manual retry reschedules produced jobs through its authentica
   }});
   const build=spawnSync(process.execPath,["scripts/build-outbox-worker.mjs"],{encoding:"utf8"});assert.equal(build.status,0,build.stderr);
   for(let i=0;i<6;i++) {
-   const job=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});assert.equal(job.status,0,job.stderr);
+   const job=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});assert.equal(job.status,i<3?0:1,job.stderr||job.stdout);
    assert.match(job.stdout,i<3?/"status":"succeeded"/:/"status":"retry_wait"/);
   }
   const detail=async(label)=>(await page.getByText(label,{exact:true}).locator("..").locator("dd").textContent()).trim();
@@ -131,4 +131,3 @@ test("Actual Admin manual retry reschedules produced jobs through its authentica
   console.log("ACTUAL_ADMIN_MANUAL_RETRY_BROWSER producer3 -> CLI retry3 -> authenticated Admin form -> original jobs due/audit3 -> controlled CLI accepted3; unconfigured disabled, foreign Worker denied, 390px no overflow");
  }finally{await browser.close();await fixture.cleanup();await rm(temporary,{recursive:true,force:true});}
 });
-

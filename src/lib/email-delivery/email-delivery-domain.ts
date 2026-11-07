@@ -5,12 +5,13 @@ import {
   OUTBOX_MAX_ATTEMPTS,
   OUTBOX_SCHEMA_VERSION,
   normalizeOutboxPayload,
+  ASSURANCE_EVENT_TYPES, normalizeAssuranceEventEmailPayload, type AssuranceEventEmailPayload,
   type OutboxJobRecord,
   type InterviewScheduledNotificationPayload,
   type TrustedOutboxLease
 } from "../outbox/outbox-domain";
 
-export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email", "interview.scheduled", "interview.reminder"] as const;
+export const EMAIL_DELIVERY_TYPES = ["platform.foundation.email", "interview.scheduled", "interview.reminder", ...ASSURANCE_EVENT_TYPES, "assessment.funding.requested", "assessment.funding.approved"] as const;
 export const EMAIL_DELIVERY_STATUSES = [
   "queued",
   "processing",
@@ -49,7 +50,8 @@ export type FoundationEmailDeliveryPayload = Readonly<{
 
 export type EmailDeliveryOutboxJob = Omit<OutboxJobRecord, "jobType" | "payload"> &
  (Readonly<{jobType:"email.delivery.foundation";payload:FoundationEmailDeliveryPayload}> |
-  Readonly<{jobType:"email.interview.scheduled" | "email.interview.reminder";payload:InterviewScheduledNotificationPayload}>);
+  Readonly<{jobType:"email.interview.scheduled" | "email.interview.reminder";payload:InterviewScheduledNotificationPayload}> |
+  Readonly<{jobType:"email.assurance.event";payload:AssuranceEventEmailPayload}>);
 
 export type EmailDeliveryRecord = Readonly<{
   sequence: number;
@@ -196,6 +198,18 @@ export function assertEmailDeliveryJob(job:OutboxJobRecord):EmailDeliveryOutboxJ
     job.enqueuedByAccountId && !job.enqueuedBySystemComponent && job.tenantId===null && job.membershipId===null){
   return Object.freeze({...job,jobType:job.jobType,payload:normalizeOutboxPayload(job.jobType,job.payload)});
  }
+ if(job.jobType==="email.assurance.event"){
+  const payload=normalizeAssuranceEventEmailPayload(job.payload);
+  const sourceRole:Readonly<Record<AssuranceEventEmailPayload["eventType"],AuthRole|null>>={
+   "evidence.submitted":"worker","evidence.reviewed":"verifier","evidence.unable":"verifier","evidence.escalated":"verifier","evidence.returned":"admin", "integrity.escalated":"verifier", "assessment.review.conflict":"verifier", "evidence.second_review.requested":"verifier", "assessment.review.assigned":"admin", "integrity.returned":"admin","evidence.additional.requested":"verifier",
+   "interview.recommended":"assessor","decision.recorded":"admin","credential.issued":null,"appeal.submitted":"worker","appeal.updated":"admin","appeal.evidence.submitted":"worker","appeal.interview.submitted":"assessor",
+   "assessment.funding.requested":"worker","assessment.funding.approved":"company"
+  };
+  const sealed=payload.eventType==="credential.issued" && job.enqueuedBySystemComponent==="outbox-worker" && job.enqueuedByAccountId===null && job.enqueuedByRole===null && job.tenantId===null && job.membershipId===null;
+  const human=payload.eventType!=="credential.issued" && typeof job.enqueuedByAccountId==="string" && job.enqueuedByAccountId.length>0 && !job.enqueuedBySystemComponent && job.enqueuedByRole===sourceRole[payload.eventType] && (job.enqueuedByRole==="company"?!!job.tenantId && !!job.membershipId:job.tenantId===null && job.membershipId===null);
+  if(!sealed && !human)throw new EmailDeliveryContractError("Assurance email source actor is invalid.");
+  return Object.freeze({...job,jobType:job.jobType,payload});
+ }
  throw new EmailDeliveryContractError("Email delivery requires a registered trusted fixed source.");
 }
 
@@ -339,12 +353,12 @@ export function describeInterviewEmailDelivery(delivery: Pick<EmailDeliveryRecor
   }
   const descriptions: Record<EmailDeliveryStatus, { label: string; description: string }> = {
     queued: { label: "Queued", description: "Waiting to send." },
-    processing: { label: "Sending", description: "Your interview email is being sent." },
+    processing: { label: "Sending", description: "Your email is being sent." },
     retry_wait: { label: "Retrying", description: "Sending could not be confirmed. We will try again shortly." },
     sent: { label: "Sent", description: "Accepted for sending. Delivery has not been confirmed." },
     delivered: { label: "Delivered", description: "Delivery has been confirmed." },
     suppressed: { label: "Suppressed", description: "This email is no longer needed, or the recipient details have changed." },
-    terminal_failed: { label: "Failed", description: "Sending could not be confirmed. Your interview details remain available in this portal." }
+    terminal_failed: { label: "Failed", description: "Sending could not be confirmed. Your record remains available in this portal." }
   };
   return descriptions[delivery.status];
 }

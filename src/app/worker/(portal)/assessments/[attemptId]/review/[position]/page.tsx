@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { AssessmentIntegrityBoundary } from "@/components/worker/assessment-integrity-boundary";
 import { AssessmentReviewWorkspace } from "@/components/worker/assessment-review-workspace";
 import { readAssessmentAccessContext } from "@/lib/assessment-attempt/assessment-device-cookie";
 import type { AssessmentReviewQuestionView } from "@/lib/assessment-attempt/assessment-attempt-domain";
@@ -50,5 +51,9 @@ export default async function AssessmentReviewQuestionPage({
     throw caught;
   }
 
-  return <AssessmentReviewWorkspace review={review} routeError={error ?? null} />;
+  return (
+    <AssessmentIntegrityBoundary attemptId={attemptId}>
+      <AssessmentReviewWorkspace review={review} routeError={error ?? null} />
+    </AssessmentIntegrityBoundary>
+  );
 }

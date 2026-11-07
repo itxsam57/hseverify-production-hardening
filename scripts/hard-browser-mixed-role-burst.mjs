@@ -8,7 +8,7 @@ const SANDBOX_KEY = process.env.HSE_AUTH_SANDBOX_ACCESS_KEY;
 const STAFF_PASSWORD = "MixedRoleStaffQA!2026";
 const WORKER_PASSWORD = "MixedRoleWorkerQA!2026";
 const COMPANY_PASSWORD = "MixedRoleCompanyQA!2026";
-const ARTIFACT_DIR = "artifacts/phase1-retrospective";
+const ARTIFACT_DIR = process.env.HSE_BURST_ARTIFACT_DIR || "artifacts/phase1-retrospective";
 const REQUESTS_PER_ROLE = 10;
 
 if (!SANDBOX_KEY) throw new Error("HSE_AUTH_SANDBOX_ACCESS_KEY is required.");
@@ -320,7 +320,10 @@ try {
     requestsPerRole: REQUESTS_PER_ROLE,
     roles: Object.keys(burst.perRole),
     perRole: burst.perRole,
-    elapsedMs: burst.elapsedMs
+    elapsedMs: burst.elapsedMs,
+    releaseSha: process.env.HSE_RELEASE_SHA || "unknown",
+    environment: process.env.HSE_APP_ENV || "unknown",
+    server: BASE_URL.startsWith("http://127.0.0.1:") ? "loopback" : "external"
   };
   await writeFile(`${ARTIFACT_DIR}/mixed-role-http-burst.json`, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   console.log(`PASS 50-request authenticated mixed-role real-server burst in ${burst.elapsedMs}ms`);

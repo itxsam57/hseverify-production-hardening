@@ -1,3 +1,4 @@
+import { seedPublishedQuestion } from "../tests/helpers/question-publication-fixture.mjs";
 import { chromium } from "playwright";
 import { createHash, randomBytes, scrypt as nodeScrypt } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -204,42 +205,7 @@ export async function seedBrowserScenario() {
       const questionId = stableId("assessment_question", `m207-browser-${question.seed}`);
       const questionVersionId = stableId("question_version", `m207-browser-${question.seed}`);
       const fingerprint = digest(`${question.type}:${question.prompt}:${JSON.stringify(question.options)}:${question.seed}`);
-      await database.transaction(async (tx) => {
-        await tx.query(
-          `INSERT INTO assessment_questions(
-             question_id,question_reference,question_status,current_version_id,current_content_fingerprint,
-             created_by_account_id,created_at,updated_at
-           ) VALUES($1,$2,'INACTIVE',NULL,NULL,$3,$4,$4)`,
-          [questionId, `M207-Q-${question.seed.toUpperCase()}`, workerAId, NOW]
-        );
-        await tx.query(
-          `INSERT INTO assessment_question_versions(
-             question_version_id,question_id,version_no,question_type,prompt,options_json,
-             answer_key_json,rubric_json,framework_id,domain_reference,difficulty,tags_json,
-             content_fingerprint,created_by_account_id,created_at
-           ) VALUES($1,$2,1,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8,$9,'MEDIUM','[]'::jsonb,$10,$11,$12)`,
-          [
-            questionVersionId,
-            questionId,
-            question.type,
-            question.prompt,
-            question.options === null ? null : JSON.stringify(question.options),
-            question.answerKey === null ? null : JSON.stringify(question.answerKey),
-            question.rubric === null ? null : JSON.stringify(question.rubric),
-            frameworkId,
-            question.domainReference,
-            fingerprint,
-            workerAId,
-            NOW
-          ]
-        );
-        await tx.query(
-          `UPDATE assessment_questions
-           SET current_version_id=$2,current_content_fingerprint=$3,question_status='ACTIVE',updated_at=$4
-           WHERE question_id=$1`,
-          [questionId, questionVersionId, fingerprint, NOW]
-        );
-      });
+      await seedPublishedQuestion(database,{questionId,versionId:questionVersionId,reference:`M207-Q-${question.seed.toUpperCase()}`,questionType:question.type,prompt:question.prompt,options:question.options,answerKey:question.answerKey,rubric:question.rubric,frameworkId,domainReference:question.domainReference,difficulty:"MEDIUM",tags:[],fingerprint,now:NOW});
     }
 
     const workerLinkId = `worker_link_${digest("m207-browser-link").slice(0, 24)}`;

@@ -32,6 +32,10 @@ function totp(secret) {
   const offset = digest.at(-1) & 15;
   return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
 }
+function datetimeLocalValue(isoTimestamp) {
+  const value = isoTimestamp.slice(0, 19);
+  return value.endsWith(":00") ? value.slice(0, 16) : value;
+}
 async function freePort() {
   return new Promise((resolve, reject) => {
     const server = createServer();
@@ -86,7 +90,7 @@ test("Chosen reminder reaches three private records only when naturally due; a r
    const row=page.locator("tbody tr");assert.equal(await row.count(),1);
    reminderAt=new Date(Date.now()+45000).toISOString().slice(0,19)+".000Z";
    await row.getByLabel("Interview time (UTC)",{exact:true}).fill(appointment);
-   await row.getByLabel("Reminder time (UTC)",{exact:true}).fill(reminderAt.slice(0,19));
+   await row.getByLabel("Reminder time (UTC)",{exact:true}).fill(datetimeLocalValue(reminderAt));
    await row.getByRole("button",{name:"Schedule",exact:true}).click();
    await row.getByRole("button",{name:"Reschedule interview",exact:true}).waitFor();
    await row.getByText("Reminder (UTC): "+reminderAt,{exact:true}).waitFor();
@@ -139,7 +143,7 @@ test("Chosen reminder reaches three private records only when naturally due; a r
    const row=page.locator("tbody tr");
    betaReminderAt=new Date(Date.now()+22000).toISOString().slice(0,19)+".000Z";
    await row.getByLabel("Interview time (UTC)",{exact:true}).fill(appointment);
-   await row.getByLabel("Reminder time (UTC)",{exact:true}).fill(betaReminderAt.slice(0,19));
+   await row.getByLabel("Reminder time (UTC)",{exact:true}).fill(datetimeLocalValue(betaReminderAt));
    await row.getByRole("button",{name:"Schedule",exact:true}).click();
    await row.getByRole("button",{name:"Reschedule interview",exact:true}).waitFor();
    const betaNextAppointment=new Date(Date.now()+172800000).toISOString().slice(0,16);

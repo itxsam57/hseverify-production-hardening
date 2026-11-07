@@ -237,7 +237,7 @@ test("all role portal pages keep usable proportions, navigation and notification
       });
       assert.equal(result.status, 0, result.stderr || result.stdout);
     }
-    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+    const credentials = JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8"));
 
     const result = await runDevelopmentServer({
       args: ["--hostname", "127.0.0.1", "--port", String(port)],
@@ -251,6 +251,14 @@ test("all role portal pages keep usable proportions, navigation and notification
             const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
             const page = await context.newPage();
             await login(page, baseUrl, role, credentials[role]);
+            await page.locator("details.profile-menu > summary").click();
+            await page.getByRole("link", { name: "Language: English", exact: true }).click();
+            await page.waitForURL("**#interface-language");
+            const language = page.getByRole("region", { name: "Interface language", exact: true });
+            await language.getByText("English", { exact: true }).waitFor({ state: "visible" });
+            await language.getByText("This release is available in English.", { exact: true }).waitFor();
+            assert.equal(await page.locator("html").getAttribute("lang"), "en");
+
 
             for (const route of routes) {
               const response = await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
@@ -292,7 +300,12 @@ test("all role portal pages keep usable proportions, navigation and notification
             const mobileBox = await notificationSummary.boundingBox();
             assert(mobileBox && mobileBox.width >= 40 && mobileBox.height >= 40, `${role} mobile notification control is undersized`);
             await notificationSummary.click();
-            await page.locator("details.notification-menu[open] .menu-panel").waitFor({ state: "visible" });
+            const mobileNotificationPanel = page.locator("details.notification-menu[open] .menu-panel");
+            await mobileNotificationPanel.waitFor({ state: "visible" });
+            const panelBox = await mobileNotificationPanel.boundingBox();
+            assert(panelBox && panelBox.y >= mobileBox.y + mobileBox.height, `${role} mobile notification panel covers its toggle`);
+            await notificationSummary.click();
+            await mobileNotificationPanel.waitFor({ state: "hidden" });
 
             const mobileNav = page.locator("details.mobile-nav-menu > summary");
             await mobileNav.waitFor({ state: "visible" });

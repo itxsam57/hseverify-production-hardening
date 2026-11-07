@@ -417,3 +417,18 @@ export async function setAssessmentReviewFlagAction(formData: FormData): Promise
   }
   redirect(`/worker/assessments/${attemptId}/review/${position}`);
 }
+
+export async function startApprovedAssessmentBreakAction(input:unknown):Promise<Readonly<{ok:true}>|Readonly<{ok:false;message:string}>> {
+ if(!input||typeof input!=="object"||Array.isArray(input))return Object.freeze({ok:false as const,message:"Approved break input is invalid."});
+ const value=input as Record<string,unknown>;
+ if(Object.keys(value).some(key=>!["attemptId","durationSeconds","mutationKey"].includes(key))||typeof value.attemptId!=="string"||typeof value.durationSeconds!=="number"||typeof value.mutationKey!=="string")return Object.freeze({ok:false as const,message:"Approved break input fields are invalid."});
+ try {
+  const principal=await requirePlatformPermission({expectedRole:"worker",permission:"worker.assessments.read"});
+  const accessContext=await readAssessmentAccessContext();
+  await (await getAssessmentAttemptService()).startApprovedBreak(principal,{attemptId:value.attemptId,durationSeconds:value.durationSeconds,mutationKey:value.mutationKey},accessContext);
+  return Object.freeze({ok:true as const});
+ }catch(error){
+  if(error instanceof AssessmentAttemptAccessError||error instanceof AssessmentAttemptConflictError||error instanceof AssessmentAttemptInputError)return Object.freeze({ok:false as const,message:error.message});
+  throw error;
+ }
+}
