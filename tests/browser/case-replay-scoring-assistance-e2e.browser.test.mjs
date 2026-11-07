@@ -5,22 +5,6 @@ const replayProgress = (step) => {
   if (process.env.HSE_REPLAY_PROGRESS_FILE) appendFileSync(process.env.HSE_REPLAY_PROGRESS_FILE, `${Date.now()} ${step}\n`);
 };
 
-// A Next action can return a POST response whose streaming body never ends.
-// Treat that as a failed save, not as an indefinitely pending browser test.
-async function requireCompletedResponse(response, label) {
-  let timer;
-  try {
-    const result = await Promise.race([
-      response.finished(),
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`${label} POST body did not finish within 20 seconds.`)), 20_000);
-      })
-    ]);
-    if (result instanceof Error) throw result;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 import { createHmac } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
@@ -264,10 +248,15 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
             replayProgress("mark-click-done-"+criterion);
             const markResponse=await saved;
             replayProgress("mark-post-received-"+criterion+"-"+markResponse.status());
-            await requireCompletedResponse(markResponse, `Rubric mark ${criterion}`);
-            replayProgress("saved-mark-"+criterion);
-            await verifier.reload({waitUntil:"domcontentloaded"});
-            replayProgress("mark-reload-done-"+criterion);
+            // Next Server Actions may keep a 200 RSC stream open after the
+            // transaction commits. Verify the *retained form values after a
+            // real reload* instead of awaiting the transport stream to close.
+            assert.equal(markResponse.status(),200,`Rubric mark ${criterion} POST must succeed.`);
+            await verifier.reload({waitUntil:"domcontentloaded",timeout:25000});
+            const retainedMark=row.getByRole("form",{name:"Rubric mark "+criterion,exact:true});
+            assert.equal(await retainedMark.getByLabel("Criterion mark").inputValue(),"84",`Rubric mark ${criterion} did not persist across reload.`);
+            assert.equal(await retainedMark.getByLabel("Mark reason").inputValue(),"Human reviewer confirms the retained answer meets this pinned rubric criterion.",`Rubric reason ${criterion} did not persist across reload.`);
+            replayProgress("mark-reload-verified-"+criterion);
           }
           await row.getByRole("combobox", { name: "Decision", exact: true }).selectOption("PASS");
           await row.getByRole("textbox", { name: "Reason", exact: true }).fill(
