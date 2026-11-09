@@ -18,6 +18,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify fail-closed compliance range selection
         run: node --test tests/engineering/autopilot-compliance-range.test.mjs
+      - name: Verify signed GitHub PR merges and reject forged merges
+        run: python3 -m unittest discover -s tests/engineering -p 'test_autopilot_signed_merge.py'
       - name: Verify guarded commits
         env:
           EVENT_NAME: ${{ github.event_name }}
