@@ -314,6 +314,28 @@ test(
             await worker.getByText(/reassessment required · no expiry recorded/i).waitFor();
             await worker.getByText(/Version 2 · reassessment required/i).waitFor();
 
+            // Bounded localhost race: eight distinct simultaneous requests for
+            // one credential after a completed original appeal. Database
+            // uniqueness collisions must be conflicts, never HTTP 500.
+            const concurrent = await Promise.all(
+              Array.from({ length: 8 }, (_, index) =>
+                workerContext.request.post(appealApi, {
+                  data: {
+                    reason: "Concurrent duplicate appeal submission test " + index,
+                    evidence: [evidenceRecordId],
+                    sequence: "race_appeal_" + index
+                  }
+                })
+              )
+            );
+            const concurrentStatuses = concurrent.map((response) => response.status());
+            console.log("ACTUAL_APPEAL_PARALLEL_STATUS", JSON.stringify(concurrentStatuses));
+            assert.deepEqual(
+              concurrentStatuses.slice().sort((left, right) => left - right),
+              [201, 409, 409, 409, 409, 409, 409, 409],
+              "Concurrent appeal submissions must return one creation and seven conflicts, never 500."
+            );
+
             assert.deepEqual(
               errors.filter((message) => !message.includes("favicon")),
               [],
@@ -332,10 +354,22 @@ test(
       try {
         const appeal = await verification.query(
           `SELECT status,version,reviewer_account_id,review_reason,outcome_action,evidence
-             FROM credential_appeals WHERE credential_id=$1`,
+             FROM credential_appeals WHERE credential_id=$1 AND status='accepted'`,
           [credentialId]
         );
-        assert.equal(appeal.rows.length, 1, "Forged, malformed and replayed API attempts must not create additional appeal rows.");
+        assert.equal(appeal.rows.length, 1, "The original accepted appeal must survive concurrent API submissions.");
+        const concurrentAppeals = await verification.query(
+          "SELECT appeal_id,status,evidence FROM credential_appeals WHERE credential_id=$1",
+          [credentialId]
+        );
+        assert.equal(concurrentAppeals.rows.length, 2, "Only one new appeal may persist under parallel submissions.");
+        const openAppeals = concurrentAppeals.rows.filter((row) => row.status === "submitted" || row.status === "under_review");
+        assert.equal(openAppeals.length, 1, "The unique open appeal constraint must hold across parallel HTTP requests.");
+        assert.deepEqual(
+          typeof openAppeals[0].evidence === "string" ? JSON.parse(openAppeals[0].evidence) : openAppeals[0].evidence,
+          [evidenceRecordId],
+          "The concurrent winner must reference only the authenticated Worker's own evidence."
+        );
         const storedEvidence = appeal.rows[0]?.evidence;
         assert.deepEqual(
           typeof storedEvidence === "string" ? JSON.parse(storedEvidence) : storedEvidence,
@@ -350,7 +384,7 @@ test(
 
         const events = await verification.query(
           `SELECT status,version FROM credential_appeal_events
-            WHERE appeal_id IN (SELECT appeal_id FROM credential_appeals WHERE credential_id=$1)
+            WHERE appeal_id IN (SELECT appeal_id FROM credential_appeals WHERE credential_id=$1 AND status='accepted')
             ORDER BY version`,
           [credentialId]
         );
