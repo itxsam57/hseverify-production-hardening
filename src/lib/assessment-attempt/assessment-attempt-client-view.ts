@@ -6,6 +6,7 @@ import type {
 } from "./assessment-attempt-domain";
 
 type AssessmentAttemptClientSource = Readonly<{
+  accommodationBreak?: import("./assessment-accommodation-break").AssessmentBreakView | null;
   timing?: import("./assessment-attempt-timing").AssessmentTimingView | null;
   attempt: Readonly<{ attemptId: string }>;
   currentQuestion: AssessmentAttemptClientQuestion | null;
@@ -47,6 +48,7 @@ export function toAssessmentAttemptClientView(
   view: AssessmentAttemptClientSource
 ): AssessmentAttemptClientView {
   return Object.freeze({
+    ...(view.accommodationBreak ? {accommodationBreak:Object.freeze({...view.accommodationBreak})} : {}),
     ...(view.timing ? { timing: Object.freeze({
       mode: view.timing.mode, phaseIndex: view.timing.phaseIndex,
       deadlineAt: view.timing.deadlineAt, remainingSeconds: view.timing.remainingSeconds,

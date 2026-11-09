@@ -1,3 +1,5 @@
+import {openScriptDatabase} from "../../scripts/lib/database.mjs";
+import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {createHash,randomUUID} from "node:crypto";
@@ -75,17 +77,18 @@ test("Availability session expiry after required audit rolls back the window and
 test("Empty availability rollback restores the exact audit constraint and retained history refuses rollback",async()=>{
  const {readFile}=await import("node:fs/promises");
  const fixture=await assessorInterviewSearchFixture(),db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+ const empty=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:"memory://"});await applyMigrationsThrough(empty,"interview-empty-rollback","0090_interview_worker_availability");
  try{
  const down=await readFile("database/migrations/0090_interview_worker_availability.down.sql","utf8"),up=await readFile("database/migrations/0090_interview_worker_availability.up.sql","utf8");
- const original=(await db.query("SELECT platform_interview_availability_original_check() AS original")).rows[0].original;
- await db.transaction(tx=>tx.exec(down));assert.equal((await db.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='platform_audit_events'::regclass AND conname='platform_audit_events_action_key_check'")).rows[0].definition,original);
- assert.equal((await db.query("SELECT count(*)::int AS n FROM interview_requests")).rows[0].n,3);
- await db.transaction(tx=>tx.exec(up));
+ const original=(await empty.query("SELECT platform_interview_availability_original_check() AS original")).rows[0].original;
+ await empty.transaction(tx=>tx.execute(down));assert.equal((await empty.query("SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='platform_audit_events'::regclass AND conname='platform_audit_events_action_key_check'")).rows[0].definition,original);
+ assert.equal((await empty.query("SELECT count(*)::int AS n FROM interview_requests")).rows[0].n,0);
+ await empty.transaction(tx=>tx.execute(up));
  await assert.rejects(()=>db.query("UPDATE interview_requests SET candidate_available_from=clock_timestamp() WHERE interview_request_id=$1",[fixture.requests.Alpha.interviewRequestId]),/interview_candidate_availability_window/);
  const principal=await workerPrincipal(db,fixture.credentials.worker);await new InterviewSchedulingService(db).setWorkerAvailability({principal,interviewRequestId:fixture.requests.Alpha.interviewRequestId,availableFrom:new Date(Date.now()+86400000).toISOString(),availableUntil:new Date(Date.now()+172800000).toISOString()});
  await assert.rejects(()=>db.transaction(tx=>tx.exec(down)),/Retained interview availability history prevents rollback/);
  assert.equal((await db.query("SELECT count(*)::int AS n FROM platform_audit_events WHERE action_key='interview.availability.updated'")).rows[0].n,1);
- }finally{await db.close();await fixture.cleanup();}
+ }finally{await empty.close();await db.close();await fixture.cleanup();}
 });
 
 const {collectWorkerPrivacyData}=loadWorkerRegistrationTs("src/lib/privacy/worker-privacy-data.ts");

@@ -1,3 +1,4 @@
+import type { InterviewPolicyScorecard } from "./interview-policy-domain";
 import { createIdentifier } from "../auth/auth-domain";
 
 export const INTERVIEW_REQUEST_STATUSES = Object.freeze([
@@ -73,7 +74,7 @@ export type InterviewConsole = Readonly<{
   connectionState: "DISCONNECTED" | "CONNECTED";
   notes: readonly InterviewNote[];
   recordingPolicy: "VIDEO_AUDIO" | "AUDIO_ONLY" | "NOTES_ONLY" | "PROHIBITED";
-  scorecard: Readonly<{
+  scorecard: Readonly<Partial<InterviewPolicyScorecard> & {
     technicalKnowledge: number | null;
     practicalReasoning: number | null;
     safetyAwareness: number | null;

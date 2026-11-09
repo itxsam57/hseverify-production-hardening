@@ -102,7 +102,7 @@ test("Browser email states follow actual worker retries and accepted messages wi
   const build=spawnSync(process.execPath,["scripts/build-outbox-worker.mjs"],{encoding:"utf8"});assert.equal(build.status,0,build.stderr);
   for(let i=0;i<6;i++){
    const result=spawnSync(process.execPath,["scripts/run-outbox-worker.mjs","--once"],{env:fixture.environment,encoding:"utf8",timeout:20000});
-   assert.equal(result.status,0,result.stderr);assert.match(result.stdout,i<3?/"status":"succeeded"/:/"status":"retry_wait"/);
+   assert.equal(result.status,i<3?0:1,result.stderr||result.stdout);assert.match(result.stdout,i<3?/"status":"succeeded"/:/"status":"retry_wait"/);
   }
   await server(async()=>{
    await workerPage.goto(baseUrl+"/worker/notifications",{waitUntil:"domcontentloaded"});
@@ -141,7 +141,7 @@ test("Browser email states follow actual worker retries and accepted messages wi
    const foreign=await browser.newContext(),page=await foreign.newPage();
    await login(page,baseUrl,{email:"search.foreign@example.test",password:fixture.credentials.worker.password},"worker");
    await page.goto(baseUrl+"/worker/notifications",{waitUntil:"domcontentloaded"});
-   assert.equal(await page.locator(".email-delivery-item").count(),0);await page.getByText("No interview emails yet.",{exact:true}).waitFor();
+   assert.equal(await page.locator(".email-delivery-item").count(),0);await page.getByText("No email updates yet.",{exact:true}).waitFor();
    const denied=await page.goto(workerLink,{waitUntil:"domcontentloaded"});assert.equal(denied.status(),404);
    assert.equal(await page.getByRole("heading",{name:"Structured competency interview",exact:true}).count(),0);
   });

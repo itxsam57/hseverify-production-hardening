@@ -100,6 +100,12 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
   }
 
   const tenantId = membership.tenant_id;
+  // An older verified case must not visually override a tenant whose live
+  // operating authorization is still pending (or has since been revoked).
+  const currentVerificationState =
+    membership.tenant_status === "active"
+      ? membership.verification_status
+      : membership.tenant_status;
   const [summaryResult, ordersResult, casesResult] = await Promise.all([
     database.query<SummaryRow>(
       `SELECT
@@ -165,8 +171,8 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
             Live workforce, assurance-case and Action Centre data for this Company tenant.
           </p>
         </div>
-        <span className={`status-badge ${verificationTone(membership.verification_status)}`}>
-          Company verification: {membership.verification_status?.replaceAll("_", " ") ?? membership.tenant_status}
+        <span className={`status-badge ${verificationTone(currentVerificationState)}`}>
+          Company verification: {currentVerificationState?.replaceAll("_", " ") ?? "pending"}
         </span>
       </header>
 
@@ -208,7 +214,7 @@ export default async function CompanyDashboardPage(): Promise<React.JSX.Element>
         </article>
       </section>
 
-      {membership.verification_status !== "verified" ? (
+      {membership.tenant_status !== "active" || membership.verification_status !== "verified" ? (
         <section className="dashboard-section" aria-labelledby="verification-heading">
           <p className="section-kicker">Company verification</p>
           <h2 id="verification-heading">Complete the Company verification case</h2>

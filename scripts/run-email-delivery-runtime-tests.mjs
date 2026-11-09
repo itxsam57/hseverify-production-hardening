@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -40,6 +41,12 @@ function runtimeSource(sourcePath) {
 }
 
 function compileRuntimeModule(relativePath) {
+  if(relativePath.endsWith(".mjs")){
+    const destination=resolve(outputDirectory,relativePath);
+    mkdirSync(dirname(destination),{recursive:true});
+    writeFileSync(destination,readFileSync(resolve(sourceRoot,relativePath),"utf8"),"utf8");
+    return [];
+  }
   const sourcePath = resolve(sourceRoot, relativePath);
   const source = runtimeSource(sourcePath);
   const compiled = ts.transpileModule(source, {
@@ -75,11 +82,41 @@ function compileRuntimeModule(relativePath) {
     relativePath.replace(/\.ts$/, ".js")
   );
   mkdirSync(dirname(destination), { recursive: true });
-  writeFileSync(destination, compiled.outputText, "utf8");
+  const imports=[];
+  const emitted=ts.createSourceFile(destination,compiled.outputText,ts.ScriptTarget.ES2022,true,ts.ScriptKind.JS);
+  const visit=node=>{
+    if(ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text==="require" &&
+      node.arguments.length===1 && ts.isStringLiteral(node.arguments[0])){
+      const request=node.arguments[0].text;
+      if(request.startsWith(".") || request.startsWith("@/lib/")){
+        const path=request.startsWith("@/lib/")?resolve(sourceRoot,request.slice("@/lib/".length)):resolve(dirname(sourcePath),request);
+        const dependency=[path,path+".ts",path+".tsx",path+".mjs"].find(candidate=>existsSync(candidate));
+        if(!dependency || relative(sourceRoot,dependency).startsWith(".."))throw new Error("Runtime source dependency is missing or outside src/lib: "+request);
+        imports.push(relative(sourceRoot,dependency));
+      }else if(request.startsWith("@/"))throw new Error("Unsupported runtime source alias: "+request);
+    }
+    ts.forEachChild(node,visit);
+  };
+  visit(emitted);
+  let output=compiled.outputText;
+  for(const dependency of imports){
+    const alias="@/lib/"+dependency.replace(/\.tsx?$/,"");
+    let target=relative(dirname(destination),resolve(outputDirectory,dependency.replace(/\.tsx?$/,".js"))).replaceAll("\\\\","/");
+    if(!target.startsWith("."))target="./"+target;
+    output=output.replaceAll(JSON.stringify(alias),JSON.stringify(target));
+  }
+  writeFileSync(destination, output, "utf8");
+  return imports;
 }
 
-for (const sourceFile of SOURCE_FILES) {
-  compileRuntimeModule(sourceFile);
+// Follow only the current real emitted runtime imports from the original roots.
+// This retains the existing source-copy harness and both explicit default-factory stubs.
+const pending=[...SOURCE_FILES],copied=new Set();
+while(pending.length){
+  const sourceFile=pending.shift();
+  if(copied.has(sourceFile))continue;
+  copied.add(sourceFile);
+  pending.push(...compileRuntimeModule(sourceFile));
 }
 
 // The runtime test injects the real PGlite script database client explicitly.

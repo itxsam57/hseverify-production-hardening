@@ -13,6 +13,12 @@ import {
 } from "../authorization/authorization-domain";
 
 export const AUDIT_ACTIONS = [
+  "evidence_review.framework.bound",
+  "staff.calibration.recorded",
+  "framework.revision.recorded",
+  "verification.draft.saved",
+  "verification.resolution.recorded",
+  "verification.escalation.returned",
   "public_inquiry.received",
   "authentication.registration.started",
   "authentication.otp.issued",
@@ -113,6 +119,8 @@ export const AUDIT_ACTIONS = [
   "worker_evidence.leaving_letter.attached",
   "worker_evidence.leaving_letter.replaced",
   "public_verification.concern.received",
+  "public_verification.concern.reviewed",
+  "public_verification.concern.evidence.served",
   "assurance_order.created",
   "assurance_order.updated",
   "assurance_order.validated",

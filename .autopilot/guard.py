@@ -215,6 +215,19 @@ def _verify_guard_installation(root: Path) -> None:
             raise ValueError(f"AUTOPILOT_V3_RECOVERY_REQUIRED: {name} guard hook is missing")
 
 
+def _require_matching_session_cycle(audit: dict[str, Any], cycle: dict[str, Any]) -> None:
+    """Do not stamp a commit with cycle trailers different from the audit's start event.
+
+    CI validates those immutable trailers against the session-start event, so a
+    local commit/push must fail rather than silently changing cycle attribution.
+    """
+    if audit.get("cycle_id") != cycle.get("id") or audit.get("feature_id") != cycle.get("feature_id"):
+        raise ValueError(
+            "AUTOPILOT_V4_AUDIT_REQUIRED: audit session cycle/feature does not match "
+            "the active cycle; close the old session and start a new attributed session"
+        )
+
+
 def _active_audit_session(root: Path) -> dict[str, Any]:
     audit_path = root / ".autopilot" / "autopilot_audit.py"
     if not audit_path.is_file():
@@ -246,6 +259,8 @@ def _active_audit_session(root: Path) -> dict[str, Any]:
         raise ValueError("AUTOPILOT_V4_AUDIT_REQUIRED: autopilot skill was not disclosed")
     if current.get("cycle_id") is None or current.get("feature_id") is None:
         raise ValueError("AUTOPILOT_V4_AUDIT_REQUIRED: session lacks cycle attribution")
+    _, active_cycle, _ = _active(root)
+    _require_matching_session_cycle(current, active_cycle)
     return current
 
 
@@ -273,6 +288,8 @@ def _audit_session_for_commit(root: Path) -> dict[str, Any]:
             raise ValueError(
                 "AUTOPILOT_V4_AUDIT_REQUIRED: workspace changed after session close"
             )
+        _, active_cycle, _ = _active(root)
+        _require_matching_session_cycle(latest, active_cycle)
         return latest
 
 
@@ -299,6 +316,8 @@ def _audit_session_for_push(root: Path) -> dict[str, Any]:
             raise ValueError(
                 "AUTOPILOT_V4_AUDIT_REQUIRED: pushed closed session is not the guarded HEAD"
             )
+        _, active_cycle, _ = _active(root)
+        _require_matching_session_cycle(records[-1], active_cycle)
         return records[-1]
 
 

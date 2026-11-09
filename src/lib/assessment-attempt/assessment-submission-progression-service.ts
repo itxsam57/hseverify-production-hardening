@@ -1,4 +1,7 @@
 import "server-only";
+import {reviewerCapacity} from "../review/reviewer-capacity";
+import {eligibleWrittenReviewers} from "../scoring/written-review-eligibility";
+import { assessmentRequiresIntegrityReview } from "../integrity/integrity-review-service";
 
 import { createIdentifier } from "../auth/auth-domain";
 import {
@@ -56,26 +59,6 @@ async function reviewOrchestrationAvailable(
     result.rows.length === 2 &&
     result.rows.every((row) => row.is_nullable === "YES")
   );
-}
-
-async function activeVerifier(
-  database: DatabaseClient
-): Promise<string | null> {
-  const result = await database.query<{ account_id: string }>(
-    `SELECT accounts.account_id
-       FROM auth_accounts AS accounts
-       JOIN auth_account_roles AS roles
-         ON roles.account_id=accounts.account_id
-        AND roles.role='verifier'
-       LEFT JOIN written_score_reviews AS reviews
-         ON reviews.reviewer_account_id=accounts.account_id
-        AND reviews.status='DRAFT'
-      WHERE accounts.account_status='active'
-      GROUP BY accounts.account_id
-      ORDER BY COUNT(reviews.review_id) ASC,accounts.account_id ASC
-      LIMIT 1`
-  );
-  return result.rows[0]?.account_id ?? null;
 }
 
 function objectiveAnswerCorrect(row: ObjectiveAnswerRow): boolean {
@@ -154,6 +137,15 @@ async function effectivePassMark(
     : null;
 }
 
+
+export async function objectiveAssessmentResult(database:DatabaseClient,attemptId:string,caseId:string):Promise<Readonly<{score:number;decision:"PASS"|"FAIL";passMark:number}>|null>{
+ const rows=await pinnedFormAnswerRows(database,attemptId);
+ if(rows.length===0 || rows.some(row=>row.question_type==="SHORT_TEXT" || row.question_type==="LONG_TEXT"))return null;
+ const passMark=await effectivePassMark(database,caseId);if(passMark===null)return null;
+ const score=Math.round(rows.filter(objectiveAnswerCorrect).length/rows.length*100);
+ return {score,decision:score>=passMark?"PASS":"FAIL",passMark};
+}
+
 async function caseTenant(
   database: DatabaseClient,
   caseId: string
@@ -186,7 +178,11 @@ async function queueHumanReview(
   }>
 ): Promise<void> {
   const tenantId = await caseTenant(database, input.caseId);
-  const reviewerAccountId = await activeVerifier(database);
+  const candidates=await eligibleWrittenReviewers(database,input.caseId,input.attemptId);
+  // All multi-reviewer capacity locks use one stable order, independent of changing workloads.
+  for(const candidate of [...candidates].sort((left,right)=>left.accountId.localeCompare(right.accountId)))await reviewerCapacity(database,candidate.accountId,true);
+  const protectedAccounts=new Set(candidates.map(candidate=>candidate.accountId));
+  const reviewerAccountId=(await eligibleWrittenReviewers(database,input.caseId,input.attemptId)).find(candidate=>protectedAccounts.has(candidate.accountId))?.accountId??null;
   if (reviewerAccountId) {
     await database.query(
       `INSERT INTO written_score_reviews(
@@ -239,7 +235,9 @@ export async function completeSubmittedAssessment(
   );
   const passMark = await effectivePassMark(database, input.caseId);
 
-  if (hasWritten || passMark === null) {
+  const requiresIntegrityReview = await assessmentRequiresIntegrityReview(database, input.attemptId);
+
+  if (hasWritten || passMark === null || requiresIntegrityReview) {
     await queueHumanReview(database, input);
     return;
   }

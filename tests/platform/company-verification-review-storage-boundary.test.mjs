@@ -16,6 +16,7 @@ process.env.DATABASE_URL = "postgresql://example.invalid/hseverify";
 process.env.HSE_RELEASE_SHA = "m1-08-storage-boundary";
 process.env.HSE_SESSION_SECRET = "m1-08-storage-boundary-session-secret-1234567890";
 process.env.HSE_AUTH_PEPPER = "m1-08-storage-boundary-auth-pepper-1234567890";
+process.env.HSE_CREDENTIAL_SIGNING_SECRET = "m1-08-storage-boundary-signing-secret-1234567890-abcdefghijklmnop";
 process.env.HSE_ENABLE_AUTH_SANDBOX = "false";
 process.env.HSE_ENABLE_WORKER_DEMO_AUTH = "false";
 process.env.HSE_USE_WORKER_DEMO_DATA = "false";

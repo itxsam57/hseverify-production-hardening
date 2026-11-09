@@ -20,7 +20,8 @@ const ENTRY_FILES = Object.freeze([
   "public-verification/public-verification-repository.ts",
   "public-verification/public-verification-request.ts",
   "public-verification/public-verification-service.ts",
-  "public-verification/public-concern-file-service.ts"
+  "public-verification/public-concern-file-service.ts",
+  "credential-concerns/credential-concern-review-service.ts"
 ]);
 const RUNTIME_STUBS = new Set(["database/database.ts"]);
 
@@ -140,6 +141,7 @@ try {
     process.execPath,
     [
       "--test",
+      resolve("tests", "platform", "credential-concern-review.test.mjs"),
       resolve("tests", "platform", "public-verification-source-authority.test.mjs"),
       resolve("tests", "platform", "public-verification-domain.test.mjs"),
       resolve("tests", "platform", "public-verification-migration.test.mjs"),

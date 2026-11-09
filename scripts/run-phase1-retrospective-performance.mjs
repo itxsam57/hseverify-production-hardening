@@ -87,9 +87,9 @@ const evidence = {
   completedAt: new Date().toISOString(),
   elapsedMs: Math.round(performance.now() - suiteStart),
   checks: results,
-  pendingHttpBurst: false,
+  pendingHttpBurst: true,
   httpBurstExecution:
-    "The Phase 1 retrospective audit permanently executes a separate 50-request authenticated mixed-role real-server burst for Worker, Company, Verifier, Admin and Root against the real Next.js server boundary."
+    "The retrospective native suite does not run the HTTP burst. Execute npm run test:authenticated-load separately on a disposable local database; then certify live staging workload independently."
 };
 
 writeFileSync(outputPath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");

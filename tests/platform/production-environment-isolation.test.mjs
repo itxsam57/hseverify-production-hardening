@@ -5,6 +5,7 @@ import {loadTs} from "../../scripts/interview-test-ts-loader.mjs";
 const {validateRuntimeEnvironment}=loadTs("src/lib/config/environment.ts");
 const base={NODE_ENV:"production",HSE_APP_ENV:"production",HSE_DATABASE_DRIVER:"postgres",
  DATABASE_URL:"postgres://test:test@localhost:5432/unused_validation_only",
+ HSE_CREDENTIAL_SIGNING_SECRET:"isolated-test-credential-key-with-more-than32-characters",
  HSE_SESSION_SECRET:"isolated-test-session-secret-with-more-than32-characters",
  HSE_AUTH_PEPPER:"isolated-test-auth-pepper-with-more-than32-characters",HSE_RELEASE_SHA:"validation-only-release",
  HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_ENABLE_AUTH_SANDBOX:"false"};

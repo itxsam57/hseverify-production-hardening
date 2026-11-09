@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requirePlatformPermission } from "@/lib/authorization/authorization-service";
+import { getAssessmentAttemptService } from "@/lib/assessment-attempt/assessment-attempt-service";
 import { readAssessmentAccessContext } from "@/lib/assessment-attempt/assessment-device-cookie";
 import {
   AssessmentIntegrityAccessError,
@@ -36,6 +37,31 @@ export async function GET(
     });
   } catch (error) {
     if (error instanceof AssessmentIntegrityAccessError) {
+      // Closed attempts still need to show the server-owned submitted receipt.
+      // Verify the same Worker/session/device binding before waiving monitoring.
+      try {
+        const [{ attemptId }, actor, access] = await Promise.all([
+          context.params,
+          principal(),
+          readAssessmentAccessContext()
+        ]);
+        const view = await (await getAssessmentAttemptService()).getOwnedView(actor, attemptId, new Date(), access);
+        if (view.submitted) {
+          return NextResponse.json({ policy: {
+            requireCamera: false,
+            requireMicrophone: false,
+            requireScreenShare: false,
+            recordCamera: false,
+            recordMicrophone: false,
+            recordScreen: false,
+            recordingRetentionDays: 30,
+            integrityFailureMode: "BLOCK",
+            requireFullscreen: false
+          } }, { status: 200, headers: { "cache-control": "private, no-store" } });
+        }
+      } catch {
+        // A non-owner, unbound device or an active attempt cannot bypass monitoring.
+      }
       return NextResponse.json({ error: "Assessment integrity access denied." }, { status: 403 });
     }
     return NextResponse.json({ error: "Assessment integrity policy is unavailable." }, { status: 400 });

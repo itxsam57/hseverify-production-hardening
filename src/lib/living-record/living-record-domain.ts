@@ -135,7 +135,8 @@ function normalizeVersion(
   }
   const effectiveAt = iso(input.effectiveAt, "Effective date");
   const expiresAt = optionalIso(input.expiresAt, "Expiry date");
-  if (expiresAt && expiresAt < effectiveAt) {
+  // Later suspension/revocation events retain the original expiry, including elapsed dates.
+  if (input.status === "valid" && expiresAt && expiresAt < effectiveAt) {
     throw new Error("Expiry date cannot be before the effective date.");
   }
   const reassessment = normalizeReassessment(input.reassessment);
@@ -221,6 +222,14 @@ export function livingCompetencyFromWorkerSkill(
   });
 }
 
+// Expiry is a projection at the observation time, never a rewrite of the retained event.
+export function projectLivingCompetencyVersion(record: LivingCompetencyRecord, observedAt: string): LivingRecordVersion {
+  const current = currentLivingCompetencyVersion(record);
+  const at = iso(observedAt, "Living Record observation time");
+  return current.status === "valid" && current.expiresAt && current.expiresAt <= at
+    ? Object.freeze({ ...current, status: "expired" as const }) : current;
+}
+
 export function buildDigitalPassport(input: {
   workerId: string;
   generatedAt: string;
@@ -233,7 +242,7 @@ export function buildDigitalPassport(input: {
   const competencies = Object.freeze([...(input.competencies ?? [])]);
   const current = competencies.map((record) => ({
     record,
-    version: currentLivingCompetencyVersion(record)
+    version: projectLivingCompetencyVersion(record, generatedAt)
   }));
   const active = current.filter(
     ({ version }) => version.status !== "revoked" && version.status !== "expired"

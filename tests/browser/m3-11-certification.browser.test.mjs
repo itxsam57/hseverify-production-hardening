@@ -74,7 +74,7 @@ test("M3.11 executed certification persists into the protected Admin operations 
     assert.equal(result.status, 0, result.stderr || result.stdout);
   }
   const credentials = JSON.parse(
-    await readFile("/tmp/independent-audit-credentials.json", "utf8")
+    await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json", "utf8")
   );
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;

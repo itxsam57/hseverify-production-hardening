@@ -35,7 +35,7 @@ async function database() {
   await applyMigrationsThrough(
     db,
     ENV.releaseSha,
-    "0073_assessment_option_order_snapshot"
+    "0105_evidence_review_resolutions"
   );
   return db;
 }
@@ -58,6 +58,7 @@ async function seedStaff(db, accountId, role) {
     "INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,$2,$3)",
     [accountId, role, ATTEMPT_NOW]
   );
+  await db.query("INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) VALUES($1,$2,$3,$1,$1,$4,$4,'2099-01-01')",[accountId+"_session",accountId,role,ATTEMPT_NOW]);
 }
 
 test("sandbox scoring guidance stays advisory and Case Replay reconstructs the same submitted case", async () => {
@@ -175,7 +176,7 @@ test("sandbox scoring guidance stays advisory and Case Replay reconstructs the s
     const replay = await new CaseReplayService(Promise.resolve(db)).replay(
       {
         accountId: admin,
-        sessionId: "session_replay_admin_not_required",
+        sessionId: admin+"_session",
         activeRole: "admin",
         accountStatus: "active",
         email: "replay-admin@example.test",
@@ -256,4 +257,21 @@ test("Pinned review evidence retains latest revisions, omitted written items and
   const review=(await db.query("SELECT score,decision,status FROM written_score_reviews WHERE review_id=$1",[reviewId])).rows[0];
   assert.deepEqual(review,{score:null,decision:null,status:"DRAFT"});
  }finally{await db.close();if(previousMode===undefined)delete process.env.HSE_SCORING_AI_MODE;else process.env.HSE_SCORING_AI_MODE=previousMode;}
+});
+
+test("Replay denies revoked, expired, demoted and disabled Admin authority before any access audit",async()=>{
+ for(const denial of ["revoked","expired","demoted","disabled"]){
+  const db=await database();try{
+   const worker=await seedWorkerPrincipal(db,"replay-auth-worker-"+denial);
+   const fixture=await seedInProgressAttempt(db,worker,"replay-auth-case-"+denial,[{questionType:"SHORT_TEXT",prompt:"Identify one safe isolation step."}]);
+   const admin="account_replay_denied_"+denial;await seedStaff(db,admin,"admin");
+   const principal={accountId:admin,sessionId:admin+"_session",activeRole:"admin",accountStatus:"active",email:admin+"@example.test",displayName:"Replay Admin",createdAt:ATTEMPT_NOW,lastSeenAt:ATTEMPT_NOW,expiresAt:"2099-01-01",tenantMembership:null};
+   if(denial==="revoked")await db.query("UPDATE auth_sessions SET revoked_at=CURRENT_TIMESTAMP,revocation_reason='Replay regression' WHERE session_id=$1",[principal.sessionId]);
+   if(denial==="expired")await db.query("UPDATE auth_sessions SET expires_at=created_at+INTERVAL '1 hour' WHERE session_id=$1",[principal.sessionId]);
+   if(denial==="demoted")await db.query("DELETE FROM auth_account_roles WHERE account_id=$1 AND role='admin'",[admin]);
+   if(denial==="disabled")await db.query("UPDATE auth_accounts SET account_status='disabled' WHERE account_id=$1",[admin]);
+   await assert.rejects(new CaseReplayService(Promise.resolve(db)).replay(principal,fixture.caseId,"Security review must recheck live authority."),/denied/i);
+   assert.equal((await db.query("SELECT count(*)::int total FROM case_replay_access_events WHERE case_id=$1",[fixture.caseId])).rows[0].total,0);
+  }finally{await db.close();}
+ }
 });

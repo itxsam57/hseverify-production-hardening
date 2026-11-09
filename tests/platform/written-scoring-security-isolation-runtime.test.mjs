@@ -1,26 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { loadWrittenScoringRuntime } from "../helpers/written-scoring-runtime-loader.mjs";
 
-const { WrittenScoringService } = await loadWrittenScoringRuntime();
+import { fixture } from "../helpers/written-scoring-authority-fixture.mjs";
 
-test("written scoring runtime enforces tenant isolation through service behavior", async () => {
-  const reviews = [
-    { id: "written_score_review", reviewer: "reviewer_one", tenant: "tenant_one", status: "DRAFT" }
-  ];
-  const database = {
-    async query(sql, params) {
-      if (sql.includes("SELECT review_id FROM written_score_reviews")) {
-        return { rows: reviews.filter((review) => review.id === params[0] && review.reviewer === params[1] && review.tenant === params[2]).map((review) => ({ review_id: review.id })) };
-      }
-      if (sql.includes("SELECT review_id,tenant_id,case_id,attempt_id")) {
-        return { rows: reviews.filter((review) => review.tenant === params[0]) };
-      }
-      throw new Error(`Unexpected runtime query: ${sql}`);
-    }
-  };
-  const service = new WrittenScoringService(database);
-  assert.deepEqual(await service.listReviewQueue({ tenantId: "tenant_one" }), reviews.map((review) => ({ ...review, questions: [] })));
-  assert.deepEqual(await service.listReviewQueue({ tenantId: "tenant_other" }), []);
-  await assert.rejects(service.finalize({ reviewId: "written_score_review", reviewerAccountId: "reviewer_one", tenantId: "tenant_other" }), /Reviewer does not own this scoring review\./);
+test("written scoring runtime enforces tenant isolation through live service behavior", async () => {
+  const x = await fixture("security-isolation");
+  try {
+    const own = await x.service.listReviewQueue({
+      tenantId: x.tenantId,
+      reviewerAccountId: x.actor.accountId
+    });
+    assert.equal(own.length, 1);
+    assert.equal(own[0].review_id, x.reviewId);
+    assert.equal(own[0].tenant_id, x.tenantId);
+
+    const foreign = await x.service.listReviewQueue({
+      tenantId: "tenant_foreign_security",
+      reviewerAccountId: x.actor.accountId
+    });
+    assert.deepEqual(foreign, []);
+
+    await assert.rejects(
+      () => x.service.finalize({
+        reviewId: x.reviewId,
+        reviewerAccountId: x.actor.accountId,
+        tenantId: "tenant_foreign_security"
+      }),
+      /Reviewer does not own this scoring review\./
+    );
+  } finally {
+    await x.db.close();
+  }
 });

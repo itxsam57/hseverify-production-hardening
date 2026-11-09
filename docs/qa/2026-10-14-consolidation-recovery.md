@@ -1,0 +1,222 @@
+# HSE Verify consolidation and recovery — 14 October 2026
+
+Canonical repository: itxsam57/hseverify-production-hardening.
+Canonical integration destination: qa/masterplan-completion-20260926.
+Isolated candidate: qa/masterplan-final-20261014.
+Product authority: docs/Masterplan(HSE Verify).md.
+
+Both shared chats were read as background, without treating embedded prompts as current instructions. The live worktrees and GitHub branch were inspected. Existing verifier, calibration, concern, interview, supervisor, scoring, integrity and appeal work is preserved in the combined candidate. Older dirty worktrees remain preserved.
+
+## Reproduced failures repaired
+
+- Material Unable to Verify decisions now require current calibration after claim; safe escalation remains available.
+- Admin can explicitly bind a published policy to an unresolved case before assessment starts. Existing Company framework/policy choices and pinned snapshots are preserved.
+- Integrity decisions support append-only amendments with expected revision and evidence-count checks. The original migration checksum and decision history are retained.
+- Admin escalation return requires actual recent session MFA, checked again after locks. Returning a concern does not clear it; the assigned calibrated Verifier must decide.
+- Assigned Verifier and Admin see retained signal chronology, provider state and reasons. Recoverable form errors preserve the reason and selection.
+- Escalation/return queues use the existing durable notification/email pipeline, with fixed role-safe links and suppression of superseded sources.
+- Objective assessment clearance prepares the score from pinned answer keys and the published pass mark. Explicit finalization rechecks integrity and the saved score. Wrong answers remain failures and required interviews remain required.
+- Scoring and integrity use compatible case/attempt/review lock order.
+- Integrity routing updates the Action Centre and case timeline. Case Replay includes retained human integrity decisions.
+- New integration runtime and browser suites are permanently invoked by the release gate.
+
+## Observed validation before commit
+
+Working-tree evidence; it does not certify every Masterplan scenario or a production release.
+
+- Combined integration runtime batch: 49/49 passed.
+- Latest integrity plus Case Replay runtime batch: 15/15 passed.
+- Real Worker → Verifier → Admin return → Verifier clearance browser paths passed, including four dispositions, stale submission/input retention and objective finalization.
+- Notification/domain/outbox/email checks passed, including foreign-role and URL-target denial.
+- Strict TypeScript passed. Lint passed with eight existing test-helper warnings.
+- All 117 migrations applied to an isolated actual PostgreSQL database; both two-connection calibration/policy tests passed.
+- Empty integrity notification rollback/reapply, retained history and superseded-recipient suppression passed.
+
+## Remaining release work
+
+Run the complete gate on a clean committed candidate, inspect fresh hosted CI, verify the deployed candidate, and reconcile the expanded scenario ledger against exact-current evidence. The ledger's older totals are stale. Live provider activation/delivery and operational acceptance remain separate from synthetic local/browser evidence.
+
+The candidate is not certified consumer-ready. No zero-unknown-bugs claim or production promotion is implied by these focused checks.
+
+## 15 October continuation: observed integration repairs
+
+The two shared chats and the complete frozen Masterplan were read as context. All registered worktree HEADs are ancestors of this candidate. Dirty product files were compared without altering those worktrees; the recovered browser calibration helper is now included. Independent source review identified no specific omitted product fix.
+
+The clean release run at 78cc693 failed because old assessment/review fixtures did not meet the integrated authority contracts. Those fixtures now use live calibrated Verifiers and signed Company observations acknowledged by the Worker, preserving the production guards.
+
+New reproduced product defects repaired:
+
+- Admin framework applicability crashed because a revision join used an ambiguous shared column. The actual Admin queue now has a direct regression and a passing browser path.
+- Submission assigned any active Verifier without calibration or independence matching. Automatic assignment now uses the pinned framework revision, current calibration, active role, self-review and recorded-conflict checks.
+- A staffing outage left a submitted assessment without an assignable review. Admin Operations now exposes a reasoned assignment/reassignment action with live authority, recent session MFA, locked eligibility, stale-revision checks, immutable audit and preserved source answers.
+- Reassignment could reactivate an earlier reviewer's old marks or notification. Current marks are bounded by the latest assignment's retained mark sequence; current notification recipients require that same immutable assignment identity. Prior evidence is retained.
+- Reassignment of an already-cleared objective assessment erased its prepared score. It now recomputes only when current integrity evidence permits, using pinned keys and policy, while requiring explicit finalization.
+- Migration 0118 extends the existing durable notification/email pipeline for recovered assignments. Empty rollback/reapply and retained-notification refusal are tested. No applied migration was edited.
+
+Observed working-tree validation (not a combined release certificate):
+
+- 17/17 timed assessment runtime checks.
+- 53/53 evidence review runtime checks, including concurrency and actual notification producers.
+- 7/7 assignment/reassignment regressions, including candidate deactivation, conflicts, stale forms, MFA, retained marks, obsolete notifications, staffing recovery and objective finalization.
+- Supervisor browser: all nine observation/outcome combinations and three existing-blocker scenarios passed through Company, Worker and Verifier, with retained feedback.
+- Admin applicability/calibration browser passed; failure removes live review authority without losing the task.
+- Staffing-outage browser passed through Admin assignment, stale-form input retention, Verifier evidence and the actual notification worker.
+- Fresh independent review reproduced the reassignment findings before repair and found no additional concrete blocker after the fixes. That review was source-only; test execution remains separately recorded.
+
+Remaining: complete fresh combined release checks, real PostgreSQL verification of 0118, hosted CI, deployed exact-release verification, and reconciliation of all 218 historical scenario entries against current evidence. Production provider delivery is not established by disposable local tests.
+
+### Follow-up contract and release-fixture checks (15 October)
+
+- Closed notification/email vocabulary checks now include the governed reviewer assignment event and validate its opaque scoring audit reference. Both source checks and all 17 domain tests pass.
+- The actual PostgreSQL concurrent review test now creates signed supervisor observations, obtains real Worker acknowledgement and authenticates exact framework calibration before claiming. It applies migrations through 0118 and proves two independent clients cannot overwrite an already committed Admin escalation.
+- Full gate failures at interview context and historical rollback were retained: calibration must precede automatic review assignment; reversing 0111 must first reverse later installed notification wrappers, while preserving their drift/history guards. Focused reruns are required before the next full candidate.
+- Owner selected **English only** for this release. Account menus explicitly identify English and link to authenticated interface-language information; no unsupported translations are advertised.
+
+Complete release, hosted CI and deployed-candidate proof remain pending.
+
+Focused verification: actual six-role language/menu navigation and desktop/mobile layouts pass; six interview-context tests pass including explicit integrity clearance; the notification reverse-order rollback and remaining finalization assertions pass. Types and lint pass with seven existing warnings. These scoped results do not replace the pending exact full gate.
+
+## 15 October: scoring recovery and independent review controls
+
+The masterplan quality controls now have pinned second-review requirements, retained random sampling, reasoned Admin selection, blind independent rounds, explicit disagreement escalation and separate adjudication. Reviewer capacity is shared by evidence claims, submitted scoring assignments, manual assignments and amendments. Migration 119 preserves quality, capacity and conflict history; migration 120 extends the existing sealed notification/email outbox rather than adding a parallel queue.
+
+Independent review reproduced an amendment capacity bypass and stale handoff revival after conflicts. The amendment regression failed before the lock/check and then passed. The invalidated-primary regression also failed before the current-source predicate and then passed. Actual Chromium proves Admin selection/capacity, first review, native outbox notification and a separate final reviewer with the primary reason hidden. The two scoring recovery Chromium journeys pass. A real PostgreSQL two-client test proves one winner at capacity 1 and availability after completion. These are bounded implementation observations, not final exact-SHA certification.
+
+Assessment variants are now permanently selected by `test:assessment-variants-browser`: controlled review, section review, MCQ-only offline, written-only offline, cross-tab/opener offline recovery, emergency resume/replacement and timed accommodation. An early diagnostic was invalidated because package configuration changed during its protected server run; it is being repeated after configuration freeze. Current release-wide gates, hosted CI, exact-build deployment and the 218-scenario evidence reconciliation remain pending.
+
+## Additional critical consumer-path audit
+
+Exact b7b0a7f release verification was deliberately aborted, not passed: independent scenario review found M1.07.07 duplicate identity staff recovery and M3.07.03 appeal interview followup inaccessible/incomplete. Duplicate identity now has an Admin operations queue, current version/check/revision guards, recent MFA, retained actor/reason, all four outcomes and actual Worker status. Exact retained target/candidate comparison masks document/contact references; private document previews reuse signed access, verify owned available objects, audit authorized/served access and close after ID issuance. Native regression and actual four-outcome Chromium journey pass, including stale tabs, privacy and post-resolution denial. Independent read-only review found no further blocker in this bounded slice. Appeal interview integration and successful further-evidence response remain next; full release/CI/deployment are not certified.
+
+### 15 October: appeal interview and Assessor authority repair
+
+Reproduced the ordinary closed-case guard blocking a requested appeal interview. Added appeal-bound authority with replacement lineage, actual draft/action/runtime/playbook integration, persisted final interview response, independent Admin terminal review and withdrawal cancellation. Original issued assurance-case records are asserted byte-for-byte unchanged in native and Chromium tests.
+
+Independent review exposed live Assessor calibration gaps. A later FAILED exact revision previously still allowed claim; matching accepted any older CURRENT result. Shared eligibility now resolves the immutable case policy revision and latest effective calibration using fresh database time, fails closed for unresolved current-schema scope, and reaches assigned reads, runtime, playbook, context, media signaling, recording and human accommodation support. The helper introduces no account lock, preserving established lock order. Native failure/expiry regressions cover draft/finalization and direct consumers.
+
+Prepared evidence: 20261015-appeal-calibration-final.log (26 native), 20261015-appeal-browser-v7.log (actual role journey), 20261015-appeal-types-v5.log and 20261015-appeal-lint-v1.log (seven existing warnings, no errors). These are diagnostic source-state results, not clean-SHA release gates. A broader108-test diagnostic exposed legacy fixtures that lacked calibration and rollback tests using current retained audit vocabulary; their actual old migration ceilings are now isolated. Fresh rerun and independent PostgreSQL contention proof are pending.
+
+Further-evidence appeal response still lacks Admin access to its frozen scan bindings. Its successful own-Worker response, scoped file preview, durable response notification and real downstream review must be completed before release.
+
+### 16 October: retained appeal evidence and actual next-actor handoff
+
+Added independent live Admin access to the exact evidence versions/files frozen in a Worker appeal response. Preview binds appeal, request, credential, Worker, record/version, attachment and frozen hash/size; it uses private filesystem storage and existing secure-file authorization/read audits, verifies physical bytes, and rechecks authority after read. Later Worker drafts cannot redirect the preview. Native tests reject original decision Admin, wrong role, foreign appeal/request, revoked sessions and changed stored bytes.
+
+Actual Chromium now creates metadata, uploads a PNG, follows quarantined scan processing with the real Check scan status/finalization control, submits the evidence response, opens the Admin response notification, opens exact PNG bytes and records an independent terminal review. Original issued case is asserted unchanged. The local development notification worker control drains the real committed queue; this proves the business source/worker/projection/UI handoff, not external email delivery or a production daemon. Both evidence and interview browser journeys passed in 20261016-appeal-response-browser-worker-v7.log.
+
+Migration0121 extends the existing assurance outbox/email pipeline with immutable Worker/Assessor response sources, eligible independent Admin and Worker recipients, exact pending appeal version checks and duplicate/stale suppression. It prevents legacy appeal.updated from falsely attributing Worker/Assessor responses to the retained Admin reviewer. The real worker browser boundary exposed a TypeScript parser overbroad appeal version rule; it now versions only legacy appeal.submitted/updated and credential.issued. Rollback retains history and snapshots new enqueue function/trigger as well as wrapped contracts. Scoped tests remain preparation; final exact-SHA release and deployment are pending.
+
+### Release gate recovery after 93c7fd3
+
+The frozen full gate failed in the historical migration106/107 empty rollback fixture: migration119 adds framework revision foreign keys. Only that historical fixture now stops at107; all operational fixtures still apply current migrations. Focused calibration tests pass13/13.
+
+Independent reconciliation covered218 scenario IDs, retaining38 bounded-clause qualifications and11 operational-proof rows; it does not certify all218 as passed. Existing financial, account-recovery, email retry, privacy, registration and notification audit-failure regressions were omitted from release selectors. They are now selected permanently, with focused passes14 billing,32 account,15 email/private export,42 registration/privacy. PostgreSQL calibration contention now uses a disposable database and is included in the PostgreSQL gate. New clean-SHA full verification, hosted CI and exact-build deployment remain required. Local provider tests do not establish live delivery.
+
+### Unsaved forms and actual PostgreSQL restore recovery
+
+The99cd4d9 full run was deliberately aborted after two new boundary failures: actual visible navigation discarded unsaved evidence metadata, and standard PostgreSQL custom archive restore failed on a populated report CHECK helper under pg_restore's empty search path. Neither99 nor93 is final release proof.
+
+The portal guard now keeps per-form baselines in memory, prompts before links/unload, and handles native Navigation API traversal. A beforeInteractive history tracker supplies the fallback before application entries are created, retaining Next state and exact history indexes; canceled traversals restore the existing source entry without sentinel entries. Explicit GET filters and assessment answer workspaces retain their own behavior. Evidence metadata rejects automatic resets, preserves invalid input, and clears only the exact accepted submission snapshot, so later edits during an in-flight save remain dirty.
+
+Permanent actual browser tests cover canceled/accepted navigation, reverted/saved forms, rejected metadata retention, edits while saving, native and disabled-NavigationAPI Back, fallback Forward and multi-entry traversal, query replacement, rapid Back, unchanged history length and retained Next keys. The scoped shared-UI cohort passes5/5, including six-role desktop/mobile and consumer error/focus regressions. Native affected regression cohort passes15/15; strict types pass and lint has0 errors with7 existing warnings.
+
+Additive0122 pins only the report validator's lookup context to pg_catalog/public/pg_temp, preserving its body and all data. A real queued report survives standard PostgreSQL custom archive restore, with exact report data/config checks, configuration-only rollback and drift refusal. The retained103 preview database and1654 private object files also restore into an isolated clone and upgrade through18 pending migrations while original data and object hashes remain unchanged. This is retained preview proof, not production-provider activation. See docs/operations/postgres-backup-restore.md for the older-archive pre-data compatibility hook.
+
+Additional permanent consumers exercise actual current completed assessment/interview conditional issuance through certification, Living Record conditions, authenticated public projection and parsed PDF; public outputs retain generic conditional disclosure without private decision reasoning. Genuine generated PDF and decodable JPEG bytes traverse actual quarantine, leased local/test scanner, exact-version binding, owned byte retrieval and submission, with foreign-owner denial. Local/test scanning is not live malware-provider certification.
+
+Full release, actual PostgreSQL cohort, hosted CI and preserved-data exact-build deployment must run again against the next clean SHA.
+
+### Full-suite orchestration contract repair
+
+The581ee1e run passed all17 leading workflow stages, then stopped at the complete application gate's strict engineering preflight. Assessment variants had been appended outside the required verify:full orchestrator. They now run as an explicit fail-closed orchestrator stage before preview smoke and release manifest; the strict checker is unchanged. Coverage regression failed before the repair and passes8/8 afterwards; check:engineering passes. This repairs selection/reporting, and does not certify the remaining application tests or prior failed full run.
+### Canonical consolidation and appeal notification contract recovery
+
+The original integration branch remains preserved at4a9dde4. Hosted compliance exposed missing merged audit sessions and incompatible historical reuse of one session across multiple feature cycles. Genuine source records were recovered with their original hashes and nested provenance. The final application delta was consolidated onto canonical ae064c82 as8b22a73 under a new valid cycle/session using ordinary hooks. The application tree was verified equal before whitespace-only cleanup. No compliance rule, guard, history reference or canonical branch was weakened or rewritten. Candidate review is PR37 on qa/masterplan-release-20261016; PR36 was superseded.
+
+The8b22a73 frozen run passed all17 leading workflow stages, then failed the strict notification source checker because its exact finite list omitted migration121's appeal.evidence.submitted and appeal.interview.submitted. Both notification and email contract lists now include these actual immutable-source events; exact equality and unknown-event rejection remain intact. A diagnostic of all29 static check entrypoints found only these two stale lists. Later complete application tests remain unverified until the next full run.
+
+At8b22a73, an isolated retained-data PostgreSQL archive restore preserved177 tables/324rows and1654 private files, then applied18 pending migrations; original data and objects remained unchanged. A verified local Gitleaks8.30.1 default-rule scan of the tracked tree flagged18 findings, all reviewed as policy text or fixture idempotency keys, with zero confirmed secrets and no suppression configuration. These are bounded receipts, not a guarantee against unknown defects or a production activation claim.
+
+Downstream domain review reproduced the same finite-list omission in notification and email unit suites. Their exact expectations now include both events; metadata cases reject arbitrary extra fields, and outbox cases accept each real two-part appeal_followup source while rejecting legacy appeal or forged versioned references. Notification, email, outbox and engineering unit suites plus changed-file lint pass. The40682e4 full attempt was deliberately aborted for this reconciliation, not certified. No product event producer or authorization was relaxed.
+
+The da5ce4a full run passed17 leading stages, zero-vulnerability production dependency audit and earlier platform cohorts, then exposed a separate stale notification route registry assertion missing the existing Admin scoring-assignment and review-quality targets. The exact expected registry now includes those two targets; route/action security assertions are retained. All explicit event/target registry references were reviewed. Direct route/coverage11 checks and strict engineering preflight pass. The complete application stage now runs after the two selection/runner preflights, ahead of module cohorts, so later failures are reached without repeating ten minutes of already-covered module setup first. Every required stage remains selected, and later stages still block after failure. This is failure-detection ordering, not reduced acceptance. The da5 full and observer remain failed/stopped.
+
+### Current-schema account lifecycle repair (16 October)
+
+The full `5431d0d` gate failed at actual signup cancellation: migration119's per-account reviewer capacity mutex used `ON DELETE RESTRICT`, preventing removal of every unactivated account. Migration123 changes only that operational sentinel FK to cascade. Retained capacity revisions keep both restricted subject/recorder references and immutability. The repair has actual current-schema service and browser cancellation proof, policy acceptance audit retention, active-account/session deletion protection, migration rollback/reapply/drift rejection, and actual PostgreSQL claim contention coverage.
+
+Independent review also identified unfinished staff enrollment becoming an active verifier before TOTP completion. Capacity configuration could attach retained history and obstruct cancellation/revocation. The focused actual-service test reproduced that eligibility defect. Capacity listing and direct mutation now exclude incomplete enrollment; mutation locks all target enrollment flows before account/role and capacity locks, matching cancellation/completion ordering. The regression covers rejection without revision/audit effects, actual cancellation/revocation, eligibility after actual TOTP completion, and actual PostgreSQL capacity waiting on cancellation's flow lock.
+
+Focused evidence is not a full release pass. The `5431d0d` release remains failed; a new clean candidate must run all release, PostgreSQL, browser, hosted CI and preserved-data preview gates. Live provider activation remains deferred.
+
+Final focused proof: `20261016-capacity-lifecycle-final.json`, `20261016-staff-capacity-final-v2.json`, `20261016-staff-capacity-fk-lock-final.log` and `20261016-lifecycle-engineering.log` under `.autopilot/artifacts`. Account/role locks use `FOR NO KEY UPDATE`; the actual PostgreSQL test confirms producer FK key-share compatibility while settings wait for the held capacity mutex. Independent review found no remaining concrete issue in this scoped diff.
+
+### Calibration producer closure (16 October)
+
+A further actual-service regression on `875ce9b` showed unfinished staff could also acquire immutable calibration history. That full run was explicitly aborted, not certified. Calibration staff listing and recording now use the same completed-enrollment guard and deterministic flow-before-account locking, preserving legacy accounts and history restrictions. Permanent lifecycle proof covers Verifier and Assessor rejection without audit/history changes, actual cancellation/revocation, eligibility after TOTP completion, and real PostgreSQL lock serialization. A fresh exact-commit full run remains required.
+
+The same actual-service red/green closure covers Assessor matching-profile configuration: its live Admin authorization, enrollment eligibility check and upsert now share one transaction and enrollment lock order. Stale direct submissions cannot bypass the completed-enrollment selector. The permanent lifecycle helper tests profile rejection with no retained row, acceptance after TOTP completion and rejection of a revoked Admin session without changing the profile.
+
+Focused completion evidence: `.autopilot/artifacts/20261016-staff-profile-lifecycle-final.json` and `20261016-staff-lifecycle-consumers.json` show all selected commands exit0, including actual PostgreSQL races, affected interview replacement/accommodation services, typecheck and strict engineering checks. These are scoped prepared-source checks; they do not replace the new clean-SHA full release gate.
+
+Final independent source review found no blocking issue and no further reachable unfinished-staff retained-target writer among inspected production callers. Its direct-profile race coverage note was closed by the actual PostgreSQL Assessor-profile cancellation race; capacity, calibration and profile races plus native lifecycle and lint all pass in `20261016-staff-all-producer-races.json`.
+
+### Report catalogue fixture calibration (16 October)
+
+The `a576ff2` full gate ran for 953.94 seconds and failed the populated catalogue test at actual interview scheduling: its fixture recorded Verifier calibration for `REPORT-CATALOGUE` but left the Assessor with unrelated framework calibration. A focused isolated test reproduced the denial. Independent review confirmed the missing fixture producer; the application correctly enforced the pinned framework. The fixture now records Assessor calibration through `StaffCalibrationService` with the existing owned live Admin. All report assertions and application authorization checks remain intact. A fresh clean-SHA full gate is required.
+
+### Asynchronous leaving-letter browser consumer (16 October)
+
+Ahead-of-full critical browser verification on `1a5f6be` failed the leaving-letter active assertion after actual upload. Leaving letters use the same queued scan/candidate contract as evidence files, but this last browser step assumed synchronous binding. The browser now exercises the existing visible `Check scan status` control in a bounded loop, matching evidence revision handling, before retaining the original active-binding assertion. Application scanning, authorization and exact binding checks are unchanged. The full native driver was explicitly aborted when the independent browser failure surfaced; it was not counted as a pass.
+
+The complete independent Worker review browser journey now passes (255.7 seconds), including actual leaving-letter scan completion and final dashboard state. The next prepared-source preflight passed review resolution and notification handoff, then found the live-media fixture lacked exact Assessor calibration for the framework pinned by review setup. The helper now optionally calibrates fixture Assessors through the same temporary live Admin producer before revocation. The browser asserts HTTP200 on the assigned detail before claiming. The application correctly returned404 for the previously uncalibrated setup; its authorization remains unchanged.
+
+### Company snooze validation and recovery (16 October)
+
+Prepared browser verification found the fixed snooze date had become past. An explicit dynamic-past browser regression also established a product error-handling gap: the expected future-date error escaped the server action instead of remaining in the form. A native real-runtime regression established invalid `Date` values were not rejected before transactional processing. Direct recursive `node --test` skipped this runtime suite and was not counted; the real isolated runner reproduced the failure.
+
+The snooze-only repair returns safe form state, retains inputs, announces inline errors/success and marks only the submitted snapshot saved for navigation protection. Authorization remains outside error handling; tenant and row-lock/audit behavior is retained. Invalid dates fail before mutation. Full Company browser (67.9 seconds), six native runtime tests, typecheck and scoped lint pass; independent review accepts the repair. The browser proves past rejection with retained date/reason and no snoozed state, then retries a date relative to the current clock and completes acknowledgement and the rest of the Company workflow.
+
+Assigned staff browser setup now pins its scoring policy and records actual exact-revision Verifier/Assessor calibration before submitting the written assessment. The real submission producer therefore creates the assigned draft review; the redundant manual case-status overwrite is removed. The full assigned staff browser and lint pass (31.4 seconds). The existing 84% criterion mark remains valid and unchanged.
+
+### Real stale-session and recovery contention closure (16 October)
+
+Critical prepared-source commands6..27 passed across immutable receipts. The replacement browser negative test initially changed a React-controlled hidden value without transmitting the archived session ID. A one-shot native FormData listener now sends that actual forged ID; the existing real POST assertion, server rejection and unchanged archived/replacement database assertions remain. All three replacement scenarios and the full eleven-test interview group pass.
+
+An old recovery concurrency debt was checked against current code and reproduced on actual PostgreSQL: new request held account then flow while reset/resend held flow then account, producing40P01. Recovery flow locking now takes the account lock first in a separate query, then re-reads/locks the flow. Expiry/consumption/OTP/replay validations remain. Three permanently selected real PostgreSQL contention cases, thirteen native OTP tests, typecheck, lint and all selected six-role/controlled-provider recovery browser tests pass. Controlled delivery is not live provider delivery.
+
+The consumer cohort then failed an appeal fixture that applied a historical0103 ceiling to its already-current database. The migration guard correctly rejected this. Fixture data seeding now accepts an existing database, Worker identifiers and signing key; the isolated historical0067 wrapper is unchanged. Both accepted-appeal and rejected/stale-Admin browser journeys now use that explicit interface, owned credential files and matching ephemeral signing keys. Both browsers, scoped lint and sixteen native fixture-consumer tests pass. Source-string/data-URL rewriting is removed from these two consumers. Remaining consumer cohorts, fresh clean-SHA full/CI and exact-build preview still block release certification.
+
+### Advisory scoring and Case Replay browser reconciliation (16 October)
+
+The remaining consumer cohort passed Company verification and Admin authoring, then failed an obsolete aggregate Score control. The browser fixture manually inserted a draft without current pinned-policy calibration/assignment. It now pins its framework policy, records exact Verifier calibration through the live temporary Admin service, and submits the actual Worker answer to create the assigned draft. The browser uses both reasoned criterion-mark forms and checks the computed84 overall result, while retaining guidance review, Admin replay and database/access assertions. Focused full browser and lint pass; adversarial review adds explicit unchanged overall-score checks before/after AI generation and guidance acceptance. Independent reviewer availability ended for this last test-only change, so its final assertion review is performed locally. Final exact-SHA release evidence remains pending.
+
+A fresh independent reviewer subsequently inspected the entire current dirty product/test batch and untracked files, including strengthened Case Replay, and found no critical or important issue. Its approval remains bounded to source/focused receipts.
+
+The next consumer tail passed privacy/export/sharing/layout/validation/help and Worker search. Verifier search's directly inserted Alpha task lacked framework binding/calibration, so Claim was correctly unavailable. Only that claimed target now uses the existing actual authenticated Admin binding/calibration helper; all251 preceding rows, Beta/foreign assignments and search/security assertions remain. Full browser and lint pass. The directly shared native test also used a nonexistent session; it now explicitly checks missing-session denial, creates a real current Verifier session for all unchanged SQL search assertions, then revokes it and checks denial. No product authorization is relaxed. Remaining consumer paths and final exact-SHA gates still block release.
+
+### Prepared browser preflight closure (16 October)
+
+The final frozen v9 preflight passed its four commands: strict engineering, the nine remaining consumer files, credential-concern/mobile navigation2/2, and full Masterplan integration10/10. The latter covers scanned appeal evidence, appeal interviews, duplicate identity clearance, calibration loss of authority, blind independent second review/capacity, human integrity disposition, all supervisor outcomes and retained mixed escalation routes, staffing recovery, reviewer conflict and safe scoring amendment. All24 consumer files now have scoped passing runs across the preserved first-failure batches. These different prepared-source receipts are not a single clean-SHA full pass and do not promote218 scenario statuses.
+
+The changed native Verifier search test was missing from permanent release selection. An explicit selection check failed before adding it to the existing evidence-review runner; no engineering stage names/counts changed. Actual whole-runner, scoped lint and diff checks precede the guarded candidate commit. Fresh exact-candidate full/PG/hostedCI, secret scan, retained-data restore and bound public preview proof remain mandatory. Earlier failed/aborted full runs remain failed/aborted.
+
+Final prepared runner verification completed: the actual M2.02 evidence-review runner including native search, its selector check, scoped lint and git diff whitespace checks all exit0. Independent review accepted the selector and complete current batch. The next guarded commit starts a fresh exact-SHA release attempt; this paragraph certifies only prepared checks, not the project or full release.
+
+## Historical notification rollback repair after712f8a6
+
+The exact712f8a6 full gate failed after1486.71seconds: the117 rollback test used a latest123 schema with later notification contract extensions. The drift guard correctly rejected this ordering. The historical test now uses the existing migration-ceiling helper on its own disposable database through117, preserving the same rollback/reapply assertions and strengthening unrelated-history checks to whole assessment-row equality after each transition. Operational integrity fixtures remain at latest migrations; no migration or product guard changed. Focused original failure reproduced, then all12 integrity native tests passed. Engineering checks/tests, affected lint and independent review passed. Fresh full candidate gates remain required.
+
+Eight active workflow files only replace setup-node remote npm caching with explicit package-manager-cache:false. Public M2.01 timing showed a602second restore versus5second npm ci. Node24, lockfile, installation and test commands are unchanged; future actual CI timings must verify the improvement. No test or release gate was removed.
+
+Broader native Masterplan integration preflight subsequently passed77/77 with zero skips in240.22seconds (`20261016-masterplan-native-after-rollback.json`). This prepared-source result does not substitute for fresh committed full verification.
+
+## MFA browser counter scheduling afterf8a98b7
+
+The exactf8a98b7 full run passed the former117rollback failure and all completed native/static and earlier browser groups, then failed at2612.72seconds in initialRoot login in the MFA-management browser. The test generated current-minus-one TOTP; crossing a30second boundary before verification invalidates that code. A deterministic check using the real verifier reproduced that boundary behavior while confirming current-code acceptance and consumed-counter rejection. The test now uses explicit submitted counters, selects an unused counter, and waits at most one counter window for its acceptance. Original old-factor, recovery-code replay, immutableaudit, session and notification assertions remain unchanged; product authentication was not altered.
+
+Focused five-role MFA browser passed213seconds; affected lint, native security tests and independent review passed. All13 remaining critical browser commands then passed against a frozen source fingerprint, including the complete consumer cohort and10connected integration tests. These prepared-source results do not replace fresh committed full verification. The failed candidate observer stopped without publishing a preview.
+
+## Worker CLI retry contract after83eb1e6
+
+Exact83connected-browserCI exposed a contradictory emailvisibility assertion: the test required exit0 for calls whose required result was retry_wait. The worker CLI deliberately returns1 for nonsuccess jobs, preserving that outcome across database close. An unchangedfocusedtest reproducedfailure; a safe diagnostic captured three success/exit0 results followedby retry_wait/exit1. Onlythetest expectation changed to require those exactpairs; workerbehavior and downstreamassertions remainunchanged. Fullfile browser2/2PASS40.34seconds, affectedlint, native manualretry and independentreviewPASS. An inventory foundnoother contradictoryretry assertions. The exact83full driver was explicitlyABORTED anditsownedprocess tree stopped beforetheedit; no previewpublished. Freshcommittedfull/CI remainrequired.

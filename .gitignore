@@ -66,15 +66,6 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# UNIVERSAL-AUTOPILOT-V3:BEGIN
-.autopilot/*
-!.autopilot/guard.py
-!.autopilot/autopilot_state.py
-!.autopilot/autopilot_audit.py
-!.autopilot/audit/
-.autopilot/audit/*
-!.autopilot/audit/events.ndjson
-# UNIVERSAL-AUTOPILOT-V3:END
 # local one-off verification scripts and generated browser evidence
 /.tmp-*.mjs
 /artifacts/all-role-ui-layout/
@@ -85,3 +76,13 @@ next-env.d.ts
 /artifacts/m2-07-browser/seed.json
 
 /.outbox-worker-dist/
+
+# UNIVERSAL-AUTOPILOT-V3:BEGIN
+.autopilot/*
+!.autopilot/guard.py
+!.autopilot/autopilot_state.py
+!.autopilot/autopilot_audit.py
+!.autopilot/audit/
+.autopilot/audit/*
+!.autopilot/audit/events.ndjson
+# UNIVERSAL-AUTOPILOT-V3:END

@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {policyInterview,actions,scoreForm} from "../helpers/interview-policy-fixture.mjs";
+test("M2.12.03 interview draft survives actual technical hold and resume; stale session cannot overwrite notes/scores",{timeout:120000},async()=>{
+ const x=await policyInterview({start:true});
+ try{
+  const id=x.request.interviewRequestId,form=scoreForm(x);
+  form.set("notes","Initial draft: isolation status observed before media failure.");
+  form.set("technicalKnowledge","2");form.set("practicalReasoning","");
+  form.set("recommendation","");
+  await actions(x).saveInterviewConsoleAction(form);
+  const before=await x.scheduling.loadLatestConsoleDraft({tenantId:x.fixture.credentials.company.tenantId,interviewRequestId:id});
+  assert.equal(before.notes.at(-1).content,"Initial draft: isolation status observed before media failure.");
+  assert.equal(before.scorecard.technicalKnowledge,2);
+  assert.equal(before.scorecard.practicalReasoning,null);
+  assert.equal(before.submitted,false);
+  await x.runtime.technicalIssue(x.principal,id,"Realistic audio stream loss before final score");
+  assert.equal((await x.runtime.view(x.principal,id)).status,"TECHNICAL_HOLD");
+  assert.deepEqual(await x.scheduling.loadLatestConsoleDraft({tenantId:x.fixture.credentials.company.tenantId,interviewRequestId:id}),before);
+  await x.runtime.resume(x.principal,id);
+  assert.equal((await x.runtime.view(x.principal,id)).status,"ACTIVE");
+  const forged=scoreForm(x);
+  forged.set("interviewSessionId","interview_session_"+ "x".repeat(24));
+  forged.set("notes","Forged old session trying to clobber draft");
+  await assert.rejects(actions(x).saveInterviewConsoleAction(forged),/redirect|session|policy/i);
+  assert.deepEqual(await x.scheduling.loadLatestConsoleDraft({tenantId:x.fixture.credentials.company.tenantId,interviewRequestId:id}),before);
+  const revision=scoreForm(x);
+  revision.set("notes","After reconnect: rescored hazard recognition following a technical interruption.");
+  revision.set("technicalKnowledge","4");
+  revision.set("practicalReasoning","3");
+  revision.set("recommendation","");
+  await actions(x).saveInterviewConsoleAction(revision);
+  const after=await x.scheduling.loadLatestConsoleDraft({tenantId:x.fixture.credentials.company.tenantId,interviewRequestId:id});
+  assert.equal(after.notes.at(-1).content,"After reconnect: rescored hazard recognition following a technical interruption.");
+  assert.equal(after.scorecard.technicalKnowledge,4);
+  assert.equal(after.scorecard.practicalReasoning,3);
+  assert.equal(after.submitted,false);
+  assert.equal(after.interviewSessionId,before.interviewSessionId);
+  assert.equal((await x.database.query("SELECT count(*)::int n FROM interview_console_drafts WHERE interview_request_id=$1",[id])).rows[0].n,1);
+  assert.equal((await x.runtime.view(x.principal,id)).status,"ACTIVE");
+  console.log("ACTUAL_M21203_NATIVE actual Assessor form saves partial draft, technical hold/resume preserves original notes and score, forged session rejected, revision persists same active runtime.");
+ }finally{await x.cleanup();}
+});
