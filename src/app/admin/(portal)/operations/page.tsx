@@ -35,7 +35,7 @@ export default async function AdminOperationsPage({
   const certification = certificationRows.length > 0
     ? buildCertificationSnapshot(certificationRows)
     : buildEmptyCertificationSnapshot();
-  const release = await (await getProductionLaunchService()).getReadiness(principal);
+  const handover = await (await getProductionLaunchService()).getReadiness(principal);
 
   return (
     <section className="page-stack">
@@ -124,14 +124,16 @@ export default async function AdminOperationsPage({
       </ul>
       <p>Provider configuration enables queued verification messages. Delivery to a real inbox or phone requires a separate delivery check.</p>
       <h2>Production launch and operational handover</h2>
-      <p aria-label="release-readiness-status">Release readiness: {release.status}</p>
+      <p aria-label="release-readiness-status">Release authorization: NO-GO</p>
+      <p>These handover checks are Admin attestations only, not independent permission to release. A production GO requires separately verified final-SHA staging, all 218 scenarios, penetration testing, realistic load and recovery, real provider delivery, and Owner UAT.</p>
+      <p aria-label="handover-readiness-status">Handover checklist: {handover.status}</p>
       {result === "updated" ? <p role="status">Handover check saved.</p> : null}
       {result === "conflict" ? (
         <p role="alert">Handover state changed in another session. Review the latest values and try again.</p>
       ) : null}
       {result === "invalid" ? <p role="alert">Handover update was invalid.</p> : null}
       <ul aria-label="Production handover checks">
-        {release.checks.map((check) => (
+        {handover.checks.map((check) => (
           <li key={check.name} data-handover-check={check.name}>
             <form action={updateProductionLaunchCheckAction}>
               <strong>{check.name}</strong>{" "}

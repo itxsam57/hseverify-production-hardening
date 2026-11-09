@@ -140,6 +140,8 @@ async function bootstrapAdmin(browser, baseUrl) {
   await rootSession.page.getByRole("button", { name: "Create one-time invitation" }).click();
   const adminInvitation = (await rootSession.page.locator(".security-key-card strong").first().innerText()).trim();
   assert(adminInvitation.startsWith("/staff/invite/"));
+  await gotoOk(rootSession.page, baseUrl, "/admin/operations", null);
+  assert.match(rootSession.page.url(), /\/access-denied(?:\?|$)/, "Root session must not receive Admin operations");
   await rootSession.context.close();
 
   const admin = await enrollStaff(
@@ -183,7 +185,13 @@ async function runBrowserAcceptance(baseUrl) {
     adminSession = await bootstrapAdmin(browser, baseUrl);
     const { page } = adminSession;
     await gotoOk(page, baseUrl, "/admin/operations", "Production launch and operational handover");
-    assert.equal((await page.getByLabel("release-readiness-status").innerText()).trim(), "Release readiness: attention");
+    assert.equal((await page.getByLabel("release-readiness-status").innerText()).trim(), "Release authorization: NO-GO");
+    assert.equal((await page.getByLabel("handover-readiness-status").innerText()).trim(), "Handover checklist: attention");
+    assert.equal((await page.getByLabel("certification-status").innerText()).trim(), "Certification: attention");
+    const providerRows = await page.getByRole("list", { name: "Provider integrations" }).locator("li").allTextContents();
+    assert.equal(providerRows.length, 6);
+    assert(providerRows.every((row) => row.includes("Live availability: not checked.")));
+    await page.getByText("These handover checks are Admin attestations only", { exact: false }).waitFor();
     for (const name of CHECKS) await expectCheck(page, name, "pending", 0);
 
     stalePage = await adminSession.context.newPage();
@@ -207,9 +215,14 @@ async function runBrowserAcceptance(baseUrl) {
       await saveCheck(page, name, "passed");
       await expectCheck(page, name, "passed", 1);
     }
-    assert.equal((await page.getByLabel("release-readiness-status").innerText()).trim(), "Release readiness: ready");
+    assert.equal((await page.getByLabel("handover-readiness-status").innerText()).trim(), "Handover checklist: ready");
+    assert.equal((await page.getByLabel("release-readiness-status").innerText()).trim(), "Release authorization: NO-GO");
     await page.reload({ waitUntil: "domcontentloaded" });
-    assert.equal((await page.getByLabel("release-readiness-status").innerText()).trim(), "Release readiness: ready");
+    assert.equal((await page.getByLabel("handover-readiness-status").innerText()).trim(), "Handover checklist: ready");
+    assert.equal((await page.getByLabel("release-readiness-status").innerText()).trim(), "Release authorization: NO-GO");
+    assert.equal((await page.getByLabel("certification-status").innerText()).trim(), "Certification: attention");
+    const unverifiedProviders = await page.getByRole("list", { name: "Provider integrations" }).locator("li").allTextContents();
+    assert(unverifiedProviders.every((row) => row.includes("Live availability: not checked.")));
     for (const name of CHECKS) await expectCheck(page, name, "passed", 1);
     await page.getByText("production_launch.handover.updated", { exact: false }).first().waitFor({ timeout: 15_000 });
 
@@ -228,7 +241,7 @@ async function runBrowserAcceptance(baseUrl) {
   }
 }
 
-test("M3.12 real Chromium acceptance persists production handover, reports stale updates, and reaches durable readiness", { timeout: 240_000 }, async () => {
+test("M3.12 real Chromium Admin handover preserves audit, stale denial and NO-GO release authorization", { timeout: 240_000 }, async () => {
   const projectRoot = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-m312-browser-"));
   const port = await freePort();
