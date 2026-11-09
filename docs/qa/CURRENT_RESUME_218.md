@@ -1,5 +1,16 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-09 — M3.12.04 local rollback candidate QA35f (SCOPED, NO-GO)
+
+- FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO. Active QA branch qa/a28-eligibility-read-guard-20261107 exact SHA 35f40507d243b0184c308bea0d32fe0f09f747aa. PR #66 integrated protected DB readiness monitor. Exact merged-SHA GitHub CI 5/5 SUCCESS.
+- Isolated worktree hseverify-m312-rollback-drill-20261109. Exact QA35f real Next production build, portable six-role preview HTTP smoke, release manifest and PGlite bundle PASS. Source unchanged. Logs in .autopilot/artifacts/M312_ROLLBACK_LOCAL_BUILD.log and M312_ROLLBACK_LOCAL_SMOKE_MANIFEST.log.
+- Actual disposable loopback PostgreSQL 16 exact QA35f 13/13 PASS in nine suites: active Worker answer/draft, private-file hashes, owner denial, report archive and contention. PostgreSQL stopped and isolated test database deleted. Receipts M312_ROLLBACK_EXACT_QA35f_PG16_SUITE.log and .tsv.
+- BLOCKED: rollback-candidate.yml exists in QA source but is not registered on GitHub default qa/hse-production-hardening; GitHub workflow lookup 404. No remote workflow_dispatch or deployment. Actual protected staging rollback, RPO/RTO and provider restore/UAT remain unverified.
+- Known RED: npm run audit:current-218-scenarios exits 1 because old historical test log 20261029-A26-registration-provider-browser.log is absent in this clean worktree. Do not fake, transplant, re-SHA or count old evidence; 0/218 fully certified. Log M312_EXACT_QA35f_218_RECONCILIATION.log.
+- Detailed commands and blockers: docs/qa/M3_12_LOCAL_ROLLBACK_QA35F_20261109.md.
+- NEXT FIRST: address missing historical artifact failure without weakening proof; establish truthful current-candidate 218-row evidence ledger, then stage monitoring/provider/rollback, complete role/UI/API pentest and Owner UAT. Preserve all active worktrees; NO-GO.
+
+
 ## 2026-11-09 — M3.12.02 executable DB readiness probe and alerting (SCOPED LOCAL)
 
 **FULLY VERIFIED 0/218 | COMPLETE PENTEST INCOMPLETE | RELEASE NO-GO.**
@@ -22,7 +33,7 @@ No independently configured production monitoring scheduler, pager/webhook opera
 
 ### NEXT FIRST
 
-1. Commit guarded new code+real audit session; **rerun full 8/8 suite on exact new commit SHA**, typecheck/lint and verify no unrelated generated changes.
+1. Commit guarded new code+real audit session; **rerun full 11/11 suite on exact new commit SHA**, typecheck/lint and verify no unrelated generated changes.
 2. Push isolated branch, open PR to current QA branch; wait for **all** CI including new M3.12 operational workflow, verify GitHub-generated merged SHA and signature.
 3. If GitHub/runner failure, reproduce exact job logs and repair. Do not bypass compliance.
 4. Resume M3.12.02 actual on-call receiver/provider delivery and M3.12.04 executable rollback and data restoration in approved protected staging when available. If external environment still blocked, explicitly BLOCKED_EXTERNAL and advance to next actionable feature-by-feature test; never promote 0/218 count without full evidence.
