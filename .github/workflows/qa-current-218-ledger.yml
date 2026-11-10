@@ -1,0 +1,69 @@
+name: HSE 218 exact-SHA release ledger (NO-GO unless fully certified)
+
+on:
+  pull_request:
+    paths:
+      - "docs/qa/2026-10-02-evidence.json"
+      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "scripts/lib/current-release-218-ledger.mjs"
+      - "scripts/reconcile-current-release-218.mjs"
+      - "tests/engineering/current-release-218-ledger.test.mjs"
+      - "package.json"
+      - ".github/workflows/qa-current-218-ledger.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "docs/qa/2026-10-02-evidence.json"
+      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "scripts/lib/current-release-218-ledger.mjs"
+      - "scripts/reconcile-current-release-218.mjs"
+      - "tests/engineering/current-release-218-ledger.test.mjs"
+      - "package.json"
+      - ".github/workflows/qa-current-218-ledger.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-current-218-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fail-closed-ledger:
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 8
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact QA commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Reject historical PASS promotion and frozen scenario tampering
+        run: node --test tests/engineering/current-release-218-ledger.test.mjs
+      - name: Reconcile all 218 scenarios from clean checkout
+        run: npm run audit:current-218-scenarios
+      - name: Assert exact QA SHA and NO-GO
+        run: |
+          node --input-type=module -e '
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          const report = JSON.parse(readFileSync(".autopilot/artifacts/current-release-218-ledger.json"));
+          assert.equal(report.exact_sha, process.env.VERIFIED_SHA);
+          assert.equal(report.counts.total, 218);
+          assert.equal(report.counts.full_verified, 0);
+          assert.equal(report.release.decision, "NO_GO");
+          '
+      - name: Retain 218-row exact-SHA machine-readable evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hse-218-no-go-ledger-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/current-release-218-ledger.json
+          if-no-files-found: error
+          retention-days: 30

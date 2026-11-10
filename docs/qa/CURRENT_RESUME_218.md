@@ -1,5 +1,14 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — CURRENT 218 clean-checkout release ledger repair (NO-GO)
+
+- Current active QA base at start: b54421302fe7000c0284864b92cbff258c2903a0 (PR #67 merged). Isolated worktree hseverify-current-218-ledger-20261109, branch qa/current-218-ledger-failclosed-20261109. No other worktree modified, no in-flight test detected. Guarded V4 audit session 4a41b893-c018-4913-a9d5-838795afe5af.
+- Reproduced known RED: original npm run audit:current-218-scenarios exit1 on missing historical A26 registration log in a clean checkout, even though the 218 frozen IDs exist. Historical log only belongs to an older SHA.
+- New current-SHA truthfulness ledger runs independently from untracked historical logs. It enforces immutable frozen identity/family/role/description SHA-256, 218 unique IDs, 37 bricks, no historical PASS promotion, and generates all 218 rows with remaining six acceptance dimensions. At base b544: 0 FULLY_VERIFIED; 1 IN_PROGRESS; 10 known BLOCKED_EXTERNAL; 207 NOT_STARTED; NO-GO. These are verification statuses, not claims that features are missing. Known blockers are a non-exhaustive minimum.
+- Original historical evidence audit remains unchanged behind npm run audit:historical-218-evidence, intentionally strict when old logs are unavailable. New current command: npm run audit:current-218-scenarios. Procedure docs/qa/CURRENT_218_LEDGER_PROCEDURE.md. Canonical mission added to QA checkout from authoritative masterplan branch because prior QA branch lacked the file referenced by AGENTS.md.
+- NEXT: run fresh negative/positive ledger tests and quality gate on exact committed SHA, push PR to active QA, verify targeted GitHub Actions and exact GitHub-generated signed merge, then resume first actionable full scenario browser/API/pentest. Never elevate local/regression evidence to FULL. External staging providers, real pager and restore, complete pentest, Owner UAT all still blocked. FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO.
+
+
 ## 2026-11-09 — M3.12.04 local rollback candidate QA35f (SCOPED, NO-GO)
 
 - FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO. Active QA branch qa/a28-eligibility-read-guard-20261107 exact SHA 35f40507d243b0184c308bea0d32fe0f09f747aa. PR #66 integrated protected DB readiness monitor. Exact merged-SHA GitHub CI 5/5 SUCCESS.
