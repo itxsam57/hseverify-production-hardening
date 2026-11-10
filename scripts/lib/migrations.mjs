@@ -116,6 +116,16 @@ export async function migrationStatus(database) {
   const appliedResult = await database.query(
     "SELECT migration_id, checksum, applied_at, release_sha FROM hse_schema_migrations ORDER BY migration_id"
   );
+  const knownIds = new Set(migrations.map((migration) => migration.id));
+  const unknown = appliedResult.rows
+    .filter((row) => !knownIds.has(row.migration_id))
+    .map((row) => JSON.stringify(row.migration_id));
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown applied migration IDs absent from source: ${unknown.slice(0, 10).join(", ")}` +
+      (unknown.length > 10 ? ` (and ${unknown.length - 10} more)` : "")
+    );
+  }
   const applied = new Map(appliedResult.rows.map((row) => [row.migration_id, row]));
 
   return migrations.map((migration) => {

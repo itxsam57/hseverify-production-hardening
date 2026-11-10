@@ -1,5 +1,15 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.01.02 real PostgreSQL16 migration ledger fail-closed fix and exhaustive empty-data rollback (NOT FULL)
+
+- FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO. Tested source base active QA SHA 3687f7422b2fbf2d8816f93e6ba3b3100a154566. Isolated worktree hseverify-m10102-migrations-20261110, branch qa/verify-m10102-migrations-20261110.
+- **Known RED reproduced:** actual disposable PostgreSQL16 migrationStatus ignored a source-unknown row in hse_schema_migrations (M10102_PG16_UNKNOWN_BASELINE_RED.log, 1/3 failed). Fix scripts/lib/migrations.mjs fail-closed on every unknown applied ledger row; direct library AND db:status/db:migrate/db:rollback command denials tested. No production/third-party data touched.
+- **Real post-fix PG16 4/4 PASS:** all **134** .up.sql migrations applied/idempotent, corrupted checksum/migration history fail-closed, stage/prod rollback denied; 134 .down.sql reverse-order executed successfully on a **disposable empty** PG16 DB, and all 134 reapplied successfully without pending rows. Tests also verify earlier history and local sentinel preservation. This is not a claim that down is safe for real retained consumer records; 51 down scripts contain explicit history/dependency refusal checks.
+- Broad generic 36-file migration/rollback sweep: 67 test cases passed, 6 file-level setup failures (5 missing compiled-runtime fixtures; 1 separate PostgreSQL URL), not product defects. **All five official specialized runners** executed separately with required runtime fixtures, **42/42 PASS**, plus actual PG16 4/4. Quality: strict typecheck PASS, ESLint exit0 with 9 inherited warnings, CI YAML parser PASS.
+- Exact source receipts and scope: docs/qa/M1_01_02_PG16_MIGRATION_INTEGRITY_20261110.md and docs/qa/evidence/M1_01_02_QA3687_LOCAL_RESULTS.tsv; underlying red/green and detailed logs .autopilot/artifacts/M10102_* in isolated worktree.
+- **NEXT FIRST:** guarded commit/push, rerun real PostgreSQL16 on exact committed SHA and GitHub targeted CI service; confirm resulting signed QA merge SHA. Then M1.01.03 exact candidate CI and M1.01.04 protected deployment rollback, retain all 218 as NOT_FULL. Protected final stage, real provider and Owner UAT remain blockers. Do not use successful synthetic empty-down execution as authorization for production destructive rollback.
+
+
 ## 2026-11-10 — M1.01.01 exact QA runtime/security scoped verification (NOT FULL)
 
 - FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO. Active QA SHA at test start: 497a06cd174d02c634291e6f5524e9f85074956b (merged PR #68, 6/6 GitHub workflow runs SUCCESS). Worktree hseverify-m101-runtime-20261110, branch qa/verify-m101-runtime-20261110.
