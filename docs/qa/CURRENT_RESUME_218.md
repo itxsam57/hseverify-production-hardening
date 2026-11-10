@@ -1,5 +1,15 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.02.03 real Chromium validation/error/retry state subset (SCOPED, NOT FULL)
+
+- **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO**. Tested isolated branch `qa/verify-m10203-feedback-20261110` starting at exact active source QA SHA `4b6f683a7be6b9e273b9df91c5f75d72270bb73a`. QA merged PR72 later advanced to `b516e41bccb0c370da33c9ec39e300775688539b`; do not treat older-source browser evidence as final merged-SHA certification.
+- Real browser **4/4 PASS**: Worker/Company registration validation and keyboard focus on 1365/390/320; deliberate Worker Dashboard and Company Billing fault isolation, safe error/Retry at 390/320/1280; Worker file oversize/MIME-spoof/unsupported rejection; Company sandbox checkout, duplicate capture, invalid refund feedback, valid retry, persisted ledger/audit. All tests used disposable local data, **no production provider**. Strict TS PASS, lint 0 errors (9 existing warnings).
+- Baseline test-coverage RED: shared global `/tmp/independent-audit-credentials.json` and no narrow error/validation viewport assertions. Changed error fixture to a private disposable PGlite-scoped credentials path, added 320/390/desktop real responsive checks; post-fix browser tests PASS. This is a test fixture/coverage bug, **not a demonstrated application exploit**.
+- Dedicated two-job GitHub-hosted Chromium QA workflow added `.github/workflows/m1-02-feedback-states.yml`, actionlint syntax/context PASS. **CI and exact commit/merged SHA verification still pending**. Results: `docs/qa/M1_02_03_FORM_ERROR_RETRY_QA4B_20261110.md` and `docs/qa/evidence/M1_02_03_QA4B_LOCAL_RESULTS.tsv`, raw `.autopilot/artifacts/M10203_*.log`.
+- Missing final release proof: empty/loading/success on every scenario page, full role/tenant/API negative matrix, restored-service retry-to-success, real provider faults, final protected staging, realistic load/recovery and Owner UAT. **M1.02.03 NOT_FULLY_VERIFIED.**
+- **NEXT FIRST:** guarded commit, exact new commit Chromium retest; push PR against current QA b516, inspect GitHub two-job browser CI and signed QA merge, preserve 0/218 NO-GO. Afterward continue empty/loading/error/denial/retry/success per feature without upgrading historical local runs.
+
+
 ## 2026-11-10 — M1.02.01 exact QA public navigation/contact/demo (SCOPED LOCAL, NOT FULL)
 
 - Release **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | NO-GO**. Tested base active QA SHA **73b63e4d4f7d502c5e7b813bae5955d601270d9d**, isolated worktree `hseverify-m10201-public-nav-20261110`, branch `qa/verify-m10201-public-nav-20261110`. Guarded audit session `8346ae5a-faae-4b98-ac58-f4cba8cf5ebe`. No production system or other worktree touched.
