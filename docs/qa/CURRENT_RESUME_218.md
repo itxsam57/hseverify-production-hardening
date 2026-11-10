@@ -1,5 +1,13 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.02.04 real six-role mobile/desktop confirmation dialogs (SCOPED, NOT FULL)
+
+- **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO.** Source SHA `9e553a777765101764d28800ea4462700b52f042` (PR #74 test commit integrated into signed active QA merge `380ad9d876aa8d5f99eafd0fb13f5db78d72ffa6`); isolated branch `qa/verify-m10204-dialog-20261110`, worktree `hseverify-m10204-dialog-20261110`, audit session `588beaaf-0a97-49ab-80b7-06d66acd0dfd`.
+- **M1.02.04 targeted 1/1 actual Chromium suite PASS**: signed-in Worker, Company, Assessor, Verifier, Admin and Root; at **320/390/1280px** actual profile Sign out confirmation dialog opens inside viewport; native focus trap via keyboard Tab, Escape and Cancel close without revoked session, correct dashboard role retained. Also actual mobile menu 44px touch target/overflow and desktop sidebar layout; test checks no client-side browser errors. Baseline original browser test had no dialog/Escape acceptance (source check RED), expanded browser GREEN; coverage defect only, not a proven product vulnerability.
+- Strict TypeScript PASS, ESLint 0 errors / 9 existing warnings. Tracked `docs/qa/M1_02_04_DIALOG_RESPONSIVE_QA9E_20261110.md` and `docs/qa/evidence/M1_02_04_QA9E_LOCAL_RESULTS.tsv`; raw browser and quality logs `.autopilot/artifacts/M10204_*.log`. Existing `.github/workflows/m1-02-header-controls.yml` will replay this real-browser test on exact PR/merged SHA.
+- **NOT FULLY VERIFIED:** all six role responsive tables/forms/dialogs and route transitions, full keyboard/mobile accessibility, production providers, protected staging exact SHA, complete tenant/API pen testing, load/restore and Owner UAT. **NEXT FIRST:** guarded commit and exact committed-SHA browser retest, push QA PR and require all CI on signed merge; then test responsive table/forms and route transitions per role. No local test proves full 218 scenario closure.
+
+
 ## 2026-11-10 — M1.02.03 reconciled QA b516 current-SHA 5 browser groups (SCOPED, NOT FULL)
 
 - **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO.** Exact source QA SHA `b516e41bccb0c370da33c9ec39e300775688539b`, isolated branch `qa/m10203-reconciled-qa-20261110`, worktree `hseverify-m10203-reconciled-20261110`. Current audit session `3b577fd9-4926-48cb-8ac9-688dfaae0659`.
