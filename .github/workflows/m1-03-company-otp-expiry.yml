@@ -1,0 +1,95 @@
+name: M1.03 Company expired OTP browser and boundary QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/company-registration-expired-otp.browser.test.mjs"
+      - "tests/browser/company-registration-boundaries.browser.test.mjs"
+      - "tests/platform/company-registration-otp-runtime.test.mjs"
+      - "tests/platform/worker-registration-otp-runtime.test.mjs"
+      - "src/lib/company/company-registration-service.ts"
+      - "src/app/company/register/verify/resend/route.ts"
+      - ".github/workflows/m1-03-company-otp-expiry.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/company-registration-expired-otp.browser.test.mjs"
+      - "tests/browser/company-registration-boundaries.browser.test.mjs"
+      - "tests/platform/company-registration-otp-runtime.test.mjs"
+      - "tests/platform/worker-registration-otp-runtime.test.mjs"
+      - "src/lib/company/company-registration-service.ts"
+      - "src/app/company/register/verify/resend/route.ts"
+      - ".github/workflows/m1-03-company-otp-expiry.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-m10302-company-otp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  company-expired-otp-real-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Real Company expired/stale/replayed OTP and same-origin POST control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/company-registration-expired-otp.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10302-company-expiry-chromium.log
+      - name: Preserve exact-SHA Chromium OTP test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10302-company-expiry-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10302-company-expiry-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  worker-company-otp-security-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Real server-side OTP cooldown expiry exhaustion audit rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          for suite in worker-registration-otp-runtime company-registration-otp-runtime; do
+            node --test "tests/platform/${suite}.test.mjs" 2>&1 | tee ".autopilot/artifacts/m10302-${suite}.log"
+          done
+      - name: Preserve native OTP security run logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10302-company-worker-otp-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10302-*.log
+          if-no-files-found: warn
+          retention-days: 30
