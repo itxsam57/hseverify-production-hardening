@@ -1,5 +1,15 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.02.02 six-role header/search/bell/account UI at QA source7e18 (SCOPED LOCAL, NOT FULL)
+
+- FULLY VERIFIED **0/218 | PENTEST INCOMPLETE | RELEASE NO-GO**. Source `7e18f4d692a18001e1a7d729c3ffd720d6cee1e2` (PR71 test commit integrated via signed active QA merge `4b6f683a7be6b9e273b9df91c5f75d72270bb73a`, 8/8 merged-SHA workflows PASS). Isolated branch `qa/verify-m10202-header-20261110`, worktree `hseverify-m10202-header-20261110`, guarded session `844a644f-7e4e-4998-90aa-0d4cf9600613`.
+- M1.02.02 scoped **10/10 distinct real Chromium suites PASS**: six role account/Help; six role wrong-role/MFA and Exit Portal vs Sign Out with authoritative security event persistence; six role notification bell/create/open/mark-read/all-read/reload, expected 24 notification+audit rows; six role 320/390 mobile navigation touch/overflow; **all six role-specific header search** results/deep links/pagination/denials. Enhanced Help/Language: English/Active Sessions actual clicks on **320/390/1440** pass 1/1; total **11 green browser executions**. No actual provider/human delivery or protected staging tested.
+- Original source six-role account test had no 320px or clicked language/Active Sessions verification: deterministic source acceptance assertion RED, enhanced real browser test GREEN (coverage gap, not proven product exploit). Strict TS PASS; lint exit0, nine existing warnings. Detailed receipt `docs/qa/M1_02_02_SIX_ROLE_HEADER_QA7E18_20261110.md`, tracked `docs/qa/evidence/M1_02_02_QA7E18_LOCAL_RESULTS.tsv`, local raw `.autopilot/artifacts/M10202_*.log`.
+- Added dedicated GitHub two-job real Chromium exact PR-SHA CI `.github/workflows/m1-02-header-controls.yml`. **Do not claim CI or merging completed until actual checks and GitHub signed merge are observed.**
+- Release blocker: final protected exact-SHA staging, real notification/email/providers, full authenticated UI/API/tenant pentest, restore/load, Owner UAT and QA branch protection (branch `protected=false` at last check). **M1.02.02 NOT_FULLY_VERIFIED, count stays 0/218.**
+- **NEXT FIRST:** record RED and GREEN in governed audit, guarded commit and exact commit browser retest, PR to active QA, wait both GitHub Chromium jobs and all other checks, verify signed merged QA SHA. Then first actionable M1.02.03 empty/loading/validation/denial/error/retry/success pages. Preserve concurrent worktrees, avoid shared local fixtures.
+
+
 ## 2026-11-10 — M1.02.01 exact QA public navigation/contact/demo (SCOPED LOCAL, NOT FULL)
 
 - Release **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | NO-GO**. Tested base active QA SHA **73b63e4d4f7d502c5e7b813bae5955d601270d9d**, isolated worktree `hseverify-m10201-public-nav-20261110`, branch `qa/verify-m10201-public-nav-20261110`. Guarded audit session `8346ae5a-faae-4b98-ac58-f4cba8cf5ebe`. No production system or other worktree touched.
