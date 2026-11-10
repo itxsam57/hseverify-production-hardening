@@ -1,5 +1,14 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.01.01 exact QA runtime/security scoped verification (NOT FULL)
+
+- FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO. Active QA SHA at test start: 497a06cd174d02c634291e6f5524e9f85074956b (merged PR #68, 6/6 GitHub workflow runs SUCCESS). Worktree hseverify-m101-runtime-20261110, branch qa/verify-m101-runtime-20261110.
+- M1.01.01 scoped 7/7 local command groups exit0: production environment negatives 11/11, generated Next isolation 4/4, local HTTP development startup, signed-out eleven protected route redirects/six role logins, existing migrated Worker DB profile persistence, real Chromium CSP/HSTS/secret non-disclosure 1/1, and real six-role positive/negative MFA/access/cross-portal and Exit vs Sign Out 1/1. Actual test runner log and TSV in isolated .autopilot/artifacts/M101_EXACT_497a_*; full result doc docs/qa/M1_01_01_RUNTIME_QA497A_SCOPED_20261110.md.
+- Expected safe RED: production-mode config with intentionally missing credentials/DB refuses to start (exit1) listing missing signing/session/auth secrets, DB URL, release identity; **not a product bug** and does not establish production credentials absent. Full protected stage/config/provider checks unverified.
+- No scenario moved to FULLY_VERIFIED; original 218 ledger at SHA497a still 0/218, 10 known external blockers minimum, NO-GO. M1.01.01 is NOT_FULLY_VERIFIED despite scoped proof.
+- NEXT FIRST: M1.01.02 execute real disposable PostgreSQL 16 migration/rollback/idempotency and negative checksum tests at current exact QA code; then return to protected final stage and full owner signoff as possible. Preserve all other worktrees and tests.
+
+
 ## 2026-11-10 — CURRENT 218 clean-checkout release ledger repair (NO-GO)
 
 - Current active QA base at start: b54421302fe7000c0284864b92cbff258c2903a0 (PR #67 merged). Isolated worktree hseverify-current-218-ledger-20261109, branch qa/current-218-ledger-failclosed-20261109. No other worktree modified, no in-flight test detected. Guarded V4 audit session 4a41b893-c018-4913-a9d5-838795afe5af.
