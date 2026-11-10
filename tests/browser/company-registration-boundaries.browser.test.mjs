@@ -126,6 +126,21 @@ test("Company registration commits email/MFA denials and activates only a Compan
    await verifyPage.getByLabel("Authenticator code").fill(["000000","111111","222222","333333"].find(c=>![-1,0,1].map(o=>totp(setupKey,o)).includes(c)));
    await verifyPage.getByRole("button",{name:"Activate Company account",exact:true}).click();
    await verifyPage.getByRole("alert").getByText("The authenticator code is invalid or was already used.",{exact:true}).waitFor();
+   // A correct live authenticator code must not authenticate an account whose enrollment remains pending.
+   const premature=await context.newPage();
+   await premature.setViewportSize({width:320,height:844});
+   await premature.goto(baseUrl+"/company/login");
+   await premature.getByLabel("Email address").fill(email);
+   await premature.getByLabel("Password").fill("CompanyBoundary!Password2026");
+   await premature.getByLabel("Authenticator code").fill(totp(setupKey));
+   await premature.getByRole("button",{name:"Sign in",exact:true}).click();
+   await premature.getByRole("alert").waitFor({timeout:15000});
+   assert.equal(new URL(premature.url()).pathname,"/company/login","Premature Company login unexpectedly succeeded");
+   assert.equal(await premature.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"320px pending Company login overflows");
+   await premature.goto(baseUrl+"/company/dashboard");
+   assert.equal(new URL(premature.url()).pathname,"/company/login","Pending MFA account accessed Company dashboard");
+   await premature.close();
+   console.log("COMPANY_PREACTIVATION_SIGNIN_DENIED_BROWSER: correct TOTP before activation cannot create session or access Company dashboard");
    console.log("ACTUAL_COMPANY_MFA_REJECTION_BROWSER: invalid authenticator denied after verified email");
   });
   await verifyPage.close();
@@ -135,8 +150,13 @@ test("Company registration commits email/MFA denials and activates only a Compan
    assert.equal((await mfaDb.query("SELECT current_step FROM company_registration_flows WHERE account_id=$1",[a.account_id])).rows[0].current_step,"pending_mfa");
    assert.equal((await mfaDb.query("SELECT factor_status FROM auth_mfa_factors WHERE account_id=$1",[a.account_id])).rows[0].factor_status,"pending");
    assert.equal((await mfaDb.query("SELECT count(*)::int AS count FROM auth_sessions WHERE account_id=$1",[a.account_id])).rows[0].count,0);
-   assert.equal((await mfaDb.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.mfa.failed'",[a.account_id])).rows[0].count,1);
-   console.log("ACTUAL_COMPANY_MFA_REJECTION_DB: pending factor/flow, no session and committed immutable audit");
+   // Registration and premature login must each persist a separate MFA denial and never activate a session.
+   assert.equal((await mfaDb.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.mfa.failed'",[a.account_id])).rows[0].count,2);
+   const mfaDenials=(await mfaDb.query("SELECT metadata FROM auth_security_events WHERE account_id=$1 AND event_type='mfa_failed'",[a.account_id])).rows;
+   assert.equal(mfaDenials.length,2);
+   assert.ok(mfaDenials.some(row=>row.metadata?.area==="company_registration"),"Registration MFA denial absent from immutable security log");
+   assert.ok(mfaDenials.some(row=>row.metadata?.reason==="not_enrolled"),"Premature login must audit inactive authenticator");
+   console.log("ACTUAL_COMPANY_MFA_REJECTION_DB: pending factor/flow, no session and separate immutable registration/login denial audit");
   }finally{await mfaDb.close();}
   await phase(async()=>{
    const finalPage=await context.newPage();await finalPage.goto(baseUrl+"/company/register/verify");
@@ -148,6 +168,26 @@ test("Company registration commits email/MFA denials and activates only a Compan
    await finalPage.getByRole("button",{name:"Sign in",exact:true}).click();
    await finalPage.waitForURL("**/company/dashboard");
    await finalPage.getByRole("link",{name:"Open Company verification",exact:true}).waitFor();
+   await finalPage.setViewportSize({width:390,height:844});
+   assert.equal(await finalPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"390px Company dashboard overflows");
+   await finalPage.goto(baseUrl+"/worker/dashboard");
+   assert.equal(new URL(finalPage.url()).pathname,"/access-denied","Company session traversed into Worker portal");
+   await finalPage.getByRole("heading",{name:"Access denied",exact:true}).waitFor();
+   await finalPage.getByText("Your active portal role is",{exact:false}).waitFor();
+   // A different browser context must not authenticate Company credentials as a Worker account.
+   const wrongRoleContext=await browser.newContext({viewport:{width:390,height:844}});
+   try{
+    const wrongRole=await wrongRoleContext.newPage();
+    await wrongRole.goto(baseUrl+"/worker/login");
+    await wrongRole.getByLabel("Email address").fill(email);
+    await wrongRole.getByLabel("Password").fill("CompanyBoundary!Password2026");
+    await wrongRole.getByRole("button",{name:"Sign in",exact:true}).click();
+    await wrongRole.getByRole("alert").waitFor({timeout:15000});
+    assert.equal(new URL(wrongRole.url()).pathname,"/worker/login","Company credentials authenticated Worker role");
+    await wrongRole.goto(baseUrl+"/worker/dashboard");
+    assert.equal(new URL(wrongRole.url()).pathname,"/worker/login","Wrong-role credentials accessed Worker dashboard");
+   }finally{await wrongRoleContext.close();}
+   console.log("COMPANY_WRONG_ROLE_DENIED_BROWSER: Company session cannot traverse Worker portal and credentials cannot create Worker session");
    await finalPage.goto(baseUrl+"/company/settings/profile");
    await finalPage.getByRole("heading",{name:"Draft",exact:true}).waitFor();
    console.log("ACTUAL_COMPANY_ACTIVATION_BROWSER: verified email and enrolled MFA allow Company login to pending verification draft");
@@ -159,6 +199,9 @@ test("Company registration commits email/MFA denials and activates only a Compan
    assert.deepEqual((await finalDb.query("SELECT membership_status,membership_role,portal_role,account_id,tenant_id FROM auth_tenant_memberships WHERE membership_id=$1",[f.membership_id])).rows,[{membership_status:"active",membership_role:"owner",portal_role:"company",account_id:a.account_id,tenant_id:f.tenant_id}]);
    assert.deepEqual((await finalDb.query("SELECT role FROM auth_account_roles WHERE account_id=$1",[a.account_id])).rows,[{role:"company"}]);
    const sessions=(await finalDb.query("SELECT active_role,revoked_at FROM auth_sessions WHERE account_id=$1",[a.account_id])).rows;assert.deepEqual(sessions,[{active_role:"company",revoked_at:null}]);
+   const wrongRoleDenials=(await finalDb.query("SELECT active_role,metadata FROM auth_security_events WHERE account_id=$1 AND event_type='access_denied'",[a.account_id])).rows;
+   assert.ok(wrongRoleDenials.some(event=>event.active_role==="worker"&&event.metadata?.reason==="role_not_assigned"),
+    "Cross-role Worker login abuse must be persisted as an authorization denial");
    assert.equal((await finalDb.query("SELECT factor_status FROM auth_mfa_factors WHERE account_id=$1",[a.account_id])).rows[0].factor_status,"active");
    const challenge=(await finalDb.query("SELECT attempts_remaining,consumed_at FROM auth_otp_challenges WHERE account_id=$1 ORDER BY created_at DESC LIMIT 1",[a.account_id])).rows[0];assert.equal(challenge.attempts_remaining,5);assert.ok(challenge.consumed_at);
    console.log("ACTUAL_COMPANY_ACTIVATION_DB: exact Company role/session, active owner/factor and completed flow; tenant still pending");
