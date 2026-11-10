@@ -1,0 +1,118 @@
+name: M1.02 all-role header/search/notifications real Chromium
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/portal-help.browser.test.mjs"
+      - "tests/browser/authentication-boundaries-e2e.browser.test.mjs"
+      - "tests/browser/all-role-notification-workflow.browser.test.mjs"
+      - "tests/browser/portal-navigation-responsive.browser.test.mjs"
+      - "tests/browser/worker-assessment-search.browser.test.mjs"
+      - "tests/browser/company-workforce-pagination.browser.test.mjs"
+      - "tests/browser/assessor-interview-search.browser.test.mjs"
+      - "tests/browser/verifier-review-search.browser.test.mjs"
+      - "tests/browser/admin-verification-search.browser.test.mjs"
+      - "tests/browser/root-invitation-search.browser.test.mjs"
+      - "src/components/auth/role-portal-shell.tsx"
+      - "src/components/worker/worker-shell.tsx"
+      - "src/components/notifications/notification-bell.tsx"
+      - "src/components/auth/account-security-workspace.tsx"
+      - "src/app/globals.css"
+      - ".github/workflows/m1-02-header-controls.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/portal-help.browser.test.mjs"
+      - "tests/browser/authentication-boundaries-e2e.browser.test.mjs"
+      - "tests/browser/all-role-notification-workflow.browser.test.mjs"
+      - "tests/browser/portal-navigation-responsive.browser.test.mjs"
+      - "tests/browser/worker-assessment-search.browser.test.mjs"
+      - "tests/browser/company-workforce-pagination.browser.test.mjs"
+      - "tests/browser/assessor-interview-search.browser.test.mjs"
+      - "tests/browser/verifier-review-search.browser.test.mjs"
+      - "tests/browser/admin-verification-search.browser.test.mjs"
+      - "tests/browser/root-invitation-search.browser.test.mjs"
+      - "src/components/auth/role-portal-shell.tsx"
+      - "src/components/worker/worker-shell.tsx"
+      - "src/components/notifications/notification-bell.tsx"
+      - "src/components/auth/account-security-workspace.tsx"
+      - "src/app/globals.css"
+      - ".github/workflows/m1-02-header-controls.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-m10202-header-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  header-actions-and-notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_AUDIT_CREDENTIALS_PATH: ${{ github.workspace }}/m10202-header-test-credentials.json
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Exercise every role Help/Language/Account, 320/390/1440, Exit and Sign Out, bell and mobile navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          for suite in portal-help authentication-boundaries-e2e all-role-notification-workflow portal-navigation-responsive; do
+            node --test --test-concurrency=1 "tests/browser/${suite}.browser.test.mjs" 2>&1 | tee ".autopilot/artifacts/m10202-${suite}.log"
+          done
+      - name: Preserve actual header action logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10202-header-actions-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10202-*.log
+          if-no-files-found: warn
+          retention-days: 30
+  all-six-search-destinations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_AUDIT_CREDENTIALS_PATH: ${{ github.workspace }}/m10202-role-search-credentials.json
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Run actual Worker/Company/Assessor/Verifier/Admin/Root header search flows
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          for suite in worker-assessment-search company-workforce-pagination assessor-interview-search verifier-review-search admin-verification-search root-invitation-search; do
+            node --test --test-concurrency=1 "tests/browser/${suite}.browser.test.mjs" 2>&1 | tee ".autopilot/artifacts/m10202-${suite}.log"
+          done
+      - name: Preserve actual six-role search logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10202-six-role-search-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10202-*.log
+          if-no-files-found: warn
+          retention-days: 30
