@@ -1,0 +1,102 @@
+name: M1.03 duplicate Worker registration and recovery browser QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/worker-duplicate-recovery.browser.test.mjs"
+      - "tests/browser/worker-two-otp-accounts-duplicate-assessment.browser.test.mjs"
+      - "tests/platform/auth-recovery-otp-runtime.test.mjs"
+      - "tests/platform/worker-identity-initial-contact-binding.test.mjs"
+      - "src/lib/auth/auth-recovery-service.ts"
+      - "src/lib/auth/worker-registration-service.ts"
+      - ".github/workflows/m1-03-duplicate-worker-recovery.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/worker-duplicate-recovery.browser.test.mjs"
+      - "tests/browser/worker-two-otp-accounts-duplicate-assessment.browser.test.mjs"
+      - "tests/platform/auth-recovery-otp-runtime.test.mjs"
+      - "tests/platform/worker-identity-initial-contact-binding.test.mjs"
+      - "src/lib/auth/auth-recovery-service.ts"
+      - "src/lib/auth/worker-registration-service.ts"
+      - ".github/workflows/m1-03-duplicate-worker-recovery.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-m10303-duplicate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-worker-duplicate-and-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Worker 320/390/desktop contact collision, OTP recovery and no identity merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/worker-duplicate-recovery.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10303-worker-recovery.log
+      - name: Preserve browser/DB/audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10303-worker-duplicate-recovery-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10303-worker-recovery.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  duplicate-worker-id-and-native-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Two independently registered accounts cannot duplicate permanent Worker ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/worker-two-otp-accounts-duplicate-assessment.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10303-second-account-duplicate.log
+      - name: Native recovery and identity-contact binding abuse controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/platform/auth-recovery-otp-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10303-auth-recovery-otp-runtime.log
+          # This suite requires a compiled runtime fixture. The repository runner builds it and supplies the env variable.
+          npm run test:worker-identity-corrections 2>&1 | tee .autopilot/artifacts/m10303-worker-identity-corrections.log
+      - name: Preserve identity and recovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10303-identity-and-recovery-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10303-*.log
+          if-no-files-found: warn
+          retention-days: 30

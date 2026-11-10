@@ -1,5 +1,11 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-11 — M1.03.03 duplicate Worker recovery browser/CI harness (SCOPED NOT FULL)
+- **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | NO-GO.** Active QA base `6a8ca6225f219a99f171f99150bd767de649b3c6`, isolated dirty test worktree `hseverify-m10303-duplicate-20261111`, V4 session `fdc53ed5-e663-46e8-b6a6-768764516b71`. Not exact committed/final staging evidence.
+- Baseline test-only RED: shared /tmp audit credentials and missing mobile recovery; now private PGlite fixture and real Chromium 320/390/1280px assertions **1/1 PASS**. Existing second-verified-account duplicate ID browser **1/1 PASS**. Recovery native **13/13 PASS**, compiled identity runner **12/12 PASS**, TS PASS, lint exit0 with 9 pre-existing warnings.
+- Raw direct identity test setup RED: missing generated runtime fixture; workflow corrected to official compiler runner; parsed YAML but GitHub Actions not yet run. Detailed command logs, test gaps and exact base at `docs/qa/M1_03_03_WORKER_DUPLICATE_RECOVERY_QA6A_20261111.md` and `docs/qa/evidence/M1_03_03_QA6A_LOCAL_RESULTS.tsv`.
+- 218 ledger: 0 fully verified, 1 in progress, 10 known external blockers, 207 not started. **NEXT FIRST:** guarded commit, exact committed-SHA replay, own QA PR, both CI jobs and signed merge; then remaining M1.03 tamper/race/provider/role scenarios. Release stays NO-GO.
+
 ## 2026-11-11 — M1.03.02 Company OTP real Chromium 320px overflow ROOT FIX and replay/expiry/security checks (SCOPED NOT FULL)
 
 - **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO.** Source exact QA SHA `f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552`, branch `qa/verify-m10302-company-expiry-20261111`, worktree `hseverify-m10302-company-expiry-20261111`, guarded session `b398df3b-6eb6-4157-baf5-ce43adc9b835`. All synthetic disposable local PostgreSQL/PGlite Next Chromium only.

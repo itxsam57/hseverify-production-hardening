@@ -1,0 +1,9 @@
+base_sha	command	result	tests	kind	evidence
+6a8ca6225f219a99f171f99150bd767de649b3c6	node --test tests/browser/worker-duplicate-recovery.browser.test.mjs	PASS_EXIT0	1/1	REAL_CHROMIUM_LOCAL	.autopilot/artifacts/M10303_QA6A_20261111_browser.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	node --test tests/platform/auth-recovery-otp-runtime.test.mjs	PASS_EXIT0	13/13	NATIVE_LOCAL	.autopilot/artifacts/M10303_QA6A_20261111_auth-native.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	npm run test:worker-identity-corrections	PASS_EXIT0	12/12	NATIVE_COMPILED_LOCAL	.autopilot/artifacts/M10303_QA6A_20261111_identity-native.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	node --test tests/browser/worker-two-otp-accounts-duplicate-assessment.browser.test.mjs	PASS_EXIT0	1/1	REAL_CHROMIUM_EXISTING_SAME_BASE	.autopilot/artifacts/M10303_QA6A_worker-two-otp-accounts-duplicate-assessment.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	node --test auth-recovery-otp-runtime.test.mjs worker-identity-initial-contact-binding.test.mjs	FAIL_EXIT1_MISSING_COMPILED_RUNTIME	13_pass_1_setup_fail	HARNESS_PRECONDITION_RED	.autopilot/artifacts/M10303_QA6A_20261111_raw-runner-red.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	npm run typecheck	PASS_EXIT0	-	QUALITY	.autopilot/artifacts/M10303_QA6A_20261111_typecheck.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	npm run lint	PASS_EXIT0_9_WARNINGS	-	QUALITY	.autopilot/artifacts/M10303_QA6A_20261111_lint.log
+6a8ca6225f219a99f171f99150bd767de649b3c6	npm run audit:current-218-scenarios	PASS_EXIT0_0_FULL_218_TOTAL	218_rows	RELEASE_RECONCILIATION	.autopilot/artifacts/current-release-218-ledger.json
