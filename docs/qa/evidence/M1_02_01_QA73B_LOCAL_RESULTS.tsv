@@ -1,0 +1,9 @@
+source_sha	suite	passed_tests	exit_code	source_log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	public-inquiry-native	4	0	.autopilot/artifacts/M10201_QA73B_public-inquiry-native.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	design-system-chromium	1	0	.autopilot/artifacts/M10201_QA73B_design-system-chromium.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	public-navigation-chromium	1	0	.autopilot/artifacts/M10201_QA73B_public-navigation-chromium.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	public-inquiry-chromium	1	0	.autopilot/artifacts/M10201_QA73B_public-inquiry-chromium.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	navigation-320-390-1440-retest	1	0	.autopilot/artifacts/M10201_QA73B_NAV_320_390_1440.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	inquiry-stored-html-crossrole-retest	1	0	.autopilot/artifacts/M10201_QA73B_PUBLIC_INQUIRY_XSS_CROSSROLE.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	typecheck	0	0	.autopilot/artifacts/M10201_QA73B_typecheck.log
+73b63e4d4f7d502c5e7b813bae5955d601270d9d	lint	0	0	.autopilot/artifacts/M10201_QA73B_lint.log
