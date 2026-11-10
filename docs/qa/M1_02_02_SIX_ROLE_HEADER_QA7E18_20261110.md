@@ -21,6 +21,8 @@ Initial four core Chromium groups **4/4 PASS**: `portal-help.browser.test.mjs`, 
 
 Dedicated `.github/workflows/m1-02-header-controls.yml` launches two separate exact-SHA GitHub-hosted Chromium jobs: full core header actions/bell/Help/auth and six search flows; persists actual run logs with SHA even on CI failure. **GitHub workflow and merged-SHA checks require real green evidence before completion.**
 
+**2026-11-10 CI parser RED→GREEN:** GitHub initial workflow run 42758975569 failed before jobs. A real actionlint v1.7.12 run reproduced invalid `runner.temp` context in job-level `env` at two lines. Both changed to permitted `github.workspace` with distinct private fixture paths. Actionlint and YAML parsed **PASS** locally; rerun remote GitHub Actions on the new pushed PR SHA before any merge or success claim. The remote failure is a CI definition bug, **not** a passing provider/staging test. Logs `.autopilot/artifacts/M10202_CI_PARSER_{RED,GREEN}.log`.
+
 ## Still mandatory for M1.02.02 and the 218 ledger
 
 - Actual **final protected staging** with real secrets/databases/providers, deployed production hostname/TLS and final matching release SHA; authentic notification/provider delivery (not synthetic fixture).

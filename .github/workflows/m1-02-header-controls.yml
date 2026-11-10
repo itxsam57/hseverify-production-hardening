@@ -53,7 +53,7 @@ jobs:
     timeout-minutes: 30
     env:
       VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      HSE_AUDIT_CREDENTIALS_PATH: ${{ runner.temp }}/m10202-header-test-credentials.json
+      HSE_AUDIT_CREDENTIALS_PATH: ${{ github.workspace }}/m10202-header-test-credentials.json
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v6
@@ -87,7 +87,7 @@ jobs:
     timeout-minutes: 30
     env:
       VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      HSE_AUDIT_CREDENTIALS_PATH: ${{ runner.temp }}/m10202-role-search-credentials.json
+      HSE_AUDIT_CREDENTIALS_PATH: ${{ github.workspace }}/m10202-role-search-credentials.json
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v6
