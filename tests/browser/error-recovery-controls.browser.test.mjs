@@ -73,6 +73,15 @@ async function assertRecoveryControlRuns(page, buttonName, errorHeading) {
     await page.waitForTimeout(750);
     await page.getByRole("heading", { name: errorHeading, exact: true }).waitFor({ timeout: 15_000 });
     assert.deepEqual(clientErrors, [], `${buttonName} produced a client-side error: ${clientErrors.join(" | ")}`);
+    for (const width of [390, 320, 1280]) {
+      await page.setViewportSize({ width, height: 840 });
+      const overflow = await page.evaluate(() => ({
+        full: Math.max(document.body.scrollWidth, document.documentElement.scrollWidth),
+        viewport: document.documentElement.clientWidth
+      }));
+      assert(overflow.full <= overflow.viewport + 2, buttonName + " error content overflows " + width + "px: " + JSON.stringify(overflow));
+      await page.getByRole("button", { name: buttonName, exact: true }).waitFor({ state: "visible" });
+    }
   } finally {
     page.off("pageerror", onPageError);
   }
@@ -89,6 +98,7 @@ test("real error boundaries retry Worker Dashboard and global route requests wit
     HSE_APP_ENV: "development",
     HSE_DATABASE_DRIVER: "pglite",
     HSE_PGLITE_DATA_DIR: databaseDirectory,
+    HSE_AUDIT_CREDENTIALS_PATH: join(databaseDirectory, "audit-credentials.json"),
     HSE_RELEASE_SHA: "error-recovery-browser",
     HSE_SESSION_SECRET: "error-recovery-session-secret-2026-000000000000",
     HSE_AUTH_PEPPER: "error-recovery-auth-pepper-2026-00000000000000",
@@ -105,7 +115,7 @@ test("real error boundaries retry Worker Dashboard and global route requests wit
       });
       assert.equal(result.status, 0, result.stderr || result.stdout);
     }
-    const credentials = JSON.parse(await readFile("/tmp/independent-audit-credentials.json", "utf8"));
+    const credentials = JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH, "utf8"));
 
     // Fault only disposable test data. Authentication/profile tables remain intact.
     const database = new PGlite(databaseDirectory);
