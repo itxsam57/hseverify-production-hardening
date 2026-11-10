@@ -1,0 +1,4 @@
+exact_source_sha	suite	passed_tests	exit_code	evidence_log
+9e553a777765101764d28800ea4462700b52f042	six-role-responsive-confirm-dialog-320-390-1280	1	0	.autopilot/artifacts/M10204_CHROMIUM_DIALOG_BASEQA.log
+9e553a777765101764d28800ea4462700b52f042	typecheck	0	0	.autopilot/artifacts/M10204_QA9E55_typecheck.log
+9e553a777765101764d28800ea4462700b52f042	lint	0	0	.autopilot/artifacts/M10204_QA9E55_lint.log
