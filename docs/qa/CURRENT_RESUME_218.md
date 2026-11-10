@@ -1,5 +1,15 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.02.01 exact QA public navigation/contact/demo (SCOPED LOCAL, NOT FULL)
+
+- Release **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | NO-GO**. Tested base active QA SHA **73b63e4d4f7d502c5e7b813bae5955d601270d9d**, isolated worktree `hseverify-m10201-public-nav-20261110`, branch `qa/verify-m10201-public-nav-20261110`. Guarded audit session `8346ae5a-faae-4b98-ac58-f4cba8cf5ebe`. No production system or other worktree touched.
+- **M1.02.01 7 distinct local native/Chromium tests passed** (9 passing test executions across first run and two enhanced reruns). Public navigation actual click/keyboard on **320/390/1440px**, two registration forms, six role login destinations, no overflow. Real contact/demo rejected-draft retention and success, credential concern submission, PGlite persistent requests/audit, Admin+Root receiving queue, authenticated Worker+anonymous read denial, stored-HTML payload treated as text (no executed XSS). Fixture credentials now isolated in disposable worktree path instead of shared `/tmp`.
+- Native 4/4 include audit failure rollback/retry, duplicate and quota protection, immutable audit, locked/revoked staff read denials. Strict TypeScript PASS, lint exit0 (9 existing warnings). Evidence: `docs/qa/M1_02_01_PUBLIC_NAV_INQUIRY_QA73B_20261110.md`, `docs/qa/evidence/M1_02_01_QA73B_LOCAL_RESULTS.tsv` and isolated `.autopilot/artifacts/M10201_QA73B_*.log`.
+- Dedicated real Chromium GitHub exact-SHA CI workflow created (`.github/workflows/m1-02-public-nav-inquiry.yml`), must see actual PASS before merging. Do not claim CI PASS until result visible.
+- **Open:** protected final-SHA staging, real follow-up email/meeting/human response, production proxy IP/rate-limit trust, all-role full API pentest, realistic load/restore, owner UAT. Active QA branch was `protected:false` with no active repository ruleset returned in GH query 2026-11-10 (governance blocker). **M1.02.01 remains NOT_FULLY_VERIFIED; 0/218.**
+- **NEXT FIRST:** guarded commit+replay on exact commit SHA; push PR and verify all GitHub checks, signed merged QA SHA. Then M1.02.02 first actionable tests. Preserve running test processes/worktrees and never promote scoped work to full release signoff.
+
+
 ## 2026-11-10 — M1.01.02 real PostgreSQL16 migration ledger fail-closed fix and exhaustive empty-data rollback (NOT FULL)
 
 - FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO. Tested source base active QA SHA 3687f7422b2fbf2d8816f93e6ba3b3100a154566. Isolated worktree hseverify-m10102-migrations-20261110, branch qa/verify-m10102-migrations-20261110.

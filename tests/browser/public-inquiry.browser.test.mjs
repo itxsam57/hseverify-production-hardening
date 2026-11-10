@@ -66,12 +66,12 @@ async function login(page, baseUrl, identity, role) {
 test("Public contact/demo reaches private staff intake with preserved drafts on rejection",{timeout:240000},async()=>{
  const databaseDirectory=await mkdtemp(join(tmpdir(),"hse-inquiry-browser-"));
  const port=await freePort(),baseUrl="http://127.0.0.1:"+port;
- const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_RELEASE_SHA:"public-inquiry-browser",HSE_CREDENTIAL_SIGNING_SECRET:process.env.HSE_CREDENTIAL_SIGNING_SECRET ?? randomBytes(32).toString("hex"),HSE_SESSION_SECRET:"public-inquiry-browser-session-secret-more-than-32",HSE_AUTH_PEPPER:"public-inquiry-browser-auth-pepper-more-than-32",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_ENABLE_AUTH_SANDBOX:"false"};
+ const environment={...process.env,HSE_APP_ENV:"test",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_AUDIT_CREDENTIALS_PATH:join(databaseDirectory,"credentials.json"),HSE_RELEASE_SHA:"public-inquiry-browser",HSE_CREDENTIAL_SIGNING_SECRET:process.env.HSE_CREDENTIAL_SIGNING_SECRET ?? randomBytes(32).toString("hex"),HSE_SESSION_SECRET:"public-inquiry-browser-session-secret-more-than-32",HSE_AUTH_PEPPER:"public-inquiry-browser-auth-pepper-more-than-32",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false",HSE_ENABLE_AUTH_SANDBOX:"false"};
  try{
   for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]){
    const r=spawnSync(process.execPath,[script],{env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr);
   }
-  const credentials=JSON.parse(await readFile(process.env.HSE_AUDIT_CREDENTIALS_PATH ?? "/tmp/independent-audit-credentials.json","utf8"));
+  const credentials=JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH,"utf8"));
   const publicCredential=issueCredential({workerId:credentials.worker.accountId,qualification:"Public concern regression fixture",issuedAt:new Date().toISOString(),expiresAt:null},"C".repeat(24),environment.HSE_CREDENTIAL_SIGNING_SECRET);
   assert.equal(credentialAuthentication(publicCredential,environment.HSE_CREDENTIAL_SIGNING_SECRET),"authenticated");
   const publicCredentialId=publicCredential.credentialId;
@@ -102,7 +102,8 @@ test("Public contact/demo reaches private staff intake with preserved drafts on 
     await publicPage.getByText("Message must contain 10 to 4000 characters.",{exact:true}).waitFor();
     assert.equal(await publicPage.getByLabel("Your name",{exact:true}).inputValue(),"Contact browser person");
     assert.equal(await publicPage.getByLabel("How can we help?",{exact:true}).inputValue(),"short");
-    await publicPage.getByLabel("How can we help?",{exact:true}).fill("Please explain the available assurance workflow.");
+    const xssText="Please explain the available assurance workflow. <img src=x onerror=window.__hseInquiryXss=1>"; // hse-xss-test-msg
+    await publicPage.getByLabel("How can we help?",{exact:true}).fill(xssText);
     await publicPage.getByRole("button",{name:"Send message",exact:true}).click();
     await publicPage.getByText("Your request was received for staff follow-up. Keep this reference.",{exact:true}).waitFor();
     await publicPage.getByText("Request reference:",{exact:true}).waitFor();
@@ -131,6 +132,9 @@ test("Public contact/demo reaches private staff intake with preserved drafts on 
      await page.getByRole("heading",{name:"Contact & demo requests",exact:true}).waitFor();
      await page.getByText("Name: Contact browser person",{exact:true}).waitFor();
      await page.getByText("Name: Demo browser person",{exact:true}).waitFor();
+     await page.getByText(xssText,{exact:true}).waitFor();
+     assert.equal(await page.locator('img[src="x"]').count(),0,"HTML from contact message must be text, not executable DOM");
+     assert.equal(await page.evaluate(()=>window.__hseInquiryXss),undefined,"Staff inbox must never execute requester HTML");
      await page.close();
     }
     const worker=await browser.newPage();await login(worker,baseUrl,credentials.worker,"worker");
@@ -148,6 +152,7 @@ test("Public contact/demo reaches private staff intake with preserved drafts on 
    const rows=(await db.query("SELECT kind,email,message FROM public_inquiries ORDER BY kind")).rows;
    assert.equal((await db.query("SELECT count(*)::int n FROM public_verification_concerns WHERE contact_email=$1",["concern-browser@example.test"])).rows[0].n,1);
    assert.equal(rows.length,2);assert.deepEqual(rows.map(r=>r.kind),["contact","demo"]);
+   assert.equal(rows.find(r=>r.kind==="contact")?.message,"Please explain the available assurance workflow. <img src=x onerror=window.__hseInquiryXss=1>","Untrusted contact message must be stored as text without mutating the payload");
    assert.equal((await db.query("SELECT count(*)::int n FROM platform_audit_events WHERE action_key='public_inquiry.received'")).rows[0].n,2);
   }finally{await db.close();}
  }finally{await rm(databaseDirectory,{recursive:true,force:true});}
