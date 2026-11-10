@@ -1,0 +1,5 @@
+exact_source_sha	command_suite	passing_tests	exit_code	local_evidence_path
+6e8f8ffdeff9b7e850fbfb975f0937a7a27ff3a9	form-history-fallback	1	0	.autopilot/artifacts/M10205_BASELINE_form-history-fallback.log
+6e8f8ffdeff9b7e850fbfb975f0937a7a27ff3a9	unsaved-form-navigation-modern-and-fallback	2	0	.autopilot/artifacts/M10205_MOBILE_UNSAVED_CHROMIUM_GREEN.log
+6e8f8ffdeff9b7e850fbfb975f0937a7a27ff3a9	typecheck	0	0	.autopilot/artifacts/M10205_QA6E8_typecheck.log
+6e8f8ffdeff9b7e850fbfb975f0937a7a27ff3a9	lint	0	0	.autopilot/artifacts/M10205_QA6E8_lint.log
