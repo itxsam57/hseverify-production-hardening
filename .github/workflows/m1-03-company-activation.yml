@@ -1,0 +1,64 @@
+name: M1.03 Company registration OTP and MFA activation real-browser QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/company-registration-boundaries.browser.test.mjs"
+      - "tests/platform/company-registration-otp-runtime.test.mjs"
+      - "src/lib/company/company-registration-service.ts"
+      - "src/lib/auth/auth-login-service.ts"
+      - ".github/workflows/m1-03-company-activation.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/company-registration-boundaries.browser.test.mjs"
+      - "tests/platform/company-registration-otp-runtime.test.mjs"
+      - "src/lib/company/company-registration-service.ts"
+      - "src/lib/auth/auth-login-service.ts"
+      - ".github/workflows/m1-03-company-activation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-m10304-company-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  company-owner-pending-and-active:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Real Company signup, five incorrect OTPs, MFA, 320px login and cross-role denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/company-registration-boundaries.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10304-company-browser.log
+      - name: Native email/MFA replay, expiry, audit rollback and activation guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/platform/company-registration-otp-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10304-company-native.log
+      - name: Preserve exact-SHA local provider-sandbox evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10304-company-activation-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10304-company-*.log
+          if-no-files-found: warn
+          retention-days: 30

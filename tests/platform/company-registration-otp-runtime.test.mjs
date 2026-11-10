@@ -101,3 +101,36 @@ test("Company expired email does not consume attempts or advance; resend recover
   assert.equal((await f.db.query('SELECT count(*)::int AS count FROM auth_sessions WHERE account_id=$1',[f.flow.account_id])).rows[0].count,0);
  }finally{await f.db.close();}
 });
+
+
+test("six simultaneous Company MFA activation requests commit only one enrollment and no session", { timeout: 30000 }, async () => {
+ const f=await fixture();
+ try {
+  const pending=await f.service.verifyEmail({token:f.token,code:f.code,requestFingerprint:"company-race-email"});
+  assert.equal(pending.step,"pending_mfa");
+  const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const bits=[...pending.totpSetupKey].map(char=>alphabet.indexOf(char).toString(2).padStart(5,"0")).join("");
+  const secret=[];
+  for(let i=0;i+8<=bits.length;i+=8)secret.push(parseInt(bits.slice(i,i+8),2));
+  const message=Buffer.alloc(8);
+  message.writeBigUInt64BE(BigInt(Math.floor(new Date(NOW).getTime()/30000)));
+  const digest=createHmac("sha1",Buffer.from(secret)).update(message).digest();
+  const offset=digest.at(-1)&15;
+  const code=String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0");
+  const requests=Array.from({length:6},(_,index)=>f.service.verifyMfa({
+   token:f.token,code,requestFingerprint:"company-race-"+index
+  }));
+  const outcomes=await Promise.allSettled(requests);
+  assert.deepEqual(outcomes.map(outcome=>outcome.status==="fulfilled"?outcome.value.step:String(outcome.reason)) ,
+   Array(6).fill("complete"),"Concurrent verification did not return the same completed flow");
+  const persisted=await state(f);
+  assert.equal(persisted.flow[0].current_step,"complete");
+  assert.equal(persisted.factor[0].factor_status,"active");
+  assert.equal(persisted.membership[0].membership_status,"active");
+  assert.equal(persisted.membership[0].membership_role,"owner");
+  assert.equal(persisted.tenant[0].tenant_status,"pending");
+  assert.equal(persisted.sessions.length,0);
+  assert.equal(persisted.events.filter(event=>event.event_type==="mfa_enrolled").length,1);
+  assert.equal(persisted.audit.filter(event=>event.action_key==="authentication.mfa.enrolled").length,1);
+ }finally{await f.db.close();}
+});
