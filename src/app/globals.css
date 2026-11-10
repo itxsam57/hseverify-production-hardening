@@ -161,7 +161,7 @@ h3 { font-size: 1rem; }
 }
 .auth-brand-copy { max-width: 690px; padding: 80px 0; }
 .auth-brand-copy h1 { margin-bottom: 24px; color: var(--white); }
-.auth-brand-copy > p:last-child { max-width: 620px; color: #d4e2ec; font-size: 1.1rem; }
+.auth-brand-copy > p:last-child { max-width: 620px; overflow-wrap: anywhere; color: #d4e2ec; font-size: 1.1rem; }
 .auth-security-note { max-width: 620px; margin: 0; color: #b7cbd9; font-size: .9rem; }
 .auth-card-panel { display: grid; place-items: center; padding: 40px 24px; background: var(--white); }
 .auth-card { width: min(100%,460px); }
@@ -364,7 +364,8 @@ h3 { font-size: 1rem; }
   .dashboard-secondary-column { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 860px) {
-  .auth-page { grid-template-columns: 1fr; }
+  .auth-page { grid-template-columns: minmax(0, 1fr); }
+  .auth-brand-panel, .auth-card-panel, .auth-card { min-width: 0; }
   .auth-brand-panel { min-height: 420px; }
   .portal-shell { display: block; }
   .portal-sidebar { display: none; }
