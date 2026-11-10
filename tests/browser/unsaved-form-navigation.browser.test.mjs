@@ -69,17 +69,35 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
    await page.getByText("Qualification draft created.",{exact:true}).waitFor({timeout:20000});
    await page.reload({waitUntil:"domcontentloaded"});const article=page.locator("article").filter({hasText:"Qualification record"}).first();
    const title=article.getByLabel("Qualification title",{exact:true});await title.fill("Unsaved protected qualification");
-   await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
+   await page.setViewportSize({width:320,height:740});
+   await title.focus();
+   assert(await title.evaluate(node=>document.activeElement===node),"The labeled draft input must accept keyboard focus at 320px");
+   await page.keyboard.press("Tab");
+   const focus=await page.evaluate(()=>{
+     const node=document.activeElement,style=getComputedStyle(node);
+     return {tag:node?.tagName,outline:style.outlineStyle,shadow:style.boxShadow};
+   });
+   assert(["INPUT","TEXTAREA","SELECT","BUTTON","A"].includes(focus.tag),
+     "Keyboard Tab must move to an interactive control: "+JSON.stringify(focus));
+   assert(focus.outline!=="none"||focus.shadow!=="none",
+     "Keyboard Tab target must have visible focus: "+JSON.stringify(focus));
+   const mobileNav=page.locator("details.mobile-nav-menu");
+   await mobileNav.locator("summary").first().click();
+   await mobileNav.locator(".mobile-nav-panel").getByRole("link",{name:"Dashboard",exact:true}).first().click();
    await page.waitForTimeout(350);
    if(new URL(page.url()).pathname!=="/worker/evidence")await page.goto(baseUrl+"/worker/evidence");
    const retained=await page.locator("article").filter({hasText:"Qualification record"}).first().getByLabel("Qualification title",{exact:true}).inputValue();
    assert.ok(dialogs>0||retained==="Unsaved protected qualification","Visible navigation discarded unsaved metadata without warning or recovery");
    assert.equal(retained,"Unsaved protected qualification");
    assert.equal(dialogs,1,"Cancel must prompt once and keep the current values");
+   await page.setViewportSize({width:390,height:844});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+     "Rejected navigation must preserve a usable 390px evidence form");
    await page.goBack({waitUntil:"domcontentloaded",timeout:5000}).catch(()=>null);
    assert.equal(new URL(page.url()).pathname,"/worker/evidence","Canceled browser Back preserves route");
    assert.equal(await title.inputValue(),"Unsaved protected qualification");
    assert.equal(dialogs,2,"Browser history traversal also prompts once");
+   await page.setViewportSize({width:1365,height:900});
    await title.fill("");
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    await page.waitForURL("**/worker/dashboard");assert.equal(dialogs,2,"Reverted form is clean");

@@ -1,5 +1,13 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-10 — M1.02.05 real 320/390px unsaved Worker-form keyboard/history (SCOPED LOCAL, NOT FULL)
+
+- FULLY VERIFIED **0/218 | PENTEST INCOMPLETE | RELEASE NO-GO**. Exact source SHA `6e8f8ffdeff9b7e850fbfb975f0937a7a27ff3a9` (PR #75 test commit integrated into signed QA merge `71a22ce20f453c0ed2804a1d7cbb672ae164533c` with 10/10 merged GitHub workflows PASS). Isolated branch `qa/verify-m10205-unsaved-focus-20261110`, worktree `hseverify-m10205-unsaved-20261110`, V4 audit session `c7ea723e-ddc4-402c-bafd-af2dea4fde83`.
+- Actual Chromium **3/3 cases PASS**: real Worker qualification draft unsaved title, **320px** keyboard Tab visible focus and mobile Dashboard link canceled with text retained, **390px** browser Back cancellation retains field, then desktop Save/invalid URL validation/retry, pending accepted-save race preserves newer unsaved draft and committed DB snapshot, accepted discard. Both modern Navigation API and forced history fallback 2/2; separate browser Back/Forward/multi-step history state tests 1/1. Existing source desktop flow 3/3 PASS before expansion.
+- Baseline source gap RED: original test never exercised 320px nav or keyboard; expanded real Chromium GREEN. No claim of a live application data-loss exploit. Strict TypeScript PASS, ESLint exit0 with 9 inherited warnings, new exact-source GitHub Chromium CI `.github/workflows/m1-02-unsaved-keyboard.yml` actionlint syntax/context PASS **but remote CI not yet run**. Evidence `docs/qa/M1_02_05_KEYBOARD_UNSAVED_QA6E8_20261110.md`, `docs/qa/evidence/M1_02_05_QA6E8_LOCAL_RESULTS.tsv`, isolated `.autopilot/artifacts/M10205_*.log`.
+- **M1.02.05 NOT_FULLY_VERIFIED** until six-role critical forms, authenticated API/tenant abuse, mobile/desktop accessibility, real provider/staging interruption, realistic load/restore and owner UAT complete. **NEXT FIRST:** guarded commit, exact committed-SHA Chromium rerun, PR to latest QA71, demand new GitHub browser CI and signed merged SHA, then first actionable remaining M1.02.05 form/keyboard or M1.03.01. Do not count local passing cases as FULLY_VERIFIED.
+
+
 ## 2026-11-10 — M1.02.04 real six-role mobile/desktop confirmation dialogs (SCOPED, NOT FULL)
 
 - **FULLY VERIFIED 0/218 | PENTEST INCOMPLETE | RELEASE NO-GO.** Source SHA `9e553a777765101764d28800ea4462700b52f042` (PR #74 test commit integrated into signed active QA merge `380ad9d876aa8d5f99eafd0fb13f5db78d72ffa6`); isolated branch `qa/verify-m10204-dialog-20261110`, worktree `hseverify-m10204-dialog-20261110`, audit session `588beaaf-0a97-49ab-80b7-06d66acd0dfd`.
