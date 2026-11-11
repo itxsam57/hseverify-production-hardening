@@ -142,6 +142,33 @@ test("All six role sessions reject invalid credentials and cross-portal access a
                 assert.equal(new URL(page.url()).pathname,"/access-denied",role+" crossed into "+other);
                 await page.getByRole("heading", { name: "Access denied", exact: true }).waitFor();
                 await page.getByText("Your active portal role is", { exact: false }).waitFor();
+                // Real browser HTTP request with a VALID session cookie for
+                // this role but attacker-controlled foreign role/account/
+                // tenant/membership selectors. None may override the
+                // server-authoritative session role or enable a foreign portal.
+                const forged = new URL(baseUrl+"/"+other+"/dashboard");
+                for (const [key,value] of Object.entries({
+                  role:other,activeRole:other,portalRole:other,
+                  accountId:credentials[other].accountId,
+                  tenantId:"tenant_M10401_foreign_"+other,
+                  membershipId:"membership_M10401_foreign_"+other
+                })) forged.searchParams.set(key,value);
+                await page.setExtraHTTPHeaders({
+                  "x-hse-role":other,
+                  "x-hse-active-role":other,
+                  "x-hse-account-id":credentials[other].accountId,
+                  "x-hse-tenant-id":"tenant_M10401_foreign_"+other,
+                  "x-hse-membership-id":"membership_M10401_foreign_"+other
+                });
+                try {
+                  const response = await page.goto(forged.toString());
+                  assert.ok(response && response.status()<500,"Forged selector request server error "+role+" -> "+other);
+                  assert.equal(new URL(page.url()).pathname,"/access-denied","M10401 forged role/tenant/account selectors crossed "+role+" -> "+other);
+                  await page.getByRole("heading",{name:"Access denied",exact:true}).waitFor();
+                } finally {
+                  await page.setExtraHTTPHeaders({});
+                }
+                console.log("M10401_FORGED_SELECTOR_CROSS_ROLE_DENIED",role,other);
               }
               await page.goto(baseUrl+"/"+role+"/dashboard");
               await page.locator("details.profile-menu summary").click();
@@ -190,6 +217,14 @@ test("All six role sessions reject invalid credentials and cross-portal access a
         assert.ok(ownSession);
         const ownDenials = portalDenials.rows.filter(row => row.account_id === credentials[role].accountId);
         assert.deepEqual([...new Set(ownDenials.map(row => row.metadata.expectedRole))].sort(), roles.filter(target => target !== role).sort());
+        // Protected layouts can audit the same denied navigation more
+        // than once during a Next.js render. The security invariant is
+        // complete coverage, correct actor and no foreign-role session.
+        // Do not invent an exact event-count/idempotency contract here.
+        assert.ok(ownDenials.length>=10,role+" missing normal/forged role denial audits");
+        for(const other of roles.filter(target => target !== role)) {
+          assert.ok(ownDenials.filter(row=>row.metadata.expectedRole===other).length>=2,role+" -> "+other+" missing normal/forged denial audit evidence");
+        }
         assert.ok(ownDenials.every(row => row.active_role === role && row.metadata.sessionId === ownSession.session_id));
       }
       const logouts = await db.query("SELECT account_id,active_role,metadata FROM auth_security_events WHERE event_type='logout'");
