@@ -54,7 +54,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .autopilot/artifacts
-          node --test --test-name-pattern='An authenticated Company can request, generate and download actual scoped CSV, PDF and printable reports' tests/browser/report-company-generation.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10402-company-report-tenant-bola-browser.log
+          log=.autopilot/artifacts/m10402-company-report-tenant-bola-browser.log
+          set +e
+          node --test --test-name-pattern='An authenticated Company can request, generate and download actual scoped CSV, PDF and printable reports' tests/browser/report-company-generation.browser.test.mjs 2>&1 | tee "$log"
+          # pipefail is still enabled: failure in Chromium OR tee stays red.
+          test_status=$?
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            # GitHub log/artifact downloads can fail independently. Preserve
+            # the actual assertion in a check annotation as a fallback;
+            # failing test still exits nonzero and blocks the merge.
+            failure_summary="$(tail -c 3000 "$log" | tr '\r\n' ' ' | sed 's/%/%25/g')"
+            echo "::error title=M1.04.02 actual Chromium test failed::$failure_summary"
+            exit "$test_status"
+          fi
       - name: Retain real-browser artifact logs for exact SHA
         if: always()
         uses: actions/upload-artifact@v4
