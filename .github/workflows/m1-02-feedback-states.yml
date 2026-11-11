@@ -44,7 +44,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Exercise 1365/390/320 validation, oversize files, billing retry and success
         shell: bash
         run: |
@@ -78,7 +78,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Exercise real Worker/Company failures, no leaks, retry at mobile widths
         shell: bash
         run: |
@@ -110,7 +110,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Real six-role pages, responsive navigation and notification controls
         shell: bash
         run: |

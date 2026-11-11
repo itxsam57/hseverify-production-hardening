@@ -46,7 +46,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Real Company expired/stale/replayed OTP and same-origin POST control
         shell: bash
         run: |

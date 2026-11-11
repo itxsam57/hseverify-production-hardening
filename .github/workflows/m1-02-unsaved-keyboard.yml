@@ -44,7 +44,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Test actual 320px mobile unsaved form, 390px history fallback and keyboard focus
         shell: bash
         run: |

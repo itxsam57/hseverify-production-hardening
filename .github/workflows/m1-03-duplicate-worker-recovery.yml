@@ -46,7 +46,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Worker 320/390/desktop contact collision, OTP recovery and no identity merge
         shell: bash
         run: |
@@ -78,7 +78,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Two independently registered accounts cannot duplicate permanent Worker ID
         shell: bash
         run: |

@@ -50,7 +50,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Install actual Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: 6 roles x 5 foreign portals, including forged query and HTTP headers and DB audit
         shell: bash
         run: |

@@ -48,7 +48,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Install actual Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Test 320/390 hydration, invalid fields and consent, registration and persistent DB
         shell: bash
         run: |
