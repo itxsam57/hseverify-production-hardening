@@ -1,0 +1,98 @@
+name: M1.03 Worker registration responsive policy and validation QA
+
+on:
+  pull_request:
+    paths:
+      - "src/app/worker/register/**"
+      - "src/lib/auth/**"
+      - "src/app/globals.css"
+      - "tests/browser/worker-registration-policy-e2e.browser.test.mjs"
+      - "tests/platform/worker-registration-policy-runtime.test.mjs"
+      - ".github/workflows/m1-03-worker-registration-policy-responsive.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "src/app/worker/register/**"
+      - "src/lib/auth/**"
+      - "src/app/globals.css"
+      - "tests/browser/worker-registration-policy-e2e.browser.test.mjs"
+      - "tests/platform/worker-registration-policy-runtime.test.mjs"
+      - ".github/workflows/m1-03-worker-registration-policy-responsive.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10301-worker-policy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actual-chromium-320-390-worker-registration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install actual Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test 320/390 hydration, invalid fields and consent, registration and persistent DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/worker-registration-policy-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10301-worker-policy-chromium.log
+      - name: Retain exact-SHA Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10301-worker-policy-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10301-worker-policy-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  immutable-consent-and-rollback-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Reject false acceptances and rollback account and OTP on consent failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/platform/worker-registration-policy-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10301-worker-policy-native.log
+      - name: Retain exact-SHA native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10301-worker-policy-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10301-worker-policy-native.log
+          if-no-files-found: warn
+          retention-days: 30

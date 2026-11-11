@@ -64,6 +64,20 @@ test("Worker registration denies missing policies/country and password mismatch,
         try {
           const page = await browser.newPage();
           const errors = [];
+          await page.setViewportSize({width:320,height:740});
+          const assertResponsive = async (width,stage,checkSubmit=true) => {
+            const layout=await page.evaluate(()=>({
+              viewport:document.documentElement.clientWidth,
+              scroll:document.documentElement.scrollWidth
+            }));
+            console.log("M10301_MOBILE_VALIDATION_320_390",stage,JSON.stringify(layout));
+            assert.equal(layout.viewport,width,stage+" wrong viewport");
+            assert.ok(layout.scroll<=width+1,stage+" Worker register layout overflow: "+JSON.stringify(layout));
+            if(checkSubmit){
+              const box=await page.getByRole("button",{name:"Create Worker account",exact:true}).boundingBox();
+              assert.ok(box&&box.height>=44&&box.x>=0&&box.x+box.width<=width+1,stage+" registration button clipped or too small");
+            }
+          };
           page.on("pageerror", error => errors.push(error.message));
           const terms = page.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true });
           const privacy = page.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true });
@@ -91,6 +105,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           } finally { releaseScripts(); }
           await page.waitForLoadState("load");
           await page.unroute(/\/_next\/static\/.*\.js(?:\?.*)?$/);
+          await assertResponsive(320,"hydrated empty form");
           await page.getByLabel("Full name").fill("Ready Worker");
           await terms.check();
           assert.equal(await page.getByLabel("Full name").inputValue(), "Ready Worker");
@@ -104,6 +119,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           await page.getByText("Accept the privacy notice to continue.", { exact: true }).waitFor();
           assert.equal(await terms.getAttribute("aria-invalid"), "true");
           assert.equal(await privacy.getAttribute("aria-invalid"), "true");
+          await assertResponsive(320,"invalid terms privacy password country");
 
           await page.getByLabel("Full name").fill("Policy Browser Worker");
           await page.getByLabel("Email address").fill("policy.browser.worker@example.test");
@@ -134,6 +150,9 @@ test("Worker registration denies missing policies/country and password mismatch,
           await page.getByText("The passwords do not match.", { exact: true }).waitFor();
           assert.equal(new URL(page.url()).pathname, "/worker/register");
           assert.equal(await page.getByLabel("Email address").inputValue(), "policy.browser.worker@example.test");
+          await page.setViewportSize({width:390,height:844});
+          await assertResponsive(390,"password mismatch error");
+          await page.setViewportSize({width:320,height:740});
 
           await page.getByLabel("Confirm password").fill("PolicyBrowser!Password2026");
           await page.getByLabel("Country", { exact: true }).fill("");
@@ -154,6 +173,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           assert.equal(new URL(page.url()).pathname, "/worker/register");
 
           await privacy.check();
+          await assertResponsive(320,"valid filled form before final submit");
           await page.evaluate(() => {
             const field = document.createElement("input");
             field.type = "hidden"; field.name = "acceptedAt"; field.value = "2099-01-01T00:00:00.000Z";
@@ -162,6 +182,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           await page.getByRole("button", { name: "Create Worker account", exact: true }).click();
           await page.waitForURL("**/worker/register/verify");
           await page.getByText("Step 1 of 2", { exact: false }).waitFor();
+          await assertResponsive(320,"pending verification after real submit",false);
           registrationCookies=await page.context().cookies();
           assert.deepEqual(errors, []);
         } finally { await browser.close(); }
