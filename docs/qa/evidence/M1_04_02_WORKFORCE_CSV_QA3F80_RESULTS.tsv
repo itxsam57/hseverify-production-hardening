@@ -1,0 +1,6 @@
+scenario_id	base_sha	command	status	pass	fail	evidence	limitation
+M1.04.02	3f80ccbc485cdcf83a7ae017f794e5da05a64a71	rg -n M10402_WORKFORCE_CSV_TENANT_FILTER tests/browser/company-workforce-pagination.browser.test.mjs	EXPECTED_COVERAGE_RED	0	1	.autopilot/artifacts/M10402_WORKFORCE_CSV_BASELINE_COVERAGE_RED_20261112.log	Missing test only, not product exploit
+M1.04.02	3f80ccbc485cdcf83a7ae017f794e5da05a64a71	node --test tests/browser/company-workforce-pagination.browser.test.mjs	PASS	1	0	.autopilot/artifacts/M10402_WORKFORCE_CSV_FILTER_PERMISSION_CHROMIUM_GREEN_20261112.log	Local synthetic real Chromium/PGlite, 1440 390 320 UI, owner/foreign/revoked private CSV, anonymous, permission revocation
+M1.04.02	3f80ccbc485cdcf83a7ae017f794e5da05a64a71	node --test tests/platform/authorization-tenant-scope-repository.test.mjs	PASS	3	0	.autopilot/artifacts/M10402_WORKFORCE_TENANT_NATIVE3_GREEN_20261112.log	Native SQL scope only
+M1.04.02	3f80ccbc485cdcf83a7ae017f794e5da05a64a71	npm run typecheck	PASS	1	0	.autopilot/artifacts/M10402_WORKFORCE_TYPECHECK_GREEN_20261112.log	Strict TS only
+M1.04.02	3f80ccbc485cdcf83a7ae017f794e5da05a64a71	npm run lint	PASS_WITH_WARNINGS	1	0	.autopilot/artifacts/M10402_WORKFORCE_LINT_EXIT0_WARN9_20261112.log	0 errors and 9 existing warnings
