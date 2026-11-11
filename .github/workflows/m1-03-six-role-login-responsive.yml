@@ -54,7 +54,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Install actual Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: All six signed-out, wrong credentials/MFA, cross-role deep links, mobile and audit
         shell: bash
         run: |

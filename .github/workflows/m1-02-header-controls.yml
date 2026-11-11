@@ -65,7 +65,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Exercise every role Help/Language/Account, 320/390/1440, Exit and Sign Out, bell and mobile navigation
         shell: bash
         run: |
@@ -99,7 +99,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - name: Run actual Worker/Company/Assessor/Verifier/Admin/Root header search flows
         shell: bash
         run: |

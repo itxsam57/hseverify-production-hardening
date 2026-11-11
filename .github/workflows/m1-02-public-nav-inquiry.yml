@@ -52,7 +52,7 @@ jobs:
       - name: Restore locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Install actual Chromium and browser dependencies
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Native contact/demo retry, audit, rate-limit and role denials
         shell: bash
         run: |
