@@ -165,6 +165,8 @@ h3 { font-size: 1rem; }
 .auth-security-note { max-width: 620px; margin: 0; color: #b7cbd9; font-size: .9rem; }
 .auth-card-panel { display: grid; place-items: center; padding: 40px 24px; background: var(--white); }
 .auth-card { width: min(100%,460px); }
+.security-key-card { min-width: 0; max-width: 100%; }
+.security-key-card strong { display: block; max-width: 100%; overflow-wrap: anywhere; }
 .auth-card h2 { margin-bottom: 10px; font-size: 2rem; }
 .auth-form { display: grid; gap: 18px; margin-top: 28px; }
 .field-group { display: grid; gap: 7px; }
