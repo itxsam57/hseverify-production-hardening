@@ -1,0 +1,4 @@
+scenario_id	signed_qa_base	command	status	pass	fail	evidence	limitation
+M1.03.07	949fdefdbac15feefc342275a3e3738917ef307c	node --test tests/browser/six-role-session-cookie-replay.browser.test.mjs	PASS	1	0	.autopilot/artifacts/M10307_REAL_CHROMIUM_COPIED_COOKIE_GREEN.log	Synthetic local HTTP/Chromium/PGlite, no HTTPS staging
+M1.03.07	949fdefdbac15feefc342275a3e3738917ef307c	node --test --test-concurrency=1 tests/browser/active-session-boundaries.browser.test.mjs tests/browser/authentication-boundaries-e2e.browser.test.mjs	PASS	2	0	.autopilot/artifacts/M10307_BROWSER_ACTIVE_AND_EXIT_GREEN.log	Six-role real Chromium, local fixture
+M1.03.07	949fdefdbac15feefc342275a3e3738917ef307c	node --test tests/platform/authorization-session-context.test.mjs tests/platform/authentication-signed-out-proxy.test.mjs	PASS	6	0	.autopilot/artifacts/M10307_NATIVE_SESSION_AUTHORITY_GREEN.log	Native source and PGlite, not direct endpoint pentest
