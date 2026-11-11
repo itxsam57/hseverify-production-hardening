@@ -74,8 +74,32 @@ test("Worker registration denies missing policies/country and password mismatch,
             assert.equal(layout.viewport,width,stage+" wrong viewport");
             assert.ok(layout.scroll<=width+1,stage+" Worker register layout overflow: "+JSON.stringify(layout));
             if(checkSubmit){
-              const box=await page.getByRole("button",{name:"Create Worker account",exact:true}).boundingBox();
-              assert.ok(box&&box.height>=44&&box.x>=0&&box.x+box.width<=width+1,stage+" registration button clipped or too small");
+              const button=page.getByRole("button",{name:"Create Worker account",exact:true});
+              const box=await button.boundingBox();
+              const styleAndRect=await button.evaluate(el=>{
+                const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
+                return {
+                  rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
+                  minHeight:style.minHeight,layoutHeight:el.offsetHeight,
+                  transform:style.transform,
+                  boxSizing:style.boxSizing,fontSize:style.fontSize,
+                  rootFontSize:getComputedStyle(document.documentElement).fontSize,
+                  docWidth:document.documentElement.scrollWidth,
+                  scrollX:window.scrollX,devicePixelRatio:window.devicePixelRatio,
+                  disabled:el.disabled
+                };
+              });
+              console.log("M10301_BUTTON_GEOMETRY",stage,JSON.stringify({box,...styleAndRect}));
+              // CSS guarantees a 44px layout target. Chromium can report
+              // 43.9999px for an otherwise 44px hover-transformed box while
+              // the CSS transition is animating. Test the layout guarantee
+              // exactly and allow only subpixel raster rounding in the visual box.
+              assert.ok(
+                box&&Number.parseFloat(styleAndRect.minHeight)>=44&&
+                styleAndRect.layoutHeight>=44&&box.height+1/128>=44&&
+                box.x>=0&&box.x+box.width<=width+1,
+                stage+" registration button clipped or too small: "+JSON.stringify({box,...styleAndRect})
+              );
             }
           };
           page.on("pageerror", error => errors.push(error.message));
