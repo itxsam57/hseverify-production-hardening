@@ -1,0 +1,111 @@
+name: M1.04 Company report two-tenant generated export HTTP BOLA QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/report-company-generation.browser.test.mjs"
+      - "tests/platform/report-company-generation-runtime.test.mjs"
+      - "src/lib/reports/**"
+      - "src/lib/authorization/**"
+      - "src/app/api/company/reports/**"
+      - ".github/workflows/m1-04-company-report-tenant-bola.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/report-company-generation.browser.test.mjs"
+      - "tests/platform/report-company-generation-runtime.test.mjs"
+      - "src/lib/reports/**"
+      - "src/lib/authorization/**"
+      - "src/app/api/company/reports/**"
+      - ".github/workflows/m1-04-company-report-tenant-bola.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10402-company-generated-report-bola-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-independent-company-report-bola:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact head SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium without Ubuntu apt DNS dependency
+        run: npx playwright install chromium
+      - name: Real generated CSV PDF print owner versus independent Company stolen report URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          log=.autopilot/artifacts/m10402-company-report-tenant-bola-browser.log
+          set +e
+          node --test --test-name-pattern='An authenticated Company can request, generate and download actual scoped CSV, PDF and printable reports' tests/browser/report-company-generation.browser.test.mjs 2>&1 | tee "$log"
+          # pipefail is still enabled: failure in Chromium OR tee stays red.
+          test_status=$?
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            # GitHub log/artifact downloads can fail independently. Preserve
+            # the actual assertion in a check annotation as a fallback;
+            # failing test still exits nonzero and blocks the merge.
+            failure_summary="$(tail -c 3000 "$log" | tr '\r\n' ' ' | sed 's/%/%25/g')"
+            echo "::error title=M1.04.02 actual Chromium test failed::$failure_summary"
+            exit "$test_status"
+          fi
+      - name: Retain real-browser artifact logs for exact SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10402-company-report-bola-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10402-company-report-tenant-bola-browser.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-report-tenant-and-revocation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact head SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Report tenant object scope and permission revocation native
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-name-pattern='Member scope, tenant isolation, permission ceiling and fresh session checks hold at the report boundary' tests/platform/report-company-generation-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10402-company-report-tenant-native.log
+      - name: Retain native artifact logs for exact SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10402-company-report-bola-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10402-company-report-tenant-native.log
+          if-no-files-found: warn
+          retention-days: 30
