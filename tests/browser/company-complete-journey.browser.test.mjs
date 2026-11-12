@@ -349,6 +349,15 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).waitFor();
           const staffCookiesBefore = await memberContext.cookies();
           assert(staffCookiesBefore.some(cookie => cookie.httpOnly), "actual staff login must hold an authenticated session");
+          const requestMemberWorkforceCsv = (headers = {}) => memberContext.request.get(
+            `${baseUrl}/api/company/workers/export`, { maxRedirects: 0, headers }
+          );
+          const expectMemberWorkforceDenied = async (label, headers = {}) => {
+            const response = await requestMemberWorkforceCsv(headers);
+            assert.notEqual(response.status(), 200, `${label}: stale permission must not export CSV`);
+            const body = await response.text();
+            assert.equal(body.includes('"Name","Email","Worker ID"'), false, `${label}: denied export must not leak CSV rows`);
+          };
 
           await company.reload({ waitUntil: "networkidle" });
           let memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
@@ -398,6 +407,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await memberCard.getByLabel("Company Team role").selectOption("admin");
           await memberCard.locator('input[name="permissions"][value="company.members.manage"]').check();
           await memberCard.locator('input[name="permissions"][value="company.members.read"]').check();
+          await memberCard.locator('input[name="permissions"][value="company.workforce.manage"]').check();
           await memberCard.locator('input[name="permissions"][value="company.reports.export"]').uncheck();
           await memberCard.getByRole("button",{name:"Save Team access"}).click();
           await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor();
@@ -424,6 +434,29 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await staffInvite.getByRole("button",{name:"Create Company Team invitation"}).click();
           await staffInvite.getByText(/Company Team invitation created/).waitFor();
           console.log("ACTUAL_STAFF_PERMISSION_CEILING own live admin session cannot grant absent permission or owner role; permitted viewer invitation succeeds");
+          let workforceResponse = await requestMemberWorkforceCsv();
+          assert.equal(workforceResponse.status(), 200, "granted admin member may export only its authorized Company CSV");
+          assert.match(await workforceResponse.text(), /"Name","Email","Worker ID"/);
+          await company.reload({waitUntil:"networkidle"});
+          memberCard = company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          await memberCard.locator('input[name="permissions"][value="company.workforce.manage"]').uncheck();
+          await memberCard.getByRole("button",{name:"Save Team access"}).click();
+          await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor();
+          await expectMemberWorkforceDenied("same member session after owner removes workforce export");
+          await expectMemberWorkforceDenied("forged root/account/tenant on stale member session",{
+            "x-hse-active-role":"root",
+            "x-hse-account-id":"auth_account_fake_root_000000",
+            "x-hse-tenant-id":"auth_tenant_fake_root_000000"
+          });
+          await company.reload({waitUntil:"networkidle"});
+          memberCard = company.locator("article").filter({hasText:"Journey Team Member"}).first();
+          await memberCard.locator('input[name="permissions"][value="company.workforce.manage"]').check();
+          await memberCard.getByRole("button",{name:"Save Team access"}).click();
+          await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor();
+          workforceResponse = await requestMemberWorkforceCsv();
+          assert.equal(workforceResponse.status(), 200, "same independently signed-in session regains export only after owner regrants permission");
+          assert.match(await workforceResponse.text(), /"Name","Email","Worker ID"/);
+          console.log("ACTUAL_COMPANY_STAFF_EXPORT_API_LIVE_REVOKE active staff grant200, no-login permission revoke denial, forged root/account/tenant denial, no-login regrant200");
           await company.reload({waitUntil:"networkidle"});
           memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
           await memberCard.getByLabel("Company Team role").selectOption("manager");
@@ -436,6 +469,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByRole("button", { name: "Reactivate" }).waitFor({ timeout: 15_000 });
+          await expectMemberWorkforceDenied("suspended member existing signed-in session");
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "suspended membership must remove existing-session tenant access");
           assert.equal(new URL(member.url()).pathname, "/access-denied");
@@ -456,6 +490,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByText("revoked", { exact: true }).waitFor({ timeout: 15_000 });
+          await expectMemberWorkforceDenied("revoked member existing signed-in session");
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "revoked membership must remove existing-session tenant access");
           assert.equal(new URL(member.url()).pathname, "/access-denied");
