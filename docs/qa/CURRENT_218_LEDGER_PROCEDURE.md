@@ -45,6 +45,17 @@ The archived old `2026-10-02-evidence.json` also has 47 suite pass claims and 2 
 
 Final authorized pentest requires a **protected isolated stage**, real providers and owner-specified safe attack/load scope; the current shared workstation is not a certified stage. See `docs/qa/PENTEST_STAGING_PREPARATION_20261114.md`. Only a fully independently attested exact-final-SHA scenario may increase the FULLY_VERIFIED count.
 
+## 2026-11-14: one-ledger 4975 planning-slot deduplication
+
+The **same** `npm run audit:current-218-scenarios` now includes `planned_check_progress`: the previous 1392/1566 unique source regression cases are preserved, **693/4975 slots contain a previous clean scoped clause** (partial and not fully passing), 54 are uncertain/mixed or title-only and 4228 have no precise old dimension link. All **4975 remain outstanding for complete exact-final-SHA certification**, and **0/218** are FULLY_VERIFIED. Earlier 216/218 was scoped old evidence only. Do not subtract 1392 source case tests from 4975 planning dimensions, as they count different units. Review the detailed per-slot CSV before any new test.
+
+```bash
+python3 scripts/reconcile-4975-prior-coverage.py --verify
+npm run audit:current-218-scenarios
+```
+
+Use the existing workstation and authorized synthetic fixtures for nondisruptive checks; a new localhost service is **not needed to track progress**. Protected isolated staging remains required before intrusive full pentest/load and genuine provider signoff. See `docs/qa/MASTERPLAN_218_UNIFIED_4975_FINAL_BASELINE_20261114.md`.
+
 ## Before a scenario can be promoted to FULLY_VERIFIED
 
 Record real exact-SHA protected-stage browser/UI actions, positive/negative/race/retry/expiry/outage, complete cross-role receiving state and DB/audit/notifications, direct tenant/role/API abuse, relevant exploit/fix/retest, real provider delivery where applicable, realistic load/restore/rollback, and Owner UAT. Reconcile *all 218* after any code/configuration change. A future governed evidence-attestation path must independently verify every required dimension; do not simply edit a status field to claim PASS.
