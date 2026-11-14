@@ -27,6 +27,14 @@ on:
       - "tests/engineering/test_legacy_216_evidence.py"
       - "scripts/reconcile-4975-prior-coverage.py"
       - "tests/engineering/test_4975_prior_reconciliation.py"
+      - "AGENTS.md"
+      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "docs/qa/CURRENT_RESUME_218.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
+      - "scripts/qa-progress-218.mjs"
+      - "tests/engineering/test_vertical_218_progress.py"
+      - "package.json"
       - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_PROGRESS_20261114.csv"
       - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json"
       - ".github/workflows/qa-4975-coverage-register.yml"
@@ -58,6 +66,14 @@ on:
       - "tests/engineering/test_legacy_216_evidence.py"
       - "scripts/reconcile-4975-prior-coverage.py"
       - "tests/engineering/test_4975_prior_reconciliation.py"
+      - "AGENTS.md"
+      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "docs/qa/CURRENT_RESUME_218.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
+      - "scripts/qa-progress-218.mjs"
+      - "tests/engineering/test_vertical_218_progress.py"
+      - "package.json"
       - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_PROGRESS_20261114.csv"
       - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json"
       - ".github/workflows/qa-4975-coverage-register.yml"
@@ -92,6 +108,10 @@ jobs:
           PYTHONDONTWRITEBYTECODE=1 python3 tests/engineering/test_4975_prior_reconciliation.py
           node --test tests/engineering/current-release-218-ledger.test.mjs
           node scripts/reconcile-current-release-218.mjs
+      - name: Enforce 218 vertical scenario route and ALL owner progress counters
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 tests/engineering/test_vertical_218_progress.py
+          npm run qa:progress-218
       - name: Archive actual exact SHA planning evidence (not release certification)
         if: always()
         uses: actions/upload-artifact@v4

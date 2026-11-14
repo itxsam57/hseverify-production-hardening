@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "source_of_release_truth": "npm run audit:current-218-scenarios",
+  "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
+  "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
+  "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
+  "current_focus_scenario_id": "M1.01.01",
+  "current_focus_phase": "REUSE_PRIOR_EVIDENCE_BEFORE_TEST",
+  "last_completed_action": "Deduplicated all historical old 216/218 and 4975 planning references without final-stage promotion; 30/30 CI success on signed baseline SHA",
+  "next_exact_action": "Read original M1.01.01 runtime secrets/demo isolation and startup source/test/log evidence, identify the missing exact-SHA acceptance assertions, and run only safe unproven checks on the existing synthetic test infrastructure",
+  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --lookup-scenario M1.01.01",
+  "active_test_pid": null,
+  "active_test_log": null,
+  "recent_failed_checks": [],
+  "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
+  "no_new_localhost_environment_by_default": true,
+  "note": "This file is an execution cursor ONLY. Never store separate pass counts here or claim scenario certification. Derive all progress from original 218 ledger."
+}
