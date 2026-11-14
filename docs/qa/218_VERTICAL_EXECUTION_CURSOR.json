@@ -5,17 +5,22 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.02.03",
-  "current_focus_phase": "CURRENT_SCOPED_BROWSER_GREEN_NEEDS_SIGNED_CI_AND_RECOVERY_TO_SUCCESS",
-  "last_completed_action": "M1.01.03 current signed QA 5e1ebfcb all 31/31 workflows SUCCESS; M1.01.04 final protected stage blocked. Reused M1.02.01/02 previous full local browser suites. M1.02.03 pending POST real Chromium GREEN 1/1 on parent SHA + test diff; first symlinked deps Next-start failed, corrected isolated worktree only.",
-  "next_exact_action": "Commit and push M1.02.03 real held POST partial browser evidence; verify PR-head and merged-SHA CI. Then test real Worker Dashboard/Company Billing backend recovery->retry->success using disposable data without impacting shared services; record exact evidence.",
-  "next_exact_command": "node --test tests/browser/error-recovery-controls.browser.test.mjs",
+  "current_focus_phase": "LOCAL_REAL_PG16_RECOVERY_GREEN_NEEDS_SIGNED_QA_CI_AND_REMAINING_ROLE_ERRORS",
+  "last_completed_action": "Signed QA parent daed51f21 31/31 workflows SUCCESS. Newly reproduced M1.02.03 Worker Dashboard error boundary reset after real PG16 online restore; root fixed Next16 retry in Worker Dashboard/global, plus 8 adjacent error wrappers. Same actual Chromium journey 1/1 GREEN on isolated PG16 unchanged running Next; Native adjacent 8/8, Next config 4/4, typecheck PASS, lint 0 errors. Historical 218/4975 unchanged.",
+  "next_exact_action": "Guarded PR, exact head real PG16 Chromium and 4975 integrity CI, signed two-parent merge and 31+ merged-SHA checks; then browser-test restored-backend retry across Worker Profile, Company tenant-scope and each role notifications; do not repeat M1.02.03 prior passes.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10203-recovery-after-restore-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
       "scenario_id": "M1.02.03",
-      "problem": "First new browser test could not resolve next/package.json because node_modules was symlinked outside Turbopack root",
-      "result": "ISOLATED_TEST_SETUP_FIXED_REAL_CHROMIUM_1_OF_1_GREEN"
+      "problem": "Next16 reset did not re-fetch server error boundary after actual isolated PostgreSQL16 online table restore",
+      "result": "ROOT_FIXED_LOCAL_WORKER_AND_COMPANY_CHROMIUM_1_OF_1_PASS_PENDING_EXACT_SIGNED_CI"
+    },
+    {
+      "scenario_id": "M1.02.03",
+      "problem": "Original offline PGlite restart invalidated live Retry testing by automatic browser reload",
+      "result": "INVALID_HARNESS_REPLACED_WITH_SAFE_CONCURRENT_DISPOSABLE_POSTGRES_16"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
