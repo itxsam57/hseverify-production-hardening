@@ -9,6 +9,14 @@ on:
       - "src/app/**"
       - "scripts/audit-4975-coverage.py"
       - "tests/engineering/test_verification_4975_coverage.py"
+      - "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"
+      - "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS_BY_SCENARIO.csv"
+      - "scripts/collect-prior-qa-ci-tests.py"
+      - "scripts/reconcile-218-prior-test-evidence.py"
+      - "scripts/reconcile-current-release-218.mjs"
+      - "scripts/lib/current-release-218-ledger.mjs"
+      - "tests/engineering/current-release-218-ledger.test.mjs"
+      - "tests/engineering/test_prior_test_evidence.py"
       - ".github/workflows/qa-4975-coverage-register.yml"
   push:
     branches:
@@ -20,6 +28,14 @@ on:
       - "src/app/**"
       - "scripts/audit-4975-coverage.py"
       - "tests/engineering/test_verification_4975_coverage.py"
+      - "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"
+      - "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS_BY_SCENARIO.csv"
+      - "scripts/collect-prior-qa-ci-tests.py"
+      - "scripts/reconcile-218-prior-test-evidence.py"
+      - "scripts/reconcile-current-release-218.mjs"
+      - "scripts/lib/current-release-218-ledger.mjs"
+      - "tests/engineering/current-release-218-ledger.test.mjs"
+      - "tests/engineering/test_prior_test_evidence.py"
       - ".github/workflows/qa-4975-coverage-register.yml"
 
 permissions:
@@ -40,6 +56,12 @@ jobs:
         run: python3 tests/engineering/test_verification_4975_coverage.py
       - name: Generate candidate planning register and fail on scope drift
         run: python3 scripts/audit-4975-coverage.py --out-csv .autopilot/artifacts/verification-4975-register.csv
+      - name: Verify distinct prior passing tests are preserved inside 218 ledger
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/reconcile-218-prior-test-evidence.py --verify-index
+          PYTHONDONTWRITEBYTECODE=1 python3 tests/engineering/test_prior_test_evidence.py
+          node --test tests/engineering/current-release-218-ledger.test.mjs
+          node scripts/reconcile-current-release-218.mjs
       - name: Archive actual exact SHA planning evidence (not release certification)
         if: always()
         uses: actions/upload-artifact@v4

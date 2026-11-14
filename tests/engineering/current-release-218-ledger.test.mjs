@@ -97,3 +97,24 @@ test("actual clean-worktree CLI produces readable no-go 218-row ledger with git 
   assert.equal(report.exact_sha, git.stdout.trim());
   assert.equal(report.scenarios.length, 218);
 });
+
+test("scoped historical test executions appear inside the SAME 218 ledger without promoting FULLY_VERIFIED", () => {
+  const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
+  const report = buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence });
+  assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1391);
+  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1565);
+  assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 234);
+  assert.equal(report.scoped_test_progress.older_historical_green_cases, 1157);
+  assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1252);
+  assert.equal(report.scoped_test_progress.prior_ci_is_this_exact_sha, false);
+  assert.equal(report.counts.full_verified, 0);
+  assert.equal(report.release.decision, "NO_GO");
+  assert.equal(report.scenarios.length, 218);
+  assert(report.scenarios.every(row => row.scoped_test_evidence.full_scenario_certification === "NOT_FULLY_VERIFIED"));
+  const reportScenario = report.scenarios.find(row => row.id === "M1.04.02");
+  assert(reportScenario.scoped_test_evidence.previously_observed_green_cases > 0);
+  assert.equal(reportScenario.status, "NOT_STARTED");
+  const tampered = copy(priorTestEvidence);
+  tampered.cases[0].test_execution = "EXACT_CI_SHA_PASSED";
+  assert.throws(() => buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence: tampered }), /mismatch/);
+});

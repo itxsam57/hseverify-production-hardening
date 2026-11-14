@@ -1,0 +1,219 @@
+id,brick,family,scenario,existing_source_cases_linked,green_exact_reference_CI_cases_linked,green_history_only_cases_linked,full_scenario_verification
+M1.01.01,M1.01,Environment and release foundation,Runtime environments/secrets/demo isolation and startup,2,0,2,NOT_FULLY_VERIFIED
+M1.01.02,M1.01,Environment and release foundation,"All migrations apply, preserve history and rollback safely",4,4,0,NOT_FULLY_VERIFIED
+M1.01.03,M1.01,Environment and release foundation,GitHub CI verifies exact canonical candidate,0,0,0,NOT_FULLY_VERIFIED
+M1.01.04,M1.01,Environment and release foundation,Production configuration/health/rollback evidence corresponds to candidate,0,0,0,NOT_FULLY_VERIFIED
+M1.02.01,M1.02,Global UI,"Public navigation, contact/demo/sign-in and role destinations",0,0,0,NOT_FULLY_VERIFIED
+M1.02.02,M1.02,Global UI,Every role header/search/bell/help/account/language/Exit/Sign Out,0,0,0,NOT_FULLY_VERIFIED
+M1.02.03,M1.02,Global UI,Empty/loading/validation/denial/error/retry/success states across scenario pages,1,1,0,NOT_FULLY_VERIFIED
+M1.02.04,M1.02,Global UI,Responsive desktop/mobile forms/tables/dialogs and route transitions,1,1,0,NOT_FULLY_VERIFIED
+M1.02.05,M1.02,Global UI,Keyboard focus/navigation/labels and unsaved-input protection,0,0,0,NOT_FULLY_VERIFIED
+M1.03.01,M1.03,Authentication,"Worker registration: invalid fields, terms and password confirmation",4,4,0,NOT_FULLY_VERIFIED
+M1.03.02,M1.03,Authentication,"Email and phone OTP: wrong, expired, resend and verified",1,1,0,NOT_FULLY_VERIFIED
+M1.03.03,M1.03,Authentication,Duplicate Worker registration: recovery without identity merge,7,7,0,NOT_FULLY_VERIFIED
+M1.03.04,M1.03,Authentication,"Company registration: pending account, email OTP and MFA activation",7,7,0,NOT_FULLY_VERIFIED
+M1.03.05,M1.03,Authentication,"Staff invitation: role-bound activation, used/expired/revoked token",18,18,0,NOT_FULLY_VERIFIED
+M1.03.06,M1.03,Authentication,"Every portal: wrong role, wrong password/MFA and signed-out redirect",11,11,0,NOT_FULLY_VERIFIED
+M1.03.07,M1.03,Authentication,Exit Portal preserves session; Sign Out revokes it,6,6,0,NOT_FULLY_VERIFIED
+M1.03.08,M1.03,Authentication,"Password change, other-session revocation and privileged recovery",6,6,0,NOT_FULLY_VERIFIED
+M1.04.01,M1.04,Authorization,Role-bound session rejects every cross-portal combination,4,3,1,NOT_FULLY_VERIFIED
+M1.04.02,M1.04,Authorization,"Tenant-scoped resources, filters, files and exports do not disclose other tenant",22,8,14,NOT_FULLY_VERIFIED
+M1.04.03,M1.04,Authorization,"Cross-worker IDs, copied capabilities and direct actions denied",3,3,0,NOT_FULLY_VERIFIED
+M1.04.04,M1.04,Authorization,"Role elevation, stale permissions, revoked session and membership fail closed",1,1,0,NOT_FULLY_VERIFIED
+M1.05.01,M1.05,Audit and notifications,"Every material transition retains actor, resource, reason and immutable history",0,0,0,NOT_FULLY_VERIFIED
+M1.05.02,M1.05,Audit and notifications,New submission/decision/assignment sends next actor correct authorized deep link,0,0,0,NOT_FULLY_VERIFIED
+M1.05.03,M1.05,Audit and notifications,Read/unread/mark-all and unread badge synchronize across roles,0,0,0,NOT_FULLY_VERIFIED
+M1.05.04,M1.05,Audit and notifications,Outbox retry/idempotency/outage does not roll back underlying business state,0,0,0,NOT_FULLY_VERIFIED
+M1.06.01,M1.06,Uploads,PDF/PNG/JPEG accepted through scan and exact record binding,0,0,0,NOT_FULLY_VERIFIED
+M1.06.02,M1.06,Uploads,"Missing, oversize, mismatched MIME and unsafe file denied",0,0,0,NOT_FULLY_VERIFIED
+M1.06.03,M1.06,Uploads,Scanner unavailable remains quarantined; retry cannot replace safe file,0,0,0,NOT_FULLY_VERIFIED
+M1.06.04,M1.06,Uploads,"Replace attachment: prior version retained, correct preview context",1,0,1,NOT_FULLY_VERIFIED
+M1.06.05,M1.06,Uploads,Preview denied before claim and across worker/tenant; expired token,0,0,0,NOT_FULLY_VERIFIED
+M1.07.01,M1.07,Identity,Incomplete profile and identity submission blocked with input retained,1,0,1,NOT_FULLY_VERIFIED
+M1.07.02,M1.07,Identity,"Profile drafts persist through navigation, validation and retry",1,0,1,NOT_FULLY_VERIFIED
+M1.07.03,M1.07,Identity,"Initial identity approved, rejected and changes requested",0,0,0,NOT_FULLY_VERIFIED
+M1.07.04,M1.07,Identity,Initial rejection/changes requested corrected and resubmitted,0,0,0,NOT_FULLY_VERIFIED
+M1.07.05,M1.07,Identity,"Verified correction accepted, rejected and changes requested",0,0,0,NOT_FULLY_VERIFIED
+M1.07.06,M1.07,Identity,Permanent Worker ID and original evidence retained across corrections,0,0,0,NOT_FULLY_VERIFIED
+M1.07.07,M1.07,Identity,Duplicate document/contact signals require independent resolution,0,0,0,NOT_FULLY_VERIFIED
+M1.08.01,M1.08,Company verification,Registration to pending dashboard and submitted scanned evidence,0,0,0,NOT_FULLY_VERIFIED
+M1.08.02,M1.08,Company verification,Pending tenant high-risk actions denied,1,0,1,NOT_FULLY_VERIFIED
+M1.08.03,M1.08,Company verification,Admin changes requested to corrected version to verification,0,0,0,NOT_FULLY_VERIFIED
+M1.08.04,M1.08,Company verification,Admin rejection remains pending and preserves original history,0,0,0,NOT_FULLY_VERIFIED
+M1.08.05,M1.08,Company verification,Approval activates tenant; stale/double decision denied,0,0,0,NOT_FULLY_VERIFIED
+M1.09.01,M1.09,Organization and Team,"Site and department create, edit, archive and restore",0,0,0,NOT_FULLY_VERIFIED
+M1.09.02,M1.09,Organization and Team,Archive assigned units unassigns placements and retains history,0,0,0,NOT_FULLY_VERIFIED
+M1.09.03,M1.09,Organization and Team,Archived units cannot receive new placements,0,0,0,NOT_FULLY_VERIFIED
+M1.09.04,M1.09,Organization and Team,"Team invitation, MFA enrollment, role permission update",0,0,0,NOT_FULLY_VERIFIED
+M1.09.05,M1.09,Organization and Team,Suspension/revocation removes existing-session access,0,0,0,NOT_FULLY_VERIFIED
+M1.09.06,M1.09,Organization and Team,Company staff cannot grant permissions above own ceiling,0,0,0,NOT_FULLY_VERIFIED
+M1.10.01,M1.10,Invitations and employment links,"Single invitation accepted, resent, revoked, expired and replayed",0,0,0,NOT_FULLY_VERIFIED
+M1.10.02,M1.10,Invitations and employment links,Bulk CSV mixed valid/invalid rows and duplicate recovery,0,0,0,NOT_FULLY_VERIFIED
+M1.10.03,M1.10,Invitations and employment links,Company code expiry/usage limit/default site and department,0,0,0,NOT_FULLY_VERIFIED
+M1.10.04,M1.10,Invitations and employment links,Unlinked/wrong Worker cannot accept another person's invitation,0,0,0,NOT_FULLY_VERIFIED
+M1.10.05,M1.10,Invitations and employment links,"Worker joins, moves placement, ends relationship and retains identity",0,0,0,NOT_FULLY_VERIFIED
+M1.10.06,M1.10,Invitations and employment links,Second company link preserves first employer's history and isolation,0,0,0,NOT_FULLY_VERIFIED
+M1.11.01,M1.11,Evidence and supervisor observation,Qualification approval/rejection/changes requested to correction and re-review,0,0,0,NOT_FULLY_VERIFIED
+M1.11.02,M1.11,Evidence and supervisor observation,Experience approval/rejection/changes requested to correction and re-review,0,0,0,NOT_FULLY_VERIFIED
+M1.11.03,M1.11,Evidence and supervisor observation,Skill approval/rejection/changes requested to correction and re-review,0,0,0,NOT_FULLY_VERIFIED
+M1.11.04,M1.11,Evidence and supervisor observation,Employment approval/rejection/changes requested to correction and re-review,0,0,0,NOT_FULLY_VERIFIED
+M1.11.05,M1.11,Evidence and supervisor observation,Multiple employment records; end exact employment without deleting history,1,0,1,NOT_FULLY_VERIFIED
+M1.11.06,M1.11,Evidence and supervisor observation,Leaving-letter replacement and preview bound to exact employment,1,0,1,NOT_FULLY_VERIFIED
+M1.11.07,M1.11,Evidence and supervisor observation,"Supervisor assignment, signed observation, Worker acknowledgement and independent review",0,0,0,NOT_FULLY_VERIFIED
+M1.11.08,M1.11,Evidence and supervisor observation,Inactive skill/history never falsely counted as current competency,0,0,0,NOT_FULLY_VERIFIED
+M1.12.01,M1.12,Public verification and concerns,Worker and credential lookup through safe opaque capabilities,0,0,0,NOT_FULLY_VERIFIED
+M1.12.02,M1.12,Public verification and concerns,"Missing, malformed, tampered and expired identifiers fail neutrally",0,0,0,NOT_FULLY_VERIFIED
+M1.12.03,M1.12,Public verification and concerns,Private identity/answers/reviewer notes absent from public response,0,0,0,NOT_FULLY_VERIFIED
+M1.12.04,M1.12,Public verification and concerns,"Concern form validation, evidence upload, staff intake and reasoned resolution",0,0,0,NOT_FULLY_VERIFIED
+M1.12.05,M1.12,Public verification and concerns,Abuse/rate limit and expired signed preview deny safely,0,0,0,NOT_FULLY_VERIFIED
+M2.01.01,M2.01,Assurance Orders and Cases,"Draft save/edit, add linked Workers, validate and submit",0,0,0,NOT_FULLY_VERIFIED
+M2.01.02,M2.01,Assurance Orders and Cases,Invalid/unlinked/ineligible Worker and missing funding explained,0,0,0,NOT_FULLY_VERIFIED
+M2.01.03,M2.01,Assurance Orders and Cases,Multi-worker cases created once with correct scope/site/deadline,0,0,0,NOT_FULLY_VERIFIED
+M2.01.04,M2.01,Assurance Orders and Cases,Duplicate submission and competing credit reservations stay idempotent,1,0,1,NOT_FULLY_VERIFIED
+M2.01.05,M2.01,Assurance Orders and Cases,Worker/company/mixed funding reaches assessment and final credential,0,0,0,NOT_FULLY_VERIFIED
+M2.01.06,M2.01,Assurance Orders and Cases,Changes requested and rejection propagate to Company and Worker,0,0,0,NOT_FULLY_VERIFIED
+M2.01.07,M2.01,Assurance Orders and Cases,"Draft/submitted cancellation preserves cases, payments and decisions",0,0,0,NOT_FULLY_VERIFIED
+M2.01.08,M2.01,Assurance Orders and Cases,Completed order readiness and reports derive from actual case outcomes,0,0,0,NOT_FULLY_VERIFIED
+M2.02.01,M2.02,Evidence review handoffs,All submitted evidence kinds queue with correct identity/source file context,0,0,0,NOT_FULLY_VERIFIED
+M2.02.02,M2.02,Evidence review handoffs,Claim/conflict/reassignment/finalization preserve source and history,0,0,0,NOT_FULLY_VERIFIED
+M2.02.03,M2.02,Evidence review handoffs,Approve/reject/changes/unable/escalate return exact next action to Worker/Company,0,0,0,NOT_FULLY_VERIFIED
+M2.02.04,M2.02,Evidence review handoffs,Correction resubmission supersedes stale open task but keeps terminal decisions,1,0,1,NOT_FULLY_VERIFIED
+M2.02.05,M2.02,Evidence review handoffs,Second review/calibration/scope/workload govern sensitive task access,0,0,0,NOT_FULLY_VERIFIED
+M2.03.01,M2.03,Frameworks and Effective Policy,Create versioned framework and publish policy,0,0,0,NOT_FULLY_VERIFIED
+M2.03.02,M2.03,Frameworks and Effective Policy,Weaker company override denied; valid override snapshotted,0,0,0,NOT_FULLY_VERIFIED
+M2.03.03,M2.03,Frameworks and Effective Policy,Case policy remains pinned after later publication,0,0,0,NOT_FULLY_VERIFIED
+M2.03.04,M2.03,Frameworks and Effective Policy,"Waiting period, attempt limits, jurisdiction and risk eligibility",0,0,0,NOT_FULLY_VERIFIED
+M2.03.05,M2.03,Frameworks and Effective Policy,Accommodation changes delivery without lowering score standards,0,0,0,NOT_FULLY_VERIFIED
+M2.03.06,M2.03,Frameworks and Effective Policy,Credential validity and renewal derive from pinned rule,0,0,0,NOT_FULLY_VERIFIED
+M2.04.01,M2.04,Question Bank,MCQ and written authoring validate answers/rubrics,0,0,0,NOT_FULLY_VERIFIED
+M2.04.02,M2.04,Question Bank,Draft/review/changes/approval/publication workflow,0,0,0,NOT_FULLY_VERIFIED
+M2.04.03,M2.04,Question Bank,Published revision preserves exact old question and rubric,0,0,0,NOT_FULLY_VERIFIED
+M2.04.04,M2.04,Question Bank,"Pause/retire/archive excludes future forms, preserves prior attempts",0,0,0,NOT_FULLY_VERIFIED
+M2.04.05,M2.04,Question Bank,Bulk import reports invalid rows without partial corruption,0,0,0,NOT_FULLY_VERIFIED
+M2.04.06,M2.04,Question Bank,Capacity metrics update after publication/exposure,0,0,0,NOT_FULLY_VERIFIED
+M2.05.01,M2.05,Randomized forms and exposure,"Unseen randomized blueprint-equivalent MCQ-only, written-only and combined forms",1,0,1,NOT_FULLY_VERIFIED
+M2.05.02,M2.05,Randomized forms and exposure,"Permanent non-repetition across exit, device change, retake and company change",1,0,1,NOT_FULLY_VERIFIED
+M2.05.03,M2.05,Randomized forms and exposure,Exposure families and displayed unanswered questions excluded,3,0,3,NOT_FULLY_VERIFIED
+M2.05.04,M2.05,Randomized forms and exposure,Insufficient unseen capacity blocks cleanly without entitlement corruption,1,0,1,NOT_FULLY_VERIFIED
+M2.05.05,M2.05,Randomized forms and exposure,Option order and question versions pinned across refresh,0,0,0,NOT_FULLY_VERIFIED
+M2.05.06,M2.05,Randomized forms and exposure,"Future questions, answer keys and rubrics absent from candidate payload",0,0,0,NOT_FULLY_VERIFIED
+M2.06.01,M2.06,"Eligibility, applications and funding",Verified/unverified qualification eligibility and unavailable reasons,0,0,0,NOT_FULLY_VERIFIED
+M2.06.02,M2.06,"Eligibility, applications and funding","Self sandbox payment to funded case, safe duplicate confirmation",0,0,0,NOT_FULLY_VERIFIED
+M2.06.03,M2.06,"Eligibility, applications and funding","Company request approved, rejected and retried/self-funded",0,0,0,NOT_FULLY_VERIFIED
+M2.06.04,M2.06,"Eligibility, applications and funding",Insufficient credits to checkout/capture to approved assessment,0,0,0,NOT_FULLY_VERIFIED
+M2.06.05,M2.06,"Eligibility, applications and funding",Link revoked before approval prevents funding and case creation,0,0,0,NOT_FULLY_VERIFIED
+M2.06.06,M2.06,"Eligibility, applications and funding",Waiting/attempt limits/current credential/reassessment affect availability,0,0,0,NOT_FULLY_VERIFIED
+M2.06.07,M2.06,"Eligibility, applications and funding",Fresh reapplication after terminal case preserves earlier records,0,0,0,NOT_FULLY_VERIFIED
+M2.07.01,M2.07,Assessment delivery,Browser/device/media/consent prechecks deny or allow truthfully,0,0,0,NOT_FULLY_VERIFIED
+M2.07.02,M2.07,Assessment delivery,"Strict progression: required answer, confirmed save, no backtracking",0,0,0,NOT_FULLY_VERIFIED
+M2.07.03,M2.07,Assessment delivery,"Controlled Review: prior answer revisit, flag and versioned change",0,0,0,NOT_FULLY_VERIFIED
+M2.07.04,M2.07,Assessment delivery,Section Review: within-section navigation and final section lock,0,0,0,NOT_FULLY_VERIFIED
+M2.07.05,M2.07,Assessment delivery,Timer expiry/auto-submit and no duplicate final outcomes,0,0,0,NOT_FULLY_VERIFIED
+M2.07.06,M2.07,Assessment delivery,Technical issue and Emergency Exit never trap candidate,0,0,0,NOT_FULLY_VERIFIED
+M2.07.07,M2.07,Assessment delivery,Successful MCQ/written completion reaches human review,0,0,0,NOT_FULLY_VERIFIED
+M2.08.01,M2.08,Interruption and recovery,Ordinary save/exit/resume preserves committed answer,0,0,0,NOT_FULLY_VERIFIED
+M2.08.02,M2.08,Interruption and recovery,Offline MCQ and written buffer/reconnect persist latest permitted answer,0,0,0,NOT_FULLY_VERIFIED
+M2.08.03,M2.08,Interruption and recovery,Refresh/navigation/crash preserve answer and authoritative timer,0,0,0,NOT_FULLY_VERIFIED
+M2.08.04,M2.08,Interruption and recovery,Second device/session cannot mutate active bound attempt,0,0,0,NOT_FULLY_VERIFIED
+M2.08.05,M2.08,Interruption and recovery,Emergency Exit to recovery request to Verifier allow-resume,0,0,0,NOT_FULLY_VERIFIED
+M2.08.06,M2.08,Interruption and recovery,Emergency Exit to approved replacement to unseen form and completed case,0,0,0,NOT_FULLY_VERIFIED
+M2.08.07,M2.08,Interruption and recovery,Exposure and original attempt/answers retained after replacement,0,0,0,NOT_FULLY_VERIFIED
+M2.08.08,M2.08,Interruption and recovery,Lost/repeated submit response returns same receipt,0,0,0,NOT_FULLY_VERIFIED
+M2.09.01,M2.09,Integrity,Green/Yellow/Red signals reach correct human queue without automatic guilt,0,0,0,NOT_FULLY_VERIFIED
+M2.09.02,M2.09,Integrity,Fullscreen/tab/paste/network/device events preserve authoritative timeline,0,0,0,NOT_FULLY_VERIFIED
+M2.09.03,M2.09,Integrity,"Media/liveness failure is degraded evidence, never clean integrity",0,0,0,NOT_FULLY_VERIFIED
+M2.09.04,M2.09,Integrity,Human review pass/additional evidence/fail reaches case decision,0,0,0,NOT_FULLY_VERIFIED
+M2.09.05,M2.09,Integrity,Accommodation privacy and controls survive monitoring,0,0,0,NOT_FULLY_VERIFIED
+M2.10.01,M2.10,Written scoring and review,Candidate answer/version/rubric displayed only to authorized reviewer,0,0,0,NOT_FULLY_VERIFIED
+M2.10.02,M2.10,Written scoring and review,"Criterion marks save, finalize and amendment preserve originals",0,0,0,NOT_FULLY_VERIFIED
+M2.10.03,M2.10,Written scoring and review,PASS/FAIL/ADDITIONAL_REVIEW flows reach correct next owner,0,0,0,NOT_FULLY_VERIFIED
+M2.10.04,M2.10,Written scoring and review,"Claim race, stale source, conflict declaration and reassignment",0,0,0,NOT_FULLY_VERIFIED
+M2.10.05,M2.10,Written scoring and review,Expired/failed calibration blocks live tasks,2,0,1,NOT_FULLY_VERIFIED
+M2.10.06,M2.10,Written scoring and review,AI available/unavailable advisory never overrides human outcome,0,0,0,NOT_FULLY_VERIFIED
+M2.10.07,M2.10,Written scoring and review,"Unable-to-verify, escalation and draft notes remain reasoned and auditable",1,0,1,NOT_FULLY_VERIFIED
+M2.11.01,M2.11,Interview scheduling,Scope/calibration/language/workload match and assignment,2,0,2,NOT_FULLY_VERIFIED
+M2.11.02,M2.11,Interview scheduling,Worker availability selection and timezone-safe scheduling,0,0,0,NOT_FULLY_VERIFIED
+M2.11.03,M2.11,Interview scheduling,Reschedule with reason and downstream notification/deep link,0,0,0,NOT_FULLY_VERIFIED
+M2.11.04,M2.11,Interview scheduling,Assessor conflict to reassignment without disclosure,2,0,2,NOT_FULLY_VERIFIED
+M2.11.05,M2.11,Interview scheduling,No-show/late/technical failure to review/reschedule,1,0,1,NOT_FULLY_VERIFIED
+M2.11.06,M2.11,Interview scheduling,Outside-window/unready/unassigned Worker cannot join,2,0,2,NOT_FULLY_VERIFIED
+M2.12.01,M2.12,Interview console,Consent/readiness to claim/admit/start with live case context,0,0,0,NOT_FULLY_VERIFIED
+M2.12.02,M2.12,Interview console,Mandatory/playbook/follow-up questions retained with versions,2,0,2,NOT_FULLY_VERIFIED
+M2.12.03,M2.12,Interview console,"Draft scores/notes survive tabs, refresh and media reconnect",2,0,2,NOT_FULLY_VERIFIED
+M2.12.04,M2.12,Interview console,Pause/resume/technical issue/reconnect/reschedule preserve evidence,2,0,2,NOT_FULLY_VERIFIED
+M2.12.05,M2.12,Interview console,Missing scorecard/recommendation cannot finalize,2,0,2,NOT_FULLY_VERIFIED
+M2.12.06,M2.12,Interview console,"Each recommendation: Pass, Conditional, Evidence, Reassessment, Second Interview, Fail",0,0,0,NOT_FULLY_VERIFIED
+M2.12.07,M2.12,Interview console,"Final recommendation locks, stops media and advances actual case",2,0,2,NOT_FULLY_VERIFIED
+M2.12.08,M2.12,Interview console,Recording policy/jurisdiction/withdrawal stays truthful and scoped,5,0,5,NOT_FULLY_VERIFIED
+M2.13.01,M2.13,Decisions,Approved and Conditional issuance require completed inputs,2,0,2,NOT_FULLY_VERIFIED
+M2.13.02,M2.13,Decisions,"Pending Review, Additional Evidence and Interview Pending route next responsible actor",3,0,3,NOT_FULLY_VERIFIED
+M2.13.03,M2.13,Decisions,Rejected and Reassessment Required route permitted correction/appeal,0,0,0,NOT_FULLY_VERIFIED
+M2.13.04,M2.13,Decisions,"Suspended, Revoked and Expired synchronize current downstream status",0,0,0,NOT_FULLY_VERIFIED
+M2.13.05,M2.13,Decisions,"Privileged override: recent MFA, reason, evidence and preserved original",0,0,0,NOT_FULLY_VERIFIED
+M2.13.06,M2.13,Decisions,Repeated/unauthorized/stale decision or issuance denied,0,0,0,NOT_FULLY_VERIFIED
+M2.13.07,M2.13,Decisions,"Company, Worker, public, share and certification display agree",0,0,0,NOT_FULLY_VERIFIED
+M3.01.01,M3.01,Credentials,Signed credential/QR/PDF issuance derives policy issue/expiry,0,0,0,NOT_FULLY_VERIFIED
+M3.01.02,M3.01,Credentials,Download/copy/view credential and live public status,0,0,0,NOT_FULLY_VERIFIED
+M3.01.03,M3.01,Credentials,Conditional/expired/suspended/revoked display across page/API/PDF,0,0,0,NOT_FULLY_VERIFIED
+M3.01.04,M3.01,Credentials,Duplicate issuance returns original; replacement retains old credential,0,0,0,NOT_FULLY_VERIFIED
+M3.01.05,M3.01,Credentials,Public credential contains permitted display facts and disclaimer,0,0,0,NOT_FULLY_VERIFIED
+M3.02.01,M3.02,Passport and Living Record,Verified qualification vs competency assessment clearly distinct,0,0,0,NOT_FULLY_VERIFIED
+M3.02.02,M3.02,Passport and Living Record,Restrictions/conditions/status/expiry and previous versions displayed,0,0,0,NOT_FULLY_VERIFIED
+M3.02.03,M3.02,Passport and Living Record,Suspension/revocation/reassessment retain original history,0,0,0,NOT_FULLY_VERIFIED
+M3.02.04,M3.02,Passport and Living Record,Renewal/replacement updates current credential without erasing former,0,0,0,NOT_FULLY_VERIFIED
+M3.02.05,M3.02,Passport and Living Record,Company changes never remove permanent identity/exposure,0,0,0,NOT_FULLY_VERIFIED
+M3.03.01,M3.03,Scoped sharing,Each approved field selection matches actual recipient output,0,0,0,NOT_FULLY_VERIFIED
+M3.03.02,M3.03,Scoped sharing,Scope never reveals unselected/private fields or other employers,0,0,0,NOT_FULLY_VERIFIED
+M3.03.03,M3.03,Scoped sharing,Purpose/recipient/expiry preserved; access logged,0,0,0,NOT_FULLY_VERIFIED
+M3.03.04,M3.03,Scoped sharing,Revoke or expire link denies previously working recipient access,0,0,0,NOT_FULLY_VERIFIED
+M3.03.05,M3.03,Scoped sharing,Tampered token and enumeration attempt fail neutrally,0,0,0,NOT_FULLY_VERIFIED
+M3.04.01,M3.04,Company Action Centre and directory,Search/filter/pagination show only authorized workforce,0,0,0,NOT_FULLY_VERIFIED
+M3.04.02,M3.04,Company Action Centre and directory,Placement/update/end relationship actions synchronize Worker and Company,0,0,0,NOT_FULLY_VERIFIED
+M3.04.03,M3.04,Company Action Centre and directory,Case funding/evidence/assessment/interview/decision feeds next exact action,0,0,0,NOT_FULLY_VERIFIED
+M3.04.04,M3.04,Company Action Centre and directory,Assign owner/snooze/acknowledge source deep links without false completion,0,0,0,NOT_FULLY_VERIFIED
+M3.04.05,M3.04,Company Action Centre and directory,Readiness/gaps/expiry totals reflect real live credential state,0,0,0,NOT_FULLY_VERIFIED
+M3.05.01,M3.05,Billing,"Sandbox checkout, capture, credit allocation and duplicate capture",0,0,0,NOT_FULLY_VERIFIED
+M3.05.02,M3.05,Billing,Funding approval/rejection and concurrent overspend prevention,0,0,0,NOT_FULLY_VERIFIED
+M3.05.03,M3.05,Billing,Invoice/receipt/usage scoped to right Company,0,0,0,NOT_FULLY_VERIFIED
+M3.05.04,M3.05,Billing,Partial/full refund and reconciliation preserve immutable money history,0,0,0,NOT_FULLY_VERIFIED
+M3.05.05,M3.05,Billing,Subscription/enterprise invoice/payment unavailable states truthful,0,0,0,NOT_FULLY_VERIFIED
+M3.05.06,M3.05,Billing,Signed webhook/replay/forgery cannot grant duplicate or unpaid entitlement,0,0,0,NOT_FULLY_VERIFIED
+M3.06.01,M3.06,Reports,Worker identity/qualification/assessment/interview/credential/history reports,0,0,0,NOT_FULLY_VERIFIED
+M3.06.02,M3.06,Reports,Company workforce/readiness/gaps/expiry/completion/failed/billing reports,0,0,0,NOT_FULLY_VERIFIED
+M3.06.03,M3.06,Reports,Preview/PDF/CSV/print/download respect filters and permissions,0,0,0,NOT_FULLY_VERIFIED
+M3.06.04,M3.06,Reports,Queue/process/complete/fail/retry produces genuine report file,0,0,0,NOT_FULLY_VERIFIED
+M3.06.05,M3.06,Reports,Email/saved definition/schedule triggers authorized delivery,0,0,0,NOT_FULLY_VERIFIED
+M3.06.06,M3.06,Reports,Cross-tenant/report/path/CSV-formula manipulation denied,0,0,0,NOT_FULLY_VERIFIED
+M3.07.01,M3.07,Appeals and continuing assurance,Eligible/ineligible/duplicate appeal and evidence validation,0,0,0,NOT_FULLY_VERIFIED
+M3.07.02,M3.07,Appeals and continuing assurance,Independent claim/review cannot be original conflicted decision maker,0,0,0,NOT_FULLY_VERIFIED
+M3.07.03,M3.07,Appeals and continuing assurance,Accepted/rejected/further-evidence/further-interview reasoned outcomes,0,0,0,NOT_FULLY_VERIFIED
+M3.07.04,M3.07,Appeals and continuing assurance,Appeal changes synchronize credential/Living Record and Company/public,0,0,0,NOT_FULLY_VERIFIED
+M3.07.05,M3.07,Appeals and continuing assurance,Complete reassessment through new assessment/interview/replacement credential,0,0,0,NOT_FULLY_VERIFIED
+M3.07.06,M3.07,Appeals and continuing assurance,"Renewal/reverification respects rules, waiting and permanent exposure",0,0,0,NOT_FULLY_VERIFIED
+M3.08.01,M3.08,Operational administration,Worker/company/staff search and scoped management,0,0,0,NOT_FULLY_VERIFIED
+M3.08.02,M3.08,Operational administration,Question/policy/catalogue/calibration administration persists,0,0,0,NOT_FULLY_VERIFIED
+M3.08.03,M3.08,Operational administration,Assignments/decisions/appeals/billing/notifications operations,0,0,0,NOT_FULLY_VERIFIED
+M3.08.04,M3.08,Operational administration,Case Replay reconstructs exact versions without changing source,0,0,0,NOT_FULLY_VERIFIED
+M3.08.05,M3.08,Operational administration,Integrations/health/queue retry cannot falsely mark live delivery,0,0,0,NOT_FULLY_VERIFIED
+M3.08.06,M3.08,Operational administration,Root invitation/permissions/MFA/recovery remain separate from routine case work,0,0,0,NOT_FULLY_VERIFIED
+M3.09.01,M3.09,Privacy and accessibility,Each privacy request kind reaches staff intake and reasoned completion,0,0,0,NOT_FULLY_VERIFIED
+M3.09.02,M3.09,Privacy and accessibility,Restriction/withdrawal/revocation has operative future-sharing effect,0,0,0,NOT_FULLY_VERIFIED
+M3.09.03,M3.09,Privacy and accessibility,Accommodation approved/rejected with reason and Worker outcome,0,0,0,NOT_FULLY_VERIFIED
+M3.09.04,M3.09,Privacy and accessibility,Approved adjustment reaches actual assessment/interview delivery,0,0,0,NOT_FULLY_VERIFIED
+M3.09.05,M3.09,Privacy and accessibility,Consent grant/withdraw history remains versioned and need-to-know,0,0,0,NOT_FULLY_VERIFIED
+M3.09.06,M3.09,Privacy and accessibility,"Keyboard, responsive layouts, inline errors and screen-reader labels",0,0,0,NOT_FULLY_VERIFIED
+M3.09.07,M3.09,Privacy and accessibility,Retention/holds preserve lawful history and appeals,0,0,0,NOT_FULLY_VERIFIED
+M3.10.01,M3.10,Production adapters,Email/SMS sandbox/outage/retry and live delivery accurately distinguished,0,0,0,NOT_FULLY_VERIFIED
+M3.10.02,M3.10,Production adapters,Payment forgery/failure never creates paid entitlement,0,0,0,NOT_FULLY_VERIFIED
+M3.10.03,M3.10,Production adapters,Built-in media handshake/reconnect and optional TURN/provider failure,0,0,0,NOT_FULLY_VERIFIED
+M3.10.04,M3.10,Production adapters,Liveness/scan/storage failure remains safely pending,0,0,0,NOT_FULLY_VERIFIED
+M3.10.05,M3.10,Production adapters,Provider health/credentials/webhook/circuit-breaker state accurate,0,0,0,NOT_FULLY_VERIFIED
+M3.11.01,M3.11,Certification,Concurrent registration/save/claim/submit/payment/issuance isolation,0,0,0,NOT_FULLY_VERIFIED
+M3.11.02,M3.11,Certification,Cross-worker/tenant/role/direct-endpoint adversarial journeys,0,0,0,NOT_FULLY_VERIFIED
+M3.11.03,M3.11,Certification,Malicious file/input/XSS/CSRF/signed-token abuse denied,0,0,0,NOT_FULLY_VERIFIED
+M3.11.04,M3.11,Certification,Authorized physical database/object restore and incident recovery,0,0,0,NOT_FULLY_VERIFIED
+M3.11.05,M3.11,Certification,Baseline latency/load does not lose active answers or handoffs,0,0,0,NOT_FULLY_VERIFIED
+M3.12.01,M3.12,Launch and operations,Candidate build/start/migrations/health correspond to exact SHA,0,0,0,NOT_FULLY_VERIFIED
+M3.12.02,M3.12,Launch and operations,Monitoring/alerts/support/rollback runbooks match executable operations,0,0,0,NOT_FULLY_VERIFIED
+M3.12.03,M3.12,Launch and operations,Production provider disabled/sandbox or genuinely activated,0,0,0,NOT_FULLY_VERIFIED
+M3.12.04,M3.12,Launch and operations,Backup/incident/rollback preserves active consumer cases,0,0,0,NOT_FULLY_VERIFIED
