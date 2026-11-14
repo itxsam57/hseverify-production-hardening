@@ -50,7 +50,9 @@ async function verifyCurrentPassword(
 ): Promise<void> {
   const environment = getServerEnvironment();
   const result = await database.query<{ password_hash: string | null }>(
-    "SELECT password_hash FROM auth_accounts WHERE account_id=$1 AND account_status='active'",
+    // Hold the verified credential version through the security transaction.
+    // NO KEY UPDATE permits concurrent audit foreign-key KEY SHARE reads.
+    "SELECT password_hash FROM auth_accounts WHERE account_id=$1 AND account_status='active' FOR NO KEY UPDATE",
     [accountId]
   );
   const stored = result.rows[0]?.password_hash;

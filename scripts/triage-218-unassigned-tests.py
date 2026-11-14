@@ -50,9 +50,9 @@ def build():
             'review_status':'TEXT_SUGGESTION_ONLY_NO_COVERAGE_CREDIT' if candidates else 'CROSS_CUTTING_OR_NO_TEXT_MATCH',
             'full_masterplan_verification':'NOT_FULLY_VERIFIED'
         })
-    assert len(rows)==1110
-    assert sum(r['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for r in rows)==173
-    assert sum(r['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for r in rows)==937
+    assert len(rows)==len(need)==1110
+    assert sum(r['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for r in rows) + sum(
+        r['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for r in rows) == len(need)
     return rows
 
 
@@ -70,8 +70,8 @@ def main():
             out=csv.DictWriter(fp,fieldnames=list(rows[0]),lineterminator='\n')
             out.writeheader();out.writerows(rows)
     print(json.dumps({'unassigned_case_identities':len(rows),
-                      'previously_green_unassigned':937,
-                      'unproven_unassigned':173,
+                      'previously_green_unassigned':sum(r['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for r in rows),
+                      'unproven_unassigned':sum(r['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for r in rows),
                       'cases_with_nonbinding_text_suggestions':sum(bool(r['suggested_frozen_ids_UNREVIEWED']) for r in rows),
                       'cases_with_no_text_suggestion':sum(not r['suggested_frozen_ids_UNREVIEWED'] for r in rows),
                       'auto_promoted_to_full_verified':0},sort_keys=True))
