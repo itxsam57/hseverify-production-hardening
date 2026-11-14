@@ -5,22 +5,17 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.02.03",
-  "current_focus_phase": "LOCAL_REAL_PG16_RECOVERY_GREEN_NEEDS_SIGNED_QA_CI_AND_REMAINING_ROLE_ERRORS",
-  "last_completed_action": "Signed QA parent daed51f21 31/31 workflows SUCCESS. Newly reproduced M1.02.03 Worker Dashboard error boundary reset after real PG16 online restore; root fixed Next16 retry in Worker Dashboard/global, plus 8 adjacent error wrappers. Same actual Chromium journey 1/1 GREEN on isolated PG16 unchanged running Next; Native adjacent 8/8, Next config 4/4, typecheck PASS, lint 0 errors. Historical 218/4975 unchanged.",
-  "next_exact_action": "Guarded PR, exact head real PG16 Chromium and 4975 integrity CI, signed two-parent merge and 31+ merged-SHA checks; then browser-test restored-backend retry across Worker Profile, Company tenant-scope and each role notifications; do not repeat M1.02.03 prior passes.",
-  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10203-recovery-after-restore-20261114 --state all --json number,state,headRefOid,mergeCommit",
+  "current_focus_phase": "KNOWN_RED_QA_MERGE_THREE_INLINE_SEED_FIX_CI_PENDING",
+  "last_completed_action": "PR102 signed QA 8fd8bcab 29/32 workflows green; 3 failed due static import of scripts/lib/database.mjs from inline evaluated synthetic seed; dynamic import PG-only fix tested 11/11 native Company reports; real Worker/Company PG16 recovery remains green at PR head but new merged-SHA candidate not fully CI-cleared.",
+  "next_exact_action": "Guarded PR dynamic import seed fixture fix; verify three previously red workflows and full signed QA merged SHA CI; continue M1.02.03 Worker Profile/Company tenant/notifications recovery only after known RED repaired.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10203-inline-audit-seed-fix-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
       "scenario_id": "M1.02.03",
-      "problem": "Next16 reset did not re-fetch server error boundary after actual isolated PostgreSQL16 online table restore",
-      "result": "ROOT_FIXED_LOCAL_WORKER_AND_COMPANY_CHROMIUM_1_OF_1_PASS_PENDING_EXACT_SIGNED_CI"
-    },
-    {
-      "scenario_id": "M1.02.03",
-      "problem": "Original offline PGlite restart invalidated live Retry testing by automatic browser reload",
-      "result": "INVALID_HARNESS_REPLACED_WITH_SAFE_CONCURRENT_DISPOSABLE_POSTGRES_16"
+      "problem": "3 signed QA workflows red from common inline seed static relative module import, affects Worker registration and Company BOLA fixtures",
+      "result": "ROOT_FIXED_DYNAMIC_PG_ONLY_LOCAL_11_OF_11_NATIVE_PASS_PENDING_GITHUB_CI"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
