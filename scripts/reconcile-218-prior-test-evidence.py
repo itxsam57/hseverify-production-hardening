@@ -176,6 +176,16 @@ def build(root: Path, ci: dict, scan_historical: bool = True) -> dict:
     ids = {x["id"] for x in frozen}
     catalog_rows, title_map = source_catalog(root, ids)
     hints = linked_files(root, ids)
+    # An already reviewed case-to-frozen-ID association is durable evidence.
+    # New reports must not silently add/remove old links as their filenames
+    # change; only source-new case identities use fresh unreviewed hints.
+    preserved_path = root / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"
+    preserved = {}
+    if preserved_path.exists():
+        old_index = json.loads(preserved_path.read_text())
+        if old_index.get("frozen_scenarios") != 218:
+            raise ValueError("Cannot reuse associations from an invalid prior 218 index")
+        preserved = {row["case_id"]: row for row in old_index["cases"]}
     logs, trees = historical_worktree_logs(root) if scan_historical else ([], 0)
     old, past_counts = extract_historical(title_map, logs)
     exact, ci_counts = current_ci_matches(title_map, ci)
@@ -196,6 +206,12 @@ def build(root: Path, ci: dict, scan_historical: bool = True) -> dict:
                 method = "single_scenario_historical_report_link"
             elif len(candidates) > 1:
                 method = "ambiguous_multiple_report_links"
+        original = preserved.get(case["case_id"])
+        if original and (original["file"], original["title"]) == (case["file"], case["title"]):
+            if any(sid not in ids for sid in original["scenario_ids"]):
+                raise ValueError("Existing test association references an unfrozen scenario")
+            association = original["scenario_ids"]
+            method = original["scenario_link_kind"]
         expanded = {
             **case, "scenario_ids": association, "scenario_link_kind": method,
             "test_execution": state,

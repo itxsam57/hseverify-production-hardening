@@ -44,7 +44,7 @@ class VerticalProtocolTest(unittest.TestCase):
     def test_all_owner_counts_in_one_machine_scoreboard(self):
         p=self.report
         for field,want in [('fully_verified',0),('scenarios_total',218),('scenarios_remaining',218),
-                           ('scoped_historical_green_source_cases',1392),('scoped_historical_source_cases_total',1566),
+                           ('scoped_historical_green_source_cases',1393),('scoped_historical_source_cases_total',1567),
                            ('source_cases_without_matched_green',174),('old_scoped_ids_not_full',216),
                            ('planned_old_partial_links_not_passed',693),('planned_uncertain_links',54),
                            ('planned_without_precise_old_link',4228),('planned_check_slots_total',4975),

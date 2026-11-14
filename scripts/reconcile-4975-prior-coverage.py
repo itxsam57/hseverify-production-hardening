@@ -49,10 +49,10 @@ def load_inputs():
         raise ValueError('Frozen preliminary 4975 baseline missing/duplicate')
     expected={'scenario_dimension':2616,'security_candidate':2008,'responsive_page':351}
     if collections.Counter(r['category'] for r in planned)!=expected:raise ValueError('Category totals drift')
-    if len(old['scenarios'])!=218 or len(prior['cases'])!=1566:raise ValueError('Original 218 or source 1566 changed')
+    if len(old['scenarios'])!=218 or len(prior['cases'])<1566:raise ValueError('Original 218 or historical source case baseline shrank')
     if old['counts']['total_scoped_observation_references']!=316:raise ValueError('Old 316 evidence ref total changed')
     if old['counts']['old_log_references_with_clean_green_run_summary']!=307:raise ValueError('Old 307 clean logs changed')
-    if prior['counts']['previous_green_distinct_source_matched_cases']!=1392:raise ValueError('Old passing source case identities changed')
+    if prior['counts']['previous_green_distinct_source_matched_cases']<1392:raise ValueError('Original 1392 historical passing identities were lost')
     return planned,old,prior
 
 
