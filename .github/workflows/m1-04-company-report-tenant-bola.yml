@@ -49,6 +49,17 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Install real Chromium without Ubuntu apt DNS dependency
         run: npx playwright install chromium
+      - name: Verify PDF parser prerequisite remains mandatory
+        run: node --test tests/engineering/m10402-report-pdf-ci-runtime.test.mjs
+      - name: Ensure real PDF artifact parser is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends poppler-utils
+          fi
+          pdftotext -v
       - name: Real generated CSV PDF print owner versus independent Company stolen report URLs
         shell: bash
         run: |
