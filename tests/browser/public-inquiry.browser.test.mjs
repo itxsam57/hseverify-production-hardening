@@ -104,7 +104,32 @@ test("Public contact/demo reaches private staff intake with preserved drafts on 
     assert.equal(await publicPage.getByLabel("How can we help?",{exact:true}).inputValue(),"short");
     const xssText="Please explain the available assurance workflow. <img src=x onerror=window.__hseInquiryXss=1>"; // hse-xss-test-msg
     await publicPage.getByLabel("How can we help?",{exact:true}).fill(xssText);
-    await publicPage.getByRole("button",{name:"Send message",exact:true}).click();
+    // M10203_PENDING_POST_GATE: hold the genuine server-action POST while the
+    // browser renders its pending state. The existing full Admin/Root+DB journey
+    // below must still receive exactly one inquiry and one immutable audit event.
+    let releasePendingPost, signalHeldPost;
+    const pendingPostGate=new Promise(resolve=>{releasePendingPost=resolve;});
+    const heldPost=new Promise(resolve=>{signalHeldPost=resolve;});
+    let intercepted=false;
+    await publicPage.route("**/contact",async route=>{
+     if(!intercepted&&route.request().method()==="POST"){
+      intercepted=true;
+      signalHeldPost();
+      await pendingPostGate;
+     }
+     await route.continue();
+    });
+    const submitAttempt=publicPage.getByRole("button",{name:"Send message",exact:true}).click({noWaitAfter:true});
+    try{
+     await Promise.race([heldPost, new Promise((_,reject)=>setTimeout(()=>reject(new Error("Timed out intercepting live POST")),15000))]);
+     const waiting=publicPage.getByRole("button",{name:"Submitting…",exact:true});
+     await waiting.waitFor({state:"visible",timeout:15000});
+     assert.equal(await waiting.isDisabled(),true,"A held POST must disable duplicate form submits");
+     assert.equal(await publicPage.getByLabel("Your name",{exact:true}).inputValue(),"Contact browser person");
+     assert.equal(await publicPage.getByLabel("How can we help?",{exact:true}).inputValue(),xssText);
+    }finally{releasePendingPost();}
+    await submitAttempt;
+    await publicPage.unroute("**/contact");
     await publicPage.getByText("Your request was received for staff follow-up. Keep this reference.",{exact:true}).waitFor();
     await publicPage.getByText("Request reference:",{exact:true}).waitFor();
     await publicPage.goto(baseUrl);
