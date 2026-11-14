@@ -4,18 +4,18 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.03.03",
-  "current_focus_phase": "TRUE_TWO_BROWSER_CONCURRENT_DUPLICATE_DENIED_GREEN_PR_PENDING",
-  "last_completed_action": "PR107 signed QA 25e895a7 31/31. Existing Worker duplicate Chrome case expanded with two independent 320/390 real browser POSTs released together; both denied, no account/identity/evidence/flow changed, five total denied contact audit events; original OTP recovery/revoked session/replay still pass. Local Chromium 1/1 PASS 63s.",
-  "next_exact_action": "Commit/push governed M1.03.03 scoped browser evidence and verify exact PR-head+signed QA 31+ CI; next inspect M1.03.04 prior source cases and first new missing check. M1.03.02 real provider BLOCKED_EXTERNAL.",
-  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10303-concurrent-duplicate-20261114 --state all --json number,state,headRefOid,mergeCommit",
+  "current_focus_scenario_id": "M1.03.04",
+  "current_focus_phase": "COMPANY_SIGNUP_REAL_PENDING_ONLY_ONE_SUBMISSION_CHROME_GREEN_PR_PENDING",
+  "last_completed_action": "PR108 signed QA aec89b92 31/31. M1.03.04 existing Chrome signup case expanded 320 in-flight actual accepted POST: pending disabled, second click refused, exactly one account flow tenant owner membership, original OTP exhaustion/resend/MFA/denial/role security passes; 1/1 real Chromium PASS 106.8s, M10304_COMPANY_REAL_PENDING_BROWSER.log. No product changes.",
+  "next_exact_action": "Guarded PR exact Chrome Company signup and original 218/4975 CI, signed two-parent QA merge and all merged SHA workflows; next M1.03.05 old staff invitation evidence review and first missing role-bound action, M1.03.02 real provider externally blocked.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10304-company-signup-pending-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.03.03",
-      "problem": "Prior duplicate Worker cases tested sequential contact conflict but not simultaneous independent browsers",
-      "result": "OLD_COVERAGE_GAP_REAL_CHROMIUM_1_OF_1_PASS_FIVE_DENIAL_EVENTS_ORIGINAL_DB_UNCHANGED"
+      "scenario_id": "M1.03.04",
+      "problem": "Existing Company OTP/MFA registration browser never asserted delayed accepted Server Action pending duplicate-click control",
+      "result": "OLD_SCOPE_GAP_REAL_320_CHROMIUM_1_OF_1_PASS_ONE_ACCOUNT_TENANT_OWNER_FLOW"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
