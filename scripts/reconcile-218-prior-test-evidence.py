@@ -342,7 +342,7 @@ def main() -> None:
                           "full_verified":0},sort_keys=True))
         return
     ci = json.loads((ROOT / args.ci_evidence).read_text())
-    if ci["github_workflows_successful"] != 29 or ci["github_workflows_log_read"] != 29:
+    if ci["github_workflows_successful"] != 30 or ci["github_workflows_log_read"] != 30:
         raise ValueError("Exact baseline CI snapshot incomplete; no substituted passing jobs")
     result = build(ROOT, ci)
     out = ROOT / args.out_json

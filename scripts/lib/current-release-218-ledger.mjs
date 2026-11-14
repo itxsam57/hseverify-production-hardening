@@ -117,7 +117,81 @@ function reconcilePriorTestExecution({ prior, frozenScenarios, commitSha }) {
   };
 }
 
-export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, generatedAt = new Date().toISOString() }) {
+function reconcileLegacy216ScopedEvidence({ legacy, scenarios, prior }) {
+  if (!legacy) return null;
+  assert.equal(legacy.report_type, "LEGACY_A28_HISTORICAL_SCOPED_EVIDENCE_NOT_RELEASE_CERTIFICATION");
+  assert.equal(legacy.historical_a28_source_sha, "eb77b70f6584c76169e7d6b849b88e25ae666696");
+  assert.equal(legacy.frozen_scenarios, 218);
+  assert.equal(legacy.counts.scenarios_with_any_historical_scoped_observation, 216);
+  assert.equal(legacy.counts.total_scoped_observation_references, 316);
+  assert.equal(legacy.counts.old_log_references_with_clean_green_run_summary, 307);
+  assert.equal(legacy.counts.old_log_references_mixed_or_missing_clean_run_summary, 9);
+  assert.equal(legacy.counts.historical_claimed_scenarios_without_any_observation, 2);
+  assert(Array.isArray(legacy.scenarios) && legacy.scenarios.length === 218,
+    "Every frozen scenario must be present in legacy scoped coverage");
+  if (prior) {
+    const validCases = new Set(prior.cases.map(item => item.case_id));
+    for (const row of legacy.scenarios) {
+      for (const cid of row.candidate_case_ids_from_old_logs_NOT_COVERAGE_CERTIFICATION ?? []) {
+        assert(validCases.has(cid), "Old scenario candidate refers to missing current test identity");
+      }
+    }
+  }
+  const byId = new Map(legacy.scenarios.map(row => [row.id, row]));
+  assert.equal(byId.size, 218, "Duplicate legacy scoped scenario");
+  let refs = 0;
+  let clean = 0;
+  let claimed = 0;
+  const candidateCases = new Set();
+  for (const scenario of scenarios) {
+    const row = byId.get(scenario.id);
+    assert(row && row.legacy_a28_reconciliation_result === "NOT_CERTIFIED",
+      "Legacy scenario missing or wrongly promoted");
+    const observations = row.old_scoped_evidence;
+    assert(Array.isArray(observations));
+    assert.equal(row.previous_216_scoped_observation_present, observations.length > 0);
+    refs += observations.length;
+    claimed += observations.length > 0 ? 1 : 0;
+    for (const item of observations) {
+      assert.match(item.legacy_log_sha256 ?? "", /^[a-f0-9]{64}$/,
+        "Old scoped log missing actual recorded SHA256");
+      assert.match(item.legacy_source_sha ?? "", /^[a-f0-9]{40}$/,
+        "Old scoped log missing source SHA");
+      assert(item.log_evidence_status === "CLEAN_OLD_TEST_LOG" ||
+        item.log_evidence_status === "MIXED_OR_NO_CLEAN_SUMMARY",
+        "Unknown old log evidence state");
+      if (item.log_evidence_status === "CLEAN_OLD_TEST_LOG") clean++;
+    }
+    for (const id of row.candidate_case_ids_from_old_logs_NOT_COVERAGE_CERTIFICATION) candidateCases.add(id);
+    scenario.historical_scoped_216 = {
+      old_claim_present: observations.length > 0,
+      old_reference_count: observations.length,
+      old_clean_log_reference_count: observations.filter(x => x.log_evidence_status === "CLEAN_OLD_TEST_LOG").length,
+      old_mixed_or_unconfirmed_count: observations.filter(x => x.log_evidence_status !== "CLEAN_OLD_TEST_LOG").length,
+      uniquely_named_current_source_candidates_NOT_CREDITED: row.candidate_case_ids_from_old_logs_NOT_COVERAGE_CERTIFICATION,
+      old_source_sha: legacy.historical_a28_source_sha,
+      raw_log_observations: observations,
+      final_candidate_status: "SCOPED_OLD_ONLY_NOT_FULLY_VERIFIED"
+    };
+  }
+  assert.equal(refs, 316);
+  assert.equal(clean, 307);
+  assert.equal(claimed, 216);
+  assert.equal(candidateCases.size, 375, "Old A28 unique current-source case candidate count changed");
+  return {
+    historical_scoped_216_of_218: claimed,
+    old_scoped_references: refs,
+    old_unambiguously_clean_run_references: clean,
+    old_mixed_or_uncertain_references: refs-clean,
+    old_missing_scoped_scenario_ids: scenarios.filter(x => !x.historical_scoped_216.old_claim_present).map(x => x.id),
+    old_source_test_case_candidate_names_distinct_not_automatic_credit: candidateCases.size,
+    old_source_sha: legacy.historical_a28_source_sha,
+    previous_216_is_a_historical_scoped_observation_claim_not_216_passes: true,
+    full_release_scenarios_certified_by_legacy: 0
+  };
+}
+
+export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, legacy216Evidence = null, generatedAt = new Date().toISOString() }) {
   assert.match(commitSha ?? "", /^[a-f0-9]{40}$/, "A full exact Git SHA is mandatory");
   const rows = source?.expanded_scenario_verification?.scenarios;
   assert(Array.isArray(rows) && rows.length === 218, "Frozen Masterplan must contain exactly 218 scenarios");
@@ -164,6 +238,9 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
   };
   assert.equal(counts.full_verified + counts.in_progress + counts.blocked_external_known + counts.failed + counts.not_started, 218);
   const scoped_test_progress = reconcilePriorTestExecution({ prior: priorTestEvidence, frozenScenarios: scenarios, commitSha });
+  const legacy_216_scope = reconcileLegacy216ScopedEvidence({
+    legacy: legacy216Evidence, scenarios, prior: priorTestEvidence
+  });
   const required_gates = Object.fromEntries(RELEASE_GATES.map(gate => [gate, "NOT_VERIFIED"]));
   return {
     report_type: "CURRENT_FINAL_RELEASE_CANDIDATE_218_EVIDENCE_LEDGER",
@@ -173,6 +250,7 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
     frozen_bricks: 37,
     counts,
     ...(scoped_test_progress ? { scoped_test_progress } : {}),
+    ...(legacy_216_scope ? { legacy_216_scope } : {}),
     release: {
       decision: "NO_GO",
       required_gates,

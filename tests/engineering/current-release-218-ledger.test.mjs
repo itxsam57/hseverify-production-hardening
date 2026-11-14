@@ -101,11 +101,11 @@ test("actual clean-worktree CLI produces readable no-go 218-row ledger with git 
 test("scoped historical test executions appear inside the SAME 218 ledger without promoting FULLY_VERIFIED", () => {
   const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
   const report = buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence });
-  assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1391);
-  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1565);
-  assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 234);
+  assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1392);
+  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1566);
+  assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 235);
   assert.equal(report.scoped_test_progress.older_historical_green_cases, 1157);
-  assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1252);
+  assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1253);
   assert.equal(report.scoped_test_progress.prior_ci_is_this_exact_sha, false);
   assert.equal(report.counts.full_verified, 0);
   assert.equal(report.release.decision, "NO_GO");
@@ -117,4 +117,25 @@ test("scoped historical test executions appear inside the SAME 218 ledger withou
   const tampered = copy(priorTestEvidence);
   tampered.cases[0].test_execution = "EXACT_CI_SHA_PASSED";
   assert.throws(() => buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence: tampered }), /mismatch/);
+});
+
+test("original 218 ledger includes all 216 old scoped observations without promoting release passes", () => {
+  const legacy216Evidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_LEGACY_216_OBSERVATIONS.json", "utf8"));
+  const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
+  const report = buildCurrentReleaseLedger({
+    source, commitSha: SOURCE_SHA, priorTestEvidence, legacy216Evidence
+  });
+  assert.equal(report.legacy_216_scope.historical_scoped_216_of_218, 216);
+  assert.equal(report.legacy_216_scope.old_scoped_references, 316);
+  assert.equal(report.legacy_216_scope.old_unambiguously_clean_run_references, 307);
+  assert.equal(report.legacy_216_scope.old_mixed_or_uncertain_references, 9);
+  assert.deepEqual(report.legacy_216_scope.old_missing_scoped_scenario_ids, ["M1.01.03","M1.01.04"]);
+  assert.equal(report.legacy_216_scope.old_source_test_case_candidate_names_distinct_not_automatic_credit, 375);
+  assert.equal(report.counts.full_verified, 0);
+  assert.equal(report.release.decision, "NO_GO");
+  assert(report.scenarios.every(row => row.historical_scoped_216.final_candidate_status === "SCOPED_OLD_ONLY_NOT_FULLY_VERIFIED"));
+  const tampered = copy(legacy216Evidence);
+  tampered.scenarios[0].old_scoped_evidence[0].legacy_log_sha256 = "fake";
+  assert.throws(() => buildCurrentReleaseLedger({source, commitSha: SOURCE_SHA, priorTestEvidence, legacy216Evidence: tampered}),
+    /SHA256|hash/i);
 });
