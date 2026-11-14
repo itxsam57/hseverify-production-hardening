@@ -69,7 +69,43 @@ test("Company registration commits email/MFA denials and activates only a Compan
    await page.getByLabel("Company size").selectOption("11-50");
    await page.getByLabel("I accept the HSE Verify terms for this Company application.").check();
    await page.getByLabel("I accept the privacy notice for Company verification data and evidence.").check();
+   // M10304_COMPANY_PENDING_SINGLE_SUBMIT: let the real Server Action
+   // complete once, hold only its browser response while React is pending.
+   // The user must not be able to create a duplicate Company tenant/owner.
+   await page.setViewportSize({width:320,height:844});
+   await page.evaluate(()=>{
+    const nativeFetch=window.fetch.bind(window);
+    let release;
+    const gate=new Promise(resolve=>{release=resolve;});
+    window.__hseCompanyPending={started:0,accepted:false,release:()=>release()};
+    window.fetch=async(...args)=>{
+     const request=args[0];
+     const method=(args[1]?.method??(request instanceof Request?request.method:"GET")).toUpperCase();
+     const url=new URL(typeof request==="string"?request:request.url,location.href);
+     if(method!=="POST"||url.pathname!=="/company/register")return nativeFetch(...args);
+     window.__hseCompanyPending.started++;
+     const response=await nativeFetch(...args);
+     window.__hseCompanyPending.accepted=true;
+     await gate;
+     return response;
+    };
+   });
    await page.getByRole("button",{name:"Create Company application",exact:true}).click();
+   try {
+    await page.waitForFunction(()=>window.__hseCompanyPending?.accepted===true,null,{timeout:20000});
+    const pendingButton=page.getByRole("button",{name:"Creating Company application…",exact:true});
+    await pendingButton.waitFor({state:"visible",timeout:10000});
+    assert.equal(await pendingButton.isDisabled(),true,"The Company registration button must disable while the accepted POST waits");
+    assert.equal(await page.getByLabel("Business email").inputValue(),email,"Pending Company form must retain the submitted email");
+    assert.equal(await page.evaluate(()=>window.__hseCompanyPending.started),1,"Exactly one Company registration request must start");
+    await assert.rejects(()=>pendingButton.click({timeout:750}),/Timeout|not enabled/i,
+     "A second Company registration click must remain blocked while pending");
+    assert.equal(await page.evaluate(()=>window.__hseCompanyPending.started),1,
+     "Disabled second click must not generate another Company registration POST");
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+     "The 320px pending Company form must remain within the viewport");
+    console.log("M10304_COMPANY_PENDING_SINGLE_SUBMIT: real accepted POST held, disabled, second click refused, one request");
+   }finally{await page.evaluate(()=>window.__hseCompanyPending?.release());}
    await page.waitForURL("**/company/register/verify");await page.getByText("Step 1 of 2",{exact:true}).waitFor();
    await inbox.goto(baseUrl+"/company/register/sandbox");
    await inbox.getByLabel("Business email").fill(email);await inbox.getByLabel("Sandbox access key").fill(SANDBOX_KEY);
@@ -103,6 +139,14 @@ test("Company registration commits email/MFA denials and activates only a Compan
    const flow=(await db.query("SELECT current_step,tenant_id,membership_id FROM company_registration_flows WHERE account_id=$1",[a.account_id])).rows[0];assert.equal(flow.current_step,"pending_email");
    assert.equal((await db.query("SELECT tenant_status FROM platform_tenants WHERE tenant_id=$1",[flow.tenant_id])).rows[0].tenant_status,"pending");
    assert.equal((await db.query("SELECT membership_status FROM auth_tenant_memberships WHERE membership_id=$1",[flow.membership_id])).rows[0].membership_status,"invited");
+   assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_accounts WHERE email_normalized=$1",[email])).rows[0].count,1,
+    "A pending Company signup must create exactly one account");
+   assert.equal((await db.query("SELECT count(*)::int AS count FROM company_registration_flows WHERE account_id=$1",[a.account_id])).rows[0].count,1,
+    "A held-response second click must not create a second registration flow");
+   assert.equal((await db.query("SELECT count(*)::int AS count FROM platform_tenants WHERE tenant_id=$1",[flow.tenant_id])).rows[0].count,1,
+    "One Company registration must produce only its own single pending tenant");
+   assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_tenant_memberships WHERE tenant_id=$1 AND account_id=$2",[flow.tenant_id,a.account_id])).rows[0].count,1,
+    "One pending Company owner membership only");
    assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_sessions WHERE account_id=$1",[a.account_id])).rows[0].count,0);
    assert.equal((await db.query("SELECT attempts_remaining FROM auth_otp_challenges WHERE account_id=$1",[a.account_id])).rows[0].attempts_remaining,0);
    assert.equal((await db.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.otp.failed'",[a.account_id])).rows[0].count,5);
