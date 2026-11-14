@@ -8,6 +8,11 @@ on:
       - "src/app/**/error.tsx"
       - "src/app/error.tsx"
       - "src/components/notifications/notification-error.tsx"
+      - "src/components/notifications/notification-bell.tsx"
+      - "src/components/auth/role-portal-shell.tsx"
+      - "src/components/worker/worker-shell.tsx"
+      - "src/app/worker/(portal)/layout.tsx"
+      - "src/lib/notifications/notification-service.ts"
       - "tests/browser/consumer-validation.browser.test.mjs"
       - "tests/browser/worker-file-upload-validation.browser.test.mjs"
       - "tests/browser/company-billing-validation.browser.test.mjs"
@@ -22,6 +27,11 @@ on:
       - "src/app/**/error.tsx"
       - "src/app/error.tsx"
       - "src/components/notifications/notification-error.tsx"
+      - "src/components/notifications/notification-bell.tsx"
+      - "src/components/auth/role-portal-shell.tsx"
+      - "src/components/worker/worker-shell.tsx"
+      - "src/app/worker/(portal)/layout.tsx"
+      - "src/lib/notifications/notification-service.ts"
       - "tests/browser/consumer-validation.browser.test.mjs"
       - "tests/browser/worker-file-upload-validation.browser.test.mjs"
       - "tests/browser/company-billing-validation.browser.test.mjs"
@@ -99,7 +109,7 @@ jobs:
           fi
           test -x /usr/lib/postgresql/16/bin/initdb
           test -x /usr/lib/postgresql/16/bin/pg_ctl
-      - name: Exercise real Worker/Company failures, no leaks, retry at mobile widths
+      - name: Exercise real Worker and Company recovery plus six-role notification failures, privacy and Retry
         shell: bash
         run: |
           set -euo pipefail
