@@ -4,18 +4,18 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.02.05",
-  "current_focus_phase": "COMPANY_ADMIN_320_UNSAVED_CHROME_GREEN_NEEDS_PR_SIGNED_QA_CI",
-  "last_completed_action": "PR105 signed QA 6d082d9c 31/31 merged workflows SUCCESS. Reused original Worker unsaved browser two cases and prior public/six role focus; source gap Company/Admin nonworker form. Extended same existing named test normal mode with real Company/Organization and Admin/Frameworks at 320 focus+prompt cancel/discard+reopen unchanged; original Worker normal and fallback preserved. Actual 2/2 real Chromium PASS log M10205_COMPANY_ADMIN_UNSAVED_INITIAL_CHROME.log; source hashes only and old counters unchanged.",
-  "next_exact_action": "Governed commit/push PR for M1.02.05 original browser case Company/Admin form added; verify 4975 CI and real chromium exact PR head, signed merge full QA CI; next M1.03.01 original registration source evidence gap triage.",
-  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10205-cross-role-unsaved-20261114 --state all --json number,state,headRefOid,mergeCommit",
+  "current_focus_scenario_id": "M1.03.01",
+  "current_focus_phase": "WORKER_SIGNUP_REAL_PENDING_SINGLE_SUBMIT_CHROME_GREEN_NEEDS_EXACT_QA_CI",
+  "last_completed_action": "PR106 signed QA 9edf3454 31/31 CI pass. Existing M1.03.01 Worker policy browser case expanded with real accepted POST response held, 320 pending Creating account disabled, second attempted click rejected, single request, draft preserved and successful navigation; original DB/account/flow/OTP/audit/cancel assertions intact. Actual Chromium 1/1 PASS ~31s log M10301_REGISTRATION_PENDING_REAL_CHROME.log. No product code change.",
+  "next_exact_action": "Governed commit/push PR, exact PR-head Chromium+218/4975 CI, signed two-parent canonical QA merge full exact merged SHA CI; then M1.03.02 BLOCKED_EXTERNAL real email/SMS OTP and M1.03.03 next actionable existing duplicate identity recovery evidence review.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10301-signup-inflight-submit-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.02.05",
-      "problem": "Original Worker-only unsaved-form browser never exercised Company/Admin 320 draft focus and cancellation",
-      "result": "SOURCE_COVERAGE_RED_ACTUAL_CHROME_TWO_CASES_GREEN_NO_PRODUCT_BUG"
+      "scenario_id": "M1.03.01",
+      "problem": "Original Worker policy browser test never verified live pending Server Action duplicate-click denial",
+      "result": "SOURCE_GAP_RED_ACTUAL_320_CHROMIUM_REAL_POST_GREEN_NO_PRODUCT_BUG"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
