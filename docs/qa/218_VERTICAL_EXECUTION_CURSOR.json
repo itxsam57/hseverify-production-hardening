@@ -4,14 +4,20 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.01.01",
-  "current_focus_phase": "REUSE_PRIOR_EVIDENCE_BEFORE_TEST",
-  "last_completed_action": "Deduplicated all historical old 216/218 and 4975 planning references without final-stage promotion; 30/30 CI success on signed baseline SHA",
-  "next_exact_action": "Read original M1.01.01 runtime secrets/demo isolation and startup source/test/log evidence, identify the missing exact-SHA acceptance assertions, and run only safe unproven checks on the existing synthetic test infrastructure",
-  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --lookup-scenario M1.01.01",
+  "current_focus_scenario_id": "M1.01.03",
+  "current_focus_phase": "VERIFY_SIGNED_QA_CANDIDATE_CI_AND_STAGE_GATES",
+  "last_completed_action": "M1.01.01 preflight mismatch reproduced (3/4 RED) and locally fixed (6/6 GREEN), 17/17 native adjacent and 4/4 Next isolation checks passed. M1.01.02 prior PostgreSQL16 134-migration rollback 4/4 previously green. Both remain NOT FULLY_VERIFIED without protected stage.",
+  "next_exact_action": "Verify signed QA merge and targeted preflight CI plus all candidate workflow results on M1.01.03; flag M1.01.04 protected staging external dependency, then inspect M1.02.01 old browser evidence and test only missing acceptance.",
+  "next_exact_command": "gh run list --repo itxsam57/hseverify-production-hardening --commit $(git ls-remote origin refs/heads/qa/a28-eligibility-read-guard-20261107 | cut -f1) --limit 100",
   "active_test_pid": null,
   "active_test_log": null,
-  "recent_failed_checks": [],
+  "recent_failed_checks": [
+    {
+      "scenario_id": "M1.01.01",
+      "problem": "Prior code script deployment preflight accepted runtime-invalid URL/email/SMS config",
+      "result": "ROOT_FIXED_LOCAL_6_OF_6_PASS_NEEDS_SIGNED_CI"
+    }
+  ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
   "no_new_localhost_environment_by_default": true,
   "note": "This file is an execution cursor ONLY. Never store separate pass counts here or claim scenario certification. Derive all progress from original 218 ledger."

@@ -35,7 +35,9 @@ class VerticalProtocolTest(unittest.TestCase):
         self.assertEqual(len(ids),len(set(ids)))
         self.assertEqual((len(ids),len({x['brick'] for x in self.queue})),(218,37))
         self.assertEqual((ids[0],ids[-1]),('M1.01.01','M3.12.04'))
-        self.assertEqual(self.cursor['current_focus_scenario_id'],ids[0])
+        self.assertIn(self.cursor['current_focus_scenario_id'],ids)
+        self.assertEqual(self.report['focus_scenario'],self.cursor['current_focus_scenario_id'])
+        self.assertNotEqual(self.report['focus_scenario_status'],'FULLY_VERIFIED')
         self.assertTrue(self.cursor['no_new_localhost_environment_by_default'])
         self.assertIsNone(self.cursor['active_test_pid'])
 
@@ -59,6 +61,6 @@ class VerticalProtocolTest(unittest.TestCase):
         result=subprocess.run(['node','scripts/qa-progress-218.mjs'],cwd=ROOT,capture_output=True,text=True,timeout=20)
         self.assertEqual(result.returncode,0,result.stderr)
         for line in self.report['taskbar']:self.assertIn(line,result.stdout)
-        self.assertIn('NOW M1.01.01',result.stdout)
+        self.assertIn('NOW '+self.cursor['current_focus_scenario_id'],result.stdout)
 
 if __name__ == '__main__': unittest.main(verbosity=2)
