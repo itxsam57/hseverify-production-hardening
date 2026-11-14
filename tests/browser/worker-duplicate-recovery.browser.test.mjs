@@ -142,6 +142,68 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
           "Rejected duplicate Worker registration overflows "+width+"px");
       }
       console.log("ACTUAL_DUPLICATE_WORKER_BROWSER: three contact conflicts denied");
+
+      // M10303_CONCURRENT_DUPLICATE_BROWSER: the old exact-green case tested
+      // sequential duplicates. Two genuinely separate signed-out browser
+      // contexts now hold their Worker-registration POSTs at the browser
+      // transport, then release both together to the same real Next/DB.
+      // Email collision and phone collision must each fail closed without
+      // creating another Worker or merging the existing identity/evidence.
+      const raceContexts = await Promise.all([
+        browser.newContext({viewport:{width:320,height:844}}),
+        browser.newContext({viewport:{width:390,height:844}})
+      ]);
+      const racePages = await Promise.all(raceContexts.map(context=>context.newPage()));
+      const raceResponses = [[],[]];
+      for(const [index,racePage] of racePages.entries()) {
+        racePage.on("response",response=>{
+          if(response.request().method()==="POST" && new URL(response.url()).pathname==="/worker/register")
+            raceResponses[index].push(response.status());
+        });
+        await racePage.addInitScript(()=>{
+          const normalFetch=window.fetch.bind(window);
+          let release;
+          const gate=new Promise(resolve=>{release=resolve;});
+          window.__hseDuplicateRace={pending:0,release:()=>release()};
+          window.fetch=async(...args)=>{
+            const request=args[0];
+            const method=(args[1]?.method??(request instanceof Request?request.method:"GET")).toUpperCase();
+            const url=new URL(typeof request==="string"?request:request.url,location.href);
+            if(method!=="POST"||url.pathname!=="/worker/register")return normalFetch(...args);
+            window.__hseDuplicateRace.pending++;
+            await gate;
+            return normalFetch(...args);
+          };
+        });
+      }
+      const raceAttempts=[
+        duplicate(racePages[0],baseUrl,worker.email,"+923008884409"),
+        duplicate(racePages[1],baseUrl,"other.duplicate.race@example.test",baseline.account[0].phone_e164)
+      ];
+      try {
+        await Promise.all(racePages.map(racePage=>racePage.waitForFunction(
+          ()=>window.__hseDuplicateRace?.pending===1,null,{timeout:20000}
+        )));
+        assert.deepEqual(await Promise.all(racePages.map(racePage=>racePage.evaluate(
+          ()=>window.__hseDuplicateRace.pending
+        ))),[1,1],"Both independent browser submissions must be held before either reaches the server");
+        await Promise.all(racePages.map(racePage=>racePage.evaluate(()=>window.__hseDuplicateRace.release())));
+        await Promise.all(raceAttempts);
+        for(const [index,racePage] of racePages.entries()) {
+          assert.deepEqual(raceResponses[index],[200],
+            "Each conflict must complete as one handled Server Action POST (never HTTP 500 or duplicate requests)");
+          assert.equal(await racePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+            "Denied concurrent registration must preserve usable 320/390px browser layout");
+        }
+        console.log("M10303_CONCURRENT_DUPLICATE_BROWSER: both held real POSTs released together and denied, no unauthorized account or identity merge");
+      } finally {
+        await Promise.all(racePages.map(racePage=>racePage.evaluate(
+          ()=>window.__hseDuplicateRace?.release()
+        ).catch(()=>{})));
+        await Promise.allSettled(raceAttempts);
+        await Promise.all(raceContexts.map(context=>context.close()));
+      }
+
       await page.setViewportSize({width:320,height:844});
       await page.goto(baseUrl+"/auth/recover?portal=worker");
       await page.getByLabel("Account email").fill(worker.email);
@@ -222,7 +284,7 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
       const flows=(await db.query("SELECT active_role,consumed_at FROM auth_recovery_flows WHERE account_id=$1",[worker.accountId])).rows;
       assert.equal(flows.length,1);assert.equal(flows[0].active_role,"worker");assert.ok(flows[0].consumed_at);
       assert.equal((await db.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE action_key='authentication.password_reset.completed' AND actor_account_id=$1 AND actor_role='worker'",[worker.accountId])).rows[0].count,1);
-      assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_security_events WHERE event_type='access_denied' AND metadata->>'reason'='contact_conflict'")).rows[0].count,3);
+      assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_security_events WHERE event_type='access_denied' AND metadata->>'reason'='contact_conflict'")).rows[0].count,5);
       console.log("ACTUAL_WORKER_RECOVERY_DB: unchanged identity/evidence, consumed flow/challenge, remaining attempts, exact immutable failure/completion audit and session revocation");
     }finally{await db.close();}
   }finally{if(browser)await browser.close();await rm(directory,{recursive:true,force:true});}
