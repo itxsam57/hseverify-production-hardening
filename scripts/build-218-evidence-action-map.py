@@ -44,6 +44,8 @@ def build() -> list[dict]:
     prior=json.loads(PRIOR.read_text())
     legacy=json.loads(LEGACY.read_text())
     frozen=json.loads(FROZEN.read_text())["expanded_scenario_verification"]["scenarios"]
+    planned=json.loads((ROOT/"docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json").read_text())
+    by_planned=planned["per_frozen_scenario_dimension_progress"]
     if len(frozen)!=218 or len(prior["scenarios"])!=218 or len(legacy["scenarios"])!=218:
         raise ValueError("Original 218 frozen rows not consistent")
     if len(set(x["id"] for x in frozen))!=218:
@@ -76,6 +78,14 @@ def build() -> list[dict]:
             next_step="BLOCKED_EXTERNAL_PREPARE_ISOLATED_STAGE_WITHOUT_NEW_TESTS"
         else:
             next_step="CHECK_SHARED_CASES_THEN_BUILD_MISSING_ACCEPTANCE_TESTS"
+        slot=by_planned.get(sid)
+        if slot is None or slot["all_12_planned_dimensions"]!=12:
+            raise ValueError(f"Missing 12 planned verification dimensions for {sid}")
+        old_dim=slot.get("OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED",0)
+        tentative=slot.get("OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED",0)+slot.get("PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED",0)
+        unmatched=slot.get("NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE",0)
+        if old_dim+tentative+unmatched!=12:
+            raise ValueError(f"Overlapping or missing dimension slots for {sid}")
         results.append({
             "frozen_id":sid,
             "brick":f["brick"],
@@ -98,6 +108,10 @@ def build() -> list[dict]:
             "old_named_case_candidate_ids_unreviewed":"; ".join(candidate_ids),
             "known_external_blocker_or_blank":KNOWN_EXTERNAL.get(sid,""),
             "six_required_full_acceptance_dimensions_unverified":"; ".join(REQUIRED),
+            "old_scoped_planned_dimension_links_partial_NOT_PASSED":old_dim,
+            "mixed_or_title_only_planned_dimension_links_NOT_PASSED":tentative,
+            "planned_dimensions_without_precise_old_link":unmatched,
+            "all_12_planned_dimensions_still_need_final_attestation":12,
             "recommended_next_action":next_step,
             "full_release_scenario_status":"NOT_FULLY_VERIFIED",
         })
@@ -105,6 +119,7 @@ def build() -> list[dict]:
     assert sum(x["legacy_A28_scoped_observation_exists"]=="TRUE" for x in results)==216
     assert sum(x["legacy_clean_old_log_references_not_full_pass"] for x in results)==307
     assert sum(x["legacy_mixed_or_uncertain_references"] for x in results)==9
+    assert sum(x["old_scoped_planned_dimension_links_partial_NOT_PASSED"] for x in results)==planned["historically_evidenced_distinct_planned_slots_NOT_COMPLETE"]
     assert len(KNOWN_EXTERNAL)==10
     return results
 

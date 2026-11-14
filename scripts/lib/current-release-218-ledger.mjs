@@ -191,7 +191,7 @@ function reconcileLegacy216ScopedEvidence({ legacy, scenarios, prior }) {
   };
 }
 
-export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, legacy216Evidence = null, generatedAt = new Date().toISOString() }) {
+export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, legacy216Evidence = null, coverage4975Evidence = null, generatedAt = new Date().toISOString() }) {
   assert.match(commitSha ?? "", /^[a-f0-9]{40}$/, "A full exact Git SHA is mandatory");
   const rows = source?.expanded_scenario_verification?.scenarios;
   assert(Array.isArray(rows) && rows.length === 218, "Frozen Masterplan must contain exactly 218 scenarios");
@@ -241,6 +241,55 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
   const legacy_216_scope = reconcileLegacy216ScopedEvidence({
     legacy: legacy216Evidence, scenarios, prior: priorTestEvidence
   });
+  let planned_check_progress = null;
+  if (coverage4975Evidence) {
+    const c = coverage4975Evidence;
+    assert.equal(c.planned_check_slots, 4975);
+    assert.equal(c.canonical_scenarios, 218);
+    assert.equal(c.final_stage_certified_slots, 0);
+    assert.equal(c.planned_slots_not_final_stage_certified, 4975);
+    assert.equal(c.release_scenarios_fully_verified, 0);
+    assert.equal(c.release_decision, "NO_GO");
+    assert.equal(c.scoped_prior_source_tests_green_distinct,
+      priorTestEvidence.counts.previous_green_distinct_source_matched_cases);
+    assert.deepEqual(c.planned_check_category_counts,
+      { scenario_dimension: 2616, security_candidate: 2008, responsive_page: 351 });
+    const buckets = c.slot_historical_link_states;
+    const oldPartial = buckets.OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED;
+    const uncertain = buckets.OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED +
+      buckets.PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED;
+    const noLink = buckets.NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE;
+    assert.equal(oldPartial + uncertain + noLink, 4975);
+    const perId = c.per_frozen_scenario_dimension_progress;
+    assert.equal(Object.keys(perId).length, 218);
+    for (const scenario of scenarios) {
+      const entry = perId[scenario.id];
+      assert(entry && entry.all_12_planned_dimensions === 12 &&
+        entry.full_release_certified_dimensions === 0, "Incomplete original 218 dimension index");
+      const p = entry.OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED ?? 0;
+      const u = (entry.OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED ?? 0) +
+        (entry.PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED ?? 0);
+      const n = entry.NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE ?? 0;
+      assert.equal(p + u + n, 12);
+      scenario.previous_partial_dimension_links = {
+        old_scoped_clauses_incomplete: p,
+        uncertain_or_title_only: u,
+        without_precise_old_dimension_link: n,
+        final_stage_certified: 0
+      };
+    }
+    planned_check_progress = {
+      planning_slots_total: 4975,
+      historically_scoped_partial_not_certified: oldPartial,
+      uncertain_mixed_or_title_only_not_certified: uncertain,
+      without_precise_old_dimension_link: noLink,
+      distinct_source_test_cases_previously_green: c.scoped_prior_source_tests_green_distinct,
+      final_stage_certified: 0,
+      full_stage_checks_still_required: 4975,
+      source_reference_sha: c.source_sha_at_reconciliation,
+      status: "NO_GO_SCOPED_HISTORY_NOT_FULL_RELEASE_VERIFICATION"
+    };
+  }
   const required_gates = Object.fromEntries(RELEASE_GATES.map(gate => [gate, "NOT_VERIFIED"]));
   return {
     report_type: "CURRENT_FINAL_RELEASE_CANDIDATE_218_EVIDENCE_LEDGER",
@@ -251,6 +300,7 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
     counts,
     ...(scoped_test_progress ? { scoped_test_progress } : {}),
     ...(legacy_216_scope ? { legacy_216_scope } : {}),
+    ...(planned_check_progress ? { planned_check_progress } : {}),
     release: {
       decision: "NO_GO",
       required_gates,

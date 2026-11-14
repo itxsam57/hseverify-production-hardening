@@ -25,6 +25,10 @@ on:
       - "scripts/triage-218-unassigned-tests.py"
       - "docs/qa/evidence/MASTERPLAN_218_UNATTRIBUTED_CASE_REVIEW_20261114.csv"
       - "tests/engineering/test_legacy_216_evidence.py"
+      - "scripts/reconcile-4975-prior-coverage.py"
+      - "tests/engineering/test_4975_prior_reconciliation.py"
+      - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_PROGRESS_20261114.csv"
+      - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json"
       - ".github/workflows/qa-4975-coverage-register.yml"
   push:
     branches:
@@ -52,6 +56,10 @@ on:
       - "scripts/triage-218-unassigned-tests.py"
       - "docs/qa/evidence/MASTERPLAN_218_UNATTRIBUTED_CASE_REVIEW_20261114.csv"
       - "tests/engineering/test_legacy_216_evidence.py"
+      - "scripts/reconcile-4975-prior-coverage.py"
+      - "tests/engineering/test_4975_prior_reconciliation.py"
+      - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_PROGRESS_20261114.csv"
+      - "docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json"
       - ".github/workflows/qa-4975-coverage-register.yml"
 
 permissions:
@@ -80,6 +88,8 @@ jobs:
           PYTHONDONTWRITEBYTECODE=1 python3 tests/engineering/test_legacy_216_evidence.py
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/build-218-evidence-action-map.py --verify
           PYTHONDONTWRITEBYTECODE=1 python3 scripts/triage-218-unassigned-tests.py --verify
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/reconcile-4975-prior-coverage.py --verify
+          PYTHONDONTWRITEBYTECODE=1 python3 tests/engineering/test_4975_prior_reconciliation.py
           node --test tests/engineering/current-release-218-ledger.test.mjs
           node scripts/reconcile-current-release-218.mjs
       - name: Archive actual exact SHA planning evidence (not release certification)
