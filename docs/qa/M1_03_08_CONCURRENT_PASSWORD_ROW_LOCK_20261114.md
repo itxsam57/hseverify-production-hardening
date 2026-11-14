@@ -31,3 +31,7 @@ Original **4,975** provisional planning slots: 693 old PARTIAL; 54 UNCERTAIN; 42
 M1.03.08 still needs protected production-like final exact-SHA stage, HTTPS/Origin/CSRF and direct role/tenant/API tests, additional role-specific concurrency/expiry/outage and recovery, production email/SMS, independent full pentest, realistic load/restore and Owner UAT. **NOT FULLY VERIFIED** even with the local root-cause fix.
 
 **NEXT:** Guarded commit+push feature branch and PR to `qa/a28-eligibility-read-guard-20261107`. Require exact PR-head 3-job real PostgreSQL+Chromium+native CI, original 218/4975 integrity and Autopilot compliance; merge only green signed two-parent QA and verify all merged SHA workflows. Resume the next uncovered M1.03.08 Origin/CSRF/role test without duplicating unchanged passing cases.
+
+## PR-head integrity correction (2026-11-14)
+
+Initial PR #113 exact head `fb244ebe77ea7e8383250368946614f3b90d6bfe` had a **RED 4,975 integrity CI job**: the retained `tests/engineering/test_legacy_216_evidence.py` still hard-coded old 937 historical green unassigned / 173 unproven, while original 218 ledger's independently verified expanded index now has **938 green / 172 unproven**. This was an outdated *test expectation*, not an additional application defect. Updated both asserts; the exact 4,975 job's full command sequence was run locally with all relevant tests **PASS** (including 5/5 legacy). Raw `.autopilot/artifacts/M10308_PR113_4975_CI_REMEDIATION.log`. The correction must pass a NEW exact PR-head CI SHA; no earlier red check is counted green.
