@@ -111,6 +111,20 @@ test("M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign
        await owner.locator("details.profile-menu").getByRole("button",{name:"Sign out",exact:true}).click();
        await owner.getByRole("dialog").getByRole("button",{name:"Sign out",exact:true}).click();
        await owner.waitForURL(url=>url.pathname==="/"+role+"/login"&&url.searchParams.get("reason")==="signed-out");
+       // M10307_HISTORY_AFTER_SIGNOUT: a valid browser history entry for
+       // the formerly authenticated portal exists here. Use real Back UI
+       // navigation rather than only a fresh URL request; old cached private
+       // dashboard/profile controls must never be restored after logout.
+       const historyEntries=await owner.evaluate(()=>history.length);
+       assert(historyEntries>1,role+" must have real Back history after Exit, Cancel and Sign Out");
+       await owner.goBack({waitUntil:"domcontentloaded",timeout:15000});
+       await owner.waitForURL(url=>["/"+role+"/login","/","/access-denied"].includes(url.pathname),
+        {timeout:15000});
+       assert.equal(await owner.locator("details.profile-menu").count(),0,
+        role+" protected profile/menu was restored through browser Back after Sign Out");
+       assert.equal(await owner.locator(".portal-shell").count(),0,
+        role+" private portal shell was restored through browser Back after Sign Out");
+       console.log("M10307_HISTORY_AFTER_SIGNOUT",role,"back navigation denied protected dashboard and private controls");
        await owner.goto(base+"/"+role+"/dashboard");
        assert.equal(new URL(owner.url()).pathname,"/"+role+"/login",role+" owner cookie remained valid");
        await copied.goto(base+"/"+role+"/dashboard");

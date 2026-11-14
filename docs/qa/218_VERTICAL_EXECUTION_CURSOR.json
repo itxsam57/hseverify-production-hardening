@@ -4,18 +4,18 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.03.06",
-  "current_focus_phase": "SIX_ROLE_320_390_GENERIC_AUTH_ERROR_EQUIVALENCE_CHROMIUM_GREEN_PR_PENDING",
-  "last_completed_action": "PR110 signed QA e0018569 31/31 merged workflows; original six-role login Chrome case expanded comparison known-bad-password, wrong-MFA, wrong-role and unknown-email to exact generic message at 320/390, no login/role/identity enumeration via UI. First run failed timing empty alert; only test synchronization corrected, final 1/1 real Chromium PASS 76.4s log M10306_SIX_ROLE_ENUMERATION_FINAL_CHROMIUM.log, original positive login, wrong-portal, signout and DB audits green, no app code touched.",
-  "next_exact_action": "Guarded commit+push PR M1.03.06 existing browser source/provenance/report, verify exact PR-head Chromium+original 218/4975 integrity CI, signed two-parent QA merge all workflows, then inspect original M1.03.07 prior tests for first genuinely missing session/expiry/replay gap.",
-  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10306-generic-auth-failures-20261114 --state all --json number,state,headRefOid,mergeCommit",
+  "current_focus_scenario_id": "M1.03.07",
+  "current_focus_phase": "SIX_ROLE_BROWSER_BACK_AFTER_SIGNOUT_PRIVATE_UI_DENIED_GREEN_PR_PENDING",
+  "last_completed_action": "PR111 signed QA b15e7c2a 31/31 CI. Existing six-role copied-cookie Exit/Cancel/SignOut/browser test extended to actual page.goBack after authenticated Sign Out for Worker/Company/Assessor/Verifier/Admin/Root; no protected dashboard/menu restored; original current and copied cookie revocation and DB logout audits intact. Real Chrome 1/1 PASS 66.9s log M10307_SIX_ROLE_HISTORY_AFTER_SIGNOUT_CHROME.log; no product code change.",
+  "next_exact_action": "Guarded commit+push PR M1.03.07 actual six-role post-signout history checks and evidence, exact PR-head real session Chrome+4975 integrity CI then signed QA merge all exact workflows; next inspect original M1.03.08 prior green password change/reauth tests and identify first untested branch.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10307-history-after-signout-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.03.06",
-      "problem": "Initial new generic alert comparison read empty transient alert container before populated message",
-      "result": "TEST_TIMING_ONLY_FIXED_WAIT_FOR_NONEMPTY_ALERT_ALL_SIX_ROLE_REAL_CHROMIUM_PASS"
+      "scenario_id": "M1.03.07",
+      "problem": "Original six role real Chrome copied-cookie signout suite never attempted browser Back history/BFCache after session revocation",
+      "result": "SOURCE_GAP_RED_ACTUAL_SIX_ROLE_HISTORY_CHROME_GREEN_NO_PRIVATE_UI_REVIVAL"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
