@@ -4,18 +4,18 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.03.05",
-  "current_focus_phase": "STAFF_MFA_TWO_INDEPENDENT_CONTEXTS_CONCURRENT_REPLAY_DENIED_CHROME_GREEN_PR_PENDING",
-  "last_completed_action": "PR109 canonical signed QA cc994abd 32/32. Extended existing staff-invitation-cancel-retry Chrome case with two independent 320/390 contexts holding same enrollment MFA cookie, real POSTs released simultaneously, one role/MFA invitation activation success and one safe denied, replayed stale token cannot reopen setup key. Exact one MFA/role/account/session/security and audit DB. 1/1 real Chromium PASS 32.9s log M10305_CONCURRENT_STAFF_MFA_REAL_CHROMIUM.log. Original cancel/reopen and wrong-role still green; old counters unchanged.",
-  "next_exact_action": "Governed commit/push PR for M1.03.05 old original browser case and evidence, exact PR-head staff invitation Chromium+4975 CI and signed QA merge all workflows; next M1.03.06 existing wrong role/tenant session cases triage and new uncovered behavior only. M1.03.02 provider BLOCKED_EXTERNAL.",
-  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10305-concurrent-enrollment-20261114 --state all --json number,state,headRefOid,mergeCommit",
+  "current_focus_scenario_id": "M1.03.06",
+  "current_focus_phase": "SIX_ROLE_320_390_GENERIC_AUTH_ERROR_EQUIVALENCE_CHROMIUM_GREEN_PR_PENDING",
+  "last_completed_action": "PR110 signed QA e0018569 31/31 merged workflows; original six-role login Chrome case expanded comparison known-bad-password, wrong-MFA, wrong-role and unknown-email to exact generic message at 320/390, no login/role/identity enumeration via UI. First run failed timing empty alert; only test synchronization corrected, final 1/1 real Chromium PASS 76.4s log M10306_SIX_ROLE_ENUMERATION_FINAL_CHROMIUM.log, original positive login, wrong-portal, signout and DB audits green, no app code touched.",
+  "next_exact_action": "Guarded commit+push PR M1.03.06 existing browser source/provenance/report, verify exact PR-head Chromium+original 218/4975 integrity CI, signed two-parent QA merge all workflows, then inspect original M1.03.07 prior tests for first genuinely missing session/expiry/replay gap.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10306-generic-auth-failures-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.03.05",
-      "problem": "Prior 18 staff invitation cases tested post-consumption replays and revoked/expired states but not simultaneous separate browsers with same valid enrollment cookie",
-      "result": "COVERAGE_RED_TRUE_2_BROWSER_MFA_CONCURRENT_REPLAY_GREEN_ONE_ACTIVATION_ONE_AUDIT"
+      "scenario_id": "M1.03.06",
+      "problem": "Initial new generic alert comparison read empty transient alert container before populated message",
+      "result": "TEST_TIMING_ONLY_FIXED_WAIT_FOR_NONEMPTY_ALERT_ALL_SIX_ROLE_REAL_CHROMIUM_PASS"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

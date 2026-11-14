@@ -52,10 +52,14 @@ async function negative(page,base,role,identity,override){
  await page.goto(base+"/"+role+"/login");
  await fill(page,identity,role,override);
  await page.getByRole("button",{name:"Sign in",exact:true}).click();
- await page.locator('[role="alert"]').waitFor();
+ const readableAlert=page.locator('[role="alert"]').filter({hasText:/\S/}).first();
+ await readableAlert.waitFor({state:"visible",timeout:15000});
+ const failureText=(await readableAlert.innerText()).trim();
+ assert.ok(failureText,"Rejected credentials must have a readable accessible alert");
  assert.equal(new URL(page.url()).pathname,"/"+role+"/login","Rejected credentials redirected");
  await page.goto(base+"/"+role+"/dashboard");
  assert.equal(new URL(page.url()).pathname,"/"+role+"/login","Rejected credentials issued session");
+ return failureText;
 }
 test("M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB",{
  timeout:350000
@@ -105,14 +109,25 @@ test("M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, c
         const box=await button.boundingBox();
         assert.ok(box&&box.height>=44&&box.x>=0&&box.x+box.width<=width+1,"Mobile Sign in button not usable");
         // Wrong password with otherwise-correct factor never creates an authenticated session.
-        await negative(page,base,role,identity,{password:"M10306!DefinitelyWrongPassword"});
+        // M10306_GENERIC_LOGIN_NONENUMERATION: the old six-role browser case
+        // proved denial but did not compare user-visible responses. A public
+        // login must not reveal which of email, role, password or MFA matched.
+        const generic=await negative(page,base,role,identity,{password:"M10306!DefinitelyWrongPassword"});
+        assert.equal(generic,"The email, password or verification code is incorrect.",
+         `${role} ${width} wrong-password login revealed a non-generic failure`);
         if(role!=="worker"){
-         // Correct password with a definitely-invalid TOTP also fails without creating a session.
-         await negative(page,base,role,identity,{verificationCode:wrongCode(identity.totpSecret)});
+         // Correct password but invalid TOTP must not reveal the account/role.
+         const mfa=await negative(page,base,role,identity,{verificationCode:wrongCode(identity.totpSecret)});
+         assert.equal(mfa,generic,`${role} ${width} invalid MFA leaked that the password or account was valid`);
         }
-        // The exact same valid account presented to a different portal must fail regardless of its password/MFA.
+        // Exact valid credentials of another role must look identical to an
+        // invalid password, not disclose an existing account/assigned role.
         const other=ROLES[(ROLES.indexOf(role)+1)%ROLES.length];
-        await negative(page,base,role,credentials[other],{});
+        const mismatched=await negative(page,base,role,credentials[other],{});
+        assert.equal(mismatched,generic,`${role} ${width} wrong-role login revealed the other account`);
+        const unknown=await negative(page,base,role,{...identity,email:`unknown.${role}.m10306@example.test`},{});
+        assert.equal(unknown,generic,`${role} ${width} unknown-account login has an enumeration side channel`);
+        console.log("M10306_GENERIC_LOGIN_NONENUMERATION",role,width,"wrong-password/wrong-role/unknown-email"+(role==="worker"?"":"/wrong-MFA"));
         console.log("M10306_MOBILE_INVALID_CREDENTIALS_AND_ROLE_DENIED",role,width,layout.document);
         if(width===390){
          await page.goto(base+"/"+role+"/login");
