@@ -1,5 +1,4 @@
 import { PGlite } from "@electric-sql/pglite";
-import { openScriptDatabase } from "./lib/database.mjs";
 import { createCipheriv, createHmac, randomBytes, scrypt as nodeScrypt } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -46,7 +45,7 @@ function encryptSecret(plaintext) {
   return `v1.${iv.toString("base64url")}.${tag.toString("base64url")}.${ciphertext.toString("base64url")}`;
 }
 const database = disposablePostgres
-  ? await openScriptDatabase({ databaseDriver: "postgres", databaseUrl: process.env.DATABASE_URL })
+  ? await (await import("./lib/database.mjs")).openScriptDatabase({ databaseDriver: "postgres", databaseUrl: process.env.DATABASE_URL })
   : await PGlite.create(dataDirectory);
 const credentials = {};
 try {
