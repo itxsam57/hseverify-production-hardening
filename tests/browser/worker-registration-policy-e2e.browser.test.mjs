@@ -203,7 +203,46 @@ test("Worker registration denies missing policies/country and password mismatch,
             field.type = "hidden"; field.name = "acceptedAt"; field.value = "2099-01-01T00:00:00.000Z";
             document.querySelector("form").append(field);
           });
+          // M10301_PENDING_SINGLE_SUBMIT: hold the actual successful Next
+          // Server Action response AFTER the real backend has accepted it.
+          // The genuine pending UI must prevent a second browser submission;
+          // existing post-test authoritative database checks assert one and
+          // only one Worker account, registration flow, OTP and consent audit.
+          await page.evaluate(() => {
+            const nativeFetch = window.fetch.bind(window);
+            let release;
+            const responseGate = new Promise(resolve => { release = resolve; });
+            window.__hseWorkerPending = { started: 0, accepted: false, release: () => release() };
+            window.fetch = async (...args) => {
+              const request = args[0];
+              const method = (args[1]?.method ?? (request instanceof Request ? request.method : "GET")).toUpperCase();
+              const url = new URL(typeof request === "string" ? request : request.url, location.href);
+              if (method !== "POST" || url.pathname !== "/worker/register") return nativeFetch(...args);
+              window.__hseWorkerPending.started++;
+              const response = await nativeFetch(...args);
+              window.__hseWorkerPending.accepted = true;
+              await responseGate;
+              return response;
+            };
+          });
           await page.getByRole("button", { name: "Create Worker account", exact: true }).click();
+          try {
+            await page.waitForFunction(() => window.__hseWorkerPending?.accepted === true, null, { timeout: 20_000 });
+            const button = page.getByRole("button", { name: "Creating account…", exact: true });
+            await button.waitFor({ state: "visible", timeout: 10_000 });
+            assert.equal(await button.isDisabled(), true, "While the real registration POST is pending the submit button must be disabled");
+            assert.equal(await page.getByLabel("Email address").inputValue(), "policy.browser.worker@example.test",
+              "In-flight signup must preserve the exact Worker draft until the accepted response arrives");
+            assert.equal(await page.evaluate(() => window.__hseWorkerPending.started), 1,
+              "Only one real Worker registration request may be issued while pending");
+            await assert.rejects(() => button.click({ timeout: 750 }), /Timeout|not enabled/i,
+              "A second attempted user click must be blocked by the pending button");
+            assert.equal(await page.evaluate(() => window.__hseWorkerPending.started), 1,
+              "Disabled second click must never issue another signup request");
+            await assertResponsive(320, "real accepted registration held pending", false);
+          } finally {
+            await page.evaluate(() => window.__hseWorkerPending?.release());
+          }
           await page.waitForURL("**/worker/register/verify");
           await page.getByText("Step 1 of 2", { exact: false }).waitFor();
           await assertResponsive(320,"pending verification after real submit",false);
