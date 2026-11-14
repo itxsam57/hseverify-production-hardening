@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/feedback";
 
 export default function CompanyTenantScopeError({
-  reset
+  retry
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }): React.JSX.Element {
   return (
     <div className="dashboard-page">
@@ -21,7 +21,7 @@ export default function CompanyTenantScopeError({
         The protected demonstration could not be loaded. No tenant or record details were exposed. Retry after confirming the database and session are available.
       </Alert>
       <div>
-        <Button onClick={reset} type="button">
+        <Button onClick={retry} type="button">
           Retry protected load
         </Button>
       </div>
