@@ -50,7 +50,74 @@ function fingerprint(rows) {
   })))).digest("hex");
 }
 
-export function buildCurrentReleaseLedger({ source, commitSha, generatedAt = new Date().toISOString() }) {
+function reconcilePriorTestExecution({ prior, frozenScenarios, commitSha }) {
+  if (!prior) return null;
+  assert.equal(prior.frozen_scenarios, 218, "Previous test index must match the frozen 218");
+  assert.match(prior.inventory_started_from_git_head_sha ?? "", /^[a-f0-9]{40}$/, "Indexed inventory base SHA is mandatory");
+  assert.match(prior.last_scoped_CI_reference_sha ?? "", /^[a-f0-9]{40}$/, "Previous CI tested source SHA is mandatory");
+  const expected = new Set(frozenScenarios.map(row => row.id));
+  const cases = prior.cases;
+  const rows = prior.scenarios;
+  assert(Array.isArray(cases) && Array.isArray(rows) && rows.length === 218, "Complete prior case and scenario evidence required");
+  assert.equal(new Set(rows.map(row => row.id)).size, 218, "Prior scenario links must be unique");
+  for (const row of rows) assert(expected.has(row.id), "Unknown scenario in prior test index");
+  const uniqueCaseIds = new Set();
+  const counts = { EXACT_CI_SHA_PASSED: 0, HISTORICAL_LOG_PASSED: 0, NO_PASS_LOG_EVIDENCE: 0 };
+  for (const item of cases) {
+    assert(typeof item.case_id === "string" && !uniqueCaseIds.has(item.case_id), "Duplicate or invalid prior test ID");
+    uniqueCaseIds.add(item.case_id);
+    assert(Object.hasOwn(counts, item.test_execution), "Invalid previously observed test execution");
+    counts[item.test_execution] += 1;
+    for (const id of item.scenario_ids ?? []) assert(expected.has(id), "Unknown prior test scenario association");
+  }
+  const c = prior.counts;
+  assert.equal(c.static_existing_distinct_test_cases, cases.length, "Prior test denominator mismatch");
+  assert.equal(c.current_reference_CI_green_distinct_cases, counts.EXACT_CI_SHA_PASSED, "CI pass count mismatch");
+  assert.equal(c.historical_only_green_distinct_cases, counts.HISTORICAL_LOG_PASSED, "Historical pass count mismatch");
+  assert.equal(c.source_tests_without_green_execution_proof, counts.NO_PASS_LOG_EVIDENCE, "Unproven-case count mismatch");
+  assert.equal(c.previous_green_distinct_source_matched_cases,
+    counts.EXACT_CI_SHA_PASSED + counts.HISTORICAL_LOG_PASSED, "Previously executed total mismatch");
+  assert.equal(c.frozen_full_release_verified, 0, "A prior test snapshot cannot assert full release verification");
+
+  const byId = new Map(rows.map(row => [row.id, row]));
+  for (const scenario of frozenScenarios) {
+    const row = byId.get(scenario.id);
+    const actual = cases.filter(item => (item.scenario_ids ?? []).includes(scenario.id));
+    assert.equal(row.existing_source_cases_linked, actual.length, "Historical per-scenario case count mismatch");
+    assert.equal(row.green_exact_reference_CI_cases_linked,
+      actual.filter(item => item.test_execution === "EXACT_CI_SHA_PASSED").length, "Historical CI linkage mismatch");
+    assert.equal(row.green_history_only_cases_linked,
+      actual.filter(item => item.test_execution === "HISTORICAL_LOG_PASSED").length, "Historical old-log linkage mismatch");
+    scenario.scoped_test_evidence = {
+      existing_source_cases_linked: row.existing_source_cases_linked,
+      previously_observed_green_cases: row.green_exact_reference_CI_cases_linked + row.green_history_only_cases_linked,
+      ci_green_reference_sha_cases: row.green_exact_reference_CI_cases_linked,
+      older_log_green_cases: row.green_history_only_cases_linked,
+      // Never equate a current-branch CI pass to complete protected-stage acceptance.
+      full_scenario_certification: "NOT_FULLY_VERIFIED",
+      linked_case_ids: row.linked_case_ids
+    };
+  }
+  return {
+    previous_distinct_green_cases: c.previous_green_distinct_source_matched_cases,
+    existing_static_source_cases: c.static_existing_distinct_test_cases,
+    not_yet_supported_by_previous_green_execution: c.source_tests_without_green_execution_proof,
+    prior_ci_reference_sha_green_cases: c.current_reference_CI_green_distinct_cases,
+    prior_ci_reference_sha: prior.last_scoped_CI_reference_sha,
+    prior_ci_is_this_exact_sha: prior.last_scoped_CI_reference_sha === commitSha,
+    older_historical_green_cases: c.historical_only_green_distinct_cases,
+    green_cases_with_explicit_scenario_link: c.previous_green_distinct_source_matched_cases - c.passed_cases_needing_scenario_mapping,
+    green_cases_awaiting_exact_scenario_link: c.passed_cases_needing_scenario_mapping,
+    known_scenarios_with_at_least_one_linked_green_test: c.frozen_ids_with_at_least_one_sourced_green_case,
+    green_security_titled_case_examples_not_full_pentest: c.previous_green_security_titled_cases_NOT_PENTEST_COVERAGE,
+    inventory_started_from_git_head_sha: prior.inventory_started_from_git_head_sha,
+    reference_is_full_stage: false,
+    release_certified_from_these_tests: 0,
+    accounting: "One historical or prior-CI passed case counted once by file+title; no full release scenario promotion",
+  };
+}
+
+export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, generatedAt = new Date().toISOString() }) {
   assert.match(commitSha ?? "", /^[a-f0-9]{40}$/, "A full exact Git SHA is mandatory");
   const rows = source?.expanded_scenario_verification?.scenarios;
   assert(Array.isArray(rows) && rows.length === 218, "Frozen Masterplan must contain exactly 218 scenarios");
@@ -96,6 +163,7 @@ export function buildCurrentReleaseLedger({ source, commitSha, generatedAt = new
     not_started: scenarios.filter(row => row.status === "NOT_STARTED").length
   };
   assert.equal(counts.full_verified + counts.in_progress + counts.blocked_external_known + counts.failed + counts.not_started, 218);
+  const scoped_test_progress = reconcilePriorTestExecution({ prior: priorTestEvidence, frozenScenarios: scenarios, commitSha });
   const required_gates = Object.fromEntries(RELEASE_GATES.map(gate => [gate, "NOT_VERIFIED"]));
   return {
     report_type: "CURRENT_FINAL_RELEASE_CANDIDATE_218_EVIDENCE_LEDGER",
@@ -104,6 +172,7 @@ export function buildCurrentReleaseLedger({ source, commitSha, generatedAt = new
     frozen_fingerprint_sha256: digest,
     frozen_bricks: 37,
     counts,
+    ...(scoped_test_progress ? { scoped_test_progress } : {}),
     release: {
       decision: "NO_GO",
       required_gates,
