@@ -71,7 +71,9 @@ jobs:
           retention-days: 30
 
   error-boundary-recovery:
-    runs-on: ubuntu-latest
+    # Pin to Ubuntu 24.04: this release's isolated recovery test uses PostgreSQL 16.
+    # ubuntu-latest currently resolves to Ubuntu 26.04 without postgresql-16 apt.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
