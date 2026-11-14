@@ -5,17 +5,27 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.02.03",
-  "current_focus_phase": "KNOWN_RED_QA_MERGE_THREE_INLINE_SEED_FIX_CI_PENDING",
-  "last_completed_action": "PR102 signed QA 8fd8bcab 29/32 workflows green; 3 failed due static import of scripts/lib/database.mjs from inline evaluated synthetic seed; dynamic import PG-only fix tested 11/11 native Company reports; real Worker/Company PG16 recovery remains green at PR head but new merged-SHA candidate not fully CI-cleared.",
-  "next_exact_action": "Guarded PR dynamic import seed fixture fix; verify three previously red workflows and full signed QA merged SHA CI; continue M1.02.03 Worker Profile/Company tenant/notifications recovery only after known RED repaired.",
-  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10203-inline-audit-seed-fix-20261114 --state all --json number,state,headRefOid,mergeCommit",
+  "current_focus_phase": "NEW_SCOPED_ROLE_RECOVERY_REAL_BROWSER_GREEN_AWAIT_SIGNED_QA_CI",
+  "last_completed_action": "Signed QA parent 6f3be3ef 31/31 CI success; M1.02.03 existing PG16 Chrome case expanded Worker Profile, Company tenant-scope and all six role notifications outage and online restoration. Real Worker Profile layout and six role bell errors RED, root fixed with strict typed profile fallback and SQLSTATE42P01 bell fallback after fresh auth recheck. Final isolated PG16 real Chromium 1/1 GREEN, normal six-role notification PGlite browser1/1 GREEN, adjacent native 8/8, Next config4/4, TypeScript PASS, lint 0 errors; wrong-role denied and DB/auth stable.",
+  "next_exact_action": "Guarded commit/push PR for M1.02.03 specific real route recovery evidence, verify exact PR head and signed canonical merged SHA all GitHub CI workflows; after green move to M1.02.04 prior evidence analysis and next missing real browser responsive test. Keep M1.02.03 final stage/provider/pentest UAT blocked.",
+  "next_exact_command": "gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10203-remaining-role-recovery-20261114 --state all --json number,state,headRefOid,mergeCommit",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
       "scenario_id": "M1.02.03",
-      "problem": "3 signed QA workflows red from common inline seed static relative module import, affects Worker registration and Company BOLA fixtures",
-      "result": "ROOT_FIXED_DYNAMIC_PG_ONLY_LOCAL_11_OF_11_NATIVE_PASS_PENDING_GITHUB_CI"
+      "problem": "Worker Profile error screen unreachable during real missing worker_profiles SQL due eager parent Worker layout load",
+      "result": "ROOT_FIXED_REAL_PG16_CHROMIUM_GREEN"
+    },
+    {
+      "scenario_id": "M1.02.03",
+      "problem": "Six role notification route error screens unreachable due eager header notification query during missing platform_notifications SQL",
+      "result": "ROOT_FIXED_ALL_SIX_ROLE_CHROME_GREEN_SECURE_ROLE_RECHECK"
+    },
+    {
+      "scenario_id": "M1.02.03",
+      "problem": "First wrong-role regression test assumed /company/login but app correctly returned /access-denied",
+      "result": "TEST_EXPECTATION_FIXED_DENIAL_CONFIRMED_NO_PROTECTED_VIEW"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

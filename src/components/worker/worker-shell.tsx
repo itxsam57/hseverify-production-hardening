@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { WorkerAssessmentSearch } from "@/components/worker/worker-assessment-search";
 import { WorkerNavigation } from "@/components/worker/worker-navigation";
 import type { WorkerSession } from "@/lib/auth/worker-session";
-import { getNotificationMenu } from "@/lib/notifications/notification-service";
+import { getNotificationMenuForShell } from "@/lib/notifications/notification-service";
 
 export async function WorkerShell({
   session,
@@ -17,7 +17,7 @@ export async function WorkerShell({
   session: WorkerSession;
   children: React.ReactNode;
 }): Promise<React.JSX.Element> {
-  const notificationMenu = await getNotificationMenu("worker");
+  const notificationMenu = await getNotificationMenuForShell("worker");
 
   return (
     <div className="portal-shell">
@@ -69,6 +69,7 @@ export async function WorkerShell({
               role="worker"
               unreadCount={notificationMenu.unreadCount}
               notifications={notificationMenu.notifications}
+              unavailable={notificationMenu.unavailable}
             />
 
             <details className="header-menu profile-menu">

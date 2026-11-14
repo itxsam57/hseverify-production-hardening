@@ -12,26 +12,30 @@ import type { AuthRole } from "@/lib/auth/auth-domain";
 export function NotificationBell({
   role,
   unreadCount,
-  notifications
+  notifications,
+  unavailable = false
 }: {
   role: AuthRole;
   unreadCount: number;
   notifications: readonly NotificationRecord[];
+  unavailable?: boolean;
 }): React.JSX.Element {
   return (
     <details className="header-menu notification-menu">
-      <summary aria-label={`${unreadCount} unread notifications`}>
+      <summary aria-label={unavailable ? "Notifications temporarily unavailable" : `${unreadCount} unread notifications`}>
         <span aria-hidden="true">♢</span>
-        {unreadCount > 0 ? (
+        {!unavailable && unreadCount > 0 ? (
           <span className="notification-count">{unreadCount}</span>
         ) : null}
       </summary>
       <div className="menu-panel notification-panel">
         <div className="menu-heading">
           <strong>Notifications</strong>
-          <span>{unreadCount} unread</span>
+          <span>{unavailable ? "Unavailable" : `${unreadCount} unread`}</span>
         </div>
-        {notifications.length === 0 ? (
+        {unavailable ? (
+          <p className="menu-empty" role="status">Notifications temporarily unavailable. Open Notifications to retry.</p>
+        ) : notifications.length === 0 ? (
           <p className="menu-empty">No notifications.</p>
         ) : (
           <ul className="notification-list persisted-notification-list">

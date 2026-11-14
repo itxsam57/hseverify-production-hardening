@@ -88,7 +88,7 @@ async function assertRecoveryControlRuns(page, buttonName, errorHeading) {
 }
 
 
-test("real error boundaries retry Worker Dashboard and global route requests without exposing internals", { timeout: 300_000 }, async () => {
+test("real error boundaries retry Worker Dashboard and global route requests without exposing internals", { timeout: 420_000 }, async () => {
   const projectRoot = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-error-recovery-pg16-"));
   const pgBin = process.env.HSE_PG_BIN ?? "/usr/lib/postgresql/16/bin";
@@ -214,6 +214,143 @@ test("real error boundaries retry Worker Dashboard and global route requests wit
               "Original Worker and Company sessions survive the outage");
           } finally {
             await finalDb.close();
+          }
+
+          // M10203_WORKER_PROFILE_ROUTE_RECOVERY: inject an actual SQL
+          // outage after authentication, without restarting the server or
+          // replacing the signed-in browser context. Profile loads in both
+          // the Worker layout and the child route: the child recovery control
+          // must remain visible, safe and genuinely usable.
+          const profileFaultDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          try {
+            await profileFaultDb.query("ALTER TABLE worker_profiles RENAME TO worker_profiles_error_recovery_fixture");
+          } finally {
+            await profileFaultDb.close();
+          }
+          await worker.goto(`${baseUrl}/worker/profile`, { waitUntil: "domcontentloaded" });
+          await worker.getByRole("heading", { name: "Profile could not be loaded", exact: true }).waitFor({ timeout: 12_000 });
+          assert.doesNotMatch(await worker.locator("body").innerText(), /worker_profiles|SELECT|RuntimeError|stack/i);
+          await assertRecoveryControlRuns(worker, "Try again", "Profile could not be loaded");
+          const profileRecoveryDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          try {
+            await profileRecoveryDb.query("ALTER TABLE worker_profiles_error_recovery_fixture RENAME TO worker_profiles");
+          } finally {
+            await profileRecoveryDb.close();
+          }
+          await worker.getByRole("button", { name: "Try again", exact: true }).click();
+          await worker.getByRole("heading", { name: "My profile", exact: true }).waitFor({ timeout: 20_000 });
+          assert.equal(await worker.getByRole("heading", { name: "Profile could not be loaded", exact: true }).count(), 0);
+          assert.doesNotMatch(await worker.locator("body").innerText(), /worker_profiles|SELECT|RuntimeError|stack/i);
+
+          // M10203_COMPANY_TENANT_SCOPE_ROUTE_RECOVERY: safely fail the
+          // authorized Company's own tenant data only, without changing its
+          // login, membership, payment or a separate real tenant.
+          const tenantFaultDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          let originalTenantRows;
+          try {
+            originalTenantRows = (await tenantFaultDb.query(
+              "SELECT count(*)::int AS n FROM authorization_tenant_scope_fixtures"
+            )).rows[0].n;
+            await tenantFaultDb.query("ALTER TABLE authorization_tenant_scope_fixtures RENAME TO authorization_tenant_scope_fixtures_error_recovery_fixture");
+          } finally {
+            await tenantFaultDb.close();
+          }
+          await company.goto(`${baseUrl}/company/tenant-scope`, { waitUntil: "domcontentloaded" });
+          await company.getByRole("heading", { name: "Tenant demonstration unavailable", exact: true })
+            .waitFor({ timeout: 12_000 });
+          assert.doesNotMatch(await company.locator("body").innerText(), /authorization_tenant_scope_fixtures|SELECT|RuntimeError|stack/i);
+          await assertRecoveryControlRuns(company, "Retry protected load", "Tenant demonstration unavailable");
+          const tenantRestoreDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          try {
+            await tenantRestoreDb.query("ALTER TABLE authorization_tenant_scope_fixtures_error_recovery_fixture RENAME TO authorization_tenant_scope_fixtures");
+            assert.equal((await tenantRestoreDb.query(
+              "SELECT count(*)::int AS n FROM authorization_tenant_scope_fixtures"
+            )).rows[0].n, originalTenantRows, "Tenant recovery must not mutate protected records");
+          } finally {
+            await tenantRestoreDb.close();
+          }
+          await company.getByRole("button", { name: "Retry protected load", exact: true }).click();
+          await company.getByRole("heading", { name: "Current Company tenant boundary", exact: true })
+            .waitFor({ timeout: 20_000 });
+          assert.equal(await company.getByRole("heading", { name: "Tenant demonstration unavailable", exact: true }).count(), 0);
+          assert.doesNotMatch(await company.locator("body").innerText(), /authorization_tenant_scope_fixtures|SELECT|RuntimeError|stack/i);
+
+          // M10203_SIX_ROLE_NOTIFICATION_ROUTE_RECOVERY: use one real online
+          // PostgreSQL fault, six separately authenticated original Chrome
+          // sessions and each role's actual notifications page. This also
+          // exercises authorization even if the portal header's bell fails.
+          const rolePages = new Map([["worker", worker], ["company", company]]);
+          for (const role of ["assessor", "verifier", "admin", "root"]) {
+            const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+            const rolePage = await context.newPage();
+            await login(rolePage, baseUrl, role, credentials[role]);
+            rolePages.set(role, rolePage);
+          }
+          for (const [role, page] of rolePages) {
+            await page.goto(`${baseUrl}/${role}/notifications`, { waitUntil: "domcontentloaded" });
+            await page.locator(".notification-center-summary").waitFor({ timeout: 15_000 });
+          }
+          const noticeFaultDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          let originalNotices;
+          try {
+            originalNotices = (await noticeFaultDb.query("SELECT count(*)::int AS n FROM platform_notifications")).rows[0].n;
+            await noticeFaultDb.query("ALTER TABLE platform_notifications RENAME TO platform_notifications_error_recovery_fixture");
+          } finally {
+            await noticeFaultDb.close();
+          }
+          for (const [role, page] of rolePages) {
+            await page.goto(`${baseUrl}/${role}/notifications`, { waitUntil: "domcontentloaded" });
+            await page.getByRole("heading", { name: "Notifications are temporarily unavailable", exact: true })
+              .waitFor({ timeout: 12_000 });
+            assert.doesNotMatch(await page.locator("body").innerText(), /platform_notifications|SELECT|RuntimeError|stack/i,
+              `${role} notification error exposed SQL details`);
+            const bell = page.locator("details.notification-menu");
+            assert.equal(await bell.locator("summary").getAttribute("aria-label"), "Notifications temporarily unavailable",
+              `${role} header must not claim zero unread when the database is unavailable`);
+            await bell.locator("summary").click();
+            await bell.getByText("Notifications temporarily unavailable. Open Notifications to retry.", { exact: true }).waitFor();
+            await bell.locator("summary").click();
+            await assertRecoveryControlRuns(page, "Try again", "Notifications are temporarily unavailable");
+          }
+          // Regression: an active Worker cookie can never open the Company's
+          // protected role data even while the shared notification storage is
+          // missing and the bell is using its constrained outage fallback.
+          const forgedRole = await workerContext.newPage();
+          try {
+            await forgedRole.goto(`${baseUrl}/company/notifications`, { waitUntil: "domcontentloaded" });
+            await forgedRole.waitForURL((url) => url.pathname === "/access-denied" || url.pathname.startsWith("/company/login"),
+              { timeout: 15_000 });
+            assert.equal(await forgedRole.locator(".notification-center-summary").count(), 0);
+          } finally {
+            await forgedRole.close();
+          }
+
+          const noticeRestoreDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          try {
+            await noticeRestoreDb.query("ALTER TABLE platform_notifications_error_recovery_fixture RENAME TO platform_notifications");
+            assert.equal((await noticeRestoreDb.query("SELECT count(*)::int AS n FROM platform_notifications")).rows[0].n,
+              originalNotices, "Read-only failure/retry must not create/delete any notifications");
+          } finally {
+            await noticeRestoreDb.close();
+          }
+          for (const [role, page] of rolePages) {
+            await page.getByRole("button", { name: "Try again", exact: true }).click();
+            await page.locator(".notification-center-summary").waitFor({ timeout: 20_000 });
+            assert.equal(await page.getByRole("heading", { name: "Notifications are temporarily unavailable", exact: true }).count(), 0);
+            assert.doesNotMatch(await page.locator("body").innerText(), /platform_notifications|SELECT|RuntimeError|stack/i,
+              `${role} notification recovery exposed SQL details`);
+            await page.reload({ waitUntil: "domcontentloaded" });
+            const label = await page.locator("details.notification-menu > summary").getAttribute("aria-label");
+            assert.match(label ?? "", /^\d+ unread notifications$/, `${role} header still claims outage after successful DB recovery`);
+          }
+          const noticeFinalDb = await openScriptDatabase({ databaseDriver: "postgres", databaseUrl });
+          try {
+            assert.equal((await noticeFinalDb.query("SELECT count(*)::int AS n FROM platform_notifications")).rows[0].n,
+              originalNotices, "Six role-specific retries must not lose or forge a notification");
+            const active = (await noticeFinalDb.query("SELECT count(*)::int AS n FROM auth_sessions WHERE revoked_at IS NULL")).rows[0].n;
+            assert(active >= 6, `Expected six original role sessions retained after outage, found ${active}`);
+          } finally {
+            await noticeFinalDb.close();
           }
         }
       });
