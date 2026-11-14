@@ -99,8 +99,79 @@ test("M1.03.05 real 320px staff cancel after pending MFA then reopen, activate a
     await fillProfile(recipient,"Reopened Verifier");
     const fresh=await recipient.locator(".security-key-card strong").innerText();
     assert.notEqual(fresh,abandoned,"Cancelled enrollment retained previous MFA secret");
-    await recipient.getByLabel("Authenticator code").fill(totp(fresh));
-    await recipient.getByRole("button",{name:"Activate MFA and finish enrollment",exact:true}).click();
+    // M10305_CONCURRENT_MFA_REPLAY_BROWSER: simulate an attacker replaying a
+    // valid enrollment capability in a separate browser *before* it is spent.
+    // Both submit the genuine TOTP through real Next Server Actions at once;
+    // the authorization boundary must commit a single staff activation.
+    const replayContext=await browser.newContext({viewport:{width:390,height:844}});
+    let replayPage;
+    try {
+      await replayContext.addCookies(await context.cookies());
+      replayPage=await replayContext.newPage();
+      await replayPage.goto(baseUrl+"/staff/invite/accept",{waitUntil:"domcontentloaded"});
+      await replayPage.getByRole("heading",{name:"Add HSE Verify to an authenticator app",exact:true}).waitFor();
+      const racing=[recipient,replayPage];
+      const requestStatuses=[[],[]];
+      for(const [index,racePage] of racing.entries()) {
+        racePage.on("response",response=>{
+          if(response.request().method()==="POST"&&new URL(response.url()).pathname==="/staff/invite/accept")
+            requestStatuses[index].push(response.status());
+        });
+        await racePage.getByLabel("Authenticator code").fill(totp(fresh));
+        await racePage.evaluate(()=>{
+          const normalFetch=window.fetch.bind(window);
+          let release;
+          const gate=new Promise(resolve=>{release=resolve;});
+          window.__hseStaffMfaRace={pending:0,release:()=>release()};
+          window.fetch=async(...args)=>{
+            const request=args[0];
+            const method=(args[1]?.method??(request instanceof Request?request.method:"GET")).toUpperCase();
+            const path=new URL(typeof request==="string"?request:request.url,location.href).pathname;
+            if(method!=="POST"||path!=="/staff/invite/accept")return normalFetch(...args);
+            window.__hseStaffMfaRace.pending++;
+            await gate;
+            return normalFetch(...args);
+          };
+        });
+      }
+      const clicks=racing.map(racePage=>racePage.getByRole("button",{name:"Activate MFA and finish enrollment",exact:true}).click());
+      try {
+        await Promise.all(racing.map(racePage=>racePage.waitForFunction(
+          ()=>window.__hseStaffMfaRace?.pending===1,null,{timeout:15000}
+        )));
+        assert.deepEqual(await Promise.all(racing.map(racePage=>racePage.evaluate(
+          ()=>window.__hseStaffMfaRace.pending
+        ))),[1,1],"Both separate browsers must hold one real MFA activation POST before dispatch");
+        await Promise.all(racing.map(racePage=>racePage.evaluate(()=>window.__hseStaffMfaRace.release())));
+        await Promise.allSettled(clicks);
+        await Promise.all(racing.map(racePage=>racePage.waitForFunction(()=>{
+          const url=new URL(location.href);
+          const text=document.body?.innerText??"";
+          return url.pathname==="/verifier/login"&&url.searchParams.get("reason")==="enrollment-complete"
+            ||text.includes("This staff invitation is invalid, expired or already used.")
+            ||text.includes("This enrollment can no longer be continued.")
+            ||text.includes("Open the staff invitation again.");
+        },null,{timeout:20000})));
+        const outcomes=await Promise.all(racing.map(async racePage=>{
+          const url=new URL(racePage.url());
+          return url.pathname==="/verifier/login"&&url.searchParams.get("reason")==="enrollment-complete";
+        }));
+        assert.equal(outcomes.filter(Boolean).length,1,
+          "Concurrent replay of the same MFA enrollment cookie must complete exactly ONE staff activation");
+        assert(requestStatuses.every(statuses=>statuses.length===1&&statuses[0]<500),
+          "Both competing staff MFA requests must receive one safe handled response, not server failure: "+JSON.stringify(requestStatuses));
+        const denied=racing[outcomes.findIndex(accepted=>!accepted)];
+        await denied.reload({waitUntil:"domcontentloaded"});
+        await denied.getByRole("heading",{name:"Invitation unavailable",exact:true}).waitFor();
+        assert.equal(await denied.locator(".security-key-card strong").count(),0,
+          "A replayed stale MFA capability must not expose setup key after completion");
+        console.log("M10305_CONCURRENT_MFA_REPLAY_BROWSER: one real successful activation, one denied; stale cookie and key inaccessible");
+        if(!outcomes[0])await recipient.goto(baseUrl+"/verifier/login?reason=enrollment-complete");
+      }finally{
+        await Promise.all(racing.map(racePage=>racePage.evaluate(()=>window.__hseStaffMfaRace?.release()).catch(()=>{})));
+        await Promise.allSettled(clicks);
+      }
+    }finally{await replayContext.close();}
     await recipient.waitForURL("**/verifier/login?reason=enrollment-complete");
     await recipient.setViewportSize({width:390,height:844});
     assert.ok(await recipient.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"390px login overflow");
@@ -132,6 +203,10 @@ test("M1.03.05 real 320px staff cancel after pending MFA then reopen, activate a
    assert.equal((await db.query("SELECT factor_status FROM auth_mfa_factors WHERE account_id=$1",[account[0].account_id])).rows[0].factor_status,"active");
    assert.deepEqual((await db.query("SELECT active_role,revoked_at FROM auth_sessions WHERE account_id=$1",[account[0].account_id])).rows,[{active_role:"verifier",revoked_at:null}]);
    assert.equal((await db.query("SELECT count(*)::int n FROM auth_security_events WHERE event_type='mfa_enrolled' AND account_id=$1",[account[0].account_id])).rows[0].n,1);
+   assert.equal((await db.query("SELECT count(*)::int n FROM auth_security_events WHERE event_type='invitation_accepted' AND account_id=$1",[account[0].account_id])).rows[0].n,1,
+    "Parallel stolen MFA token cannot record duplicate invitation acceptance");
+   assert.equal((await db.query("SELECT count(*)::int n FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.invitation.accepted'",[account[0].account_id])).rows[0].n,1,
+    "Concurrent staff MFA token replay cannot create two immutable acceptance audits");
    console.log("M10305_DB_CANCELLED_FLOW_NULL_ACCOUNT_ACTIVE_VERIFIER_SINGLE_SESSION_PASS");
   }finally{await db.close();}
   assert.deepEqual(errors,[]);
