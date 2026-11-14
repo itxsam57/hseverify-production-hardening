@@ -1,0 +1,74 @@
+name: M1.03 Company MFA real PostgreSQL row-lock race
+
+on:
+  pull_request:
+    paths:
+      - "tests/platform/company-registration-mfa-postgres.test.mjs"
+      - ".github/workflows/m1-03-company-mfa-postgres.yml"
+      - "src/lib/company/company-registration-service.ts"
+      - "src/lib/company/company-registration-repository.ts"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/platform/company-registration-mfa-postgres.test.mjs"
+      - ".github/workflows/m1-03-company-mfa-postgres.yml"
+      - "src/lib/company/company-registration-service.ts"
+      - "src/lib/company/company-registration-repository.ts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10304-real-pg16-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  independent-mfa-activation-row-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hseqa
+          POSTGRES_PASSWORD: disposable-m10304-only
+          POSTGRES_DB: hseqa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hseqa -d hseqa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_POSTGRES_TEST_DATABASE_URL: postgres://hseqa:disposable-m10304-only@127.0.0.1:5432/hseqa
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Exact SHA checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Real PostgreSQL six independent clients blocked on FOR UPDATE
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/platform/company-registration-mfa-postgres.test.mjs 2>&1 | tee .autopilot/artifacts/m10304-real-postgres-concurrency.log
+      - name: Save exact-SHA actual PostgreSQL evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10304-real-postgres-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10304-real-postgres-concurrency.log
+          if-no-files-found: warn
+          retention-days: 30

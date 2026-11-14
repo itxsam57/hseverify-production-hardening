@@ -1,0 +1,14 @@
+exact_source_sha	group	passed_tests	exit_code	raw_log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	six-role-help	1	0	.autopilot/artifacts/M10202_six-role-help.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	six-role-auth-exit-logout	1	0	.autopilot/artifacts/M10202_six-role-auth-exit-logout.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	six-role-bell-notification	1	0	.autopilot/artifacts/M10202_six-role-bell-notification.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	six-role-mobile-nav	1	0	.autopilot/artifacts/M10202_six-role-mobile-nav.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	worker-search	1	0	.autopilot/artifacts/M10202_worker-search.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	company-search	1	0	.autopilot/artifacts/M10202_company-search.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	assessor-search	1	0	.autopilot/artifacts/M10202_assessor-search.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	verifier-search	1	0	.autopilot/artifacts/M10202_verifier-search.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	admin-search	1	0	.autopilot/artifacts/M10202_admin-search.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	root-search	1	0	.autopilot/artifacts/M10202_root-search.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	six-role-help-language-account-320-rerun	1	0	.autopilot/artifacts/M10202_HEADER_HELP_LANGUAGE_320_RETEST.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	typecheck	0	0	.autopilot/artifacts/M10202_typecheck.log
+7e18f4d692a18001e1a7d729c3ffd720d6cee1e2	lint	0	0	.autopilot/artifacts/M10202_lint.log

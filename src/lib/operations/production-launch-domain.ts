@@ -17,6 +17,8 @@ const REQUIRED_CHECKS: readonly ReleaseHandoverCheck["name"][] = [
   "acceptance"
 ];
 
+// This snapshot covers only self-attested Admin handover checks.
+// "ready" is not evidence of provider delivery, staged security or release authorization.
 export function buildReleaseReadinessSnapshot(
   checks: readonly ReleaseHandoverCheck[]
 ): ReleaseReadinessSnapshot {

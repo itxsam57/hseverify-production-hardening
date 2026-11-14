@@ -671,7 +671,7 @@ jobs:
           fi
           /usr/lib/postgresql/16/bin/initdb --version | grep -Eq '[[:space:]]16\.'
       - name: Install Chromium for real HTTPS production-session verification
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Rebuild exact candidate and test native PostgreSQL, HTTPS, six roles and concurrent Identity GETs
         timeout-minutes: 10
         run: |

@@ -1,0 +1,108 @@
+name: M1.04.04 live Company staff workforce API permission revocation QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/company-complete-journey.browser.test.mjs"
+      - "src/lib/authorization/**"
+      - "src/app/api/company/workers/export/**"
+      - "src/app/company/(portal)/team/**"
+      - ".github/workflows/m1-04-staff-live-export-revocation.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/company-complete-journey.browser.test.mjs"
+      - "src/lib/authorization/**"
+      - "src/app/api/company/workers/export/**"
+      - "src/app/company/(portal)/team/**"
+      - ".github/workflows/m1-04-staff-live-export-revocation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10404-staff-live-export-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-company-staff-permission-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+      UV_THREADPOOL_SIZE: "2"
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Real MFA Company member grant downgrade forged-header restore and revocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          log=.autopilot/artifacts/m10404-staff-live-export-chromium.log
+          set +e
+          node --test --test-concurrency=1 tests/browser/company-complete-journey.browser.test.mjs 2>&1 | tee "$log"
+          test_status=$?
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            failure_summary="$(tail -c 3000 "$log" | tr '\r\n' ' ' | sed 's/%/%25/g')"
+            echo "::error title=M1.04.04 real Chromium test failed::$failure_summary"
+            exit "$test_status"
+          fi
+          grep -q 'ACTUAL_COMPANY_STAFF_EXPORT_API_LIVE_REVOKE' "$log"
+      - name: Archive exact SHA real-browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10404-staff-live-export-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10404-staff-live-export-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-authorization-session-and-membership:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Native authorization and tenant membership regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/platform/authorization-policy-ceiling.test.mjs tests/platform/authorization-session-context.test.mjs tests/platform/authorization-membership-context.test.mjs tests/platform/authorization-tenant-scope-repository.test.mjs 2>&1 | tee .autopilot/artifacts/m10404-native-authorization.log
+      - name: Archive exact SHA native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10404-native-authorization-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10404-native-authorization.log
+          if-no-files-found: warn
+          retention-days: 30

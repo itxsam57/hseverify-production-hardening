@@ -1,0 +1,63 @@
+name: M1.02 keyboard and unsaved form history real-browser QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/unsaved-form-navigation.browser.test.mjs"
+      - "tests/browser/form-history-fallback.browser.test.mjs"
+      - "tests/browser/consumer-validation.browser.test.mjs"
+      - "src/components/ui/unsaved-changes-guard.tsx"
+      - "src/components/ui/form-history-guard.ts"
+      - ".github/workflows/m1-02-unsaved-keyboard.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/unsaved-form-navigation.browser.test.mjs"
+      - "tests/browser/form-history-fallback.browser.test.mjs"
+      - "tests/browser/consumer-validation.browser.test.mjs"
+      - "src/components/ui/unsaved-changes-guard.tsx"
+      - "src/components/ui/form-history-guard.ts"
+      - ".github/workflows/m1-02-unsaved-keyboard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-m10205-keyboard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-mobile-unsaved-navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install chromium
+      - name: Test actual 320px mobile unsaved form, 390px history fallback and keyboard focus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          for suite in form-history-fallback unsaved-form-navigation consumer-validation; do
+            node --test --test-concurrency=1 "tests/browser/${suite}.browser.test.mjs" 2>&1 | tee ".autopilot/artifacts/m10205-${suite}.log"
+          done
+      - name: Preserve exact-SHA real Chromium keyboard and form history proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10205-unsaved-keyboard-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10205-*.log
+          if-no-files-found: warn
+          retention-days: 30

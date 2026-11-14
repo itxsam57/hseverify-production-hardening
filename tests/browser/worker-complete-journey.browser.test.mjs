@@ -123,6 +123,11 @@ test("Worker completes registration, identity, evidence, passport, privacy and s
           await page.getByLabel("Nationality").fill("Pakistani");
           await page.getByLabel("Country of residence").fill("Pakistan");
           await page.getByLabel("Primary language").fill("English");
+          assert.equal(
+            await page.getByLabel("Date of birth").inputValue(),
+            "1990-01-15",
+            "A valid date of birth must not disappear after rapidly editing adjacent fields."
+          );
           await page.getByRole("button", { name: "Save and continue" }).click();
           await page.waitForURL(/section=contact/, { timeout: 15_000 });
 

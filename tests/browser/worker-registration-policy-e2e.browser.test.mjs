@@ -64,6 +64,44 @@ test("Worker registration denies missing policies/country and password mismatch,
         try {
           const page = await browser.newPage();
           const errors = [];
+          await page.setViewportSize({width:320,height:740});
+          const assertResponsive = async (width,stage,checkSubmit=true) => {
+            const layout=await page.evaluate(()=>({
+              viewport:document.documentElement.clientWidth,
+              scroll:document.documentElement.scrollWidth
+            }));
+            console.log("M10301_MOBILE_VALIDATION_320_390",stage,JSON.stringify(layout));
+            assert.equal(layout.viewport,width,stage+" wrong viewport");
+            assert.ok(layout.scroll<=width+1,stage+" Worker register layout overflow: "+JSON.stringify(layout));
+            if(checkSubmit){
+              const button=page.getByRole("button",{name:"Create Worker account",exact:true});
+              const box=await button.boundingBox();
+              const styleAndRect=await button.evaluate(el=>{
+                const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
+                return {
+                  rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
+                  minHeight:style.minHeight,layoutHeight:el.offsetHeight,
+                  transform:style.transform,
+                  boxSizing:style.boxSizing,fontSize:style.fontSize,
+                  rootFontSize:getComputedStyle(document.documentElement).fontSize,
+                  docWidth:document.documentElement.scrollWidth,
+                  scrollX:window.scrollX,devicePixelRatio:window.devicePixelRatio,
+                  disabled:el.disabled
+                };
+              });
+              console.log("M10301_BUTTON_GEOMETRY",stage,JSON.stringify({box,...styleAndRect}));
+              // CSS guarantees a 44px layout target. Chromium can report
+              // 43.9999px for an otherwise 44px hover-transformed box while
+              // the CSS transition is animating. Test the layout guarantee
+              // exactly and allow only subpixel raster rounding in the visual box.
+              assert.ok(
+                box&&Number.parseFloat(styleAndRect.minHeight)>=44&&
+                styleAndRect.layoutHeight>=44&&box.height+1/128>=44&&
+                box.x>=0&&box.x+box.width<=width+1,
+                stage+" registration button clipped or too small: "+JSON.stringify({box,...styleAndRect})
+              );
+            }
+          };
           page.on("pageerror", error => errors.push(error.message));
           const terms = page.getByLabel("I accept the HSE Verify terms for this Worker account.", { exact: true });
           const privacy = page.getByLabel("I accept the privacy notice for Worker registration data.", { exact: true });
@@ -91,6 +129,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           } finally { releaseScripts(); }
           await page.waitForLoadState("load");
           await page.unroute(/\/_next\/static\/.*\.js(?:\?.*)?$/);
+          await assertResponsive(320,"hydrated empty form");
           await page.getByLabel("Full name").fill("Ready Worker");
           await terms.check();
           assert.equal(await page.getByLabel("Full name").inputValue(), "Ready Worker");
@@ -104,6 +143,7 @@ test("Worker registration denies missing policies/country and password mismatch,
           await page.getByText("Accept the privacy notice to continue.", { exact: true }).waitFor();
           assert.equal(await terms.getAttribute("aria-invalid"), "true");
           assert.equal(await privacy.getAttribute("aria-invalid"), "true");
+          await assertResponsive(320,"invalid terms privacy password country");
 
           await page.getByLabel("Full name").fill("Policy Browser Worker");
           await page.getByLabel("Email address").fill("policy.browser.worker@example.test");
@@ -134,6 +174,9 @@ test("Worker registration denies missing policies/country and password mismatch,
           await page.getByText("The passwords do not match.", { exact: true }).waitFor();
           assert.equal(new URL(page.url()).pathname, "/worker/register");
           assert.equal(await page.getByLabel("Email address").inputValue(), "policy.browser.worker@example.test");
+          await page.setViewportSize({width:390,height:844});
+          await assertResponsive(390,"password mismatch error");
+          await page.setViewportSize({width:320,height:740});
 
           await page.getByLabel("Confirm password").fill("PolicyBrowser!Password2026");
           await page.getByLabel("Country", { exact: true }).fill("");
@@ -154,14 +197,55 @@ test("Worker registration denies missing policies/country and password mismatch,
           assert.equal(new URL(page.url()).pathname, "/worker/register");
 
           await privacy.check();
+          await assertResponsive(320,"valid filled form before final submit");
           await page.evaluate(() => {
             const field = document.createElement("input");
             field.type = "hidden"; field.name = "acceptedAt"; field.value = "2099-01-01T00:00:00.000Z";
             document.querySelector("form").append(field);
           });
+          // M10301_PENDING_SINGLE_SUBMIT: hold the actual successful Next
+          // Server Action response AFTER the real backend has accepted it.
+          // The genuine pending UI must prevent a second browser submission;
+          // existing post-test authoritative database checks assert one and
+          // only one Worker account, registration flow, OTP and consent audit.
+          await page.evaluate(() => {
+            const nativeFetch = window.fetch.bind(window);
+            let release;
+            const responseGate = new Promise(resolve => { release = resolve; });
+            window.__hseWorkerPending = { started: 0, accepted: false, release: () => release() };
+            window.fetch = async (...args) => {
+              const request = args[0];
+              const method = (args[1]?.method ?? (request instanceof Request ? request.method : "GET")).toUpperCase();
+              const url = new URL(typeof request === "string" ? request : request.url, location.href);
+              if (method !== "POST" || url.pathname !== "/worker/register") return nativeFetch(...args);
+              window.__hseWorkerPending.started++;
+              const response = await nativeFetch(...args);
+              window.__hseWorkerPending.accepted = true;
+              await responseGate;
+              return response;
+            };
+          });
           await page.getByRole("button", { name: "Create Worker account", exact: true }).click();
+          try {
+            await page.waitForFunction(() => window.__hseWorkerPending?.accepted === true, null, { timeout: 20_000 });
+            const button = page.getByRole("button", { name: "Creating account…", exact: true });
+            await button.waitFor({ state: "visible", timeout: 10_000 });
+            assert.equal(await button.isDisabled(), true, "While the real registration POST is pending the submit button must be disabled");
+            assert.equal(await page.getByLabel("Email address").inputValue(), "policy.browser.worker@example.test",
+              "In-flight signup must preserve the exact Worker draft until the accepted response arrives");
+            assert.equal(await page.evaluate(() => window.__hseWorkerPending.started), 1,
+              "Only one real Worker registration request may be issued while pending");
+            await assert.rejects(() => button.click({ timeout: 750 }), /Timeout|not enabled/i,
+              "A second attempted user click must be blocked by the pending button");
+            assert.equal(await page.evaluate(() => window.__hseWorkerPending.started), 1,
+              "Disabled second click must never issue another signup request");
+            await assertResponsive(320, "real accepted registration held pending", false);
+          } finally {
+            await page.evaluate(() => window.__hseWorkerPending?.release());
+          }
           await page.waitForURL("**/worker/register/verify");
           await page.getByText("Step 1 of 2", { exact: false }).waitFor();
+          await assertResponsive(320,"pending verification after real submit",false);
           registrationCookies=await page.context().cookies();
           assert.deepEqual(errors, []);
         } finally { await browser.close(); }

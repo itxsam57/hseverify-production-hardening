@@ -1,0 +1,7 @@
+exact_source_sha	browser_suite	pass_count	exit_code	local_log
+4b6f683a7be6b9e273b9df91c5f75d72270bb73a	consumer-validation	1	0	.autopilot/artifacts/M10203_EXPANDED_consumer-validation.log
+4b6f683a7be6b9e273b9df91c5f75d72270bb73a	error-recovery-controls	1	0	.autopilot/artifacts/M10203_EXPANDED_error-recovery-controls.log
+4b6f683a7be6b9e273b9df91c5f75d72270bb73a	worker-file-upload-validation	1	0	.autopilot/artifacts/M10203_worker-file-upload-validation.log
+4b6f683a7be6b9e273b9df91c5f75d72270bb73a	company-billing-validation	1	0	.autopilot/artifacts/M10203_company-billing-validation.log
+4b6f683a7be6b9e273b9df91c5f75d72270bb73a	typecheck	0	0	.autopilot/artifacts/M10203_typecheck.log
+4b6f683a7be6b9e273b9df91c5f75d72270bb73a	lint	0	0	.autopilot/artifacts/M10203_lint.log

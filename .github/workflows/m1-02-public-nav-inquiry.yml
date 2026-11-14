@@ -1,0 +1,80 @@
+name: M1.02 public navigation and inquiry browser QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/public-navigation.browser.test.mjs"
+      - "tests/browser/public-inquiry.browser.test.mjs"
+      - "tests/platform/public-inquiry-runtime.test.mjs"
+      - "tests/platform/m1-02-design-system-runtime.test.mjs"
+      - "src/app/contact/**"
+      - "src/components/public-inquiry/**"
+      - "src/app/page.tsx"
+      - ".github/workflows/m1-02-public-nav-inquiry.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/public-navigation.browser.test.mjs"
+      - "tests/browser/public-inquiry.browser.test.mjs"
+      - "tests/platform/public-inquiry-runtime.test.mjs"
+      - "tests/platform/m1-02-design-system-runtime.test.mjs"
+      - "src/app/contact/**"
+      - "src/components/public-inquiry/**"
+      - "src/app/page.tsx"
+      - ".github/workflows/m1-02-public-nav-inquiry.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hse-m102-public-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-inquiry-navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check out exact QA candidate commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Restore locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install actual Chromium and browser dependencies
+        run: npx playwright install chromium
+      - name: Native contact/demo retry, audit, rate-limit and role denials
+        shell: bash
+        run: |
+          mkdir -p .autopilot/artifacts
+          set -o pipefail
+          node --test tests/platform/public-inquiry-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m102-native.log
+      - name: Real Chromium controls, 320/390/desktop navigation and keyboard
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/platform/m1-02-design-system-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m102-design-browser.log
+          node --test tests/browser/public-navigation.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m102-navigation-browser.log
+      - name: Real contact/demo submissions, private Admin/Root inbox and stored XSS denial
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/browser/public-inquiry.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m102-inquiry-browser.log
+      - name: Retain actual exact-SHA browser logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m102-public-nav-inquiry-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m102-*.log
+          if-no-files-found: warn
+          retention-days: 30

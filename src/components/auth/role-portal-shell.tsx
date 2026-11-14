@@ -13,7 +13,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { AuthRole } from "@/lib/auth/auth-domain";
 import type { AuthenticatedSession } from "@/lib/auth/auth-session-service";
-import { getNotificationMenu } from "@/lib/notifications/notification-service";
+import { getNotificationMenuForShell } from "@/lib/notifications/notification-service";
 
 const ROLE_LABELS: Record<AuthRole, string> = {
   worker: "Worker",
@@ -33,7 +33,7 @@ export async function RolePortalShell({
 }): Promise<React.JSX.Element> {
   const label = ROLE_LABELS[session.role];
   const basePath = `/${session.role}`;
-  const notificationMenu = await getNotificationMenu(session.role);
+  const notificationMenu = await getNotificationMenuForShell(session.role);
   const navigationRole = session.role as Exclude<AuthRole, "worker">;
 
   return (
@@ -100,6 +100,7 @@ export async function RolePortalShell({
               role={session.role}
               unreadCount={notificationMenu.unreadCount}
               notifications={notificationMenu.notifications}
+              unavailable={notificationMenu.unavailable}
             />
             <details className="header-menu profile-menu">
               <summary aria-label={`Open ${label} account menu`}>

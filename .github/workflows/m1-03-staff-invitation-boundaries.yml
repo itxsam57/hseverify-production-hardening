@@ -1,0 +1,100 @@
+name: M1.03 staff invitation cancel, token and role-bound browser QA
+
+on:
+  pull_request:
+    paths:
+      - "src/app/globals.css"
+      - "src/app/staff/invite/**"
+      - "src/lib/auth/staff-provisioning-service.ts"
+      - "src/lib/auth/auth-access-repository.ts"
+      - "tests/browser/staff-invitation-*.browser.test.mjs"
+      - "tests/platform/staff-enrollment-token-boundaries.test.mjs"
+      - ".github/workflows/m1-03-staff-invitation-boundaries.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "src/app/globals.css"
+      - "src/app/staff/invite/**"
+      - "src/lib/auth/staff-provisioning-service.ts"
+      - "src/lib/auth/auth-access-repository.ts"
+      - "tests/browser/staff-invitation-*.browser.test.mjs"
+      - "tests/platform/staff-enrollment-token-boundaries.test.mjs"
+      - ".github/workflows/m1-03-staff-invitation-boundaries.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10305-staff-invite-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  invite-browser-320-390-and-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install actual Chromium
+        run: npx playwright install chromium
+      - name: Browser cancel and restart, five roles, expiry, revoked cached forms
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/staff-invitation-cancel-retry.browser.test.mjs tests/browser/staff-invitation-lifecycle.browser.test.mjs tests/browser/staff-invitation-revocation.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10305-staff-browser.log
+      - name: Retain exact candidate browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10305-staff-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10305-staff-browser.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  token-abuse-native-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Mixed tokens, stale/reused tokens, cancellations, issuer revocation and audit rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/platform/staff-enrollment-token-boundaries.test.mjs tests/platform/staff-invitation-revocation-runtime.test.mjs tests/platform/authentication-invitation-expiry.test.mjs 2>&1 | tee .autopilot/artifacts/m10305-staff-token-native.log
+      - name: Retain exact candidate native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10305-staff-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10305-staff-token-native.log
+          if-no-files-found: warn
+          retention-days: 30

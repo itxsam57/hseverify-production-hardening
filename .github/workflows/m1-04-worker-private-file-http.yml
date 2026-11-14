@@ -1,0 +1,107 @@
+name: M1.04 Worker cross-account secure-file HTTP and signed token replay QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/worker-secure-files-cross-account.browser.test.mjs"
+      - "tests/platform/secure-file-access-runtime.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/auth/**"
+      - "src/app/api/secure-files/**"
+      - ".github/workflows/m1-04-worker-private-file-http.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/worker-secure-files-cross-account.browser.test.mjs"
+      - "tests/platform/secure-file-access-runtime.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/auth/**"
+      - "src/app/api/secure-files/**"
+      - ".github/workflows/m1-04-worker-private-file-http.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10403-worker-secure-file-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-two-worker-signed-file-bola:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install actual Chromium without Ubuntu apt dependency fetch
+        run: npx playwright install chromium
+      - name: Real two Worker sign-in, private PDF BOLA and copied capability replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          log=.autopilot/artifacts/m10403-two-worker-file-http-chromium.log
+          set +e
+          node --test tests/browser/worker-secure-files-cross-account.browser.test.mjs 2>&1 | tee "$log"
+          test_status=$?
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            failure_summary="$(tail -c 3000 "$log" | tr '\r\n' ' ' | sed 's/%/%25/g')"
+            echo "::error title=M1.04.03 real Worker file Chromium failed::$failure_summary"
+            exit "$test_status"
+          fi
+      - name: Archive exact SHA Worker browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10403-two-worker-file-http-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10403-two-worker-file-http-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-signed-file-owner-and-session-revocation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Native secure file Worker owner foreign tenant and revoked session security
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-secure-access-runtime-tests.mjs 2>&1 | tee .autopilot/artifacts/m10403-signed-file-native.log
+      - name: Archive exact SHA native access evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10403-signed-file-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10403-signed-file-native.log
+          if-no-files-found: warn
+          retention-days: 30

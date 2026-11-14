@@ -1,0 +1,1346 @@
+{
+  "canonical_scenarios": 218,
+  "final_stage_certified_slots": 0,
+  "historical_mixed_or_source_case_title_only_slots_NOT_COMPLETE": 54,
+  "historically_evidenced_distinct_planned_slots_NOT_COMPLETE": 693,
+  "important_limitations": [
+    "A historical mapped scoped clause is not a fully passing compound 4975 slot; it is evidence for one or more substeps.",
+    "Conservative regex mapping may miss earlier valid tests; no evidence is thrown away, it remains in original 1392 source cases or 316 old scoped logs.",
+    "Source-case titles without exact scenario+dimension assertions remain candidate-only; no lexical auto PASS.",
+    "Security attack-family and responsive-page planning slots require explicit entrypoint/viewport/source-specific test attribution, not generic role or browser logs.",
+    "All 4975 final protected-stage checks remain pending; no actual new application tests were performed during this audit.",
+    "4975 is a provisional planning denominator, not the finite exact future executable test count. Increase with proven mandatory cases."
+  ],
+  "old_clean_unique_observation_ids_used_for_preliminary_dimension_links": 277,
+  "old_scoped_scenario_claims": 216,
+  "per_frozen_scenario_dimension_progress": {
+    "M1.01.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.01.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.01.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.01.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.02.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.02.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.02.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.02.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.02.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 2,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 9,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.03.08": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 3,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.04.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.04.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 3,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.04.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.04.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.05.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.05.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.05.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.05.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.06.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.06.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.06.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.06.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.06.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.07.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 2,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 10,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.08.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.08.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.08.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.08.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.08.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.09.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.09.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.09.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.09.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.09.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.09.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.10.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.10.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.10.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.10.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.10.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.10.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.11.08": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.12.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.12.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.12.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.12.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M1.12.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 3,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 9,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.01.08": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.02.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.02.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.02.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.02.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.02.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.03.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.03.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.03.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.03.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.03.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.03.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.04.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.04.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.04.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.04.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.04.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.04.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.05.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.05.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.05.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 2,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 10,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.05.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.05.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.05.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.06.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.07.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.08.08": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.09.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.09.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.09.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.09.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.09.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 3,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 9,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.10.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.11.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.11.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.11.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.11.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.11.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.11.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 3,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 9,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 1,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 11,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.12.08": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 8,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 5,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 7,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M2.13.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.01.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.01.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.01.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.01.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.01.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.02.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.02.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.02.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.02.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.02.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.03.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.03.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.03.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.03.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.03.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.04.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.04.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.04.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.04.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.04.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.05.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.05.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.05.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.05.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 6,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 6,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.05.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.05.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.06.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.06.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.06.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.06.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.06.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.06.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.07.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.07.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.07.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.07.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.07.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.07.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.08.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.08.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.08.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.08.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.08.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.08.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.06": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.09.07": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.10.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.10.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.10.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.10.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.10.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.11.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 11,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.11.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 5,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.11.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.11.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.11.05": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 1,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 1,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.12.01": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.12.02": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.12.03": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 12,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    },
+    "M3.12.04": {
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 10,
+      "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 2,
+      "all_12_planned_dimensions": 12,
+      "full_release_certified_dimensions": 0
+    }
+  },
+  "planned_check_category_counts": {
+    "responsive_page": 351,
+    "scenario_dimension": 2616,
+    "security_candidate": 2008
+  },
+  "planned_check_slots": 4975,
+  "planned_slots_not_final_stage_certified": 4975,
+  "planned_slots_without_any_precise_old_dimension_link": 4228,
+  "previous_green_source_cases_without_a_precise_planned_dimension_link": 1016,
+  "release_decision": "NO_GO",
+  "release_scenarios_fully_verified": 0,
+  "scoped_prior_source_tests_green_distinct": 1392,
+  "scoped_source_test_case_total": 1566,
+  "slot_historical_link_states": {
+    "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4228,
+    "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 17,
+    "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 693,
+    "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 37
+  },
+  "source_cases_used_in_preliminary_dimension_candidate_links": 376,
+  "source_sha_at_initial_plan": "8c60c0b789513f427fb56db3fa96dad4afe38d47",
+  "source_sha_at_reconciliation": "1c9954a770edb9e9f1a23b1bab59e680fb5bdcc5"
+}

@@ -111,6 +111,45 @@ test("Company filtered directory preserves status through Next, refresh and Prev
     }
     await page.goto(baseUrl+"/company/workers?"+new URLSearchParams({q:"Safety & Operations 25",tenantId:"foreign",accountId:"foreign"}),{waitUntil:"domcontentloaded"});
     await page.getByText("1 matching Worker",{exact:true}).waitFor();
+    // M10402_WORKFORCE_CSV_TENANT_FILTER: direct private export must preserve
+    // the authoritative Company scope despite forged selectors and headers.
+    const filteredCsvUrl=baseUrl+"/api/company/workers/export?"+
+      new URLSearchParams({q:"Safety & Operations 25",status:"active",
+        tenantId:"tenant_untrusted",accountId:"account_untrusted",role:"root"});
+    const filteredCsv=await page.request.get(filteredCsvUrl,{headers:{
+      "x-hse-tenant-id":"tenant_untrusted",
+      "x-hse-account-id":"account_untrusted",
+      "x-hse-active-role":"root"
+    }});
+    assert.equal(filteredCsv.status(),200,"Authorized owner CSV unavailable");
+    assert.match(filteredCsv.headers()["content-type"]??"",/^text\/csv/i);
+    assert.match(filteredCsv.headers()["cache-control"]??"",/no-store/i);
+    const filteredText=await filteredCsv.text();
+    assert.equal(filteredText.trimEnd().split("\n").length,2,"CSV ignored the real Company query scope");
+    assert.ok(filteredText.includes("pagination.25@example.test"),"Owner matching Worker absent from CSV");
+    assert.ok(!filteredText.includes("pagination.27@example.test"),"Unlinked matching foreign Worker leaked in CSV");
+    assert.ok(!filteredText.includes("pagination.00@example.test"),"Unmatched owner Worker leaked in CSV");
+    const activeCsv=await page.request.get(baseUrl+"/api/company/workers/export?"+
+      new URLSearchParams({q:"Safety & Operations",status:"active"}));
+    assert.equal(activeCsv.status(),200);
+    const activeText=await activeCsv.text();
+    assert.equal(activeText.trimEnd().split("\n").length,27,"CSV must include header and 26 active owner workers, not paginate away records");
+    assert.ok(!activeText.includes("pagination.26@example.test"),"Revoked Worker leaked in active-only export");
+    assert.ok(!activeText.includes("pagination.27@example.test"),"Foreign Worker leaked in active-only export");
+    const injectionCsv=await page.request.get(baseUrl+"/api/company/workers/export?"+
+      new URLSearchParams({q:"' OR 1=1 --"}));
+    assert.equal(injectionCsv.status(),200);
+    assert.equal((await injectionCsv.text()).trimEnd().split("\n").length,1,
+      "SQL-like search caused unfiltered CSV data disclosure");
+    const anonymous=await browser.newPage();
+    try {
+      const anonymousCsv=await anonymous.request.get(filteredCsvUrl,{maxRedirects:0});
+      assert.ok([302,303,307,308,401,403,404].includes(anonymousCsv.status()),
+        "Anonymous Company CSV request did not deny safely");
+      assert.ok(!(await anonymousCsv.text()).includes("pagination.25@example.test"),
+        "Anonymous Company CSV leaked a Worker email");
+    } finally { await anonymous.close(); }
+    console.log("M10402_WORKFORCE_CSV_TENANT_FILTER", "owner filters and all rows, forged role/tenant ignored, foreign/revoked excluded, SQL-like and anonymous safe");
     await page.goto(baseUrl+"/company/workers?"+new URLSearchParams({q:"\u0027 OR 1=1 --"}),{waitUntil:"domcontentloaded"});
     await page.getByText("No Workers match these filters.",{exact:true}).waitFor();
     const filters=new URLSearchParams({q:"Safety & Operations",status:"active"});
@@ -149,6 +188,12 @@ test("Company filtered directory preserves status through Next, refresh and Prev
     assert.equal(await page.locator("header.portal-header").getByRole("group",{name:"Workforce search",exact:true}).count(),0);
     await page.goto(baseUrl+"/company/workers?q=Safety",{waitUntil:"domcontentloaded"});
     await page.waitForURL("**/access-denied");
+    const deniedCsv=await page.request.get(baseUrl+"/api/company/workers/export?q=Safety",{maxRedirects:0});
+    assert.ok([302,303,307,308,401,403,404].includes(deniedCsv.status()),
+      "Revoked workforce permission did not deny CSV safely: "+deniedCsv.status());
+    assert.ok(!(await deniedCsv.text()).includes("pagination.25@example.test"),
+      "Revoked workforce permission still disclosed Worker CSV records");
+    console.log("M10402_WORKFORCE_CSV_PERMISSION_REVOKED",deniedCsv.status(),"no Worker exports");
     console.log("ACTUAL_COMPANY_SEARCH_LIVE_DENIAL existing session retains portal, search hidden and direct result route denied after permission removal");
    } finally {await browser.close();}
   }});assert.equal(denied.requestedSignal,"SMOKE_COMPLETE");
