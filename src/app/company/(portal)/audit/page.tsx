@@ -15,10 +15,11 @@ export default async function CompanyAuditPage(): Promise<React.JSX.Element> {
         {events.length === 0 ? <p>No company audit events recorded yet.</p> : (
           <div className="data-table-wrap">
             <table className="data-table">
-              <thead><tr><th>Time</th><th>Action</th><th>Outcome</th><th>Target</th><th>Reason</th></tr></thead>
+              <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Outcome</th><th>Target</th><th>Reason</th></tr></thead>
               <tbody>{events.map((event) => (
                 <tr key={event.auditEventId}>
                   <td>{new Date(event.occurredAt).toLocaleString()}</td>
+                  <td>{event.actorAccountId ? `${event.actorRole ?? "account"} · ${event.actorAccountId}` : "System"}</td>
                   <td>{event.action}</td>
                   <td>{event.outcome}</td>
                   <td>{event.target.type}{event.target.reference ? ` · ${event.target.reference}` : ""}</td>

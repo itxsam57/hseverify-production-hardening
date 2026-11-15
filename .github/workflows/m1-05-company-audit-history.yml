@@ -1,0 +1,104 @@
+name: M1.05.01 Company immutable audit actor, reason and cross-tenant browser QA
+
+on:
+  pull_request:
+    paths:
+      - "src/app/company/(portal)/audit/**"
+      - "src/lib/company/company-organization-repository.ts"
+      - "src/lib/audit/**"
+      - "tests/browser/m10501-company-audit-actor-history.browser.test.mjs"
+      - "tests/platform/audit-foundation.test.mjs"
+      - "tests/platform/company-organization-team.test.mjs"
+      - ".github/workflows/m1-05-company-audit-history.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "src/app/company/(portal)/audit/**"
+      - "src/lib/company/company-organization-repository.ts"
+      - "src/lib/audit/**"
+      - "tests/browser/m10501-company-audit-actor-history.browser.test.mjs"
+      - "tests/platform/audit-foundation.test.mjs"
+      - "tests/platform/company-organization-team.test.mjs"
+      - ".github/workflows/m1-05-company-audit-history.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10501-real-company-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-two-company-immutable-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Actual two Company MFA audit UI lifecycle, actor, reason, tenant isolation and immutable PostgreSQL-compatible DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m10501-company-audit-actor-history.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10501-real-company-immutable-audit-browser.log
+          grep -q 'M10501_IMMUTABLE_DB' .autopilot/artifacts/m10501-real-company-immutable-audit-browser.log
+          grep -q 'M10501_AUDIT_CROSS_TENANT_UI_320' .autopilot/artifacts/m10501-real-company-immutable-audit-browser.log
+      - name: Archive exact SHA browser audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10501-real-company-immutable-audit-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10501-real-company-immutable-audit-browser.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-audit-foundation-and-organization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Strict Next route and TypeScript typecheck on exact SHA
+        run: npm run typecheck
+      - name: Native immutable audit, tenant scope and Company organization adjacent regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/platform/audit-foundation.test.mjs tests/platform/company-organization-team.test.mjs tests/platform/m1-05-final-acceptance.test.mjs 2>&1 | tee .autopilot/artifacts/m10501-native-audit-and-organization.log
+      - name: Archive exact SHA native audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10501-native-audit-and-organization-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10501-native-audit-and-organization.log
+          if-no-files-found: warn
+          retention-days: 30
