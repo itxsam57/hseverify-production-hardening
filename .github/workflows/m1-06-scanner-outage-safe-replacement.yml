@@ -1,0 +1,100 @@
+name: M1.06.03 Worker scanner outage retains safe file until exact retry QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/m10603-worker-scanner-outage.browser.test.mjs"
+      - "tests/platform/secure-file-scan-handler-runtime.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-scanner-outage-safe-replacement.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/m10603-worker-scanner-outage.browser.test.mjs"
+      - "tests/platform/secure-file-scan-handler-runtime.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-scanner-outage-safe-replacement.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10603-safe-outage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-worker-browser-safe-file-during-scanner-outage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact source SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Actual Worker retains signed active file during pending scan and binds recovered retry only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m10603-worker-scanner-outage.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10603-scanner-outage-browser.log
+          grep -q 'M10603_PENDING_BROWSER_OLD_SAFE_RETAINED' .autopilot/artifacts/m10603-scanner-outage-browser.log
+          grep -q 'M10603_RECOVERED_BROWSER' .autopilot/artifacts/m10603-scanner-outage-browser.log
+          grep -q 'M10603_OUTAGE_DB_IMMUTABLE' .autopilot/artifacts/m10603-scanner-outage-browser.log
+      - name: Archive exact SHA Worker/browser and DB proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10603-scanner-outage-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10603-scanner-outage-browser.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-outage-scan-object-immutability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact source SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Existing native scan outage retry, exact private object, duplicate lease, single clean audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-name-pattern='scanner outage retains quarantine provenance' tests/platform/secure-file-scan-handler-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10603-outage-native.log
+          grep -q 'M10603_SCANNER_OUTAGE' .autopilot/artifacts/m10603-outage-native.log
+      - name: Archive exact SHA scanner-outage native
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10603-scanner-outage-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10603-outage-native.log
+          if-no-files-found: warn
+          retention-days: 30
