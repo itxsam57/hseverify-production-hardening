@@ -1333,7 +1333,7 @@
   "release_decision": "NO_GO",
   "release_scenarios_fully_verified": 0,
   "scoped_prior_source_tests_green_distinct": 1400,
-  "scoped_source_test_case_total": 1573,
+  "scoped_source_test_case_total": 1574,
   "slot_historical_link_states": {
     "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4227,
     "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 17,
