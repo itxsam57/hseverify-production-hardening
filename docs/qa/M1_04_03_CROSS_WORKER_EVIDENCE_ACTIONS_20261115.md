@@ -25,3 +25,8 @@
 
 
 **Strict original release-index proof:** 218 frozen, 4975, 216 legacy, source-case and scenario action map verification plus original engine tests all exit0; `.autopilot/artifacts/M10403_ORIGINAL_218_4975_ENGINEERING_GATES_20261115.log` SHA256 `8f7fabaf2d64f940438e9d78c2afbf89f67f5b6a549c76f1cc85c6c97082fc23`. These remain scoped engineering checks, not final protected staging certification.
+
+
+## Exact PR-head CI coverage gap and correction before merge
+- PR #118 initial head `f448062d7f70d5b65cc6a172313a83f880a3060d`: real two Worker Chromium, signed-file native, Autopilot and 4,975 all passed, **but the HSE218 release-ledger workflow did not run**. Root cause: `.github/workflows/qa-current-218-ledger.yml` path filters omitted canonical original `docs/qa/evidence/**`, cursor, resume and original action-map generator. This is proven CI trigger coverage gap, **not a failing product test**.
+- Root governance fix in same isolated PR: add those paths to PR/push triggers and add four strict original source-case SHA, legacy216, 4975 and action-map verifiers before existing immutable 218 NO-GO check. No gate disabled or pass promoted. New head CI mandatory before merge.

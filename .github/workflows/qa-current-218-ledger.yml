@@ -5,6 +5,10 @@ on:
     paths:
       - "docs/qa/2026-10-02-evidence.json"
       - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
+      - "docs/qa/CURRENT_RESUME_218.md"
+      - "docs/qa/evidence/**"
+      - "scripts/build-218-evidence-action-map.py"
       - "scripts/lib/current-release-218-ledger.mjs"
       - "scripts/reconcile-current-release-218.mjs"
       - "tests/engineering/current-release-218-ledger.test.mjs"
@@ -16,6 +20,10 @@ on:
     paths:
       - "docs/qa/2026-10-02-evidence.json"
       - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
+      - "docs/qa/CURRENT_RESUME_218.md"
+      - "docs/qa/evidence/**"
+      - "scripts/build-218-evidence-action-map.py"
       - "scripts/lib/current-release-218-ledger.mjs"
       - "scripts/reconcile-current-release-218.mjs"
       - "tests/engineering/current-release-218-ledger.test.mjs"
@@ -45,6 +53,12 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - name: Verify unchanged original case fingerprints, legacy scoped 216 and all 4975 planned dimensions
+        run: |
+          python3 scripts/reconcile-218-prior-test-evidence.py --verify-index
+          python3 scripts/reconcile-216-historical-scope.py --verify-index
+          python3 scripts/reconcile-4975-prior-coverage.py --verify
+          python3 scripts/build-218-evidence-action-map.py --verify
       - name: Reject historical PASS promotion and frozen scenario tampering
         run: node --test tests/engineering/current-release-218-ledger.test.mjs
       - name: Reconcile all 218 scenarios from clean checkout
