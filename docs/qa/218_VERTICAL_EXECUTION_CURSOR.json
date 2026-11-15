@@ -4,28 +4,28 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.05.01",
-  "current_focus_phase": "M10501_REAL_AUDIT_UI_ACTOR_MISSING_PRODUCT_RED_REASON_MISSING_ROOT_FIXED_CHROME_1_OF_1_DB_IMMUTABLE_NATIVE9_GREEN_PR_CI_PENDING",
-  "last_completed_action": "Current exact QA e7054324d5a236476268e76bb72f3187cc5a3acd PR119 merged all32/32 workflows green. Frozen M1.05.01 prior directly green0, old candidate tests not auto-promoted; new real Company A owner MFA site create and Audit UI actor column missing real browser RED (raw sha256 7898e343b22841ca2d499c41d87d92a4ce95e4cd26cf4e0b6390b040d6498c97), and source confirmed org audit reason_key NULL. Root fixed Company Audit Actor role/account field and org action-derived machine reason keys (not human rationale). Same actual two Company Chrome 1/1 PASS 30.8s sha256 e39dd2bf4e161f0317e3bcd1a6077a646ceb9f8def9920f02c2bc832d4dff159: A real create/edit/archive/restore 4 durable audit rows, B tenant separate, anonymous redirected, DB5 correct actor/role/tenant/membership/target/reason, immutable UPDATE/DELETE denied. Adjacent native9/9 and typecheck PASS sha256 6f201b28378abe75c88efc0d3e51e744dbd6e4e226416c692011b9c8a425eedd. New source case denominator1573 expected but historically prior GREEN1399 until exact new current CI/source proof; old scoped216 NOT FULL; FULL0/218, planned693 PARTIAL+55 UNCERTAIN+4227 UNLINKED FINAL0/4975, pentest incomplete2008 provisional independent UNKNOWN, blocked10, high/critical UNKNOWN. This is Company org only, other material events/final protected stage/owner UAT not verified. V4 session f1ed9caf-cde7-4c9b-a9c4-d7956cc038e4.",
-  "next_exact_action": "Rebuild/verify canonical 218/4975 test-case source index/legacy/action map with new M10501 actual browser test; guarded commit+push qa/m10501-audit-actor-history-20261115, open PR against QA e7054324, exact head new real Chrome + audit/native + 218/4975 + Autopilot full GREEN, merge only clean and inspect all merged SHA CI; resume frozen M1.05.02 if final stage/owner UAT provider blocked.",
-  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'fix(M1.05.01): show Company audit actor and lifecycle reasons' && git push origin qa/m10501-audit-actor-history-20261115",
+  "current_focus_scenario_id": "M1.05.02",
+  "current_focus_phase": "M10502_NEXT_ACTOR_ROLE_DEEPLINK_REAL_CHROME_ONE_PASS_NATIVE_NINETEEN_PASS_PR_CI_PENDING",
+  "last_completed_action": "Signed QA aa92ebef9cc2223de7de1ac7a68bc2e73ba3c4c3 PR120 merged33/33. Existing genuine Worker->Verifier->Admin->Verifier/Worker notification deep link flow extended in place: five signed other-role or anonymous copied Admin escalation URL denied and two forged header HTTP denied without private reason; 3 built CLI job deliveries, 4 actor-bound role-mismatch security DB denials, Worker/Admin/Verifier notification read audit. Real Chrome1/1 exit0 log sha256 ce8c4e22863ded474365de514fc8b4c51efe1de9e8a3127e18081001963bb702. Native thirteen producer cases pass; premature external145s timeout cancelled remaining review file, only remaining six rerun6/6 pass exit0 SHA256 22c3f5dc67b31dc29ff9c2084f847bede655f49788cfd34f7f5e95ae222f9f7a. Historical matched count newly1400/1573 from prior M10501 real log (NOT duplicate M10502), unmatched173. FULL0/218, old216 partial, 4975 693partial 55uncertain 4227unlinked final0, pentest incomplete2008 candidate independently done unknown, blocked10, critical/high unknown. Stage/providers/independent pentest/owner UAT not verified. V4 session 6a7cc38f-3a97-4735-a3ee-30e4f3064ad2.",
+  "next_exact_action": "Run strict original218,216,4975 source index engineering + audit; governed commit/push qa/m10502-next-actor-deeplink-20261115, PR vs signed QA aa92ebe, exact head real Chrome/native/218/4975/Autopilot green then merge, all merged exact QA SHA workflow green; move to frozen M1.05.03 with M1.05.02 final stage blocked.",
+  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.05.01",
-      "problem": "Actual Company Audit UI did not show actor column and Company organization native append had reason_key NULL for real lifecycle events",
-      "result": "ACTUAL_CHROME_RED_REPRODUCED_ROOT_FIXED_REAL_CHROME_1_OF_1_GREEN_NATIVE9_TYPECHECK_GREEN_NEW_PR_CI_PENDING_NOT_FINAL_STAGE"
+      "scenario_id": "M1.05.02",
+      "problem": "Previously green receiving-role browser workflow lacked copied Admin link wrong-role/form-header tests",
+      "result": "ACTUAL_CHROME_ONE_PASS_FIVE_FOREIGN_ANON_DENIED_NATIVE19_CASES_PASS_NOT_FINAL_STAGE"
     },
     {
-      "scenario_id": "M1.05.01",
-      "problem": "Remaining other roles/material transitions full audit matrix, protected staging independent pentest real provider load/restore owner UAT",
-      "result": "NOT_FULLY_VERIFIED_SCOPED_COMPANY_ORGANIZATION_ONLY_BLOCKED_EXTERNAL_FINAL_STAGE"
+      "scenario_id": "M1.05.02",
+      "problem": "Combined native tool timeout145s cancelled separate review file after producer13 passed",
+      "result": "TOOL_TIMEOUT_NOT_PRODUCT_DEFECT_ONLY_UNFINISHED_SIX_RERUN_PASS_EXIT0"
     },
     {
-      "scenario_id": "M1.04.04",
-      "problem": "Independent copied Company staff browser after owner grant removal, suspension and membership revoke",
-      "result": "PR119_MERGED_QA_e7054324_32_OF_32_CI_GREEN_SCOPED_ONLY"
+      "scenario_id": "M1.05.02",
+      "problem": "Other material events plus independent staging pentest/providers/load/restore/owner UAT not available",
+      "result": "NOT_FULLY_VERIFIED_EXTERNAL_FINAL_STAGE_AND_ACTION_MATRIX"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

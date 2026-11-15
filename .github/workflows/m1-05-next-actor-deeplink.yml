@@ -1,0 +1,100 @@
+name: M1.05.02 next actor notification deep-link role/tenant abuse QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/review-resolution-notification.browser.test.mjs"
+      - "tests/platform/review-resolution-notification-runtime.test.mjs"
+      - "src/lib/review/**"
+      - "src/lib/notifications/**"
+      - "src/app/admin/(portal)/operations/review-escalations/**"
+      - ".github/workflows/m1-05-next-actor-deeplink.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/review-resolution-notification.browser.test.mjs"
+      - "tests/platform/review-resolution-notification-runtime.test.mjs"
+      - "src/lib/review/**"
+      - "src/lib/notifications/**"
+      - "src/app/admin/(portal)/operations/review-escalations/**"
+      - ".github/workflows/m1-05-next-actor-deeplink.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10502-review-next-actor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-worker-verifier-admin-next-actor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Actual Worker evidence submission, Verifier/Admin decisions and next actor notifications with copied Admin href role-abuse denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/review-resolution-notification.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10502-review-next-actor-chromium.log
+          grep -q 'M10502_ESCALATION_WRONG_ROLE_LINK_DENIED' .autopilot/artifacts/m10502-review-next-actor-chromium.log
+          grep -q 'M10502_ESCALATION_AUDIT_DB' .autopilot/artifacts/m10502-review-next-actor-chromium.log
+      - name: Archive exact SHA next-actor browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10502-review-next-actor-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10502-review-next-actor-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-review-notification-source-and-receiving-role:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Native next actor event outbox, notification projection and unauthorized reader boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/platform/review-resolution-notification-runtime.test.mjs tests/platform/assurance-event-notification-producer-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10502-review-next-actor-native.log
+      - name: Archive exact SHA notification runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10502-review-next-actor-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10502-review-next-actor-native.log
+          if-no-files-found: warn
+          retention-days: 30
