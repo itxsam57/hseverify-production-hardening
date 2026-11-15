@@ -15,7 +15,7 @@ async function fixture(role="worker") {
   const repo=new AuthAccessRepository(db), accountId="recovery-"+role+"-account",email=role+".recovery@example.test";
   await repo.authentication.insertAccount({accountId,email,phone:null,displayName:"Recovery "+role,status:"pending_email",passwordHash:await hashPassword(OLD,ENV.authPepper),workerReference:role==="worker"?"HSE-REG-RECOVERYTEST":null,now:NOW});
   await repo.authentication.updateAccountAfterEmailVerification(accountId,NOW);await repo.authentication.addRole(accountId,role,NOW);
-  for(const suffix of ["one","two"]) await repo.authentication.insertSession({sessionId:"recovery-"+role+"-"+suffix,accountId,activeRole:role,tokenHash:"token-"+role+"-"+suffix,csrfTokenHash:"csrf-"+role+"-"+suffix,userAgentHash:null,ipAddressHash:null,createdAt:NOW,lastSeenAt:NOW,expiresAt:"2026-10-06T03:00:00.000Z"});
+  for(const suffix of ["one","two"]) await repo.authentication.insertSession({sessionId:"recovery-"+role+"-"+suffix,accountId,activeRole:role,tokenHash:"token-"+role+"-"+suffix,csrfTokenHash:"csrf-"+role+"-"+suffix,userAgentHash:null,ipAddressHash:null,createdAt:NOW,lastSeenAt:NOW,expiresAt:new Date(Date.now()+60*60*1000).toISOString()});
   const service=new AuthRecoveryService(repo,{pepper:ENV.authPepper,sandboxEnabled:true},()=>new Date(NOW));
   const request=await service.request({role,email,requestFingerprint:"recovery-fixture"});
   const delivery=(await db.query("SELECT d.encrypted_code,c.challenge_id FROM auth_sandbox_deliveries d JOIN auth_otp_challenges c ON c.challenge_id=d.challenge_id WHERE c.account_id=$1 AND c.purpose='password_reset'",[accountId])).rows[0];
