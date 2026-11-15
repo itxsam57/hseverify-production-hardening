@@ -57,12 +57,27 @@ async function requireCurrentSecuritySession(
   if (!account.rows[0]) {
     throw new AccountSecurityInputError("Security session is no longer active. Sign in again.");
   }
+  const bound = [session.sessionId, session.accountId, session.role];
+  // Acquire the authoritative session lock before checking expiry. A statement
+  // started while valid can wait for the row until AFTER expiry; its original
+  // statement_timestamp() would incorrectly authorize that stale session.
+  const locked = await database.query<{ session_id: string }>(
+    `SELECT session_id FROM auth_sessions
+      WHERE session_id=$1 AND account_id=$2 AND active_role=$3
+      FOR UPDATE`,
+    bound
+  );
+  if (!locked.rows[0]) {
+    throw new AccountSecurityInputError("Security session is no longer active. Sign in again.");
+  }
+  // A SECOND SQL statement runs after the lock has been granted. Unlike a
+  // transaction/statement-start timestamp, clock_timestamp() represents the
+  // actual database time after any row-lock wait.
   const active = await database.query<{ session_id: string }>(
     `SELECT session_id FROM auth_sessions
       WHERE session_id=$1 AND account_id=$2 AND active_role=$3
-        AND revoked_at IS NULL AND expires_at>statement_timestamp()
-      FOR UPDATE`,
-    [session.sessionId, session.accountId, session.role]
+        AND revoked_at IS NULL AND expires_at>clock_timestamp()`,
+    bound
   );
   if (!active.rows[0]) {
     throw new AccountSecurityInputError("Security session is no longer active. Sign in again.");
