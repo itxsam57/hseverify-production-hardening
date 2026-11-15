@@ -49,7 +49,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Install actual Chromium without Ubuntu apt dependency fetch
         run: npx playwright install chromium
-      - name: Real two Worker sign-in, private PDF BOLA and copied capability replay
+      - name: Real two Worker private PDF BOLA, forged recordId evidence save/submit actions, immutable audit
         shell: bash
         run: |
           set -euo pipefail
