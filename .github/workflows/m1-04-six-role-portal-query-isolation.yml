@@ -8,6 +8,7 @@ on:
       - "src/app/**/dashboard/**"
       - "src/proxy.ts"
       - "tests/browser/authentication-boundaries-e2e.browser.test.mjs"
+      - "tests/browser/m10401-crossportal-server-action.browser.test.mjs"
       - "tests/platform/authorization-final-isolation-suite.test.mjs"
       - ".github/workflows/m1-04-six-role-portal-query-isolation.yml"
   push:
@@ -19,6 +20,7 @@ on:
       - "src/app/**/dashboard/**"
       - "src/proxy.ts"
       - "tests/browser/authentication-boundaries-e2e.browser.test.mjs"
+      - "tests/browser/m10401-crossportal-server-action.browser.test.mjs"
       - "tests/platform/authorization-final-isolation-suite.test.mjs"
       - ".github/workflows/m1-04-six-role-portal-query-isolation.yml"
 
@@ -57,12 +59,20 @@ jobs:
           set -euo pipefail
           mkdir -p .autopilot/artifacts
           node --test --test-concurrency=1 tests/browser/authentication-boundaries-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10401-six-role-request-browser.log
+      - name: Signed real Next Server Action POST rejects five foreign authenticated roles and anonymous replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m10401-crossportal-server-action.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10401-cross-role-action-post-browser.log
       - name: Preserve real browser exact-SHA evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: m10401-six-role-browser-${{ env.VERIFIED_SHA }}
-          path: .autopilot/artifacts/m10401-six-role-request-browser.log
+          path: |
+            .autopilot/artifacts/m10401-six-role-request-browser.log
+            .autopilot/artifacts/m10401-cross-role-action-post-browser.log
           if-no-files-found: warn
           retention-days: 30
 

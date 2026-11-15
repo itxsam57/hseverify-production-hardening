@@ -3607,6 +3607,23 @@
       "title": "M1.12 public verification entry renders through real Chromium"
     },
     {
+      "case_id": "tests/browser/m10401-crossportal-server-action.browser.test.mjs#e1ae6883d32ddd4c",
+      "direct_scenarios": [
+        "M1.04.01"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/browser/m10401-crossportal-server-action.browser.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.04.01"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay"
+    },
+    {
       "case_id": "tests/browser/m2-01-assurance-order-case.browser.test.mjs#1b67f0d4bf1c8bfa",
       "direct_scenarios": [],
       "evidence": [
@@ -4631,8 +4648,8 @@
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         },
         {
-          "sha256": "8b1ccc110e20437f108cc3c7eb1b01ebd2ff6df8dc97adf9fd5a614d3fdcf6fe",
-          "source_log": "hseverify-m308-operations-pentest-20261108/.autopilot/artifacts/20261108-M308-exact8f-mfa-management-boundaries.log",
+          "sha256": "125b8fd050e27836e9fe77d06aba84b9d3f857054ad1935f6c15c7280548bcd9",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_MFA_MANAGEMENT_POST_SESSION_LOCK_CHROME_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -4640,7 +4657,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/browser/mfa-management-boundaries.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -4672,8 +4689,8 @@
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         },
         {
-          "sha256": "679dc7cdf16903e97ed28f103da5119661d9ce81788cd7ddab53b80a72410e77",
-          "source_log": "hseverify-m10308-password-race-20261114/.autopilot/artifacts/M10308_SIX_ROLE_PASSWORD_CHANGE_BROWSER_FIXED.log",
+          "sha256": "45062728e58b7420b4187c8e3bbf00fdcc8a86e09d11b82fd5ed442462476874",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_SESSION_VALIDITY_SIX_ROLE_CHROMIUM_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -4681,7 +4698,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/browser/password-change-boundaries.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -7299,7 +7316,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 24,
+      "prior_log_pass_repetition_count": 27,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7358,7 +7375,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 24,
+      "prior_log_pass_repetition_count": 27,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7417,7 +7434,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 24,
+      "prior_log_pass_repetition_count": 27,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7476,7 +7493,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 24,
+      "prior_log_pass_repetition_count": 27,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7535,7 +7552,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 24,
+      "prior_log_pass_repetition_count": 27,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7594,7 +7611,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 24,
+      "prior_log_pass_repetition_count": 27,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7653,7 +7670,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 21,
+      "prior_log_pass_repetition_count": 24,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7685,7 +7702,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 20,
+      "prior_log_pass_repetition_count": 23,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -9778,14 +9795,20 @@
           "workflow": "M1.03 password change six-role copied-session replay QA"
         },
         {
-          "sha256": "e42002f4c82d1b63105ad9bfb1b7081e48807b6443e4589a92957874a30502f1",
-          "source_log": "hseverify-m10308-password-race-20261114/.autopilot/artifacts/M10308_ACCOUNT_SECURITY_NATIVE_REGRESSION.log",
+          "sha256": "46a67530c5ec696bc06e098c969449b0fd88a7741c76a24d579d786cac0d4283",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_NATIVE_AND_TSC_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         },
         {
-          "sha256": "0a49f9906aa0dc83e39f3c21b092f1d2d6af80f85cdfe6a8152ce6f324db7583",
-          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_NATIVE_PASSWORD_ROLLBACK10_GREEN_20261111.log",
+          "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e42002f4c82d1b63105ad9bfb1b7081e48807b6443e4589a92957874a30502f1",
+          "source_log": "hseverify-m10308-password-race-20261114/.autopilot/artifacts/M10308_ACCOUNT_SECURITY_NATIVE_REGRESSION.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -9793,7 +9816,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/account-security-audit-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 4,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -9836,7 +9859,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/account-security-notification-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 8,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -9879,7 +9902,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/account-security-notification-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 8,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -9922,7 +9945,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/account-security-notification-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 8,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -9965,7 +9988,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/account-security-notification-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 8,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -9980,6 +10003,18 @@
       ],
       "evidence": [
         {
+          "sha256": "15fe9fb664f572ffd84aa2b93d1162c2f7d1575ff0f0d27094f7c0c41d0d0350",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_SESSION_REVALIDATION_PG_LOCKED_V2.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "951871ae5ba77c28759ef0a077d174c874c4c3691cc8b8aea4d5447317f4fabe",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_PG5_FIXED_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
           "sha256": "975e72fd4093252f9f86df59260f8fca31726fe2d424e30ff2160cd68d7b604e",
           "source_log": "hseverify-m10308-password-race-20261114/.autopilot/artifacts/M10308_REAL_PG_CONCURRENT_PASSWORD_FIXED.log",
           "status": "clean_green_summary_historical_worktree",
@@ -9989,7 +10024,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/account-security-password-change-postgres.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [
         "M1.03.08"
       ],
@@ -10002,16 +10037,29 @@
       "direct_scenarios": [
         "M1.03.08"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "15fe9fb664f572ffd84aa2b93d1162c2f7d1575ff0f0d27094f7c0c41d0d0350",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_SESSION_REVALIDATION_PG_LOCKED_V2.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "951871ae5ba77c28759ef0a077d174c874c4c3691cc8b8aea4d5447317f4fabe",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_PG5_FIXED_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/account-security-password-change-postgres.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [
         "M1.03.08"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.03.08 PostgreSQL rejects revoked, expired, role-mismatched security sessions without mutation"
     },
     {
@@ -10019,16 +10067,29 @@
       "direct_scenarios": [
         "M1.03.08"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "15fe9fb664f572ffd84aa2b93d1162c2f7d1575ff0f0d27094f7c0c41d0d0350",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_SESSION_REVALIDATION_PG_LOCKED_V2.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "951871ae5ba77c28759ef0a077d174c874c4c3691cc8b8aea4d5447317f4fabe",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_PG5_FIXED_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/account-security-password-change-postgres.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [
         "M1.03.08"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.03.08 PostgreSQL logout committed before security lock rejects in-flight request"
     },
     {
@@ -10036,16 +10097,29 @@
       "direct_scenarios": [
         "M1.03.08"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "15fe9fb664f572ffd84aa2b93d1162c2f7d1575ff0f0d27094f7c0c41d0d0350",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_SESSION_REVALIDATION_PG_LOCKED_V2.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "951871ae5ba77c28759ef0a077d174c874c4c3691cc8b8aea4d5447317f4fabe",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_PG5_FIXED_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/account-security-password-change-postgres.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [
         "M1.03.08"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.03.08 PostgreSQL security lock serializes simultaneous logout"
     },
     {
@@ -10053,16 +10127,23 @@
       "direct_scenarios": [
         "M1.03.08"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "951871ae5ba77c28759ef0a077d174c874c4c3691cc8b8aea4d5447317f4fabe",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_PG5_FIXED_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/account-security-password-change-postgres.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.03.08"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.03.08 PostgreSQL session expiry during a row lock wait rejects the stale mutation"
     },
     {
@@ -44647,12 +44728,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 948,
+    "ambiguous_or_changed_title_occurrences": 958,
     "ambiguous_or_changed_unique_titles": 222,
-    "clean_pass_summary_logs": 1201,
+    "clean_pass_summary_logs": 1212,
     "current_reference_CI_green_distinct_cases": 235,
-    "current_source_test_files": 546,
-    "current_test_source_content_sha256": "a94c43fa6b267c7d253f27f015103d60509f4f1995fe38cd38c49d46e240c3f2",
+    "current_source_test_files": 547,
+    "current_test_source_content_sha256": "e4d39753505a69db69cea7cf132e74ef807e6865a3ee02dd5bf230bcda635f16",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -44660,24 +44741,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 235,
       "unmatched_or_ambiguous_distinct_CI_names": 32
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 145,
+    "existing_source_cases_linked_to_an_exact_218_id": 146,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 42,
-    "historical_log_files_scanned": 2203,
-    "historical_only_green_distinct_cases": 1159,
-    "logs_with_no_clean_pass_summary_or_a_failure": 56,
-    "logs_with_pass_lines": 1257,
-    "matched_case_occurrences_with_duplicates": 5680,
+    "historical_log_files_scanned": 2226,
+    "historical_only_green_distinct_cases": 1163,
+    "logs_with_no_clean_pass_summary_or_a_failure": 60,
+    "logs_with_pass_lines": 1272,
+    "matched_case_occurrences_with_duplicates": 5727,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1394,
-    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 178,
+    "previous_green_distinct_source_matched_cases": 1398,
+    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 179,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 177,
-    "static_existing_distinct_test_cases": 1571,
-    "unique_source_matched_historical_green_cases": 1394,
-    "worktrees_scanned": 99
+    "source_tests_without_green_execution_proof": 174,
+    "static_existing_distinct_test_cases": 1572,
+    "unique_source_matched_historical_green_cases": 1398,
+    "worktrees_scanned": 101
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -44690,7 +44771,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "1bb890f700f55383b0dbf70277f6deb776430d7b",
+  "inventory_started_from_git_head_sha": "2139bbdb2020d10e7f90f3ac91bbf54f029e6114",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -44950,7 +45031,7 @@
       "family": "Authentication",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 6,
-      "green_history_only_cases_linked": 1,
+      "green_history_only_cases_linked": 5,
       "id": "M1.03.08",
       "linked_case_ids": [
         "tests/browser/password-change-boundaries.browser.test.mjs#22f42e379ac9bfd9",
@@ -44959,13 +45040,17 @@
         "tests/platform/account-security-notification-runtime.test.mjs#1c5e2bcdd6d6bfc8",
         "tests/platform/account-security-notification-runtime.test.mjs#09eab1335e4590c3",
         "tests/platform/account-security-notification-runtime.test.mjs#6c481204ab260f9a",
-        "tests/platform/account-security-password-change-postgres.test.mjs#b5985d07696b4260"
+        "tests/platform/account-security-password-change-postgres.test.mjs#b5985d07696b4260",
+        "tests/platform/account-security-password-change-postgres.test.mjs#ec3ce90980c202d4",
+        "tests/platform/account-security-password-change-postgres.test.mjs#5d605e4770d2cda6",
+        "tests/platform/account-security-password-change-postgres.test.mjs#a6602aa14d513c2c",
+        "tests/platform/account-security-password-change-postgres.test.mjs#0621d776c733c372"
       ],
       "scenario": "Password change, other-session revocation and privileged recovery"
     },
     {
       "brick": "M1.04",
-      "existing_source_cases_linked": 4,
+      "existing_source_cases_linked": 5,
       "family": "Authorization",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 3,
