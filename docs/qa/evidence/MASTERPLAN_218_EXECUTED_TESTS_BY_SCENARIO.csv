@@ -16,7 +16,7 @@ M1.03.05,M1.03,Authentication,"Staff invitation: role-bound activation, used/exp
 M1.03.06,M1.03,Authentication,"Every portal: wrong role, wrong password/MFA and signed-out redirect",11,11,0,NOT_FULLY_VERIFIED
 M1.03.07,M1.03,Authentication,Exit Portal preserves session; Sign Out revokes it,6,6,0,NOT_FULLY_VERIFIED
 M1.03.08,M1.03,Authentication,"Password change, other-session revocation and privileged recovery",11,6,5,NOT_FULLY_VERIFIED
-M1.04.01,M1.04,Authorization,Role-bound session rejects every cross-portal combination,5,3,1,NOT_FULLY_VERIFIED
+M1.04.01,M1.04,Authorization,Role-bound session rejects every cross-portal combination,5,3,2,NOT_FULLY_VERIFIED
 M1.04.02,M1.04,Authorization,"Tenant-scoped resources, filters, files and exports do not disclose other tenant",22,8,14,NOT_FULLY_VERIFIED
 M1.04.03,M1.04,Authorization,"Cross-worker IDs, copied capabilities and direct actions denied",3,3,0,NOT_FULLY_VERIFIED
 M1.04.04,M1.04,Authorization,"Role elevation, stale permissions, revoked session and membership fail closed",1,1,0,NOT_FULLY_VERIFIED

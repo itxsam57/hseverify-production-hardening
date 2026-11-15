@@ -138,6 +138,35 @@ test("M1.04.02 two real Company browser sessions isolate secure PDF issue, previ
             })).status(),404,"Forged Company headers changed tenant authority");
             console.log("M10402_COMPANY_FOREIGN_DENIAL_320","cross-tenant fileRef, copied token, anonymous and spoofed headers 404");
 
+            // Revalidate the principal before ANY cache/partial response decision.
+            // These are actual signed download-capability HTTP GETs, not a
+            // recreated token or an unauthorized file served from a stub.
+            const conditionalRequests=[
+              {name:"ranged",headers:{"range":"bytes=0-15"}},
+              {name:"etag",headers:{"if-none-match":'"'+hash(aFile.bytes)+'"'}},
+              {name:"date",headers:{"if-modified-since":new Date(Date.now()+86_400_000).toUTCString()}},
+              {name:"ranged-validator",headers:{"range":"bytes=0-15","if-range":'"'+hash(aFile.bytes)+'"'}}
+            ];
+            for(const variant of conditionalRequests){
+              for(const [contextName,foreign] of [["foreign-company",companyB],["anonymous",anonymous]]){
+                const denied=await foreign.request.get(base+aUrl,{headers:variant.headers});
+                assert.equal(denied.status(),404,contextName+" "+variant.name+" must not return 200/206/304");
+                assert.equal((await denied.body()).length,0,contextName+" "+variant.name+" leaked private PDF bytes");
+                assert.match(denied.headers()["cache-control"]??"",/private.*no-store/i,
+                  contextName+" "+variant.name+" denial is cacheable");
+                assert.equal(denied.headers().pragma,"no-cache",contextName+" "+variant.name+" missing no-cache");
+              }
+            }
+            const ownRanged=await companyA.request.get(base+aUrl,{headers:{"range":"bytes=0-15"}});
+            assert.equal(ownRanged.status(),200,"Current download route must serve full authorized bytes, not unsolicited partial");
+            assert.deepEqual(Buffer.from(await ownRanged.body()),aFile.bytes);
+            assert.match(ownRanged.headers()["cache-control"]??"",/private.*no-store/i);
+            const foreignHead=await companyB.request.head(base+aUrl,{headers:{"range":"bytes=0-15"}});
+            assert.ok([404,405].includes(foreignHead.status()),"HEAD may not bypass GET authorization");
+            assert.equal((await foreignHead.body()).length,0,"Cross-tenant HEAD may not disclose PDF bytes");
+            console.log("M10402_CONDITIONAL_RANGE_TENANT_DENIED",
+              "foreign+anonymous 4 header variants each 404 empty no-store; own ranged valid full bytes; foreign HEAD denied");
+
             const bOwn=await issue(companyB,bFile.fileRef);
             assert.equal(bOwn.status(),200,"Company B could not issue own private PDF");
             const bUrl=(await bOwn.json()).accessUrl;
