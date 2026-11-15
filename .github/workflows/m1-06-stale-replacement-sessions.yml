@@ -1,0 +1,98 @@
+name: M1.06.04 stale Worker replacement preserves signed preview context QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/m10604-stale-replacement-sessions.browser.test.mjs"
+      - "tests/platform/worker-evidence-attachments.test.mjs"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-stale-replacement-sessions.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/m10604-stale-replacement-sessions.browser.test.mjs"
+      - "tests/platform/worker-evidence-attachments.test.mjs"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-stale-replacement-sessions.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10604-stale-replacement-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-worker-two-session-stale-replacement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install dependencies from lock
+        run: npm ci --no-audit --no-fund
+      - name: Install actual Chromium
+        run: npx playwright install chromium
+      - name: Two signed-in Worker sessions stale replace denied and correct retry/preview/DB/audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m10604-stale-replacement-sessions.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10604-two-sessions.log
+          grep -q 'M10604_STALE_TWO_SESSIONS_REPLACEMENT_CONFLICT_BROWSER' .autopilot/artifacts/m10604-two-sessions.log
+          grep -q 'M10604_STALE_CONFLICT_PRIVATE_PREVIEW_BROWSER' .autopilot/artifacts/m10604-two-sessions.log
+          grep -q 'M10604_STALE_RECOVERY_RELOAD_BROWSER' .autopilot/artifacts/m10604-two-sessions.log
+          grep -q 'M10604_STALE_ATTACHED_DB_AUDIT' .autopilot/artifacts/m10604-two-sessions.log
+      - name: Archive exact SHA browser and DB proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10604-worker-stale-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10604-two-sessions.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-replacement-immutability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install dependencies from lock
+        run: npm ci --no-audit --no-fund
+      - name: Adjacent exact-version native replacement and submitted-version write-denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-name-pattern='M1.11 replacing a primary certificate supersedes only the same slot' tests/platform/worker-evidence-attachments.test.mjs 2>&1 | tee .autopilot/artifacts/m10604-native-replacement.log
+      - name: Archive native replacement regression
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10604-worker-stale-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10604-native-replacement.log
+          if-no-files-found: warn
+          retention-days: 30
