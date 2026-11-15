@@ -4,33 +4,33 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.05.04",
-  "current_focus_phase": "M10504_REAL_INTERVIEW_EMAIL_OUTAGE_SCHEDULE_AND_IDEMPOTENT_OUTBOX_CHROME2_OF2_NATIVE1_PASS_GITHUB_PR_CI_PENDING",
-  "last_completed_action": "Signed QA 43b7f14dafa7418a1548613ba39e123123a51544 PR122 exact 34/34 merged-SHA CI all green. Frozen M1.05.04 prior directly linked0, already existing interview email delivery real browser extended in-place: original schedule persisted in Worker actual UI and identical DB id/status/time/assessor/tenant/event across unconfigured email retry and controlled transport success; 3 distinct original jobs without idempotency duplicates; Worker Assessor Company link authorized, copied Worker link foreign Worker404. Initial source gap marker RED only; first actual browser startup RED due worktree symlinked node_modules Next package resolution not product issue; restored lock-identical copy local worktree only; same real Chromium2/2 PASS exit0 104.8s log sha256 1add0a87b8d6204ff810a4bda5cc6a399ccd12e73c00e263b9980c8820cfc5aa. Original native outage business state/idempotency/stale lease 1/1 PASS exit0 log sha256 c9c2efa606bc7ce73bcff8268606eeefd8facfb245b647a91038f131d1e63864. Added exact-head browser/native CI and original report. FULL0/218, HISTORIC1400/1573, 173 unmatched; scoped216 not full; planned 693 PARTIAL+55 UNCERTAIN+4227 UNLINKED FINAL0/4975; pentest 2008 preliminary completed unknown, blocked10, severe unknown. Real external provider, final protected stage, full independent pentest, load/restore and Owner UAT unverified. V4 be431772-7616-42a7-b42e-c74dc716d3b1 cycle5c1c4c7978f743de8fd705d773e79d2a.",
-  "next_exact_action": "Original frozen 218/216/4975/source identity and action index rebuild+strict engineering gates, V4 guarded commit/push qa/m10504-email-outage-business-20261115, PR exact head real Chrome 2/2/native1/1 plus full 218/4975/Autopilot all green, merge only all green then verify all merged QA workflow results; next frozen M1.06.01 if provider/full-stage blocked.",
+  "current_focus_scenario_id": "M1.06.01",
+  "current_focus_phase": "M10601_REAL_PDF_PNG_JPEG_WORKER_BROWSER_1_OF_1_NATIVE_SCAN_3_OF_3_PASS_PR_CI_PENDING",
+  "last_completed_action": "PR123 QA merged at exact 4284ce6ee28f43c98ef602ea6744e49d4c9b0429 35/35 workflows green. Frozen M1.06.01 initial source gap RED (missing PDF/JPEG real browser, not product). Created genuine PDF PNG JPEG Worker browser upload, scanning, record/version owner SHA256 MIME precise DB3, 3 foreign/anonymous private signed preview denials. Initial browser fail was corrupted hardcoded JPEG test fixture (not product); corrected to valid 268-byte decoded JPEG and added diagnostics, same real Chrome1/1 PASS exit0 31.9s SHA256 f9cba6baf8af5cbbf81ff35fe80f5e51b459e5b76a3cc281505ccacf303931f4, adjacent native scanner/secure-file 3/3 PASS exit0 SHA256 e3762492dfd95b4369cc10b9656897bf92b30d461eb623d153e87a8893156000. One distinct new named browser case; original source index historical1400/1574 unmatched174 (new local PASS not prior historic), old scoped216/218 NOT_FULL, planned4975 partial693 uncertain55 unlinked4227 FINAL0, 218 FULL0, pentest 2008 provisional independent UNKNOWN, blocked10, high/critical UNKNOWN, NO-GO. Original report docs/qa/M1_06_01_REAL_THREE_FORMAT_SCAN_BINDING_20261115.md and scoped row link. Final provider/protected stage/UAT absent. V4 session 536f5187-bf5c-40ce-a122-d7751a18a39b.",
+  "next_exact_action": "Run strict original 218/216/source index and 4975/check/action-mapping plus engineering gates, protected V4 guarded commit/push qa/m10601-three-format-scan-binding-20261115 and PR to QA4284ce6; exact head real Chrome1/1 native3/3 original218/4975/Autopilot green, genuine merge and verify ALL exact merged QA SHA workflows; next original M1.06.02 negative upload form/unsafe scan, keep M1.06.01 provider final stage NOT_FULLY_VERIFIED.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.05.04",
-      "problem": "Exact source-assertion gap: existing browser mail outage journey did not assert committed Worker scheduled interview ID/time/status/event persists and no duplicate recipient job",
-      "result": "SOURCE_GAP_RED_ONLY_NOT_APP_EXPLOIT_EXTENDED_SAME_REAL_CHROME_2_OF_2_GREEN_NATIVE_1_OF_1_PASS_SCOPED_NOT_FINAL_STAGE"
+      "scenario_id": "M1.06.01",
+      "problem": "Existing real PNG upload browser did not test genuine PDF and JPEG complete scanner + file/version binding",
+      "result": "SOURCE_COVERAGE_RED_ONLY_NEW_GENUINE_FORMAT_CHROMIUM_1_OF_1_PASS_NATIVE_SCAN_3_OF_3_PASS_SCOPED_NOT_FINAL"
+    },
+    {
+      "scenario_id": "M1.06.01",
+      "problem": "Initial hardcoded 639-byte JPEG in newly added test did not decode; browser expected-success timeout",
+      "result": "TEST_FIXTURE_ONLY_CORRECTED_TO_DECODER_VERIFIED_268_BYTE_2X2_JPEG_REAL_BROWSER_RETEST_PASS_NO_APP_DEFECT"
+    },
+    {
+      "scenario_id": "M1.06.01",
+      "problem": "Real external scanner/storage, full cross-role receiving workflows, independent full pentest, protected final staging, realistic load and Owner UAT",
+      "result": "NOT_FULLY_VERIFIED_EXTERNAL_AND_FINAL_STAGE"
     },
     {
       "scenario_id": "M1.05.04",
-      "problem": "First browser attempt Next Turbopack could not resolve out-of-root symlinked node_modules Next package",
-      "result": "TEST_ENV_STARTUP_RED_FIXED_ISOLATED_LOCAL_NODE_MODULES_COPY_NO_PRODUCT_CHANGE_BROWSER_RETEST_EXIT0"
-    },
-    {
-      "scenario_id": "M1.05.04",
-      "problem": "Independent protected staging, real mail provider delivery, full role/workflow security, realistic load/restore, Owner UAT",
-      "result": "NOT_FULLY_VERIFIED_BLOCKED_EXTERNAL_AND_FINAL_STAGE"
-    },
-    {
-      "scenario_id": "M1.05.03",
-      "problem": "Six-role cloned signed browser unread badge sync 1 to0 and2 to0",
-      "result": "PR122_MERGED_QA_43b7f14_34_OF_34_CI_GREEN_SCOPED_ONLY"
+      "problem": "Previously tested real Worker interview preserved through email outage and native outbox",
+      "result": "PR123_MERGED_QA_4284ce6_35_OF_35_EXACT_CI_GREEN_SCOPED_ONLY"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

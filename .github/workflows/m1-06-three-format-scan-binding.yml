@@ -1,0 +1,101 @@
+name: M1.06.01 real PDF PNG JPEG scan and exact record binding QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/m10601-three-format-scan-binding.browser.test.mjs"
+      - "tests/platform/secure-file-scan-result-semantics.test.mjs"
+      - "tests/platform/secure-file-foundation.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-three-format-scan-binding.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/m10601-three-format-scan-binding.browser.test.mjs"
+      - "tests/platform/secure-file-scan-result-semantics.test.mjs"
+      - "tests/platform/secure-file-foundation.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-three-format-scan-binding.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10601-three-formats-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-worker-three-format-scanner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Real Worker PDF PNG JPEG upload, clean scan binding and owned private previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m10601-three-format-scan-binding.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10601-real-formats-chromium.log
+          grep -q 'M10601_THREE_FORMATS_REAL_SCAN_BINDING' .autopilot/artifacts/m10601-real-formats-chromium.log
+          grep -q 'M10601_THREE_FORMATS_IMMUTABLE_DB' .autopilot/artifacts/m10601-real-formats-chromium.log
+          test "$(grep -c 'M10601_THREE_FORMAT_PRIVATE_PREVIEW' .autopilot/artifacts/m10601-real-formats-chromium.log)" -eq 3
+      - name: Archive exact SHA browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10601-real-formats-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10601-real-formats-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-clean-scan-and-secure-file-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Native clean scan and secure-file metadata, privacy and immutability
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/platform/secure-file-scan-result-semantics.test.mjs tests/platform/secure-file-foundation.test.mjs 2>&1 | tee .autopilot/artifacts/m10601-native-scanner.log
+      - name: Archive exact SHA native scanner evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10601-native-scanner-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10601-native-scanner.log
+          if-no-files-found: warn
+          retention-days: 30
