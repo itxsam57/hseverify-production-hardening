@@ -20,7 +20,7 @@ M1.04.01,M1.04,Authorization,Role-bound session rejects every cross-portal combi
 M1.04.02,M1.04,Authorization,"Tenant-scoped resources, filters, files and exports do not disclose other tenant",22,8,14,NOT_FULLY_VERIFIED
 M1.04.03,M1.04,Authorization,"Cross-worker IDs, copied capabilities and direct actions denied",3,3,0,NOT_FULLY_VERIFIED
 M1.04.04,M1.04,Authorization,"Role elevation, stale permissions, revoked session and membership fail closed",1,1,0,NOT_FULLY_VERIFIED
-M1.05.01,M1.05,Audit and notifications,"Every material transition retains actor, resource, reason and immutable history",0,0,0,NOT_FULLY_VERIFIED
+M1.05.01,M1.05,Audit and notifications,"Every material transition retains actor, resource, reason and immutable history",1,0,0,NOT_FULLY_VERIFIED
 M1.05.02,M1.05,Audit and notifications,New submission/decision/assignment sends next actor correct authorized deep link,0,0,0,NOT_FULLY_VERIFIED
 M1.05.03,M1.05,Audit and notifications,Read/unread/mark-all and unread badge synchronize across roles,0,0,0,NOT_FULLY_VERIFIED
 M1.05.04,M1.05,Audit and notifications,Outbox retry/idempotency/outage does not roll back underlying business state,0,0,0,NOT_FULLY_VERIFIED
