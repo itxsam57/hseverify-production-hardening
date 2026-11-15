@@ -95,7 +95,7 @@ async function seedSecuritySession(control, suffix, options = {}) {
  const accountId="m10308_validity_"+suffix+"_"+randomBytes(4).toString("hex");
  const sessionId=accountId+"_session", createdAt=new Date(Date.now()-7200000).toISOString();
  const now=new Date().toISOString();
- const expiresAt=options.expired?new Date(Date.now()-3600000).toISOString():new Date(Date.now()+3600000).toISOString();
+ const expiresAt=options.expiresAt??(options.expired?new Date(Date.now()-3600000).toISOString():new Date(Date.now()+3600000).toISOString());
  const repository=new AuthAccessRepository(control);
  await repository.authentication.insertAccount({
   accountId,email:accountId+"@example.test",phone:null,displayName:"Synthetic account security",
@@ -222,4 +222,42 @@ test("M1.03.08 PostgreSQL security lock serializes simultaneous logout",{timeout
   assert.equal(active,0,"successful security action completed BEFORE logout; logout then revokes session");
   assert.deepEqual(persisted,{oldPasswordPreserved:false,events:1,audits:1});
  }finally{release.resolve();await Promise.all([worker.close(),logout.close(),control.close()])}
+});
+
+
+test("M1.03.08 PostgreSQL session expiry during a row lock wait rejects the stale mutation",{timeout:45000},async()=>{
+ const [worker,holder,control]=await Promise.all([openScriptDatabase(ENV),openScriptDatabase(ENV),openScriptDatabase(ENV)]);
+ const holdReady=deferred(),release=deferred(),attempted=deferred();
+ try {
+  const session=await seedSecuritySession(control,"expiry_during_row_lock",{
+   expiresAt:new Date(Date.now()+3000).toISOString()
+  });
+  const held=holder.transaction(async tx=>{
+   await tx.query("UPDATE auth_sessions SET last_seen_at=last_seen_at WHERE session_id=$1",[session.sessionId]);
+   holdReady.resolve();
+   await release.promise;
+  });
+  await holdReady.promise;
+  const wrapped={...worker,transaction:cb=>worker.transaction(async tx=>cb({...tx,query:async(sql,params)=>{
+   if(sql.includes("SELECT session_id FROM auth_sessions"))attempted.resolve();
+   return tx.query(sql,params);
+  }}))};
+  const pending=new AccountSecurityService(Promise.resolve(wrapped))
+   .changePassword({session,currentPassword:OLD,newPassword:NEW_ONE})
+   .then(()=>({accepted:true}),e=>({accepted:false,error:e.message}));
+  await attempted.promise;
+  const msUntilExpiry=Date.parse(session.expiresAt)-Date.now();
+  assert.ok(msUntilExpiry>600,"This probe must start the session query while still unexpired");
+  await new Promise(resolve=>setTimeout(resolve,msUntilExpiry+550));
+  release.resolve();
+  await held;
+  const result=await pending;
+  const persisted=await securityMutationCounts(control,session.accountId);
+  console.log("M10308_EXPIRY_DURING_ROW_LOCK_REAL_POSTGRES",JSON.stringify({
+   result,persisted,afterExpiry:Date.now()>Date.parse(session.expiresAt)
+  }));
+  assert.deepEqual(result,{accepted:false,error:"Security session is no longer active. Sign in again."},
+   "PostgreSQL statement_timestamp captured BEFORE the lock wait must not authorize an expired session");
+  assert.deepEqual(persisted,{oldPasswordPreserved:true,events:0,audits:0});
+ }finally{release.resolve();await Promise.all([worker.close(),holder.close(),control.close()]);}
 });

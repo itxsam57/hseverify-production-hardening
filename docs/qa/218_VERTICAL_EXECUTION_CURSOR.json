@@ -5,27 +5,22 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.03.08",
-  "current_focus_phase": "SESSION_ROW_VALIDITY_LOCK_ROOT_FIX_PG4_CHROME2_NATIVE_GREEN_PR_HEAD_CI_REQUIRED",
-  "last_completed_action": "Signed canonical QA PR113 already merged f4884d757a7f56fea14a72f8d2fbe9d7e88f9fc1; reused passing password race. New actual PG16 revoked/logout-after-request RED; added account+session row lock inside all four security mutations; real PG16 4/4 scoped PASS (both race commit orders, deny revoked/expired/wrong role), 6-role password Chromium 1/1, 5 staff MFA Chromium 1/1, native rollback 2/2, TypeScript/audit/notification PASS; original 218/4975 source inventory and engineering gates PASS. Source case historic GREEN1394/1570, NO MATCH176; planned693 PARTIAL +55 UNCERTAIN +4227 UNLINKED FINAL0; full0/218, external blockers10. See docs/qa/M1_03_08_SESSION_LOCK_REVALIDATION_20261115.md. Pending guarded feature commit/push and exact PR/merge SHA CI; no final stage signoff.",
-  "next_exact_action": "Governed commit and push qa/m10308-session-validity-20261115 with original 218 ledger evidence/handoff; open PR into qa/a28-eligibility-read-guard-20261107, then verify exact PR-head PostgreSQL/Chromium/218/4975/Autopilot CI and merged-SHA CI. Full M1.03.08 remains NOT_FULLY_VERIFIED pending stage, real provider, independent pentest, load/restore and Owner UAT; continue M1.04.01 after scoped merge.",
-  "next_exact_command": "git status --short && git add .autopilot/audit/events.ndjson docs/qa/M1_03_08_SESSION_LOCK_REVALIDATION_20261115.md docs/qa/CURRENT_RESUME_218.md docs/qa/218_VERTICAL_EXECUTION_CURSOR.json docs/qa/evidence/MASTERPLAN_218* src/lib/auth/account-security-service.ts scripts/build-218-evidence-action-map.py tests/engineering tests/platform/account-security-password-change-postgres.test.mjs tests/platform/account-security-business-rollback.test.mjs && git commit -m \"fix(auth): lock active security session for privileged mutations\" && git push -u origin qa/m10308-session-validity-20261115",
+  "current_focus_phase": "PR115_EXPIRY_POSTLOCK_RECHECK_REAL_PG5_NATIVE10_TWO_CHROMIUM_SUITES_GREEN_PR_CI_PENDING",
+  "last_completed_action": "PR114 two-parent merged qa SHA 5a08d15caed3c933172336c4019c91ee55a0da15, exact QA CI 36/36 SUCCESS. NEW PG16 statement_timestamp prelock expiry bug reproduced in direct SQL probe and actual service RED 4/5 (expired accepted password, security/audit event1). Fixed by post-lock SQL database clock_timestamp check; same PG suite 5/5 GREEN, native rollback/audit/notices10/10 and TypeScript GREEN, six-role password Chrome1/1 and postlock five-role MFA Chrome1/1 GREEN (combined log SHA256 ee003d19b81b3ff2033225546079e0cc81f3cd1cf76461cf0598c6279d069b25, exit0). Original counters: FULL 0/218, old 216 scoped, 1394/1571 prior green 177 unproven, provisional 4975: 693 PARTIAL+55 UNCERTAIN+4227 UNLINKED, FINAL0; pentest incomplete and 10 known external blockers. Report docs/qa/M1_03_08_SESSION_LOCK_REVALIDATION_20261115.md. Follow-up PR115 commit/push required; not release-ready.",
+  "next_exact_action": "Guarded commit and push qa/m10308-session-validity-20261115 expiry-after-wait corrective source+PG5 proof+original 218/4975 ledger. Open follow-up PR115 against current signed QA 5a08d15caed3c933172336c4019c91ee55a0da15, confirm exact PR-head CI, merge only all-green then confirm all merged SHA workflows. After scope merged, retain NOT_FULLY_VERIFIED until final protected stage, real providers, independent pentest, realistic load/restore and owner UAT; move to next frozen M1.04.01 without repeating previously passing 30-pair cross-portal tests.",
+  "next_exact_command": "git diff --check && git status --short && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'fix(auth): recheck session expiry after PostgreSQL row lock' && git push origin qa/m10308-session-validity-20261115",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
       "scenario_id": "M1.03.08",
-      "problem": "Actual PG revoked/expired or wrong-role stale session accepted security mutation, logout-after-request race accepted",
-      "result": "ROOT_FIXED_IN_ISOLATED_WORKTREE_PG4_OF4_CHROMIUM_TWO_SUITES_GREEN_NOT_FINAL_STAGE"
+      "problem": "Real PostgreSQL statement_timestamp evaluated before auth_sessions row lock, session expired during wait but mutation accepted and audit persisted",
+      "result": "DETERMINISTIC_RED_4_OF_5_FIXED_WITH_POSTLOCK_CLOCK_TIMESTAMP_REAL_PG_GREEN_5_OF_5_NOT_FINAL_STAGE"
     },
     {
       "scenario_id": "M1.03.08",
-      "problem": "Older native rollback fixture used expired Oct 2026 session, test no longer reached injected audit/queue failure",
-      "result": "SYNTHETIC_FIXTURE_TIME_CORRECTED_NATIVE_2_OF_2_PASS"
-    },
-    {
-      "scenario_id": "M1.03.08",
-      "problem": "Exact protected final stage, provider, independent pentest/load/restore/Owner UAT",
-      "result": "NOT_VERIFIED_BLOCKED_EXTERNAL_OR_OWNER_DEPENDENCY"
+      "problem": "Protected final exact-SHA staging, independent full pen test, real providers, load/restore and owner UAT",
+      "result": "STILL_UNVERIFIED_EXTERNAL_OR_OWNER_STAGE"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
