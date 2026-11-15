@@ -122,7 +122,7 @@ async function createEvidence(page, baseUrl, kind, fields) {
 
 
 
-test("Actual resolution forms reach native CLI, role bells and guarded record links",{timeout:240000},async()=>{
+test("Actual resolution forms reach native CLI, role bells and guarded record links",{timeout:300000},async()=>{
  const root=process.cwd(),directory=await mkdtemp(join(tmpdir(),"review-resolution-notify-browser-")),port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
  const credentialPath=join(directory,"credentials.json");
  const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:join(directory,"database"),HSE_AUDIT_CREDENTIALS_PATH:credentialPath,HSE_RELEASE_SHA:"review-resolution-notify-browser",HSE_SESSION_SECRET:"review-resolution-browser-session-secret-more-than-thirty-two",HSE_AUTH_PEPPER:"review-resolution-browser-auth-pepper-more-than-thirty-two",HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
@@ -188,6 +188,43 @@ test("Actual resolution forms reach native CLI, role bells and guarded record li
   await wp.goto(baseUrl+"/worker/notifications");const unable=wp.locator(".notification-center-item").filter({hasText:"Evidence could not be verified"});await unable.waitFor();
   assert.ok(!(await unable.innerText()).includes("Private"));await unable.getByRole("button",{name:"Open",exact:true}).click();await wp.waitForURL("**/worker/evidence#*");
   await wp.getByText(/Private issuer detail belongs only/).waitFor();
+  // M1.05.02: the real Admin escalation notification must not become
+  // an IDOR when its href is copied into a different authenticated portal.
+  // Reuse the same submitted evidence and outbox state; never create fake
+  // "passing" notifications just to exercise the route.
+  const copiedAdminLink=baseUrl+"/admin/operations/review-escalations#"+taskId;
+  const sensitiveReason="Private employer discrepancy requires authorized Admin review.";
+  for(const [role,page] of [["worker",wp],["verifier",vp]]){
+   await page.goto(copiedAdminLink,{waitUntil:"domcontentloaded"});
+   assert.notEqual(new URL(page.url()).pathname,"/admin/operations/review-escalations",role+" copied Admin link accessed private queue");
+   assert.equal((await page.locator("body").innerText()).includes(sensitiveReason),false,role+" copied link exposed private escalation reason");
+  }
+  const foreignContexts=[];
+  try{
+   for(const role of ["company","assessor"]){
+    const context=await browser.newContext({viewport:{width:320,height:740}});foreignContexts.push(context);
+    const attacker=await context.newPage();
+    await login(attacker,baseUrl,credentials[role],role);
+    const forged=await context.request.get(baseUrl+"/admin/operations/review-escalations",{
+     headers:{"x-hse-active-role":"admin","x-hse-account-id":credentials.admin.accountId,
+       "x-hse-tenant-id":credentials.company.tenantId},maxRedirects:0
+    });
+    assert.notEqual(forged.status(),200,role+" forged Admin headers enabled another role's escalation read");
+    assert.equal((await forged.text()).includes(sensitiveReason),false,role+" forged headers disclosed private escalation");
+    await attacker.goto(copiedAdminLink,{waitUntil:"domcontentloaded"});
+    assert.notEqual(new URL(attacker.url()).pathname,"/admin/operations/review-escalations",
+     role+" authenticated copied Admin escalation link was accepted");
+    assert.equal((await attacker.locator("body").innerText()).includes(sensitiveReason),false,
+      role+" protected private employer reason appeared outside Admin");
+   }
+   const anonymousContext=await browser.newContext();foreignContexts.push(anonymousContext);
+   const anonymous=await anonymousContext.newPage();
+   await anonymous.goto(copiedAdminLink,{waitUntil:"domcontentloaded"});
+   assert.notEqual(new URL(anonymous.url()).pathname,"/admin/operations/review-escalations",
+     "Signed-out visitor opened copied Admin escalation notification");
+  }finally{for(const context of foreignContexts)await context.close();}
+  console.log("M10502_ESCALATION_WRONG_ROLE_LINK_DENIED",
+   "Worker, Verifier, Company, Assessor and anonymous cannot read Admin escalation href; Company/Assessor forged Admin account and role headers denied, private reason never leaked");
   await ap.goto(baseUrl+"/admin/notifications");
   const escalated=ap.locator(".notification-center-item").filter({hasText:"Evidence review escalated"});await escalated.waitFor();assert.ok(!(await escalated.innerText()).includes("Private"));
   await escalated.getByRole("button",{name:"Open",exact:true}).click();await ap.waitForURL("**/admin/operations/review-escalations#"+taskId);
@@ -206,6 +243,21 @@ test("Actual resolution forms reach native CLI, role bells and guarded record li
  const db=await PGlite.create(environment.HSE_PGLITE_DATA_DIR);try{
  assert.equal((await db.query("SELECT count(*)::int n FROM platform_outbox_jobs WHERE job_type='notification.assurance.event' AND payload->>'eventType' IN ('evidence.unable','evidence.escalated','evidence.returned') AND status='succeeded'")).rows[0].n,3);
  assert.equal((await db.query("SELECT count(*)::int n FROM evidence_review_decisions")).rows[0].n,0);
+ const roleDenials=(await db.query(`SELECT account_id,active_role,metadata
+   FROM auth_security_events WHERE event_type='access_denied'
+    AND metadata->>'expectedRole'='admin'
+    AND metadata->>'permission'='platform.operations.manage'`)).rows;
+ for(const role of ["worker","verifier","company","assessor"]){
+  assert.ok(roleDenials.some(row=>row.account_id===credentials[role].accountId
+    && row.active_role===role && row.metadata.reason==="role_mismatch"),
+    role+" missing actor-bound wrong-role copied Admin escalation denial audit");
+ }
+ const readAudit=(await db.query("SELECT actor_role FROM platform_audit_events WHERE action_key='notification.read'")).rows;
+ for(const role of ["worker","verifier","admin"]){
+  assert.ok(readAudit.some(row=>row.actor_role===role),role+" next-actor notification open lacks immutable read audit");
+ }
+ console.log("M10502_ESCALATION_AUDIT_DB",
+   "four correct-account role-mismatch security denial actors; Worker, Admin and Verifier notification read audit persisted; built outbox3 succeeded");
  }finally{await db.close();}
  }finally{await browser?.close();await rm(directory,{recursive:true,force:true});}
 });
