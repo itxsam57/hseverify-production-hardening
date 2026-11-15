@@ -4,33 +4,28 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.04.03",
-  "current_focus_phase": "M10403_REAL_CROSS_WORKER_EVIDENCE_ACTION_SCOPED_GREEN_PR118_INITIAL_CHROME_NATIVE_PASS_218_CI_PATH_FILTER_GAP_FIXED_NEW_HEAD_REQUIRED",
-  "last_completed_action": "Canonical QA PR117 merged SHA 775991423e9e945431df4f09135415f900cc4cb7 exact 32/32 workflows green. M1.04.03 reused 3 old direct source CI-green Worker secure-file cases and same existing browser test; added actual 2 Worker browser create Skill drafts, Worker B forged Worker A recordId plus matching revision in Save metadata and Submit this version real Server Actions; both returned nonenumerating unavailable error; B own save worked; DB records A/B each revision2 status draft, zero forged A mutation/submit, 4 actor-bound immutable evidence audits, original 2 owner private PDF files and 6 audit events still valid. Existing browser 1/1 PASS exit0 34.6sec, log SHA256 97235909b8bad1fd0fad6c81b4cc0b420b95d3f13ef8faabb7d8772ff1686383. Source coverage pre-check RED exit1 is NOT product exploit. No product fix. Hist 1399/1572 173 unmatched (old), 218 FULL0, planned693 partial+55 uncertain+4227 unlinked FINAL0/4975, old scoped216 not full, pentest incomplete 2008 candidates independent UNKNOWN, blocked10, high/critical UNKNOWN. Audit session 9213448b-27cc-47d1-b432-0fc7cc4981c6. PR118 initial f448062d Worker browser/native +4975/Autopilot pass but HSE218 CI missing because original evidence/cursor/handoff paths omitted. Fixed current 218 workflow to monitor canonical evidence and run 4 strict original source,216,4975,action index verifiers. New PR head CI mandatory.",
-  "next_exact_action": "Guarded commit/push CI trigger correction on PR118, require exact new head Worker Chromium/native, HSE218 with strict source/216/4975/action verifiers, 4975 and Autopilot all PASS; then merge and check merged SHA workflows. Continue original M1.04.04. Final FULL0/218 pending protected stage.",
-  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && node --test tests/engineering/current-release-218-ledger.test.mjs && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'ci(218): trigger release ledger on canonical evidence and cursor updates' && git push origin qa/m10403-worker-evidence-bola-20261115",
+  "current_focus_scenario_id": "M1.04.04",
+  "current_focus_phase": "M10404_COPIED_STAFF_SECOND_BROWSER_LIVE_PERMISSION_GRANT_REVOKE_REGRANT_SUSPEND_MEMBERSHIP_DENIED_CHROME1_OF1_SCOPED_GREEN_PR_CI_PENDING",
+  "last_completed_action": "QA PR118 merged SHA 0e9eee20d4daa36f7258bf13a127423ad5732e5f exactly 32/32 GitHub workflows green, two-parent merge. M1.04.04 original 1 direct named Company complete-journey source case green reused. Missing second distinct copied authenticated staff cookie browser context evidenced source gap RED (not app exploit); extended same original real Chrome 320/390 Company journey: copied staff workforce CSV200 while grant live, denied after owner revokes grant, forged root/tenant denied, regrant200 without login, suspension and final membership revoke denied, no CSV rows; original staff Team forged role, archived units, Company workflows/billing/DB immutable audits all PASS. Browser1/1 exit0 132.8s log SHA256 a945cb85514e6f50cd5e98feb6bc5e50898ff714c894f36c8cc800da07b06931. No application code defect or new source case. FULL0/218, prior clean green1399/1572 (173 unmatched), older scoped216, planned 693 partial+55 uncertain+4227 unlinked, FINAL0/4975, pentest incomplete 2008 provisional independent UNKNOWN, blocked10, severe UNKNOWN. V4 session dd73543f-1e31-4a66-9561-d079243e5168 cycle1e8b2e1bab0742d388baeefe457a6362. Final stage still external blocked.",
+  "next_exact_action": "Rebuild + validate original 218 frozen scenario action map, 216 legacy, 4975 and source-case indexes, guarded commit/push qa/m10404-copied-staff-cookie-20261115 with existing Company Chrome and exact marker CI workflow, all PR-head HSE218+4975+autopilot/native/browser green, merge only all passes then full exact merged QA CI, move to next frozen M1.05.01 if final protected stage/provider/owner UAT unavailable.",
+  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'test(M1.04.04): revoke Company staff copied browser session permissions' && git push origin qa/m10404-copied-staff-cookie-20261115",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.04.03",
-      "problem": "PR118 first head HSE218 ledger workflow not triggered by original evidence/cursor updates",
-      "result": "ROOT_FIXED_LOCAL_WORKFLOW_PATHS_AND_STRICT_INDEX_CHECKS_NEW_HEAD_CI_PENDING"
+      "scenario_id": "M1.04.04",
+      "problem": "Original Company live permission revoke browser covered only one authenticated member BrowserContext; independent copied staff cookie missing",
+      "result": "COVERAGE_GAP_SOURCE_RED_NOT_APP_EXPLOIT_COPIED_BROWSER_FULL_CHROME_1_OF_1_GREEN_NOT_FINAL_STAGE"
+    },
+    {
+      "scenario_id": "M1.04.04",
+      "problem": "Protected final stage, independent full pentest, providers, realistic load/restore, Owner UAT missing",
+      "result": "NOT_FULLY_VERIFIED_EXTERNAL_STAGE_GATES_UNAVAILABLE"
     },
     {
       "scenario_id": "M1.04.03",
-      "problem": "Original private Worker file browser missing cross-worker direct recordId save/submit action test",
-      "result": "SOURCE_COVERAGE_GAP_RED_NOT_PRODUCT_EXPLOIT_ACTUAL_TWO_WORKER_CHROME_1_OF_1_GREEN_WITH_DB_AUDIT_NOT_FINAL"
-    },
-    {
-      "scenario_id": "M1.04.03",
-      "problem": "Final protected stage/full independent pentest/providers/load/restore/owner UAT and other direct object actions",
-      "result": "NOT_FULLY_VERIFIED_BLOCKED_EXTERNAL_STAGE"
-    },
-    {
-      "scenario_id": "M1.04.02",
-      "problem": "Company private PDF conditional Range and HEAD tenant leaks regression",
-      "result": "PR117_MERGED_QA_77599142_EXACT_32_OF_32_CI_SUCCESS_STILL_NOT_FINAL_STAGE"
+      "problem": "Two Workers forged real skill recordId/current revision Save/Submit negative case and original 218 CI path trigger",
+      "result": "PR118_MERGED_QA_0e9eee2_ALL_32_OF_32_CI_SUCCESS_NOT_FINAL_STAGE"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

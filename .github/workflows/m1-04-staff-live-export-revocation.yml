@@ -49,7 +49,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Install real Chromium
         run: npx playwright install chromium
-      - name: Real MFA Company member grant downgrade forged-header restore and revocation
+      - name: Real MFA Company staff cloned-session grant downgrade forged-header regrant suspend and revoke
         shell: bash
         run: |
           set -euo pipefail
@@ -65,6 +65,7 @@ jobs:
             exit "$test_status"
           fi
           grep -q 'ACTUAL_COMPANY_STAFF_EXPORT_API_LIVE_REVOKE' "$log"
+          grep -q 'M10404_COPIED_STAFF_SESSION_LIVE_PERMISSION_DENIED' "$log"
       - name: Archive exact SHA real-browser evidence
         if: always()
         uses: actions/upload-artifact@v4

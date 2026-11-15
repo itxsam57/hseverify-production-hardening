@@ -349,6 +349,22 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).waitFor();
           const staffCookiesBefore = await memberContext.cookies();
           assert(staffCookiesBefore.some(cookie => cookie.httpOnly), "actual staff login must hold an authenticated session");
+          // A distinct browser context uses the member's genuine existing
+          // login cookie. It must follow live grants, not cached privileges.
+          const copiedStaffContext=await browser.newContext({
+            viewport:{width:320,height:740},
+            storageState:await memberContext.storageState()
+          });
+          const requestCopiedStaffCsv=(headers={})=>copiedStaffContext.request.get(
+            `${baseUrl}/api/company/workers/export`,{maxRedirects:0,headers}
+          );
+          const expectCopiedStaffDenied=async(label,headers={})=>{
+            const response=await requestCopiedStaffCsv(headers);
+            assert.notEqual(response.status(),200,`${label}: copied session cannot export CSV`);
+            const body=await response.text();
+            assert.equal(body.includes('"Name","Email","Worker ID"'),false,
+              `${label}: copied session leaked Worker CSV records`);
+          };
           const requestMemberWorkforceCsv = (headers = {}) => memberContext.request.get(
             `${baseUrl}/api/company/workers/export`, { maxRedirects: 0, headers }
           );
@@ -437,12 +453,21 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           let workforceResponse = await requestMemberWorkforceCsv();
           assert.equal(workforceResponse.status(), 200, "granted admin member may export only its authorized Company CSV");
           assert.match(await workforceResponse.text(), /"Name","Email","Worker ID"/);
+          const copiedInitial=await requestCopiedStaffCsv();
+          assert.equal(copiedInitial.status(),200,"second copied staff browser requires current workforce grant");
+          assert.match(await copiedInitial.text(),/"Name","Email","Worker ID"/);
           await company.reload({waitUntil:"networkidle"});
           memberCard = company.locator("article").filter({hasText:"Journey Team Member"}).first();
           await memberCard.locator('input[name="permissions"][value="company.workforce.manage"]').uncheck();
           await memberCard.getByRole("button",{name:"Save Team access"}).click();
           await memberCard.getByText(/role, permissions and unit scope saved/i).waitFor();
           await expectMemberWorkforceDenied("same member session after owner removes workforce export");
+          await expectCopiedStaffDenied("copied staff cookie after owner removes workforce grant");
+          await expectCopiedStaffDenied("copied staff forged root headers after owner downgrades",{
+            "x-hse-active-role":"root",
+            "x-hse-account-id":"auth_account_fake_root_000000",
+            "x-hse-tenant-id":"auth_tenant_fake_root_000000"
+          });
           await expectMemberWorkforceDenied("forged root/account/tenant on stale member session",{
             "x-hse-active-role":"root",
             "x-hse-account-id":"auth_account_fake_root_000000",
@@ -456,6 +481,9 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           workforceResponse = await requestMemberWorkforceCsv();
           assert.equal(workforceResponse.status(), 200, "same independently signed-in session regains export only after owner regrants permission");
           assert.match(await workforceResponse.text(), /"Name","Email","Worker ID"/);
+          const copiedRestored=await requestCopiedStaffCsv();
+          assert.equal(copiedRestored.status(),200,"copied staff browser only regains export after owner regrant");
+          assert.match(await copiedRestored.text(),/"Name","Email","Worker ID"/);
           console.log("ACTUAL_COMPANY_STAFF_EXPORT_API_LIVE_REVOKE active staff grant200, no-login permission revoke denial, forged root/account/tenant denial, no-login regrant200");
           await company.reload({waitUntil:"networkidle"});
           memberCard=company.locator("article").filter({hasText:"Journey Team Member"}).first();
@@ -470,6 +498,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByRole("button", { name: "Reactivate" }).waitFor({ timeout: 15_000 });
           await expectMemberWorkforceDenied("suspended member existing signed-in session");
+          await expectCopiedStaffDenied("independent copied cookie after staff suspension");
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "suspended membership must remove existing-session tenant access");
           assert.equal(new URL(member.url()).pathname, "/access-denied");
@@ -491,6 +520,9 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByText("revoked", { exact: true }).waitFor({ timeout: 15_000 });
           await expectMemberWorkforceDenied("revoked member existing signed-in session");
+          await expectCopiedStaffDenied("independent copied cookie after membership revocation");
+          console.log("M10404_COPIED_STAFF_SESSION_LIVE_PERMISSION_DENIED",
+            "copied staff initially allowed, denied after revoke and forged role, allowed after regrant, denied on suspension and membership revocation");
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "revoked membership must remove existing-session tenant access");
           assert.equal(new URL(member.url()).pathname, "/access-denied");
@@ -499,6 +531,7 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           assert.equal(await member.getByRole("heading", { name: "HSE Verify could not complete this request.", exact: true }).count(), 0);
           console.log("ACTUAL_COMPANY_STAFF_REVOCATION reactivated signed-in session loses Company tenant dashboard access on revocation");
 
+          await copiedStaffContext.close();
           await memberContext.close();
 
           // Assurance order: valid submitted case, Action Centre visibility, cancellation.
