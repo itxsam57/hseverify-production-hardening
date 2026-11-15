@@ -1329,10 +1329,10 @@
   "planned_check_slots": 4975,
   "planned_slots_not_final_stage_certified": 4975,
   "planned_slots_without_any_precise_old_dimension_link": 4227,
-  "previous_green_source_cases_without_a_precise_planned_dimension_link": 1017,
+  "previous_green_source_cases_without_a_precise_planned_dimension_link": 1018,
   "release_decision": "NO_GO",
   "release_scenarios_fully_verified": 0,
-  "scoped_prior_source_tests_green_distinct": 1400,
+  "scoped_prior_source_tests_green_distinct": 1401,
   "scoped_source_test_case_total": 1574,
   "slot_historical_link_states": {
     "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4227,
