@@ -43,6 +43,32 @@ function formatRecoveryCode(): string {
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
 }
 
+// Keep the account -> session lock order consistent with password changes.
+// Session validation in the request boundary alone is not sufficient: logout
+// may commit between the browser request and the account-security transaction.
+async function requireCurrentSecuritySession(
+  database: DatabaseClient,
+  session: AuthenticatedSession
+): Promise<void> {
+  const account = await database.query<{ account_id: string }>(
+    "SELECT account_id FROM auth_accounts WHERE account_id=$1 AND account_status='active' FOR NO KEY UPDATE",
+    [session.accountId]
+  );
+  if (!account.rows[0]) {
+    throw new AccountSecurityInputError("Security session is no longer active. Sign in again.");
+  }
+  const active = await database.query<{ session_id: string }>(
+    `SELECT session_id FROM auth_sessions
+      WHERE session_id=$1 AND account_id=$2 AND active_role=$3
+        AND revoked_at IS NULL AND expires_at>statement_timestamp()
+      FOR UPDATE`,
+    [session.sessionId, session.accountId, session.role]
+  );
+  if (!active.rows[0]) {
+    throw new AccountSecurityInputError("Security session is no longer active. Sign in again.");
+  }
+}
+
 async function verifyCurrentPassword(
   database: DatabaseClient,
   accountId: string,
@@ -172,6 +198,7 @@ export class AccountSecurityService {
     const database = await this.databasePromise;
     const environment = getServerEnvironment();
     await database.transaction(async (tx) => {
+      await requireCurrentSecuritySession(tx, input.session);
       await verifyCurrentPassword(tx, input.session.accountId, input.currentPassword);
       await verifyCurrentMfa(tx, input.session, input.mfaCode ?? "");
       const passwordHash = await hashPassword(input.newPassword, environment.authPepper);
@@ -201,6 +228,7 @@ export class AccountSecurityService {
     const environment = getServerEnvironment();
     const codes = Array.from({ length: 10 }, () => formatRecoveryCode());
     await database.transaction(async (tx) => {
+      await requireCurrentSecuritySession(tx, input.session);
       await verifyCurrentPassword(tx, input.session.accountId, input.currentPassword);
       await verifyCurrentMfa(tx, input.session, input.mfaCode ?? "");
       await tx.query("DELETE FROM auth_mfa_recovery_codes WHERE account_id=$1", [input.session.accountId]);
@@ -233,6 +261,7 @@ export class AccountSecurityService {
     const database = await this.databasePromise;
     const environment = getServerEnvironment();
     return database.transaction(async (tx) => {
+      await requireCurrentSecuritySession(tx, input.session);
       await verifyCurrentPassword(tx, input.session.accountId, input.currentPassword);
       await verifyCurrentMfa(tx, input.session, input.mfaCode);
       await tx.query(
@@ -273,6 +302,7 @@ export class AccountSecurityService {
     const database = await this.databasePromise;
     const environment = getServerEnvironment();
     await database.transaction(async (tx) => {
+      await requireCurrentSecuritySession(tx, input.session);
       const challenge = await tx.query<{ encrypted_secret: string }>(
         `SELECT encrypted_secret
            FROM auth_mfa_rotation_challenges

@@ -90,3 +90,136 @@ test("M1.03.08 actual PostgreSQL concurrent old-password changes accept one and 
   assert.equal(await verifyPassword(outcomes[0].ok?NEW_TWO:NEW_ONE,hash,PEPPER),false);
  } finally {release.resolve();await Promise.all(db.map(client=>client.close()));}
 });
+
+async function seedSecuritySession(control, suffix, options = {}) {
+ const accountId="m10308_validity_"+suffix+"_"+randomBytes(4).toString("hex");
+ const sessionId=accountId+"_session", createdAt=new Date(Date.now()-7200000).toISOString();
+ const now=new Date().toISOString();
+ const expiresAt=options.expired?new Date(Date.now()-3600000).toISOString():new Date(Date.now()+3600000).toISOString();
+ const repository=new AuthAccessRepository(control);
+ await repository.authentication.insertAccount({
+  accountId,email:accountId+"@example.test",phone:null,displayName:"Synthetic account security",
+  status:"pending_email",passwordHash:await hashPassword(OLD,PEPPER),
+  workerReference:"HSE-REG-"+accountId.slice(-8),now:createdAt
+ });
+ await repository.authentication.updateAccountAfterEmailVerification(accountId,now);
+ await repository.authentication.addRole(accountId,"worker",now);
+ await repository.authentication.insertSession({
+  sessionId,accountId,activeRole:"worker",tokenHash:randomBytes(32).toString("hex"),
+  csrfTokenHash:randomBytes(32).toString("hex"),userAgentHash:null,ipAddressHash:null,
+  createdAt,lastSeenAt:createdAt,expiresAt
+ });
+ if(options.revoked)await control.query(
+  "UPDATE auth_sessions SET revoked_at=$2,revocation_reason='user_logout' WHERE session_id=$1",
+  [sessionId,new Date().toISOString()]
+ );
+ return {accountId,sessionId,role:"worker",email:accountId+"@example.test",
+  displayName:"Synthetic account security",createdAt,lastSeenAt:createdAt,expiresAt};
+}
+async function securityMutationCounts(db,accountId) {
+ const hash=(await db.query("SELECT password_hash FROM auth_accounts WHERE account_id=$1",[accountId])).rows[0].password_hash;
+ const events=Number((await db.query(
+  "SELECT count(*) n FROM auth_security_events WHERE account_id=$1 AND event_type IN ('password_changed','mfa_recovery_codes_rotated','mfa_replaced')",
+  [accountId])).rows[0].n);
+ const audits=Number((await db.query(
+  "SELECT count(*) n FROM platform_audit_events WHERE actor_account_id=$1 AND action_key='authentication.password.changed'",
+  [accountId])).rows[0].n);
+ return {oldPasswordPreserved:await verifyPassword(OLD,hash,PEPPER),events,audits};
+}
+test("M1.03.08 PostgreSQL rejects revoked, expired, role-mismatched security sessions without mutation",{timeout:120000},async()=>{
+ const db=await openScriptDatabase(ENV);
+ const service=new AccountSecurityService(Promise.resolve(db));
+ const rejectedMessage="Security session is no longer active. Sign in again.";
+ try {
+  for(const condition of ["revoked","expired","wrong-role","revoked-recovery","revoked-factor-confirm"]) {
+   const fixture=await seedSecuritySession(db,condition.replace(/-/g,"_"),{
+    revoked:condition.startsWith("revoked"),expired:condition==="expired"
+   });
+   const session=condition==="wrong-role"?{...fixture,role:"admin"}:fixture;
+   let actual=null;
+   try {
+    if(condition==="revoked-recovery"){
+     await service.rotateRecoveryCodes({session,currentPassword:OLD});
+    } else if(condition==="revoked-factor-confirm"){
+     await service.confirmMfaReplacement({session,challengeId:"synthetic_missing_challenge",newCode:"123456"});
+    } else {
+     await service.changePassword({session,currentPassword:OLD,newPassword:NEW_ONE});
+    }
+    actual="ACCEPTED";
+   } catch(error){actual=error.message}
+   const persisted=await securityMutationCounts(db,fixture.accountId);
+   console.log("M10308_SESSION_REVALIDATION",JSON.stringify({condition,actual,persisted}));
+   assert.equal(actual,rejectedMessage,condition+" should reject the stale session");
+   assert.deepEqual(persisted,{oldPasswordPreserved:true,events:0,audits:0},
+    condition+" must not write a password, event or audit");
+  }
+  const valid=await seedSecuritySession(db,"valid");
+  await service.changePassword({session:valid,currentPassword:OLD,newPassword:NEW_ONE});
+  const accepted=await securityMutationCounts(db,valid.accountId);
+  console.log("M10308_ACTIVE_SESSION_POSITIVE",JSON.stringify(accepted));
+  assert.deepEqual(accepted,{oldPasswordPreserved:false,events:1,audits:1});
+ }finally{await db.close()}
+});
+test("M1.03.08 PostgreSQL logout committed before security lock rejects in-flight request",{timeout:45000},async()=>{
+ const [worker,logout,control]=await Promise.all([openScriptDatabase(ENV),openScriptDatabase(ENV),openScriptDatabase(ENV)]);
+ const atLock=deferred(),release=deferred();
+ try {
+  const session=await seedSecuritySession(control,"logout_wins_race");
+  // Pause the already-started request BEFORE it acquires any account/session lock.
+  const wrapped={...worker,transaction:cb=>worker.transaction(async tx=>cb({...tx,query:async(sql,params)=>{
+   if(sql.includes("SELECT account_id FROM auth_accounts")){atLock.resolve();await release.promise;}
+   return tx.query(sql,params);
+  }}))};
+  const pending=new AccountSecurityService(Promise.resolve(wrapped))
+   .changePassword({session,currentPassword:OLD,newPassword:NEW_ONE})
+   .then(()=>({accepted:true}),e=>({accepted:false,error:e.message}));
+  await atLock.promise;
+  const revoked=await logout.query(
+   "UPDATE auth_sessions SET revoked_at=$2,revocation_reason='user_logout' WHERE session_id=$1 AND revoked_at IS NULL RETURNING session_id",
+   [session.sessionId,new Date().toISOString()]
+  );
+  assert.equal(revoked.rows.length,1,"logout must commit before any security row is locked");
+  release.resolve();
+  const result=await pending;
+  const persisted=await securityMutationCounts(control,session.accountId);
+  console.log("M10308_LOGOUT_WINS_REAL_POSTGRES_RACE",JSON.stringify({result,persisted}));
+  assert.deepEqual(result,{accepted:false,error:"Security session is no longer active. Sign in again."});
+  assert.deepEqual(persisted,{oldPasswordPreserved:true,events:0,audits:0});
+ }finally{release.resolve();await Promise.all([worker.close(),logout.close(),control.close()])}
+});
+test("M1.03.08 PostgreSQL security lock serializes simultaneous logout",{timeout:45000},async()=>{
+ const [worker,logout,control]=await Promise.all([openScriptDatabase(ENV),openScriptDatabase(ENV),openScriptDatabase(ENV)]);
+ const locked=deferred(),release=deferred();
+ try {
+  const session=await seedSecuritySession(control,"security_wins_race");
+  // The transaction now owns BOTH account and session locks. Logout must wait.
+  const wrapped={...worker,transaction:cb=>worker.transaction(async tx=>cb({...tx,query:async(sql,params)=>{
+   const result=await tx.query(sql,params);
+   if(sql.includes("SELECT session_id FROM auth_sessions")){locked.resolve();await release.promise;}
+   return result;
+  }}))};
+  const pending=new AccountSecurityService(Promise.resolve(wrapped))
+   .changePassword({session,currentPassword:OLD,newPassword:NEW_ONE})
+   .then(()=>({accepted:true}),e=>({accepted:false,error:e.message}));
+  await locked.promise;
+  const logoutAttempt=logout.query(
+   "UPDATE auth_sessions SET revoked_at=$2,revocation_reason='user_logout' WHERE session_id=$1 AND revoked_at IS NULL RETURNING session_id",
+   [session.sessionId,new Date().toISOString()]
+  );
+  const order=await Promise.race([
+   logoutAttempt.then(()=>"logout-committed"),
+   new Promise(resolve=>setTimeout(()=>resolve("logout-waits-on-session-lock"),400))
+  ]);
+  assert.equal(order,"logout-waits-on-session-lock");
+  release.resolve();
+  const result=await pending;
+  const revoked=await logoutAttempt;
+  const persisted=await securityMutationCounts(control,session.accountId);
+  const active=Number((await control.query("SELECT count(*) n FROM auth_sessions WHERE session_id=$1 AND revoked_at IS NULL",[session.sessionId])).rows[0].n);
+  console.log("M10308_SECURITY_WINS_REAL_POSTGRES_RACE",JSON.stringify({order,result,logoutRows:revoked.rows.length,active,persisted}));
+  assert.deepEqual(result,{accepted:true});
+  assert.equal(revoked.rows.length,1);
+  assert.equal(active,0,"successful security action completed BEFORE logout; logout then revokes session");
+  assert.deepEqual(persisted,{oldPasswordPreserved:false,events:1,audits:1});
+ }finally{release.resolve();await Promise.all([worker.close(),logout.close(),control.close()])}
+});

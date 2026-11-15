@@ -26,6 +26,9 @@ REQUIRED=(
     "real_integrations_staging_load_restore_owner_UAT",
 )
 # Mirrors the existing frozen QA release blocker inventory; never assume it is exhaustive.
+CURRENT_SCOPED_REPORTS_NOT_FINAL={
+ "M1.03.08":"docs/qa/M1_03_08_SESSION_LOCK_REVALIDATION_20261115.md",
+}
 KNOWN_EXTERNAL={
  "M1.01.04":"Protected final staging/operations/rollback",
  "M1.03.02":"Real external email and SMS OTP delivery",
@@ -113,6 +116,7 @@ def build() -> list[dict]:
             "planned_dimensions_without_precise_old_link":unmatched,
             "all_12_planned_dimensions_still_need_final_attestation":12,
             "recommended_next_action":next_step,
+            "current_scoped_evidence_report_NOT_FINAL":CURRENT_SCOPED_REPORTS_NOT_FINAL.get(sid,""),
             "full_release_scenario_status":"NOT_FULLY_VERIFIED",
         })
     assert len(results)==218
