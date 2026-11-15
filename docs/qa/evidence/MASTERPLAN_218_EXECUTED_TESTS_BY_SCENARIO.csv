@@ -27,8 +27,8 @@ M1.05.04,M1.05,Audit and notifications,Outbox retry/idempotency/outage does not 
 M1.06.01,M1.06,Uploads,PDF/PNG/JPEG accepted through scan and exact record binding,1,0,1,NOT_FULLY_VERIFIED
 M1.06.02,M1.06,Uploads,"Missing, oversize, mismatched MIME and unsafe file denied",0,0,0,NOT_FULLY_VERIFIED
 M1.06.03,M1.06,Uploads,Scanner unavailable remains quarantined; retry cannot replace safe file,1,0,1,NOT_FULLY_VERIFIED
-M1.06.04,M1.06,Uploads,"Replace attachment: prior version retained, correct preview context",2,0,1,NOT_FULLY_VERIFIED
-M1.06.05,M1.06,Uploads,Preview denied before claim and across worker/tenant; expired token,0,0,0,NOT_FULLY_VERIFIED
+M1.06.04,M1.06,Uploads,"Replace attachment: prior version retained, correct preview context",2,0,2,NOT_FULLY_VERIFIED
+M1.06.05,M1.06,Uploads,Preview denied before claim and across worker/tenant; expired token,1,0,0,NOT_FULLY_VERIFIED
 M1.07.01,M1.07,Identity,Incomplete profile and identity submission blocked with input retained,1,0,1,NOT_FULLY_VERIFIED
 M1.07.02,M1.07,Identity,"Profile drafts persist through navigation, validation and retry",1,0,1,NOT_FULLY_VERIFIED
 M1.07.03,M1.07,Identity,"Initial identity approved, rejected and changes requested",0,0,0,NOT_FULLY_VERIFIED
