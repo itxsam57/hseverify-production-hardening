@@ -1,0 +1,100 @@
+name: M1.06.02 empty, unsafe file and clean retry actual browser QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/worker-file-upload-validation.browser.test.mjs"
+      - "tests/platform/secure-file-scan-handler-runtime.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-invalid-unsafe-upload.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/worker-file-upload-validation.browser.test.mjs"
+      - "tests/platform/secure-file-scan-handler-runtime.test.mjs"
+      - "src/lib/secure-files/**"
+      - "src/lib/worker-evidence/**"
+      - ".github/workflows/m1-06-invalid-unsafe-upload.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10602-unsafe-recovery-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-worker-browser-invalid-and-unsafe-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Run actual Worker upload missing, oversize, MIME, EICAR and clean same-slot recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/worker-file-upload-validation.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10602-upload-unsafe-chromium.log
+          grep -q 'M10602_BROWSER_EMPTY_FILE_REQUIRED' .autopilot/artifacts/m10602-upload-unsafe-chromium.log
+          grep -q 'M10602_UNSAFE_SCANNER_BROWSER' .autopilot/artifacts/m10602-upload-unsafe-chromium.log
+          grep -q 'M10602_EMPTY_UNSAFE_AND_RECOVERY_ACTUAL_BROWSER' .autopilot/artifacts/m10602-upload-unsafe-chromium.log
+          grep -q 'M10602_UNSAFE_DB_AUDIT' .autopilot/artifacts/m10602-upload-unsafe-chromium.log
+      - name: Archive actual browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10602-unsafe-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10602-upload-unsafe-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-eicar-scanner-unsafe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Native scanner malware marker must never become available
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-name-pattern='EICAR fixture becomes unsafe and never available' tests/platform/secure-file-scan-handler-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10602-scanner-unsafe-native.log
+      - name: Archive native scan proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10602-unsafe-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10602-scanner-unsafe-native.log
+          if-no-files-found: warn
+          retention-days: 30

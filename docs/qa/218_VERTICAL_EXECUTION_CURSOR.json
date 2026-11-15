@@ -4,33 +4,33 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.06.01",
-  "current_focus_phase": "M10601_REAL_PDF_PNG_JPEG_WORKER_BROWSER_1_OF_1_NATIVE_SCAN_3_OF_3_PASS_PR_CI_PENDING",
-  "last_completed_action": "PR123 QA merged at exact 4284ce6ee28f43c98ef602ea6744e49d4c9b0429 35/35 workflows green. Frozen M1.06.01 initial source gap RED (missing PDF/JPEG real browser, not product). Created genuine PDF PNG JPEG Worker browser upload, scanning, record/version owner SHA256 MIME precise DB3, 3 foreign/anonymous private signed preview denials. Initial browser fail was corrupted hardcoded JPEG test fixture (not product); corrected to valid 268-byte decoded JPEG and added diagnostics, same real Chrome1/1 PASS exit0 31.9s SHA256 f9cba6baf8af5cbbf81ff35fe80f5e51b459e5b76a3cc281505ccacf303931f4, adjacent native scanner/secure-file 3/3 PASS exit0 SHA256 e3762492dfd95b4369cc10b9656897bf92b30d461eb623d153e87a8893156000. One distinct new named browser case; original source index historical1400/1574 unmatched174 (new local PASS not prior historic), old scoped216/218 NOT_FULL, planned4975 partial693 uncertain55 unlinked4227 FINAL0, 218 FULL0, pentest 2008 provisional independent UNKNOWN, blocked10, high/critical UNKNOWN, NO-GO. Original report docs/qa/M1_06_01_REAL_THREE_FORMAT_SCAN_BINDING_20261115.md and scoped row link. Final provider/protected stage/UAT absent. V4 session 536f5187-bf5c-40ce-a122-d7751a18a39b.",
-  "next_exact_action": "Run strict original 218/216/source index and 4975/check/action-mapping plus engineering gates, protected V4 guarded commit/push qa/m10601-three-format-scan-binding-20261115 and PR to QA4284ce6; exact head real Chrome1/1 native3/3 original218/4975/Autopilot green, genuine merge and verify ALL exact merged QA SHA workflows; next original M1.06.02 negative upload form/unsafe scan, keep M1.06.01 provider final stage NOT_FULLY_VERIFIED.",
+  "current_focus_scenario_id": "M1.06.02",
+  "current_focus_phase": "M10602_REAL_EMPTY_OVERSIZE_MIME_UNSAFE_EICAR_AND_SAFE_RETRY_CHROME1_NATIVE1_PASS_HEAD_PR_PENDING",
+  "last_completed_action": "QA baseline4ce069339f28242d81c247502246b5fd5fb64c13 PR124 genuine two-parent merge36/36 exact merged workflows green. Frozen M1.06.02 original direct source0 but preexisting same named browser case already prior exact green at f5fe6eb8. Expanded same case with missing file HTML required, old oversize 10MB+1/MIME-spoofed/exe, genuine PDFKit PDF with EICAR local synthetic marker waits its own POST and UI unsafe, no accepted attachment/preview, DB two secure files: unsafe PDF code eicar_test_signature (never available) and clean PNG available bound only one exact Worker record/version, separate immutable unsafe/clean scan audits, mobile390 no overflow. Actual Chrome1/1 PASS exit0 SHA256 bbaacf28a61171fa5bd63986075a69e9e4d60e470621fe8c6c0f82fd6a52844b, native EICAR1/1 PASS exit0 SHA256 1e7df25bc2e04ca9d429b2614f06dcba7e3a8732beb6e63e8a697f2367ff46f2. Initial failures were stale previous generic UI validation error and mistaken absent-history-region assertion, fixed test wait own server POST; temporary product diagnostic code removed. Original reindex historical1401/1574 old green matched SHA f5fe6eb8, 173 unmatched, source identity total unchanged, NOT new EICAR historic pass; 218 FULL0, scoped216 not full, planned693 partial55 uncertain4227 unlinked FINAL0/4975, independent pen test incomplete 2008 provisional, known blocked10 high/critical unknown. Real external scanner/storage, protected final stage, independent full pentest/load/restore, Owner UAT missing; NO-GO. Active V4 session effb9926-d692-4466-ae66-3910171d96a7 cycle9a7e9190486d4f18a0f9ff20ca6b0a5e.",
+  "next_exact_action": "Regenerate official prior source/legacy216/planned4975/original frozen218 action map after final source edits, verify strict engineering suite, guarded commit/push qa/m10602-unsafe-upload-20261115 and PR against exact QA4ce0693; require head Chrome1/1/native1/1, 218/4975/Autopilot green, merge and independently check ALL exact merged SHA workflows, then frozen M1.06.03.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.06.01",
-      "problem": "Existing real PNG upload browser did not test genuine PDF and JPEG complete scanner + file/version binding",
-      "result": "SOURCE_COVERAGE_RED_ONLY_NEW_GENUINE_FORMAT_CHROMIUM_1_OF_1_PASS_NATIVE_SCAN_3_OF_3_PASS_SCOPED_NOT_FINAL"
+      "scenario_id": "M1.06.02",
+      "problem": "Original Worker browser did not check missing file and real EICAR-unsafe scan or clean same-version retry",
+      "result": "SAME_EXISTING_SOURCE_BROWSER_CHROME_1_OF_1_PASS_NATIVE_EICAR_1_OF_1_PASS_LOCAL_SCOPED"
     },
     {
-      "scenario_id": "M1.06.01",
-      "problem": "Initial hardcoded 639-byte JPEG in newly added test did not decode; browser expected-success timeout",
-      "result": "TEST_FIXTURE_ONLY_CORRECTED_TO_DECODER_VERIFIED_268_BYTE_2X2_JPEG_REAL_BROWSER_RETEST_PASS_NO_APP_DEFECT"
+      "scenario_id": "M1.06.02",
+      "problem": "Prior generic error was matched before EICAR Server Action completed and version history region assumed absent",
+      "result": "TEST_RACE_EXPECTATION_FIXED_WAIT_OWN_POST_AND_DB_AUDIT_PROOF_NO_APP_DEFECT"
     },
     {
-      "scenario_id": "M1.06.01",
-      "problem": "Real external scanner/storage, full cross-role receiving workflows, independent full pentest, protected final staging, realistic load and Owner UAT",
+      "scenario_id": "M1.06.02",
+      "problem": "Real provider AV/storage, Company/Verifier/Admin receiving and BOLA, final staging, independent full pentest, load/restore, Owner UAT",
       "result": "NOT_FULLY_VERIFIED_EXTERNAL_AND_FINAL_STAGE"
     },
     {
-      "scenario_id": "M1.05.04",
-      "problem": "Previously tested real Worker interview preserved through email outage and native outbox",
-      "result": "PR123_MERGED_QA_4284ce6_35_OF_35_EXACT_CI_GREEN_SCOPED_ONLY"
+      "scenario_id": "M1.06.01",
+      "problem": "Genuine PDF PNG JPEG verified local only",
+      "result": "PR124_MERGED_QA_4ce0693_36_OF_36_EXACT_SHA_CI_GREEN_SCOPED_ONLY"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
