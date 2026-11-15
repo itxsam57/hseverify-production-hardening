@@ -108,7 +108,7 @@ test("M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, 
     fixture.environment.HSE_RUNTIME_PROJECT_ROOT=privateRoot;
     const base="http://127.0.0.1:"+(await freePort());
     const a=fixture.credentials.worker;
-    let aFile,bFile;
+    let aFile,bFile,aEvidenceRecordId,bEvidenceRecordId;
     try {
       const db=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
       try{
@@ -175,6 +175,75 @@ test("M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, 
             assert.equal(forgedBody.status(),400,"Foreign Worker accountId in JSON not rejected");
             console.log("M10403_SIGNED_FILE_PURPOSE_SCHEMA", "preview/download separate, duplicate token and extra account ID rejected");
 
+            // M1.04.03 actual signed Server Action BOLA: a second Worker
+            // changes a *hidden* recordId in the real React form, rather
+            // than simply browsing a copied file capability (covered above).
+            const createSkill=async(page)=>{
+              await page.goto(base+"/worker/evidence",{waitUntil:"domcontentloaded"});
+              const before=new Set(await page.locator('article[id^="evidence_record_"]')
+                .evaluateAll(els=>els.map(el=>el.id)));
+              await page.getByLabel("Record type").selectOption("skill");
+              await page.getByRole("button",{name:"Create draft",exact:true}).click();
+              await page.getByText("Skill draft created.",{exact:true}).waitFor({timeout:25000});
+              await page.reload({waitUntil:"domcontentloaded"});
+              const after=await page.locator('article[id^="evidence_record_"]')
+                .evaluateAll(els=>els.map(el=>el.id));
+              const added=after.filter(id=>!before.has(id));
+              assert.equal(added.length,1,"Creating a real Worker skill must add exactly one owner record");
+              return added[0];
+            };
+            const workerARecordId=await createSkill(workerA);
+            const workerBRecordId=await createSkill(workerB);
+            assert.notEqual(workerARecordId,workerBRecordId);
+            const saveForm=(page,id)=>page.locator('article[id="'+id+'"] form')
+              .filter({has:page.getByRole("button",{name:"Save metadata",exact:true})});
+            const submitForm=(page,id)=>page.locator('article[id="'+id+'"] form')
+              .filter({has:page.getByRole("button",{name:"Submit this version",exact:true})});
+            const workerAForm=saveForm(workerA,workerARecordId);
+            await workerAForm.locator('input[name="skillName"]').fill("Private owner A synthetic competency");
+            await workerAForm.getByRole("button",{name:"Save metadata",exact:true}).click();
+            await workerAForm.getByText("Draft metadata saved with its current version.",{exact:true})
+              .waitFor({timeout:25000});
+            await workerA.reload({waitUntil:"domcontentloaded"});
+            const workerARevision=await saveForm(workerA,workerARecordId)
+              .locator('input[name="expectedRevision"]').inputValue();
+
+            const workerBSpoofForm=saveForm(workerB,workerBRecordId);
+            await workerBSpoofForm.locator('input[name="skillName"]')
+              .fill("CROSS_WORKER_FORGED_MUTATION_MUST_NOT_PERSIST");
+            await workerBSpoofForm.locator('input[name="recordId"]')
+              .evaluate((el,value)=>{el.value=value},workerARecordId);
+            await workerBSpoofForm.locator('input[name="expectedRevision"]')
+              .evaluate((el,value)=>{el.value=value},workerARevision);
+            await workerBSpoofForm.getByRole("button",{name:"Save metadata",exact:true}).click();
+            await workerBSpoofForm.getByText("The evidence record is unavailable. Reload the page and try again.",{exact:true})
+              .waitFor({timeout:25000});
+
+            const forgedSubmit=submitForm(workerB,workerBRecordId);
+            await forgedSubmit.locator('input[name="recordId"]')
+              .evaluate((el,value)=>{el.value=value},workerARecordId);
+            await forgedSubmit.locator('input[name="expectedRevision"]')
+              .evaluate((el,value)=>{el.value=value},workerARevision);
+            await forgedSubmit.getByRole("button",{name:"Submit this version",exact:true}).click();
+            await forgedSubmit.getByText("The evidence record is unavailable. Reload the page and try again.",{exact:true})
+              .waitFor({timeout:25000});
+            console.log("M10403_CROSS_WORKER_EVIDENCE_ACTION_DENIED",
+              "Worker B copied Worker A recordId and matching revision; real save and submit forms both refused without owner disclosure");
+
+            const workerBOwnForm=saveForm(workerB,workerBRecordId);
+            await workerBOwnForm.locator('input[name="recordId"]')
+              .evaluate((el,value)=>{el.value=value},workerBRecordId);
+            await workerBOwnForm.locator('input[name="expectedRevision"]')
+              .evaluate(el=>{el.value="1"});
+            await workerBOwnForm.locator('input[name="skillName"]').fill("Worker B own synthetic competency");
+            await workerBOwnForm.getByRole("button",{name:"Save metadata",exact:true}).click();
+            await workerBOwnForm.getByText("Draft metadata saved with its current version.",{exact:true})
+              .waitFor({timeout:25000});
+            console.log("M10403_CROSS_WORKER_EVIDENCE_OWN_RECOVERY","Worker B own valid metadata action still accepted after forged save+submit");
+            // Retain exact record IDs in closure for authoritative post-server audit.
+            aEvidenceRecordId=workerARecordId;
+            bEvidenceRecordId=workerBRecordId;
+
             await workerA.goto(base+"/worker/dashboard");
             await workerA.locator("details.profile-menu summary").click();
             await workerA.locator("details.profile-menu").getByRole("button",{name:"Sign out",exact:true}).click();
@@ -206,6 +275,38 @@ test("M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, 
           (x.actor_account_id===SECOND.accountId&&x.target_reference===bFile.fileRef))),
           "File access audit bound to foreign Worker owner");
         console.log("M10403_WORKER_DB_AUDIT",files.length,"owned files",audit.length,"correct-actor audit events");
+        assert.ok(aEvidenceRecordId&&bEvidenceRecordId,"Both Worker-owned skill records must exist");
+        const evidence=(await verifyDb.query(`SELECT records.record_id,records.worker_account_id,
+          versions.revision,versions.version_status,skills.skill_name
+          FROM worker_evidence_records records
+          JOIN worker_evidence_versions versions ON versions.version_id=records.current_version_id
+          JOIN worker_skill_versions skills ON skills.version_id=versions.version_id
+          WHERE records.record_id=ANY($1::text[])`,
+          [[aEvidenceRecordId,bEvidenceRecordId]])).rows;
+        assert.equal(evidence.length,2);
+        const ownerRecord=evidence.find(x=>x.record_id===aEvidenceRecordId);
+        const foreignRecord=evidence.find(x=>x.record_id===bEvidenceRecordId);
+        assert.equal(ownerRecord.worker_account_id,a.accountId);
+        assert.equal(foreignRecord.worker_account_id,SECOND.accountId);
+        assert.equal(ownerRecord.skill_name,"Private owner A synthetic competency");
+        assert.equal(foreignRecord.skill_name,"Worker B own synthetic competency");
+        assert.equal(Number(ownerRecord.revision),2,"Unauthorized save must not increment Worker A revision");
+        assert.equal(Number(foreignRecord.revision),2);
+        assert.ok(evidence.every(row=>row.version_status==="draft"),
+          "Unauthorized submission must never submit Worker A record");
+        const evidenceAudit=(await verifyDb.query(`SELECT actor_account_id,action_key,target_reference
+          FROM platform_audit_events
+          WHERE target_reference=ANY($1::text[])
+            AND action_key IN ('worker_evidence.record.created','worker_evidence.draft.saved')`,
+          [[aEvidenceRecordId,bEvidenceRecordId]])).rows;
+        assert.equal(evidenceAudit.length,4,"Only two creates and two authorized saves may be audited");
+        assert.ok(evidenceAudit.every(row=>(row.actor_account_id===a.accountId&&row.target_reference===aEvidenceRecordId)||
+          (row.actor_account_id===SECOND.accountId&&row.target_reference===bEvidenceRecordId)),
+          "Foreign Worker falsely mutated or created an owner-bound audit entry");
+        console.log("M10403_CROSS_WORKER_DIRECT_ACTION_DB",JSON.stringify({
+          ownerRevision:Number(ownerRecord.revision),foreignRevision:Number(foreignRecord.revision),
+          submittedVersions:0,actorBoundAudit:evidenceAudit.length
+        }));
       }finally{await verifyDb.close();}
     }finally{await fixture.cleanup();}
   });
