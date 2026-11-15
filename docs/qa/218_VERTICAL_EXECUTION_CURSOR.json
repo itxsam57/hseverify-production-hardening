@@ -4,23 +4,28 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.03.08",
-  "current_focus_phase": "PR115_EXPIRY_POSTLOCK_RECHECK_REAL_PG5_NATIVE10_TWO_CHROMIUM_SUITES_GREEN_PR_CI_PENDING",
-  "last_completed_action": "PR114 two-parent merged qa SHA 5a08d15caed3c933172336c4019c91ee55a0da15, exact QA CI 36/36 SUCCESS. NEW PG16 statement_timestamp prelock expiry bug reproduced in direct SQL probe and actual service RED 4/5 (expired accepted password, security/audit event1). Fixed by post-lock SQL database clock_timestamp check; same PG suite 5/5 GREEN, native rollback/audit/notices10/10 and TypeScript GREEN, six-role password Chrome1/1 and postlock five-role MFA Chrome1/1 GREEN (combined log SHA256 ee003d19b81b3ff2033225546079e0cc81f3cd1cf76461cf0598c6279d069b25, exit0). Original counters: FULL 0/218, old 216 scoped, 1394/1571 prior green 177 unproven, provisional 4975: 693 PARTIAL+55 UNCERTAIN+4227 UNLINKED, FINAL0; pentest incomplete and 10 known external blockers. Report docs/qa/M1_03_08_SESSION_LOCK_REVALIDATION_20261115.md. Follow-up PR115 commit/push required; not release-ready.",
-  "next_exact_action": "Guarded commit and push qa/m10308-session-validity-20261115 expiry-after-wait corrective source+PG5 proof+original 218/4975 ledger. Open follow-up PR115 against current signed QA 5a08d15caed3c933172336c4019c91ee55a0da15, confirm exact PR-head CI, merge only all-green then confirm all merged SHA workflows. After scope merged, retain NOT_FULLY_VERIFIED until final protected stage, real providers, independent pentest, realistic load/restore and owner UAT; move to next frozen M1.04.01 without repeating previously passing 30-pair cross-portal tests.",
-  "next_exact_command": "git diff --check && git status --short && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'fix(auth): recheck session expiry after PostgreSQL row lock' && git push origin qa/m10308-session-validity-20261115",
+  "current_focus_scenario_id": "M1.04.01",
+  "current_focus_phase": "M10401_REAL_ADMIN_NEXT_ACTION_POST_FIVE_FOREIGN_SIGNED_ANON_DENIED_ADMIN_CONTROL_DB_AUDIT_SCOPED_PASS_PR_CI_PENDING",
+  "last_completed_action": "Latest QA SHA 2139bbdb2020d10e7f90f3ac91bbf54f029e6114 PR115 merged 36/36 exact CI; M1.03.08 scoped PG5, native10, 2 Chrome green but external final gates missing. M1.04.01 existing 30 GET pairs reused; new real Chrome Admin Server Action POST captured and replayed by five other valid role sessions, all redirect /access-denied, anonymous login; authorized Admin creates exactly 1 with 5 actor role-mismatch security denial events. New source 1/1 PASS raw log sha256 d288960ed1e72ddfee23913221727201b41d8cb1f4e7706ac5bb0d0e11acf6d5. Original canonical counters FULL 0/218, hist 1398/1572 with 174 no prior matched green (four newly mapped older PG16 clean logs), old scoped 216; planned 693 PARTIAL+55 UNCERTAIN+4227 UNLINKED, FINAL0/4975; pentest incomplete2008 provisional, blockers10, severe UNKNOWN. No final stage signoff. V4 session da03483d-c29e-4f88-8026-1fed11336dd3 ACTIVE. ",
+  "next_exact_action": "Guarded M1.04.01 commit and push qa/m10401-crossportal-server-action-20261115 from isolated worktree, PR against QA signed base 2139bbdb..., enforce exact PR-head Chrome signed Server Action and original 218/4975 index and Autopilot CI, merge only green and verify all merged QA SHA workflows. Then pursue remaining missing M1.04.01 role-target POST actions; if final protected stage/providers/owner UAT blocked, leave NOT_FULLY_VERIFIED and move to next frozen actionable M1.04.02.",
+  "next_exact_command": "npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && git add .autopilot/audit/events.ndjson .github/workflows/m1-04-six-role-portal-query-isolation.yml docs/qa scripts/build-218-evidence-action-map.py tests/browser/m10401-crossportal-server-action.browser.test.mjs tests/engineering && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'test(authz): deny foreign-role real Server Action POST replay' && git push origin qa/m10401-crossportal-server-action-20261115",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.03.08",
-      "problem": "Real PostgreSQL statement_timestamp evaluated before auth_sessions row lock, session expired during wait but mutation accepted and audit persisted",
-      "result": "DETERMINISTIC_RED_4_OF_5_FIXED_WITH_POSTLOCK_CLOCK_TIMESTAMP_REAL_PG_GREEN_5_OF_5_NOT_FINAL_STAGE"
+      "scenario_id": "M1.04.01",
+      "problem": "First new browser run failed before a POST because two forms used Title label",
+      "result": "TEST_ONLY_SELECTOR_FIXED_REAL_CHROME_GREEN_1_OF_1_FIVE_FOREIGN_AND_ANON_DENIED_NOT_FINAL_STAGE"
+    },
+    {
+      "scenario_id": "M1.04.01",
+      "problem": "Other portal-target Server Action POST replay coverage and final stage independent pentest/providers/load/restore/owner UAT",
+      "result": "SCOPED_ADMIN_POST_PASS_OTHER_ACTIONS_UNVERIFIED_EXTERNAL_STAGE_BLOCKED"
     },
     {
       "scenario_id": "M1.03.08",
-      "problem": "Protected final exact-SHA staging, independent full pen test, real providers, load/restore and owner UAT",
-      "result": "STILL_UNVERIFIED_EXTERNAL_OR_OWNER_STAGE"
+      "problem": "Expired-session after PostgreSQL wait accepted privileged mutation in older QA",
+      "result": "ROOT_FIXED_PR115_MERGED_SHA_2139bbd_36_OF_36_CI_GREEN_NOT_FINAL_STAGE"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
