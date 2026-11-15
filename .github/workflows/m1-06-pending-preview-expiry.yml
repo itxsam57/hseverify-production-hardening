@@ -1,0 +1,63 @@
+name: M1.06.05 pending private preview and valid HMAC expired token QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/m10605-pending-expired-private-preview.browser.test.mjs"
+      - "src/lib/secure-files/**"
+      - ".github/workflows/m1-06-pending-preview-expiry.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/m10605-pending-expired-private-preview.browser.test.mjs"
+      - "src/lib/secure-files/**"
+      - ".github/workflows/m1-06-pending-preview-expiry.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10605-preview-expiry-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-worker-pending-and-expired-token-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile install
+        run: npm ci --no-audit --no-fund
+      - name: Real Chromium
+        run: npx playwright install chromium
+      - name: Pending preview denied and correct HMAC expired token denied through real HTTP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m10605-pending-expired-private-preview.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10605-private-preview-browser.log
+          grep -q 'M10605_PRECLAIM_PENDING_PREVIEW_DENIED_HTTP' .autopilot/artifacts/m10605-private-preview-browser.log
+          grep -q 'M10605_AVAILABLE_SIGNED_PREVIEW_HTTP' .autopilot/artifacts/m10605-private-preview-browser.log
+          grep -q 'M10605_PENDING_PREVIEW_EXPIRED_HMAC_HTTP' .autopilot/artifacts/m10605-private-preview-browser.log
+          grep -q 'M10605_EXPIRED_TOKEN_AUDIT_DB' .autopilot/artifacts/m10605-private-preview-browser.log
+      - name: Archive exact SHA proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10605-pending-expiry-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10605-private-preview-browser.log
+          if-no-files-found: warn
+          retention-days: 30
