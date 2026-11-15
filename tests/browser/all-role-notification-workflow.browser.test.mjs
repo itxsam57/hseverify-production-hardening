@@ -50,7 +50,7 @@ async function login(page, baseUrl, role, credential) {
   await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
 }
 
-test("every portal notification bell creates, opens, deep-links and marks persisted notifications read", { timeout: 300_000 }, async () => {
+test("every portal notification bell creates, opens, deep-links and marks persisted notifications read", { timeout: 420_000 }, async () => {
   const root = process.cwd();
   const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-role-notifications-"));
   const port = await freePort();
@@ -86,12 +86,22 @@ test("every portal notification bell creates, opens, deep-links and marks persis
             const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
             const page = await context.newPage();
             await login(page, baseUrl, role, credentials[role]);
+            // An independent browser receives the actual signed-in session
+            // cookie, not a synthetic notification or a newly logged-in user.
+            const copiedContext = await browser.newContext({
+              viewport: { width: 320, height: 740 },
+              storageState: await context.storageState()
+            });
+            const copiedPage = await copiedContext.newPage();
 
             await page.goto(`${baseUrl}/${role}/notifications`, { waitUntil: "networkidle" });
             await page.getByRole("button", { name: "Create persisted test notification" }).click();
             await page.waitForURL(/notice=fixture-ready/, { timeout: 15_000 });
             await page.getByText("The real outbox worker projected the test notification successfully.", { exact: true }).waitFor();
             await page.locator(".notification-center-summary").getByText("1", { exact: true }).waitFor();
+            await copiedPage.goto(`${baseUrl}/${role}/dashboard`, { waitUntil: "networkidle" });
+            assert.equal(await copiedPage.locator("details.notification-menu > summary").getAttribute("aria-label"),
+              "1 unread notifications", role+" second real browser must see committed unread notice");
 
             await page.goto(`${baseUrl}/${role}/dashboard`, { waitUntil: "networkidle" });
             const bell = page.locator("details.notification-menu");
@@ -115,6 +125,9 @@ test("every portal notification bell creates, opens, deep-links and marks persis
 
             await page.reload({ waitUntil: "networkidle" });
             assert.equal(await page.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");
+            await copiedPage.reload({ waitUntil: "networkidle" });
+            assert.equal(await copiedPage.locator("details.notification-menu > summary").getAttribute("aria-label"),
+              "0 unread notifications", role+" copied session retained stale unread after actual bell Open");
 
             await page.goto(`${baseUrl}/${role}/notifications`, { waitUntil: "networkidle" });
             await page.getByRole("button", { name: "Create persisted test notification" }).click();
@@ -127,11 +140,20 @@ test("every portal notification bell creates, opens, deep-links and marks persis
               await page.waitForURL(/notice=fixture-ready/, { timeout: 15_000 });
               await page.locator(".notification-center-summary").getByText(String(i + 1), { exact: true }).waitFor();
             }
+            await copiedPage.reload({ waitUntil: "networkidle" });
+            assert.equal(await copiedPage.locator("details.notification-menu > summary").getAttribute("aria-label"),
+              "2 unread notifications", role+" copied session did not see two new actual notices");
             await page.getByRole("button", { name: "Mark all read", exact: true }).click();
             await page.locator(".notification-center-summary").getByText("0", { exact: true }).waitFor();
             assert.equal(await page.locator(".notification-unread").count(), 0);
             await page.reload({ waitUntil: "networkidle" });
             assert.equal(await page.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");
+            await copiedPage.reload({ waitUntil: "networkidle" });
+            assert.equal(await copiedPage.locator("details.notification-menu > summary").getAttribute("aria-label"),
+              "0 unread notifications", role+" copied session retained stale badge after Mark all read");
+            console.log("M10503_COPIED_CONTEXT_UNREAD_SYNC_ALL_SIX_ROLES", role,
+              "separate 320px real signed browser saw 1,0 after Open,2 then0 after mark-all");
+            await copiedContext.close();
             await context.close();
           }
         } finally {

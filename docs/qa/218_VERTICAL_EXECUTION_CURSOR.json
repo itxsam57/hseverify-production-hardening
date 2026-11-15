@@ -4,28 +4,28 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.05.02",
-  "current_focus_phase": "M10502_NEXT_ACTOR_ROLE_DEEPLINK_REAL_CHROME_ONE_PASS_NATIVE_NINETEEN_PASS_PR_CI_PENDING",
-  "last_completed_action": "Signed QA aa92ebef9cc2223de7de1ac7a68bc2e73ba3c4c3 PR120 merged33/33. Existing genuine Worker->Verifier->Admin->Verifier/Worker notification deep link flow extended in place: five signed other-role or anonymous copied Admin escalation URL denied and two forged header HTTP denied without private reason; 3 built CLI job deliveries, 4 actor-bound role-mismatch security DB denials, Worker/Admin/Verifier notification read audit. Real Chrome1/1 exit0 log sha256 ce8c4e22863ded474365de514fc8b4c51efe1de9e8a3127e18081001963bb702. Native thirteen producer cases pass; premature external145s timeout cancelled remaining review file, only remaining six rerun6/6 pass exit0 SHA256 22c3f5dc67b31dc29ff9c2084f847bede655f49788cfd34f7f5e95ae222f9f7a. Historical matched count newly1400/1573 from prior M10501 real log (NOT duplicate M10502), unmatched173. FULL0/218, old216 partial, 4975 693partial 55uncertain 4227unlinked final0, pentest incomplete2008 candidate independently done unknown, blocked10, critical/high unknown. Stage/providers/independent pentest/owner UAT not verified. V4 session 6a7cc38f-3a97-4735-a3ee-30e4f3064ad2.",
-  "next_exact_action": "Run strict original218,216,4975 source index engineering + audit; governed commit/push qa/m10502-next-actor-deeplink-20261115, PR vs signed QA aa92ebe, exact head real Chrome/native/218/4975/Autopilot green then merge, all merged exact QA SHA workflow green; move to frozen M1.05.03 with M1.05.02 final stage blocked.",
+  "current_focus_scenario_id": "M1.05.03",
+  "current_focus_phase": "M10503_SIX_ROLE_COPIED_REAL_BROWSER_UNREAD_1_0_2_0_CHROME_ONE_PASS_NATIVE_FIVE_PASS_PR_PENDING",
+  "last_completed_action": "Signed QA PR121 two-parent merge SHA 749fd8666e17c644a63a0710fd00f29365cd631a exact34/34 workflow success. M10503 reused existing full real six role notification browser: each of Worker, Company, Assessor, Verifier, Admin, Root clone actual signed cookie in independent 320px context, all six see unread1, zero after original real bell Open, two new unread, zero after original Mark all; original actual outbox and DB24 read notices and24 immutable notification.read target audits all passed. Same original Chrome test 1/1 exit0 106.8s raw sha256 17572926f7e67d88436ae7bd8434d706e4db181a1570f7992a57ad9afb62ae1c; native bulk read 5/5 exit0 sha256 3bf31b86e02af510fbfd5d6f7709028b65ccc1ea55381d12c3758cabae6c038d. Source gap red marker only, no app defect, no new case identity. Source reindex historical1400/1573 unmatched173, old scoped216, FULL0/218, planned693partial+55uncertain+4227unlinked FINAL0/4975; pentest incomplete2008 provisional independent UNKNOWN, blocked10, severe unknown. Stage/providers/UAT still unavailable. V4 session 60a556c0-cd96-4e92-9b9d-16f57c651078.",
+  "next_exact_action": "Verify original 218/216/4975/source action indexes and engineering suite, guarded commit/push qa/m10503-dual-session-unread-20261115, PR against QA SHA749fd866, exact head existing M1.02 all-role Chrome marker count6 + native bulk and 218/4975/Autopilot all green, two-parent merge and verify ALL merged QA SHA; then next original M1.05.04 outbox retry/outage.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.05.02",
-      "problem": "Previously green receiving-role browser workflow lacked copied Admin link wrong-role/form-header tests",
-      "result": "ACTUAL_CHROME_ONE_PASS_FIVE_FOREIGN_ANON_DENIED_NATIVE19_CASES_PASS_NOT_FINAL_STAGE"
+      "scenario_id": "M1.05.03",
+      "problem": "Existing all six role real browser notice read/mark-all lacked distinct copied session badge state refresh",
+      "result": "COVERAGE_GAP_RED_ONLY_REAL_ALL_SIX_1_OF_1_CHROME_GREEN_NATIVE_5_OF_5_PASS_NOT_FINAL_STAGE"
+    },
+    {
+      "scenario_id": "M1.05.03",
+      "problem": "Independent full-stage pentest, real providers, realistic load/restore, owner UAT and other race/expired notifications",
+      "result": "NOT_FULLY_VERIFIED_BLOCKED_EXTERNAL_STAGE_AND_REMAINING_ATTACK_MATRIX"
     },
     {
       "scenario_id": "M1.05.02",
-      "problem": "Combined native tool timeout145s cancelled separate review file after producer13 passed",
-      "result": "TOOL_TIMEOUT_NOT_PRODUCT_DEFECT_ONLY_UNFINISHED_SIX_RERUN_PASS_EXIT0"
-    },
-    {
-      "scenario_id": "M1.05.02",
-      "problem": "Other material events plus independent staging pentest/providers/load/restore/owner UAT not available",
-      "result": "NOT_FULLY_VERIFIED_EXTERNAL_FINAL_STAGE_AND_ACTION_MATRIX"
+      "problem": "Old Worker->Verifier->Admin actual deep links plus copied Admin wrong role denials",
+      "result": "PR121_MERGED_QA_749fd86_34_OF_34_EXACT_CI_SUCCESS_SCOPED_ONLY"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

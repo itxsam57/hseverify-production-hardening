@@ -1,0 +1,28 @@
+# M1.05.03 — six roles, two real browser sessions, unread badge and mark-all synchronization
+
+**2026-11-15 — SCOPED real Chromium/DB + native evidence. Frozen M1.05.03 is NOT_FULLY_VERIFIED; RELEASE NO-GO.**
+
+## Signed QA and previous tests reused
+
+- Canonical QA baseline `749fd8666e17c644a63a0710fd00f29365cd631a`, PR #121 actual two-parent merge; **34/34 workflows passed on exact merged SHA**.
+- Original M1.05.03 explicitly says "Read/unread/mark-all and unread badge synchronize across roles". Existing `tests/browser/all-role-notification-workflow.browser.test.mjs` already ran all six portal roles, real notification fixture through built outbox, bell open, mark read, mark-all and database audit; existing `tests/platform/notification-bulk-read-runtime.test.mjs` already verifies idempotent audit, role/tenant limits, revoked/locked sessions and rollback. Both evidence sources reused; **same real browser test case identity**, no duplicate source test or fake new pass.
+- Uncovered specific case: a **second independent browser context** holding the same role's signed-in cookie might display a stale unread count after another browser's Open/Mark all. Deterministic source-coverage assertion **RED exit1** because copied-context test was absent; **not a product exploit**. Log `.autopilot/artifacts/M10503_COPIED_SESSION_BADGE_SOURCE_GAP_RED_20261115.log`, SHA256 `0c2b8c74171a80a597ccd0db92b3cb2c19190f5b6d92924f94a92e63657bdb82`.
+
+## Actual real-browser and database checks
+
+- Extended the same six-role Playwright Chromium script: Worker, Company, Assessor, Verifier, Admin, Root each signed in through real UI with role MFA as required (original viewport 1440px), opened **second independent 320px browser context using actual authenticated storageState/session cookie**, no second login and no test-only fake access privileges.
+- For **each of all six roles**, the copied browser displays **1 unread** when the first real outbox-backed notice exists; original browser opens it using actual bell button/Server Action, second browser reload displays **0**; after original browser creates two other unread notices, second browser reload shows **2**; original UI Mark all read, second browser reload shows **0** again. On-page role markers exactly six, one per role: `M10503_COPIED_CONTEXT_UNREAD_SYNC_ALL_SIX_ROLES`.
+- Existing full test retains **24 genuine persisted notification rows** (4 per role), all `read_at` set, **24 immutable `platform_audit_events` `notification.read` with unique target references**, role-scoped projection and no duplicate read audit; all source assertions actually completed.
+- **Real original six-role Chromium 1/1 PASS**, ~106.8 seconds, exit0, command `node --test --test-concurrency=1 tests/browser/all-role-notification-workflow.browser.test.mjs`. Log `.autopilot/artifacts/M10503_SIX_ROLE_COPIED_CONTEXT_UNREAD_REAL_BROWSER_20261115.log`, SHA256 **`17572926f7e67d88436ae7bd8434d706e4db181a1570f7992a57ad9afb62ae1c`**.
+- Adjacent native notification-bulk-read regression **5/5 PASS**, exit0, ~25.9s, including idempotent bulk read, atomic rollback/audit failure retry, revoked/locked/expired/wrong-role fail-closed, tenant membership isolation and pending Company owner constrained notices. Log `.autopilot/artifacts/M10503_BULK_READ_NATIVE_20261115.log`, SHA256 **`3bf31b86e02af510fbfd5d6f7709028b65ccc1ea55381d12c3758cabae6c038d`**.
+- **No application security defect found** by this particular additional test; no product code change. Existing `.github/workflows/m1-02-header-controls.yml` exact-head and QA push CI, instead of a duplicate new six-role job, now **requires all six copied-context markers** and runs the native bulk-read regression with saved artifact log. Existing full CI source checks retained.
+
+## Frozen original ledger, limits and handoff
+
+- **FULLY VERIFIED 0/218**, release **NO-GO**, older 216 scoped NOT full. Original historical clean source case numerator should be remeasured after original index regeneration, no duplicate old test identities; 4,975 prior link slots **693 PARTIAL +55 UNCERTAIN +4227 UNLINKED**, FINAL **0/4,975**; pentest incomplete 2,008 provisional attack slots independently completed UNKNOWN, 10 external blocked scenarios, high/critical UNKNOWN.
+- This is **six roles** with 2 sessions *within the same role*. It does **not** attest all cross-role notifications, real provider delivery, 4,975 final dimension checks, negative expiry/races across every endpoint, independently completed full pentest, protected staging, realistic load/restore or Owner UAT. Remains NOT_FULLY_VERIFIED.
+- Isolated workstation worktree `hseverify-m10503-dual-session-unread-20261115`, branch `qa/m10503-dual-session-unread-20261115`, base QA SHA `749fd8666e17c644a63a0710fd00f29365cd631a`; V4 audit session `60a556c0-cd96-4e92-9b9d-16f57c651078`, cycle `9abd0ef758ea4833ba4efd586a3f29ac`.
+- **NEXT:** reconcile original 218/216/source/4,975 action ledger and all counters, strict engineering integrity and V4 guarded commit/push PR, exact head real six-role Chrome including six copied markers and native 5/5, 218, 4975 and Autopilot all green. Merge only green and inspect complete merged QA SHA workflows. Continue frozen M1.05.04 outbox retry/idempotency/outage with final protected stage blockers preserved.
+
+
+**Original 218/4,975 engineering proof:** `.autopilot/artifacts/M10503_ORIGINAL_218_4975_ENGINEERING_20261115.log`, SHA256 `8df3df7760da93bd49147ba3b6175cbe26b3b1f566d08123ec52d288f1feb76c`. Original source/legacy/planned indexes, frozen 218/37, native engineering suites and current no-go progress all exit0. No final protected stage certification.

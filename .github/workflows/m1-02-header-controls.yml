@@ -74,6 +74,9 @@ jobs:
           for suite in portal-help authentication-boundaries-e2e all-role-notification-workflow portal-navigation-responsive; do
             node --test --test-concurrency=1 "tests/browser/${suite}.browser.test.mjs" 2>&1 | tee ".autopilot/artifacts/m10202-${suite}.log"
           done
+          actual_copied_roles="$(grep -c 'M10503_COPIED_CONTEXT_UNREAD_SYNC_ALL_SIX_ROLES' .autopilot/artifacts/m10202-all-role-notification-workflow.log)"
+          test "$actual_copied_roles" -eq 6
+          node --test --test-concurrency=1 tests/platform/notification-bulk-read-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10202-bulk-read-native.log
       - name: Preserve actual header action logs
         if: always()
         uses: actions/upload-artifact@v4
