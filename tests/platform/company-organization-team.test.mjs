@@ -537,3 +537,197 @@ test("M1.09 Worker unit archive clears live scope, retains immutable per-link hi
     console.log("ACTUAL_WORKER_ARCHIVE native site/department unassignment, prior scope/source retained, no restore reassignment, archived new assignment denied and required audit rollback");
   } finally { await database.close(); }
 });
+
+async function m10901RealPostgresDatabase() {
+  const raw = process.env.HSE_M10901_POSTGRES_TEST_DATABASE_URL;
+  if (!raw) throw new Error("M10901 test requires explicit approved isolated PostgreSQL16.");
+  const url = new URL(raw);
+  if (!["localhost","127.0.0.1"].includes(url.hostname) || url.pathname !== "/postgres") {
+    throw new Error("M10901 never opens an external/shared application or production database.");
+  }
+  const root = await openScriptDatabase({
+    ...TEST_ENVIRONMENT,databaseDriver:"postgres",databaseUrl:url.href,releaseSha:"m10901-supervisor"
+  });
+  const dbName = "m10901_two_staff_units_"+process.pid+"_"+Date.now();
+  let created=false, first, second;
+  try {
+    await root.execute('CREATE DATABASE "'+dbName+'"');
+    created=true;
+    url.pathname = "/"+dbName;
+    const env = {...TEST_ENVIRONMENT,databaseDriver:"postgres",
+      databaseUrl:url.href,releaseSha:"m10901-unit-race-"+process.pid};
+    first = await openScriptDatabase(env);
+    await applyMigrationsThrough(first,env.releaseSha,"0130_verified_identity_correction_notices");
+    second = await openScriptDatabase(env);
+    return {first,second,cleanup:async()=>{
+      try{await second.close();}
+      finally{try{await first.close();}
+        finally{try{await root.execute('DROP DATABASE "'+dbName+'"');}
+          finally{await root.close();}}}
+    }};
+  } catch(error) {
+    if(second) await second.close();
+    if(first) await first.close();
+    try{if(created) await root.execute('DROP DATABASE "'+dbName+'"');}
+    finally{await root.close();}
+    throw error;
+  }
+}
+function holdM10901SuccessfulTransactionUntilReleased(client) {
+  let signal;
+  let release;
+  const reached = new Promise(resolve=>{signal=resolve;});
+  const held = new Promise(resolve=>{release=resolve;});
+  const repository = new DatabaseCompanyOrganizationRepository(Promise.resolve({
+    transaction: callback => client.transaction(async tx=>{
+      const result=await callback(tx);
+      signal();
+      await held;
+      return result;
+    })
+  }));
+  return {repository,reached,release};
+}
+
+test("M1.09.01 actual PostgreSQL16 two Company staff race site archive and department edit with strict unit revision",{
+  skip:!process.env.HSE_M10901_POSTGRES_TEST_DATABASE_URL,timeout:140000
+},async()=>{
+  const {first,second,cleanup}=await m10901RealPostgresDatabase();
+  let releaseRaceA,releaseRaceB,pendingA,pendingB;
+  try{
+    const ownerA=await insertCompanyContext(first,"A");
+    const otherTenantOwner=await insertCompanyContext(first,"B");
+    const staff=await insertCompanyContext(first,"C","admin");
+    await first.query("UPDATE auth_tenant_memberships SET tenant_id=$1 WHERE membership_id=$2",
+      [ownerA.tenantId,staff.membershipId]);
+    const pOwner=principal(ownerA,"company.settings.manage");
+    const pStaff=principal({...staff,tenantId:ownerA.tenantId},"company.settings.manage");
+    const pForeign=principal(otherTenantOwner,"company.settings.manage");
+    const firstRepo=new DatabaseCompanyOrganizationRepository(Promise.resolve(first));
+    const secondRepo=new DatabaseCompanyOrganizationRepository(Promise.resolve(second));
+    const initialSite={
+      name:"M10901 original Islamabad site",formattedAddress:"Islamabad, Pakistan",
+      phone:"+92510000101",website:"https://unit-site.example.test",
+      email:"unit-site@example.test",registrationNumber:null
+    };
+    const initialDept={
+      name:"M10901 original safety department",formattedAddress:"Islamabad, Pakistan",
+      phone:"+92510000102",website:"https://unit-department.example.test",
+      email:"unit-dept@example.test",registrationNumber:null
+    };
+    const site=await firstRepo.create(pOwner,"site",initialSite);
+    const department=await firstRepo.create(pOwner,"department",initialDept);
+    assert.equal(site.revision,1);
+    assert.equal(department.revision,1);
+
+    // Hold an actual committed-write transaction open while a second
+    // separately authenticated Company Admin attempts the stale edit.
+    const raceSite=holdM10901SuccessfulTransactionUntilReleased(first);
+    releaseRaceA=raceSite.release;
+    pendingA=raceSite.repository.archive(pOwner,"site",site.unitId,site.revision);
+    await raceSite.reached;
+    pendingB=secondRepo.update(pStaff,"site",site.unitId,site.revision,{
+      ...initialSite,name:"ATTACK stale site overwrite"
+    }).then(value=>({accepted:true,value}),error=>({accepted:false,name:error.name,message:error.message}));
+    const earlySite=await Promise.race([
+      pendingB.then(()=>"second-finished-before-first-commit"),
+      new Promise(resolve=>setTimeout(()=>resolve("waiting-for-first-commit"),1000))
+    ]);
+    assert.equal(earlySite,"waiting-for-first-commit");
+    raceSite.release();
+    releaseRaceA=null;
+    const archived=await pendingA;
+    assert.equal(archived.status,"archived");
+    assert.equal(archived.revision,site.revision+1);
+    const staleSite=await pendingB;
+    assert.equal(staleSite.accepted,false);
+    assert.equal(staleSite.name,"CompanyOrganizationConflictError");
+    const rowSite=(await first.query(
+      "SELECT name,site_status,revision,tenant_id FROM company_sites WHERE site_id=$1",
+      [site.unitId])).rows[0];
+    assert.equal(rowSite.name,initialSite.name);
+    assert.equal(rowSite.site_status,"archived");
+    assert.equal(Number(rowSite.revision),2);
+    assert.equal(rowSite.tenant_id,ownerA.tenantId);
+    await assert.rejects(
+      secondRepo.update(pStaff,"site",site.unitId,archived.revision,{
+        ...initialSite,name:"Forbidden edit of archived site"
+      }),error=>error?.name==="CompanyOrganizationConflictError");
+    await assert.rejects(
+      secondRepo.restore(pStaff,"site",site.unitId,site.revision),
+      error=>error?.name==="CompanyOrganizationConflictError");
+    await assert.rejects(
+      secondRepo.restore(pForeign,"site",site.unitId,archived.revision),
+      error=>error?.name==="CompanyOrganizationNotFoundError");
+    const restored=await secondRepo.restore(pStaff,"site",site.unitId,archived.revision);
+    assert.equal(restored.status,"active");
+    assert.equal(restored.revision,3);
+    const siteAudit=(await first.query(
+      "SELECT action_key,actor_account_id FROM platform_audit_events WHERE target_reference=$1 ORDER BY audit_sequence",
+      [site.unitId])).rows;
+    assert.deepEqual(siteAudit.map(x=>x.action_key),[
+      "company_organization.created","company_organization.archived","company_organization.restored"
+    ]);
+    assert.deepEqual(siteAudit.map(x=>x.actor_account_id),[
+      ownerA.accountId,ownerA.accountId,staff.accountId
+    ]);
+    console.log("M10901_ACTUAL_PG16_STAFF_UNIT_RACE_STALE_DENIED",
+      "two independent authenticated Owner/Admin sessions; site archive blocks concurrent stale edit until commit; stale edit/replay and foreign restore denied; one archived + one authorized restored audit; no overwrite");
+
+    // Reverse the conflict for the department: Admin editing competes with
+    // the Owner's archive on the *same* initial revision.
+    const raceDept=holdM10901SuccessfulTransactionUntilReleased(first);
+    releaseRaceB=raceDept.release;
+    pendingA=raceDept.repository.update(pStaff,"department",department.unitId,
+      department.revision,{...initialDept,name:"M10901 independently reviewed safety department"});
+    await raceDept.reached;
+    pendingB=secondRepo.archive(pOwner,"department",department.unitId,department.revision)
+      .then(value=>({accepted:true,value}),error=>({accepted:false,name:error.name,message:error.message}));
+    const earlyDept=await Promise.race([
+      pendingB.then(()=>"second-finished-before-first-commit"),
+      new Promise(resolve=>setTimeout(()=>resolve("waiting-for-first-commit"),1000))
+    ]);
+    assert.equal(earlyDept,"waiting-for-first-commit");
+    raceDept.release();
+    releaseRaceB=null;
+    const updated=await pendingA;
+    assert.equal(updated.status,"active");
+    assert.equal(updated.revision,2);
+    const staleArchive=await pendingB;
+    assert.equal(staleArchive.accepted,false);
+    assert.equal(staleArchive.name,"CompanyOrganizationConflictError");
+    const recorded=(await first.query(
+      "SELECT name,department_status,revision FROM company_departments WHERE department_id=$1",
+      [department.unitId])).rows[0];
+    assert.equal(recorded.name,updated.name);
+    assert.equal(recorded.department_status,"active");
+    assert.equal(Number(recorded.revision),2);
+    const deptArchived=await secondRepo.archive(pOwner,"department",department.unitId,updated.revision);
+    assert.equal(deptArchived.revision,3);
+    assert.equal(deptArchived.status,"archived");
+    const deptRestored=await firstRepo.restore(pStaff,"department",department.unitId,deptArchived.revision);
+    assert.equal(deptRestored.revision,4);
+    assert.equal(deptRestored.status,"active");
+    const deptAudit=(await first.query(
+      "SELECT action_key,actor_account_id FROM platform_audit_events WHERE target_reference=$1 ORDER BY audit_sequence",
+      [department.unitId])).rows;
+    assert.deepEqual(deptAudit.map(x=>x.action_key),[
+      "company_organization.created","company_organization.updated",
+      "company_organization.archived","company_organization.restored"
+    ]);
+    assert.deepEqual(deptAudit.map(x=>x.actor_account_id),[
+      ownerA.accountId,staff.accountId,ownerA.accountId,staff.accountId
+    ]);
+    const otherTenant=(await first.query(
+      "SELECT count(*)::int n FROM company_sites WHERE tenant_id=$1 AND site_id=$2",
+      [otherTenantOwner.tenantId,site.unitId])).rows[0].n;
+    assert.equal(otherTenant,0);
+    console.log("M10901_ACTUAL_PG16_SITE_DEPT_HISTORY_IMMUTABLE_DB",
+      "department admin edit wins Owner stale archive, fresh Owner archive and Admin restore each once; original foreign tenant untouched; version revision4 and 4 immutable audit records");
+  }finally{
+    releaseRaceA?.();
+    releaseRaceB?.();
+    await Promise.allSettled([pendingA,pendingB]);
+    await cleanup();
+  }
+});

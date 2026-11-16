@@ -143,12 +143,19 @@ if (process.env.HSE_COMPANY_ORGANIZATION_TEAM_SKIP_TEST === "1") {
   process.exit(0);
 }
 
+// Focus one newly necessary concurrency test without duplicating historical
+// green test executions; no-argument mode keeps the original full suite.
+const focusedPattern = process.argv[2] === "--test-name-pattern" ? process.argv[3] : null;
+if (process.argv.length > 2 && (!focusedPattern || process.argv.length !== 4)) {
+  fail("Expected --test-name-pattern followed by the exact new M1.09 test, or no arguments for the full original suite.");
+}
 const tests = spawnSync(
   process.execPath,
   [
     "--test",
+    ...(focusedPattern ? ["--test-name-pattern",focusedPattern] : []),
     resolve("tests", "platform", "company-organization-team.test.mjs"),
-    resolve("tests", "platform", "company-organization-team-migration-stack.test.mjs")
+    ...(!focusedPattern ? [resolve("tests", "platform", "company-organization-team-migration-stack.test.mjs")] : [])
   ],
   {
     stdio: "inherit",

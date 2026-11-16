@@ -4,33 +4,43 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.08.05",
-  "current_focus_phase": "M10805_TWO_ADMIN_REAL_PG16_CONCURRENT_VERIFY_AND_REJECT_OPPOSITE_ORDERS_ROW_LOCK_SINGLE_AUDIT_1OF1_PASS_EXACT_PR_CI_PENDING",
-  "last_completed_action": "QA3983ab31dcf7e51c2775cc19e26b47e47f476b3d PR139 true two-parent 51/51 exact merged-SHA CI green. Frozen M10805 original old signed Company/Admin Chrome hash2a0b08433325e4239946f450f1dec703828299f8eb7865c05fb4aa29715c3eb4, native a0a71d87a381f0e655a43817060a5824038a323f14603a1479e23ec38ae37a89 raw hashes verified, not rerun. Missing two Admin real PG16 simultaneous different terminal decisions source-only RED1 SHA256 ee14ad8ac60469c452faaaf26fc10d41058d3c5a70dd4e4ebb7818d5e1141913 NOT product defect. One distinct necessary native source test conditionally registered only real local PG16 maintenance URL, two independently authorized synthetic Admin sessions + separate PG connections; first Verify or Reject transaction held before commit, other conflicting decision blocked 1.1s then stale conflict, first replay conflict. Verify winning tenant active, Reject winning tenant pending, exact one terminal Company audit, zero duplicate losing/replay audit, one original scanned PDF and immutable version1, one lock increment, final case absent Admin active queue. Disposable real PostgreSQL16 all migrations0130 1/1 PASS exit0 raw SHA256 2105e9d63bda91379b383b38d36bc8b5f3c2e16cf4eac9376483c690d8aae19b, all two outcome markers printed twice, isolated database dropped, shared PG serverPID723113 unaffected. No application TS/UI/schema change. Original M10805 row report docs/qa/M1_08_05_TWO_ADMIN_FINAL_DECISION_RACE_20261117.md linked original 218/4975; exact head new realPG16 workflow target created. Reindex source cases1583, historic1414 matched, unmatched169 current old CI232 and historic-only1182, historical +1 old M10804 local PG16 unknown tested SHA NOT M10805 new pass; FULL0/218 old216 scoped, planned4975 693 PARTIAL 59 UNCERTAIN 4223 UNLINKED FINAL0, pentest incomplete2008 provisional independent done UNKNOWN external blockers10 severe unknown NO-GO. Missing protected final signed UI/role/tenant/direct API, real provider, independent full pentest, load/restore and Owner UAT. V4 session f9ad03a7-b9cd-4ff5-ac36-d9e79e76e567 cycle7919f6a0827e4239ba14f127bc894b44, worktree hseverify-m10805-two-admin-approval-race-20261116 on QA3983ab31 parent, no test running. Original GitHub 4975/218 CI-equivalent source/index/1110 triage/Python+Node engineering PASS exit0; raw .autopilot/artifacts/M10805_STRICT_ORIGINAL_218_4975_GITHUB_ENGINEERING_20261117.log SHA256 98730204c0cc54ab4f98b9e27a63161a44c2e0322468c5221cb70352bc1b805e. Canonical FULL0/218, historically green1414/1583 unmatched169, planned4975 693 PARTIAL+59 UNCERTAIN+4223 UNLINKED FINAL0, pen test incomplete2008 preliminary independent complete unknown, blocked10 severe unknown, RELEASE NO-GO.",
-  "next_exact_action": "V4 guarded commit/push QA feature qa/m10805-two-admin-approval-race-20261116; open GitHub PR against original qa/a28-eligibility-read-guard-20261107; require exact PR head real PostgreSQL16 both Verify-wins/Reject-wins Admin concurrency markers PASS1/1, old Company Admin native/UI security regression + original 218/216/4975 and triage and Autopilot all GREEN; normal true two-parent QA merge and all exact merged SHA workflow success. Then original M1.09.01 site/department operations; release still NO-GO until same protected final staging providers full independent pentest load/restore UAT.",
-  "next_exact_command": "git diff --check && python3 .autopilot/guard.py pre-commit --root . && git commit -m 'test(M1.08.05): serialize concurrent Company Admin decisions on PG16' && git push -u origin qa/m10805-two-admin-approval-race-20261116 && gh pr list --repo itxsam57/hseverify-production-hardening --head qa/m10805-two-admin-approval-race-20261116",
+  "current_focus_scenario_id": "M1.09.01",
+  "current_focus_phase": "M10901_QA9C_HISTORY_FORK_RECONCILED_ORIGINAL_218_4975_ENGINEERING_GREEN_PR141_HEAD_CI_PENDING",
+  "last_completed_action": "PR140 genuine signed two-parent QA9c71685 merge 53/53 exact-QA workflows SUCCESS and original scope M10805 PG16 1/1. PR141 a194d24 scoped M10901 Owner/Admin actual PostgreSQL16 site/archive department/edit 1/1 PASS rawSHA256 4af8ba29a83ae7fb31b08cdb0a827182594b5b840d62950d9ade6dcd63a998ef, original source and QA9c audit forks safely reconciled preserving original hash tail and archives, V4 source commit CI both origins compliant. Combined Python/Node original 218/216/4975 gates ALL PASS raw SHA256 68cdcbc1c4876121eb0c5135266059a6cec3b1f32a16e244c03fa8b15f1fc7da, counters source historically1415/1584 unmatched169, planned693 partial60 uncertain4222 unlinked FINAL0, full0/218 old216 scoped, pentest incomplete external10, NO-GO; no product runtime defect.",
+  "next_exact_action": "Commit already verified QA9c PR140 merge reconciliation in isolated PR141 branch under V4, nonforce push, require exact head original 218+4975+Autopilot and new M10901 PG16 1/1 GitHub Actions GREEN. Resolve any RED root cause, merge PR141 normal signed two-parent GitHub on green only, then all exact merged-QA SHA workflows GREEN. Do not promote full release: protected final same-SHA browser/API/pentest/providers/load/restore/owner UAT missing; resume M1.09.02 next owned scope.",
+  "next_exact_command": "git diff --check && python3 .autopilot/guard.py pre-commit --root . && git add .autopilot/audit/events.ndjson docs/qa scripts/build-218-evidence-action-map.py tests/engineering && git commit -m \"test(M1.09.01): reconcile signed QA9c concurrent verification evidence\" && git push origin qa/m10901-unit-lifecycle-20261117 && gh pr checks 141 --repo itxsam57/hseverify-production-hardening",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.08.05",
-      "problem": "No independent simultaneous two Admin PostgreSQL final decision proof, prior old sequential Chrome only",
-      "result": "ONE_NECESSARY_GENUINE_PG16_TWO_WINNER_ORDERS_ROW_LOCK_AND_STALE_LOSER_REAL_DB_1_OF1_PASS_SCOPED_EXACT_SHA_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.08.05",
-      "problem": "Protected final signed Company/Admin browser direct API cross-role tenant abuse, all providers, independent full pentest load/restore and Owner UAT absent",
-      "result": "NOT_FULLY_VERIFIED_RELEASE_NO_GO"
+      "scenario_id": "M1.09.01",
+      "problem": "Old original M10901 real two independent PostgreSQL16 Company revision conflict source missing; red was source-only not exploit",
+      "result": "NEW_REAL_PG16_TEST_1_OF1_PASS_ISOLATED_LOCAL_ONLY_RAW_SHA256_4af8ba29_EXACT_PR_HEAD_CI_PENDING"
     },
     {
       "scenario_id": "M1.08.04",
-      "problem": "Prior PR139 CI 4975 unassigned/PG Docker health and adjacent native strict test oracle RED fixed, terminal rejection",
-      "result": "PR139_TRUE_TWO_PARENT_QA3983ab31_ALL51_OF51_EXACT_MERGED_SHA_WORKFLOWS_GREEN_SCOPED_NOT_FINAL"
+      "problem": "PR139 7d72ca0 M1.08.03 adjacent native GitHub job run43929096376 had 11 native actual PASS but old CI oracle grep expected10",
+      "result": "CI_ORACLE_REQUIRE11_AND_BOTH_NEW_TERMINAL_GUARDS_UPDATED_EXACT_NEW_HEAD_CI_PENDING"
+    },
+    {
+      "scenario_id": "M1.08.04",
+      "problem": "PR139 first CI head original triage review CSV stale, Docker health command wrongly quoted",
+      "result": "ROOT_FIXED_SECOND_HEAD_7d72ca0_ORIGINAL_4975_AND_OWN_PGLITE_PG16_GITHUB_WORKFLOW_GREEN"
+    },
+    {
+      "scenario_id": "M1.08.04",
+      "problem": "Full real production providers, protected signed final browser/API/role/tenant and complete independent pentest, load/restore and Owner UAT still missing",
+      "result": "NOT_FULLY_VERIFIED_RELEASE_NO_GO"
+    },
+    {
+      "scenario_id": "M1.08.03",
+      "problem": "Stale Admin original v1 form could verify corrected Company v2 and activate tenant",
+      "result": "PR138_QA7c85093_ALL50_OF50_EXACT_MERGED_SHA_CI_GREEN_SCOPED_NOT_FINAL"
     },
     {
       "scenario_id": "M1.07.04",
-      "problem": "Frozen identity REJECTED/resubmission contract conflicts implemented terminal initial rejection",
-      "result": "OWNER_CONTRACT_REVIEW_REQUIRED_NOT_FULL"
+      "problem": "Initial Worker identity REJECTED frozen contract vs implemented terminal state",
+      "result": "OWNER_CONTRACT_REVIEW_REQUIRED"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
