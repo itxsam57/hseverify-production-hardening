@@ -842,17 +842,24 @@ export class CompanyVerificationRepository {
     decider: CompanyVerificationDecider;
     actor: TrustedAuditActor;
     caseId: string;
+    expectedVersionId: string;
+    expectedLockVersion: number;
   }): Promise<void> {
     const database = await this.client();
     await database.transaction(async (transaction) => {
       await assertLiveDecider(transaction, input.decider);
       const caseRow = await lockCaseById(transaction, input.caseId);
-      if (caseRow.case_status !== "submitted") throw new CompanyVerificationConflictError();
+      if (
+        caseRow.case_status !== "submitted" ||
+        caseRow.current_version_id !== input.expectedVersionId ||
+        Number(caseRow.lock_version) !== input.expectedLockVersion
+      ) throw new CompanyVerificationConflictError("The submitted Company version changed. Reload and review the current evidence.");
       const updated = await transaction.query(
         `UPDATE company_verification_cases
          SET case_status = 'under_review', lock_version = lock_version + 1, updated_at = CURRENT_TIMESTAMP
-         WHERE case_id = $1 AND case_status = 'submitted'`,
-        [caseRow.case_id]
+         WHERE case_id = $1 AND case_status = 'submitted'
+           AND lock_version = $2 AND current_version_id = $3`,
+        [caseRow.case_id, input.expectedLockVersion, input.expectedVersionId]
       );
       if (updated.affectedRows !== 1) throw new CompanyVerificationConflictError();
       const audit = new DatabaseAuditRepository(Promise.resolve(transaction));
@@ -869,6 +876,8 @@ export class CompanyVerificationRepository {
     decider: CompanyVerificationDecider;
     actor: TrustedAuditActor;
     caseId: string;
+    expectedVersionId: string;
+    expectedLockVersion: number;
     outcome: "verified" | "changes_requested" | "rejected";
   }): Promise<void> {
     const database = await this.client();
@@ -876,8 +885,14 @@ export class CompanyVerificationRepository {
       await assertLiveDecider(transaction, input.decider);
       const caseRow = await lockCaseById(transaction, input.caseId);
       const versionRow = await lockVersion(transaction, caseRow.current_version_id!);
-      if (caseRow.case_status !== "under_review" || versionRow.version_status !== "submitted") {
-        throw new CompanyVerificationConflictError();
+      if (
+        caseRow.case_status !== "under_review" ||
+        versionRow.version_status !== "submitted" ||
+        caseRow.current_version_id !== input.expectedVersionId ||
+        versionRow.version_id !== input.expectedVersionId ||
+        Number(caseRow.lock_version) !== input.expectedLockVersion
+      ) {
+        throw new CompanyVerificationConflictError("The reviewed Company version changed. Reload and check the current evidence before deciding.");
       }
       const nowResult = await transaction.query<{ now: DatabaseTimestamp }>(`SELECT CURRENT_TIMESTAMP AS now`);
       const now = timestamp(nowResult.rows[0]!.now);
@@ -897,8 +912,10 @@ export class CompanyVerificationRepository {
              rejected_at = CASE WHEN $2 = 'rejected' THEN $3::timestamptz ELSE rejected_at END,
              updated_at = $3
          WHERE case_id = $1
-           AND case_status = 'under_review'`,
-        [caseRow.case_id, input.outcome, now]
+           AND case_status = 'under_review'
+           AND lock_version = $4
+           AND current_version_id = $5`,
+        [caseRow.case_id, input.outcome, now, input.expectedLockVersion, input.expectedVersionId]
       );
       if (caseUpdate.affectedRows !== 1) throw new CompanyVerificationConflictError();
       if (input.outcome === "verified") {

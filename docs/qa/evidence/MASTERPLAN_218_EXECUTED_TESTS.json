@@ -7467,7 +7467,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 51,
+      "prior_log_pass_repetition_count": 52,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7526,7 +7526,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 51,
+      "prior_log_pass_repetition_count": 52,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7585,7 +7585,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 51,
+      "prior_log_pass_repetition_count": 52,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7644,7 +7644,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 51,
+      "prior_log_pass_repetition_count": 52,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7703,7 +7703,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 51,
+      "prior_log_pass_repetition_count": 52,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7762,7 +7762,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 51,
+      "prior_log_pass_repetition_count": 52,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7821,7 +7821,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 48,
+      "prior_log_pass_repetition_count": 49,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7853,7 +7853,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 47,
+      "prior_log_pass_repetition_count": 48,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -19202,6 +19202,23 @@
       "title": "M1.08 Company verification preserves submitted history, creates correction lineage and activates tenant only after server review"
     },
     {
+      "case_id": "tests/platform/company-verification.test.mjs#4360d331a4ee6bd5",
+      "direct_scenarios": [
+        "M1.08.03"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/company-verification.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.08.03"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.08.03 stale Admin version one review cannot decide a corrected version two without re-review"
+    },
+    {
       "case_id": "tests/platform/company-worker-expiry-lifecycle.test.mjs#74580d8c168278a1",
       "direct_scenarios": [],
       "evidence": [
@@ -19635,16 +19652,23 @@
       "direct_scenarios": [
         "M1.08.02"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "6fa510a9b681dff41281a1f7120d6971acd0a93540d0df2d9a31b5ae6538ec85",
+          "source_log": "hseverify-m10802-pending-preissued-redeem-20261116/.autopilot/artifacts/M10802_PREISSUED_CODE_INVITATION_PENDING_REAL_PGLITE_RETEST_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-worker-invitations.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.08.02"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.08.02 preissued Company code and invitation cannot be redeemed while tenant pending and resume after activation"
     },
     {
@@ -45037,12 +45061,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 966,
+    "ambiguous_or_changed_title_occurrences": 967,
     "ambiguous_or_changed_unique_titles": 225,
-    "clean_pass_summary_logs": 1270,
+    "clean_pass_summary_logs": 1273,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 552,
-    "current_test_source_content_sha256": "cde61389c0d8dc37cfb5ddbd48770ffc45a6aae686cccee269a3b63ceabaefb4",
+    "current_test_source_content_sha256": "191f583f87a6ccdfe27544d5020d190adf9a32ccdde530b9d101e2a58f05ac67",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45050,24 +45074,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 154,
+    "existing_source_cases_linked_to_an_exact_218_id": 155,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 48,
-    "historical_log_files_scanned": 2479,
-    "historical_only_green_distinct_cases": 1174,
+    "historical_log_files_scanned": 2491,
+    "historical_only_green_distinct_cases": 1175,
     "logs_with_no_clean_pass_summary_or_a_failure": 61,
-    "logs_with_pass_lines": 1331,
-    "matched_case_occurrences_with_duplicates": 5968,
+    "logs_with_pass_lines": 1334,
+    "matched_case_occurrences_with_duplicates": 5977,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1406,
+    "previous_green_distinct_source_matched_cases": 1407,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 183,
     "prior_result_TSV_files": 26,
     "source_tests_without_green_execution_proof": 174,
-    "static_existing_distinct_test_cases": 1580,
-    "unique_source_matched_historical_green_cases": 1406,
-    "worktrees_scanned": 122
+    "static_existing_distinct_test_cases": 1581,
+    "unique_source_matched_historical_green_cases": 1407,
+    "worktrees_scanned": 123
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45080,7 +45104,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "6ec1ed9ca297e55be0f9b855697750699f8e7fbc",
+  "inventory_started_from_git_head_sha": "65358e50d5492940de19c52234899270a2756b80",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -45648,16 +45672,17 @@
       "family": "Company verification",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 1,
+      "green_history_only_cases_linked": 2,
       "id": "M1.08.02",
       "linked_case_ids": [
-        "tests/browser/company-pending-tenant-high-risk.browser.test.mjs#dfeca330c369fa52"
+        "tests/browser/company-pending-tenant-high-risk.browser.test.mjs#dfeca330c369fa52",
+        "tests/platform/company-worker-invitations.test.mjs#2ddc9244c65935ba"
       ],
       "scenario": "Pending tenant high-risk actions denied"
     },
     {
       "brick": "M1.08",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 1,
       "family": "Company verification",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,

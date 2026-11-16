@@ -120,6 +120,8 @@ export default async function CompanyVerificationReviewPage({
               {item.caseStatus === "submitted" ? (
                 <form action={beginCompanyVerificationReviewAction}>
                   <input type="hidden" name="caseId" value={item.caseId} />
+                      <input type="hidden" name="expectedVersionId" value={item.versionId} />
+                      <input type="hidden" name="expectedLockVersion" value={item.lockVersion} />
                   <button type="submit">Begin review</button>
                 </form>
               ) : (
@@ -130,16 +132,22 @@ export default async function CompanyVerificationReviewPage({
                   <div className="button-row" role="group" aria-label={`Decide ${item.legalName || "Company"} verification`}>
                     <form action={decideCompanyVerificationAction}>
                       <input type="hidden" name="caseId" value={item.caseId} />
+                      <input type="hidden" name="expectedVersionId" value={item.versionId} />
+                      <input type="hidden" name="expectedLockVersion" value={item.lockVersion} />
                       <input type="hidden" name="outcome" value="verified" />
                       <button type="submit">Verify Company</button>
                     </form>
                     <form action={decideCompanyVerificationAction}>
                       <input type="hidden" name="caseId" value={item.caseId} />
+                      <input type="hidden" name="expectedVersionId" value={item.versionId} />
+                      <input type="hidden" name="expectedLockVersion" value={item.lockVersion} />
                       <input type="hidden" name="outcome" value="changes_requested" />
                       <button type="submit">Request changes</button>
                     </form>
                     <form action={decideCompanyVerificationAction}>
                       <input type="hidden" name="caseId" value={item.caseId} />
+                      <input type="hidden" name="expectedVersionId" value={item.versionId} />
+                      <input type="hidden" name="expectedLockVersion" value={item.lockVersion} />
                       <input type="hidden" name="outcome" value="rejected" />
                       <button className="button-danger" type="submit">Reject</button>
                     </form>

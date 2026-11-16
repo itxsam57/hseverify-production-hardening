@@ -1,0 +1,136 @@
+name: M1.08.03 Company Admin exact-version review CAS and signed browser replay
+on:
+  pull_request:
+    paths:
+      - "src/lib/company/company-verification-**"
+      - "src/app/admin/(portal)/company-verifications/**"
+      - "tests/platform/company-verification.test.mjs"
+      - "tests/platform/company-verification-review-ui-contract.test.mjs"
+      - "tests/browser/m1-08-company-verification.browser.test.mjs"
+      - "scripts/run-company-verification-tests.mjs"
+      - ".github/workflows/m1-08-company-admin-version-cas.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "src/lib/company/company-verification-**"
+      - "src/app/admin/(portal)/company-verifications/**"
+      - "tests/platform/company-verification.test.mjs"
+      - "tests/platform/company-verification-review-ui-contract.test.mjs"
+      - "tests/browser/m1-08-company-verification.browser.test.mjs"
+      - "scripts/run-company-verification-tests.mjs"
+      - ".github/workflows/m1-08-company-admin-version-cas.yml"
+permissions:
+  contents: read
+concurrency:
+  group: m10803-company-version-cas-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  exact-version-native-pglite-and-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_company_review
+          POSTGRES_PASSWORD: synthetic_company_review_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_company_review -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Exact Next 16 types and untrusted Admin form security
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          npm run typecheck 2>&1 | tee .autopilot/artifacts/m10803-typecheck.log
+          node --test tests/platform/company-verification-review-ui-contract.test.mjs 2>&1 | tee .autopilot/artifacts/m10803-admin-form-ui-contract.log
+          grep -q 'ℹ pass 5' .autopilot/artifacts/m10803-admin-form-ui-contract.log
+      - name: Original impacted Company registration-review native regression plus exploit fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/run-company-verification-tests.mjs tests/platform/company-verification.test.mjs 2>&1 | tee .autopilot/artifacts/m10803-all-impacted-company-native.log
+          grep -q 'ℹ pass 10' .autopilot/artifacts/m10803-all-impacted-company-native.log
+          grep -q 'M10803_STALE_V1_ADMIN_REVIEW_DENIED_NO_TENANT_ACTIVATION' .autopilot/artifacts/m10803-all-impacted-company-native.log
+          grep -q 'M10803_FRESH_V2_ADMIN_VERSION_BOUND_APPROVAL' .autopilot/artifacts/m10803-all-impacted-company-native.log
+      - name: Disposable real PostgreSQL16 latest migration0130 stale-admin exploit and safe fresh approval
+        shell: bash
+        env:
+          HSE_M10803_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_company_review:synthetic_company_review_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          node scripts/run-company-verification-tests.mjs --test-name-pattern 'M1.08.03 stale Admin version one review' 2>&1 | tee .autopilot/artifacts/m10803-postgres16-version-cas.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10803-postgres16-version-cas.log
+          grep -q '"accepted":false' .autopilot/artifacts/m10803-postgres16-version-cas.log
+          grep -q 'M10803_STALE_V1_ADMIN_REVIEW_DENIED_NO_TENANT_ACTIVATION' .autopilot/artifacts/m10803-postgres16-version-cas.log
+          grep -q 'M10803_FRESH_V2_ADMIN_VERSION_BOUND_APPROVAL' .autopilot/artifacts/m10803-postgres16-version-cas.log
+      - name: Archive exact-SHA native and PostgreSQL evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10803-native-cas-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m10803-typecheck.log
+            .autopilot/artifacts/m10803-admin-form-ui-contract.log
+            .autopilot/artifacts/m10803-all-impacted-company-native.log
+            .autopilot/artifacts/m10803-postgres16-version-cas.log
+          if-no-files-found: warn
+          retention-days: 30
+  signed-company-admin-old-tab-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Install real Playwright Chromium
+        run: npx playwright install chromium
+      - name: Signed Company and MFA Admin corrected-v2 review rejects old-v1 390px decision form
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m1-08-company-verification.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10803-signed-admin-old-tab-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10803-signed-admin-old-tab-chromium.log
+          grep -q 'ACTUAL_M10803_STALE_V1_ADMIN_FORM_BROWSER_DENIED_V2_REMAINS_UNDER_REVIEW' .autopilot/artifacts/m10803-signed-admin-old-tab-chromium.log
+          grep -q 'ACTUAL_M10803_FRESH_V2_ADMIN_BROWSER_APPROVAL' .autopilot/artifacts/m10803-signed-admin-old-tab-chromium.log
+      - name: Archive exact-SHA signed browser UI and API replay outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10803-chromium-stale-admin-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10803-signed-admin-old-tab-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
