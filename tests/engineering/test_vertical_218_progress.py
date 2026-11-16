@@ -44,10 +44,10 @@ class VerticalProtocolTest(unittest.TestCase):
     def test_all_owner_counts_in_one_machine_scoreboard(self):
         p=self.report
         for field,want in [('fully_verified',0),('scenarios_total',218),('scenarios_remaining',218),
-                           ('scoped_historical_green_source_cases',1413),('scoped_historical_source_cases_total',1585),
+                           ('scoped_historical_green_source_cases',1414),('scoped_historical_source_cases_total',1586),
                            ('source_cases_without_matched_green',172),('old_scoped_ids_not_full',216),
-                           ('planned_old_partial_links_not_passed',693),('planned_uncertain_links',61),
-                           ('planned_without_precise_old_link',4221),('planned_check_slots_total',4975),
+                           ('planned_old_partial_links_not_passed',693),('planned_uncertain_links',63),
+                           ('planned_without_precise_old_link',4219),('planned_check_slots_total',4975),
                            ('final_stage_certified_planned_checks',0),('blocked_external_known',10),
                            ('preliminary_pentest_attack_slots',2008)]:
             self.assertEqual(p[field],want,field)
