@@ -470,6 +470,38 @@ test("independent identity manual review reaches Verifier and approved outcome v
     const { DatabaseWorkerIdentityCorrectionRepository } = await import(pathToFileURL(join(runtime, "identity", "worker-identity-correction-repository.js")).href);
     const corrections = new DatabaseWorkerIdentityCorrectionRepository(Promise.resolve(db));
     const originalId = permanentId.rows[0].permanent_worker_id;
+    // Original M1.07.06 retention: preserve exact verified v1 and its real
+    // bound secure-file metadata before changing the active verified version.
+    const immutableWorkerId=(await db.query(
+      "SELECT * FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+      [worker.accountId]
+    )).rows;
+    assert.equal(immutableWorkerId.length,1);
+    const identityId=immutableWorkerId[0].identity_id;
+    const originalVersion=(await db.query(
+      "SELECT * FROM worker_identity_versions WHERE identity_id=$1 AND version_number=1",
+      [identityId]
+    )).rows[0];
+    assert.equal(originalVersion.version_kind,"initial");
+    assert.equal(originalVersion.version_status,"submitted");
+    const originalDetails=(await db.query(
+      "SELECT * FROM worker_identity_version_drafts WHERE identity_version_id=$1",
+      [originalVersion.identity_version_id]
+    )).rows[0];
+    const originalBindings=(await db.query(
+      "SELECT * FROM worker_identity_evidence_bindings WHERE identity_version_id=$1 ORDER BY purpose,binding_id",
+      [originalVersion.identity_version_id]
+    )).rows;
+    assert.deepEqual(originalBindings.map(x=>x.purpose).sort(),
+      ["identity_document","profile_photo","selfie"]);
+    const boundOriginalFiles=(await db.query(
+      "SELECT file_id,owner_account_id,lifecycle_status,content_sha256,object_key "+
+      "FROM platform_secure_files WHERE file_id=ANY($1::text[]) ORDER BY file_id",
+      [originalBindings.map(x=>x.secure_file_id)]
+    )).rows;
+    assert.equal(boundOriginalFiles.length,3);
+    assert.ok(boundOriginalFiles.every(x=>x.owner_account_id===worker.accountId&&x.lifecycle_status==="available"));
+
     // M1.07.05 adds only missing receiving-side evidence. The original
     // historically green case already covers all three outcomes, denial of
     // duplicate finalization, and preservation of verified parent/Worker ID.
@@ -632,6 +664,77 @@ test("independent identity manual review reaches Verifier and approved outcome v
     )).rows[0].n,3);
     console.log("M10705_0130_TAMPERED_EVENT_WRONG_WORKER_DENIAL_DB",
       "all three forged outcome types, missing decision and foreign Worker delivery denied; genuine Worker-only same original 3 notices");
+    // M1.07.06 source-data tampering after three completed corrections:
+    // verify the exact submitted initial record and all three original secure
+    // document/photo/selfie bindings remain intact, not just an ID count.
+    const afterId=(await db.query(
+      "SELECT * FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+      [worker.accountId]
+    )).rows;
+    assert.deepEqual(afterId,immutableWorkerId);
+    assert.equal((await db.query(
+      "SELECT lifecycle_status,current_version_number FROM worker_identities WHERE identity_id=$1",
+      [identityId]
+    )).rows[0].current_version_number,2,
+    "Only accepted correction v2 is current after rejected and changes requested.");
+    assert.deepEqual((await db.query(
+      "SELECT * FROM worker_identity_versions WHERE identity_version_id=$1",
+      [originalVersion.identity_version_id]
+    )).rows[0],originalVersion);
+    assert.deepEqual((await db.query(
+      "SELECT * FROM worker_identity_version_drafts WHERE identity_version_id=$1",
+      [originalVersion.identity_version_id]
+    )).rows[0],originalDetails);
+    assert.deepEqual((await db.query(
+      "SELECT * FROM worker_identity_evidence_bindings WHERE identity_version_id=$1 ORDER BY purpose,binding_id",
+      [originalVersion.identity_version_id]
+    )).rows,originalBindings);
+    assert.deepEqual((await db.query(
+      "SELECT file_id,owner_account_id,lifecycle_status,content_sha256,object_key FROM platform_secure_files "+
+      "WHERE file_id=ANY($1::text[]) ORDER BY file_id",
+      [originalBindings.map(x=>x.secure_file_id)]
+    )).rows,boundOriginalFiles);
+    const accepted=(await db.query(
+      "SELECT identity_version_id FROM worker_identity_versions WHERE identity_id=$1 AND version_number=2",
+      [identityId]
+    )).rows[0];
+    const acceptedBindings=(await db.query(
+      "SELECT purpose,secure_file_id,identity_version_id FROM worker_identity_evidence_bindings "+
+      "WHERE identity_version_id=$1",
+      [accepted.identity_version_id]
+    )).rows;
+    assert.equal(acceptedBindings.length,3);
+    assert.ok(acceptedBindings.every(x=>
+      originalBindings.some(original=>original.purpose===x.purpose&&original.secure_file_id===x.secure_file_id)));
+    // Mutations use genuine original object IDs and even valid no-op values:
+    // validation must fail due immutable history, not because inputs are malformed.
+    await assert.rejects(()=>db.query(
+      "UPDATE worker_identity_worker_ids SET permanent_worker_id=permanent_worker_id WHERE worker_account_id=$1",
+      [worker.accountId]));
+    await assert.rejects(()=>db.query(
+      "DELETE FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+      [worker.accountId]));
+    await assert.rejects(()=>db.query(
+      "UPDATE worker_identity_evidence_bindings SET secure_file_id=secure_file_id WHERE binding_id=$1",
+      [originalBindings[0].binding_id]));
+    await assert.rejects(()=>db.query(
+      "DELETE FROM worker_identity_evidence_bindings WHERE binding_id=$1",
+      [originalBindings[0].binding_id]));
+    await assert.rejects(()=>db.query(
+      "UPDATE worker_identity_version_drafts SET legal_first_name='FORGED' WHERE identity_version_id=$1",
+      [originalVersion.identity_version_id]));
+    assert.deepEqual((await db.query(
+      "SELECT * FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+      [worker.accountId]
+    )).rows,immutableWorkerId);
+    assert.deepEqual((await db.query(
+      "SELECT * FROM worker_identity_evidence_bindings WHERE identity_version_id=$1 ORDER BY purpose,binding_id",
+      [originalVersion.identity_version_id]
+    )).rows,originalBindings);
+    console.log("M10706_ORIGINAL_EVIDENCE_ID_TAMPER_DENIED_DB",
+      "original Worker ID, version1 original details and all 3 stored original file ownership/hashes retained after accepted, rejected and changes-requested corrections; direct ID/evidence/update/delete/forged-name denied");
+    console.log("M10706_VERIFIED_PARENT_CORRECTION_RETENTION_DB",
+      "only accepted version2 active, all 3 exact original file bindings carried forward and original version1 immutable, Worker ID one");
 
 
   } finally {
