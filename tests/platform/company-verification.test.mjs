@@ -1397,3 +1397,141 @@ test("M1.08.04 terminal Company rejection preserves pending tenant, original evi
       "one original scanned PDF/one rejected version/one final Admin audit, rejected Company still readable but absent from active Admin review queue");
   }finally{await dispose();}
 });
+
+async function m10805IsolatedPostgres() {
+  const base = process.env.HSE_M10805_POSTGRES_TEST_DATABASE_URL;
+  const url = new URL(base);
+  if (!["127.0.0.1","localhost"].includes(url.hostname) || url.pathname !== "/postgres")
+    throw new Error("M10805 permits only an isolated temporary database on localhost PostgreSQL.");
+  const maintenance = await openScriptDatabase({...environment("m10805-maintenance"),databaseDriver:"postgres",databaseUrl:base});
+  const dbname = "m10805_admin_race_"+process.pid+"_"+Date.now();
+  let first,second,created=false;
+  try {
+    await maintenance.execute('CREATE DATABASE "'+dbname+'"');
+    created=true;
+    url.pathname="/"+dbname;
+    const config={...environment("m10805-"+process.pid),databaseDriver:"postgres",databaseUrl:url.href};
+    first=await openScriptDatabase(config);
+    await applyMigrationsThrough(first,config.releaseSha,"0130_verified_identity_correction_notices");
+    second=await openScriptDatabase(config);
+    return {first,second,async dispose(){
+      try{await second.close();await first.close();}
+      finally{try{await maintenance.execute('DROP DATABASE "'+dbname+'"');}
+        finally{await maintenance.close();}}
+    }};
+  } catch(error) {
+    await Promise.allSettled([second?.close(),first?.close()]);
+    try{if(created)await maintenance.execute('DROP DATABASE "'+dbname+'"');}
+    finally{await maintenance.close();}
+    throw error;
+  }
+}
+
+if(process.env.HSE_M10805_POSTGRES_TEST_DATABASE_URL) {
+  test("M1.08.05 two Admins race Company final approval or rejection on real PostgreSQL16", {timeout:180000}, async()=>{
+    const {first,second,dispose}=await m10805IsolatedPostgres();
+    try{
+      for(const win of ["verified","rejected"]){
+        const suffix="m10805-"+win;
+        const company=await registerCompany(first,suffix);
+        const adminA=await seedAdmin(first,suffix+"-a");
+        const adminB=await seedAdmin(first,suffix+"-b");
+        const service=new CompanyVerificationService(
+          new CompanyVerificationRepository(Promise.resolve(first)));
+        let snapshot=await service.loadOwn(company.principal);
+        const versionId=snapshot.currentVersion.versionId;
+        const fileId=await reserveAvailableEvidence(first,company.principal,suffix+"-pdf");
+        await service.bindEvidence({principal:company.principal,secureFileId:fileId,
+          evidenceLabel:"Company original scanned evidence",expectedActiveBindingId:null});
+        snapshot=await service.submit({
+          principal:company.principal,expectedLockVersion:snapshot.case.lockVersion});
+        await service.beginReview({principal:adminA,caseId:company.caseId,
+          expectedVersionId:versionId,expectedLockVersion:snapshot.case.lockVersion});
+        snapshot=await service.loadOwn(company.principal);
+        const revision=snapshot.case.lockVersion;
+        const form=Object.freeze({caseId:company.caseId,expectedVersionId:versionId,
+          expectedLockVersion:revision});
+        let release,signalled;
+        const commitGate=new Promise(r=>release=r);
+        const firstWrote=new Promise(r=>signalled=r);
+        const held={
+          ...first,
+          async transaction(callback){
+            return first.transaction(async tx=>{
+              const value=await callback(tx);
+              signalled();
+              await commitGate;
+              return value;
+            });
+          }
+        };
+        const decidingA=new CompanyVerificationService(
+          new CompanyVerificationRepository(Promise.resolve(held)));
+        const decidingB=new CompanyVerificationService(
+          new CompanyVerificationRepository(Promise.resolve(second)));
+        let aPromise,bPromise;
+        try{
+          aPromise=decidingA.decide({principal:adminA,...form,outcome:win});
+          const writeStatus=await Promise.race([
+            firstWrote.then(()=>"uncommitted"),
+            aPromise.then(()=>"unexpected_commit",err=>{throw err;}),
+            new Promise(r=>setTimeout(()=>r("first_not_ready"),10000))
+          ]);
+          assert.equal(writeStatus,"uncommitted");
+          bPromise=decidingB.decide({principal:adminB,...form,
+            outcome:win==="verified"?"rejected":"verified"
+          }).then(()=>({accepted:true}),error=>({accepted:false,name:error.name,message:error.message}));
+          const early=await Promise.race([
+            bPromise.then(()=>"premature_second_decision"),
+            new Promise(r=>setTimeout(()=>r("second_waited"),1100))
+          ]);
+          assert.equal(early,"second_waited","Second independent Admin cannot decide before first DB commit.");
+          release();
+          await aPromise;
+          const loser=await bPromise;
+          assert.equal(loser.accepted,false,"Both Admin decisions cannot succeed for one case revision.");
+          assert.equal(loser.name,"CompanyVerificationConflictError");
+        }finally{
+          release?.();
+          await Promise.allSettled([aPromise,bPromise]);
+        }
+        await assert.rejects(
+          service.decide({principal:adminA,...form,outcome:win}),
+          CompanyVerificationConflictError,"Previously accepted Admin decision cannot be replayed.");
+        const row=(await first.query(
+          "SELECT c.case_status,c.lock_version,c.current_version_id,v.version_status,"+
+          "t.tenant_status,t.activated_at FROM company_verification_cases c "+
+          "JOIN company_verification_versions v ON v.version_id=c.current_version_id "+
+          "JOIN platform_tenants t ON t.tenant_id=c.tenant_id WHERE c.case_id=$1",
+          [company.caseId])).rows[0];
+        assert.equal(row.case_status,win);
+        assert.equal(row.version_status,win);
+        assert.equal(row.current_version_id,versionId);
+        assert.equal(Number(row.lock_version),revision+1);
+        assert.equal(row.tenant_status,win==="verified"?"active":"pending");
+        assert.equal(Boolean(row.activated_at),win==="verified");
+        const decisionEvents=(await first.query(
+          "SELECT metadata->>'to' decision FROM platform_audit_events "+
+          "WHERE target_reference=$1 AND action_key='company_verification.status.changed' "+
+          "AND metadata->>'from'='under_review'",
+          [company.caseId])).rows;
+        assert.deepEqual(decisionEvents,[{decision:win}],
+          "Exactly one winning decision audit; no losing or replayed audit.");
+        assert.equal((await first.query(
+          "SELECT count(*)::int n FROM company_verification_versions WHERE case_id=$1",
+          [company.caseId])).rows[0].n,1);
+        assert.equal((await first.query(
+          "SELECT count(*)::int n FROM company_verification_evidence "+
+          "WHERE case_id=$1 AND version_id=$2 AND secure_file_id=$3",
+          [company.caseId,versionId,fileId])).rows[0].n,1);
+        assert.equal((await new CompanyVerificationReviewService(first)
+          .listForReview(adminB)).some(x=>x.caseId===company.caseId),false);
+        console.log("M10805_TWO_ADMIN_REAL_PG16_DECISION_SERIALIZED_DB",
+          JSON.stringify({winner:win,loser:"denied",singleAudit:true,
+            tenantStatus:row.tenant_status,caseRevision:Number(row.lock_version)}));
+        console.log("M10805_PENDING_OR_ACTIVATED_TENANT_SINGLE_AUDIT_REPLAY_DENIED",
+          win,"original Company PDF and v1 remain, old decision form rejects, one terminal audit");
+      }
+    }finally{await dispose();}
+  });
+}
