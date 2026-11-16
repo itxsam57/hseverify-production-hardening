@@ -4,33 +4,38 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.07.03",
-  "current_focus_phase": "M10703_INITIAL_REJECTED_IDENTITY_EXACT_VERIFIER_DECISION_WORKER_ONLY_NOTICE_EMAIL_INTENT_PROJECTION_IDEMPOTENT_NATIVE1_PASS_BROWSER_NEW_CHECK_INFRA_CRASH_EXACT_HEAD_PR_PENDING",
-  "last_completed_action": "Parent QA54a4bcb481d8173b6bb3b461659a054cccb78ea1 PR130 genuine two-parent merge 42/42 ALL exact SHA workflows success. Original frozen M10703 0 direct named old cases; historic signed 3-role actual browser initial rejection and independently signed approval/CHANGES_REQUESTED correction branches exist but neither independently reattested protected final stage. New unique targeted native test on same real migrated synthetic PGlite via EvidenceReviewService: original identity Verifier REJECTED exact human reason, original submitted version, no permanent WorkerID; 1 genuine evidence.reviewed in-app and email delivery intent eventRef review:decisionId, official projector 1 Worker-only worker.identity.record notice target exact identityId, no Verifier/Admin/tenant recipients, replay created0, one immutable decision. Native1/1 PASS exit0 raw SHA256 80e98410612ecebf6d88c246c82d60cbf6e48f482c74e01c53b66483f73fd21c. A new real browser extension FAILED at previous Worker profile page reload with Chromium page crashed ~34sec BEFORE new assertions, SHA256 67415306299a369f7e69fc8db957b68a067b6450eeadbc54c73d59e851ea880c, not proven application defect; edits withdrawn and old historic browser source preserved. Direct privileged role-URL abuse probe not executed, no pen test pass. Source test count new native case +1, historical1404/1578 old matched unchanged, no match174; old216/218 scoped not full, planned4975 partial693 uncertain56 unlinked4226 FINAL0, FULL0/218 left218, pentest incomplete2008 preliminary independent completed UNKNOWN, known external blocked10 HIGH/CRITICAL UNKNOWN, provider/Owner UAT/final staging absent RELEASE NO-GO. V4 session ad3da4a3-46fc-4557-9ce7-0229626d5ffb cycle16e63df132704876a4e7c0435ffe9985; no Node tests active, older independent PG and other worktrees untouched.",
-  "next_exact_action": "Verify original prior-case source/legacy216/4975/218 maps after test count updates and strict Python+Node engineering gate; V4 guarded commit/push qa/m10703-initial-identity-outcomes-20261116 PR, require exact-head targeted native1/1+218/4975/Autopilot all success, normal two-parent QA merge and independently ALL merged exact QA SHA workflows green. Next frozen M1.07.04 initial rejection/changes requested correction and resubmission using older branch-specific historic cross-role evidence without repeating pass; retain M10703 real-browser crashed infrastructure, direct role/API abuse unexecuted, provider/final stage/Owner UAT and independent pentest blockers.",
+  "current_focus_scenario_id": "M1.07.04",
+  "current_focus_phase": "M10704_EXISTING_NATIVE_ONE_CASE_V1_CHANGES_REQUESTED_V2_APPROVED_TWO_WORKER_ONLY_NOTICE_INTENTS_IDEMPOTENT_REPLAY_PASS1_PR_EXACT_HEAD_PENDING",
+  "last_completed_action": "Parent QA62aad4fbc3cfe8ddd5bb09f586704be557f79650 PR131 genuine two-parent merge 43/43 all workflows green. Frozen M10704 initial rejection/changes-requested corrected/resubmitted old direct named0, old 3-role browser candidate prior clean green but not final. Extended existing one native returned-initial-identity test with true Worker/Verifier service initial v1 CHANGES_REQUESTED then revised v2 approved, original DB immutable/3 evidence bindings, wrong-role revision and stale lock denied, permanent ID issued only upon approval. New exact original review outcome outbox: v1 evidence.additional.requested and v2 evidence.reviewed each one notification plus email delivery intent keyed by immutable decision, official projector each makes one Worker-only worker.identity.record target correct identity with no Admin/Verifier/tenant, second replay creates0, exactly two notices/decision sources, no duplicate. Native1/1 PASS exit0 log SHA256 b58bbc4c5fa7f5bb8d9cf8152aa509ca325463f8773afff1611edd37bf57e543, source coverage gap RED SHA256 dcee7ddd227cca8d42a70f0dbd774215a664000459ac738f26b231a418ca5e07 not app defect, no new distinct source case. Frozen M10704 phrase ambiguous versus existing terminal initial REJECTED policy, only CHANGES_REQUESTED reparable, owner policy scope needs reconciliation before final. Reindexed original source historic 1405/1578 unmatched173 because prior M10703 local native old matched UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION, 4,975 693 partial59 uncertain4223 unlinked FINAL0, FULL0/218 remaining218 old216/218 scoped, pentest incomplete2008 preliminary independent completed unknown, external blockers10 high/critical unknown. Browser not run due prior M10703 Chrome crash, root unproven shared disk~410MB; real email and final provider/staging/OwnerUAT/pentest missing, release NO-GO. V4 session76e04e34-3b06-4f2b-8c2a-db132207080c cycle7f64035900e9425d8694432d6570e1b8; old PG and other worktrees left untouched, no live tests.",
+  "next_exact_action": "Verify official original source/216/4975/218 and strict Python+Node engineering; guarded V4 commit/push qa/m10704-identity-revision-20261116, PR exact-head native1/1+218/4975/Autopilot green, genuine two-parent QA merge and all exact merged SHA workflows green. Next original frozen M1.07.05 verified correction accepted/rejected/changes requested, reuse already green browser and native evidence, do not ignore initial terminal rejection contract discrepancy nor M10703 Chrome crash and provider/final stage security/Owner UAT blockers.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.07.03",
-      "problem": "Existing 3-role rejected initial identity browser historic green lacks original review Worker notification projection/recipient/idempotent delivery proof",
-      "result": "NEW_DISTINCT_NATIVE_NODE1_OF_1_PASS_VERIFIER_REJECTED_ORIGINAL_VERSION_WORKER_ONLY_PRIVATE_IDENTITY_NOTICE_EMAIL_INTENT_IDEMPOTENT_REPLAY_DB_NO_FINAL_STAGE"
+      "scenario_id": "M1.07.04",
+      "problem": "Previously passed locked original revision v1 CHANGES_REQUESTED then corrected v2 APPROVED had no exact original two Worker notification recipient/outbox or replay assertions",
+      "result": "EXTENDED_SAME_OLD_NATIVE_CASE_1_OF_1_PASS_TWO_VERDICT_WORKER_ONLY_NOTICES_EMAIL_INTENTS_AND_REPLAY_IDEMPOTENT_NO_NEW_SOURCE_CASE"
+    },
+    {
+      "scenario_id": "M1.07.04",
+      "problem": "Frozen phrase appears to permit rejected correction while historic initial REJECTED 3-role browser policy is terminal, unlike CHANGES_REQUESTED",
+      "result": "CONTRACT_SEMANTICS_UNRESOLVED_NO_REJECTED_RESUBMISSION_CREDIT_NOT_FULLY_VERIFIED"
     },
     {
       "scenario_id": "M1.07.03",
-      "problem": "Extended browser attempt crashed preexisting Worker profile reload before any new assertion, 96GB filesystem nearly full, root not proven",
-      "result": "SCOPED_BROWSER_INFRA_FAILED_NOT_PRODUCT_DEFECT_NO_NEW_UI_PASS_UNEXECUTED_SOURCE_EDIT_REVERTED"
+      "problem": "New browser receiving test crashed on old Worker profile reload before assertions; site/app cause not established and shared disk nearly full",
+      "result": "SCOPED_BROWSER_INFRA_BLOCKED_SOURCE_UNRUN_EDIT_WITHDRAWN"
     },
     {
       "scenario_id": "M1.07.03",
-      "problem": "Direct copied Verifier private review URL cross-role API abuse test unexecuted and final provider/full pentest protected SHA/Owner UAT absent",
-      "result": "NOT_FULLY_VERIFIED_EXTERNAL_FINAL_STAGE_AND_SECURITY"
+      "problem": "Previous rejected initial identity one private Worker notification and exact replay native PASS",
+      "result": "PR131_MERGED_QA_62aad4f_43_OF_43_ALL_EXACT_MERGED_SHA_CI_GREEN_SCOPED_ONLY"
     },
     {
-      "scenario_id": "M1.07.02",
-      "problem": "Previous dual Worker profile stale version browser/DB v5 safe retry",
-      "result": "PR130_MERGED_QA_54a4bcb_42_OF_42_EXACT_SHA_WORKFLOWS_GREEN_SCOPED_ONLY"
+      "scenario_id": "M1.07.04",
+      "problem": "Missing protected final candidate, real email provider, full security+role/API, load/restore and Owner UAT",
+      "result": "NOT_FULLY_VERIFIED_EXTERNAL_AND_FINAL_STAGE"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

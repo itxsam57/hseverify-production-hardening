@@ -1,0 +1,53 @@
+name: M1.07.04 initial identity revision two Worker notices QA
+on:
+  pull_request:
+    paths:
+      - "tests/platform/independent-evidence-review-runtime.test.mjs"
+      - ".github/workflows/m1-07-initial-identity-revision-notifications.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/platform/independent-evidence-review-runtime.test.mjs"
+      - ".github/workflows/m1-07-initial-identity-revision-notifications.yml"
+permissions:
+  contents: read
+concurrency:
+  group: m10704-original-revision-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-original-revision-worker-notices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile install
+        run: npm ci --no-audit --no-fund
+      - name: Execute original identity lineage test with added receiver proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 --test-name-pattern='returned initial identity creates a locked lineage revision' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10704-two-original-verdict-notices.log
+          grep -q M10704_CHANGES_REQUESTED_APPROVED_WORKER_NOTIFICATIONS_DB .autopilot/artifacts/m10704-two-original-verdict-notices.log
+          grep -q M10704_REPLAY_SAFETY_DB .autopilot/artifacts/m10704-two-original-verdict-notices.log
+      - name: Archive exact SHA test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10704-two-worker-notices-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10704-two-original-verdict-notices.log
+          if-no-files-found: warn
+          retention-days: 30
