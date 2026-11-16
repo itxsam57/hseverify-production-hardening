@@ -19350,6 +19350,30 @@
       "title": "M1.08.04 terminal Company rejection preserves pending tenant, original evidence and denies stale resurrection"
     },
     {
+      "case_id": "tests/platform/company-verification.test.mjs#368f642f16b2dbf2",
+      "direct_scenarios": [
+        "M1.08.05"
+      ],
+      "evidence": [
+        {
+          "sha256": "2105e9d63bda91379b383b38d36bc8b5f3c2e16cf4eac9376483c690d8aae19b",
+          "source_log": "hseverify-m10805-two-admin-approval-race-20261116/.autopilot/artifacts/M10805_ACTUAL_PG16_CONCURRENT_ADMIN_APPROVE_REJECT_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/company-verification.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 1,
+      "scenario_ids": [
+        "M1.08.05"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "HISTORICAL_LOG_PASSED",
+      "title": "M1.08.05 two Admins race Company final approval or rejection on real PostgreSQL16"
+    },
+    {
       "case_id": "tests/platform/company-worker-expiry-lifecycle.test.mjs#74580d8c168278a1",
       "direct_scenarios": [],
       "evidence": [
@@ -45192,12 +45216,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 968,
-    "ambiguous_or_changed_unique_titles": 226,
+    "ambiguous_or_changed_title_occurrences": 967,
+    "ambiguous_or_changed_unique_titles": 225,
     "clean_pass_summary_logs": 1285,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 552,
-    "current_test_source_content_sha256": "fd902b7347efdf805162cf9ed81f727ca01043177dd9f87fc0c09f770ac83dd9",
+    "current_test_source_content_sha256": "cd5fbdaf0125be15e963e08610feebf9aaaa3c8a4f1d9327f5c6bd122827df2d",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45205,23 +45229,23 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 157,
+    "existing_source_cases_linked_to_an_exact_218_id": 158,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 50,
+    "frozen_ids_with_at_least_one_sourced_green_case": 51,
     "historical_log_files_scanned": 2541,
-    "historical_only_green_distinct_cases": 1182,
+    "historical_only_green_distinct_cases": 1183,
     "logs_with_no_clean_pass_summary_or_a_failure": 61,
     "logs_with_pass_lines": 1346,
-    "matched_case_occurrences_with_duplicates": 6034,
+    "matched_case_occurrences_with_duplicates": 6035,
     "passed_cases_needing_scenario_mapping": 1259,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1414,
+    "previous_green_distinct_source_matched_cases": 1415,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 185,
     "prior_result_TSV_files": 26,
     "source_tests_without_green_execution_proof": 169,
-    "static_existing_distinct_test_cases": 1583,
-    "unique_source_matched_historical_green_cases": 1414,
+    "static_existing_distinct_test_cases": 1584,
+    "unique_source_matched_historical_green_cases": 1415,
     "worktrees_scanned": 126
   },
   "disclaimers": [
@@ -45235,7 +45259,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "3983ab31dcf7e51c2775cc19e26b47e47f476b3d",
+  "inventory_started_from_git_head_sha": "a194d244fafa1369cb6db5f29e5587a22b994c94",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -45839,13 +45863,15 @@
     },
     {
       "brick": "M1.08",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 1,
       "family": "Company verification",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 1,
       "id": "M1.08.05",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/platform/company-verification.test.mjs#368f642f16b2dbf2"
+      ],
       "scenario": "Approval activates tenant; stale/double decision denied"
     },
     {
