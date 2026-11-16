@@ -4,33 +4,33 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.07.01",
-  "current_focus_phase": "M10701_SIGNED_WORKER390_VERIFIER320_ADMIN1280_INCOMPLETE_ID_NO_PREMATURE_REVIEW_NOTICE_DB_AUDIT_CHROME1_PASS_PR_EXACT_HEAD_PENDING",
-  "last_completed_action": "Parent signed QA8599b4c016ae521b9e9a461040f9e20964b9e1ad PR128 genuine 2-parent merge 40/40 all exact merged SHA workflows GREEN. Original M1.07.01 existing historically passed signed Worker390 identity empty and partial submit blocked, fields retained, DB no review task/WorkerID. Extended SAME original test without renaming/new case: real Worker390 incomplete profile Submit disabled, empty+partial identity denied persisted, independently signed Verifier320 filtered live review shows 0 task rows and no task-level deep link or premature notification; Admin1280 framework0, duplicate review0, no Worker notification, Worker fields survive cross-role reads. PGlite draft/version submitted_at NULL, zero identity review task/WorkerID/target notification/notification.assurance.event outbox/false submitted audit. Genuine Chrome 1/1 PASS exit0 ~38secs log SHA256 bbb002e823addb6ae381f6aa287ec054699b301711c662a968f023971fe38dc1. First extended red due over-broad navigation-selector counted2 ordinary links, fixed test-only tbody query; raw initial FAIL SHA25670ef5e48756939b0ff00cd8685721efa5a7f9e45a98196d3794177843bc62e41, not app defect. Original M1.07.01 remains NOT_FULLY_VERIFIED. Historical matched source1404/1577 unmatched173 (increment prior M10605 local historical log, not new source case), old216/218 scoped, planned4975 partial693 uncertain56 unlinked4226 FINAL0; fully verified0/218, pentest incomplete2008 provisional independently completed UNKNOWN, known blockers10, severe UNKNOWN; protected final stage/provider/Owner UAT and comprehensive independent pentest missing, release NO-GO. V4 session459536ae-b9d8-4524-8a88-11a1f8c336d6 cycle20341f9fd0c24daa97854a3a0fb2034c, local workstation old PG PID723113 retained, no Node tests running, disk approx596MB free.",
-  "next_exact_action": "Regenerate official original source identity/legacy216/planned4975/218 action map after counter assertion changes, strict Python+Node engineering and no full-credit attestations, guarded V4 commit/push qa/m10701-profile-identity-gates-20261116, PR exact-head Chrome1/1 and original218/4975/Autopilot all green, merge genuine two-parent then independently verify ALL workflows on exact merged QA SHA. Move next frozen M1.07.02 without repeating already-green three profile section drafts; M1.07.01 remains blocked final protected staging/provider/full independent pentest/Owner UAT.",
+  "current_focus_scenario_id": "M1.07.02",
+  "current_focus_phase": "M10702_ACTUAL_TWO_SIGNED_WORKER_TABS_STALE_VERSION3_DENIED_TYPED_DRAFT10_RETAINED_VERSION4_5_RETRY_DB5_AUDIT5_CHROME1_PASS_EXACT_HEAD_PR_PENDING",
+  "last_completed_action": "Parent QA0207b2bdb93a14319f790426d610d50ef789e210 PR129 merged genuine 2 parent 41/41 exact merged SHA workflows GREEN. Original M1.07.02 one directly named historic real Worker390 three-section invalid input retained/nav/retry, DB version3 audit3. Extended SAME exact test title not new source case: independent B signed Worker320 opened professional v3 after A original three valid saves; A saved years9 v4; B typed years10 using stale expectedVersion3, HTTP200 transport semantic visible conflict, typed10 retained and expectedVersion refreshed4, A remains9; B retry current version4 succeeds v5 years10 ready/unsubmitted, no HTTP500/JS/horiz overflow. PGlite exact version5, section-save audit 5 (personal contact professional professional professional), stale B never persisted or audited. Real Chrome1/1 PASS exit0 log SHA256 758f39df76b61f29ef0907db6b3c086d8feb5679b92cb646bd4d8cf8fb0936f3, source-only missing coverage RED SHA256 bfb62d153f6984df60bacdaa07649b2f55c29cb79c476186715a1a409ea068b5; only prior stale trailing console wording about three original versions corrected to five total in source, no application product patch. Canonical reindex previous-green1404/1577, unmatched173 no new case; old216/218 scoped, planned4975 partial693 uncertain56 unlinked4226 FINAL0, FULL0/218 LEFT218, pentest incomplete2008 provisional independently completed unknown, known external blockers10 high/critical unknown. Final protected exact SHA, actual PostgreSQL competing writes, all role/tenant/API abuse, providers/independent pentest/load restore Owner UAT missing, release NO-GO. V4 session6015f251-f6e2-4666-b46a-e5f6434157a0 cycle b0a3ba4c14e34e8882748e48f4ae9d5e; old PG PID723113 untouched, no running Node tests.",
+  "next_exact_action": "Reindex original previous source/216 historical/4975/218 evidence action map after original extended M10702 source, verify strict Python Node engineering, V4 precommit guarded commit/push qa/m10702-profile-concurrency-20261116, PR exact head real Chrome1/1 + original218/4975/Autopilot green, merge and independently ALL merged exact QA SHA workflows GREEN. Then original M1.07.03 initial identity approved/rejected/changes requested (direct previously linked0) with existing prior rejection/reviewer workflows reused; retain M10702 final stage/provider/pentest and true PostgreSQL race blockers.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.07.01",
-      "problem": "Existing Worker-only real browser historic green lacked signed Verifier/Admin receiving empty-state and notification/audit proof",
-      "result": "EXTENDED_SAME_CASE_REAL_CHROME1_OF_1_PASS_WORKER390_VERIFIER320_ADMIN1280_EMPTY_RECIPIENTS_DB_OUTBOX_AUDIT"
+      "scenario_id": "M1.07.02",
+      "problem": "Previously green original Worker personal/contact/professional draft test lacked real same-account independent signed 2-session stale version conflict and retained typed draft",
+      "result": "EXTENDED_SAME_EXISTING_REAL_BROWSER_TEST_CHROME1_OF_1_PASS_A390_B320_STALE3_REJECTED_A_VERSION4_PRESERVED_B_DRAFT10_RETAINED_SAFE_RETRY_V5_DB_AUDIT5"
     },
     {
-      "scenario_id": "M1.07.01",
-      "problem": "First extended local browser asserted global Verifier reviews href count0, but two normal sidebar links matched; task table had 0 rows",
-      "result": "TEST_ORACLE_SELECTOR_FIXED_TO_TBODY_NOT_PRODUCT_DEFECT_ALL_THREE_ROLE_BROWSER_RETEST_PASS"
-    },
-    {
-      "scenario_id": "M1.07.01",
-      "problem": "Full protected final exact SHA, independent approved pentest API/role/tenant abuse/load/restore, real identity/provider flow and Owner UAT not evidenced",
+      "scenario_id": "M1.07.02",
+      "problem": "Actual simultaneous independent PostgreSQL connection writes and protected stage provider, cross-role/API abuse and full owner UAT missing",
       "result": "NOT_FULLY_VERIFIED_EXTERNAL_AND_FINAL_STAGE"
     },
     {
-      "scenario_id": "M1.06.05",
-      "problem": "Previously scoped signed Worker pending and synthetic-HMAC-expired preview real browser",
-      "result": "PR128_MERGED_QA_8599b4c_40_OF_40_EXACT_SHA_WORKFLOWS_GREEN_NOT_FULL_STAGE"
+      "scenario_id": "M1.07.01",
+      "problem": "Previously locally passing Worker Verifier Admin receiving proof",
+      "result": "PR129_MERGED_QA_0207b2b_41_OF_41_EXACT_SHA_WORKFLOWS_GREEN_SCOPED_ONLY"
+    },
+    {
+      "scenario_id": "M1.07.03",
+      "problem": "Initial identity approved/rejected/changes requested old direct named zero, separate older identity rejection and reviewer journeys available for reuse",
+      "result": "NEXT_FROZEN_ACTIONABLE_SOURCE_INSPECTION_NOT_FULLY_VERIFIED"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
