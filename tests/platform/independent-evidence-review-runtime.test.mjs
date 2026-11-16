@@ -377,8 +377,43 @@ test("independent Worker submissions reach Verifier and approve/reject outcomes 
   }
 });
 
-test("independent identity manual review reaches Verifier and approved outcome verifies Worker identity", async () => {
-  const db = await database();
+// Reuse the same existing M1.07.05 native case against isolated actual PG16
+// when requested. Each invocation owns and drops only its fresh synthetic
+// database, never the long-running PostgreSQL service or another test's DB.
+async function m10705CorrectionDatabase() {
+  const connection=process.env.HSE_M10705_POSTGRES_TEST_DATABASE_URL;
+  if(!connection){
+    const db=await database("0130_verified_identity_correction_notices");
+    return {db,dispose:async()=>db.close()};
+  }
+  const admin=await openScriptDatabase({databaseDriver:"postgres",databaseUrl:connection});
+  const databaseName="m10705_"+Date.now()+"_"+process.pid;
+  let db;
+  let created=false;
+  try{
+    await admin.execute('CREATE DATABASE "'+databaseName+'"');
+    created=true;
+    const isolated=new URL(connection);
+    isolated.pathname="/"+databaseName;
+    db=await openScriptDatabase({databaseDriver:"postgres",databaseUrl:isolated.href});
+    await applyMigrationsThrough(db,"m10705-actual-postgres-isolated","0130_verified_identity_correction_notices");
+    return {db,dispose:async()=>{
+      try {await db.close();}
+      finally{
+        try{await admin.execute('DROP DATABASE "'+databaseName+'"');}
+        finally{await admin.close();}
+      }
+    }};
+  }catch(error){
+    if(db)await db.close();
+    try{if(created)await admin.execute('DROP DATABASE "'+databaseName+'"');}
+    finally{await admin.close();}
+    throw error;
+  }
+}
+
+test("independent identity manual review reaches Verifier and approved outcome verifies Worker identity", {timeout:120000}, async () => {
+  const {db,dispose} = await m10705CorrectionDatabase();
   try {
     const worker = await seedAccount(db, {
       accountId: "account_independent_worker_02",
@@ -435,6 +470,65 @@ test("independent identity manual review reaches Verifier and approved outcome v
     const { DatabaseWorkerIdentityCorrectionRepository } = await import(pathToFileURL(join(runtime, "identity", "worker-identity-correction-repository.js")).href);
     const corrections = new DatabaseWorkerIdentityCorrectionRepository(Promise.resolve(db));
     const originalId = permanentId.rows[0].permanent_worker_id;
+    // M1.07.05 adds only missing receiving-side evidence. The original
+    // historically green case already covers all three outcomes, denial of
+    // duplicate finalization, and preservation of verified parent/Worker ID.
+    const decisionNoticeIds=[];
+    const decisionRefsByOutcome=new Map();
+    const assertWorkerCorrectionNotice=async (taskId,outcome)=>{
+      const decision=(await db.query(
+        "SELECT decision_id,outcome,source_version_id,verifier_account_id "+
+        "FROM evidence_review_decisions WHERE task_id=$1",
+        [taskId]
+      )).rows;
+      assert.equal(decision.length,1);
+      assert.equal(decision[0].outcome,outcome);
+      assert.equal(decision[0].verifier_account_id,verifier.accountId);
+      const eventType=outcome==="CHANGES_REQUESTED"?"evidence.additional.requested":"evidence.reviewed";
+      const eventRef="review:"+decision[0].decision_id;
+      const jobs=(await db.query(
+        "SELECT job_id,job_type FROM platform_outbox_jobs "+
+        "WHERE job_type IN ('notification.assurance.event','email.assurance.event') "+
+        "AND payload->>'eventType'=$1 AND payload->>'eventRef'=$2",
+        [eventType,eventRef]
+      )).rows;
+      const inApp=jobs.filter(j=>j.job_type==="notification.assurance.event");
+      assert.equal(inApp.length,1,"Exactly one original in-app review event intent.");
+      assert.ok(jobs.some(j=>j.job_type==="email.assurance.event"),
+        "Correction result must retain intended email delivery, not a provider send claim.");
+      const projected=(await db.query(
+        "SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",
+        [inApp[0].job_id]
+      )).rows[0];
+      assert.deepEqual(projected,{created:1,suppressed:false},
+        "Worker must receive each verified correction decision including rejected and changes requested.");
+      const notices=(await db.query(
+        "SELECT recipient_account_id,recipient_role,tenant_id,membership_id,notification_type,"+
+        "target_key,target_reference,metadata FROM platform_notifications WHERE source_job_id=$1",
+        [inApp[0].job_id]
+      )).rows;
+      assert.equal(notices.length,1,"Only the Worker can receive an original identity correction result.");
+      assert.equal(notices[0].recipient_account_id,worker.accountId);
+      assert.equal(notices[0].recipient_role,"worker");
+      assert.equal(notices[0].tenant_id,null);
+      assert.equal(notices[0].membership_id,null);
+      assert.equal(notices[0].notification_type,eventType);
+      assert.equal(notices[0].target_key,"worker.identity.record");
+      assert.equal(notices[0].target_reference,(await db.query(
+        "SELECT identity_id FROM worker_identities WHERE worker_account_id=$1",
+        [worker.accountId]
+      )).rows[0].identity_id);
+      assert.equal(notices[0].metadata.eventRef,eventRef);
+      assert.deepEqual((await db.query(
+        "SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",
+        [inApp[0].job_id]
+      )).rows[0],{created:0,suppressed:false},
+      "Exact original event replay cannot create a second notification.");
+      decisionNoticeIds.push(inApp[0].job_id);
+      decisionRefsByOutcome.set(outcome,{eventType,eventRef});
+      console.log("M10705_CORRECTION_OUTCOME_NOTICE",
+        outcome,"one Worker-only private identity notice and intended email; replay0");
+    };
     for (const outcome of ["APPROVED", "REJECTED", "CHANGES_REQUESTED"]) {
       const before = (await db.query("SELECT lock_version,current_version_number FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
       await corrections.requestOwn(worker, { reason: "Correct the legal spelling against preserved signed identity evidence.", expectedLockVersion: Number(before.lock_version) });
@@ -443,6 +537,7 @@ test("independent identity manual review reaches Verifier and approved outcome v
       const correctionTask = await service.queueIndependentIdentity(worker, NOW_DATE);
       await authorizeAndClaim(db,service,verifier,correctionTask.taskId,NOW_DATE);
       await service.decide(verifier, correctionTask.taskId, outcome, "Independent correction decision with preserved prior verified identity.", NOW_DATE);
+      await assertWorkerCorrectionNotice(correctionTask.taskId,outcome);
       const after = (await db.query("SELECT lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1", [worker.accountId])).rows[0];
       assert.equal(after.lifecycle_status, "verified");
       if (outcome !== "APPROVED") assert.equal(after.current_version_number, before.current_version_number);
@@ -451,9 +546,96 @@ test("independent identity manual review reaches Verifier and approved outcome v
       assert.equal((await db.query("SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1", [worker.accountId])).rows[0].permanent_worker_id, originalId);
       await assert.rejects(service.decide(verifier, correctionTask.taskId, outcome, "Repeated finalized decision must be rejected.", NOW_DATE));
     }
+    assert.equal(decisionNoticeIds.length,3);
+    assert.equal(new Set(decisionNoticeIds).size,3);
+    console.log("M10705_ALL_THREE_VERIFIED_CORRECTION_WORKER_NOTICES",
+      "APPROVED, REJECTED, CHANGES_REQUESTED each one correctly scoped Worker original event/identity link; all three replays0 and permanent Worker ID retained");
+    // Migration rollback must restore the old exact recipient function
+    // (including its documented legacy suppression), then a reapply must
+    // recover current behavior without rewriting any existing notice.
+    const currentDefinition=(await db.query(
+      "SELECT pg_get_functiondef('platform_assurance_event_recipients(text,text)'::regprocedure) AS definition"
+    )).rows[0].definition;
+    await db.execute(readFileSync("database/migrations/0130_verified_identity_correction_notices.down.sql","utf8"));
+    for(const outcome of ["REJECTED","CHANGES_REQUESTED"]){
+      const {eventType,eventRef}=decisionRefsByOutcome.get(outcome);
+      const reverted=(await db.query(
+        "SELECT account_id,role FROM platform_assurance_event_recipients($1,$2)",
+        [eventType,eventRef]
+      )).rows;
+      assert.equal(reverted.length,0,
+        "Down migration must restore original current-version-only rule without leaking to other roles.");
+    }
+    await db.execute(readFileSync("database/migrations/0130_verified_identity_correction_notices.up.sql","utf8"));
+    const restoredDefinition=(await db.query(
+      "SELECT pg_get_functiondef('platform_assurance_event_recipients(text,text)'::regprocedure) AS definition"
+    )).rows[0].definition;
+    assert.equal(restoredDefinition,currentDefinition,"0130 rollback/reapply must preserve installed function contract exactly.");
+    for(const outcome of ["REJECTED","CHANGES_REQUESTED"]){
+      const {eventType,eventRef}=decisionRefsByOutcome.get(outcome);
+      const restored=(await db.query(
+        "SELECT account_id,role,target_key FROM platform_assurance_event_recipients($1,$2)",
+        [eventType,eventRef]
+      )).rows;
+      assert.deepEqual(restored,[{account_id:worker.accountId,role:"worker",target_key:"worker.identity.record"}]);
+    }
+    const storedNotices=(await db.query(
+      "SELECT source_job_id FROM platform_notifications WHERE source_job_id=ANY($1::text[])",
+      [decisionNoticeIds]
+    )).rows;
+    assert.equal(storedNotices.length,3,"Rollback/reapply cannot delete accepted immutable Worker notification history.");
+    console.log("M10705_0130_ROLLBACK_REAPPLY_DB",
+      "real original recipients restored on down, exact new definition/Worker corrections restored on up, all 3 immutable delivered notices preserved");
+    // Native negative abuse probes: a caller cannot turn one outcome into
+    // another, fabricate a review event or receive another Worker's result.
+    const unrelated={accountId:"account_independent_unrelated_worker_02"};
+    // This foreign Worker needs a real active account/role to be a
+    // potential notification recipient, not a duplicate auth session.
+    // The old seed helper's token_hash is intentionally unique per role.
+    await db.query(
+      "INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,"+
+      "email_verified_at,password_set_at,created_at,updated_at) "+
+      "SELECT $1,'unrelated-correction-worker@example.test','Unrelated Worker','active',password_hash,"+
+      "email_verified_at,password_set_at,created_at,updated_at FROM auth_accounts WHERE account_id=$2",
+      [unrelated.accountId,worker.accountId]
+    );
+    await db.query(
+      "INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",
+      [unrelated.accountId,NOW]
+    );
+    for(const [outcome,{eventType,eventRef}] of decisionRefsByOutcome){
+      const incorrectType=eventType==="evidence.additional.requested"
+        ?"evidence.reviewed":"evidence.additional.requested";
+      assert.deepEqual((await db.query(
+        "SELECT account_id FROM platform_assurance_event_recipients($1,$2)",
+        [incorrectType,eventRef]
+      )).rows,[],"Changing the event type of a genuine decision cannot create a recipient.");
+      const legitimate=(await db.query(
+        "SELECT account_id,role,tenant_id,membership_id FROM platform_assurance_event_recipients($1,$2)",
+        [eventType,eventRef]
+      )).rows;
+      assert.deepEqual(legitimate,[{
+        account_id:worker.accountId,role:"worker",tenant_id:null,membership_id:null
+      }],"Even replaying an exact decision has only one Worker owner and no tenant scope.");
+    }
+    assert.deepEqual((await db.query(
+      "SELECT account_id FROM platform_assurance_event_recipients($1,$2)",
+      ["evidence.reviewed","review:missing_verifier_decision"]
+    )).rows,[],"Fabricated decision reference cannot create a recipient.");
+    assert.equal((await db.query(
+      "SELECT count(*)::int n FROM platform_notifications WHERE recipient_account_id=$1",
+      [unrelated.accountId]
+    )).rows[0].n,0,"Another Worker must never receive the authenticated subject's correction notices.");
+    assert.equal((await db.query(
+      "SELECT count(*)::int n FROM platform_notifications WHERE source_job_id=ANY($1::text[])",
+      [decisionNoticeIds]
+    )).rows[0].n,3);
+    console.log("M10705_0130_TAMPERED_EVENT_WRONG_WORKER_DENIAL_DB",
+      "all three forged outcome types, missing decision and foreign Worker delivery denied; genuine Worker-only same original 3 notices");
+
 
   } finally {
-    await db.close();
+    await dispose();
   }
 });
 
