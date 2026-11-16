@@ -35,7 +35,7 @@ const {
   CompanyTeamAccessError
 } = teamModule;
 
-const OWNED_MIGRATION = "0028_company_worker_invitations_codes";
+const OWNED_MIGRATION = "0133_company_team_access_revision_cas";
 const NOW_DATE = new Date("2026-08-11T12:30:00.000Z");
 const NOW = NOW_DATE.toISOString();
 const FAR_FUTURE = "2099-01-01T00:00:00.000Z";
@@ -325,6 +325,7 @@ test("M1.09 organization and Company Team compose tenant scope, MFA activation, 
       membershipId: manager.membershipId,
       expectedRole: "manager",
       expectedStatus: "active",
+      expectedAccessRevision: manager.accessRevision,
       membershipRole: "viewer",
       permissions: ["company.tenant.read"],
       siteId: null,
@@ -357,6 +358,7 @@ test("M1.09 organization and Company Team compose tenant scope, MFA activation, 
         membershipId: ownerB.membershipId,
         expectedRole: "owner",
         expectedStatus: "active",
+        expectedAccessRevision: 1,
         membershipRole: "viewer",
         permissions: ["company.tenant.read"]
       }),
@@ -367,6 +369,7 @@ test("M1.09 organization and Company Team compose tenant scope, MFA activation, 
         membershipId: opaqueId("membership", "Z"),
         expectedRole: "owner",
         expectedStatus: "active",
+        expectedAccessRevision: 1,
         membershipRole: "viewer",
         permissions: ["company.tenant.read"]
       }),
@@ -377,6 +380,7 @@ test("M1.09 organization and Company Team compose tenant scope, MFA activation, 
         membershipId: ownerA.membershipId,
         expectedRole: "owner",
         expectedStatus: "active",
+        expectedAccessRevision: 1,
         membershipRole: "viewer",
         permissions: ["company.tenant.read"]
       }),
@@ -396,6 +400,7 @@ test("M1.09 organization and Company Team compose tenant scope, MFA activation, 
     const suspended = await team.changeMemberStatus(manageA, {
       membershipId: manager.membershipId,
       expectedStatus: "active",
+      expectedAccessRevision: updatedManager.accessRevision,
       targetStatus: "suspended"
     });
     assert.equal(suspended.status, "suspended");
@@ -417,6 +422,7 @@ test("M1.09 organization and Company Team compose tenant scope, MFA activation, 
     const reactivated = await team.changeMemberStatus(manageA, {
       membershipId: manager.membershipId,
       expectedStatus: "suspended",
+      expectedAccessRevision: suspended.accessRevision,
       targetStatus: "active"
     });
     assert.equal(reactivated.status, "active");
@@ -564,7 +570,7 @@ async function m10901RealPostgresDatabase(scenario="M10901") {
       ? "0130_verified_identity_correction_notices"
       : scenario === "M10902"
         ? "0131_company_workforce_archive_scope_serialization"
-        : "0132_company_team_archived_scope_serialization";
+        : "0133_company_team_access_revision_cas";
     await applyMigrationsThrough(first,env.releaseSha,ceiling);
     second = await openScriptDatabase(env);
     return {first,second,cleanup:async()=>{
@@ -1035,7 +1041,7 @@ test("M1.09.03 actual PostgreSQL16 Company Team placement and invite acceptance 
       // than relying exclusively on a database trigger for UI-origin calls.
       await assert.rejects(
         teamReader.updateMember(manage,{
-          membershipId:members[0].membershipId,expectedRole:"manager",expectedStatus:"active",
+          membershipId:members[0].membershipId,expectedRole:"manager",expectedStatus:"active",expectedAccessRevision:1,
           membershipRole:"manager",permissions:["company.tenant.read"],
           siteId:kind==="site"?target.unitId:null,
           departmentId:kind==="department"?target.unitId:null
@@ -1071,4 +1077,155 @@ test("M1.09.03 actual PostgreSQL16 Company Team placement and invite acceptance 
     if(releaseArchive)releaseArchive();
     await cleanup();
   }
+});
+
+test("M1.09.04 actual PostgreSQL16 Company Team same-role stale permission form replay denied", {
+  skip: !process.env.HSE_M10904_POSTGRES_TEST_DATABASE_URL,
+  timeout: 160000
+}, async () => {
+  const {first,second,cleanup}=await m10901RealPostgresDatabase("M10904");
+  try {
+    const owner=await insertCompanyContext(first,"H");
+    const foreign=await insertCompanyContext(first,"I");
+    const adminAccount=await createAcceptedInviteAccount(first,"m10904-admin@example.test","m10904-admin");
+    const managerAccount=await createAcceptedInviteAccount(first,"m10904-manager@example.test","m10904-manager");
+    const adminMembership=opaqueId("membership","J");
+    const managerMembership=opaqueId("membership","K");
+    const adminSession="m10904_admin_session";
+    for (const row of [
+      [adminMembership,adminAccount,"admin"],
+      [managerMembership,managerAccount,"manager"]
+    ]) {
+      await first.query(`INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at)
+        VALUES($1,$2,$3,'company',$4,'active',$5,$6,$6,$6)`,[row[0],owner.tenantId,row[1],row[2],owner.accountId,NOW]);
+    }
+    await first.query(`INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at)
+      VALUES($1,$2,'company','m10904-admin-token','m10904-admin-csrf',$3,$3,$4)`,[adminSession,adminAccount,NOW,FAR_FUTURE]);
+    const ownerManage=principal(owner,"company.members.manage");
+    const adminManage=principal({
+      accountId:adminAccount,tenantId:owner.tenantId,membershipId:adminMembership,
+      sessionId:adminSession,email:"m10904-admin@example.test",
+      displayName:"M10904 Company Admin",membershipRole:"admin"
+    },"company.members.manage");
+    const ownerReader=principal(owner,"company.members.read");
+    const foreignReader=principal(foreign,"company.members.read");
+    const ownerService=new CompanyTeamService(Promise.resolve(first),PEPPER,()=>new Date(NOW_DATE));
+    const adminService=new CompanyTeamService(Promise.resolve(second),PEPPER,()=>new Date(NOW_DATE));
+    const initial=(await adminService.listMembers(ownerReader)).find(row=>row.membershipId===managerMembership);
+    assert.ok(initial,"Third-party Company Team member must exist before both forms load");
+    assert.equal(initial.membershipRole,"manager");
+    assert.equal(initial.status,"active");
+    assert.ok(initial.permissions.includes("company.workforce.manage"));
+    const cachedForm={
+      membershipId:managerMembership,expectedRole:initial.membershipRole,
+      expectedStatus:initial.status,expectedAccessRevision:initial.accessRevision,
+      membershipRole:initial.membershipRole,
+      permissions:[...initial.permissions],siteId:initial.siteId,departmentId:initial.departmentId
+    };
+    const removed=await ownerService.updateMember(ownerManage,{
+      ...cachedForm,permissions:initial.permissions.filter(p=>p!=="company.workforce.manage")
+    });
+    assert.equal(removed.permissions.includes("company.workforce.manage"),false);
+    const otherSessionOutcome=await adminService.updateMember(adminManage,cachedForm)
+      .then(()=>({ok:true}),error=>({ok:false,error}));
+    const seen=(await ownerService.listMembers(ownerReader)).find(row=>row.membershipId===managerMembership);
+    assert.ok(seen);
+    console.log(`M10904_ACTUAL_PG16_TWO_STAFF_STALE_PERMISSION_REPLAY outcome=${otherSessionOutcome.ok?"ACCEPTED_STALE":"DENIED"} workforce_manage=${seen.permissions.includes("company.workforce.manage")}`);
+    assert.equal(otherSessionOutcome.ok,false,
+      "M1.09.04 stale same-role/status Company admin form reinstated permission the owner had just removed");
+    assert.equal(seen.permissions.includes("company.workforce.manage"),false,
+      "M1.09.04 stale permission must never be restored by another staff session");
+    assert.equal(seen.accessRevision,initial.accessRevision+1);
+    const previousAudit=await first.query(`SELECT audit_sequence,actor_account_id,metadata FROM platform_audit_events
+      WHERE actor_tenant_id=$1 AND target_reference=$2 AND action_key='company_team.membership.updated'
+      ORDER BY audit_sequence`,[owner.tenantId,managerMembership]);
+    assert.equal(previousAudit.rows.length,1,"Rejected same-role stale form must produce zero extra successful audit events");
+    assert.equal(previousAudit.rows[0].actor_account_id,owner.accountId);
+    // Real overlapping transactions, not merely sequential stale browser forms:
+    // Owner changes a second permission while the Admin's second connection
+    // simultaneously submits the still-stale member access version.
+    let markOwnerPrepared, releaseOwnerCommit;
+    const ownerPrepared=new Promise(resolve=>{markOwnerPrepared=resolve;});
+    const mayCommitOwner=new Promise(resolve=>{releaseOwnerCommit=resolve;});
+    let pendingRelease=releaseOwnerCommit;
+    try {
+      const ownerHeld=new CompanyTeamService(Promise.resolve({
+        transaction:callback=>first.transaction(async tx=>{
+          const result=await callback(tx);
+          markOwnerPrepared();
+          await mayCommitOwner;
+          return result;
+        })
+      }),PEPPER,()=>new Date(NOW_DATE));
+      const preparedOwnerUpdate=ownerHeld.updateMember(ownerManage,{
+        ...cachedForm,expectedAccessRevision:seen.accessRevision,
+        permissions:seen.permissions.filter(p=>p!=="company.orders.manage")
+      });
+      await ownerPrepared;
+      const racingAdminUpdate=adminService.updateMember(adminManage,{
+        ...cachedForm,expectedAccessRevision:seen.accessRevision,
+        permissions:[...seen.permissions,"company.workforce.manage"]
+      }).then(()=>({ok:true}),error=>({ok:false,error}));
+      const early=await Promise.race([
+        racingAdminUpdate.then(()=>({finished:true})),
+        new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))
+      ]);
+      assert.equal(early.pending,true,"Concurrent Admin should block on locked target member while Owner transaction is uncommitted");
+      pendingRelease();pendingRelease=null;
+      const winner=await preparedOwnerUpdate;
+      assert.equal(winner.accessRevision,seen.accessRevision+1);
+      const loser=await racingAdminUpdate;
+      assert.equal(loser.ok,false,"Stale other staff session must not overwrite the earlier authorized permission change");
+      assert.equal(loser.error?.name,"CompanyTeamConflictError");
+    } finally {if(pendingRelease)pendingRelease();}
+    const afterRace=(await ownerService.listMembers(ownerReader)).find(m=>m.membershipId===managerMembership);
+    assert.ok(afterRace);
+    assert.equal(afterRace.permissions.includes("company.workforce.manage"),false);
+    assert.equal(afterRace.permissions.includes("company.orders.manage"),false);
+    assert.equal(afterRace.accessRevision,seen.accessRevision+1);
+    const afterRaceAudit=await first.query(`SELECT audit_sequence,actor_account_id,metadata FROM platform_audit_events
+      WHERE actor_tenant_id=$1 AND target_reference=$2 AND action_key='company_team.membership.updated'
+      ORDER BY audit_sequence`,[owner.tenantId,managerMembership]);
+    assert.equal(afterRaceAudit.rows.length,2,"Only two successful Owners' membership updates may be audited");
+    assert.deepEqual(afterRaceAudit.rows.map(row=>row.actor_account_id),[owner.accountId,owner.accountId]);
+    const suspended=await ownerService.changeMemberStatus(ownerManage,{
+      membershipId:managerMembership,expectedStatus:"active",
+      expectedAccessRevision:afterRace.accessRevision,targetStatus:"suspended"
+    });
+    assert.equal(suspended.accessRevision,afterRace.accessRevision+1);
+    await assert.rejects(
+      adminService.changeMemberStatus(adminManage,{
+        membershipId:managerMembership,expectedStatus:"suspended",
+        expectedAccessRevision:afterRace.accessRevision,targetStatus:"active"
+      }),error=>error?.name==="CompanyTeamConflictError"
+    );
+    const reactivated=await ownerService.changeMemberStatus(ownerManage,{
+      membershipId:managerMembership,expectedStatus:"suspended",
+      expectedAccessRevision:suspended.accessRevision,targetStatus:"active"
+    });
+    assert.equal(reactivated.accessRevision,suspended.accessRevision+1);
+    const freshAuthorized=await adminService.updateMember(adminManage,{
+      membershipId:managerMembership,expectedRole:"manager",expectedStatus:"active",
+      expectedAccessRevision:reactivated.accessRevision,membershipRole:"manager",
+      permissions:[...reactivated.permissions,"company.workforce.manage"],
+      siteId:null,departmentId:null
+    });
+    assert.equal(freshAuthorized.accessRevision,reactivated.accessRevision+1);
+    assert.ok(freshAuthorized.permissions.includes("company.workforce.manage"),
+      "A genuinely refreshed Company Admin may grant only permissions within its current authority");
+    await assert.rejects(ownerService.updateMember(ownerManage,{
+      ...cachedForm,expectedAccessRevision:1
+    }),error=>error?.name==="CompanyTeamConflictError");
+    await assert.rejects(ownerService.updateMember(ownerManage,{
+      ...cachedForm,expectedAccessRevision:0
+    }),error=>error?.name==="CompanyTeamConflictError");
+    await assert.rejects(ownerService.updateMember(principal(foreign,"company.members.manage"),{
+      ...cachedForm,expectedAccessRevision:freshAuthorized.accessRevision
+    }),error=>error?.name==="CompanyTeamAccessError");
+    const foreignMembers=await adminService.listMembers(foreignReader);
+    assert.equal(foreignMembers.some(row=>row.membershipId===managerMembership),false);
+    console.log("M10904_ACTUAL_PG16_TWO_STAFF_CONCURRENT_CAS_WINNER_ONE_STALE_DENIED");
+    console.log("M10904_ACTUAL_PG16_STATUS_REVISION_RESURRECTION_DENIED_AND_FRESH_GRANT_ALLOWED");
+    console.log("M10904_ACTUAL_PG16_MEMBER_AUDIT_DENIES_DUPLICATE_AND_FOREIGN_TENANT");
+  } finally { await cleanup(); }
 });

@@ -193,6 +193,7 @@ function MemberCard({
             <input type="hidden" name="membershipId" value={member.membershipId} />
             <input type="hidden" name="expectedRole" value={member.membershipRole} />
             <input type="hidden" name="expectedStatus" value={member.status} />
+            <input type="hidden" name="expectedAccessRevision" value={member.accessRevision} />
             <Field htmlFor={`${member.membershipId}-role`} label="Company Team role">
               <Select
                 id={`${member.membershipId}-role`}
@@ -275,6 +276,7 @@ function MemberCard({
                 hiddenFields={[
                   { name: "membershipId", value: member.membershipId },
                   { name: "expectedStatus", value: member.status },
+                  { name: "expectedAccessRevision", value: String(member.accessRevision) },
                   { name: "targetStatus", value: "suspended" }
                 ]}
                 pendingLabel="Suspending…"
@@ -289,6 +291,7 @@ function MemberCard({
                 hiddenFields={[
                   { name: "membershipId", value: member.membershipId },
                   { name: "expectedStatus", value: member.status },
+                  { name: "expectedAccessRevision", value: String(member.accessRevision) },
                   { name: "targetStatus", value: "revoked" }
                 ]}
                 pendingLabel="Revoking…"
@@ -301,6 +304,7 @@ function MemberCard({
               <form action={statusAction}>
                 <input type="hidden" name="membershipId" value={member.membershipId} />
                 <input type="hidden" name="expectedStatus" value={member.status} />
+                <input type="hidden" name="expectedAccessRevision" value={member.accessRevision} />
                 <input type="hidden" name="targetStatus" value="active" />
                 <Button type="submit" variant="secondary" disabled={statusPending}>
                   {statusPending ? "Reactivating…" : "Reactivate"}
@@ -314,6 +318,7 @@ function MemberCard({
                 hiddenFields={[
                   { name: "membershipId", value: member.membershipId },
                   { name: "expectedStatus", value: member.status },
+                  { name: "expectedAccessRevision", value: String(member.accessRevision) },
                   { name: "targetStatus", value: "revoked" }
                 ]}
                 pendingLabel="Revoking…"

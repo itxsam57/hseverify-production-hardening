@@ -43,8 +43,8 @@ M1.08.04,M1.08,Company verification,Admin rejection remains pending and preserve
 M1.08.05,M1.08,Company verification,Approval activates tenant; stale/double decision denied,1,0,1,NOT_FULLY_VERIFIED
 M1.09.01,M1.09,Organization and Team,"Site and department create, edit, archive and restore",1,0,1,NOT_FULLY_VERIFIED
 M1.09.02,M1.09,Organization and Team,Archive assigned units unassigns placements and retains history,1,0,1,NOT_FULLY_VERIFIED
-M1.09.03,M1.09,Organization and Team,Archived units cannot receive new placements,1,0,0,NOT_FULLY_VERIFIED
-M1.09.04,M1.09,Organization and Team,"Team invitation, MFA enrollment, role permission update",0,0,0,NOT_FULLY_VERIFIED
+M1.09.03,M1.09,Organization and Team,Archived units cannot receive new placements,1,0,1,NOT_FULLY_VERIFIED
+M1.09.04,M1.09,Organization and Team,"Team invitation, MFA enrollment, role permission update",2,0,0,NOT_FULLY_VERIFIED
 M1.09.05,M1.09,Organization and Team,Suspension/revocation removes existing-session access,0,0,0,NOT_FULLY_VERIFIED
 M1.09.06,M1.09,Organization and Team,Company staff cannot grant permissions above own ceiling,0,0,0,NOT_FULLY_VERIFIED
 M1.10.01,M1.10,Invitations and employment links,"Single invitation accepted, resent, revoked, expired and replayed",0,0,0,NOT_FULLY_VERIFIED
