@@ -27,6 +27,9 @@ const teamModule = await import(
 );
 
 const { DatabaseCompanyOrganizationRepository } = organizationModule;
+const { CompanyWorkforceWorkerReadRepository } = await import(
+  pathToFileURL(join(runtime, "company", "company-workforce-worker-read-repository.js")).href
+);
 const {
   CompanyTeamService,
   CompanyTeamAccessError
@@ -538,8 +541,8 @@ test("M1.09 Worker unit archive clears live scope, retains immutable per-link hi
   } finally { await database.close(); }
 });
 
-async function m10901RealPostgresDatabase() {
-  const raw = process.env.HSE_M10901_POSTGRES_TEST_DATABASE_URL;
+async function m10901RealPostgresDatabase(scenario="M10901") {
+  const raw = process.env[`HSE_${scenario}_POSTGRES_TEST_DATABASE_URL`];
   if (!raw) throw new Error("M10901 test requires explicit approved isolated PostgreSQL16.");
   const url = new URL(raw);
   if (!["localhost","127.0.0.1"].includes(url.hostname) || url.pathname !== "/postgres") {
@@ -548,16 +551,19 @@ async function m10901RealPostgresDatabase() {
   const root = await openScriptDatabase({
     ...TEST_ENVIRONMENT,databaseDriver:"postgres",databaseUrl:url.href,releaseSha:"m10901-supervisor"
   });
-  const dbName = "m10901_two_staff_units_"+process.pid+"_"+Date.now();
+  const dbName = scenario.toLowerCase()+"_two_staff_units_"+process.pid+"_"+Date.now();
   let created=false, first, second;
   try {
     await root.execute('CREATE DATABASE "'+dbName+'"');
     created=true;
     url.pathname = "/"+dbName;
     const env = {...TEST_ENVIRONMENT,databaseDriver:"postgres",
-      databaseUrl:url.href,releaseSha:"m10901-unit-race-"+process.pid};
+      databaseUrl:url.href,releaseSha:scenario.toLowerCase()+"-unit-race-"+process.pid};
     first = await openScriptDatabase(env);
-    await applyMigrationsThrough(first,env.releaseSha,"0130_verified_identity_correction_notices");
+    const ceiling = scenario === "M10902"
+      ? "0131_company_workforce_archive_scope_serialization"
+      : "0130_verified_identity_correction_notices";
+    await applyMigrationsThrough(first,env.releaseSha,ceiling);
     second = await openScriptDatabase(env);
     return {first,second,cleanup:async()=>{
       try{await second.close();}
@@ -728,6 +734,135 @@ test("M1.09.01 actual PostgreSQL16 two Company staff race site archive and depar
     releaseRaceA?.();
     releaseRaceB?.();
     await Promise.allSettled([pendingA,pendingB]);
+    await cleanup();
+  }
+});
+
+test("M1.09.02 actual PostgreSQL16 concurrent archive versus new Worker placement retains Worker receiving state and immutable audit", {
+  skip: !process.env.HSE_M10902_POSTGRES_TEST_DATABASE_URL,
+  timeout: 180000
+}, async () => {
+  const { first, second, cleanup } = await m10901RealPostgresDatabase("M10902");
+  let currentRelease = null;
+  try {
+    const owner = await insertCompanyContext(first, "Q");
+    const foreign = await insertCompanyContext(first, "R");
+    const actor = principal(owner, "company.settings.manage");
+    const foreignActor = principal(foreign, "company.settings.manage");
+    const repository = new DatabaseCompanyOrganizationRepository(Promise.resolve(first));
+    const workerReader = new CompanyWorkforceWorkerReadRepository(Promise.resolve(second), () => new Date(NOW_DATE));
+    const draft = { name: "Real archive race site", formattedAddress: "Islamabad", phone: "+92510000111", website: "https://archive-race.example.test", email: "site-race@example.test", registrationNumber: null };
+    const otherSite = await repository.create(foreignActor, "site", {...draft, name: "Foreign retained site"});
+
+    for (const kind of ["site", "department"]) {
+      const suffix = kind === "site" ? "S" : "D";
+      const site = await repository.create(actor, "site", {...draft, name: `Scoped ${kind} site`});
+      const dept = await repository.create(actor, "department", {...draft, name: `Scoped ${kind} department`});
+      const target = kind === "site" ? site : dept;
+      const codeId = opaqueId("company_code",suffix);
+      await first.query("INSERT INTO company_registration_codes(code_id,tenant_id,code_hash,usage_limit,created_by_membership_id,expires_at) VALUES($1,$2,$3,3,$4,$5)",
+        [codeId,owner.tenantId,`m10902-race-code-${suffix}`,owner.membershipId,FAR_FUTURE]);
+      const workerSessions = [];
+      for (const order of ["A", "B"]) {
+        const accountId = `m10902_worker_${suffix}${order}`;
+        const sessionId = `m10902_worker_session_${suffix}${order}`;
+        const email = `m10902-worker-${suffix}${order}@example.test`.toLowerCase();
+        await first.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$3,'active','scrypt$16384$8$1$salt$hash',$4,$4,$4,$4)",
+          [accountId,email,`M10902 Worker ${suffix}${order}`,NOW]);
+        await first.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",[accountId,NOW]);
+        await first.query("INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) VALUES($1,$2,'worker',$3,$4,$5,$5,$6)",
+          [sessionId,accountId,`m10902-token-${suffix}${order}`,`m10902-csrf-${suffix}${order}`,NOW,FAR_FUTURE]);
+        workerSessions.push({accountId,sessionId,email,activeRole:"worker",accountStatus:"active",tenantMembership:null});
+      }
+      const linkA = opaqueId("company_worker_link", suffix);
+      const linkB = opaqueId("company_worker_link", suffix.toLowerCase());
+      const linkSql = `INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,link_source,code_id,link_status,site_id,department_id,worker_accepted_at,activated_at)
+           VALUES($1,$2,$3,'code',$4,'active',$5,$6,$7,$7)`;
+      const argsFor = (linkId,index) => [linkId,owner.tenantId,workerSessions[index].accountId,codeId,site.unitId,dept.unitId,NOW];
+      await first.query(linkSql,argsFor(linkA,0));
+      const before = await workerReader.listLinks(workerSessions[0]);
+      assert.equal(before.length,1);
+      assert.equal(before[0].siteName,site.name);
+      assert.equal(before[0].departmentName,dept.name);
+      await assert.rejects(workerReader.listLinks({...workerSessions[0],activeRole:"company"}), /access|denied|unavailable/i);
+
+      const held = holdM10901SuccessfulTransactionUntilReleased(first);
+      const archiving = held.repository.archive(actor,kind,target.unitId,target.revision);
+      currentRelease = held.release;
+      await held.reached;
+      // The competing connection legitimately has an active authenticated Worker,
+      // but must not create a new placement into the archived unit in any interleaving.
+      const competing = second.query(linkSql,argsFor(linkB,1)).then(()=>({ok:true}),error=>({ok:false,error}));
+      const early = await Promise.race([competing, new Promise(resolve=>setTimeout(()=>resolve({pending:true}),350))]);
+      console.log(`M10902_REAL_PG16_ARCHIVE_PLACEMENT_INTERLEAVING kind=${kind} early=${early.pending ? "pending" : early.ok ? "INSERT_BEFORE_ARCHIVE_COMMIT" : "rejected"}`);
+      currentRelease();currentRelease=null;
+      const archived = await archiving;
+      assert.equal(archived.status,"archived");
+      const outcome = await competing;
+      if (!outcome.ok) assert.match(outcome.error.message,/site is unavailable|department is unavailable|lock|deadlock|serialization/i);
+      const actual = await second.query("SELECT link_id,site_id,department_id,link_status,code_id FROM company_worker_links WHERE tenant_id=$1 AND worker_account_id IN ($2,$3) ORDER BY worker_account_id",
+        [owner.tenantId,workerSessions[0].accountId,workerSessions[1].accountId]);
+      assert.equal(actual.rows.length,outcome.ok?2:1);
+      for (const link of actual.rows) {
+        assert.equal(link[kind === "site"?"site_id":"department_id"],null,`M1.09.02 leaked a concurrent Worker placement into archived ${kind}`);
+        assert.equal(link[kind === "site"?"department_id":"site_id"],kind === "site" ? dept.unitId : site.unitId);
+        assert.equal(link.link_status,"active");
+        assert.equal(link.code_id,codeId);
+      }
+      const receiving = await workerReader.listLinks(workerSessions[0]);
+      assert.equal(receiving.length,1);
+      assert.equal(receiving[0][kind === "site"?"siteName":"departmentName"],null);
+      assert.equal(receiving[0][kind === "site"?"departmentName":"siteName"],kind === "site"?dept.name:site.name);
+      const perLinkAudits = await second.query("SELECT metadata->>'workerLinkId' AS link_id,metadata->>'previousSiteId' AS site_id,metadata->>'previousDepartmentId' AS department_id FROM platform_audit_events WHERE actor_tenant_id=$1 AND action_key='company_organization.archived' AND metadata->>'workerLinkId' IS NOT NULL AND target_reference=$2 ORDER BY audit_sequence",
+        [owner.tenantId,target.unitId]);
+      assert.equal(perLinkAudits.rows.length,1);
+      assert.equal(perLinkAudits.rows[0].link_id,linkA);
+      assert.equal(perLinkAudits.rows[0][kind === "site"?"site_id":"department_id"],target.unitId);
+      const retainedForeign = await second.query("SELECT site_status FROM company_sites WHERE tenant_id=$1 AND site_id=$2",[foreign.tenantId,otherSite.unitId]);
+      assert.equal(retainedForeign.rows[0].site_status,"active");
+      const restored = await repository.restore(actor,kind,target.unitId,archived.revision);
+      assert.equal((await workerReader.listLinks(workerSessions[0]))[0][kind === "site"?"siteName":"departmentName"],null,"Unit restore must not silently reassign the Worker");
+      // Reverse interleaving: a new Worker placement must hold a live unit
+      // SHARE lock until commit so an archive cannot miss this fresh link.
+      let permitPlacementCommit, signalPlacementInserted;
+      const placementAllowedToCommit = new Promise(resolve=>{permitPlacementCommit=resolve;});
+      const placementInserted = new Promise(resolve=>{signalPlacementInserted=resolve;});
+      currentRelease=permitPlacementCommit;
+      const pendingPlacement = second.transaction(async tx=>{
+        await tx.query(linkSql,argsFor(linkB,1));
+        signalPlacementInserted();
+        await placementAllowedToCommit;
+      });
+      await placementInserted;
+      const pendingArchive = repository.archive(actor,kind,target.unitId,restored.revision);
+      const archiveEarly = await Promise.race([
+        pendingArchive.then(()=>({committed:true}),error=>({error})),
+        new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))
+      ]);
+      assert.equal(archiveEarly.pending,true,"Archive committed before previous Worker placement transaction despite unit SHARE lock");
+      currentRelease();currentRelease=null;
+      await pendingPlacement;
+      const secondArchive=await pendingArchive;
+      assert.equal(secondArchive.status,"archived");
+      const secondLink=await first.query("SELECT site_id,department_id FROM company_worker_links WHERE link_id=$1",[linkB]);
+      assert.equal(secondLink.rows.length,1);
+      assert.equal(secondLink.rows[0][kind === "site"?"site_id":"department_id"],null);
+      assert.equal((await workerReader.listLinks(workerSessions[1]))[0][kind === "site"?"siteName":"departmentName"],null);
+      const laterAudit=await first.query("SELECT metadata->>'workerLinkId' AS link_id FROM platform_audit_events WHERE actor_tenant_id=$1 AND action_key='company_organization.archived' AND target_reference=$2 AND metadata->>'workerLinkId' IS NOT NULL ORDER BY audit_sequence",[owner.tenantId,target.unitId]);
+      assert.deepEqual(laterAudit.rows.map(r=>r.link_id),[linkA,linkB],"Each Worker placement is unassigned/audited once, not duplicated after restore");
+      console.log(`M10902_REAL_PG16_${kind.toUpperCase()}_PLACEMENT_RACE_PRESERVES_WORKER_AND_AUDIT`);
+    }
+    const beforeFunction=await first.query("SELECT pg_get_functiondef('hse_validate_company_workforce_scope()'::regprocedure) AS body");
+    assert.match(beforeFunction.rows[0].body,/FOR SHARE/i);
+    const {readFileSync}=await import("node:fs");
+    await first.execute(readFileSync("database/migrations/0131_company_workforce_archive_scope_serialization.down.sql","utf8"));
+    await first.execute(readFileSync("database/migrations/0131_company_workforce_archive_scope_serialization.up.sql","utf8"));
+    const afterFunction=await first.query("SELECT pg_get_functiondef('hse_validate_company_workforce_scope()'::regprocedure) AS body");
+    assert.equal(afterFunction.rows[0].body,beforeFunction.rows[0].body,"Monotonic 0131 down/reapply must not restore the vulnerable trigger");
+    console.log("M10902_0131_ROLLBACK_REAPPLY_PRESERVES_ROW_LOCK");
+    console.log("M10902_REAL_PG16_WORKER_RECEIVING_STATE_NO_ARCHIVED_SCOPE_LEAK");
+  } finally {
+    if(currentRelease) currentRelease();
     await cleanup();
   }
 });

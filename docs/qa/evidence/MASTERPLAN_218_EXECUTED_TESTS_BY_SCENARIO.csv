@@ -1,6 +1,6 @@
 id,brick,family,scenario,existing_source_cases_linked,green_exact_reference_CI_cases_linked,green_history_only_cases_linked,full_scenario_verification
 M1.01.01,M1.01,Environment and release foundation,Runtime environments/secrets/demo isolation and startup,2,0,2,NOT_FULLY_VERIFIED
-M1.01.02,M1.01,Environment and release foundation,"All migrations apply, preserve history and rollback safely",4,1,3,NOT_FULLY_VERIFIED
+M1.01.02,M1.01,Environment and release foundation,"All migrations apply, preserve history and rollback safely",4,1,0,NOT_FULLY_VERIFIED
 M1.01.03,M1.01,Environment and release foundation,GitHub CI verifies exact canonical candidate,0,0,0,NOT_FULLY_VERIFIED
 M1.01.04,M1.01,Environment and release foundation,Production configuration/health/rollback evidence corresponds to candidate,0,0,0,NOT_FULLY_VERIFIED
 M1.02.01,M1.02,Global UI,"Public navigation, contact/demo/sign-in and role destinations",0,0,0,NOT_FULLY_VERIFIED
@@ -41,8 +41,8 @@ M1.08.02,M1.08,Company verification,Pending tenant high-risk actions denied,2,0,
 M1.08.03,M1.08,Company verification,Admin changes requested to corrected version to verification,1,0,1,NOT_FULLY_VERIFIED
 M1.08.04,M1.08,Company verification,Admin rejection remains pending and preserves original history,1,0,1,NOT_FULLY_VERIFIED
 M1.08.05,M1.08,Company verification,Approval activates tenant; stale/double decision denied,1,0,1,NOT_FULLY_VERIFIED
-M1.09.01,M1.09,Organization and Team,"Site and department create, edit, archive and restore",1,0,0,NOT_FULLY_VERIFIED
-M1.09.02,M1.09,Organization and Team,Archive assigned units unassigns placements and retains history,0,0,0,NOT_FULLY_VERIFIED
+M1.09.01,M1.09,Organization and Team,"Site and department create, edit, archive and restore",1,0,1,NOT_FULLY_VERIFIED
+M1.09.02,M1.09,Organization and Team,Archive assigned units unassigns placements and retains history,1,0,0,NOT_FULLY_VERIFIED
 M1.09.03,M1.09,Organization and Team,Archived units cannot receive new placements,0,0,0,NOT_FULLY_VERIFIED
 M1.09.04,M1.09,Organization and Team,"Team invitation, MFA enrollment, role permission update",0,0,0,NOT_FULLY_VERIFIED
 M1.09.05,M1.09,Organization and Team,Suspension/revocation removes existing-session access,0,0,0,NOT_FULLY_VERIFIED
