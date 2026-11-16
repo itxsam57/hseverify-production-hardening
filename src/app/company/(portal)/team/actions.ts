@@ -34,6 +34,12 @@ function membershipStatus(value: string): TenantMembershipStatus | null {
     ? value
     : null;
 }
+function accessRevision(value: string): number | null {
+  if (!/^[1-9][0-9]*$/.test(value)) return null;
+  const revision = Number(value);
+  return Number.isSafeInteger(revision) ? revision : null;
+}
+
 function targetStatus(value: string): "active" | "suspended" | "revoked" | null {
   return value === "active" || value === "suspended" || value === "revoked" ? value : null;
 }
@@ -118,9 +124,10 @@ export async function updateCompanyTeamMemberAction(
 ): Promise<CompanyTeamActionState> {
   const expectedRole = role(text(formData, "expectedRole"));
   const expectedStatus = membershipStatus(text(formData, "expectedStatus"));
+  const expectedAccessRevision = accessRevision(text(formData, "expectedAccessRevision"));
   const membershipRole = role(text(formData, "membershipRole"));
   const membershipId = text(formData, "membershipId");
-  if (!expectedRole || !expectedStatus || !membershipRole || !membershipId) {
+  if (!expectedRole || !expectedStatus || !expectedAccessRevision || !membershipRole || !membershipId) {
     return state("conflict", "That Company Team form is stale. Reload and try again.");
   }
   const permissions = formData
@@ -132,6 +139,7 @@ export async function updateCompanyTeamMemberAction(
       membershipId,
       expectedRole,
       expectedStatus,
+      expectedAccessRevision,
       membershipRole,
       permissions,
       siteId: text(formData, "siteId") || null,
@@ -150,8 +158,9 @@ export async function changeCompanyTeamMemberStatusAction(
 ): Promise<CompanyTeamActionState> {
   const membershipId = text(formData, "membershipId");
   const expectedStatus = membershipStatus(text(formData, "expectedStatus"));
+  const expectedAccessRevision = accessRevision(text(formData, "expectedAccessRevision"));
   const nextStatus = targetStatus(text(formData, "targetStatus"));
-  if (!membershipId || !expectedStatus || !nextStatus) {
+  if (!membershipId || !expectedStatus || !expectedAccessRevision || !nextStatus) {
     return state("conflict", "That Company Team status form is stale. Reload and try again.");
   }
   try {
@@ -159,6 +168,7 @@ export async function changeCompanyTeamMemberStatusAction(
     await getCompanyTeamService().changeMemberStatus(principal, {
       membershipId,
       expectedStatus,
+      expectedAccessRevision,
       targetStatus: nextStatus
     });
     refreshCompanyTeamViews();

@@ -60,6 +60,7 @@ export type CompanyTeamMemberRecord = Readonly<{
   membershipRole: TenantMembershipRole;
   status: TenantMembershipStatus;
   permissions: readonly TenantPermission[];
+  accessRevision: number;
   siteId: string | null;
   siteName: string | null;
   departmentId: string | null;
@@ -113,6 +114,7 @@ const MEMBER_COLUMNS = `
   a.email_normalized,
   m.membership_role,
   m.membership_status,
+  m.company_team_access_revision AS access_revision,
   m.activated_at,
   x.site_id,
   s.name AS site_name,
@@ -127,6 +129,7 @@ type MemberRow = {
   email_normalized: string;
   membership_role: TenantMembershipRole;
   membership_status: TenantMembershipStatus;
+  access_revision: number | string;
   activated_at: string | Date | null;
   site_id: string | null;
   site_name: string | null;
@@ -143,6 +146,7 @@ type TargetMembershipRow = {
   account_id: string;
   membership_role: TenantMembershipRole;
   membership_status: TenantMembershipStatus;
+  company_team_access_revision: number | string;
 };
 type ActiveAssignmentRow = {
   assignment_id: string;
@@ -321,6 +325,7 @@ async function memberFromDatabase(
     membershipRole: row.membership_role,
     status: row.membership_status,
     permissions: Object.freeze([...permissions]),
+    accessRevision: Number(row.access_revision),
     siteId: row.site_id,
     siteName: row.site_name,
     departmentId: row.department_id,
@@ -600,6 +605,7 @@ export class CompanyTeamService {
     membershipId: string;
     expectedRole: TenantMembershipRole;
     expectedStatus: TenantMembershipStatus;
+    expectedAccessRevision: number;
     membershipRole: TenantMembershipRole;
     permissions: readonly string[];
     siteId?: string | null;
@@ -607,6 +613,9 @@ export class CompanyTeamService {
   }): Promise<CompanyTeamMemberRecord> {
     const membershipId = input.membershipId.trim();
     if (!membershipId) throw new CompanyTeamInputError("Team membership reference is required.");
+    if (!Number.isSafeInteger(input.expectedAccessRevision) || input.expectedAccessRevision < 1) {
+      throw new CompanyTeamConflictError("That Company Team form is stale. Reload and try again.");
+    }
     const selectedPermissions = uniquePermissions(input.permissions);
     const siteId = input.siteId?.trim() || null;
     const departmentId = input.departmentId?.trim() || null;
@@ -622,7 +631,7 @@ export class CompanyTeamService {
         const actor = await liveActor(database, scope);
         if (scope.membershipId === membershipId) throw new CompanyTeamAccessError();
         const targetResult = await database.query<TargetMembershipRow>(
-          `SELECT membership_id, account_id, membership_role, membership_status
+          `SELECT membership_id, account_id, membership_role, membership_status, company_team_access_revision
            FROM auth_tenant_memberships
            WHERE tenant_id=$1 AND membership_id=$2 AND portal_role='company'
            FOR UPDATE`,
@@ -630,7 +639,8 @@ export class CompanyTeamService {
         );
         const target = targetResult.rows[0];
         if (!target) throw new CompanyTeamAccessError();
-        if (target.membership_role !== input.expectedRole || target.membership_status !== input.expectedStatus) {
+        if (target.membership_role !== input.expectedRole || target.membership_status !== input.expectedStatus
+            || Number(target.company_team_access_revision) !== input.expectedAccessRevision) {
           throw new CompanyTeamConflictError("That Company Team membership changed. Reload and try again.");
         }
         if (target.membership_status !== "active" && target.membership_status !== "suspended") {
@@ -669,10 +679,13 @@ export class CompanyTeamService {
         );
         const membershipUpdate = await database.query(
           `UPDATE auth_tenant_memberships
-           SET membership_role=$3, updated_at=$4
+           SET membership_role=$3, updated_at=$4,
+               company_team_access_revision=company_team_access_revision+1
            WHERE tenant_id=$1 AND membership_id=$2
-             AND membership_role=$5 AND membership_status=$6`,
-          [scope.tenantId, membershipId, input.membershipRole, nowIso, target.membership_role, target.membership_status]
+             AND membership_role=$5 AND membership_status=$6
+             AND company_team_access_revision=$7`,
+          [scope.tenantId, membershipId, input.membershipRole, nowIso,
+           target.membership_role, target.membership_status, input.expectedAccessRevision]
         );
         if (membershipUpdate.affectedRows !== 1) throw new CompanyTeamConflictError();
 
@@ -719,6 +732,8 @@ export class CompanyTeamService {
           metadata: {
             previousRole: target.membership_role,
             membershipRole: input.membershipRole,
+            previousAccessRevision: input.expectedAccessRevision,
+            accessRevision: input.expectedAccessRevision+1,
             permissionCount: selectedPermissions.length,
             assignmentChanged
           }
@@ -733,10 +748,14 @@ export class CompanyTeamService {
   async changeMemberStatus(principal: TenantPermissionPrincipal<typeof MANAGE_PERMISSION>, input: {
     membershipId: string;
     expectedStatus: TenantMembershipStatus;
+    expectedAccessRevision: number;
     targetStatus: "active" | "suspended" | "revoked";
   }): Promise<CompanyTeamMemberRecord> {
     const membershipId = input.membershipId.trim();
     if (!membershipId) throw new CompanyTeamInputError("Team membership reference is required.");
+    if (!Number.isSafeInteger(input.expectedAccessRevision) || input.expectedAccessRevision < 1) {
+      throw new CompanyTeamConflictError("That Company Team status form is stale. Reload and try again.");
+    }
     const now = this.now();
     const nowIso = now.toISOString();
 
@@ -749,7 +768,7 @@ export class CompanyTeamService {
         const actor = await liveActor(database, scope);
         if (scope.membershipId === membershipId) throw new CompanyTeamAccessError();
         const targetResult = await database.query<TargetMembershipRow>(
-          `SELECT membership_id, account_id, membership_role, membership_status
+          `SELECT membership_id, account_id, membership_role, membership_status, company_team_access_revision
            FROM auth_tenant_memberships
            WHERE tenant_id=$1 AND membership_id=$2 AND portal_role='company'
            FOR UPDATE`,
@@ -757,7 +776,8 @@ export class CompanyTeamService {
         );
         const target = targetResult.rows[0];
         if (!target) throw new CompanyTeamAccessError();
-        if (target.membership_status !== input.expectedStatus) {
+        if (target.membership_status !== input.expectedStatus
+            || Number(target.company_team_access_revision) !== input.expectedAccessRevision) {
           throw new CompanyTeamConflictError("That Company Team membership changed. Reload and try again.");
         }
         if (!canGrantTenantRole(actor.membership_role, target.membership_role)) throw new CompanyTeamAccessError();
@@ -780,22 +800,22 @@ export class CompanyTeamService {
         const update = input.targetStatus === "suspended"
           ? await database.query(
               `UPDATE auth_tenant_memberships
-               SET membership_status='suspended', suspended_at=$3, revoked_at=NULL, updated_at=$3
-               WHERE tenant_id=$1 AND membership_id=$2 AND membership_status='active'`,
-              [scope.tenantId, membershipId, nowIso]
+               SET membership_status='suspended', suspended_at=$3, revoked_at=NULL, updated_at=$3, company_team_access_revision=company_team_access_revision+1
+               WHERE tenant_id=$1 AND membership_id=$2 AND membership_status='active' AND company_team_access_revision=$4`,
+              [scope.tenantId, membershipId, nowIso, input.expectedAccessRevision]
             )
           : input.targetStatus === "active"
             ? await database.query(
                 `UPDATE auth_tenant_memberships
-                 SET membership_status='active', suspended_at=NULL, revoked_at=NULL, updated_at=$3
-                 WHERE tenant_id=$1 AND membership_id=$2 AND membership_status='suspended'`,
-                [scope.tenantId, membershipId, nowIso]
+                 SET membership_status='active', suspended_at=NULL, revoked_at=NULL, updated_at=$3, company_team_access_revision=company_team_access_revision+1
+                 WHERE tenant_id=$1 AND membership_id=$2 AND membership_status='suspended' AND company_team_access_revision=$4`,
+                [scope.tenantId, membershipId, nowIso, input.expectedAccessRevision]
               )
             : await database.query(
                 `UPDATE auth_tenant_memberships
-                 SET membership_status='revoked', suspended_at=NULL, revoked_at=$3, updated_at=$3
-                 WHERE tenant_id=$1 AND membership_id=$2 AND membership_status IN ('active','suspended')`,
-                [scope.tenantId, membershipId, nowIso]
+                 SET membership_status='revoked', suspended_at=NULL, revoked_at=$3, updated_at=$3, company_team_access_revision=company_team_access_revision+1
+                 WHERE tenant_id=$1 AND membership_id=$2 AND membership_status IN ('active','suspended') AND company_team_access_revision=$4`,
+                [scope.tenantId, membershipId, nowIso, input.expectedAccessRevision]
               );
         if (update.affectedRows !== 1) throw new CompanyTeamConflictError();
 
@@ -809,7 +829,9 @@ export class CompanyTeamService {
           action,
           outcome: "succeeded",
           target: { type: "membership", reference: membershipId },
-          metadata: { previousStatus: target.membership_status, status: input.targetStatus }
+          metadata: { previousStatus: target.membership_status, status: input.targetStatus,
+                      previousAccessRevision: input.expectedAccessRevision,
+                      accessRevision: input.expectedAccessRevision+1 }
         });
         const changed = await memberFromDatabase(database, scope.tenantId, membershipId);
         if (!changed) throw new CompanyTeamConflictError();
