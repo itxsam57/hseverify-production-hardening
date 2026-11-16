@@ -1,5 +1,14 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-16 — PR139 third exact-head CI red: adjacent M1.08.03 native suite count must include new M1.08.04 case
+
+- PR139 updated exact SHA `7d72ca03a05b8c43d0dc4d7b0d6ce41f1592e9d6`: 4,975 original inventory, M1.08.04 native PGlite/real PostgreSQL16, signed Company/Admin Chromium, V4 compliance and 218 ledger all **GREEN**, but required adjacent M1.08.03 native job within GitHub run **43929096376** **RED**; **not merged**.
+- Exact CI job raw ran **all 11 Company verification source tests successfully (11/11, zero fail)**, including M1.08.03 stale Admin v1 denial/fresh v2 approval and new M1.08.04 rejected Company anti-resurrection markers. CI exited1 **only because its pinned strict grep expected 10 tests** from before new necessary distinct M1.08.04 case. No new product execution defect, but release gate remains red until fixed and rerun.
+- Updated original `.github/workflows/m1-08-company-admin-version-cas.yml` strict expected count **10→11**, **kept both M1.08.03 security markers**, and added both M1.08.04 terminal rejection/immutable evidence markers. No relaxation of acceptance. This is a CI test-oracle repair, new exact PR-head CI still required, no false pass claim.
+- Counters unchanged FULL0/218 LEFT218; historical1413/1582 (169 no matching old pass), old scoped216/218 NOT FULL, planned4975 PARTIAL693 UNCERTAIN59 UNLINKED4223 FINAL0; pentest incomplete2,008 provisional independent completed UNKNOWN, external blocked10 high/critical unknown. NO-GO.
+- **NEXT:** guarded non-force PR139 follow-up commit/push this single strict original CI expectation update, require all exact new-head runs including adjacent native+PG16 and own M1.08.04 PG16/PGlite and source218/4975+Autopilot and real Chrome GREEN; normal two-parent QA merge and independently all merged-SHA workflows GREEN. Then first frozen M1.08.05.
+
+
 ## 2026-11-16 — PR139 exact-head CI RED repair (original 4,975 triage and PostgreSQL runner)
 
 - First PR139 head af94d835f7e80a39d24bbff170e8356fb478739a **did not pass CI**. Original 4,975 reconcile job 43927642173 rejected stale original 1,110-case unassigned review CSV after source case historical statuses changed; native test workflow 43927642902 exited Docker create125 before any test because PostgreSQL health command used single quotes and Docker interpreted `-U` as a flag.

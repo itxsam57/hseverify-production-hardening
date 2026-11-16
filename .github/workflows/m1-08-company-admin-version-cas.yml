@@ -70,9 +70,11 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/run-company-verification-tests.mjs tests/platform/company-verification.test.mjs 2>&1 | tee .autopilot/artifacts/m10803-all-impacted-company-native.log
-          grep -q 'ℹ pass 10' .autopilot/artifacts/m10803-all-impacted-company-native.log
+          grep -q 'ℹ pass 11' .autopilot/artifacts/m10803-all-impacted-company-native.log
           grep -q 'M10803_STALE_V1_ADMIN_REVIEW_DENIED_NO_TENANT_ACTIVATION' .autopilot/artifacts/m10803-all-impacted-company-native.log
           grep -q 'M10803_FRESH_V2_ADMIN_VERSION_BOUND_APPROVAL' .autopilot/artifacts/m10803-all-impacted-company-native.log
+          grep -q 'M10804_TERMINAL_REJECTION_DENIES_RESURRECTION_DB' .autopilot/artifacts/m10803-all-impacted-company-native.log
+          grep -q 'M10804_REJECTED_COMPANY_ADMIN_QUEUE_AND_EVIDENCE_PERSISTED' .autopilot/artifacts/m10803-all-impacted-company-native.log
       - name: Disposable real PostgreSQL16 latest migration0130 stale-admin exploit and safe fresh approval
         shell: bash
         env:
