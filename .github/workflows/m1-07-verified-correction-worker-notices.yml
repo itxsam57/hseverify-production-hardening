@@ -58,6 +58,8 @@ jobs:
           grep -q 'M10705_ALL_THREE_VERIFIED_CORRECTION_WORKER_NOTICES' .autopilot/artifacts/m10705-pglite-three-outcomes.log
           grep -q 'M10705_0130_ROLLBACK_REAPPLY_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
           grep -q 'M10705_0130_TAMPERED_EVENT_WRONG_WORKER_DENIAL_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10706_ORIGINAL_EVIDENCE_ID_TAMPER_DENIED_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10706_VERIFIED_PARENT_CORRECTION_RETENTION_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
       - name: Isolated PostgreSQL 16 original corrections, security, and reversible migration
         shell: bash
         env:
@@ -69,6 +71,8 @@ jobs:
           grep -q 'M10705_CORRECTION_OUTCOME_NOTICE CHANGES_REQUESTED' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
           grep -q 'M10705_0130_ROLLBACK_REAPPLY_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
           grep -q 'M10705_0130_TAMPERED_EVENT_WRONG_WORKER_DENIAL_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10706_ORIGINAL_EVIDENCE_ID_TAMPER_DENIED_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10706_VERIFIED_PARENT_CORRECTION_RETENTION_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
       - name: Preserve exact-SHA original native and actual PostgreSQL logs
         if: always()
         uses: actions/upload-artifact@v4
