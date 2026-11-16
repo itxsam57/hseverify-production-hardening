@@ -78,6 +78,45 @@ function environment(releaseSha) {
   };
 }
 
+// Run the same original M1.08.01 test on an isolated real PostgreSQL16
+// database if explicitly requested. Never point a destructive test at
+// another project's database, and drop ONLY the database created here.
+async function isolatedCompanyVerificationDatabase() {
+  const connection=process.env.HSE_M10801_POSTGRES_TEST_DATABASE_URL;
+  if(!connection){
+    const env=environment("m1-08-latest-schema-regression");
+    const database=await openScriptDatabase(env);
+    try{await applyMigrationsThrough(database,env.releaseSha,LATEST_SCHEMA_MIGRATION);}
+    catch(error){await database.close();throw error;}
+    return {database,dispose:async()=>database.close()};
+  }
+  const adminEnv={...environment("m10801-pg-admin"),databaseDriver:"postgres",databaseUrl:connection};
+  const admin=await openScriptDatabase(adminEnv);
+  const name="m10801_scanned_evidence_"+process.pid+"_"+Date.now();
+  let created=false,database;
+  try{
+    await admin.execute('CREATE DATABASE "'+name+'"');
+    created=true;
+    const url=new URL(connection);
+    url.pathname="/"+name;
+    const env={...environment("m10801-pg-"+process.pid),databaseDriver:"postgres",databaseUrl:url.href};
+    database=await openScriptDatabase(env);
+    await applyMigrationsThrough(database,env.releaseSha,"0130_verified_identity_correction_notices");
+    return {database,dispose:async()=>{
+      try{await database.close();}
+      finally{
+        try{await admin.execute('DROP DATABASE "'+name+'"');}
+        finally{await admin.close();}
+      }
+    }};
+  }catch(error){
+    if(database)await database.close();
+    try{if(created)await admin.execute('DROP DATABASE "'+name+'"');}
+    finally{await admin.close();}
+    throw error;
+  }
+}
+
 function token24(value) {
   return value.replace(/[^A-Za-z0-9_-]/g, "x").padEnd(24, "x").slice(0, 24);
 }
@@ -173,7 +212,7 @@ async function seedPendingCompany(database) {
   return { principal, accountId, tenantId, membershipId };
 }
 
-async function uploadAndScanAvailableEvidence(database, principal) {
+async function uploadAndScanAvailableEvidence(database, principal, verifyNotReady = async () => {}) {
   const owner = bindTrustedCompanyApplicationSecureFileOwner(principal);
   const authority = new CompanyVerificationSecureFileAuthorityRepository(Promise.resolve(database));
   const reservation = await authority.reserve(
@@ -212,6 +251,7 @@ async function uploadAndScanAvailableEvidence(database, principal) {
     stored
   );
   assert.equal(quarantined.file.lifecycleStatus, "quarantined");
+  await verifyNotReady({phase:"quarantined",fileId:reservation.file.fileId});
 
   const scans = new DatabaseSecureFileScanRepository(Promise.resolve(database));
   const scheduled = await scans.scheduleForCompanyApplication({
@@ -229,6 +269,7 @@ async function uploadAndScanAvailableEvidence(database, principal) {
 
   const handlerState = await scans.loadForHandler(claimed.job, claimed.lease);
   assert.equal(handlerState.lifecycleStatus, "scan_pending");
+  await verifyNotReady({phase:"scan_pending",fileId:reservation.file.fileId});
   const available = await scans.finalizeDecision({
     job: claimed.job,
     lease: claimed.lease,
@@ -242,11 +283,9 @@ async function uploadAndScanAvailableEvidence(database, principal) {
   return reservation.file.fileId;
 }
 
-test("M1.08 Company verification evidence lifecycle remains functional on the latest Phase 1 schema", async () => {
-  const env = environment("m1-08-latest-schema-regression");
-  const database = await openScriptDatabase(env);
+test("M1.08 Company verification evidence lifecycle remains functional on the latest Phase 1 schema", {timeout:120000}, async () => {
+  const {database,dispose}=await isolatedCompanyVerificationDatabase();
   try {
-    await applyMigrationsThrough(database, env.releaseSha, LATEST_SCHEMA_MIGRATION);
     const company = await seedPendingCompany(database);
     const service = new CompanyVerificationService(
       new CompanyVerificationRepository(Promise.resolve(database))
@@ -269,7 +308,35 @@ test("M1.08 Company verification evidence lifecycle remains functional on the la
       }
     });
 
-    const fileId = await uploadAndScanAvailableEvidence(database, company.principal);
+    const fileId = await uploadAndScanAvailableEvidence(database, company.principal,
+      async ({phase,fileId}) => {
+        const unsafeBinding=()=>service.bindEvidence({
+          principal:company.principal,secureFileId:fileId,
+          evidenceLabel:"Company registration evidence",expectedActiveBindingId:null
+        });
+        await assert.rejects(unsafeBinding,error=>error?.name==="CompanyVerificationAccessDeniedError",
+          "Quarantined or scan-pending Company document must never become a submitted verification binding.");
+        await assert.rejects(
+          service.submit({principal:company.principal,expectedLockVersion:snapshot.case.lockVersion}),
+          error=>error?.name==="CompanyVerificationNotReadyError"&&
+            error.requirements?.includes("Company evidence"),
+          "Unscanned evidence must not satisfy Company registration submission.");
+        assert.deepEqual((await database.query(
+          "SELECT lifecycle_status FROM platform_secure_files WHERE file_id=$1",
+          [fileId]
+        )).rows,[{lifecycle_status:phase}]);
+        assert.equal((await database.query(
+          "SELECT count(*)::int n FROM company_verification_evidence WHERE case_id=$1",
+          [snapshot.case.caseId]
+        )).rows[0].n,0,"Rejected premature scan cannot create evidence binding.");
+        const status=(await database.query(
+          "SELECT case_status FROM company_verification_cases WHERE case_id=$1",
+          [snapshot.case.caseId]
+        )).rows[0].case_status;
+        assert.equal(status,"draft","Pending scan cannot make an application submitted.");
+        console.log("M10801_QUARANTINED_AND_SCAN_PENDING_REJECTED_BEFORE_CLEAN",phase,
+          "binding rejected, submission not ready, no binding created and original Company draft preserved");
+      });
     await service.bindEvidence({
       principal: company.principal,
       secureFileId: fileId,
@@ -285,7 +352,34 @@ test("M1.08 Company verification evidence lifecycle remains functional on the la
     assert.equal(snapshot.case.caseStatus, "submitted");
     assert.equal(snapshot.currentVersion.versionStatus, "submitted");
     assert.ok(snapshot.currentVersion.submittedAt);
+    const persisted=(await database.query(
+      "SELECT evidence.binding_id,evidence.binding_status,files.file_id,files.owner_account_id,files.tenant_id,"+
+      "files.lifecycle_status,files.scan_result_code,files.detected_mime FROM company_verification_evidence evidence "+
+      "JOIN platform_secure_files files ON files.file_id=evidence.secure_file_id "+
+      "WHERE evidence.case_id=$1",
+      [snapshot.case.caseId]
+    )).rows;
+    assert.equal(persisted.length,1);
+    assert.equal(persisted[0].binding_status,"active");
+    assert.equal(persisted[0].file_id,fileId);
+    assert.equal(persisted[0].owner_account_id,company.accountId);
+    assert.equal(persisted[0].tenant_id,company.tenantId);
+    assert.equal(persisted[0].lifecycle_status,"available");
+    assert.equal(persisted[0].scan_result_code,"clean");
+    assert.equal(persisted[0].detected_mime,"application/pdf");
+    assert.equal((await database.query(
+      "SELECT tenant_status FROM platform_tenants WHERE tenant_id=$1",
+      [company.tenantId]
+    )).rows[0].tenant_status,"pending",
+      "Cleanly submitted Company verification must not automatically activate an unreviewed tenant.");
+    assert.ok((await database.query(
+      "SELECT action_key FROM platform_audit_events WHERE target_reference=$1",
+      [snapshot.case.caseId]
+    )).rows.some(x=>x.action_key==="company_verification.submitted"),
+      "Submitted Company scanned PDF must have an immutable auditable receiving state.");
+    console.log("M10801_CLEAN_SCAN_PENDING_COMPANY_SUBMITTED_DB",
+      "clean-scanned Company PDF one exact binding, own tenant, audited submitted case and tenant remains pending");
   } finally {
-    await database.close();
+    await dispose();
   }
 });
