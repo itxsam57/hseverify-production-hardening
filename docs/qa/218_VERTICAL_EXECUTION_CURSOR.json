@@ -4,38 +4,38 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.07.06",
-  "current_focus_phase": "M10706_ORIGINAL_WORKER_ID_V1_PRIVATE_PDF_PHOTO_SELFIE_FILE_METADATA_IMMUTABLE_AFTER_CORRECTIONS_AND_DIRECT_SQL_TAMPER_PGLITE_AND_REAL_PG16_1_OF1_EACH_PASS_EXACT_PR_CI_PENDING",
-  "last_completed_action": "Parent QA1e8ba94f0b6c4ddd6d8a150fe9f1e8f3a3cc8245 PR133 genuine two-parent merge ALL48/48 exact QA SHA workflows success. Original frozen M10706 four old actual signed Worker/Verifier/Admin clean A28 browser logs exist hashes0ef1a9b1c1eea34de0dd23477b20f4b94cb02336e9e872308ee7fbe5b4794a4b,24ea7f67f74fd69f814fe1d9ad7c7a47a79040fc000e4538cb5414ba72197f59,18b5cafe7d45e9cdd330148f853ae72f5d7f49dd361d90891a52e2ab8b0a6dcc,e701b6358dd1b2ac0b26d16d6b26103c028bbf990fad3d8b498a94c8d809a166 all individually confirmed, historical source older SHA not current final; existing browser five original+correction versions one Worker ID not rerun. Extended SAME existing native M10705 Worker/Verifier approval and three corrections source with new pre/post original v1 submitted identity details, original 3 bound PDF/PNG/JPEG file owner/object_key/hash metadata, accepted v2 inherited exact original file IDs, only v2 current after rejected v3 and changes_requested v4; direct permanent Worker ID no-op UPDATE and DELETE, original evidence binding no-op pointer UPDATE and DELETE, original legal name forge UPDATE each SQL fails and original row exact unchanged, one immutable Worker ID. PGlite1/1 PASS raw SHA256 c0cf71b4032e782fcf4d03b750653ebf0849ba593e26cefdd4ea23ce645108e5; real PostgreSQL16 isolated1/1 PASS SHA256 c7ac26871571070419f61bf046d67f1ea7ae077cd1322a92a6ba786c6e67f151, temp test DB dropped, shared PG PID723113 preserved. Existing dual-engine GH workflow now requires two M10706 new DB/SQL tamper markers, no new distinct test. Reindex 3 M10102 135 migration test cases newly matched earlier actual PG16 raw 4/4 source SHA unknown, historical1405/1578 unmatched173 ref CI232 old historical1173, 4,975 partial693 uncertain59 unlinked4223 FINAL0, FULL0/218 old216 scoped, pen test incomplete2008 provisional completed unknown, known external blocked10 severe unknown, release NO-GO. Original report docs/qa/M1_07_06_ORIGINAL_ID_AND_EVIDENCE_IMMUTABILITY_20261116.md. Missing real stage provider file bytes, UI API/tenant crossrole full pentest, realistic load/restore UAT and M10704 contract; Chromium attempted new review crashed prior assertions, host disk~283MB free. V4 f6a320d6-7b2a-4cf4-931a-37e38bea16fe cycle d47ff1f91d0b4ea8bab47222bb31b67e.",
-  "next_exact_action": "Run strict original frozen 218, historical216, exact source test index and 4975 reconciliations and Python+Node engineering gates with updated source 1405/1578 historical and 59 uncertain/4223 unlinked; V4 guarded commit/push qa/m10706-retained-worker-id-20261116 PR, exact-head existing M1.07.05 native both real PostgreSQL16/PGlite new M10706 markers plus original218/4975/Autopilot all GREEN; normal two-parent merge and all merged SHA workflows green. Then next frozen M1.07.07 duplicate identity signals, reuse earlier passing browser/native, no full certify before final provider/pentest/owner UAT.",
-  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && python3 .autopilot/guard.py pre-commit --root .",
+  "current_focus_scenario_id": "M1.07.07",
+  "current_focus_phase": "M10707_TWOCONNECTION_PG16_TWO_SEPARATE_MFA_ADMINS_CONCURRENT_DUPLICATE_DISPOSITIONS_ROW_LOCK_STALE_LOSER_NO_ID_AND_FRESH_REVIEW_RACE1_OF1_PASS_EXACT_CI_PR_PENDING",
+  "last_completed_action": "Parent QA851a3f19cff7e111e0cc6fecc35146d963a9a260 PR134 genuine two-parent merge all47/47 exact QA SHA workflows green. Original M10707 6 prior browser and 6 prior native clean scoped A28 evidence logs all12 file hashes individually located/verified, no duplicate tests. New necessary distinct original M10707 real PostgreSQL16 test two independently seeded active Admin account/session principals with recent MFA success+login, same approved submitted matching document identities review_required check. Admin1 authentic duplicate_review holds real transaction after writing before commit, concurrent second Admin independent connection same checkId expectedRevision0 chooses continue, blocks >1.1s, after first commit second rejects stale; database only one immutable disposition/audit and zero WorkerID. Fresh second Admin version1 reasoned continue succeeds target single Worker ID and second matching account still zero, exactly two reasoned immutable decisions/audits and no account merge. Actual PostgreSQL16 native1/1 PASS exit0 raw SHA256 5f3ab3c9cb5de16957b483a2c1c6b5d16b7da0121767b97ea1b36d74e0371eaa, test DB dropped, shared PG PID723113 preserved, no product code fix. Source-only coverage RED exit1 SHA256 76946e1baa8d84b2e33d95af48bc05bc1a0fc9addc3556ba5f104a90ab0dffba not a vulnerability. New one distinct source case raises source denominator1578->1579, historic old matched stays1405 no matching old green174, 4975 693partial59uncertain4223unlinked FINAL0, FULL0/218 left218, old216/218 scoped not full, provisional pentest2008 independent verified unknown, known external blockers10 high/critical UNKNOWN, release NO-GO. Real providers/complete UI/API staged independent pentest load/restore owner UAT missing, original M10704 terminal rejected contract unresolved and M10703 Chrome crash before assertions. V4 session82efc1a0-c238-4ffe-b70c-7338ca79c523 cycle3cc543187be0496dad6bf41a3b86cf49. Worktree hseverify-m10707-duplicate-id-signals-20261116, based QA851a3f1... no active tests. New exact CI .github/workflows/m1-07-duplicate-two-admin-race.yml targeted PG16 only, original report docs/qa/M1_07_07_TWO_ADMIN_DUPLICATE_DISPOSITION_RACE_20261116.md.",
+  "next_exact_action": "Verify original source/216/4975/218 and strict Python+Node engineering after one necessary new M10707 distinct source test; V4 guarded commit/push qa/m10707-duplicate-id-signals-20261116 PR, require exact-head real PG16 two Admin race plus 218/4975/Autopilot green; normal genuine two-parent QA merge and independent all merged SHA workflows green. Then first original M1.08.01 Company registration pending dashboard scanned evidence, reuse earlier signed browser/native and flag production scanner/storage email provider external blocker. Final release NO-GO until full218/218 and approved stage/pentest/UAT.",
+  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.07.06",
-      "problem": "Prior signed 3-role browser four A28 clean log observations reviewed but no current direct SQL attack on original Worker ID and immutable v1 secure file evidence after corrections",
-      "result": "SAME_EXISTING_NATIVE_CASE_EXTENDED_PGLITE1_OF1_REAL_PG16_1_OF1_PASS_ID_AND_ORIGINAL_3_FILE_METADATA_UNCHANGED_UPDATE_DELETE_DENIED_NOT_FINAL_STAGE"
+      "scenario_id": "M1.07.07",
+      "problem": "One new necessary distinct real PostgreSQL16 two independent MFA Admin sessions race same duplicate review check with conflicting duplicate_review/continue, no existing direct source test",
+      "result": "ACTUAL_PG16_1_OF1_PASS_SECOND_ADMIN_BLOCKS_UNCOMMITTED_FIRST_THEN_STALE_DENIED_ZERO_IDS_ONE_AUDIT_FRESH_REVISION1_ONLY_TARGET_ID_ONE_SECOND_ACCOUNT_BLOCKED_NOT_FINAL_STAGE"
     },
     {
-      "scenario_id": "M1.07.06",
-      "problem": "Real private provider object bytes and HTTP/tenant cross-role preview plus same-final-SHA signed browser UI not retested; full pentest/load/restore/Owner UAT missing",
+      "scenario_id": "M1.07.07",
+      "problem": "Real signed final-stage Worker/Verifier/Admin browser and direct API tenant/private file capability tests, full independent pentest/real identity providers and owner UAT missing",
       "result": "NOT_FULLY_VERIFIED_RELEASE_NO_GO"
     },
     {
-      "scenario_id": "M1.07.05",
-      "problem": "Verified correction Worker notice suppression genuine bug fixed reversible migration0130, exact M10102 migration suite135 corrected",
-      "result": "PR133_MERGED_QA_1e8ba94_ALL48_OF48_MERGED_SHA_WORKFLOWS_GREEN_SCOPED_ONLY"
+      "scenario_id": "M1.07.06",
+      "problem": "Original WorkerID and v1 original document/PNG/JPG metadata direct DB tamper proof PGlite/realPG scope green",
+      "result": "PR134_MERGED_QA_851a3f1_47_OF47_EXACT_MERGED_SHA_CI_GREEN_SCOPED_ONLY"
     },
     {
       "scenario_id": "M1.07.04",
-      "problem": "Initial REJECTED terminal real UI conflicts with frozen rejected/resubmit wording",
-      "result": "CONTRACT_UNRESOLVED_NOT_FULLY_VERIFIED"
+      "problem": "Frozen initial rejection resubmit wording conflicts terminal initial REJECTED actual historic UI",
+      "result": "POLICY_CONTRACT_UNRESOLVED_NO_PASS"
     },
     {
       "scenario_id": "M1.07.03",
-      "problem": "New signed real browser receiving probe crashed before new assertion",
-      "result": "BROWSER_INFRA_UNVERIFIED"
+      "problem": "New receiving browser failed before assertions with Chrome page crash, host root disk nearly full",
+      "result": "BROWSER_INFRA_FAILED_NOT_VERIFIED"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
