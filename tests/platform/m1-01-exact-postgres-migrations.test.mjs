@@ -25,18 +25,18 @@ const environment = {
 const INJECTED_ID = "9999_unrecognized_migration_ledger_probe";
 let database;
 
-test("M1.01.02 real PostgreSQL applies 134 migrations once, preserves history, and safely refuses an unknown applied migration", { timeout: 180_000 }, async () => {
+test("M1.01.02 real PostgreSQL applies 135 migrations once, preserves history, and safely refuses an unknown applied migration", { timeout: 180_000 }, async () => {
   database = await openScriptDatabase(environment);
   try {
     const files = await listMigrations();
-    assert.equal(files.length, 134, "Exact release's migration inventory changed");
+    assert.equal(files.length, 135, "Exact release's migration inventory changed");
     const applied = await applyPendingMigrations(database, SHA);
     assert.deepEqual(applied, files.map(row => row.id));
     assert.deepEqual(await applyPendingMigrations(database, SHA), [], "Repeat must be idempotent");
     const first = await database.query(
       "SELECT migration_id, checksum, release_sha, applied_at FROM hse_schema_migrations ORDER BY migration_id"
     );
-    assert.equal(first.rows.length, 134);
+    assert.equal(first.rows.length, 135);
     assert(first.rows.every(row => row.release_sha === SHA));
     const status = await migrationStatus(database);
     assert(status.every(row => row.applied && row.checksumMatches));
@@ -131,7 +131,7 @@ test("M1.01.02 production and preview forbid destructive rollback, and corrupted
   }
 });
 
-test("M1.01.02 explicitly acknowledged test rollback preserves preceding history and reapply restores all 134", { timeout: 180_000 }, async () => {
+test("M1.01.02 explicitly acknowledged test rollback preserves preceding history and reapply restores all 135", { timeout: 180_000 }, async () => {
   database = await openScriptDatabase(environment);
   try {
     await database.execute("CREATE TABLE IF NOT EXISTS m10102_local_data_sentinel (id TEXT PRIMARY KEY, value TEXT NOT NULL)");
@@ -145,9 +145,9 @@ test("M1.01.02 explicitly acknowledged test rollback preserves preceding history
       await assert.rejects(() => rollbackLatestMigration(database, environment), /HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK=true/);
       process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK = "true";
       const rolledBack = await rollbackLatestMigration(database, environment);
-      assert.equal(rolledBack, "0129_assurance_role_action_destinations");
+      assert.equal(rolledBack, "0130_verified_identity_correction_notices");
       const partial = await database.query("SELECT migration_id FROM hse_schema_migrations ORDER BY migration_id");
-      assert.equal(partial.rows.length, 133);
+      assert.equal(partial.rows.length, 134);
       assert.equal(partial.rows.some(row => row.migration_id === rolledBack), false);
       assert.deepEqual(await applyPendingMigrations(database, SHA), [rolledBack]);
       assert.deepEqual(await applyPendingMigrations(database, SHA), []);
@@ -155,7 +155,7 @@ test("M1.01.02 explicitly acknowledged test rollback preserves preceding history
         "SELECT migration_id, checksum, release_sha, applied_at FROM hse_schema_migrations ORDER BY migration_id"
       );
       assert.deepEqual(final.rows.slice(0, -1), history.rows.slice(0, -1), "Unrelated migration history must survive rollback/reapply");
-      assert.equal(final.rows.length, 134);
+      assert.equal(final.rows.length, 135);
       assert.equal((await database.query("SELECT value FROM m10102_local_data_sentinel WHERE id=$1", ["m10102"])).rows[0].value, "retain-me");
     } finally {
       if (previous === undefined) delete process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;
@@ -167,7 +167,7 @@ test("M1.01.02 explicitly acknowledged test rollback preserves preceding history
 });
 
 
-test("M1.01.02 all 134 reverse down migrations are executable in disposable PG16 and completely reapply", { timeout: 240_000 }, async () => {
+test("M1.01.02 all 135 reverse down migrations are executable in disposable PG16 and completely reapply", { timeout: 240_000 }, async () => {
   database = await openScriptDatabase(environment);
   const previous = process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;
   process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK = "true";
@@ -180,14 +180,14 @@ test("M1.01.02 all 134 reverse down migrations are executable in disposable PG16
       assert.equal(actual, id, `Expected reverse rollback of ${id}`);
       rolled.push(actual);
     }
-    assert.equal(rolled.length, 134);
+    assert.equal(rolled.length, 135);
     assert.equal(await rollbackLatestMigration(database, environment), null);
     const pending = await migrationStatus(database);
     assert.equal(pending.filter(row => row.applied).length, 0);
     assert.deepEqual(await applyPendingMigrations(database, SHA), migrations.map(row => row.id));
     assert.deepEqual(await applyPendingMigrations(database, SHA), []);
     const full = await migrationStatus(database);
-    assert.equal(full.length, 134);
+    assert.equal(full.length, 135);
     assert(full.every(row => row.applied && row.checksumMatches));
   } finally {
     if (previous === undefined) delete process.env.HSE_ALLOW_DESTRUCTIVE_DB_ROLLBACK;
