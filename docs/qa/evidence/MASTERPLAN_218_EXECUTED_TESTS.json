@@ -7467,7 +7467,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 49,
+      "prior_log_pass_repetition_count": 50,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7526,7 +7526,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 49,
+      "prior_log_pass_repetition_count": 50,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7585,7 +7585,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 49,
+      "prior_log_pass_repetition_count": 50,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7644,7 +7644,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 49,
+      "prior_log_pass_repetition_count": 50,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7703,7 +7703,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 49,
+      "prior_log_pass_repetition_count": 50,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7762,7 +7762,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 49,
+      "prior_log_pass_repetition_count": 50,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7821,7 +7821,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 46,
+      "prior_log_pass_repetition_count": 47,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7853,7 +7853,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 45,
+      "prior_log_pass_repetition_count": 46,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -41746,16 +41746,23 @@
       "direct_scenarios": [
         "M1.07.07"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "5f3ab3c9cb5de16957b483a2c1c6b5d16b7da0121767b97ea1b36d74e0371eaa",
+          "source_log": "hseverify-m10707-duplicate-id-signals-20261116/.autopilot/artifacts/M10707_ACTUAL_POSTGRES16_TWO_ADMIN_DISPOSITION_RACE_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/worker-identity-issuance-race-postgres.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.07.07"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.07.07 two genuine Admins racing duplicate dispositions serialize and stale loser cannot issue Worker ID"
     },
     {
@@ -45015,10 +45022,10 @@
   "counts": {
     "ambiguous_or_changed_title_occurrences": 966,
     "ambiguous_or_changed_unique_titles": 225,
-    "clean_pass_summary_logs": 1265,
+    "clean_pass_summary_logs": 1267,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 552,
-    "current_test_source_content_sha256": "5f220b76fff42773e2d178b2f0269458eeff6cce62eec84516cc352bacaaa0fc",
+    "current_test_source_content_sha256": "4d25f5075f1f2fc27cc27be8a31c264f94a14f68891d1433b0650dbc0744518f",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45028,22 +45035,22 @@
     },
     "existing_source_cases_linked_to_an_exact_218_id": 153,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 47,
-    "historical_log_files_scanned": 2456,
-    "historical_only_green_distinct_cases": 1173,
+    "frozen_ids_with_at_least_one_sourced_green_case": 48,
+    "historical_log_files_scanned": 2467,
+    "historical_only_green_distinct_cases": 1174,
     "logs_with_no_clean_pass_summary_or_a_failure": 61,
-    "logs_with_pass_lines": 1326,
-    "matched_case_occurrences_with_duplicates": 5949,
+    "logs_with_pass_lines": 1328,
+    "matched_case_occurrences_with_duplicates": 5958,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1405,
-    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 182,
+    "previous_green_distinct_source_matched_cases": 1406,
+    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 183,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 174,
+    "source_tests_without_green_execution_proof": 173,
     "static_existing_distinct_test_cases": 1579,
-    "unique_source_matched_historical_green_cases": 1405,
-    "worktrees_scanned": 120
+    "unique_source_matched_historical_green_cases": 1406,
+    "worktrees_scanned": 121
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45056,7 +45063,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "851a3f19cff7e111e0cc6fecc35146d963a9a260",
+  "inventory_started_from_git_head_sha": "5bd01c5db8a10d17dfafcdbabf6a6c19e8638fff",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -45600,9 +45607,11 @@
       "family": "Identity",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 1,
       "id": "M1.07.07",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/platform/worker-identity-issuance-race-postgres.test.mjs#63f04d435cdf9435"
+      ],
       "scenario": "Duplicate document/contact signals require independent resolution"
     },
     {

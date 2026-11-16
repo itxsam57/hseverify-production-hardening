@@ -4,38 +4,38 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.07.07",
-  "current_focus_phase": "M10707_TWOCONNECTION_PG16_TWO_SEPARATE_MFA_ADMINS_CONCURRENT_DUPLICATE_DISPOSITIONS_ROW_LOCK_STALE_LOSER_NO_ID_AND_FRESH_REVIEW_RACE1_OF1_PASS_EXACT_CI_PR_PENDING",
-  "last_completed_action": "Parent QA851a3f19cff7e111e0cc6fecc35146d963a9a260 PR134 genuine two-parent merge all47/47 exact QA SHA workflows green. Original M10707 6 prior browser and 6 prior native clean scoped A28 evidence logs all12 file hashes individually located/verified, no duplicate tests. New necessary distinct original M10707 real PostgreSQL16 test two independently seeded active Admin account/session principals with recent MFA success+login, same approved submitted matching document identities review_required check. Admin1 authentic duplicate_review holds real transaction after writing before commit, concurrent second Admin independent connection same checkId expectedRevision0 chooses continue, blocks >1.1s, after first commit second rejects stale; database only one immutable disposition/audit and zero WorkerID. Fresh second Admin version1 reasoned continue succeeds target single Worker ID and second matching account still zero, exactly two reasoned immutable decisions/audits and no account merge. Actual PostgreSQL16 native1/1 PASS exit0 raw SHA256 5f3ab3c9cb5de16957b483a2c1c6b5d16b7da0121767b97ea1b36d74e0371eaa, test DB dropped, shared PG PID723113 preserved, no product code fix. Source-only coverage RED exit1 SHA256 76946e1baa8d84b2e33d95af48bc05bc1a0fc9addc3556ba5f104a90ab0dffba not a vulnerability. New one distinct source case raises source denominator1578->1579, historic old matched stays1405 no matching old green174, 4975 693partial59uncertain4223unlinked FINAL0, FULL0/218 left218, old216/218 scoped not full, provisional pentest2008 independent verified unknown, known external blockers10 high/critical UNKNOWN, release NO-GO. Real providers/complete UI/API staged independent pentest load/restore owner UAT missing, original M10704 terminal rejected contract unresolved and M10703 Chrome crash before assertions. V4 session82efc1a0-c238-4ffe-b70c-7338ca79c523 cycle3cc543187be0496dad6bf41a3b86cf49. Worktree hseverify-m10707-duplicate-id-signals-20261116, based QA851a3f1... no active tests. New exact CI .github/workflows/m1-07-duplicate-two-admin-race.yml targeted PG16 only, original report docs/qa/M1_07_07_TWO_ADMIN_DUPLICATE_DISPOSITION_RACE_20261116.md.",
-  "next_exact_action": "Verify original source/216/4975/218 and strict Python+Node engineering after one necessary new M10707 distinct source test; V4 guarded commit/push qa/m10707-duplicate-id-signals-20261116 PR, require exact-head real PG16 two Admin race plus 218/4975/Autopilot green; normal genuine two-parent QA merge and independent all merged SHA workflows green. Then first original M1.08.01 Company registration pending dashboard scanned evidence, reuse earlier signed browser/native and flag production scanner/storage email provider external blocker. Final release NO-GO until full218/218 and approved stage/pentest/UAT.",
+  "current_focus_scenario_id": "M1.08.01",
+  "current_focus_phase": "M10801_QUARANTINE_AND_SCAN_PENDING_COMPANY_PDF_BIND_SUBMIT_DENIED_REAL_PGLITE_AND_PG16_0130_1_OF1_EACH_PASS_OWNER_TENANT_AUDIT_PENDING_TENANT_EXACT_PR_CI_REQUIRED",
+  "last_completed_action": "QA parent5bd01c5db8a10d17dfafcdbabf6a6c19e8638fff PR135 genuine two-parent merge all46/46 exact QA merged SHA workflows GREEN. Original frozen M10801 Company registration/pending/scanned PDF old authenticated browser source log hash verified2a0b08433325e4239946f450f1dec703828299f8eb7865c05fb4aa29715c3eb4, old local storage scoped hash a0a71d87a381f0e655a43817060a5824038a323f14603a1479e23ec38ae37a89, no duplicate browser. Existing latest-schema native Company PDF source case previously positive scanning lacks quarantine and scan_pending negative. Source-only RED SHA256 bb9a0827fed17392ff0d7a30cfba3be53c5d105afe381da76856343764fc3146 not product defect. Extended SAME stable test title after actual PDF reserved+quarantined and real scan_pending worker claim before clean: live owner Company bindEvidence rejected CompanyVerificationAccessDeniedError and submit rejected CompanyVerificationNotReadyError missing Company evidence, no binding, original case draft; after clean scan one exact PDF available clean for correct Company owner/tenant only, audited submitted case, tenant still pending. Original PGlite0041 1/1 PASS SHA256 9ca138b9207c085743b6fe4b37c49e10b6cf4302d639f73d0a77997a3e536fd4, disposable actual PostgreSQL16 migration0130 1/1 PASS SHA256 b06d75f08b3014768cfac7e235b397eda7de64ac8939c466bbe6d523b88426cc, isolated temp DB dropped shared serverPID723113 protected. New exact-PR and merged dual-engine workflow .github/workflows/m1-08-company-scanned-evidence-guard.yml with required markers and archived raw. No product code mutation; scanner decision synthetic, not actual production provider. Original M10801 NOT_FULLY_VERIFIED. Reindex one earlier M10707 local PG16 case found HISTORICAL_LOG_PASSED unknown tested commit, total historical1406/1579 unmatched173, old CI232 historic-only1174, old scoped216/218, 4975 partial693 uncertain59 unlinked4223 FINAL0, FULL0/218 LEFT218, pentest incomplete2008 provisional independent verified UNKNOWN, external blockers10 severe unknown, release NO-GO. External real scanner/private storage/email/SMS, protected final role/tenant/UI/API pentest/a11y/load/restore Owner UAT missing. V4 session4c518d1b-81b5-4cd3-bc6b-44d186b68b6b cycle124d94a2f3b04c3d9809c6f298f1fb2c. Disk~132MB free.",
+  "next_exact_action": "Refresh source checksum index after strict engineering assertions and retain original historical1406/1579 unmatched173, original 218/216/4975 and Python+Node strict gate; V4 governed commit/push QA feature branch qa/m10801-company-scanner-boundary-20261116 PR require exact HEAD PGlite+actual PG16 migration0130 scanned evidence denial+clean retry and original ledger/Autopilot all GREEN, true two-parent QA merge and independently every merged QA SHA workflow green. Then first frozen M1.08.02 pending Company restriction. Real providers and final stage remain blocked, 0/218 NO-GO.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.07.07",
-      "problem": "One new necessary distinct real PostgreSQL16 two independent MFA Admin sessions race same duplicate review check with conflicting duplicate_review/continue, no existing direct source test",
-      "result": "ACTUAL_PG16_1_OF1_PASS_SECOND_ADMIN_BLOCKS_UNCOMMITTED_FIRST_THEN_STALE_DENIED_ZERO_IDS_ONE_AUDIT_FRESH_REVISION1_ONLY_TARGET_ID_ONE_SECOND_ACCOUNT_BLOCKED_NOT_FINAL_STAGE"
+      "scenario_id": "M1.08.01",
+      "problem": "Existing old positive Company scanned PDF path had no negative under quarantine or scan_pending; source-only coverage gap, not actual exploit",
+      "result": "SAME_EXISTING_NATIVE_PGLITE1_OF1_REAL_POSTGRES16_LATEST_0130_1_OF1_PASS_DENIED_BIND_AND_SUBMIT_PRE_CLEAN_EXACT_OWNER_AUDIT_AND_TENANT_PENDING_EXACT_HEAD_CI_PENDING"
+    },
+    {
+      "scenario_id": "M1.08.01",
+      "problem": "Real production scanner/antivirus, object bytes, delivery and final protected signed Company/Admin UI/tenants/API independent pentest/load/restore and owner UAT absent",
+      "result": "BLOCKED_EXTERNAL_NOT_FULLY_VERIFIED_NO_GO"
     },
     {
       "scenario_id": "M1.07.07",
-      "problem": "Real signed final-stage Worker/Verifier/Admin browser and direct API tenant/private file capability tests, full independent pentest/real identity providers and owner UAT missing",
-      "result": "NOT_FULLY_VERIFIED_RELEASE_NO_GO"
-    },
-    {
-      "scenario_id": "M1.07.06",
-      "problem": "Original WorkerID and v1 original document/PNG/JPG metadata direct DB tamper proof PGlite/realPG scope green",
-      "result": "PR134_MERGED_QA_851a3f1_47_OF47_EXACT_MERGED_SHA_CI_GREEN_SCOPED_ONLY"
+      "problem": "Two real signed MFA Admins same duplicate-review row concurrent conflicting decision, stale loser and fresh retry",
+      "result": "PR135_MERGED_QA_5bd01c5_ALL46_OF46_EXACT_MERGED_SHA_WORKFLOWS_GREEN_SCOPED_ONLY"
     },
     {
       "scenario_id": "M1.07.04",
-      "problem": "Frozen initial rejection resubmit wording conflicts terminal initial REJECTED actual historic UI",
-      "result": "POLICY_CONTRACT_UNRESOLVED_NO_PASS"
+      "problem": "Initial REJECTED terminal real browser conflicts frozen revised resubmission wording",
+      "result": "CONTRACT_REVIEW_REQUIRED"
     },
     {
       "scenario_id": "M1.07.03",
-      "problem": "New receiving browser failed before assertions with Chrome page crash, host root disk nearly full",
-      "result": "BROWSER_INFRA_FAILED_NOT_VERIFIED"
+      "problem": "Additional signed browser assertion crashed before receiving test",
+      "result": "INFRA_UNVERIFIED"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
