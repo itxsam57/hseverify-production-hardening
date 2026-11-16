@@ -4,38 +4,43 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.08.01",
-  "current_focus_phase": "M10801_QUARANTINE_AND_SCAN_PENDING_COMPANY_PDF_BIND_SUBMIT_DENIED_REAL_PGLITE_AND_PG16_0130_1_OF1_EACH_PASS_OWNER_TENANT_AUDIT_PENDING_TENANT_EXACT_PR_CI_REQUIRED",
-  "last_completed_action": "QA parent5bd01c5db8a10d17dfafcdbabf6a6c19e8638fff PR135 genuine two-parent merge all46/46 exact QA merged SHA workflows GREEN. Original frozen M10801 Company registration/pending/scanned PDF old authenticated browser source log hash verified2a0b08433325e4239946f450f1dec703828299f8eb7865c05fb4aa29715c3eb4, old local storage scoped hash a0a71d87a381f0e655a43817060a5824038a323f14603a1479e23ec38ae37a89, no duplicate browser. Existing latest-schema native Company PDF source case previously positive scanning lacks quarantine and scan_pending negative. Source-only RED SHA256 bb9a0827fed17392ff0d7a30cfba3be53c5d105afe381da76856343764fc3146 not product defect. Extended SAME stable test title after actual PDF reserved+quarantined and real scan_pending worker claim before clean: live owner Company bindEvidence rejected CompanyVerificationAccessDeniedError and submit rejected CompanyVerificationNotReadyError missing Company evidence, no binding, original case draft; after clean scan one exact PDF available clean for correct Company owner/tenant only, audited submitted case, tenant still pending. Original PGlite0041 1/1 PASS SHA256 9ca138b9207c085743b6fe4b37c49e10b6cf4302d639f73d0a77997a3e536fd4, disposable actual PostgreSQL16 migration0130 1/1 PASS SHA256 b06d75f08b3014768cfac7e235b397eda7de64ac8939c466bbe6d523b88426cc, isolated temp DB dropped shared serverPID723113 protected. New exact-PR and merged dual-engine workflow .github/workflows/m1-08-company-scanned-evidence-guard.yml with required markers and archived raw. No product code mutation; scanner decision synthetic, not actual production provider. Original M10801 NOT_FULLY_VERIFIED. Reindex one earlier M10707 local PG16 case found HISTORICAL_LOG_PASSED unknown tested commit, total historical1406/1579 unmatched173, old CI232 historic-only1174, old scoped216/218, 4975 partial693 uncertain59 unlinked4223 FINAL0, FULL0/218 LEFT218, pentest incomplete2008 provisional independent verified UNKNOWN, external blockers10 severe unknown, release NO-GO. External real scanner/private storage/email/SMS, protected final role/tenant/UI/API pentest/a11y/load/restore Owner UAT missing. V4 session4c518d1b-81b5-4cd3-bc6b-44d186b68b6b cycle124d94a2f3b04c3d9809c6f298f1fb2c. Disk~132MB free.",
-  "next_exact_action": "Refresh source checksum index after strict engineering assertions and retain original historical1406/1579 unmatched173, original 218/216/4975 and Python+Node strict gate; V4 governed commit/push QA feature branch qa/m10801-company-scanner-boundary-20261116 PR require exact HEAD PGlite+actual PG16 migration0130 scanned evidence denial+clean retry and original ledger/Autopilot all GREEN, true two-parent QA merge and independently every merged QA SHA workflow green. Then first frozen M1.08.02 pending Company restriction. Real providers and final stage remain blocked, 0/218 NO-GO.",
+  "current_focus_scenario_id": "M1.08.02",
+  "current_focus_phase": "M10802_PENDING_COMPANY_PREISSUED_CODE_AND_INVITE_REDEEM_FAIL_CLOSED_PGLITE1_OF1_GENUINE_PASS_AND_SAFE_ACTIVATION_RETRY_EXACT_PR_CI_PENDING",
+  "last_completed_action": "QA parent6ec1ed9ca297e55be0f9b855697750699f8e7fbc PR136 true two-parent merge all47/47 exact QA SHA workflows GREEN. Frozen original M10802 pending Company high-risk actions old signed real Chrome1/1 PASS SHA256 481aa3674039cc15c4a0b25c49a04db0b0d72d62e7356fbf9c3f36afae4fb72f and old native a0a71d87a381f0e655a43817060a5824038a323f14603a1479e23ec38ae37a89 original hashes verified, no duplicate passing tests. New necessary untested Worker redemption of Company valid code and invitation issued before tenant suspension, source-only RED d1b04ddfd43c77d55a64c31d1d8045f2470af0e3b3c7053c180452346ea3a2f9 not product defect. One new distinct source case fixture two independent synthetic authenticated Worker DB sessions, pending tenant blocks both code and invitation via real CompanyWorkforceService and DB: zero links, code use0, invitation pending, no false accept/redeem audit, both Worker sessions retain; after reactivation original tokens create intended two distinct active links with exactly two immutable audits, code use1. First direct node --test false green from recursive wrapper (NO ACTUAL ASSERTIONS) log SHA256 a617dc11bda1a04218d7ef68002238be6b21023cdb035e9b60bdeb9848f13f35 NOT CREDITED. Correct focused runner optional pattern preserving default engineering suite, genuine scoped PGlite1/1 PASS SHA256 6fa510a9b681dff41281a1f7120d6971acd0a93540d0df2d9a31b5ae6538ec85 markers M10802_PREISSUED_PENDING_NO_CODE_OR_INVITATION_CONSUMPTION and M10802_REACTIVATION_PREISSUED_SECRETS_SCOPED_RETRY. Exact head and merged SHA target CI .github/workflows/m1-08-pending-preissued-company-secrets.yml, original M10802 action report mapped. No application product source bug found. Official source static cases1580 vs1579 prior, historic matched1406 unchanged, unmatched174 vs173. FULL0/218 left218 old scoped216 NOT FULL, planned4975 partial693 uncertain59 unlinked4223 FINAL0, pentest incomplete2008 provisional independently completed UNKNOWN, external blockers10 and high/critical unknown, RELEASE NO-GO. Missing real signed final UI/role/tenant/API all widths, true PG two-connection suspension-race, old token expiry/revocation/replay, independent full pentest/real providers/load/restore/Owner UAT. Active V4 session f2d23977-2c34-460e-b6ab-c29fa2a96d3a cycle080826c7c8d14d139c31ab7a2897810f, worktree hseverify-m10802-pending-preissued-redeem-20261116, QA parent6ec1ed9, no tests live, PG server PID723113 protected, disk ~70MB free.",
+  "next_exact_action": "Strict original source/216/4975/218 source fingerprints after engineering assertions, original Python+Node gates, V4 governed commit/push qa/m10802-pending-preissued-redeem-20261116 PR; exact-head genuine M10802 PGlite negative+retry markers with no recursive false pass, original218/4975/Autopilot all green; true two-parent QA merge and independently ALL exact merged SHA workflows green. Next original M1.08.03 first uncovered check, reuse old green logs; full real-provider and final exact SHA release blockers persist NO-GO.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.08.01",
-      "problem": "Existing old positive Company scanned PDF path had no negative under quarantine or scan_pending; source-only coverage gap, not actual exploit",
-      "result": "SAME_EXISTING_NATIVE_PGLITE1_OF1_REAL_POSTGRES16_LATEST_0130_1_OF1_PASS_DENIED_BIND_AND_SUBMIT_PRE_CLEAN_EXACT_OWNER_AUDIT_AND_TENANT_PENDING_EXACT_HEAD_CI_PENDING"
+      "scenario_id": "M1.08.02",
+      "problem": "Previously issued valid Company invitation and registration code redeemed by Workers after Company suspension was not previously tested",
+      "result": "NEW_DISTINCT_SOURCE_CASE_SYNTHETIC_PGLITE1_1_PASS_PENDING_DENIES_BOTH_ZERO_LINKS_AUDITS_AND_SAME_TOKEN_REACTIVATION_SAFE; EXACT_PR_CI_PENDING"
     },
     {
-      "scenario_id": "M1.08.01",
-      "problem": "Real production scanner/antivirus, object bytes, delivery and final protected signed Company/Admin UI/tenants/API independent pentest/load/restore and owner UAT absent",
+      "scenario_id": "M1.08.02",
+      "problem": "Initial direct node --test invoked recursive runtime bootstrap and falsely reported wrapper pass without running assertions",
+      "result": "INVALID_HARNESS_NOT_CREDITED; focused compiled existing runner executed 1/1 actual and required markers"
+    },
+    {
+      "scenario_id": "M1.08.02",
+      "problem": "Real production providers, protected final SHA multi-role responsive browser/API and independent full pentest, live PG concurrency/expiry/replay/load/restore and Owner UAT not available",
       "result": "BLOCKED_EXTERNAL_NOT_FULLY_VERIFIED_NO_GO"
     },
     {
-      "scenario_id": "M1.07.07",
-      "problem": "Two real signed MFA Admins same duplicate-review row concurrent conflicting decision, stale loser and fresh retry",
-      "result": "PR135_MERGED_QA_5bd01c5_ALL46_OF46_EXACT_MERGED_SHA_WORKFLOWS_GREEN_SCOPED_ONLY"
+      "scenario_id": "M1.08.01",
+      "problem": "Production provider real scanner and final protected scenario status",
+      "result": "QA_PR136_MERGED_6ec1ed9_ALL47_47_EXACT_SHA_CI_GREEN_ONLY_SCOPED"
     },
     {
       "scenario_id": "M1.07.04",
-      "problem": "Initial REJECTED terminal real browser conflicts frozen revised resubmission wording",
-      "result": "CONTRACT_REVIEW_REQUIRED"
+      "problem": "Frozen initial REJECTED correction wording conflicts with terminal initial REJECTED implementation",
+      "result": "CONTRACT_REVIEW_REQUIRED_NOT_FULL"
     },
     {
       "scenario_id": "M1.07.03",
-      "problem": "Additional signed browser assertion crashed before receiving test",
-      "result": "INFRA_UNVERIFIED"
+      "problem": "Extra Chrome test crashed before new assertion on Worker profile reload",
+      "result": "UNVERIFIED_NEEDS_ROOT_CAUSE_AND_STAGE"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

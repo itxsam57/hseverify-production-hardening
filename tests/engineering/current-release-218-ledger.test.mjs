@@ -102,7 +102,7 @@ test("scoped historical test executions appear inside the SAME 218 ledger withou
   const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
   const report = buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence });
   assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1406);
-  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1579);
+  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1580);
   assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 232);
   assert.equal(report.scoped_test_progress.older_historical_green_cases, 1174);
   assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1254);

@@ -309,3 +309,97 @@ test("Company transfer after termination creates only a new consented link, reta
     assert.equal(oldAudit.rows[0].n,1);
   } finally { await database.close(); }
 });
+
+test("M1.08.02 preissued Company code and invitation cannot be redeemed while tenant pending and resume after activation",async()=>{
+  const database=await db();
+  try{
+    const company=await seedCompany(database,"S");
+    const invitedWorker=await seedWorker(database,"T");
+    const codeWorker=await seedWorker(database,"U");
+    const service=new CompanyWorkforceService(database,PEPPER,()=>new Date(NOW_DATE));
+    const invitation=await service.inviteWorker(companyPrincipal(company),{
+      email:invitedWorker.email,siteId:null,departmentId:null,
+      paymentResponsibility:"worker",assessmentReference:null
+    });
+    const code=await service.createRegistrationCode(companyPrincipal(company),{
+      usageLimit:2,expiresAt:"2026-08-20T12:00:00.000Z",siteId:null,
+      departmentId:null,paymentResponsibility:"worker",assessmentReference:null
+    });
+    const initial=(await database.query(
+      "SELECT usage_count,code_status FROM company_registration_codes WHERE code_id=$1",
+      [code.codeId]
+    )).rows;
+    assert.deepEqual(initial,[{usage_count:0,code_status:"active"}]);
+    await database.query(
+      "UPDATE platform_tenants SET tenant_status='pending',activated_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=$1",
+      [company.tenantId]
+    );
+    await assert.rejects(
+      service.redeemRegistrationCode(workerPrincipal(codeWorker),code.registrationCode),
+      CompanyWorkforceAccessError,
+      "An active, valid Company registration code becomes unusable when the tenant is suspended."
+    );
+    await assert.rejects(
+      service.acceptInvitation(workerPrincipal(invitedWorker),invitation.invitationToken),
+      CompanyWorkforceAccessError,
+      "A valid Company invitation cannot enroll a Worker while its tenant is pending."
+    );
+    assert.deepEqual((await database.query(
+      "SELECT usage_count,code_status FROM company_registration_codes WHERE code_id=$1",
+      [code.codeId]
+    )).rows,initial,"Rejected pending-tenant code must not consume capacity or revoke the token.");
+    assert.deepEqual((await database.query(
+      "SELECT invitation_status,accepted_by_worker_account_id FROM company_worker_invitations WHERE invitation_id=$1",
+      [invitation.invitationId]
+    )).rows,[{invitation_status:"pending",accepted_by_worker_account_id:null}]);
+    assert.equal((await database.query(
+      "SELECT count(*)::int n FROM company_worker_links WHERE tenant_id=$1",
+      [company.tenantId]
+    )).rows[0].n,0,"Neither preissued onboarding route may create a link during suspension.");
+    assert.equal((await database.query(
+      "SELECT count(*)::int n FROM platform_audit_events WHERE action_key IN "+
+      "('company_workforce.code.redeemed','company_workforce.invitation.accepted') "+
+      "AND target_reference=ANY($1::text[])",
+      [[code.codeId,invitation.invitationId]]
+    )).rows[0].n,0,"Denied secret redemption cannot fabricate successful audit.");
+    assert.equal((await database.query(
+      "SELECT count(*)::int n FROM auth_sessions WHERE account_id=ANY($1::text[]) AND revoked_at IS NULL",
+      [[invitedWorker.accountId,codeWorker.accountId]]
+    )).rows[0].n,2,"Pending tenant cannot revoke independent Workers' authentication.");
+    console.log("M10802_PREISSUED_PENDING_NO_CODE_OR_INVITATION_CONSUMPTION",
+      "active preissued code and invitation both denied while Company tenant pending, zero links, zero usage and zero accept/redeem audits; both signed Worker sessions retained");
+
+    await database.query(
+      "UPDATE platform_tenants SET tenant_status='active',activated_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=$1",
+      [company.tenantId]
+    );
+    const acceptedInvite=await service.acceptInvitation(workerPrincipal(invitedWorker),invitation.invitationToken);
+    const redeemed=await service.redeemRegistrationCode(workerPrincipal(codeWorker),code.registrationCode);
+    assert.equal(acceptedInvite.tenantId,company.tenantId);
+    assert.equal(acceptedInvite.workerAccountId,invitedWorker.accountId);
+    assert.equal(redeemed.tenantId,company.tenantId);
+    assert.equal(redeemed.workerAccountId,codeWorker.accountId);
+    assert.notEqual(acceptedInvite.linkId,redeemed.linkId);
+    assert.equal(acceptedInvite.status,"active");
+    assert.equal(redeemed.status,"active");
+    assert.deepEqual((await database.query(
+      "SELECT worker_account_id,link_status FROM company_worker_links WHERE tenant_id=$1 ORDER BY worker_account_id",
+      [company.tenantId]
+    )).rows,[
+      {worker_account_id:invitedWorker.accountId,link_status:"active"},
+      {worker_account_id:codeWorker.accountId,link_status:"active"}
+    ]);
+    assert.deepEqual((await database.query(
+      "SELECT usage_count,code_status FROM company_registration_codes WHERE code_id=$1",
+      [code.codeId]
+    )).rows,[{usage_count:1,code_status:"active"}]);
+    assert.equal((await database.query(
+      "SELECT count(*)::int n FROM platform_audit_events WHERE action_key IN "+
+      "('company_workforce.code.redeemed','company_workforce.invitation.accepted') "+
+      "AND target_reference=ANY($1::text[])",
+      [[code.codeId,invitation.invitationId]]
+    )).rows[0].n,2);
+    console.log("M10802_REACTIVATION_PREISSUED_SECRETS_SCOPED_RETRY",
+      "after verified tenant activation, original code and invitation each enroll only intended independent Worker, exact two links and two accepted audits, single code use");
+  }finally{await database.close();}
+});
