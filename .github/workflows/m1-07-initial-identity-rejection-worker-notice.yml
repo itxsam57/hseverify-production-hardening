@@ -1,0 +1,63 @@
+name: M1.07.03 rejected initial identity Worker-only notice and idempotent replay QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/platform/independent-evidence-review-runtime.test.mjs"
+      - "src/lib/review/**"
+      - "src/lib/identity/**"
+      - "src/lib/notifications/**"
+      - ".github/workflows/m1-07-initial-identity-rejection-worker-notice.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/platform/independent-evidence-review-runtime.test.mjs"
+      - "src/lib/review/**"
+      - "src/lib/identity/**"
+      - "src/lib/notifications/**"
+      - ".github/workflows/m1-07-initial-identity-rejection-worker-notice.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10703-initial-identity-notice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-initial-identity-rejection-worker-notice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependency install
+        run: npm ci --no-audit --no-fund
+      - name: Original initial identity rejection decision notification and replay native fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 --test-name-pattern='M1.07.03 rejected initial identity routes' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10703-rejected-initial-identity-worker-notice.log
+          grep -q 'M10703_REJECTED_OUTCOME_NOTIFICATION_INTENT_DB' .autopilot/artifacts/m10703-rejected-initial-identity-worker-notice.log
+          grep -q 'M10703_REJECTED_WORKER_PRIVATE_NOTICE_REPLAY_DB' .autopilot/artifacts/m10703-rejected-initial-identity-worker-notice.log
+      - name: Archive exact SHA original decision and Worker notification audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10703-original-identity-notice-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10703-rejected-initial-identity-worker-notice.log
+          if-no-files-found: warn
+          retention-days: 30

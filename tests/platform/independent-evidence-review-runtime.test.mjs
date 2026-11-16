@@ -640,3 +640,51 @@ test("Unable-to-verify identity correction preserves the verified original and p
  await corrections.requestOwn(worker,{reason:"Provide additional issuer records for a fresh correction.",expectedLockVersion:Number(after.lock_version)});
  }finally{await db.close();}
 });
+
+test("M1.07.03 rejected initial identity routes one immutable Worker notification without duplicate recipients",async()=>{
+ const db=await database();
+ try{
+  const worker=await seedAccount(db,{accountId:"account_m10703_rejected_worker",email:"m10703-rejected-worker@example.test",role:"worker",sessionId:"session_m10703_rejected_worker"});
+  const verifier=await seedAccount(db,{accountId:"account_m10703_rejected_verifier",email:"m10703-rejected-verifier@example.test",role:"verifier",sessionId:"session_m10703_rejected_verifier"});
+  await seedManualReviewIdentity(db,worker.accountId);
+  const service=new EvidenceReviewService(db);
+  const task=await service.queueIndependentIdentity(worker,NOW_DATE);
+  await authorizeAndClaim(db,service,verifier,task.taskId,NOW_DATE);
+  const reason="Independent checks cannot establish the claimed initial identity.";
+  await service.decide(verifier,task.taskId,"REJECTED",reason,NOW_DATE);
+  const identity=(await db.query("SELECT identity_id,lifecycle_status,current_version_number FROM worker_identities WHERE worker_account_id=$1",[worker.accountId])).rows[0];
+  assert.equal(identity.lifecycle_status,"rejected");
+  assert.equal(identity.current_version_number,1);
+  const versions=(await db.query("SELECT identity_version_id,version_status,submitted_at FROM worker_identity_versions WHERE identity_id=$1",[identity.identity_id])).rows;
+  assert.equal(versions.length,1);assert.equal(versions[0].version_status,"submitted");assert.ok(versions[0].submitted_at);
+  const decision=(await db.query("SELECT decision_id,outcome,reason,source_version_id,verifier_account_id FROM evidence_review_decisions WHERE task_id=$1",[task.taskId])).rows[0];
+  assert.equal(decision.outcome,"REJECTED");assert.equal(decision.reason,reason);
+  assert.equal(decision.source_version_id,versions[0].identity_version_id);
+  assert.equal(decision.verifier_account_id,verifier.accountId);
+  assert.equal((await db.query("SELECT count(*)::int n FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].n,0);
+  const eventRef="review:"+decision.decision_id;
+  const jobs=(await db.query("SELECT job_id,job_type,payload FROM platform_outbox_jobs WHERE job_type IN ('notification.assurance.event','email.assurance.event') AND payload->>'eventType'='evidence.reviewed' AND payload->>'eventRef'=$1",[eventRef])).rows;
+  const inApp=jobs.filter(j=>j.job_type==="notification.assurance.event");
+  const emails=jobs.filter(j=>j.job_type==="email.assurance.event");
+  assert.equal(inApp.length,1);assert.ok(emails.length>=1);
+  console.log("M10703_REJECTED_OUTCOME_NOTIFICATION_INTENT_DB","original Verifier rejection, immutable initial identity, no Worker ID, one in-app and intended email event");
+  const first=(await db.query("SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",[inApp[0].job_id])).rows[0];
+  assert.deepEqual(first,{created:1,suppressed:false});
+  const notices=(await db.query("SELECT notification_type,recipient_account_id,recipient_role,tenant_id,membership_id,target_key,target_reference,title,metadata,read_at FROM platform_notifications WHERE source_job_id=$1",[inApp[0].job_id])).rows;
+  assert.equal(notices.length,1);
+  const notice=notices[0];
+  assert.equal(notice.notification_type,"evidence.reviewed");
+  assert.equal(notice.recipient_account_id,worker.accountId);
+  assert.equal(notice.recipient_role,"worker");
+  assert.equal(notice.tenant_id,null);assert.equal(notice.membership_id,null);
+  assert.equal(notice.target_key,"worker.identity.record");
+  assert.equal(notice.target_reference,identity.identity_id);
+  assert.equal(notice.title,"Evidence review recorded");
+  assert.equal(notice.read_at,null);assert.equal(notice.metadata.eventRef,eventRef);
+  const replay=(await db.query("SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",[inApp[0].job_id])).rows[0];
+  assert.deepEqual(replay,{created:0,suppressed:false});
+  assert.equal((await db.query("SELECT count(*)::int n FROM platform_notifications WHERE source_job_id=$1",[inApp[0].job_id])).rows[0].n,1);
+  assert.equal((await db.query("SELECT count(*)::int n FROM evidence_review_decisions WHERE task_id=$1",[task.taskId])).rows[0].n,1);
+  console.log("M10703_REJECTED_WORKER_PRIVATE_NOTICE_REPLAY_DB","exact Worker-only identity link and recipient, zero Verifier/Admin/tenant leak, replay idempotent, original decision unchanged");
+ }finally{await db.close();}
+});
