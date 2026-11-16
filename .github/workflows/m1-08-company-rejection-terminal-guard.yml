@@ -1,0 +1,80 @@
+name: M1.08.04 rejected Company cannot resurrect tenant or rewrite immutable history
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/company-verification.test.mjs'
+      - 'src/lib/company/company-verification-**'
+      - '.github/workflows/m1-08-company-rejection-terminal-guard.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/company-verification.test.mjs'
+      - 'src/lib/company/company-verification-**'
+      - '.github/workflows/m1-08-company-rejection-terminal-guard.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m10804-company-terminal-rejection-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  rejected-tenant-real-postgres-and-pglite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_company_rejection
+          POSTGRES_PASSWORD: synthetic_company_rejection_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd 'pg_isready -U synthetic_company_rejection -d postgres'
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact feature head or merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Genuine PGlite Company rejection replay and immutable audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-verification-tests.mjs --test-name-pattern 'M1.08.04 terminal Company rejection' 2>&1 | tee .autopilot/artifacts/m10804-terminal-pglite.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10804-terminal-pglite.log
+          grep -q 'M10804_TERMINAL_REJECTION_DENIES_RESURRECTION_DB' .autopilot/artifacts/m10804-terminal-pglite.log
+          grep -q 'M10804_REJECTED_COMPANY_ADMIN_QUEUE_AND_EVIDENCE_PERSISTED' .autopilot/artifacts/m10804-terminal-pglite.log
+      - name: Real PostgreSQL16 latest0130 rejects Admin and Company resurrection
+        shell: bash
+        env:
+          HSE_M10804_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_company_rejection:synthetic_company_rejection_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          node scripts/run-company-verification-tests.mjs --test-name-pattern 'M1.08.04 terminal Company rejection' 2>&1 | tee .autopilot/artifacts/m10804-terminal-postgres16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10804-terminal-postgres16.log
+          grep -q 'M10804_TERMINAL_REJECTION_DENIES_RESURRECTION_DB' .autopilot/artifacts/m10804-terminal-postgres16.log
+          grep -q 'M10804_REJECTED_COMPANY_ADMIN_QUEUE_AND_EVIDENCE_PERSISTED' .autopilot/artifacts/m10804-terminal-postgres16.log
+      - name: Archive exact-SHA PGlite and PostgreSQL16 immutable rejection results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10804-rejected-company-immutable-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m10804-terminal-pglite.log
+            .autopilot/artifacts/m10804-terminal-postgres16.log
+          if-no-files-found: warn
+          retention-days: 30
