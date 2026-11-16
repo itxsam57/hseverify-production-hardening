@@ -16,7 +16,7 @@ async function freePort(){
     });
   });
 }
-test("M1.07.02 Worker all three profile section drafts survive rejected save, navigation and retry", {timeout:180000}, async()=>{
+test("M1.07.02 Worker all three profile section drafts survive rejected save, navigation and retry", {timeout:230000}, async()=>{
   const fixture=await workerAssessmentSearchFixture();
   const base="http://127.0.0.1:"+(await freePort());
   try{
@@ -138,6 +138,73 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
           await page.getByText("Ready to submit",{exact:true}).first().waitFor();
           assert.deepEqual(fatal,[],output());
           console.log("ACTUAL_M10702_BROWSER three section drafts reject invalid values without clearing typed input, retry saves, cold reload, tab navigation, dashboard return, 100% ready but not submitted");
+
+          // The historical green case above already proves ordinary section
+          // validation/navigation. This adds the uncovered real concurrent
+          // session / stale write / typed draft retention and retry outcome.
+          const second=await browser.newPage({viewport:{width:320,height:740}});
+          second.on("pageerror",error=>fatal.push(error.message));
+          second.on("response",response=>{
+            if(response.status()>=500)fatal.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);
+          });
+          await second.goto(base+"/worker/login",{waitUntil:"domcontentloaded"});
+          await second.getByLabel("Email address").fill(fixture.credentials.worker.email);
+          await second.getByLabel("Password").fill(fixture.credentials.worker.password);
+          await second.getByRole("button",{name:"Sign in",exact:true}).click();
+          await second.waitForURL("**/worker/dashboard",{timeout:25000});
+          await second.goto(base+"/worker/profile?section=professional",{waitUntil:"domcontentloaded"});
+          await second.locator('form.profile-form[data-hydrated="ready"]').waitFor({timeout:20000});
+          const formVersion=p=>p.locator('form.profile-form input[name="expectedVersion"]').inputValue();
+          assert.equal(await formVersion(page),"3","Original A must hold the three-section accepted version.");
+          assert.equal(await formVersion(second),"3","Independent B must hold the same version before A saves.");
+          assert.equal(await second.getByLabel("Years of experience",{exact:true}).inputValue(),"8");
+
+          const saveAction=async p=>{
+            const posted=p.waitForResponse(response=>
+              response.request().method()==="POST" &&
+              new URL(response.url()).pathname==="/worker/profile",{timeout:25000});
+            await p.getByRole("button",{name:"Save changes",exact:true}).click();
+            assert.equal((await posted).status(),200,"Actual signed profile Server Action transport must remain healthy.");
+          };
+          await page.getByLabel("Years of experience",{exact:true}).fill("9");
+          await saveAction(page);
+          await page.reload({waitUntil:"domcontentloaded"});
+          await page.locator('form.profile-form[data-hydrated="ready"]').waitFor({timeout:20000});
+          assert.equal(await formVersion(page),"4");
+          assert.equal(await page.getByLabel("Years of experience",{exact:true}).inputValue(),"9",
+            "A successful new draft must be committed before B submits stale version 3.");
+
+          // B edits its own genuine old DOM from an independent authenticated
+          // context: the same Worker owner, but exact version is stale.
+          assert.equal(await formVersion(second),"3");
+          await second.getByLabel("Years of experience",{exact:true}).fill("10");
+          await saveAction(second);
+          await second.getByRole("alert").getByText(
+            "Your profile changed in another request. Reloaded data is required before saving again.",
+            {exact:true}
+          ).waitFor({timeout:18000});
+          await second.waitForFunction(()=>
+            document.querySelector('form.profile-form input[name="expectedVersion"]')?.value==="4",
+            {timeout:20000});
+          assert.equal(await second.getByLabel("Years of experience",{exact:true}).inputValue(),"10",
+            "Stale edit must preserve B's typed draft for a deliberate safe retry.");
+          await page.reload({waitUntil:"domcontentloaded"});
+          assert.equal(await page.getByLabel("Years of experience",{exact:true}).inputValue(),"9",
+            "Rejected stale B request must not overwrite A's committed year value.");
+          console.log("ACTUAL_M10702_STALE_TWO_SIGNED_WORKER_SESSIONS",
+            "independent signed A390/B320 version3, A version4 saved9, stale B draft10 rejected visibly and retained, A winner9 untouched");
+
+          await saveAction(second);
+          await second.reload({waitUntil:"domcontentloaded"});
+          await second.locator('form.profile-form[data-hydrated="ready"]').waitFor({timeout:20000});
+          assert.equal(await formVersion(second),"5");
+          assert.equal(await second.getByLabel("Years of experience",{exact:true}).inputValue(),"10");
+          await second.getByText("Ready to submit",{exact:true}).first().waitFor();
+          assert.equal(await second.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,
+            "320px stale-conflict recovery must not overflow horizontally.");
+          assert.deepEqual(fatal,[],output());
+          console.log("ACTUAL_M10702_STALE_RETRY_BROWSER",
+            "B reloads latest version and retries retained draft10 successfully, version5 ready/not submitted, responsive320px no JS/500");
         } finally{await browser.close();}
       }
     });
@@ -147,17 +214,23 @@ test("M1.07.02 Worker all three profile section drafts survive rejected save, na
       const rows=(await db.query("SELECT worker_sub,version,status,submitted_at,profile_document FROM worker_profiles WHERE worker_sub=$1",[fixture.credentials.worker.accountId])).rows;
       assert.equal(rows.length,1);
       const record=typeof rows[0].profile_document==="string"?JSON.parse(rows[0].profile_document):rows[0].profile_document;
-      assert.equal(rows[0].version,3);
+      assert.equal(rows[0].version,5);
       assert.equal(rows[0].status,"ready");
       assert.equal(rows[0].submitted_at,null);
       assert.equal(record.personal.legalFirstName,"Navin");
       assert.equal(record.personal.preferredName,"Nav");
       assert.equal(record.contact.addressLine1,"123 Safety Street");
       assert.equal(record.contact.city,"Lahore");
-      assert.equal(record.professional.yearsExperience,8);
+      assert.equal(record.professional.yearsExperience,10);
       assert.equal(record.professional.willingToRelocate,true);
-      assert.deepEqual(record.audit.filter(e=>e.action==="section_saved").map(e=>e.section),["personal","contact","professional"]);
-      console.log("ACTUAL_M10702_DB exactly three successful section versions, no invalid attempt persisted, complete but not submitted, immutable section-save audit retained");
+      assert.deepEqual(record.audit.filter(e=>e.action==="section_saved").map(e=>e.section),
+        ["personal","contact","professional","professional","professional"],
+        "Only A's winning write and B's successful corrected retry may append audits; stale B must not.");
+      assert.equal(rows[0].status,"ready");
+      assert.equal(rows[0].submitted_at,null);
+      console.log("ACTUAL_M10702_STALE_RETRY_DB",
+        "exact 5 successful immutable profile versions/section-save audits; stale concurrent B never committed, latest B draft10 retained ready unsubmitted");
+      console.log("ACTUAL_M10702_DB three initial section saves plus A winner and B safe retry = five successful audited versions; invalid and stale attempts not persisted; ready unsubmitted");
     }finally{await db.close();}
   }finally{await fixture.cleanup();}
 });

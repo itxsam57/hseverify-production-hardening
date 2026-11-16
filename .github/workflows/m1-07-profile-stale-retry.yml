@@ -1,0 +1,69 @@
+name: M1.07.02 signed two-tab Worker profile stale version and retry QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/m1-07-profile-draft-navigation.browser.test.mjs"
+      - "src/lib/worker/profile-**"
+      - "src/app/worker/profile/**"
+      - "src/components/worker/profile-forms.tsx"
+      - ".github/workflows/m1-07-profile-stale-retry.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/m1-07-profile-draft-navigation.browser.test.mjs"
+      - "src/lib/worker/profile-**"
+      - "src/app/worker/profile/**"
+      - "src/components/worker/profile-forms.tsx"
+      - ".github/workflows/m1-07-profile-stale-retry.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10702-profile-stale-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-two-signed-worker-profile-stale-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Real Chromium
+        run: npx playwright install chromium
+      - name: Real Worker profile all sections plus two signed sessions stale save denied and retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m1-07-profile-draft-navigation.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          grep -q 'ACTUAL_PROFILE_CORRECTED_FORM' .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          grep -q 'ACTUAL_M10702_BROWSER' .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          grep -q 'ACTUAL_M10702_STALE_TWO_SIGNED_WORKER_SESSIONS' .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          grep -q 'ACTUAL_M10702_STALE_RETRY_BROWSER' .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          grep -q 'ACTUAL_M10702_STALE_RETRY_DB' .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          grep -q 'ACTUAL_M10702_DB' .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+      - name: Archive exact SHA Chromium and immutable DB proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10702-worker-two-session-stale-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10702-worker-profile-two-sessions.log
+          if-no-files-found: warn
+          retention-days: 30
