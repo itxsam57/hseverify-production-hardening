@@ -98,13 +98,23 @@ for (const file of collectRuntimeSources(ENTRY_FILES)) compileRuntimeModule(file
 mkdirSync(resolve(outputDirectory, "database"), { recursive: true });
 writeFileSync(resolve(outputDirectory, "database", "database.js"), '"use strict";\nObject.defineProperty(exports, "__esModule", { value: true });\nexports.getDatabaseClient = async function getDatabaseClient() { throw new Error("M1.10 runtime test must inject a database client."); };\n', "utf8");
 
+// Explicit focused mode runs one new source test without repeating the
+// already-green invitation/registration/expiry suites. The default invocation
+// remains the full original multi-file engineering gate.
+const focusedPattern = process.argv[2] === "--test-name-pattern" ? process.argv[3] : null;
+if (process.argv.length > 2 && (!focusedPattern || process.argv.length !== 4)) {
+  fail("Use --test-name-pattern followed by one exact test title, or omit arguments for the full gate.");
+}
 const tests = spawnSync(process.execPath, [
   "--test",
+  ...(focusedPattern ? ["--test-name-pattern",focusedPattern] : []),
   resolve("tests", "platform", "company-worker-invitations.test.mjs"),
+  ...(!focusedPattern ? [
   resolve("tests", "platform", "company-worker-registration-binding.test.mjs"),
   resolve("tests", "platform", "company-worker-login-return.test.mjs"),
   resolve("tests", "platform", "company-worker-expiry-lifecycle.test.mjs"),
   resolve("tests", "platform", "company-worker-invitations-migration-stack.test.mjs")
+  ] : [])
 ], {
   stdio: "inherit",
   env: { ...process.env, HSE_COMPANY_WORKFORCE_RUNTIME_DIST: outputDirectory }

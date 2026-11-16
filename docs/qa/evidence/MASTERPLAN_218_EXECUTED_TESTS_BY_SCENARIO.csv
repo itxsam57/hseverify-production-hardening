@@ -37,7 +37,7 @@ M1.07.05,M1.07,Identity,"Verified correction accepted, rejected and changes requ
 M1.07.06,M1.07,Identity,Permanent Worker ID and original evidence retained across corrections,0,0,0,NOT_FULLY_VERIFIED
 M1.07.07,M1.07,Identity,Duplicate document/contact signals require independent resolution,1,0,1,NOT_FULLY_VERIFIED
 M1.08.01,M1.08,Company verification,Registration to pending dashboard and submitted scanned evidence,0,0,0,NOT_FULLY_VERIFIED
-M1.08.02,M1.08,Company verification,Pending tenant high-risk actions denied,1,0,1,NOT_FULLY_VERIFIED
+M1.08.02,M1.08,Company verification,Pending tenant high-risk actions denied,2,0,1,NOT_FULLY_VERIFIED
 M1.08.03,M1.08,Company verification,Admin changes requested to corrected version to verification,0,0,0,NOT_FULLY_VERIFIED
 M1.08.04,M1.08,Company verification,Admin rejection remains pending and preserves original history,0,0,0,NOT_FULLY_VERIFIED
 M1.08.05,M1.08,Company verification,Approval activates tenant; stale/double decision denied,0,0,0,NOT_FULLY_VERIFIED
