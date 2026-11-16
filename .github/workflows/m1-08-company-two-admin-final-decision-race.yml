@@ -1,0 +1,75 @@
+name: M1.08.05 two Admin concurrent Company final decisions PostgreSQL16
+on:
+  pull_request:
+    paths:
+      - "tests/platform/company-verification.test.mjs"
+      - "src/lib/company/company-verification-repository.ts"
+      - "src/lib/company/company-verification-service.ts"
+      - ".github/workflows/m1-08-company-two-admin-final-decision-race.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/platform/company-verification.test.mjs"
+      - "src/lib/company/company-verification-repository.ts"
+      - "src/lib/company/company-verification-service.ts"
+      - ".github/workflows/m1-08-company-two-admin-final-decision-race.yml"
+permissions:
+  contents: read
+concurrency:
+  group: m10805-two-admin-company-decision-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  real-postgres16-two-admin-final-decision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_company_race
+          POSTGRES_PASSWORD: disposable_company_admin_race_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_company_race -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact PR head or merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact dependency lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Concurrent Admin verify vs reject, both winner orders, one final audit
+        shell: bash
+        env:
+          HSE_M10805_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_company_race:disposable_company_admin_race_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-verification-tests.mjs --test-name-pattern 'M1.08.05 two Admins race Company' 2>&1 | tee .autopilot/artifacts/m10805-two-admin-real-postgres16.log
+          test "$(grep -c 'M10805_TWO_ADMIN_REAL_PG16_DECISION_SERIALIZED_DB' .autopilot/artifacts/m10805-two-admin-real-postgres16.log)" -eq 2
+          test "$(grep -c 'M10805_PENDING_OR_ACTIVATED_TENANT_SINGLE_AUDIT_REPLAY_DENIED' .autopilot/artifacts/m10805-two-admin-real-postgres16.log)" -eq 2
+          grep -q '"winner":"verified","loser":"denied"' .autopilot/artifacts/m10805-two-admin-real-postgres16.log
+          grep -q '"winner":"rejected","loser":"denied"' .autopilot/artifacts/m10805-two-admin-real-postgres16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10805-two-admin-real-postgres16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10805-two-admin-real-postgres16.log
+      - name: Archive exact-SHA real PostgreSQL16 race output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10805-company-final-decision-race-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10805-two-admin-real-postgres16.log
+          if-no-files-found: warn
+          retention-days: 30
