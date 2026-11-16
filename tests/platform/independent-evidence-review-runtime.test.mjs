@@ -567,9 +567,71 @@ test("returned initial identity creates a locked lineage revision; invalid autho
     const verifier=await seedAccount(db,{accountId:"account_more_info_verifier_01",email:"more-info-verifier@example.test",role:"verifier",sessionId:"session_more_info_verifier_01"});
     await seedManualReviewIdentity(db,worker.accountId);
     const service=new EvidenceReviewService(db);
+    // Frozen M1.07.04: the original case already proved correct revision
+    // lineage, stale-write denial and final approval. Add only its missing
+    // real event-driven receiving-side notification contract for each version.
+    const decisionNotices=[];
+    const assertWorkerDecisionNotice=async (taskId,eventType,versionId)=>{
+      const decisions=(await db.query(
+        "SELECT decision_id,outcome,source_version_id,verifier_account_id FROM evidence_review_decisions WHERE task_id=$1",
+        [taskId]
+      )).rows;
+      assert.equal(decisions.length,1,"Each finalized task must have one immutable human decision.");
+      assert.equal(decisions[0].source_version_id,versionId);
+      assert.equal(decisions[0].verifier_account_id,verifier.accountId);
+      const eventRef="review:"+decisions[0].decision_id;
+      const jobs=(await db.query(
+        "SELECT job_id,job_type FROM platform_outbox_jobs "+
+        "WHERE job_type IN ('notification.assurance.event','email.assurance.event') "+
+        "AND payload->>'eventType'=$1 AND payload->>'eventRef'=$2",
+        [eventType,eventRef]
+      )).rows;
+      const inApp=jobs.filter(j=>j.job_type==="notification.assurance.event");
+      assert.equal(inApp.length,1,"One original in-app delivery intent per actual decision.");
+      assert.ok(jobs.some(j=>j.job_type==="email.assurance.event"),
+        "Review decision must preserve intended email delivery (NOT provider send).");
+      const projected=(await db.query(
+        "SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",
+        [inApp[0].job_id]
+      )).rows[0];
+      assert.deepEqual(projected,{created:1,suppressed:false});
+      const notifications=(await db.query(
+        "SELECT notification_type,recipient_account_id,recipient_role,tenant_id,membership_id,"+
+        "target_key,target_reference,title,metadata FROM platform_notifications WHERE source_job_id=$1",
+        [inApp[0].job_id]
+      )).rows;
+      assert.equal(notifications.length,1,"Decision must notify exactly the Worker, not Verifier/Admin.");
+      const message=notifications[0];
+      assert.equal(message.notification_type,eventType);
+      assert.equal(message.recipient_account_id,worker.accountId);
+      assert.equal(message.recipient_role,"worker");
+      assert.equal(message.tenant_id,null);
+      assert.equal(message.membership_id,null);
+      assert.equal(message.target_key,"worker.identity.record");
+      assert.equal(message.target_reference,(await db.query(
+        "SELECT identity_id FROM worker_identities WHERE worker_account_id=$1",
+        [worker.accountId]
+      )).rows[0].identity_id);
+      assert.equal(message.metadata.eventRef,eventRef);
+      assert.deepEqual((await db.query(
+        "SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",
+        [inApp[0].job_id]
+      )).rows[0],{created:0,suppressed:false},
+      "Replay must not duplicate an existing authorized notice.");
+      decisionNotices.push({eventType,eventRef,jobId:inApp[0].job_id});
+    };
     const task=await service.queueIndependentIdentity(worker,NOW_DATE);
     await authorizeAndClaim(db,service,verifier,task.taskId,NOW_DATE);
     await service.decide(verifier,task.taskId,"CHANGES_REQUESTED","The document photograph must be corrected before initial identity verification.",NOW_DATE);
+    const firstVersion=(await db.query(
+      "SELECT identity_version_id FROM worker_identity_versions WHERE identity_id=(SELECT identity_id FROM worker_identities WHERE worker_account_id=$1) AND version_number=1",
+      [worker.accountId]
+    )).rows[0].identity_version_id;
+    assert.equal((await db.query(
+      "SELECT count(*)::int n FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+      [worker.accountId]
+    )).rows[0].n,0,"CHANGES_REQUESTED cannot issue a permanent identity before correction.");
+    await assertWorkerDecisionNotice(task.taskId,"evidence.additional.requested",firstVersion);
     const { DatabaseWorkerIdentityRepository }=await import(pathToFileURL(join(runtime,"identity","worker-identity-repository.js")).href);
     const repository=new DatabaseWorkerIdentityRepository(Promise.resolve(db));
     const before=await repository.loadOwn(worker);
@@ -592,6 +654,30 @@ test("returned initial identity creates a locked lineage revision; invalid autho
     assert.notEqual(revisedTask.taskId,task.taskId);
     await authorizeAndClaim(db,service,verifier,revisedTask.taskId,NOW_DATE);
     await service.decide(verifier,revisedTask.taskId,"APPROVED","Corrected initial identity evidence was independently verified.",NOW_DATE);
+    await assertWorkerDecisionNotice(revisedTask.taskId,"evidence.reviewed",revision.currentVersion.identityVersionId);
+    assert.equal(decisionNotices.length,2);
+    assert.notEqual(decisionNotices[0].eventRef,decisionNotices[1].eventRef);
+    assert.notEqual(decisionNotices[0].jobId,decisionNotices[1].jobId);
+    const allNotices=(await db.query(
+      "SELECT source_job_id,recipient_role,target_key,target_reference FROM platform_notifications "+
+      "WHERE source_job_id IN ($1,$2)",
+      [decisionNotices[0].jobId,decisionNotices[1].jobId]
+    )).rows;
+    assert.equal(allNotices.length,2,"Both independently accepted outcomes must retain one immutable Worker notice.");
+    assert.ok(allNotices.every(n=>n.recipient_role==="worker"&&n.target_key==="worker.identity.record"));
+    const originalAndCorrected=(await db.query(
+      "SELECT identity_version_id,version_number,parent_version_id,version_status,submitted_at FROM worker_identity_versions "+
+      "WHERE identity_id=(SELECT identity_id FROM worker_identities WHERE worker_account_id=$1) ORDER BY version_number",
+      [worker.accountId]
+    )).rows;
+    assert.equal(originalAndCorrected.length,2);
+    assert.deepEqual(originalAndCorrected.map(v=>v.version_status),["submitted","submitted"]);
+    assert.ok(originalAndCorrected.every(v=>v.submitted_at));
+    assert.equal(originalAndCorrected[1].parent_version_id,originalAndCorrected[0].identity_version_id);
+    console.log("M10704_CHANGES_REQUESTED_APPROVED_WORKER_NOTIFICATIONS_DB",
+      "original v1 CHANGES_REQUESTED and corrected submitted v2 APPROVED each own one Worker-only private identity notice and intended email event; no ID before final approval");
+    console.log("M10704_REPLAY_SAFETY_DB",
+      "both official in-app source projections replay without duplicate, two immutable decisions/versions remain with exact parent link");
     assert.equal((await repository.loadOwn(worker)).identity.lifecycleStatus,"verified");
     assert.equal((await db.query("SELECT COUNT(*)::int AS count FROM worker_identity_worker_ids WHERE worker_account_id=$1",[worker.accountId])).rows[0].count,1);
     await assert.rejects(repository.reviseOwn(worker,(await repository.loadOwn(worker)).identity.lockVersion));
