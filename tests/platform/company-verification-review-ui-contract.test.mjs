@@ -14,6 +14,10 @@ test("Admin Company verification review route is fixed-role and reads server-aut
   assert.match(page, /getCompanyVerificationReviewService\(\)/);
   assert.match(page, /listForReview\(/);
   assert.match(page, /Company verification review/);
+  assert.equal((page.match(/name="expectedVersionId" value=\{item\.versionId\}/g) ?? []).length,4,
+    "Each Admin begin/approve/changes/reject form pins the version actually displayed.");
+  assert.equal((page.match(/name="expectedLockVersion" value=\{item\.lockVersion\}/g) ?? []).length,4,
+    "Each Admin review action pins a fresh case revision to reject stale tabs.");
 });
 
 test("Admin Company verification actions revalidate live authority and use the canonical service transitions", async () => {
@@ -30,6 +34,11 @@ test("Admin Company verification actions revalidate live authority and use the c
   assert.match(actions, /verified/);
   assert.match(actions, /changes_requested/);
   assert.match(actions, /rejected/);
+  assert.match(actions, /expectedReview\(formData\)/);
+  assert.match(actions, /VERSION_ID_PATTERN/);
+  assert.match(actions, /LOCK_VERSION_PATTERN/);
+  assert.match(actions, /\.\.\.expected/);
+  assert.match(actions, /if \(!reference \|\| !decision \|\| !expected\)/);
 });
 
 test("review read model is live-decider guarded and exposes case/evidence metadata without object storage secrets", async () => {
@@ -37,6 +46,8 @@ test("review read model is live-decider guarded and exposes case/evidence metada
   assert.match(service, /COMPANY_VERIFICATION_DECIDER_GUARD_SQL/);
   assert.match(service, /company_verification_cases/);
   assert.match(service, /company_verification_versions/);
+  assert.match(service, /versions\.version_id/);
+  assert.match(service, /versionId: row\.version_id/);
   assert.match(service, /company_verification_evidence/);
   assert.match(service, /platform_secure_files/);
   assert.match(service, /submitted/);

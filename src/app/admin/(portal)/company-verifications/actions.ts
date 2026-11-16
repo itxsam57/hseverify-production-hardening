@@ -11,6 +11,8 @@ import {
 import { getCompanyVerificationService } from "@/lib/company/company-verification-service";
 
 const CASE_ID_PATTERN = /^company_verification_[A-Za-z0-9_-]{24}$/;
+const VERSION_ID_PATTERN = /^company_verification_version_[A-Za-z0-9_-]{24}$/;
+const LOCK_VERSION_PATTERN = /^(?:0|[1-9]\d{0,9})$/;
 
 type ReviewOutcome = "verified" | "changes_requested" | "rejected";
 
@@ -22,6 +24,20 @@ function text(formData: FormData, name: string): string {
 function caseId(formData: FormData): string | null {
   const value = text(formData, "caseId");
   return CASE_ID_PATTERN.test(value) ? value : null;
+}
+
+function expectedReview(formData: FormData): {
+  expectedVersionId: string;
+  expectedLockVersion: number;
+} | null {
+  const expectedVersionId = text(formData, "expectedVersionId");
+  const rawLockVersion = text(formData, "expectedLockVersion");
+  if (!VERSION_ID_PATTERN.test(expectedVersionId) || !LOCK_VERSION_PATTERN.test(rawLockVersion)) {
+    return null;
+  }
+  const expectedLockVersion = Number(rawLockVersion);
+  if (!Number.isSafeInteger(expectedLockVersion)) return null;
+  return { expectedVersionId, expectedLockVersion };
 }
 
 function outcome(formData: FormData): ReviewOutcome | null {
@@ -51,14 +67,16 @@ function resultPath(status: "review-started" | "decision-recorded" | "conflict" 
 
 export async function beginCompanyVerificationReviewAction(formData: FormData): Promise<void> {
   const reference = caseId(formData);
-  if (!reference) redirect(resultPath("invalid"));
+  const expected = expectedReview(formData);
+  if (!reference || !expected) redirect(resultPath("invalid"));
 
   let result: "review-started" | "conflict" | "denied" = "review-started";
   try {
     const principal = await adminPrincipal();
     await getCompanyVerificationService().beginReview({
       principal,
-      caseId: reference
+      caseId: reference,
+      ...expected
     });
     refresh(reference);
   } catch (error) {
@@ -72,7 +90,8 @@ export async function beginCompanyVerificationReviewAction(formData: FormData): 
 export async function decideCompanyVerificationAction(formData: FormData): Promise<void> {
   const reference = caseId(formData);
   const decision = outcome(formData);
-  if (!reference || !decision) redirect(resultPath("invalid"));
+  const expected = expectedReview(formData);
+  if (!reference || !decision || !expected) redirect(resultPath("invalid"));
 
   let result: "decision-recorded" | "conflict" | "denied" = "decision-recorded";
   try {
@@ -80,6 +99,7 @@ export async function decideCompanyVerificationAction(formData: FormData): Promi
     await getCompanyVerificationService().decide({
       principal,
       caseId: reference,
+      ...expected,
       outcome: decision
     });
     refresh(reference);

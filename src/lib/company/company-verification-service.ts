@@ -89,23 +89,31 @@ export class CompanyVerificationService {
   beginReview(input: {
     principal: AuthorizationPrincipal;
     caseId: string;
+    expectedVersionId: string;
+    expectedLockVersion: number;
   }): Promise<void> {
     return this.repository.beginReview({
       decider: bindCompanyVerificationDecider(input.principal),
       actor: bindTrustedAuditActor(input.principal),
-      caseId: input.caseId
+      caseId: input.caseId,
+      expectedVersionId: input.expectedVersionId,
+      expectedLockVersion: input.expectedLockVersion
     });
   }
 
   decide(input: {
     principal: AuthorizationPrincipal;
     caseId: string;
+    expectedVersionId: string;
+    expectedLockVersion: number;
     outcome: "verified" | "changes_requested" | "rejected";
   }): Promise<void> {
     return this.repository.decide({
       decider: bindCompanyVerificationDecider(input.principal),
       actor: bindTrustedAuditActor(input.principal),
       caseId: input.caseId,
+      expectedVersionId: input.expectedVersionId,
+      expectedLockVersion: input.expectedLockVersion,
       outcome: input.outcome
     });
   }
