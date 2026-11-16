@@ -31,7 +31,7 @@ M1.06.04,M1.06,Uploads,"Replace attachment: prior version retained, correct prev
 M1.06.05,M1.06,Uploads,Preview denied before claim and across worker/tenant; expired token,1,0,1,NOT_FULLY_VERIFIED
 M1.07.01,M1.07,Identity,Incomplete profile and identity submission blocked with input retained,1,0,1,NOT_FULLY_VERIFIED
 M1.07.02,M1.07,Identity,"Profile drafts persist through navigation, validation and retry",1,0,1,NOT_FULLY_VERIFIED
-M1.07.03,M1.07,Identity,"Initial identity approved, rejected and changes requested",0,0,0,NOT_FULLY_VERIFIED
+M1.07.03,M1.07,Identity,"Initial identity approved, rejected and changes requested",1,0,0,NOT_FULLY_VERIFIED
 M1.07.04,M1.07,Identity,Initial rejection/changes requested corrected and resubmitted,0,0,0,NOT_FULLY_VERIFIED
 M1.07.05,M1.07,Identity,"Verified correction accepted, rejected and changes requested",0,0,0,NOT_FULLY_VERIFIED
 M1.07.06,M1.07,Identity,Permanent Worker ID and original evidence retained across corrections,0,0,0,NOT_FULLY_VERIFIED
