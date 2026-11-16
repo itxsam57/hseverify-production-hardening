@@ -560,9 +560,11 @@ async function m10901RealPostgresDatabase(scenario="M10901") {
     const env = {...TEST_ENVIRONMENT,databaseDriver:"postgres",
       databaseUrl:url.href,releaseSha:scenario.toLowerCase()+"-unit-race-"+process.pid};
     first = await openScriptDatabase(env);
-    const ceiling = scenario === "M10902"
-      ? "0131_company_workforce_archive_scope_serialization"
-      : "0130_verified_identity_correction_notices";
+    const ceiling = scenario === "M10901"
+      ? "0130_verified_identity_correction_notices"
+      : scenario === "M10902"
+        ? "0131_company_workforce_archive_scope_serialization"
+        : "0132_company_team_archived_scope_serialization";
     await applyMigrationsThrough(first,env.releaseSha,ceiling);
     second = await openScriptDatabase(env);
     return {first,second,cleanup:async()=>{
@@ -863,6 +865,210 @@ test("M1.09.02 actual PostgreSQL16 concurrent archive versus new Worker placemen
     console.log("M10902_REAL_PG16_WORKER_RECEIVING_STATE_NO_ARCHIVED_SCOPE_LEAK");
   } finally {
     if(currentRelease) currentRelease();
+    await cleanup();
+  }
+});
+
+test("M1.09.03 actual PostgreSQL16 Company Team placement and invite acceptance race against archived units", {
+  skip: !process.env.HSE_M10903_POSTGRES_TEST_DATABASE_URL,
+  timeout: 180000
+}, async () => {
+  const {first,second,cleanup} = await m10901RealPostgresDatabase("M10903");
+  let releaseArchive;
+  try {
+    const owner=await insertCompanyContext(first,"T");
+    const foreign=await insertCompanyContext(first,"U");
+    const organization=new DatabaseCompanyOrganizationRepository(Promise.resolve(first));
+    const teamReader=new CompanyTeamService(Promise.resolve(second),PEPPER,()=>new Date(NOW_DATE));
+    const settings=principal(owner,"company.settings.manage");
+    const read=principal(owner,"company.members.read");
+    const draft={name:"Company Team archived scope",formattedAddress:"Islamabad",phone:"+92510000333",website:"https://team-archive.example.test",email:"team-archive@example.test",registrationNumber:null};
+    const foreignSite=await organization.create(principal(foreign,"company.settings.manage"),"site",{...draft,name:"Foreign site kept active"});
+    for(const kind of ["site","department"]){
+      const target=await organization.create(settings,kind,{...draft,name:`Team scoped ${kind}`});
+      const memberSeeds=kind==="site"?["V","W"]:["X","Y"];
+      const members=[];
+      for(const char of memberSeeds){
+        const email=`m10903-team-${char.toLowerCase()}@example.test`;
+        const accountId=await createAcceptedInviteAccount(first,email,`m10903-${char}`);
+        const membershipId=opaqueId("membership",char);
+        await first.query("INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at) VALUES($1,$2,$3,'company','manager','active',$4,$5,$5,$5)",
+          [membershipId,owner.tenantId,accountId,owner.accountId,NOW]);
+        members.push({accountId,membershipId,email});
+      }
+      const existingId=opaqueId("teamassignment",memberSeeds[0]);
+      const competingId=opaqueId("teamassignment",memberSeeds[1]);
+      const teamAssignmentSql="INSERT INTO company_team_unit_assignments(assignment_id,tenant_id,membership_id,site_id,department_id,assigned_by_membership_id,assigned_at) VALUES($1,$2,$3,$4,$5,$6,$7)";
+      const insertArgs=(assignmentId,index)=>[assignmentId,owner.tenantId,members[index].membershipId,kind==="site"?target.unitId:null,kind==="department"?target.unitId:null,owner.membershipId,NOW];
+      await first.query(teamAssignmentSql,insertArgs(existingId,0));
+      assert.equal((await teamReader.listMembers(read)).find(m=>m.membershipId===members[0].membershipId)?.[kind==="site"?"siteId":"departmentId"],target.unitId);
+      const held=holdM10901SuccessfulTransactionUntilReleased(first);
+      const archive=held.repository.archive(settings,kind,target.unitId,target.revision);
+      releaseArchive=held.release;
+      await held.reached;
+      const concurrent=second.query(teamAssignmentSql,insertArgs(competingId,1)).then(()=>({ok:true}),error=>({ok:false,error}));
+      const early=await Promise.race([concurrent,new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))]);
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_TEAM_PLACEMENT_INTERLEAVING ${early.pending?"pending":early.ok?"INSERT_BEFORE_ARCHIVE_COMMIT":"rejected"}`);
+      releaseArchive();releaseArchive=null;
+      const archived=await archive;
+      assert.equal(archived.status,"archived");
+      const result=await concurrent;
+      if(!result.ok) assert.match(result.error.message,/Archived Company|deadlock|serialization|unavailable/i);
+      const assignments=await second.query("SELECT assignment_id,ended_at,ended_reason FROM company_team_unit_assignments WHERE tenant_id=$1 AND (site_id=$2 OR department_id=$2) ORDER BY assignment_id",[owner.tenantId,target.unitId]);
+      assert.equal(assignments.rows.some(row=>row.ended_at===null),false,`M1.09.03 leaked new active Company Team placement into archived ${kind}`);
+      assert.equal(assignments.rows.find(row=>row.assignment_id===existingId)?.ended_reason,`${kind==="site"?"Site":"Department"} archived`);
+      const receiving=await teamReader.listMembers(read);
+      assert.equal(receiving.find(m=>m.membershipId===members[0].membershipId)?.[kind==="site"?"siteId":"departmentId"],null);
+      assert.equal(receiving.find(m=>m.membershipId===members[1].membershipId)?.[kind==="site"?"siteId":"departmentId"],null);
+      assert.equal((await second.query("SELECT site_status FROM company_sites WHERE tenant_id=$1 AND site_id=$2",[foreign.tenantId,foreignSite.unitId])).rows[0].site_status,"active");
+      // Team invitation acceptance is a genuine application path into the
+      // Company Team assignment trigger; unlike updateMember it does not call
+      // CompanyTeamService.assertActiveUnits again after invitation creation.
+      const restored=await organization.restore(settings,kind,target.unitId,archived.revision);
+      const manage=principal(owner,"company.members.manage");
+      const pendingInvite=await teamReader.invite(manage,{
+        email:`m10903-pending-${kind}@example.test`,membershipRole:"viewer",
+        permissions:["company.tenant.read"],
+        siteId:kind==="site"?target.unitId:null,
+        departmentId:kind==="department"?target.unitId:null,
+        requestFingerprint:`m10903-pending-${kind}-archive-race`
+      });
+      const pendingAccount=await createAcceptedInviteAccount(first,pendingInvite.email,`pending-${kind}`);
+      await activateTotp(first,pendingAccount,`pending-${kind}`);
+      const heldAcceptance=holdM10901SuccessfulTransactionUntilReleased(first);
+      const archivingForAcceptance=heldAcceptance.repository.archive(settings,kind,target.unitId,restored.revision);
+      releaseArchive=heldAcceptance.release;
+      await heldAcceptance.reached;
+      const acceptance=second.query(
+        "UPDATE auth_staff_invitations SET invitation_status='accepted',accepted_by_account_id=$2,accepted_at=$3 WHERE invitation_id=$1",
+        [pendingInvite.invitationId,pendingAccount,NOW]
+      ).then(()=>({ok:true}),error=>({ok:false,error}));
+      const acceptanceEarly=await Promise.race([
+        acceptance,new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))
+      ]);
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_TEAM_ACCEPTANCE_INTERLEAVING ${acceptanceEarly.pending?"pending":acceptanceEarly.ok?"ACCEPTED_BEFORE_ARCHIVE_COMMIT":"rejected"}`);
+      releaseArchive();releaseArchive=null;
+      const archivedAfterAcceptance=await archivingForAcceptance;
+      assert.equal(archivedAfterAcceptance.status,"archived");
+      const acceptanceResult=await acceptance;
+      assert.equal(acceptanceResult.ok,false,"M1.09.03 invitation accepted into archived Company Team unit");
+      assert.match(acceptanceResult.error.message,/Archived Company (?:site|department) cannot receive active assignment|unavailable/i);
+      const pendingRow=await first.query("SELECT invitation_status FROM auth_staff_invitations WHERE invitation_id=$1",[pendingInvite.invitationId]);
+      assert.equal(pendingRow.rows[0].invitation_status,"pending","A failed Team acceptance must roll back the entire invitation status/membership/assignment");
+      assert.equal((await teamReader.listMembers(read)).some(m=>m.accountId===pendingAccount),false);
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_TEAM_ACCEPTANCE_DENIED_AFTER_ARCHIVE`);
+
+      // New invitation bindings must also serialize, not just the later
+      // activation/assignment trigger. The signed 0026 trigger is used here.
+      const restoredForBinding=await organization.restore(settings,kind,target.unitId,archivedAfterAcceptance.revision);
+      const bindingPrefix=kind==="site"?"K":"L";
+      const directInvitationId=opaqueId("invitation",bindingPrefix);
+      await first.query("INSERT INTO auth_staff_invitations(invitation_id,email_normalized,role,token_hash,invitation_status,invited_by_account_id,expires_at,created_at) VALUES($1,$2,'company',$3,'pending',$4,$5,$6)",
+        [directInvitationId,`m10903-direct-${kind}@example.test`,`m10903-direct-token-${kind}`,owner.accountId,FAR_FUTURE,NOW]);
+      const heldBinding=holdM10901SuccessfulTransactionUntilReleased(first);
+      const archivingForBinding=heldBinding.repository.archive(settings,kind,target.unitId,restoredForBinding.revision);
+      releaseArchive=heldBinding.release;
+      await heldBinding.reached;
+      const binding=second.query(
+        "INSERT INTO company_team_invitation_bindings(invitation_id,membership_id,initial_assignment_id,tenant_id,invited_by_membership_id,membership_role,site_id,department_id,created_at) VALUES($1,$2,$3,$4,$5,'viewer',$6,$7,$8)",
+        [directInvitationId,opaqueId("membership",bindingPrefix),opaqueId("teamassignment",bindingPrefix),owner.tenantId,owner.membershipId,
+         kind==="site"?target.unitId:null,kind==="department"?target.unitId:null,NOW]
+      ).then(()=>({ok:true}),error=>({ok:false,error}));
+      const bindingEarly=await Promise.race([
+        binding,new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))
+      ]);
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_TEAM_BINDING_INTERLEAVING ${bindingEarly.pending?"pending":bindingEarly.ok?"BOUND_BEFORE_ARCHIVE_COMMIT":"rejected"}`);
+      releaseArchive();releaseArchive=null;
+      const archivedAfterBinding=await archivingForBinding;
+      assert.equal(archivedAfterBinding.status,"archived");
+      const bindingResult=await binding;
+      assert.equal(bindingResult.ok,false,"M1.09.03 new pending Company Team invitation bound to archived unit");
+      assert.match(bindingResult.error.message,/Archived or unavailable Company (?:site|department) cannot receive assignment|unavailable/i);
+      assert.equal((await second.query("SELECT 1 FROM company_team_invitation_bindings WHERE invitation_id=$1",[directInvitationId])).rows.length,0);
+      assert.equal((await second.query("SELECT invitation_status FROM auth_staff_invitations WHERE invitation_id=$1",[directInvitationId])).rows[0].invitation_status,"pending");
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_TEAM_INVITE_BINDING_DENIED_AFTER_ARCHIVE`);
+      // Reverse interleaving: successful Company Team invite acceptance
+      // must commit first and the later archive must end (not delete) the
+      // newly created assignment. This covers the receiving Company member.
+      const restoredForReverse=await organization.restore(settings,kind,target.unitId,archivedAfterBinding.revision);
+      const acceptedFirstInvite=await teamReader.invite(manage,{
+        email:`m10903-first-${kind}@example.test`,membershipRole:"viewer",
+        permissions:["company.tenant.read"],
+        siteId:kind==="site"?target.unitId:null,
+        departmentId:kind==="department"?target.unitId:null,
+        requestFingerprint:`m10903-accepted-first-${kind}`
+      });
+      const acceptedFirstAccount=await createAcceptedInviteAccount(first,acceptedFirstInvite.email,`first-${kind}`);
+      await activateTotp(first,acceptedFirstAccount,`first-${kind}`);
+      let signalAccepted,permitAcceptanceCommit;
+      const acceptanceExecuted=new Promise(resolve=>{signalAccepted=resolve;});
+      const finishAcceptance=new Promise(resolve=>{permitAcceptanceCommit=resolve;});
+      releaseArchive=permitAcceptanceCommit;
+      const acceptingFirst=second.transaction(async tx=>{
+        await tx.query("UPDATE auth_staff_invitations SET invitation_status='accepted',accepted_by_account_id=$2,accepted_at=$3 WHERE invitation_id=$1",
+          [acceptedFirstInvite.invitationId,acceptedFirstAccount,NOW]);
+        signalAccepted();
+        await finishAcceptance;
+      });
+      await acceptanceExecuted;
+      const archiveAfterAccept=organization.archive(settings,kind,target.unitId,restoredForReverse.revision);
+      const reverseEarly=await Promise.race([
+        archiveAfterAccept.then(()=>({finished:true}),error=>({error})),
+        new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))
+      ]);
+      assert.equal(reverseEarly.pending,true,"Archive completed while pending Company Team acceptance held the unit row lock");
+      releaseArchive();releaseArchive=null;
+      await acceptingFirst;
+      const reverseArchived=await archiveAfterAccept;
+      assert.equal(reverseArchived.status,"archived");
+      const memberAfterReverse=(await teamReader.listMembers(read)).find(m=>m.accountId===acceptedFirstAccount);
+      assert.ok(memberAfterReverse,"New invited Company member must be visible after accepted-first reverse race");
+      assert.equal(memberAfterReverse.status,"active");
+      assert.equal(memberAfterReverse[kind==="site"?"siteId":"departmentId"],null);
+      const historyAfterReverse=await first.query("SELECT ended_at,ended_reason FROM company_team_unit_assignments WHERE tenant_id=$1 AND membership_id=$2",
+        [owner.tenantId,memberAfterReverse.membershipId]);
+      assert.equal(historyAfterReverse.rows.length,1);
+      assert.ok(historyAfterReverse.rows[0].ended_at);
+      assert.equal(historyAfterReverse.rows[0].ended_reason,`${kind==="site"?"Site":"Department"} archived`);
+      assert.equal((await first.query("SELECT invitation_status FROM auth_staff_invitations WHERE invitation_id=$1",[acceptedFirstInvite.invitationId])).rows[0].invitation_status,"accepted");
+      // Direct service entrypoint also denies archived references, rather
+      // than relying exclusively on a database trigger for UI-origin calls.
+      await assert.rejects(
+        teamReader.updateMember(manage,{
+          membershipId:members[0].membershipId,expectedRole:"manager",expectedStatus:"active",
+          membershipRole:"manager",permissions:["company.tenant.read"],
+          siteId:kind==="site"?target.unitId:null,
+          departmentId:kind==="department"?target.unitId:null
+        }),error=>error?.name==="CompanyTeamInputError"
+      );
+      await assert.rejects(
+        second.query(teamAssignmentSql,[
+          opaqueId("teamassignment","Z"),foreign.tenantId,members[0].membershipId,
+          kind==="site"?target.unitId:null,kind==="department"?target.unitId:null,
+          owner.membershipId,NOW
+        ]),/outside the tenant/i
+      );
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_SERVICE_AND_FOREIGN_TENANT_DENIED`);
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_ACCEPT_FIRST_ARCHIVE_ENDS_TEAM_HISTORY_ONCE`);
+      console.log(`M10903_ACTUAL_PG16_${kind.toUpperCase()}_ARCHIVED_TEAM_ASSIGNMENT_DENIED`);
+    }
+    const originalFunctions=await first.query(`
+      SELECT pg_get_functiondef('hse_validate_company_team_unit_assignment()'::regprocedure) AS team,
+             pg_get_functiondef('hse_validate_company_team_invitation_binding()'::regprocedure) AS binding
+    `);
+    assert.equal((originalFunctions.rows[0].team.match(/FOR SHARE/g)||[]).length,2);
+    assert.equal((originalFunctions.rows[0].binding.match(/FOR SHARE/g)||[]).length,2);
+    const {readFileSync}=await import("node:fs");
+    await first.execute(readFileSync("database/migrations/0132_company_team_archived_scope_serialization.down.sql","utf8"));
+    await first.execute(readFileSync("database/migrations/0132_company_team_archived_scope_serialization.up.sql","utf8"));
+    const reinstatedFunctions=await first.query(`
+      SELECT pg_get_functiondef('hse_validate_company_team_unit_assignment()'::regprocedure) AS team,
+             pg_get_functiondef('hse_validate_company_team_invitation_binding()'::regprocedure) AS binding
+    `);
+    assert.deepEqual(reinstatedFunctions.rows,originalFunctions.rows,"0132 down/reapply must never weaken Company Team archived-unit row locking");
+    console.log("M10903_0132_ROLLBACK_REAPPLY_RETAINS_TEAM_INVITE_ROW_LOCKS");
+  } finally {
+    if(releaseArchive)releaseArchive();
     await cleanup();
   }
 });
