@@ -4,33 +4,33 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.06.05",
-  "current_focus_phase": "M10605_REAL_AUTH_WORKER_PENDING_PRECLAIM_404_CORRECT_HMAC_EXPIRED_404_CLEAN_SIGNED_200_DB_AUDIT_CHROME1_PASS_HEAD_PR_PENDING",
-  "last_completed_action": "QA315dc6b690dcb8b478ec7db72b50b5ce71fa671a PR127 merged correct 2-parent 39/39 exact merged workflows success. Original M1.06.05 direct previously named0, reused earlier exact passing M1.04.02 Company tenant and M1.04.03 Worker wrong-account copied token without rerun. New real signed Worker390 HTTP pre-claim scan_pending file preview issuance404 no-store empty; owner available clean file issues token200, real signed private preview200 bytes/no-store/nosniff; same synthetic signing HMAC re-signs expired iat=now-135 exp=now-15 (normal120sec TTL), real owner GET404 empty, unchanged live token GET200; PGlite authorized audit1 served2 all only clean file, pending unchanged and zero successful denied audit. Actual Chromium1/1 PASS exit0 log SHA256 735560396c2559c9df3ece6ce9852af71f9f181bfa16b91ff39be65cca1ba5a2; local signature not real naturally elapsed token/provider. New source case +1 static1577, prior-green1403 due previously green M1.06.04 old worktree log now matched, old unmatched174; FULL0/218 old216/218 scoped not full, planned4975 partial693 uncertain55 unlinked4227 FINAL0; pentest incomplete2008 provisional independent done UNKNOWN, 10 external known blocked, high/critical unknown. No external scanner/storage/Company Verifier Admin receiving/final protected release load/Owner UAT, NO-GO. Active V4 session e79c4d8e-ff78-4b1b-9623-7c33a28937b2 cycle587161e5089e46c4bc8059c2d5a0343a.",
-  "next_exact_action": "Regenerate canonical original source/218/legacy216/4975/action map source digests after engineering source counter edits; strict Node/Python release engineering gates; V4 guarded commit/push qa/m10605-private-preview-20261116, PR exact head Chrome1/1 original218/4975/Autopilot green; merge and independently confirm ALL exact merged QA SHA workflows; move next original M1.07.01 incomplete profile and identity submission blocked with input retained, retain M10605 protected stage/provider blockers.",
+  "current_focus_scenario_id": "M1.07.01",
+  "current_focus_phase": "M10701_SIGNED_WORKER390_VERIFIER320_ADMIN1280_INCOMPLETE_ID_NO_PREMATURE_REVIEW_NOTICE_DB_AUDIT_CHROME1_PASS_PR_EXACT_HEAD_PENDING",
+  "last_completed_action": "Parent signed QA8599b4c016ae521b9e9a461040f9e20964b9e1ad PR128 genuine 2-parent merge 40/40 all exact merged SHA workflows GREEN. Original M1.07.01 existing historically passed signed Worker390 identity empty and partial submit blocked, fields retained, DB no review task/WorkerID. Extended SAME original test without renaming/new case: real Worker390 incomplete profile Submit disabled, empty+partial identity denied persisted, independently signed Verifier320 filtered live review shows 0 task rows and no task-level deep link or premature notification; Admin1280 framework0, duplicate review0, no Worker notification, Worker fields survive cross-role reads. PGlite draft/version submitted_at NULL, zero identity review task/WorkerID/target notification/notification.assurance.event outbox/false submitted audit. Genuine Chrome 1/1 PASS exit0 ~38secs log SHA256 bbb002e823addb6ae381f6aa287ec054699b301711c662a968f023971fe38dc1. First extended red due over-broad navigation-selector counted2 ordinary links, fixed test-only tbody query; raw initial FAIL SHA25670ef5e48756939b0ff00cd8685721efa5a7f9e45a98196d3794177843bc62e41, not app defect. Original M1.07.01 remains NOT_FULLY_VERIFIED. Historical matched source1404/1577 unmatched173 (increment prior M10605 local historical log, not new source case), old216/218 scoped, planned4975 partial693 uncertain56 unlinked4226 FINAL0; fully verified0/218, pentest incomplete2008 provisional independently completed UNKNOWN, known blockers10, severe UNKNOWN; protected final stage/provider/Owner UAT and comprehensive independent pentest missing, release NO-GO. V4 session459536ae-b9d8-4524-8a88-11a1f8c336d6 cycle20341f9fd0c24daa97854a3a0fb2034c, local workstation old PG PID723113 retained, no Node tests running, disk approx596MB free.",
+  "next_exact_action": "Regenerate official original source identity/legacy216/planned4975/218 action map after counter assertion changes, strict Python+Node engineering and no full-credit attestations, guarded V4 commit/push qa/m10701-profile-identity-gates-20261116, PR exact-head Chrome1/1 and original218/4975/Autopilot all green, merge genuine two-parent then independently verify ALL workflows on exact merged QA SHA. Move next frozen M1.07.02 without repeating already-green three profile section drafts; M1.07.01 remains blocked final protected staging/provider/full independent pentest/Owner UAT.",
   "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.06.05",
-      "problem": "No directly named real signed Worker HTTP pre-clean claim denied and valid-HMAC expired token access denial/audit",
-      "result": "NEW_REAL_CHROME1_OF_1_PASS_PENDING_ISSUE404_AVAILABLE_PREVIEW200_EXPIRED_CORRECT_HMAC404_DB_SUCCESS_AUDIT_ONLY_CLEAN_SCOPED_NOT_FINAL"
+      "scenario_id": "M1.07.01",
+      "problem": "Existing Worker-only real browser historic green lacked signed Verifier/Admin receiving empty-state and notification/audit proof",
+      "result": "EXTENDED_SAME_CASE_REAL_CHROME1_OF_1_PASS_WORKER390_VERIFIER320_ADMIN1280_EMPTY_RECIPIENTS_DB_OUTBOX_AUDIT"
     },
     {
-      "scenario_id": "M1.06.05",
-      "problem": "Natural 120-second elapsed expiry, real scanner/storage, Company/Verifier/Admin receiving UI, independent full penetration testing, protected final SHA/restore/Owner UAT",
+      "scenario_id": "M1.07.01",
+      "problem": "First extended local browser asserted global Verifier reviews href count0, but two normal sidebar links matched; task table had 0 rows",
+      "result": "TEST_ORACLE_SELECTOR_FIXED_TO_TBODY_NOT_PRODUCT_DEFECT_ALL_THREE_ROLE_BROWSER_RETEST_PASS"
+    },
+    {
+      "scenario_id": "M1.07.01",
+      "problem": "Full protected final exact SHA, independent approved pentest API/role/tenant abuse/load/restore, real identity/provider flow and Owner UAT not evidenced",
       "result": "NOT_FULLY_VERIFIED_EXTERNAL_AND_FINAL_STAGE"
     },
     {
-      "scenario_id": "M1.06.04",
-      "problem": "Previously passing independent signed Worker stale replacement and previews",
-      "result": "PR127_MERGED_QA_315dc6b_39_OF_39_EXACT_SHA_WORKFLOWS_GREEN_SCOPED_ONLY"
-    },
-    {
       "scenario_id": "M1.06.05",
-      "problem": "Original case direct0, separate cross-worker and tenant proof existed previously under M1.04.02 and M1.04.03",
-      "result": "PRIOR_EXACT_CI_PASSES_REUSED_NO_DUPLICATE_SOURCE"
+      "problem": "Previously scoped signed Worker pending and synthetic-HMAC-expired preview real browser",
+      "result": "PR128_MERGED_QA_8599b4c_40_OF_40_EXACT_SHA_WORKFLOWS_GREEN_NOT_FULL_STAGE"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
