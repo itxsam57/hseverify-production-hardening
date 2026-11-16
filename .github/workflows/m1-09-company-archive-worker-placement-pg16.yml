@@ -1,0 +1,76 @@
+name: M1.09.02 actual PostgreSQL16 Company archive against concurrent Worker placement
+on:
+  pull_request:
+    paths:
+      - 'database/migrations/0131_company_workforce_archive_scope_serialization.*.sql'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'scripts/run-company-organization-team-tests.mjs'
+      - '.github/workflows/m1-09-company-archive-worker-placement-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'database/migrations/0131_company_workforce_archive_scope_serialization.*.sql'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'scripts/run-company-organization-team-tests.mjs'
+      - '.github/workflows/m1-09-company-archive-worker-placement-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m10902-archive-worker-placement-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  archive-placement-four-orders-postgres16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_archive_race
+          POSTGRES_PASSWORD: synthetic_archive_race_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_archive_race -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR HEAD or signed QA merge SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Install locked Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Real PostgreSQL16 archive first and Worker placement first for site and department
+        shell: bash
+        env:
+          HSE_M10902_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_archive_race:synthetic_archive_race_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-organization-team-tests.mjs --test-name-pattern 'M1.09.02 actual PostgreSQL16 concurrent archive versus new Worker placement' 2>&1 | tee .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'M10902_REAL_PG16_SITE_PLACEMENT_RACE_PRESERVES_WORKER_AND_AUDIT' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'M10902_REAL_PG16_DEPARTMENT_PLACEMENT_RACE_PRESERVES_WORKER_AND_AUDIT' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'M10902_0131_ROLLBACK_REAPPLY_PRESERVES_ROW_LOCK' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          grep -q 'M10902_REAL_PG16_WORKER_RECEIVING_STATE_NO_ARCHIVED_SCOPE_LEAK' .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+      - name: Archive exact-SHA raw PG16 exploit fix retest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10902-archive-worker-placement-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10902-archive-worker-placement-pg16.log
+          if-no-files-found: warn
+          retention-days: 30

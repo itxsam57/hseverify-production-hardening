@@ -17,6 +17,7 @@ rmSync(outputDirectory, { recursive: true, force: true });
 const ENTRY_FILES = Object.freeze([
   "company/company-organization-domain.ts",
   "company/company-organization-repository.ts",
+  "company/company-workforce-worker-read-repository.ts",
   "company/company-team-service.ts",
   "audit/audit-domain.ts",
   "audit/audit-repository.ts",
