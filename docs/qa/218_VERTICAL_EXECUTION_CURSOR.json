@@ -4,43 +4,38 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.08.03",
-  "current_focus_phase": "M10803_TRUE_STALE_ADMIN_V1_APPROVES_V2_SECURITY_RED_REPRODUCED_AND_TRANSACTION_CAS_FIXED_PGLITE1_PG16_0130_1_NATIVE10_UI5_TS_GREEN_REAL_LOCAL_SIGNED_CHROME_INFRA_FAILURE_EXACT_HEAD_CI_REQUIRED",
-  "last_completed_action": "Latest canonical QA parent 65358e50d5492940de19c52234899270a2756b80 PR137 true two-parent merged with 48/48 exact QA SHA CI GREEN. Frozen M10803 Company/Admin old signed Company OTP MFA and independent Admin v1 changes_request Company correct v2 PDF Admin v2 verify Chromium1/1 old scoped log SHA256 2a0b08433325e4239946f450f1dec703828299f8eb7865c05fb4aa29715c3eb4 hash verified, not final SHA. TRUE confirmed PGlite security exploit RED1: Admin v1 stale decision form with only caseId/outcome allowed approval and tenant activation of unreviewed corrected v2, actual marker accepted=true tenantStatus=active raw SHA256 c164e5087404934d773965cd293df1622ce884c89c2169e8da8aa02417c1c239. Root fix in isolated branch both beginReview and decide require original immutable versionId and case lockVersion under database row FOR UPDATE lock and atomic SQL update CAS, four Admin page forms hidden exact versionId/lockVersion, Next16 Server Actions strict validate input, review model exposes version ID, old role/session checks intact. Actual PGlite extended 1/1 PASS raw SHA256 896a69f375e1786dfd4f8c05a45b1fe47c746c9bc132c3d5bbb490012fc1b30f; real disposable Postgres16 full migration0130 1/1 PASS SHA256 054e77040fff94361c6b502059de77263fa28d4d02cb27160e967fdbc96ec940 temporary DB dropped; old impacted native10/10 PASS 9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d, Admin form source UI5/5 PASS6afc094482fe5416f9d91938823acc85572bf468d3602835980f54d40593d16e, TS and route typecheck PASS75ed9d0116d6c593e654d3b7adba0ca5a3207cca70bb283fb98ad276d9b059c1. Signed real Chrome updated original test for v1 stale tab at390 and fresh v2 approval, local run FAILED infra ERR_INSUFFICIENT_RESOURCES before new assertions SHA256 665367bdf71ca9d0bf5234fa7137b1ff92824c7f8ca9e4e38b3fe264443246d9; not browser pass. New dedicated exact PR/merged SHA two-job CI native PGlite/PG16 and actual signed chromium, do not merge until both green. Original index new static cases 1581 from1580, one earlier M10802 old log discovered historical matched 1407 from1406 unmatched174, old source scoped216 NOT FULL, original planned 4975 partial693 uncertain59 unlinked4223 FINAL0, FULL0/218 LEFT218, pentest incomplete2008 provisional independent done unknown, external blockers10 severe unknown, RELEASE NO-GO. Original M10803 report linked original 218-row action map; V4 session e795505b-7445-4f99-a975-2e72add27fef cycle4c50cb088bc345ca9f7d23b9a2f7bec2 in isolated worktree hseverify-m10803-stale-admin-review-20261116 based QA65358e5, patch uncommitted, workstation nearly full ~177MB, no active Node/Next, unrelated Brave and PG port39051 preserved.",
-  "next_exact_action": "Run strict original source/218/216/4975 reindex verification plus complete original Python+Node tests after changed necessary source assertions and current resume; V4 guarded commit/push qa/m10803-stale-admin-review-20261116 PR; require real signed Chromium stale v1 form denied and new v2 fresh approval plus native PGlite/PG16/TS/UI and original ledger/Autopilot all exact head CI green. Fix any true CI browser failure before normal two-parent QA merge. Verify all merged exact QA SHA CI green. Then first M1.08.04 original frozen with prior browser evidence reuse. Full protected providers/independent penetration test/UAT NO-GO.",
-  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 scripts/reconcile-216-historical-scope.py --verify-index && python3 scripts/reconcile-4975-prior-coverage.py --verify && python3 scripts/build-218-evidence-action-map.py --verify && npm run audit:current-218-scenarios && npm run qa:progress-218 && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
+  "current_focus_scenario_id": "M1.08.04",
+  "current_focus_phase": "M10804_PR139_THIRD_HEAD_ADJACENT_M10803_NATIVE_11_11_GREEN_BUT_STRICT_CI_ORACLE_EXPECTED10_NOW11_PLUS_TERMINAL_MARKERS_EXACT_HEAD_CI_REQUIRED",
+  "last_completed_action": "Current canonical QA exact SHA 7c8509317b241946c96ca61175a013fb4944be09 PR138 genuine two-parent merge 50/50 merged-SHA workflows GREEN incl real signed 390px Chrome older Admin v1 form denial and fresh v2 approval; M10803 local Chrome resource failure superseded by green GitHub exact-QA SHA (still NOT final stage). Frozen M10804 prior signed Company/Admin Chromium rejection 1/1 older scoped log sha256 802103229fdea43f94a91ed914f5d4ec272175b506f6d30b510218f01a26787a exact bytes/hash verified not rerun. New necessary distinct original M10804 native test terminal rejected Company, one original verified document PDF, exact Admin v1 form reject, rejects old Admin verify or reject replay, forged revision verify, beginReview, Company correction/saveDraft/resubmit/withdraw; case remains rejected, tenant pending, no verified audit and exact one rejected audit, original document/version immutable, absent Admin active review queue. Synthetic PGlite1/1 PASS SHA256 df51dadcb98eedf09bed0379f8d7f46ff36853e1336016a22d136b75ec5b831e; disposable actual PostgreSQL16 all migrations through0130 1/1 PASS SHA256 b882e8b67d43e27c8e07ca785b622ab139476775e2a4e2d9bb478781df9c4b03, temporary DB dropped and shared PG service protected. No product TS change. New exact-head workflow m1-08-company-rejection-terminal-guard.yml both engines markers; original row linked report docs/qa/M1_08_04_TERMINAL_REJECTION_REPLAY_GUARD_20261116.md and still NOT_FULLY_VERIFIED. Original source reindex: 6 earlier M10803 raw source logs gained historical matched provenance, existing + new necessary M10804 source denominator, historic1413/1582 unmatched169 ref CI232 historic-only1181; all new historic matches tested_commit_sha UNKNOWN NOT final SHA. FULLY VERIFIED0/218 LEFT218, old scoped216/218, planned4975 693 PARTIAL+59 UNCERTAIN+4223 UNLINKED FINAL0, pen test incomplete2008 preliminary independent complete UNKNOWN, known BLOCKED_EXTERNAL10, high/critical OPEN UNKNOWN, release NO-GO. Required protected final staging complete role/tenant/API/signed UI real provider/pentest/load/restore and Owner UAT missing. V4 session b52544e4-b363-4fc4-8af1-472d56d0c751 cycle fdc1d6f1df524972b2877c71dd2bdbc2, current isolated branch qa/m10804-terminal-rejection-20261116 QA base7c85093 no running tests, shared PG PID723113 preserved. PR139 first exact head af94d835f7e80a39d24bbff170e8356fb478739a two mandatory RED CI workflows not merged: original 4975 run43927642173 stale original1110 unassigned case review CSV after five older source logs newly matched (regenerated 943 historic,167 unproven, zero certification; updated strict legacy216 assertions 938->943,172->167); real PostgreSQL16 native CI run43927642902 failed docker create125 before any test due single quoted --health-cmd unrecognized U flag, fixed to double quote used by other green workflows. Entire exact original 4975 GH CI shell sequence PASS local exit0 log SHA256 91909c76723c998e2fe235a04e646076583d10ad2363f33410f44ecdf6b6847e; new CI head required. PGlite1/1 and real PostgreSQL16 migration0130 1/1 original scoped tests already green, no duplicate local retest. Full0/218, old216 scoped, hist1413/1582 unmatched169, planned4975 693 PARTIAL 59 UNCERTAIN 4223 UNLINKED FINAL0, pentest incomplete2008 provisional independently completed unknown, known external blocked10 high/critical unknown NO-GO. PR139 next exact head 7d72ca03a05b8c43d0dc4d7b0d6ce41f1592e9d6 source 4975, own M10804 PGlite+PG16, signed Company/Admin real Chromium and V4 compliance GREEN. But adjacent M10803 run43929096376 native job RED: all 11 source cases actually PASS11/11 including both M10803 and new M10804 negative markers; existing workflow strict grep expected former 10 and exited1. Fixed exact original m1-08-company-admin-version-cas.yml to require 11 and both new M10804 markers, never weaken old security acceptance. New exact PR SHA CI required before merge. Original counters FULL0/218, prior1413/1582 unmatched169, planned693 partial59 uncertain4223 unlinked FINAL0, old216 scoped, pentest incomplete2008 external blocked10 high/critical unknown NO-GO.",
+  "next_exact_action": "V4 guarded additional commit nonforce push PR139 exact m10803 native count10->11 plus M10804 two markers; recheck all new exact-head PR139 CI native real PG16+PGlite, signed Chrome, original 218+4975+Autopilot GREEN; no merge on red, then normal two-parent QA merge and ALL exact merged QA SHA workflows. Next frozen M1.08.05 Company Admin two-approval concurrency race after positive and stale/double old scoped logs reused.",
+  "next_exact_command": "git diff --check && python3 .autopilot/guard.py pre-commit --root . && git commit -m \"ci(M1.08.04): require all eleven Company regression cases\" && git push origin qa/m10804-terminal-rejection-20261116 && gh pr checks 139 --repo itxsam57/hseverify-production-hardening",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
     {
-      "scenario_id": "M1.08.03",
-      "problem": "TRUE CONFIRMED stale Admin v1 decision approves corrected v2 without seeing v2 and activates tenant",
-      "result": "CURRENT_QA65358e5_EXPLOIT_RED1_SHA_c164e5087404_FIXED_LOCALLY_ATOMIC_VERSION_CAS_PGLITE1_PG16_0130_1_NATIVE10_UI5_TS_PASS_EXACT_PR_CI_NOT_YET_SIGNED"
+      "scenario_id": "M1.08.04",
+      "problem": "PR139 7d72ca0 M1.08.03 adjacent native GitHub job run43929096376 had 11 native actual PASS but old CI oracle grep expected10",
+      "result": "CI_ORACLE_REQUIRE11_AND_BOTH_NEW_TERMINAL_GUARDS_UPDATED_EXACT_NEW_HEAD_CI_PENDING"
+    },
+    {
+      "scenario_id": "M1.08.04",
+      "problem": "PR139 first CI head original triage review CSV stale, Docker health command wrongly quoted",
+      "result": "ROOT_FIXED_SECOND_HEAD_7d72ca0_ORIGINAL_4975_AND_OWN_PGLITE_PG16_GITHUB_WORKFLOW_GREEN"
+    },
+    {
+      "scenario_id": "M1.08.04",
+      "problem": "Full real production providers, protected signed final browser/API/role/tenant and complete independent pentest, load/restore and Owner UAT still missing",
+      "result": "NOT_FULLY_VERIFIED_RELEASE_NO_GO"
     },
     {
       "scenario_id": "M1.08.03",
-      "problem": "Extended real signed Company/Admin Chrome stale tab and fresh review local run failed at email verification before newly added assertions; Chrome net::ERR_INSUFFICIENT_RESOURCES workstation disk ~177MB free",
-      "result": "BROWSER_INFRA_UNVERIFIED_RAW_SHA_665367bdf71c_NOT_APP_EXPLOIT_REQUIRE_EXACT_GITHUB_CI_GREEN"
-    },
-    {
-      "scenario_id": "M1.08.03",
-      "problem": "Still no protected final same-SHA full real browser/API/tenant/expiry/race/provider/pentest/restore/Owner UAT",
-      "result": "NOT_FULLY_VERIFIED_BLOCKED_EXTERNAL_NO_GO"
-    },
-    {
-      "scenario_id": "M1.08.02",
-      "problem": "Previously issued valid code and invitation while Company becomes pending",
-      "result": "PR137_QA65358E5_TRUE_TWO_PARENT_48_OF48_MERGED_SHA_CI_GREEN_ONLY_SCOPED"
+      "problem": "Stale Admin original v1 form could verify corrected Company v2 and activate tenant",
+      "result": "PR138_QA7c85093_ALL50_OF50_EXACT_MERGED_SHA_CI_GREEN_SCOPED_NOT_FINAL"
     },
     {
       "scenario_id": "M1.07.04",
-      "problem": "Initial REJECTED terminal vs corrections-required CHANGES_REQUESTED contract ambiguity",
-      "result": "CONTRACT_REVIEW_REQUIRED"
-    },
-    {
-      "scenario_id": "M1.07.03",
-      "problem": "Existing Worker profile reload Chrome crash before new notification assertion",
-      "result": "INFRA_UNVERIFIED"
+      "problem": "Initial Worker identity REJECTED frozen contract vs implemented terminal state",
+      "result": "OWNER_CONTRACT_REVIEW_REQUIRED"
     }
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",

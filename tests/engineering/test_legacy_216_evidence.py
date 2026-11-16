@@ -56,8 +56,8 @@ class LegacyScopedEvidenceTest(unittest.TestCase):
             rows=list(csv.DictReader(fp))
         self.assertEqual(len(rows),1110)
         self.assertEqual(len({x['case_id'] for x in rows}),1110)
-        self.assertEqual(sum(x['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for x in rows),938)
-        self.assertEqual(sum(x['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for x in rows),172)
+        self.assertEqual(sum(x['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for x in rows),943)
+        self.assertEqual(sum(x['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for x in rows),167)
         self.assertEqual(sum(bool(x['suggested_frozen_ids_UNREVIEWED']) for x in rows),1102)
         self.assertTrue(all(x['full_masterplan_verification']=='NOT_FULLY_VERIFIED' for x in rows))
 
