@@ -1,0 +1,132 @@
+name: M1.10.01 actual Company Worker invitation lifecycle real PG16 and Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/company/company-workforce-registration-service.ts'
+      - 'src/lib/company/company-workforce-registration-binding.ts'
+      - 'src/lib/authorization/**'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/components/company/company-workforce-invitations-workspace.tsx'
+      - 'src/components/worker/worker-company-invitation-choice.tsx'
+      - '.github/workflows/m1-10-01-company-worker-invitation-lifecycle-pg16-browser.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/company/company-workforce-registration-service.ts'
+      - 'src/lib/company/company-workforce-registration-binding.ts'
+      - 'src/lib/authorization/**'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/components/company/company-workforce-invitations-workspace.tsx'
+      - 'src/components/worker/worker-company-invitation-choice.tsx'
+      - '.github/workflows/m1-10-01-company-worker-invitation-lifecycle-pg16-browser.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11001-company-worker-invite-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-postgres16-invite-accept-revoke-resend-races:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_invite_worker
+          POSTGRES_PASSWORD: synthetic_invite_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_invite_worker -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Test real independent PG16 Worker accept versus revoke/resend/expiry
+        shell: bash
+        env:
+          HSE_M11001_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_invite_worker:synthetic_invite_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-worker-invitation-tests.mjs --test-name-pattern 'M1.10.01 actual PostgreSQL16 Worker accept versus Owner revoke and resend races serialize with immutable cross-role evidence' 2>&1 | tee .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          for marker in WORKER_ACCEPT_COMMIT_WINS_OWNER_REVOKE_BLOCKED_AND_REPLAY_ONE_LINK OWNER_REVOKE_COMMIT_WINS_WORKER_ACCEPT_BLOCKED_NO_LINK CONCURRENT_RESEND_ROTATES_TOKEN_OLD_WORKER_REPLAY_BLOCKED_FOREIGN_ROLE_DENIED EXPIRED_TOKEN_DENIED_DURABLE_EXPIRY_AND_FRESH_INVITATION ALL_FIVE_STATES_TWO_LINKS_EXACT_WORKER_COMPANY_IMMUTABLE_AUDIT; do
+            grep -q "M11001_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          done
+      - name: Preserve exact-SHA PostgreSQL race and immutable audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11001-pg16-company-worker-invite-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11001-company-worker-real-pg16.log
+          if-no-files-found: warn
+          retention-days: 30
+  signed-company-and-worker-real-chromium-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Real Company Owner and Worker 390px create accept resend revoke expire and replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11001-company-worker-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11001-company-worker-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11001-company-worker-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11001-company-worker-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11001-company-worker-chromium.log
+          for marker in COMPANY_CREATED_REAL_SINGLE_INVITATION_FORM COMPANY_DUPLICATE_PENDING_INVITE_REJECTED OTHER_WORKER_EMAIL_CANNOT_ACCEPT_390 RIGHTFUL_WORKER_ACCEPTS_AND_SEES_ACTIVE_COMPANY STALE_ACTION_REPLAY_IDEMPOTENT_AND_SPENT_URL_UNAVAILABLE COMPANY_RECEIVES_WORKER_ACCEPTANCE_AFTER_RELOAD RESEND_ROTATES_OLD_TOKEN_FRESH_WORKER_ACCEPTS REVOKED_TOKEN_NOT_USABLE EXPIRED_TOKEN_DENIED_HISTORY_RETAINED COMPANY_DESKTOP_WORKER390_RESPONSIVE_NO_OVERFLOW DB_FOUR_DURABLE_STATUSES_TWO_WORKER_LINKS_TOKEN_ROTATION_AND_AUDIT_NO_REPLAY; do
+            grep -q "M11001_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m11001-company-worker-chromium.log
+          done
+      - name: Preserve exact-SHA signed browser and persisted DB results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11001-chromium-company-worker-invite-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11001-company-worker-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
