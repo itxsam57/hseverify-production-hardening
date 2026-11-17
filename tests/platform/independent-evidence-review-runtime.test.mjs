@@ -1059,3 +1059,201 @@ test("M1.07.03 rejected initial identity routes one immutable Worker notificatio
   console.log("M10703_REJECTED_WORKER_PRIVATE_NOTICE_REPLAY_DB","exact Worker-only identity link and recipient, zero Verifier/Admin/tenant leak, replay idempotent, original decision unchanged");
  }finally{await db.close();}
 });
+
+// M1.11.01 adds a qualification-specific review conflict on actual two-client
+// PostgreSQL16. Earlier real signed browser tests already cover file upload,
+// Verifier CHANGES_REQUESTED/REJECTED, Worker correction and approved receiving
+// UI; this is deliberately narrower to avoid duplicating old passing journeys.
+async function m11101QualificationSqlClients() {
+  const connection=process.env.HSE_M11101_POSTGRES_TEST_DATABASE_URL;
+  if (!connection) {
+    const db=await database("0134_company_worker_placement_audit");
+    return {first:db,second:db,postgres:false,dispose:async()=>db.close()};
+  }
+  const parsed=new URL(connection);
+  assert.match(parsed.hostname,/^(127\.0\.0\.1|localhost)$/,"Only isolated loopback PostgreSQL allowed");
+  const admin=await openScriptDatabase({databaseDriver:"postgres",databaseUrl:connection});
+  const name="m11101_qualification_"+Date.now()+"_"+process.pid;
+  let first,second,created=false;
+  try{
+    await admin.execute('CREATE DATABASE "'+name+'"');created=true;
+    parsed.pathname="/"+name;
+    first=await openScriptDatabase({databaseDriver:"postgres",databaseUrl:parsed.href});
+    second=await openScriptDatabase({databaseDriver:"postgres",databaseUrl:parsed.href});
+    await applyMigrationsThrough(first,"m11101-qual-correction-two-client-pg16","0134_company_worker_placement_audit");
+    return {first,second,postgres:true,dispose:async()=>{
+      try{await second.close();await first.close();}
+      finally{try{await admin.execute('DROP DATABASE "'+name+'"');}finally{await admin.close();}}
+    }};
+  }catch(error){
+    if(second)await second.close();
+    if(first)await first.close();
+    try{if(created)await admin.execute('DROP DATABASE "'+name+'"');}
+    finally{await admin.close();}
+    throw error;
+  }
+}
+
+test("M1.11.01 qualification two-source review race and stale-Verifier denial on PGlite and actual PostgreSQL16",{
+  timeout:220000
+},async()=>{
+  const {first,second,postgres,dispose}=await m11101QualificationSqlClients();
+  const evidence=new EvidenceReviewService(first),competitor=new EvidenceReviewService(second);
+  const mark=(s)=>console.log((postgres?"M11101_ACTUAL_PG16_":"M11101_PGLITE_")+s);
+  try{
+    const worker=await seedAccount(first,{
+      accountId:"account_m11101_qual_worker",
+      email:"m11101-worker@example.test",role:"worker",sessionId:"session_m11101_worker"
+    });
+    const verifier=await seedAccount(first,{
+      accountId:"account_m11101_qual_verifier",
+      email:"m11101-verifier@example.test",role:"verifier",sessionId:"session_m11101_verifier"
+    });
+    const extra=async(role,suffix)=>{
+      const accountId="account_m11101_other_"+suffix;
+      const sessionId="session_m11101_other_"+suffix;
+      const email="m11101-"+suffix+"@example.test";
+      await first.query("INSERT INTO auth_accounts "+
+        "(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) "+
+        "VALUES($1,$2,$3,'active',$4,$5,$5,$5,$5)",[
+        accountId,email,"M11101 "+suffix,"scrypt$16384$8$1$salt$hash",NOW
+      ]);
+      await first.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,$2,$3)",[
+        accountId,role,NOW
+      ]);
+      await first.query("INSERT INTO auth_sessions "+
+        "(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) "+
+        "VALUES($1,$2,$3,$4,$5,$6,$6,$7)",[
+        sessionId,accountId,role,"m11101-token-"+suffix,"m11101-csrf-"+suffix,NOW,FUTURE
+      ]);
+      return {accountId,sessionId,activeRole:role,accountStatus:"active",
+        email,displayName:"M11101 "+suffix,createdAt:NOW,lastSeenAt:NOW,
+        expiresAt:FUTURE,tenantMembership:null};
+    };
+    const foreignWorker=await extra("worker","wrong-worker");
+    const otherVerifier=await extra("verifier","wrong-verifier");
+    const companyRole=await extra("company","company-role");
+    const q=await seedEvidence(first,worker.accountId,"qualification","Q");
+    const taskV1=await evidence.queueIndependentWorkerEvidence(worker,q.recordId,NOW_DATE);
+    await assert.rejects(evidence.queueIndependentWorkerEvidence(foreignWorker,q.recordId,NOW_DATE),
+      e=>e?.name==="EvidenceReviewConflictError");
+    await assert.rejects(evidence.claim(companyRole,taskV1.taskId,NOW_DATE),
+      e=>e?.name==="EvidenceReviewAccessError");
+    await authorizeAndClaim(first,evidence,verifier,taskV1.taskId,NOW_DATE);
+    await assert.rejects(competitor.decide(otherVerifier,taskV1.taskId,"APPROVED",
+      "Copied review task identifier cannot confer assigned-review permission.",NOW_DATE),
+      e=>e?.name==="EvidenceReviewAccessError");
+    await evidence.decide(verifier,taskV1.taskId,"CHANGES_REQUESTED",
+      "Qualification certificate reference needs correction before independent review.",NOW_DATE);
+    mark("WRONG_WORKER_COMPANY_ROLE_AND_UNASSIGNED_VERIFIER_DENIED_NO_FORGED_DECISION");
+
+    const revise=async(record,oldVersion,letter)=>{
+      const replacement=oid("evidence_version",letter);
+      await first.query("UPDATE worker_evidence_versions SET version_status='superseded',updated_at=$2 "+
+        "WHERE version_id=$1",[oldVersion,NOW]);
+      await first.query("INSERT INTO worker_evidence_versions "+
+        "(version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at) "+
+        "VALUES($1,$2,2,1,'submitted',$3,$4,$4,$4)",[
+        replacement,record,oldVersion,NOW
+      ]);
+      await first.query("UPDATE worker_evidence_records SET current_version_id=$2,updated_at=$3 "+
+        "WHERE record_id=$1",[record,replacement,NOW]);
+      return replacement;
+    };
+    const v2=await revise(q.recordId,q.versionId,"q");
+    const taskV2=await evidence.queueIndependentWorkerEvidence(worker,q.recordId,NOW_DATE);
+    const replay=await evidence.queueIndependentWorkerEvidence(worker,q.recordId,NOW_DATE);
+    assert.equal(replay.taskId,taskV2.taskId);
+    assert.notEqual(taskV1.taskId,taskV2.taskId);
+    await authorizeReviewFixture(first,{
+      taskId:taskV2.taskId,verifiers:[verifier,otherVerifier],at:NOW_DATE
+    });
+    let winner,loser;
+    if(postgres){
+      const claims=await Promise.allSettled([
+        evidence.claim(verifier,taskV2.taskId,NOW_DATE),
+        competitor.claim(otherVerifier,taskV2.taskId,NOW_DATE)
+      ]);
+      assert.equal(claims.filter(x=>x.status==="fulfilled").length,1,
+        "Actual two-client PG16 claim must select exactly one Verifier");
+      winner=claims[0].status==="fulfilled"?verifier:otherVerifier;
+      loser=winner===verifier?otherVerifier:verifier;
+    }else{
+      await evidence.claim(verifier,taskV2.taskId,NOW_DATE);
+      await assert.rejects(evidence.claim(otherVerifier,taskV2.taskId,NOW_DATE),
+        e=>e?.name==="EvidenceReviewAccessError");
+      winner=verifier;loser=otherVerifier;
+    }
+    await assert.rejects(competitor.decide(loser,taskV2.taskId,"APPROVED",
+      "Unassigned Verifier may not approve another actor's task.",NOW_DATE),
+      e=>e?.name==="EvidenceReviewAccessError");
+    const validReason="Corrected qualification v2 source reference and independent evidence are sufficient.";
+    if(postgres){
+      const decisions=await Promise.allSettled([
+        evidence.decide(winner,taskV2.taskId,"APPROVED",validReason,NOW_DATE),
+        competitor.decide(winner,taskV2.taskId,"APPROVED",validReason,NOW_DATE)
+      ]);
+      assert.equal(decisions.filter(x=>x.status==="fulfilled").length,1,
+        "Two PostgreSQL16 clients must not finalize the same corrected qualification twice");
+    }else{
+      await evidence.decide(winner,taskV2.taskId,"APPROVED",validReason,NOW_DATE);
+      await assert.rejects(competitor.decide(winner,taskV2.taskId,"APPROVED",validReason,NOW_DATE),
+        e=>e?.name==="EvidenceReviewAccessError");
+    }
+    mark("CORRECTED_QUALIFICATION_V2_ONE_CLAIM_AND_FINALIZE_REPLAYS_DENIED");
+
+    const stale=await seedEvidence(first,worker.accountId,"qualification","R");
+    const staleTask=await evidence.queueIndependentWorkerEvidence(worker,stale.recordId,NOW_DATE);
+    await authorizeAndClaim(first,evidence,verifier,staleTask.taskId,NOW_DATE);
+    const staleCurrent=await revise(stale.recordId,stale.versionId,"r");
+    await assert.rejects(competitor.decide(verifier,staleTask.taskId,"APPROVED",
+      "Verifier must not approve qualification after Worker changed source version.",NOW_DATE),
+      e=>e?.name==="EvidenceReviewConflictError");
+    const noStale=(await first.query(
+      "SELECT COUNT(*)::int n FROM evidence_review_decisions WHERE task_id=$1",
+      [staleTask.taskId])).rows[0].n;
+    assert.equal(noStale,0);
+    const newStale=await evidence.queueIndependentWorkerEvidence(worker,stale.recordId,NOW_DATE);
+    assert.notEqual(newStale.taskId,staleTask.taskId);
+    await authorizeAndClaim(first,evidence,verifier,newStale.taskId,NOW_DATE);
+    await evidence.decide(verifier,newStale.taskId,"APPROVED",
+      "New version of qualification is current and independently verified.",NOW_DATE);
+    mark("STALE_ASSIGNED_VERSION_APPROVAL_DENIED_CORRECTED_TASK_APPROVED_NO_STALE_DECISION");
+
+    const rows=(await first.query(
+      "SELECT task_id,source_record_id,source_version_id,task_status,assigned_verifier_account_id "+
+      "FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='qualification' "+
+      "ORDER BY source_record_id,source_version_id",[worker.accountId])).rows;
+    assert.equal(rows.length,4);
+    assert.equal(rows.find(x=>x.task_id===taskV1.taskId).task_status,"CHANGES_REQUESTED");
+    assert.equal(rows.find(x=>x.task_id===taskV2.taskId).task_status,"APPROVED");
+    assert.equal(rows.find(x=>x.task_id===taskV2.taskId).source_version_id,v2);
+    assert.equal(rows.find(x=>x.task_id===staleTask.taskId).task_status,"SUPERSEDED");
+    assert.equal(rows.find(x=>x.task_id===newStale.taskId).task_status,"APPROVED");
+    assert.equal(rows.find(x=>x.task_id===newStale.taskId).source_version_id,staleCurrent);
+    const history=(await first.query(
+      "SELECT tasks.task_id,tasks.source_version_id,decisions.outcome,decisions.verifier_account_id,decisions.decision_id "+
+      "FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id "+
+      "WHERE tasks.worker_account_id=$1 AND tasks.evidence_kind='qualification' ORDER BY tasks.task_id",
+      [worker.accountId])).rows;
+    assert.equal(history.length,3);
+    assert.deepEqual(history.map(x=>x.outcome).sort(),["APPROVED","APPROVED","CHANGES_REQUESTED"]);
+    assert.equal(history.find(x=>x.task_id===taskV1.taskId).source_version_id,q.versionId);
+    assert.equal(history.find(x=>x.task_id===taskV2.taskId).source_version_id,v2);
+    assert.equal(history.find(x=>x.task_id===newStale.taskId).source_version_id,staleCurrent);
+    assert(history.every(x=>x.verifier_account_id===verifier.accountId||x.verifier_account_id===otherVerifier.accountId));
+    const original=(await first.query(
+      "SELECT version_id,version_status FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",
+      [q.recordId])).rows;
+    assert.deepEqual(original,[
+      {version_id:q.versionId,version_status:"superseded"},
+      {version_id:v2,version_status:"submitted"}
+    ]);
+    assert.equal((await first.query("SELECT count(*)::int n FROM auth_accounts WHERE account_id=$1",
+      [worker.accountId])).rows[0].n,1);
+    await assert.rejects(first.query(
+      "UPDATE evidence_review_decisions SET reason='altered after review' WHERE decision_id=$1",
+      [history[0].decision_id]),e=>e?.code==="55000");
+    mark("EXACT_THREE_IMMUTABLE_VERSION_BOUND_QUALIFICATION_DECISIONS_ONE_WORKER_NO_FOREIGN_ACCESS");
+  }finally{await dispose();}
+});
