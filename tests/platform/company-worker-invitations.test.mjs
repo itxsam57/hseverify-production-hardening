@@ -691,3 +691,112 @@ test("M1.10.02 actual PostgreSQL16 concurrent Company bulk CSV duplicate recover
     await cleanup();
   }
 });
+
+test("M1.10.03 actual PostgreSQL16 Worker last-slot race enforces code expiry usage/default Site Department and immutable cross-role audit",{
+  skip:!process.env.HSE_M11003_POSTGRES_TEST_DATABASE_URL,timeout:180000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16("M11003");
+  let releaseHeld;
+  try{
+    const owner=await seedCompany(first,"M"),foreign=await seedCompany(first,"N");
+    const units=await seedUnits(first,owner,"M");
+    const foreignUnits=await seedUnits(first,foreign,"N");
+    const a=await seedWorker(first,"P","m11003-pg-a@example.test");
+    const b=await seedWorker(first,"Q","m11003-pg-b@example.test");
+    const c=await seedWorker(first,"R","m11003-pg-c@example.test");
+    const d=await seedWorker(first,"S","m11003-pg-d@example.test");
+    const wrong=await seedWorker(first,"T","m11003-pg-evil@example.test");
+    const pOwner=companyPrincipal(owner),pForeign=companyPrincipal(foreign);
+    const svc1=new CompanyWorkforceService(first,PEPPER,()=>new Date(NOW_DATE));
+    const svc2=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const make=(limit,siteId=units.siteId,departmentId=units.departmentId,expiresAt="2026-08-20T12:00:00.000Z")=>
+      ({usageLimit:limit,expiresAt,siteId,departmentId,paymentResponsibility:"company",assessmentReference:"M11003-PG"});
+    for(const bad of [make(0),make(10001),make(1,foreignUnits.siteId),make(1,units.siteId,foreignUnits.departmentId),
+      make(1,units.siteId,units.departmentId,"2026-08-16T11:00:00.000Z"),
+      make(1,units.siteId,units.departmentId,"2027-08-16T12:00:00.000Z")]){
+      await assert.rejects(svc1.createRegistrationCode(pOwner,bad),
+        error=>["CompanyWorkforceInputError","CompanyWorkforceAccessError"].includes(error?.name));
+    }
+    await assert.rejects(svc1.createRegistrationCode(workerPrincipal(wrong),make(1)),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    console.log("M11003_ACTUAL_PG16_INVALID_CODE_LIMIT_EXPIRY_FOREIGN_SITE_DEPARTMENT_WRONG_ROLE_DENIED");
+
+    const code=await svc1.createRegistrationCode(pOwner,make(1));
+    const rawStored=(await first.query("SELECT code_hash,site_id,department_id,usage_limit,usage_count FROM company_registration_codes WHERE code_id=$1",[code.codeId])).rows[0];
+    assert.notEqual(rawStored.code_hash,code.registrationCode);
+    assert.equal(rawStored.site_id,units.siteId);
+    assert.equal(rawStored.department_id,units.departmentId);
+    assert.equal(Number(rawStored.usage_count),0);
+    const hold=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=hold.release;
+    const svcHeld=new CompanyWorkforceService(hold.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const workerA=svcHeld.redeemRegistrationCode(workerPrincipal(a),code.registrationCode);
+    await hold.ready;
+    const workerB=svc2.redeemRegistrationCode(workerPrincipal(b),code.registrationCode)
+      .then(value=>({ok:true,value}),error=>({ok:false,error}));
+    const premature=await Promise.race([workerB.then(()=>({done:true})),new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))]);
+    assert.equal(premature.waiting,true,"The other authenticated Worker must block while first last-slot redemption is uncommitted");
+    hold.release();releaseHeld=null;
+    const linked=await workerA,failed=await workerB;
+    assert.equal(linked.status,"active");
+    assert.equal(failed.ok,false);
+    assert.equal(failed.error?.name,"CompanyWorkforceSecretError");
+    const same=await svc2.redeemRegistrationCode(workerPrincipal(a),code.registrationCode);
+    assert.equal(same.linkId,linked.linkId,"Original Worker retry must be idempotent without using a second slot");
+    await assert.rejects(svc2.redeemRegistrationCode(pOwner,code.registrationCode),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    console.log("M11003_ACTUAL_PG16_TWO_INDEPENDENT_WORKERS_LAST_SLOT_ONE_WINS_OTHER_FAILS_IDEMPOTENT");
+
+    const multi=await svc2.createRegistrationCode(pOwner,make(3));
+    const third=await svc1.redeemRegistrationCode(workerPrincipal(c),multi.registrationCode);
+    const fourth=await svc2.redeemRegistrationCode(workerPrincipal(d),multi.registrationCode);
+    assert.notEqual(third.linkId,fourth.linkId);
+    const codeMulti=(await first.query("SELECT usage_count,usage_limit,code_status FROM company_registration_codes WHERE code_id=$1",[multi.codeId])).rows[0];
+    assert.equal(Number(codeMulti.usage_count),2);assert.equal(codeMulti.code_status,"active");
+    const revoke=await svc1.createRegistrationCode(pOwner,make(2));
+    await assert.rejects(svc2.revokeRegistrationCode(pForeign,revoke.codeId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await svc1.revokeRegistrationCode(pOwner,revoke.codeId);
+    await svc2.revokeRegistrationCode(pOwner,revoke.codeId);
+    await assert.rejects(svc2.redeemRegistrationCode(workerPrincipal(b),revoke.registrationCode),
+      error=>error?.name==="CompanyWorkforceSecretError");
+    const expiring=await svc1.createRegistrationCode(pOwner,make(2));
+    const later=new Date("2026-08-21T12:00:00.000Z");
+    const lateSvc=new CompanyWorkforceService(second,PEPPER,()=>later);
+    await assert.rejects(lateSvc.redeemRegistrationCode(workerPrincipal(b),expiring.registrationCode),
+      error=>error?.name==="CompanyWorkforceSecretError");
+    await assert.rejects(lateSvc.redeemRegistrationCode(workerPrincipal(wrong),"not-real"),
+      error=>error?.name==="CompanyWorkforceSecretError");
+    console.log("M11003_ACTUAL_PG16_MULTI_USE_REMAINS_ACTIVE_REVOKE_EXPIRED_TAMPERED_DENIED_FOREIGN_OWNER_BLOCKED");
+
+    const rows=(await first.query("SELECT code_id,tenant_id,code_hash,code_status,usage_limit,usage_count,site_id,department_id "+
+      "FROM company_registration_codes WHERE tenant_id=$1 ORDER BY created_at,code_id",[owner.tenantId])).rows;
+    assert.equal(rows.length,4);
+    const byId=new Map(rows.map(x=>[x.code_id,x]));
+    assert.deepEqual([byId.get(code.codeId).code_status,Number(byId.get(code.codeId).usage_count)],["exhausted",1]);
+    assert.deepEqual([byId.get(multi.codeId).code_status,Number(byId.get(multi.codeId).usage_count)],["active",2]);
+    assert.deepEqual([byId.get(revoke.codeId).code_status,Number(byId.get(revoke.codeId).usage_count)],["revoked",0]);
+    assert.deepEqual([byId.get(expiring.codeId).code_status,Number(byId.get(expiring.codeId).usage_count)],["active",0],
+      "A time-expired code may need explicit lifecycle sweep to persist expired status; redemption must deny regardless");
+    assert(rows.every(x=>x.site_id===units.siteId && x.department_id===units.departmentId));
+    const links=(await first.query("SELECT worker_account_id,link_status,code_id,site_id,department_id,payment_responsibility,assessment_reference "+
+      "FROM company_worker_links WHERE tenant_id=$1 ORDER BY worker_account_id",[owner.tenantId])).rows;
+    assert.deepEqual(links.map(x=>[x.worker_account_id,x.link_status]),[
+      [a.accountId,"active"],[c.accountId,"active"],[d.accountId,"active"]
+    ]);
+    assert(links.every(x=>x.site_id===units.siteId && x.department_id===units.departmentId && x.payment_responsibility==="company" &&
+      x.assessment_reference==="M11003-PG"));
+    const audit=(await first.query("SELECT action_key,actor_account_id,target_reference FROM platform_audit_events WHERE target_reference IN "+
+      "(SELECT code_id FROM company_registration_codes WHERE tenant_id=$1) AND action_key LIKE 'company_workforce.code.%' ORDER BY audit_sequence",
+      [owner.tenantId])).rows;
+    const occurrences=(key)=>audit.filter(x=>x.action_key===key);
+    assert.equal(occurrences("company_workforce.code.created").length,4);
+    assert.equal(occurrences("company_workforce.code.redeemed").length,3);
+    assert.equal(occurrences("company_workforce.code.revoked").length,1);
+    assert(occurrences("company_workforce.code.created").concat(occurrences("company_workforce.code.revoked"))
+      .every(x=>x.actor_account_id===owner.accountId));
+    assert.deepEqual(occurrences("company_workforce.code.redeemed").map(x=>x.actor_account_id),[a.accountId,c.accountId,d.accountId]);
+    assert.equal((await first.query("SELECT COUNT(*)::integer AS n FROM company_worker_links WHERE tenant_id=$1",[foreign.tenantId])).rows[0].n,0);
+    console.log("M11003_ACTUAL_PG16_DB_ONE_EXHAUSTED_ONE_MULTI_ACTIVE_REVOKED_EXPIRED_REDEMPTION_DENIAL_THREE_ACTIVE_LINKS_CROSS_ROLE_AUDITS");
+  }finally{if(releaseHeld)releaseHeld();await cleanup();}
+});
