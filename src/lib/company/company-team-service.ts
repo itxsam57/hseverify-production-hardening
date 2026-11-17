@@ -819,6 +819,20 @@ export class CompanyTeamService {
               );
         if (update.affectedRows !== 1) throw new CompanyTeamConflictError();
 
+        // Membership status alone blocks the current request, but it does not
+        // invalidate existing Company session cookies. Without revocation a
+        // suspended user's old signed cookie becomes valid again if restored.
+        // Revoke all Company sessions in this *same* membership-status and audit
+        // transaction. The other portal roles on the account remain untouched.
+        const revokedCompanySessions = input.targetStatus === "active"
+          ? 0
+          : (await database.query(
+              `UPDATE auth_sessions
+               SET revoked_at=$2, revocation_reason=$3
+               WHERE account_id=$1 AND active_role='company' AND revoked_at IS NULL`,
+              [target.account_id,nowIso,`company_team_membership_${input.targetStatus}`]
+            )).affectedRows;
+
         const action = input.targetStatus === "suspended"
           ? "company_team.membership.suspended"
           : input.targetStatus === "active"
@@ -831,7 +845,8 @@ export class CompanyTeamService {
           target: { type: "membership", reference: membershipId },
           metadata: { previousStatus: target.membership_status, status: input.targetStatus,
                       previousAccessRevision: input.expectedAccessRevision,
-                      accessRevision: input.expectedAccessRevision+1 }
+                      accessRevision: input.expectedAccessRevision+1,
+                      revokedCompanySessions }
         });
         const changed = await memberFromDatabase(database, scope.tenantId, membershipId);
         if (!changed) throw new CompanyTeamConflictError();
