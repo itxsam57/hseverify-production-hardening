@@ -3797,16 +3797,23 @@
       "direct_scenarios": [
         "M1.09.05"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "9621c9f9cfd7b111e50ce307f86fb05ac66018443a541f9d8b6f2b0e86796ae1",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ACTUAL_CHROMIUM_ALL_STATUS_AND_DB_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/browser/m10905-company-team-session-revocation.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.09.05"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.09.05 actual Chromium owner suspends Company Team and old worker-scope session cannot reenter after reactivation"
     },
     {
@@ -7508,7 +7515,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7567,7 +7574,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7626,7 +7633,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7685,7 +7692,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7744,7 +7751,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7803,7 +7810,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7862,7 +7869,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 58,
+      "prior_log_pass_repetition_count": 59,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7894,7 +7901,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 57,
+      "prior_log_pass_repetition_count": 58,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15704,12 +15711,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-080-test-auth-completion.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-completion.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15730,12 +15743,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-080-test-auth-completion.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-completion.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15756,12 +15775,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-080-test-auth-completion.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-completion.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15782,12 +15807,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-080-test-auth-completion.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-completion.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15808,12 +15839,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-080-test-auth-completion.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-completion.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15874,12 +15911,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-080-test-auth-completion.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-failure-state-sql.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15894,12 +15937,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-045-test-auth-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15914,12 +15963,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-045-test-auth-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15934,12 +15989,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-045-test-auth-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15954,12 +16015,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-045-test-auth-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15974,12 +16041,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-045-test-auth-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15994,12 +16067,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-045-test-auth-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c3fc3aeb386b97d6e8dd1630776153612740c92083492997123c26e88c947692",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ADJACENT_COMPANY_AUTH_AUTHZ_NATIVE_TYPECHECK_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authentication-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 1,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -16040,7 +16119,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-invitation-expiry.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -16083,7 +16162,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-invitation-expiry.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -16126,7 +16205,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16169,7 +16248,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16212,7 +16291,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16255,7 +16334,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16298,7 +16377,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16341,7 +16420,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16384,7 +16463,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16427,7 +16506,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16470,7 +16549,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16513,7 +16592,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authentication-portal-isolation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.03.06"
       ],
@@ -16565,7 +16644,7 @@
       "exact_ci_pass_count_runs": 2,
       "file": "tests/platform/authentication-signed-out-proxy.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "ambiguous_multiple_report_links",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -16615,7 +16694,7 @@
       "exact_ci_pass_count_runs": 2,
       "file": "tests/platform/authentication-signed-out-proxy.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "ambiguous_multiple_report_links",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -16953,7 +17032,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authorization-membership-context.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -16994,7 +17073,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/authorization-policy-ceiling.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -17044,7 +17123,7 @@
       "exact_ci_pass_count_runs": 2,
       "file": "tests/platform/authorization-session-context.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.07"
       ],
@@ -17096,7 +17175,7 @@
       "exact_ci_pass_count_runs": 2,
       "file": "tests/platform/authorization-session-context.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.07"
       ],
@@ -17148,7 +17227,7 @@
       "exact_ci_pass_count_runs": 2,
       "file": "tests/platform/authorization-session-context.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.07"
       ],
@@ -17200,7 +17279,7 @@
       "exact_ci_pass_count_runs": 2,
       "file": "tests/platform/authorization-session-context.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.07"
       ],
@@ -17234,7 +17313,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -17266,7 +17345,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -17298,7 +17377,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -17330,7 +17409,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -17362,7 +17441,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -17394,7 +17473,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -17426,7 +17505,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/authorization-tenant-foundation.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18397,7 +18476,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team-migration-stack.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18429,7 +18508,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18461,7 +18540,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18493,7 +18572,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18642,16 +18721,35 @@
       "direct_scenarios": [
         "M1.09.05"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "906ee2d21bcfb26bf846876cc448cf886bbf79726b659f7862d7817553b173a4",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ACTUAL_PG16_OLD_TOKEN_REVOCATION_FIX_RETEST_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e13a958daa53733791fd01f0f18c386aa687cfde6c63dcd44bddd2d4247ca49d",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ACTUAL_PG16_SESSION_ISSUANCE_ROWLOCK_RETEST_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "3cfab51b941ab71f41469a807ce382567d915468fac43298eecac2344f9f6196",
+          "source_log": "hseverify-m10905-company-session-revoke-20261117/.autopilot/artifacts/M10905_ACTUAL_PG16_BOTH_LOGIN_REVOKE_ORDERS_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [
         "M1.09.05"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.09.05 actual PostgreSQL16 cached Company staff session suspension and revocation token cannot revive"
     },
     {
@@ -45403,10 +45501,10 @@
   "counts": {
     "ambiguous_or_changed_title_occurrences": 976,
     "ambiguous_or_changed_unique_titles": 234,
-    "clean_pass_summary_logs": 1310,
+    "clean_pass_summary_logs": 1316,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 554,
-    "current_test_source_content_sha256": "1bbc1126afa10b6cd1bc1710d512746e8e90b659b9f4cdcb7af770e9cab6a539",
+    "current_test_source_content_sha256": "1a2f9afe1ece1ba0d8340899ae6bdeab4a1efebf6739b17f58d835aacd0aa759",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45416,22 +45514,22 @@
     },
     "existing_source_cases_linked_to_an_exact_218_id": 164,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 55,
-    "historical_log_files_scanned": 2592,
-    "historical_only_green_distinct_cases": 1188,
+    "frozen_ids_with_at_least_one_sourced_green_case": 56,
+    "historical_log_files_scanned": 2605,
+    "historical_only_green_distinct_cases": 1190,
     "logs_with_no_clean_pass_summary_or_a_failure": 61,
-    "logs_with_pass_lines": 1371,
-    "matched_case_occurrences_with_duplicates": 6101,
+    "logs_with_pass_lines": 1377,
+    "matched_case_occurrences_with_duplicates": 6156,
     "passed_cases_needing_scenario_mapping": 1259,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1420,
+    "previous_green_distinct_source_matched_cases": 1422,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 187,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 170,
+    "source_tests_without_green_execution_proof": 168,
     "static_existing_distinct_test_cases": 1590,
-    "unique_source_matched_historical_green_cases": 1420,
-    "worktrees_scanned": 130
+    "unique_source_matched_historical_green_cases": 1422,
+    "worktrees_scanned": 131
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45444,7 +45542,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "5c152fe74034adb64b93e1540c1d9d3953ac75be",
+  "inventory_started_from_git_head_sha": "c9c275af5bcf63c02b6521228a904d6199533e31",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -46118,9 +46216,12 @@
       "family": "Organization and Team",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 2,
       "id": "M1.09.05",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/browser/m10905-company-team-session-revocation.browser.test.mjs#7454121947b0f156",
+        "tests/platform/company-organization-team.test.mjs#08dacd7d7eb56e13"
+      ],
       "scenario": "Suspension/revocation removes existing-session access"
     },
     {

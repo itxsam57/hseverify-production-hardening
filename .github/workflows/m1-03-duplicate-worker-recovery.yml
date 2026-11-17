@@ -8,6 +8,7 @@ on:
       - "tests/platform/auth-recovery-otp-runtime.test.mjs"
       - "tests/platform/worker-identity-initial-contact-binding.test.mjs"
       - "src/lib/auth/auth-recovery-service.ts"
+      - "src/lib/auth/auth-repository.ts"
       - "src/lib/auth/worker-registration-service.ts"
       - ".github/workflows/m1-03-duplicate-worker-recovery.yml"
   push:
@@ -19,6 +20,7 @@ on:
       - "tests/platform/auth-recovery-otp-runtime.test.mjs"
       - "tests/platform/worker-identity-initial-contact-binding.test.mjs"
       - "src/lib/auth/auth-recovery-service.ts"
+      - "src/lib/auth/auth-repository.ts"
       - "src/lib/auth/worker-registration-service.ts"
       - ".github/workflows/m1-03-duplicate-worker-recovery.yml"
 
