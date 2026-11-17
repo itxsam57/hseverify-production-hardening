@@ -27,6 +27,15 @@ const teamModule = await import(
 );
 
 const { DatabaseCompanyOrganizationRepository } = organizationModule;
+const { AuthorizationContextRepository } = await import(
+  pathToFileURL(join(runtime,"authorization","authorization-context-repository.js")).href
+);
+const { AuthenticationRepository } = await import(
+  pathToFileURL(join(runtime,"auth","auth-repository.js")).href
+);
+const {resolveSessionAuthorizationContext,authorizeCurrentTenantPermission,authorizePortalEntry} = await import(
+  pathToFileURL(join(runtime,"authorization","authorization-context-domain.js")).href
+);
 const { CompanyWorkforceWorkerReadRepository } = await import(
   pathToFileURL(join(runtime, "company", "company-workforce-worker-read-repository.js")).href
 );
@@ -1228,4 +1237,139 @@ test("M1.09.04 actual PostgreSQL16 Company Team same-role stale permission form 
     console.log("M10904_ACTUAL_PG16_STATUS_REVISION_RESURRECTION_DENIED_AND_FRESH_GRANT_ALLOWED");
     console.log("M10904_ACTUAL_PG16_MEMBER_AUDIT_DENIES_DUPLICATE_AND_FOREIGN_TENANT");
   } finally { await cleanup(); }
+});
+
+test("M1.09.05 actual PostgreSQL16 cached Company staff session suspension and revocation token cannot revive", {
+  skip: !process.env.HSE_M10905_POSTGRES_TEST_DATABASE_URL,
+  timeout: 180000
+}, async () => {
+  const {first,second,cleanup} = await m10901RealPostgresDatabase("M10905");
+  try {
+    const owner=await insertCompanyContext(first,"R");
+    const foreign=await insertCompanyContext(first,"S");
+    const managerAccount=await createAcceptedInviteAccount(first,"m10905-manager@example.test","m10905-manager");
+    const managerMembership=opaqueId("membership","Z");
+    await first.query(`INSERT INTO auth_tenant_memberships(
+      membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at)
+      VALUES($1,$2,$3,'company','manager','active',$4,$5,$5,$5)`,
+      [managerMembership,owner.tenantId,managerAccount,owner.accountId,NOW]);
+    const staffSessions=["m10905_cached_company_session_a","m10905_cached_company_session_b"];
+    for(const id of staffSessions){
+      await first.query(`INSERT INTO auth_sessions(
+        session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at)
+        VALUES($1,$2,'company',$3,$4,$5,$5,$6)`,
+        [id,managerAccount,`hash-${id}`,`csrf-${id}`,NOW,FAR_FUTURE]);
+    }
+    const memberService=new CompanyTeamService(Promise.resolve(first),PEPPER,()=>new Date(NOW_DATE));
+    const manage=principal(owner,"company.members.manage");
+    const reader=principal(owner,"company.members.read");
+    const sessionReader=new AuthorizationContextRepository(second);
+    const tokenResolution=async id=>resolveSessionAuthorizationContext({
+      snapshot:await sessionReader.findBySessionTokenHash(`hash-${id}`),now:NOW
+    });
+    const before=await tokenResolution(staffSessions[0]);
+    assert.equal(before.allowed,true);
+    assert.equal(authorizePortalEntry({resolution:before,expectedRole:"company"}).allowed,true);
+    assert.equal(authorizeCurrentTenantPermission({resolution:before,permission:"company.workforce.read"}).allowed,true);
+    const manager=(await memberService.listMembers(reader)).find(row=>row.membershipId===managerMembership);
+    assert.ok(manager);
+    const suspended=await memberService.changeMemberStatus(manage,{
+      membershipId:managerMembership,expectedStatus:"active",
+      expectedAccessRevision:manager.accessRevision,targetStatus:"suspended"
+    });
+    assert.equal(suspended.status,"suspended");
+    const oldSessionsAfterSuspend=await second.query(`SELECT session_id,revoked_at,revocation_reason
+      FROM auth_sessions WHERE account_id=$1 AND active_role='company' ORDER BY session_id`,[managerAccount]);
+    assert.equal(oldSessionsAfterSuspend.rows.length,2);
+    assert.equal(oldSessionsAfterSuspend.rows.every(row=>row.revoked_at!==null),true,
+      "M1.09.05 suspended Company Team member retained usable signed sessions, which could revive on activation");
+    assert.deepEqual(oldSessionsAfterSuspend.rows.map(row=>row.revocation_reason),
+      ["company_team_membership_suspended","company_team_membership_suspended"]);
+    for(const id of staffSessions){
+      const revoked=await tokenResolution(id);
+      assert.equal(revoked.allowed,false);
+      assert.equal(revoked.reason,"session_revoked");
+    }
+    console.log("M10905_REAL_PG16_SUSPEND_INVALIDATES_ALL_PREVIOUS_COMPANY_SESSION_TOKENS");
+    const issueNewCompanyToken=(client,id,role="company")=>new AuthenticationRepository(client).insertSession({
+      sessionId:id,accountId:managerAccount,activeRole:role,tokenHash:`hash-${id}`,
+      csrfTokenHash:`csrf-${id}`,userAgentHash:null,ipAddressHash:null,
+      createdAt:NOW,lastSeenAt:NOW,expiresAt:FAR_FUTURE
+    });
+    await assert.rejects(issueNewCompanyToken(second,"m10905_suspended_login"),
+      /active account|active Company|membership/i,
+      "M1.09.05 suspended member can mint a new Company cookie, which would revive at reactivation");
+    console.log("M10905_REAL_PG16_LOGIN_ISSUANCE_DURING_SUSPENSION_DENIED");
+    const reactivated=await memberService.changeMemberStatus(manage,{
+      membershipId:managerMembership,expectedStatus:"suspended",
+      expectedAccessRevision:suspended.accessRevision,targetStatus:"active"
+    });
+    assert.equal(reactivated.status,"active");
+    for(const id of staffSessions){
+      const oldToken=await tokenResolution(id);
+      assert.equal(oldToken.allowed,false,"M1.09.05 resurrected an old Company session token after reactivation");
+    }
+    console.log("M10905_REAL_PG16_OLD_SIGNED_SESSIONS_CANNOT_REVIVE_AFTER_REACTIVATION");
+    const freshId="m10905_fresh_after_reactivation";
+    await issueNewCompanyToken(second,freshId);
+    const fresh=await tokenResolution(freshId);
+    assert.equal(authorizeCurrentTenantPermission({resolution:fresh,permission:"company.workforce.read"}).allowed,true);
+    // Genuine overlapping transactions: the Owner's revocation is uncommitted
+    // while the other connection attempts another MFA-complete session issue.
+    // Its membership FOR SHARE lock must wait, then recheck the revoked row.
+    let notifyRevocation, releaseRevocation;
+    const reachedRevocation=new Promise(resolve=>{notifyRevocation=resolve;});
+    const holdCommit=new Promise(resolve=>{releaseRevocation=resolve;});
+    let release=releaseRevocation;
+    const heldService=new CompanyTeamService(Promise.resolve({
+      transaction:callback=>first.transaction(async tx=>{
+        const result=await callback(tx);
+        notifyRevocation();
+        await holdCommit;
+        return result;
+      })
+    }),PEPPER,()=>new Date(NOW_DATE));
+    let final;
+    try {
+      const ownerRevocation=heldService.changeMemberStatus(manage,{
+        membershipId:managerMembership,expectedStatus:"active",
+        expectedAccessRevision:reactivated.accessRevision,targetStatus:"revoked"
+      });
+      await reachedRevocation;
+      const racingLogin=issueNewCompanyToken(second,"m10905_racing_login_during_revoke")
+        .then(()=>({ok:true}),error=>({ok:false,error}));
+      const early=await Promise.race([
+        racingLogin.then(()=>({pending:false})),
+        new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))
+      ]);
+      assert.equal(early.pending,true,"Company login must wait while a membership revocation holds the row lock");
+      release();release=null;
+      final=await ownerRevocation;
+      const late=await racingLogin;
+      assert.equal(late.ok,false,"New Company login cannot commit after the competing membership was revoked");
+      assert.match(late.error?.message??"",/active Company membership/i);
+      const racedSession=await second.query("SELECT 1 FROM auth_sessions WHERE session_id=$1",["m10905_racing_login_during_revoke"]);
+      assert.equal(racedSession.rows.length,0);
+      console.log("M10905_REAL_PG16_CONCURRENT_LOGIN_REVOKE_ROWLOCK_SERIALIZES_AND_FAILS_CLOSED");
+    } finally {if(release)release();}
+    assert.equal(final.status,"revoked");
+    const freshAfterRevocation=await tokenResolution(freshId);
+    assert.equal(freshAfterRevocation.allowed,false);
+    assert.equal(freshAfterRevocation.reason,"session_revoked");
+    const freshDb=await first.query("SELECT revoked_at,revocation_reason FROM auth_sessions WHERE session_id=$1",[freshId]);
+    assert.equal(freshDb.rows[0]?.revocation_reason,"company_team_membership_revoked");
+    assert.ok(freshDb.rows[0]?.revoked_at);
+    const foreignSession=await second.query("SELECT revoked_at FROM auth_sessions WHERE session_id=$1",[foreign.sessionId]);
+    assert.equal(foreignSession.rows[0].revoked_at,null);
+    const ownerSession=await second.query("SELECT revoked_at FROM auth_sessions WHERE session_id=$1",[owner.sessionId]);
+    assert.equal(ownerSession.rows[0].revoked_at,null);
+    const memberAudits=await second.query(`SELECT action_key FROM platform_audit_events
+      WHERE actor_tenant_id=$1 AND target_reference=$2
+       AND action_key IN ('company_team.membership.suspended','company_team.membership.reactivated','company_team.membership.revoked')
+      ORDER BY audit_sequence`,[owner.tenantId,managerMembership]);
+    assert.deepEqual(memberAudits.rows.map(row=>row.action_key),[
+      "company_team.membership.suspended","company_team.membership.reactivated","company_team.membership.revoked"
+    ]);
+    console.log("M10905_REAL_PG16_REVOKE_INVALIDATES_FRESH_TOKEN_FOREIGN_AND_OWNER_UNTOUCHED_AUDITS_EXACT");
+  } finally {await cleanup();}
 });

@@ -25,6 +25,7 @@ const ENTRY_FILES = Object.freeze([
   "auth/auth-repository.ts",
   "auth/auth-access-repository.ts",
   "authorization/authorization-context-domain.ts",
+  "authorization/authorization-context-repository.ts",
   "authorization/authorization-domain.ts",
   "authorization/tenant-scoped-resource-domain.ts",
   "authorization/tenant-scoped-command-guard.ts"

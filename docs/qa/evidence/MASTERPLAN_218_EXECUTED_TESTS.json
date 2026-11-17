@@ -3773,17 +3773,41 @@
       "direct_scenarios": [
         "M1.09.04"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "e1a401f1d1d2fcba6052a393850818e820367312c7ed394cba8ccbe60c2aa490",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_ACTUAL_CHROMIUM_LOCAL_HARDLINK_DEPS_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/browser/m10904-company-team-stale-permission.browser.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.09.04"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.09.04 actual Chromium two Company staff stale same-role permission forms cannot resurrect revoked access"
+    },
+    {
+      "case_id": "tests/browser/m10905-company-team-session-revocation.browser.test.mjs#7454121947b0f156",
+      "direct_scenarios": [
+        "M1.09.05"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/browser/m10905-company-team-session-revocation.browser.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.09.05"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.09.05 actual Chromium owner suspends Company Team and old worker-scope session cannot reenter after reactivation"
     },
     {
       "case_id": "tests/browser/m2-01-assurance-order-case.browser.test.mjs#1b67f0d4bf1c8bfa",
@@ -7484,7 +7508,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 60,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7543,7 +7567,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 60,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7602,7 +7626,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 60,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7661,7 +7685,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 60,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7720,7 +7744,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 60,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7779,7 +7803,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 60,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7838,7 +7862,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 57,
+      "prior_log_pass_repetition_count": 58,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7870,7 +7894,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 56,
+      "prior_log_pass_repetition_count": 57,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18362,12 +18386,18 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-074-test-m1-09.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "107de8ce6a13d1eae7d0bd10e992781c941076fe60b13158e087677b2d9a25e4",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_FULL_NATIVE_TEAM_SERVICE_REGRESSION_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team-migration-stack.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 4,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18399,7 +18429,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 3,
+      "prior_log_pass_repetition_count": 6,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18431,7 +18461,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 3,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18463,7 +18493,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 3,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18569,7 +18599,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 4,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [
         "M1.09.03"
       ],
@@ -18582,17 +18612,47 @@
       "direct_scenarios": [
         "M1.09.04"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "a2a9e75820b9291e7df43867fe95725eebf88a8d967a8de87ccd1aad8a530d34",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_ACTUAL_PG16_STALE_PERMISSION_REVISION_0133_RETEST_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "ce9877ce91bf4c65a4e3f29223900aec07bcf38a0b631da61e474c03d72b003b",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_ACTUAL_PG16_STALE_PERMISSION_FULL_CAS_RETEST_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 2,
       "scenario_ids": [
         "M1.09.04"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.09.04 actual PostgreSQL16 Company Team same-role stale permission form replay denied"
+    },
+    {
+      "case_id": "tests/platform/company-organization-team.test.mjs#08dacd7d7eb56e13",
+      "direct_scenarios": [
+        "M1.09.05"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/company-organization-team.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.09.05"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.09.05 actual PostgreSQL16 cached Company staff session suspension and revocation token cannot revive"
     },
     {
       "case_id": "tests/platform/company-registration-mfa-postgres.test.mjs#8b2149854d76a3a1",
@@ -28356,16 +28416,23 @@
       "direct_scenarios": [
         "M1.01.02"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "1328d5dbc85546ac9cd74a4e847fd722ad893a3ebe545a9e84c92f8e3d8ce83a",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_ACTUAL_PG16_MIGRATION_0133_FULL138_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/m1-01-exact-postgres-migrations.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.01.02"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.01.02 real PostgreSQL applies 138 migrations once, preserves history, and safely refuses an unknown applied migration"
     },
     {
@@ -28405,7 +28472,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/m1-01-exact-postgres-migrations.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.01.02"
       ],
@@ -28418,16 +28485,23 @@
       "direct_scenarios": [
         "M1.01.02"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "1328d5dbc85546ac9cd74a4e847fd722ad893a3ebe545a9e84c92f8e3d8ce83a",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_ACTUAL_PG16_MIGRATION_0133_FULL138_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/m1-01-exact-postgres-migrations.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.01.02"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.01.02 explicitly acknowledged test rollback preserves preceding history and reapply restores all 138"
     },
     {
@@ -28435,16 +28509,23 @@
       "direct_scenarios": [
         "M1.01.02"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "1328d5dbc85546ac9cd74a4e847fd722ad893a3ebe545a9e84c92f8e3d8ce83a",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_ACTUAL_PG16_MIGRATION_0133_FULL138_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/m1-01-exact-postgres-migrations.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.01.02"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.01.02 all 138 reverse down migrations are executable in disposable PG16 and completely reapply"
     },
     {
@@ -45322,10 +45403,10 @@
   "counts": {
     "ambiguous_or_changed_title_occurrences": 976,
     "ambiguous_or_changed_unique_titles": 234,
-    "clean_pass_summary_logs": 1301,
+    "clean_pass_summary_logs": 1310,
     "current_reference_CI_green_distinct_cases": 232,
-    "current_source_test_files": 553,
-    "current_test_source_content_sha256": "c1a4fd7f435ca041ca0f638864144a1b6e54681cbd9b86993eafd1373e8dfa31",
+    "current_source_test_files": 554,
+    "current_test_source_content_sha256": "1bbc1126afa10b6cd1bc1710d512746e8e90b659b9f4cdcb7af770e9cab6a539",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45333,24 +45414,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 162,
+    "existing_source_cases_linked_to_an_exact_218_id": 164,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 54,
-    "historical_log_files_scanned": 2571,
-    "historical_only_green_distinct_cases": 1183,
+    "frozen_ids_with_at_least_one_sourced_green_case": 55,
+    "historical_log_files_scanned": 2592,
+    "historical_only_green_distinct_cases": 1188,
     "logs_with_no_clean_pass_summary_or_a_failure": 61,
-    "logs_with_pass_lines": 1362,
-    "matched_case_occurrences_with_duplicates": 6076,
+    "logs_with_pass_lines": 1371,
+    "matched_case_occurrences_with_duplicates": 6101,
     "passed_cases_needing_scenario_mapping": 1259,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1415,
-    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 185,
+    "previous_green_distinct_source_matched_cases": 1420,
+    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 187,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 173,
-    "static_existing_distinct_test_cases": 1588,
-    "unique_source_matched_historical_green_cases": 1415,
-    "worktrees_scanned": 129
+    "source_tests_without_green_execution_proof": 170,
+    "static_existing_distinct_test_cases": 1590,
+    "unique_source_matched_historical_green_cases": 1420,
+    "worktrees_scanned": 130
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45363,7 +45444,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "05e834cc370dc05628359325006b50392376a33b",
+  "inventory_started_from_git_head_sha": "5c152fe74034adb64b93e1540c1d9d3953ac75be",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -45388,10 +45469,13 @@
       "family": "Environment and release foundation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 1,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 3,
       "id": "M1.01.02",
       "linked_case_ids": [
-        "tests/platform/m1-01-exact-postgres-migrations.test.mjs#5a06ce438e5dcf4e"
+        "tests/platform/m1-01-exact-postgres-migrations.test.mjs#194fb7522670d66a",
+        "tests/platform/m1-01-exact-postgres-migrations.test.mjs#5a06ce438e5dcf4e",
+        "tests/platform/m1-01-exact-postgres-migrations.test.mjs#4d14322e9e6a2d20",
+        "tests/platform/m1-01-exact-postgres-migrations.test.mjs#09a2617803dbae04"
       ],
       "scenario": "All migrations apply, preserve history and rollback safely"
     },
@@ -46020,14 +46104,17 @@
       "family": "Organization and Team",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 2,
       "id": "M1.09.04",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/browser/m10904-company-team-stale-permission.browser.test.mjs#577d2c179b7ecdab",
+        "tests/platform/company-organization-team.test.mjs#5855cb4ced9c4fa3"
+      ],
       "scenario": "Team invitation, MFA enrollment, role permission update"
     },
     {
       "brick": "M1.09",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 2,
       "family": "Organization and Team",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,

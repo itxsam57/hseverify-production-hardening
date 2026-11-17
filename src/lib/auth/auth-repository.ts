@@ -528,6 +528,17 @@ export class AuthenticationRepository {
        FROM auth_accounts
        WHERE account_id = $2
          AND account_status = 'active'
+         -- A new Company session may never be minted against an invited,
+         -- suspended or revoked Company membership. Lock the live membership
+         -- row so concurrent Team suspension/revocation serializes with login:
+         -- if login commits first, the transition sweeps that token; if the
+         -- transition commits first, this INSERT denies the new token.
+         AND ($3 <> 'company' OR EXISTS (
+           SELECT 1 FROM auth_tenant_memberships AS membership
+           WHERE membership.account_id=$2 AND membership.portal_role='company'
+             AND membership.membership_status='active'
+           FOR SHARE
+         ))
        RETURNING session_id`,
       [
         input.sessionId,
@@ -543,7 +554,7 @@ export class AuthenticationRepository {
       ]
     );
     if (result.rows.length !== 1) {
-      throw new Error("A session can only be created for an active account.");
+      throw new Error("A session can only be created for an active account and active Company membership.");
     }
   }
 
