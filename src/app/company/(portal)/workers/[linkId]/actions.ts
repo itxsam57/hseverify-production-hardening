@@ -53,3 +53,41 @@ export async function endWorkerRelationshipAction(
     return { status: "error", message: "The Worker relationship could not be ended safely." };
   }
 }
+
+export type UpdateWorkerPlacementState = Readonly<{
+  status: "idle" | "success" | "error" | "conflict";
+  message: string | null;
+}>;
+
+export async function updateWorkerPlacementAction(
+  linkId: string,
+  _previous: UpdateWorkerPlacementState,
+  formData: FormData
+): Promise<UpdateWorkerPlacementState> {
+  try {
+    const principal = await requireCurrentTenantPermission("company.workforce.manage");
+    const environment = getServerEnvironment();
+    const service = new CompanyWorkforceService(await getDatabaseClient(), environment.authPepper);
+    await service.updateWorkerPlacement(principal, {
+      linkId,
+      siteId: typeof formData.get("siteId") === "string" ? String(formData.get("siteId")) : null,
+      departmentId: typeof formData.get("departmentId") === "string" ? String(formData.get("departmentId")) : null
+    });
+    revalidatePath("/company/workers");
+    revalidatePath(`/company/workers/${encodeURIComponent(linkId)}`);
+    revalidatePath("/worker/company-access");
+    revalidatePath("/company/dashboard");
+    return {status:"success",message:"Worker placement updated. The Worker can see the new Site and Department."};
+  } catch (error) {
+    if (error instanceof CompanyWorkforceConflictError) {
+      return {status:"conflict",message:error.message};
+    }
+    if (error instanceof CompanyWorkforceInputError) {
+      return {status:"error",message:error.message};
+    }
+    if (error instanceof CompanyWorkforceAccessError) {
+      return {status:"error",message:"This Company session cannot change that Worker placement."};
+    }
+    return {status:"error",message:"The Worker placement could not be changed safely."};
+  }
+}

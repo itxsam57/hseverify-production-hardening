@@ -34,6 +34,12 @@ DIMENSIONS = (
     "role_tenant_api_pentest",
     "genuine_provider_stage_owner_uat",
 )
+# Post-freeze source additions require separate attack candidates, never a
+# rewrite or reclassification of the owner's immutable 4,975-slot register.
+ORIGINAL_FROZEN_PLANNED_CHECKS = 4975
+REVIEWED_POST_FREEZE_SECURITY_ACTIONS = frozenset({
+    "ACTION:src/app/company/(portal)/workers/[linkId]/actions.ts:updateWorkerPlacementAction",
+})
 SECURITY_FAMILIES = (
     "unauthenticated",
     "wrong_role_privilege",
@@ -138,6 +144,11 @@ def prior_result_rows(root: Path = ROOT) -> dict:
 def build_register(root: Path = ROOT, sha: str | None = None) -> tuple[dict, list[dict]]:
     rows = frozen_scenarios(root)
     actions, by_endpoint_type = candidate_entrypoints(root)
+    added = [action for action in actions if action["id"] in REVIEWED_POST_FREEZE_SECURITY_ACTIONS]
+    if {action["id"] for action in added} != REVIEWED_POST_FREEZE_SECURITY_ACTIONS:
+        raise ValueError("Expected new post-freeze placement action missing from live source")
+    if len(actions) != 251 + len(added):
+        raise ValueError("Unexpected live API/Server Action candidate surface drift; review new attack cases")
     pages = ui_pages(root)
     if sha is None:
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
@@ -194,6 +205,10 @@ def build_register(root: Path = ROOT, sha: str | None = None) -> tuple[dict, lis
         "frozen_bricks": len({r["brick"] for r in rows}),
         "candidate_entrypoints": len(actions),
         "entrypoint_types": by_endpoint_type,
+        "original_frozen_planned_checks": ORIGINAL_FROZEN_PLANNED_CHECKS,
+        "original_frozen_security_action_candidates": 251,
+        "reviewed_post_freeze_security_action_ids": sorted(REVIEWED_POST_FREEZE_SECURITY_ACTIONS),
+        "additional_unfrozen_attack_family_slots": len(added) * len(SECURITY_FAMILIES),
         "responsive_page_files": len(pages),
         "planned_checks": len(result),
         "planned_check_categories": dict(counts),
@@ -205,6 +220,7 @@ def build_register(root: Path = ROOT, sha: str | None = None) -> tuple[dict, lis
         "historical_scenarios_with_a_tsv": len(prior["files_by_scenario"]),
         "historical_tsv_scenario_ids": sorted(prior["files_by_scenario"]),
         "warnings": [
+            "The owner's ORIGINAL 4975-slot register remains frozen; the live source has additional post-freeze action attack candidates that are NOT silently written into the original register.",
             "The 4975 rows are a PROVISIONAL planning matrix, not exhaustive pentest scope or runnable distinct tests.",
             "Green TSV rows are evidence-index observations from historical or scoped suites, not 4975-slot completions.",
             "Reported passing cases can overlap and repeat: never subtract their count from 4975.",
@@ -221,15 +237,18 @@ def build_register(root: Path = ROOT, sha: str | None = None) -> tuple[dict, lis
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-json", default=".autopilot/artifacts/verification-4975-coverage.json")
-    parser.add_argument("--out-csv", default="docs/qa/evidence/QA_4975_PROVISIONAL_REGISTER_20261114.csv")
+    parser.add_argument("--out-csv", default=".autopilot/artifacts/verification-4975-current-source-register.csv")
     args = parser.parse_args()
     report, rows = build_register()
-    if len(rows) != 4975 or report["planned_check_categories"] != {
-        "scenario_dimension": 2616, "security_candidate": 2008, "responsive_page": 351
+    additional = len(REVIEWED_POST_FREEZE_SECURITY_ACTIONS) * len(SECURITY_FAMILIES)
+    if len(rows) != ORIGINAL_FROZEN_PLANNED_CHECKS + additional or report["planned_check_categories"] != {
+        "scenario_dimension": 2616, "security_candidate": 2008 + additional, "responsive_page": 351
     }:
-        raise SystemExit(f"Planning inventory drift: {report['planned_checks']} rows; {report['planned_check_categories']}. Never fudge coverage baseline.")
+        raise SystemExit(f"Unreviewed live security inventory drift: {report['planned_checks']} rows; {report['planned_check_categories']}. Never fudge the original 4975 baseline.")
     out_json = ROOT / args.out_json
     out_csv = ROOT / args.out_csv
+    if out_csv.resolve() == (ROOT / "docs/qa/evidence/QA_4975_PROVISIONAL_REGISTER_20261114.csv").resolve():
+        raise SystemExit("Refusing to overwrite owner's original immutable 4,975-row planning register with expanded live security candidate inventory")
     for path in (out_json, out_csv):
         path.parent.mkdir(parents=True, exist_ok=True)
     out_json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

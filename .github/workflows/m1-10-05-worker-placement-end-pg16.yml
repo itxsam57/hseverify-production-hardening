@@ -1,0 +1,137 @@
+name: M1.10.05 actual PostgreSQL16 Company Worker cross-employer history end consent race
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'tests/browser/company-worker-end-relationship.browser.test.mjs'
+      - 'tests/browser/m11005-worker-placement.browser.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/audit/audit-domain.ts'
+      - 'database/migrations/0134_company_worker_placement_audit.*.sql'
+      - 'src/app/company/(portal)/workers/[linkId]/**'
+      - 'src/components/company/worker-placement-form.tsx'
+      - 'src/lib/company/company-workforce-worker-read-repository.ts'
+      - 'src/lib/authorization/**'
+      - 'src/app/worker/(portal)/company-access/actions.ts'
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - '.github/workflows/m1-10-05-worker-placement-end-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'tests/browser/company-worker-end-relationship.browser.test.mjs'
+      - 'tests/browser/m11005-worker-placement.browser.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/audit/audit-domain.ts'
+      - 'database/migrations/0134_company_worker_placement_audit.*.sql'
+      - 'src/app/company/(portal)/workers/[linkId]/**'
+      - 'src/components/company/worker-placement-form.tsx'
+      - 'src/lib/company/company-workforce-worker-read-repository.ts'
+      - 'src/lib/authorization/**'
+      - 'src/app/worker/(portal)/company-access/actions.ts'
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - '.github/workflows/m1-10-05-worker-placement-end-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11005-placement-end-history-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  real-postgres16-cross-employer-end-receiver-race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_placement_end
+          POSTGRES_PASSWORD: synthetic_placement_end_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_placement_end -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact dependency lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Independent PostgreSQL16 cross-employer end race, Worker receiving history, consent and immutable audits
+        shell: bash
+        env:
+          HSE_M11005_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_placement_end:synthetic_placement_end_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-worker-invitation-tests.mjs --test-name-pattern 'M1.10.05 actual PostgreSQL16' 2>&1 | tee .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          grep -q 'ℹ tests 2' .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          grep -q 'ℹ pass 2' .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          for marker in FIRST_COMPANY_PENDING_TO_RIGHTFUL_WORKER_ACTIVE_WITH_OWN_SITE_DEPARTMENT_RECEIVER TWO_CONNECTION_SAME_LINK_END_SERIALIZES_ONE_REVOKE_WORKER_HISTORY_RETAINS_OLD_PLACEMENT NEW_COMPANY_REQUIRES_FRESH_WORKER_CONSENT_REJECTS_OLD_TENANT_LINK_ID_AND_PRESERVES_WORKER_ID WORKER_RECEIVER_OLD_HISTORY_NEW_ACTIVE_SITE_DEPARTMENT_AND_PERMANENT_ID_UNCHANGED EXACT_TWO_CONSENTED_LINKS_ONE_END_FIVE_IMMUTABLE_ROLE_SCOPED_AUDITS_NO_REPLAY MOVEMENT_WRONG_ROLE_FOREIGN_TENANT_SITE_DEPARTMENT_DENIED_NO_CHANGES ACTIVE_PLACEMENT_MOVE_COMMITS_BEFORE_CONCURRENT_END_WORKER_HISTORY_SHOWS_LAST_SCOPE ONE_MOVE_ONE_END_ORDERED_IMMUTABLE_AUDIT_NO_WRONG_TENANT_OR_WORKER_ID_MUTATION; do
+            grep -q "M11005_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          done
+      - name: Preserve exact-SHA PostgreSQL16 Company placement and termination audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11005-worker-placement-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11005-real-postgres16-worker-history.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  signed-company-worker-actual-chromium-placement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exact lockfile and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Company Worker active Site Department placement real receiving and forged ID denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/m11005-worker-placement.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11005-placement-real-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11005-placement-real-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11005-placement-real-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11005-placement-real-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11005-placement-real-chromium.log
+          for marker in COMPANY_WORKER_SIGNED_ACTIVE_INITIAL_SITE_DEPARTMENT_390 FORGED_SITE_ID_REAL_SERVER_ACTION_DENIED_NO_CHANGES COMPANY_SAVED_NEW_PLACEMENT_WORKER_RECEIVER_UPDATED_390_NO_OVERFLOW REPLAY_IDEMPOTENT_320_390_WORKER_HISTORY_RESPONSIVE DB_ONE_VALID_CHANGE_EXACT_ACTOR_SCOPE_ZERO_FORGED_ZERO_REPLAY_AUDIT; do
+            grep -q "M11005_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m11005-placement-real-chromium.log
+          done
+      - name: Archive exact-SHA Chromium role and audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11005-placement-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11005-placement-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 30

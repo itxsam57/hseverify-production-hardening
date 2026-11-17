@@ -141,6 +141,7 @@ const workforceAuditActions = [
   "company_workforce.code.redeemed",
   "company_workforce.link.requested",
   "company_workforce.link.accepted",
+  "company_workforce.link.placement_updated",
   "company_workforce.link.revoked"
 ];
 for (const action of workforceAuditActions) requireMarker(auditDomain, action, paths.auditDomain);
