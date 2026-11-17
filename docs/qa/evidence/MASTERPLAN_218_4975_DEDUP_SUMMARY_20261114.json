@@ -1,7 +1,7 @@
 {
   "canonical_scenarios": 218,
   "final_stage_certified_slots": 0,
-  "historical_mixed_or_source_case_title_only_slots_NOT_COMPLETE": 87,
+  "historical_mixed_or_source_case_title_only_slots_NOT_COMPLETE": 90,
   "historically_evidenced_distinct_planned_slots_NOT_COMPLETE": 693,
   "important_limitations": [
     "A historical mapped scoped clause is not a fully passing compound 4975 slot; it is evidence for one or more substeps.",
@@ -358,14 +358,16 @@
       "full_release_certified_dimensions": 0
     },
     "M1.11.01": {
-      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 9,
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
       "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 3,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 2,
       "all_12_planned_dimensions": 12,
       "full_release_certified_dimensions": 0
     },
     "M1.11.02": {
-      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 8,
+      "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 7,
       "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 4,
+      "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 1,
       "all_12_planned_dimensions": 12,
       "full_release_certified_dimensions": 0
     },
@@ -1342,19 +1344,19 @@
   },
   "planned_check_slots": 4975,
   "planned_slots_not_final_stage_certified": 4975,
-  "planned_slots_without_any_precise_old_dimension_link": 4195,
+  "planned_slots_without_any_precise_old_dimension_link": 4192,
   "previous_green_source_cases_without_a_precise_planned_dimension_link": 1023,
   "release_decision": "NO_GO",
   "release_scenarios_fully_verified": 0,
-  "scoped_prior_source_tests_green_distinct": 1430,
-  "scoped_source_test_case_total": 1604,
+  "scoped_prior_source_tests_green_distinct": 1431,
+  "scoped_source_test_case_total": 1605,
   "slot_historical_link_states": {
-    "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4195,
+    "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4192,
     "OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED": 17,
     "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 693,
-    "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 70
+    "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 73
   },
-  "source_cases_used_in_preliminary_dimension_candidate_links": 407,
+  "source_cases_used_in_preliminary_dimension_candidate_links": 408,
   "source_sha_at_initial_plan": "8c60c0b789513f427fb56db3fa96dad4afe38d47",
   "source_sha_at_reconciliation": "1c9954a770edb9e9f1a23b1bab59e680fb5bdcc5"
 }

@@ -1064,8 +1064,8 @@ test("M1.07.03 rejected initial identity routes one immutable Worker notificatio
 // PostgreSQL16. Earlier real signed browser tests already cover file upload,
 // Verifier CHANGES_REQUESTED/REJECTED, Worker correction and approved receiving
 // UI; this is deliberately narrower to avoid duplicating old passing journeys.
-async function m11101QualificationSqlClients() {
-  const connection=process.env.HSE_M11101_POSTGRES_TEST_DATABASE_URL;
+async function m11101QualificationSqlClients(connectionOverride) {
+  const connection=connectionOverride || process.env.HSE_M11101_POSTGRES_TEST_DATABASE_URL;
   if (!connection) {
     const db=await database("0134_company_worker_placement_audit");
     return {first:db,second:db,postgres:false,dispose:async()=>db.close()};
@@ -1256,4 +1256,139 @@ test("M1.11.01 qualification two-source review race and stale-Verifier denial on
       [history[0].decision_id]),e=>e?.code==="55000");
     mark("EXACT_THREE_IMMUTABLE_VERSION_BOUND_QUALIFICATION_DECISIONS_ONE_WORKER_NO_FOREIGN_ACCESS");
   }finally{await dispose();}
+});
+
+
+test("M1.11.02 experience correction retains old review and rejects stale, foreign and simultaneous Verifier decisions on actual PostgreSQL16",{
+ timeout:220000
+},async()=>{
+ const {first,second,postgres,dispose}=await m11101QualificationSqlClients(process.env.HSE_M11102_POSTGRES_TEST_DATABASE_URL);
+ const service=new EvidenceReviewService(first),concurrent=new EvidenceReviewService(second);
+ const mark=s=>console.log((postgres?"M11102_ACTUAL_PG16_":"M11102_PGLITE_")+s);
+ const stamp=new Date(NOW);
+ try{
+  const worker=await seedAccount(first,{accountId:"account_m11102_worker",email:"worker-m11102@example.test",role:"worker",sessionId:"session_m11102_worker"});
+  const verifierA=await seedAccount(first,{accountId:"account_m11102_verifier_a",email:"verifier-a-m11102@example.test",role:"verifier",sessionId:"session_m11102_verifier_a"});
+  const seedAdditional=async(role,suffix)=>{
+   const accountId="account_m11102_"+suffix,sessionId="session_m11102_"+suffix,email=suffix+"@m11102.example.test";
+   await first.query("INSERT INTO auth_accounts (account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at)"+
+     " VALUES($1,$2,$3,'active',$4,$5,$5,$5,$5)",[accountId,email,suffix,"scrypt$16384$8$1$salt$hash",NOW]);
+   await first.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,$2,$3)",[accountId,role,NOW]);
+   await first.query("INSERT INTO auth_sessions (session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at)"+
+     " VALUES($1,$2,$3,$4,$5,$6,$6,$7)",[sessionId,accountId,role,"token-"+suffix,"csrf-"+suffix,NOW,FUTURE]);
+   return {accountId,sessionId,activeRole:role,accountStatus:"active",email,displayName:suffix,
+     createdAt:NOW,lastSeenAt:NOW,expiresAt:FUTURE,tenantMembership:null};
+  };
+  const verifierB=await seedAdditional("verifier","verifier_b");
+  const foreignWorker=await seedAdditional("worker","foreign_worker");
+  const company=await seedAccount(first,{accountId:"account_m11102_company",email:"company-m11102@example.test",role:"company",sessionId:"session_m11102_company"});
+  const original=await seedEvidence(first,worker.accountId,"experience","E");
+  const oldTask=await service.queueIndependentWorkerEvidence(worker,original.recordId,stamp);
+  await assert.rejects(service.queueIndependentWorkerEvidence(foreignWorker,original.recordId,stamp),e=>e?.name==="EvidenceReviewConflictError");
+  await assert.rejects(service.claim(company,oldTask.taskId,stamp),e=>e?.name==="EvidenceReviewAccessError");
+  await authorizeAndClaim(first,service,verifierA,oldTask.taskId,stamp);
+  await assert.rejects(concurrent.decide(verifierB,oldTask.taskId,"APPROVED",
+   "A copied task ID cannot authorize another Verifier to change an experience outcome.",stamp),
+    e=>e?.name==="EvidenceReviewAccessError");
+  await service.decide(verifierA,oldTask.taskId,"CHANGES_REQUESTED",
+   "Original experience duties evidence needs a specific corrected account before approval.",stamp);
+  mark("FOREIGN_WORKER_COMPANY_ROLE_AND_COPIED_VERIFIER_TASK_DENIED");
+
+  const revise=async(recordId,versionId,letter)=>{
+   const corrected=oid("evidence_version",letter);
+   await first.query("UPDATE worker_evidence_versions SET version_status='superseded',updated_at=$2 WHERE version_id=$1",
+     [versionId,NOW]);
+   await first.query("INSERT INTO worker_evidence_versions"+
+     " (version_id,record_id,version_number,revision,version_status,supersedes_version_id,created_at,updated_at,submitted_at)"+
+     " VALUES($1,$2,2,1,'submitted',$3,$4,$4,$4)",[corrected,recordId,versionId,NOW]);
+   await first.query("UPDATE worker_evidence_records SET current_version_id=$2,updated_at=$3 WHERE record_id=$1",
+     [recordId,corrected,NOW]);
+   return corrected;
+  };
+  const correctedId=await revise(original.recordId,original.versionId,"e");
+  const corrected=await service.queueIndependentWorkerEvidence(worker,original.recordId,stamp);
+  assert.equal((await service.queueIndependentWorkerEvidence(worker,original.recordId,stamp)).taskId,corrected.taskId);
+  assert.notEqual(corrected.taskId,oldTask.taskId);
+  await authorizeReviewFixture(first,{taskId:corrected.taskId,verifiers:[verifierA,verifierB],at:stamp});
+  let winner=verifierA,loser=verifierB;
+  if(postgres){
+   const raced=await Promise.allSettled([
+     service.claim(verifierA,corrected.taskId,stamp),
+     concurrent.claim(verifierB,corrected.taskId,stamp)
+   ]);
+   assert.equal(raced.filter(r=>r.status==="fulfilled").length,1,"Only one live Verifier can claim corrected experience on two SQL clients");
+   winner=raced[0].status==="fulfilled"?verifierA:verifierB;
+   loser=winner===verifierA?verifierB:verifierA;
+  }else{
+   await service.claim(verifierA,corrected.taskId,stamp);
+   await assert.rejects(service.claim(verifierB,corrected.taskId,stamp),e=>e?.name==="EvidenceReviewAccessError");
+  }
+  await assert.rejects(concurrent.decide(loser,corrected.taskId,"APPROVED",
+   "Unassigned competing reviewer cannot finalize this corrected experience.",stamp),
+   e=>e?.name==="EvidenceReviewAccessError");
+  const reason="Corrected experience duties and attributable evidence are adequate for an independent approval.";
+  if(postgres){
+   const raced=await Promise.allSettled([
+     service.decide(winner,corrected.taskId,"APPROVED",reason,stamp),
+     concurrent.decide(winner,corrected.taskId,"APPROVED",reason,stamp)
+   ]);
+   assert.equal(raced.filter(r=>r.status==="fulfilled").length,1,"Only one corrected experience decision can commit on two SQL clients");
+  }else{
+   await service.decide(winner,corrected.taskId,"APPROVED",reason,stamp);
+   await assert.rejects(concurrent.decide(winner,corrected.taskId,"APPROVED",reason,stamp),
+     e=>e?.name==="EvidenceReviewAccessError");
+  }
+  mark("CORRECTED_V2_REQUEUED_ONCE_ONLY_AUTHORIZED_VERIFIER_FINALIZES");
+
+  const staleEvidence=await seedEvidence(first,worker.accountId,"experience","F");
+  const staleTask=await service.queueIndependentWorkerEvidence(worker,staleEvidence.recordId,stamp);
+  await authorizeAndClaim(first,service,verifierA,staleTask.taskId,stamp);
+  const replacement=await revise(staleEvidence.recordId,staleEvidence.versionId,"f");
+  await assert.rejects(concurrent.decide(verifierA,staleTask.taskId,"APPROVED",
+    "Stale earlier experience source can no longer be approved after Worker replacement.",stamp),
+    e=>e?.name==="EvidenceReviewConflictError");
+  assert.equal((await first.query("SELECT COUNT(*)::int n FROM evidence_review_decisions WHERE task_id=$1",
+    [staleTask.taskId])).rows[0].n,0);
+  const activeTask=await service.queueIndependentWorkerEvidence(worker,staleEvidence.recordId,stamp);
+  await authorizeAndClaim(first,service,verifierA,activeTask.taskId,stamp);
+  await service.decide(verifierA,activeTask.taskId,"APPROVED",
+   "Current corrected Worker experience is attributable, traceable and suitable for approval.",stamp);
+  mark("STALE_VERIFIER_DECISION_REFUSED_WITH_ZERO_STALE_DECISIONS_CORRECTED_SOURCE_ACCEPTED");
+
+  const tasks=(await first.query("SELECT task_id,source_version_id,source_record_id,task_status,worker_account_id"+
+    " FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='experience'",
+    [worker.accountId])).rows;
+  assert.equal(tasks.length,4);
+  for(const [ref,version,status] of [
+   [oldTask.taskId,original.versionId,"CHANGES_REQUESTED"],
+   [corrected.taskId,correctedId,"APPROVED"],
+   [staleTask.taskId,staleEvidence.versionId,"SUPERSEDED"],
+   [activeTask.taskId,replacement,"APPROVED"]
+  ]){
+   const row=tasks.find(x=>x.task_id===ref);
+   assert.equal(row?.source_version_id,version);
+   assert.equal(row?.task_status,status);
+   assert.equal(row?.worker_account_id,worker.accountId);
+  }
+  const decisions=(await first.query("SELECT d.decision_id,d.source_version_id,d.outcome,d.verifier_account_id,t.task_id"+
+    " FROM evidence_review_decisions d JOIN evidence_review_tasks t ON t.task_id=d.task_id"+
+    " WHERE t.worker_account_id=$1 AND t.evidence_kind='experience' ORDER BY t.task_id",
+    [worker.accountId])).rows;
+  assert.equal(decisions.length,3);
+  assert.deepEqual(decisions.map(x=>x.outcome).sort(),["APPROVED","APPROVED","CHANGES_REQUESTED"]);
+  assert.equal(decisions.find(x=>x.task_id===oldTask.taskId).source_version_id,original.versionId);
+  assert.equal(decisions.find(x=>x.task_id===corrected.taskId).source_version_id,correctedId);
+  assert.equal(decisions.find(x=>x.task_id===activeTask.taskId).source_version_id,replacement);
+  const versions=(await first.query("SELECT version_id,version_status FROM worker_evidence_versions"+
+    " WHERE record_id=$1 ORDER BY version_number",[original.recordId])).rows;
+  assert.deepEqual(versions,[{version_id:original.versionId,version_status:"superseded"},
+    {version_id:correctedId,version_status:"submitted"}]);
+  assert.equal((await first.query("SELECT COUNT(*)::int n FROM auth_accounts WHERE account_id=$1",
+    [worker.accountId])).rows[0].n,1);
+  assert.equal((await first.query("SELECT COUNT(*)::int n FROM evidence_review_decisions WHERE task_id=$1",
+    [staleTask.taskId])).rows[0].n,0);
+  await assert.rejects(first.query("UPDATE evidence_review_decisions SET reason='tampered' WHERE decision_id=$1",
+    [decisions[0].decision_id]),e=>e?.code==="55000");
+  mark("IMMUTABLE_ORIGINAL_AND_CORRECTED_EXPERIENCE_VERSIONS_THREE_BOUND_DECISIONS_ONE_WORKER");
+ }finally{await dispose();}
 });
