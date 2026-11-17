@@ -404,15 +404,15 @@ test("M1.08.02 preissued Company code and invitation cannot be redeemed while te
   }finally{await database.close();}
 });
 
-async function m11001ActualPostgres16() {
-  const raw=process.env.HSE_M11001_POSTGRES_TEST_DATABASE_URL;
+async function m11001ActualPostgres16(scenario="M11001") {
+  const raw=process.env[`HSE_${scenario}_POSTGRES_TEST_DATABASE_URL`];
   if(!raw)throw new Error("M11001 real PG16 requires explicitly approved isolated localhost Postgres.");
   const url=new URL(raw);
   if(!["127.0.0.1","localhost"].includes(url.hostname)||url.pathname!=="/postgres"){
     throw new Error("M11001 must never open shared application or external PostgreSQL.");
   }
   const root=await openScriptDatabase({...ENV,databaseDriver:"postgres",databaseUrl:url.href,releaseSha:"m11001-pg16-root"});
-  const dbName="m11001_invite_race_"+process.pid+"_"+Date.now();
+  const dbName=scenario.toLowerCase()+"_invite_race_"+process.pid+"_"+Date.now();
   let created=false,first,second;
   try{
     await root.execute('CREATE DATABASE "'+dbName+'"');created=true;
@@ -589,6 +589,103 @@ test("M1.10.01 actual PostgreSQL16 Worker accept versus Owner revoke and resend 
       .every(x=>x.actor_account_id===owner.accountId),
       "All Company issuer audit actions must name the authenticated Company Owner");
     console.log("M11001_ACTUAL_PG16_ALL_FIVE_STATES_TWO_LINKS_EXACT_WORKER_COMPANY_IMMUTABLE_AUDIT");
+  }finally{
+    if(releaseHeld)releaseHeld();
+    await cleanup();
+  }
+});
+
+test("M1.10.02 actual PostgreSQL16 concurrent Company bulk CSV duplicate recovery blocks stale sessions and cross-tenant units",{
+  skip:!process.env.HSE_M11002_POSTGRES_TEST_DATABASE_URL,timeout:170000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16("M11002");
+  let releaseHeld;
+  try{
+    const owner=await seedCompany(first,"K"),foreign=await seedCompany(first,"Z");
+    const worker=await seedWorker(first,"K","m11002-pg-worker@example.test");
+    const site=await seedUnits(first,owner,"K");
+    const principalOwner=companyPrincipal(owner),principalForeign=companyPrincipal(foreign);
+    const anotherSession="session_m11002_same_owner_second";
+    await first.query("INSERT INTO auth_sessions "+
+      "(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at) "+
+      "VALUES($1,$2,'company',$3,$4,$5,$5,$6)",
+      [anotherSession,owner.accountId,"m11002-second-owner-token","m11002-second-owner-csrf",NOW,FUTURE]);
+    const anotherPrincipal=Object.freeze({...principalOwner,sessionId:anotherSession});
+    const input=(email,siteId=site.siteId)=>({
+      email,siteId,departmentId:null,paymentResponsibility:"company",assessmentReference:"M11002-PG-BULK"
+    });
+    const holding=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=holding.release;
+    const serviceHeld=new CompanyWorkforceService(holding.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const serviceSecond=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const firstBatch=serviceHeld.bulkInviteWorkers(principalOwner,[
+      input("m11002-pg-common@example.test"),
+      input("not-an-email"),
+      input(" M11002-PG-COMMON@EXAMPLE.TEST "),
+      input("m11002-pg-b@example.test")
+    ]);
+    await holding.ready;
+    const secondBatch=serviceSecond.bulkInviteWorkers(anotherPrincipal,[
+      input("M11002-PG-COMMON@example.test"),
+      input("m11002-pg-c@example.test")
+    ]);
+    const early=await Promise.race([
+      secondBatch.then(()=>({finished:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))
+    ]);
+    assert.equal(early.waiting,true,"Other signed Company session must wait on the first real SQL row/tenant lock");
+    holding.release();releaseHeld=null;
+    const a=await firstBatch,b=await secondBatch;
+    assert.deepEqual(a.map(x=>[x.rowNumber,x.status]),[
+      [1,"created"],[2,"error"],[3,"error"],[4,"created"]
+    ]);
+    assert.deepEqual(b.map(x=>[x.rowNumber,x.status]),[
+      [1,"error"],[2,"created"]
+    ]);
+    assert.match(a[1].message,/valid Worker email/);
+    assert.match(a[2].message,/Duplicate Worker email/);
+    console.log("M11002_ACTUAL_PG16_TWO_AUTHENTICATED_COMPANY_SESSIONS_CONCURRENT_BULK_ONE_WINNER_DUPLICATE_DENIED");
+
+    const retry=await serviceSecond.bulkInviteWorkers(principalOwner,[
+      input("m11002-pg-b@example.test"),input("m11002-pg-fixed@example.test")
+    ]);
+    assert.deepEqual(retry.map(x=>x.status),["error","created"]);
+    assert.equal(retry[0].invitationId,null);
+    const forgedRole=await serviceSecond.bulkInviteWorkers(workerPrincipal(worker),[
+      input("m11002-pg-role-spoof@example.test")
+    ]);
+    assert.deepEqual(forgedRole.map(x=>x.status),["error"]);
+    const foreignSite=await serviceSecond.bulkInviteWorkers(principalForeign,[
+      input("m11002-pg-foreign@example.test",site.siteId)
+    ]);
+    assert.deepEqual(foreignSite.map(x=>x.status),["error"]);
+    await second.query("UPDATE auth_sessions SET revoked_at=$2,revocation_reason='M11002 controlled revoked-session QA' WHERE session_id=$1",
+      [anotherSession,NOW]);
+    const revokedSession=await serviceSecond.bulkInviteWorkers(anotherPrincipal,[
+      input("m11002-pg-revoked-session@example.test")
+    ]);
+    assert.deepEqual(revokedSession.map(x=>x.status),["error"]);
+    console.log("M11002_ACTUAL_PG16_CORRECTED_RETRY_ONE_NEW_WRONG_ROLE_FOREIGN_SITE_REVOKED_SESSION_DENIED");
+
+    const invitationRows=(await first.query("SELECT invitation_id,tenant_id,email_normalized,invitation_status,site_id,"+
+      "payment_responsibility,assessment_reference FROM company_worker_invitations "+
+      "WHERE tenant_id=$1 ORDER BY email_normalized",[owner.tenantId])).rows;
+    assert.deepEqual(invitationRows.map(x=>x.email_normalized),[
+      "m11002-pg-b@example.test","m11002-pg-c@example.test","m11002-pg-common@example.test","m11002-pg-fixed@example.test"
+    ]);
+    assert(invitationRows.every(x=>x.tenant_id===owner.tenantId && x.invitation_status==="pending" &&
+      x.site_id===site.siteId && x.payment_responsibility==="company" &&
+      x.assessment_reference==="M11002-PG-BULK"));
+    assert.equal((await first.query("SELECT COUNT(*)::integer AS n FROM company_worker_invitations WHERE tenant_id=$1",
+      [foreign.tenantId])).rows[0].n,0);
+    const audits=(await first.query("SELECT action_key,actor_account_id,target_reference FROM platform_audit_events "+
+      "WHERE target_reference IN (SELECT invitation_id FROM company_worker_invitations WHERE tenant_id=$1) "+
+      "AND action_key='company_workforce.invitation.created' ORDER BY audit_sequence",[owner.tenantId])).rows;
+    assert.equal(audits.length,4,"Each accepted valid distinct row creates exactly one immutable audit, no duplicate/denied success");
+    assert(audits.every(x=>x.actor_account_id===owner.accountId));
+    assert.deepEqual([...new Set(audits.map(x=>x.target_reference))].sort(),
+      invitationRows.map(x=>x.invitation_id).sort());
+    console.log("M11002_ACTUAL_PG16_DB_EXACT_FOUR_PENDING_ONE_PER_DISTINCT_VALID_ROW_AND_IMMUTABLE_OWNER_AUDIT");
   }finally{
     if(releaseHeld)releaseHeld();
     await cleanup();

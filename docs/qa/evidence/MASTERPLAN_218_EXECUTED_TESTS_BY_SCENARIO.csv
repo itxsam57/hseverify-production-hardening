@@ -47,8 +47,8 @@ M1.09.03,M1.09,Organization and Team,Archived units cannot receive new placement
 M1.09.04,M1.09,Organization and Team,"Team invitation, MFA enrollment, role permission update",2,0,2,NOT_FULLY_VERIFIED
 M1.09.05,M1.09,Organization and Team,Suspension/revocation removes existing-session access,2,0,2,NOT_FULLY_VERIFIED
 M1.09.06,M1.09,Organization and Team,Company staff cannot grant permissions above own ceiling,2,0,2,NOT_FULLY_VERIFIED
-M1.10.01,M1.10,Invitations and employment links,"Single invitation accepted, resent, revoked, expired and replayed",2,0,0,NOT_FULLY_VERIFIED
-M1.10.02,M1.10,Invitations and employment links,Bulk CSV mixed valid/invalid rows and duplicate recovery,0,0,0,NOT_FULLY_VERIFIED
+M1.10.01,M1.10,Invitations and employment links,"Single invitation accepted, resent, revoked, expired and replayed",2,0,2,NOT_FULLY_VERIFIED
+M1.10.02,M1.10,Invitations and employment links,Bulk CSV mixed valid/invalid rows and duplicate recovery,2,0,0,NOT_FULLY_VERIFIED
 M1.10.03,M1.10,Invitations and employment links,Company code expiry/usage limit/default site and department,0,0,0,NOT_FULLY_VERIFIED
 M1.10.04,M1.10,Invitations and employment links,Unlinked/wrong Worker cannot accept another person's invitation,0,0,0,NOT_FULLY_VERIFIED
 M1.10.05,M1.10,Invitations and employment links,"Worker joins, moves placement, ends relationship and retains identity",0,0,0,NOT_FULLY_VERIFIED
