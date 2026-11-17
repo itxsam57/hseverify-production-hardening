@@ -30,7 +30,7 @@ class Dedup4975Tests(unittest.TestCase):
             'PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED':50,
             'NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE':4215})
         self.assertEqual(self.summary['scoped_prior_source_tests_green_distinct'],1422)
-        self.assertEqual(self.summary['scoped_source_test_case_total'],1590)
+        self.assertEqual(self.summary['scoped_source_test_case_total'],1592)
         self.assertEqual(self.summary['final_stage_certified_slots'],0)
         self.assertEqual(self.summary['release_scenarios_fully_verified'],0)
         self.assertEqual(self.summary['planned_slots_not_final_stage_certified'],4975)

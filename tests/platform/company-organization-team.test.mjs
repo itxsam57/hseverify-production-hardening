@@ -1397,3 +1397,136 @@ test("M1.09.05 actual PostgreSQL16 cached Company staff session suspension and r
     console.log("M10905_REAL_PG16_REVOKE_INVALIDATES_FRESH_TOKEN_FOREIGN_AND_OWNER_UNTOUCHED_AUDITS_EXACT");
   } finally {await cleanup();}
 });
+
+test("M1.09.06 actual PostgreSQL16 Owner revoked Admin live grant cannot be delegated under overlapping transactions", {
+  skip: !process.env.HSE_M10906_POSTGRES_TEST_DATABASE_URL,
+  timeout: 180000
+}, async () => {
+  const {first,second,cleanup}=await m10901RealPostgresDatabase("M10906");
+  let releaseCommit;
+  try {
+    const owner=await insertCompanyContext(first,"P");
+    const foreign=await insertCompanyContext(first,"Q");
+    const adminAccount=await createAcceptedInviteAccount(first,"m10906-admin@example.test","m10906-admin");
+    const managerAccount=await createAcceptedInviteAccount(first,"m10906-manager@example.test","m10906-manager");
+    const adminMembership=opaqueId("membership","V");
+    const managerMembership=opaqueId("membership","W");
+    const adminSession="m10906_company_admin_session";
+    for(const entry of [[adminMembership,adminAccount,"admin"],[managerMembership,managerAccount,"manager"]]){
+      await first.query(`INSERT INTO auth_tenant_memberships(
+        membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at)
+        VALUES($1,$2,$3,'company',$4,'active',$5,$6,$6,$6)`,
+        [entry[0],owner.tenantId,entry[1],entry[2],owner.accountId,NOW]);
+    }
+    await first.query(`INSERT INTO auth_sessions(session_id,account_id,active_role,token_hash,csrf_token_hash,created_at,last_seen_at,expires_at)
+      VALUES($1,$2,'company','m10906-admin-token','m10906-admin-csrf',$3,$3,$4)`,
+      [adminSession,adminAccount,NOW,FAR_FUTURE]);
+    const ownerManage=principal(owner,"company.members.manage");
+    const ownerRead=principal(owner,"company.members.read");
+    const foreignManage=principal(foreign,"company.members.manage");
+    // Principal snapshot is intentionally stale: the server must use the
+    // database actor's current role, permission grants and active session.
+    const adminManage=principal({accountId:adminAccount,tenantId:owner.tenantId,
+      membershipId:adminMembership,sessionId:adminSession,
+      email:"m10906-admin@example.test",displayName:"M10906 Admin",membershipRole:"admin"},"company.members.manage");
+    const ownerService=new CompanyTeamService(Promise.resolve(first),PEPPER,()=>new Date(NOW_DATE));
+    const adminService=new CompanyTeamService(Promise.resolve(second),PEPPER,()=>new Date(NOW_DATE));
+    const oldMembers=await ownerService.listMembers(ownerRead);
+    const adminInitial=oldMembers.find(row=>row.membershipId===adminMembership);
+    const managerInitial=oldMembers.find(row=>row.membershipId===managerMembership);
+    assert.ok(adminInitial && managerInitial);
+    assert.ok(adminInitial.permissions.includes("company.workforce.manage"));
+    assert.ok(managerInitial.permissions.includes("company.workforce.manage"));
+    const validPrecedingInvite=await adminService.invite(adminManage,{
+      email:"m10906-allowed-before-revoke@example.test",membershipRole:"manager",
+      permissions:["company.tenant.read","company.workforce.manage"],
+      requestFingerprint:"m10906-pre-revoke-valid"
+    });
+    assert.ok(validPrecedingInvite.invitationId);
+    const existingInvites=await ownerService.listInvitations(ownerRead);
+    assert.equal(existingInvites.find(i=>i.invitationId===validPrecedingInvite.invitationId)?.membershipRole,"manager");
+    console.log("M10906_REAL_PG16_PRE_REVOKE_WITHIN_LIVE_CEILING_INVITATION_SUCCEEDS");
+
+    let signalPrepared;
+    const prepared=new Promise(resolve=>{signalPrepared=resolve;});
+    const commitPermit=new Promise(resolve=>{releaseCommit=resolve;});
+    const ownerHeld=new CompanyTeamService(Promise.resolve({
+      transaction:callback=>first.transaction(async tx=>{
+        const result=await callback(tx);
+        signalPrepared();
+        await commitPermit;
+        return result;
+      })
+    }),PEPPER,()=>new Date(NOW_DATE));
+    const ownerUpdate=ownerHeld.updateMember(ownerManage,{
+      membershipId:adminMembership,expectedRole:"admin",expectedStatus:"active",
+      expectedAccessRevision:adminInitial.accessRevision,membershipRole:"admin",
+      permissions:adminInitial.permissions.filter(p=>p!=="company.workforce.manage"),
+      siteId:null,departmentId:null
+    });
+    await prepared;
+    const competingInvite=adminService.invite(adminManage,{
+      email:"m10906-forbidden-after-revoke@example.test",membershipRole:"manager",
+      permissions:["company.tenant.read","company.workforce.manage"],
+      requestFingerprint:"m10906-stale-admin-over-ceiling-race"
+    }).then(value=>({ok:true,value}),error=>({ok:false,error}));
+    const early=await Promise.race([competingInvite.then(()=>({finished:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({pending:true}),250))]);
+    assert.equal(early.pending,true,
+      "Concurrent Company Admin grant must wait on Owner's uncommitted live membership permission update");
+    releaseCommit();releaseCommit=null;
+    const revokedGrant=await ownerUpdate;
+    assert.ok(!revokedGrant.permissions.includes("company.workforce.manage"));
+    const competing=await competingInvite;
+    assert.equal(competing.ok,false,
+      "M1.09.06 stale Admin granted workforce.manage after Owner revoked Admin's own live workforce grant");
+    assert.equal(competing.error?.name,"CompanyTeamAccessError");
+    const adminLive=(await ownerService.listMembers(ownerRead)).find(x=>x.membershipId===adminMembership);
+    assert.ok(adminLive && !adminLive.permissions.includes("company.workforce.manage"));
+    const managerStill=(await ownerService.listMembers(ownerRead)).find(x=>x.membershipId===managerMembership);
+    assert.ok(managerStill && managerStill.permissions.includes("company.workforce.manage"));
+    console.log("M10906_REAL_PG16_REVOKE_FIRST_STALE_ADMIN_GRANT_BLOCKED_AFTER_ROW_LOCK_RELEASE");
+
+    await assert.rejects(adminService.updateMember(adminManage,{
+      membershipId:managerMembership,expectedRole:"manager",expectedStatus:"active",
+      expectedAccessRevision:managerStill.accessRevision,membershipRole:"manager",
+      permissions:[...managerStill.permissions],siteId:null,departmentId:null
+    }),error=>error?.name==="CompanyTeamAccessError",
+    "An Admin lacking workforce.manage cannot re-issue that permission through a stale Manager edit");
+    await assert.rejects(adminService.invite(adminManage,{
+      email:"m10906-forbidden-owner@example.test",membershipRole:"owner",
+      permissions:["company.tenant.read"],requestFingerprint:"m10906-forged-owner-role"
+    }),error=>error?.name==="CompanyTeamAccessError");
+    const validManager=await adminService.updateMember(adminManage,{
+      membershipId:managerMembership,expectedRole:"manager",expectedStatus:"active",
+      expectedAccessRevision:managerStill.accessRevision,membershipRole:"manager",
+      permissions:managerStill.permissions.filter(p=>p!=="company.workforce.manage"),
+      siteId:null,departmentId:null
+    });
+    assert.ok(!validManager.permissions.includes("company.workforce.manage"));
+    assert.equal(validManager.accessRevision,managerStill.accessRevision+1);
+    const receiving=await ownerService.listMembers(ownerRead);
+    assert.equal(receiving.find(x=>x.membershipId===managerMembership)?.permissions.includes("company.workforce.manage"),false);
+    await assert.rejects(adminService.updateMember(foreignManage,{
+      membershipId:managerMembership,expectedRole:"manager",expectedStatus:"active",
+      expectedAccessRevision:validManager.accessRevision,membershipRole:"manager",
+      permissions:["company.tenant.read"],siteId:null,departmentId:null
+    }),error=>error?.name==="CompanyTeamAccessError");
+    assert.equal((await first.query(`SELECT invitation_id FROM auth_staff_invitations
+      WHERE email_normalized IN ('m10906-forbidden-after-revoke@example.test','m10906-forbidden-owner@example.test')`)).rows.length,0);
+    const audit=await first.query(`SELECT action_key,actor_account_id,target_reference
+      FROM platform_audit_events WHERE actor_tenant_id=$1
+      AND action_key IN ('company_team.invitation.created','company_team.membership.updated') ORDER BY audit_sequence`,[owner.tenantId]);
+    assert.deepEqual(audit.rows.map(row=>[row.action_key,row.actor_account_id]),[
+      ["company_team.invitation.created",adminAccount],
+      ["company_team.membership.updated",owner.accountId],
+      ["company_team.membership.updated",adminAccount]
+    ],"Rejected stale/cross-tenant/above-ceiling grants cannot emit successful immutable Team audit events");
+    const foreignSession=await second.query("SELECT revoked_at FROM auth_sessions WHERE session_id=$1",[foreign.sessionId]);
+    assert.equal(foreignSession.rows[0].revoked_at,null);
+    console.log("M10906_REAL_PG16_ADMIN_GRANT_CEILING_MANAGER_RECEIPT_TENANT_ISOLATION_AUDIT_EXACT");
+  } finally {
+    if(releaseCommit)releaseCommit();
+    await cleanup();
+  }
+});

@@ -1,0 +1,120 @@
+name: M1.09.06 real PostgreSQL16 Company staff live grant ceiling and overlapping Owner revocation
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs'
+      - 'src/lib/company/company-team-service.ts'
+      - 'src/lib/authorization/authorization-domain.ts'
+      - 'src/lib/authorization/tenant-scoped-command-guard.ts'
+      - '.github/workflows/m1-09-company-team-live-grant-ceiling-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs'
+      - 'src/lib/company/company-team-service.ts'
+      - 'src/lib/authorization/authorization-domain.ts'
+      - 'src/lib/authorization/tenant-scoped-command-guard.ts'
+      - '.github/workflows/m1-09-company-team-live-grant-ceiling-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m10906-live-grant-ceiling-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  two-company-actors-live-grant-ceiling-pg16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_live_grant
+          POSTGRES_PASSWORD: synthetic_live_grant_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_live_grant -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Actual PostgreSQL16 two independent Company sessions Owner revoke versus stale Admin grant
+        shell: bash
+        env:
+          HSE_M10906_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_live_grant:synthetic_live_grant_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-organization-team-tests.mjs --test-name-pattern 'M1.09.06 actual PostgreSQL16 Owner revoked Admin live grant cannot be delegated under overlapping transactions' 2>&1 | tee .autopilot/artifacts/m10906-two-company-live-grant-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10906-two-company-live-grant-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10906-two-company-live-grant-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10906-two-company-live-grant-pg16.log
+          for marker in PRE_REVOKE_WITHIN_LIVE_CEILING_INVITATION_SUCCEEDS REVOKE_FIRST_STALE_ADMIN_GRANT_BLOCKED_AFTER_ROW_LOCK_RELEASE ADMIN_GRANT_CEILING_MANAGER_RECEIPT_TENANT_ISOLATION_AUDIT_EXACT; do
+            grep -q "M10906_REAL_PG16_${marker}" .autopilot/artifacts/m10906-two-company-live-grant-pg16.log
+          done
+      - name: Preserve exact-source raw PostgreSQL grant denial evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10906-company-live-grant-ceiling-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10906-two-company-live-grant-pg16.log
+          if-no-files-found: warn
+          retention-days: 30
+  two-signed-company-roles-real-chromium-stale-ceiling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Real Owner desktop and Company Admin 390px stale permission UI forms
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10906-live-grant-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10906-live-grant-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10906-live-grant-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10906-live-grant-chromium.log
+          for marker in OWNER_REMOVES_ADMIN_WORKFORCE_GRANT_DESKTOP 390PX_STALE_ADMIN_MANAGER_FORM_GRANT_CEILING_DENIED 390PX_STALE_ADMIN_INVITATION_GRANT_CEILING_DENIED REFRESHED_ADMIN_ONLY_SEES_OWN_CEILING_AND_OWNER_RECEIVES_NARROW_MANAGER DB_ONLY_TWO_AUTHORIZED_TEAM_MUTATIONS_NO_FORGED_INVITE_EXACT_AUDIT; do
+            grep -q "M10906_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m10906-live-grant-chromium.log
+          done
+      - name: Retain exact-SHA Chromium real form and persisted audit proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10906-company-live-grant-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10906-live-grant-chromium.log
+          if-no-files-found: warn
+          retention-days: 30

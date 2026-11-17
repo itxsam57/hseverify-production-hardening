@@ -3817,6 +3817,23 @@
       "title": "M1.09.05 actual Chromium owner suspends Company Team and old worker-scope session cannot reenter after reactivation"
     },
     {
+      "case_id": "tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs#d1824276588593d1",
+      "direct_scenarios": [
+        "M1.09.06"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.09.06"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.09.06 actual Chromium Owner removes Admin live grant while stale Admin Manager and invitation forms cannot delegate it"
+    },
+    {
       "case_id": "tests/browser/m2-01-assurance-order-case.browser.test.mjs#1b67f0d4bf1c8bfa",
       "direct_scenarios": [],
       "evidence": [
@@ -5873,12 +5890,18 @@
           "source_log": "hseverify-m10305-staff-invite-20261111/.autopilot/artifacts/M10305_STAFF_CANCEL_320_BROWSER_GREEN_20261111.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "51142cd3e189efa212e27e509451b378663e85f0a1098fddb10ada5b2032fcf4",
+          "source_log": "hseverify-m10905-postmerge-session-regressions-20261117/.autopilot/artifacts/M10905_POSTMERGE_STAFF_INVITATION_REAL_CHROMIUM_RECOVERY_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
       "file": "tests/browser/staff-invitation-cancel-retry.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -5921,7 +5944,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/browser/staff-invitation-lifecycle.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -5964,7 +5987,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/browser/staff-invitation-lifecycle.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -6007,7 +6030,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/browser/staff-invitation-lifecycle.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -6050,7 +6073,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/browser/staff-invitation-revocation.browser.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 7,
       "scenario_ids": [
         "M1.03.05"
       ],
@@ -7515,7 +7538,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 64,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7574,7 +7597,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 64,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7633,7 +7656,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 64,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7692,7 +7715,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 64,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7751,7 +7774,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 64,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7810,7 +7833,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 64,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7869,7 +7892,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 59,
+      "prior_log_pass_repetition_count": 61,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7901,7 +7924,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 58,
+      "prior_log_pass_repetition_count": 60,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -18744,13 +18767,30 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-organization-team.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 3,
+      "prior_log_pass_repetition_count": 4,
       "scenario_ids": [
         "M1.09.05"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
       "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.09.05 actual PostgreSQL16 cached Company staff session suspension and revocation token cannot revive"
+    },
+    {
+      "case_id": "tests/platform/company-organization-team.test.mjs#b7418ca8059106e4",
+      "direct_scenarios": [
+        "M1.09.06"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/company-organization-team.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.09.06"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.09.06 actual PostgreSQL16 Owner revoked Admin live grant cannot be delegated under overlapping transactions"
     },
     {
       "case_id": "tests/platform/company-registration-mfa-postgres.test.mjs#8b2149854d76a3a1",
@@ -45499,12 +45539,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 976,
+    "ambiguous_or_changed_title_occurrences": 977,
     "ambiguous_or_changed_unique_titles": 234,
-    "clean_pass_summary_logs": 1316,
+    "clean_pass_summary_logs": 1321,
     "current_reference_CI_green_distinct_cases": 232,
-    "current_source_test_files": 554,
-    "current_test_source_content_sha256": "1a2f9afe1ece1ba0d8340899ae6bdeab4a1efebf6739b17f58d835aacd0aa759",
+    "current_source_test_files": 555,
+    "current_test_source_content_sha256": "78bea911dfca1c116575b44fa52124af7ae2dd1c49b0bab5edfd5e84dfe55c0d",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45512,24 +45552,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 164,
+    "existing_source_cases_linked_to_an_exact_218_id": 166,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 56,
-    "historical_log_files_scanned": 2605,
+    "historical_log_files_scanned": 2619,
     "historical_only_green_distinct_cases": 1190,
-    "logs_with_no_clean_pass_summary_or_a_failure": 61,
-    "logs_with_pass_lines": 1377,
-    "matched_case_occurrences_with_duplicates": 6156,
+    "logs_with_no_clean_pass_summary_or_a_failure": 63,
+    "logs_with_pass_lines": 1384,
+    "matched_case_occurrences_with_duplicates": 6178,
     "passed_cases_needing_scenario_mapping": 1259,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
     "previous_green_distinct_source_matched_cases": 1422,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 187,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 168,
-    "static_existing_distinct_test_cases": 1590,
+    "source_tests_without_green_execution_proof": 170,
+    "static_existing_distinct_test_cases": 1592,
     "unique_source_matched_historical_green_cases": 1422,
-    "worktrees_scanned": 131
+    "worktrees_scanned": 132
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45542,7 +45582,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "c9c275af5bcf63c02b6521228a904d6199533e31",
+  "inventory_started_from_git_head_sha": "a2f04885080827696e85b6182018e5a52cb70ebf",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -46226,7 +46266,7 @@
     },
     {
       "brick": "M1.09",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 2,
       "family": "Organization and Team",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
