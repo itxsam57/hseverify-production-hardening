@@ -25319,6 +25319,23 @@
       "title": "M1.07.03 rejected initial identity routes one immutable Worker notification without duplicate recipients"
     },
     {
+      "case_id": "tests/platform/independent-evidence-review-runtime.test.mjs#e27c8859fb2f49b6",
+      "direct_scenarios": [
+        "M1.11.01"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/independent-evidence-review-runtime.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.11.01"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.11.01 qualification two-source review race and stale-Verifier denial on PGlite and actual PostgreSQL16"
+    },
+    {
       "case_id": "tests/platform/integrity-capture-service.test.mjs#280c7101ac4427e2",
       "direct_scenarios": [],
       "evidence": [
@@ -45816,7 +45833,7 @@
     "clean_pass_summary_logs": 1345,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 559,
-    "current_test_source_content_sha256": "c689e75e164a8302d18409844c010219de08a319ecc86165e9673ad274bf6dd7",
+    "current_test_source_content_sha256": "93b93144402a6b0760b126bceb890bf94b56f293c4168e1dd19f945a1fecc7af",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45824,7 +45841,7 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 182,
+    "existing_source_cases_linked_to_an_exact_218_id": 183,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 64,
     "historical_log_files_scanned": 2695,
@@ -45838,8 +45855,8 @@
     "previous_green_distinct_source_matched_cases": 1430,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 193,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 173,
-    "static_existing_distinct_test_cases": 1603,
+    "source_tests_without_green_execution_proof": 174,
+    "static_existing_distinct_test_cases": 1604,
     "unique_source_matched_historical_green_cases": 1430,
     "worktrees_scanned": 139
   },
@@ -45854,7 +45871,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "033dd97aba99676b074f3815206e03e765213d65",
+  "inventory_started_from_git_head_sha": "aad6d80a019353b15405999911238e85c74bf128",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -46634,7 +46651,7 @@
     },
     {
       "brick": "M1.11",
-      "existing_source_cases_linked": 2,
+      "existing_source_cases_linked": 3,
       "family": "Evidence and supervisor observation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,

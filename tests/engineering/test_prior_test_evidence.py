@@ -53,11 +53,11 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1430)
         self.assertEqual(c["current_reference_CI_green_distinct_cases"], 232)
         self.assertEqual(c["historical_only_green_distinct_cases"], 1198)
-        self.assertEqual(c["static_existing_distinct_test_cases"], 1603)
-        self.assertEqual(c["source_tests_without_green_execution_proof"], 173)
+        self.assertEqual(c["static_existing_distinct_test_cases"], 1604)
+        self.assertEqual(c["source_tests_without_green_execution_proof"], 174)
         self.assertEqual(c["frozen_full_release_verified"], 0)
         self.assertEqual(len(index["scenarios"]), 218)
-        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1603)
+        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1604)
 
     def test_existing_case_lookup_is_read_only_and_clearly_uncredited(self):
         result = subprocess.run(["python3", "scripts/reconcile-218-prior-test-evidence.py",

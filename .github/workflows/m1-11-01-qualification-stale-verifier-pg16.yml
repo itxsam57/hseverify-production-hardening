@@ -1,0 +1,94 @@
+name: M1.11.01 qualification corrected version and stale Verifier denial real PostgreSQL16
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/independent-evidence-review-runtime.test.mjs'
+      - 'src/lib/review/**'
+      - 'src/lib/worker/**'
+      - 'src/lib/authorization/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-01-qualification-stale-verifier-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/independent-evidence-review-runtime.test.mjs'
+      - 'src/lib/review/**'
+      - 'src/lib/worker/**'
+      - 'src/lib/authorization/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-01-qualification-stale-verifier-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11101-qualification-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualification-stale-verifier-pglite-and-real-postgres16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_qual_review
+          POSTGRES_PASSWORD: synthetic_qual_review_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_qual_review -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exactly the PR head or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify PGlite baseline, qualification version and refusal markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 --test-name-pattern='M1.11.01 qualification two-source review race' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m11101-qualification-pglite.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11101-qualification-pglite.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11101-qualification-pglite.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11101-qualification-pglite.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11101-qualification-pglite.log
+          for marker in WRONG_WORKER_COMPANY_ROLE_AND_UNASSIGNED_VERIFIER_DENIED_NO_FORGED_DECISION CORRECTED_QUALIFICATION_V2_ONE_CLAIM_AND_FINALIZE_REPLAYS_DENIED STALE_ASSIGNED_VERSION_APPROVAL_DENIED_CORRECTED_TASK_APPROVED_NO_STALE_DECISION EXACT_THREE_IMMUTABLE_VERSION_BOUND_QUALIFICATION_DECISIONS_ONE_WORKER_NO_FOREIGN_ACCESS; do
+            grep -q "M11101_PGLITE_${marker}" .autopilot/artifacts/m11101-qualification-pglite.log
+          done
+      - name: Verify real PostgreSQL16 independent connections, two racing reviewer claims and two finalize attempts
+        shell: bash
+        env:
+          HSE_M11101_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_qual_review:synthetic_qual_review_ci_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 --test-name-pattern='M1.11.01 qualification two-source review race' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m11101-qualification-postgres16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11101-qualification-postgres16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11101-qualification-postgres16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11101-qualification-postgres16.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11101-qualification-postgres16.log
+          for marker in WRONG_WORKER_COMPANY_ROLE_AND_UNASSIGNED_VERIFIER_DENIED_NO_FORGED_DECISION CORRECTED_QUALIFICATION_V2_ONE_CLAIM_AND_FINALIZE_REPLAYS_DENIED STALE_ASSIGNED_VERSION_APPROVAL_DENIED_CORRECTED_TASK_APPROVED_NO_STALE_DECISION EXACT_THREE_IMMUTABLE_VERSION_BOUND_QUALIFICATION_DECISIONS_ONE_WORKER_NO_FOREIGN_ACCESS; do
+            grep -q "M11101_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11101-qualification-postgres16.log
+          done
+      - name: Preserve both native and independent real SQL source-SHA proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11101-qualification-pg16-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m11101-qualification-pglite.log
+            .autopilot/artifacts/m11101-qualification-postgres16.log
+          if-no-files-found: warn
+          retention-days: 30
