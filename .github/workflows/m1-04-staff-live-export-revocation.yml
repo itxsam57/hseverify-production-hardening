@@ -68,6 +68,10 @@ jobs:
           fi
           grep -q 'ACTUAL_COMPANY_STAFF_EXPORT_API_LIVE_REVOKE' "$log"
           grep -q 'M10404_COPIED_STAFF_SESSION_LIVE_PERMISSION_DENIED' "$log"
+          grep -q 'ℹ tests 1' "$log"
+          grep -q 'ℹ pass 1' "$log"
+          grep -q 'ℹ fail 0' "$log"
+          grep -q 'M10905_M10404_DB_TWO_DISTINCT_PERMANENTLY_REVOKED_STAFF_TOKENS_AND_MIRRORED_DENIAL_AUDITS' "$log"
       - name: Archive exact SHA real-browser evidence
         if: always()
         uses: actions/upload-artifact@v4

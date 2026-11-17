@@ -877,12 +877,25 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
            AND e.metadata->>'reason'='permission_denied'`);
       assert(staffDenials.rows.length >= 4, "dashboard and Team denials on suspension and revocation must persist");
       assert(staffDenials.rows.every(row => row.audit_event_id), "every actual denial must retain its mirrored audit");
-      const staffSessions = await db.query(`SELECT session_id, revoked_at FROM auth_sessions WHERE account_id IN
-        (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')`);
-      assert.equal(staffSessions.rows.length,1,"one existing session used throughout membership transitions");
-      assert.equal(staffSessions.rows[0].revoked_at,null,"membership denial must be proved against an existing authenticated session");
-      assert(staffDenials.rows.every(row => row.denied_session_id === staffSessions.rows[0].session_id), "all denials must bind to the exact existing staff session");
-      console.log("ACTUAL_COMPANY_STAFF_DENIAL_DB revoked membership, same authenticated session, persisted denials with complete audit mirrors");
+      const staffSessions = await db.query(`SELECT session_id, created_at, revoked_at, revocation_reason
+        FROM auth_sessions WHERE account_id IN
+        (SELECT account_id FROM auth_accounts WHERE email_normalized='journey.team.member@example.test')
+        AND active_role='company' ORDER BY created_at, session_id`);
+      assert.equal(staffSessions.rows.length,2,
+        "suspension requires one revoked old cookie, and reactivation requires a distinct fresh MFA session");
+      assert.equal(new Set(staffSessions.rows.map(row=>row.session_id)).size,2,
+        "old Company Team session must not be silently reused or overwritten");
+      assert.deepEqual(staffSessions.rows.map(row=>row.revocation_reason),[
+        "company_team_membership_suspended", "company_team_membership_revoked"
+      ],"old suspended cookie and newly authenticated revoked cookie retain their separate permanent revocation reasons");
+      assert(staffSessions.rows.every(row=>row.revoked_at!==null),
+        "no Company Team session may stay active after final membership revocation");
+      assert(Date.parse(staffSessions.rows[0].revoked_at) <= Date.parse(staffSessions.rows[1].created_at),
+        "fresh Company MFA session must only be issued after the original session is revoked");
+      const knownStaffSessionIds=new Set(staffSessions.rows.map(row=>row.session_id));
+      assert(staffDenials.rows.every(row=>knownStaffSessionIds.has(row.denied_session_id)),
+        "every persisted permission denial must belong to a real authenticated Company staff session");
+      console.log("M10905_M10404_DB_TWO_DISTINCT_PERMANENTLY_REVOKED_STAFF_TOKENS_AND_MIRRORED_DENIAL_AUDITS");
 
       assert(overrides.rows.length >= 1);
       assert.equal(reports.rows.length, 1, "The named saved definition must produce exactly one persisted report request.");
