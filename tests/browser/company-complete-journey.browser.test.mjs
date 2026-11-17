@@ -501,9 +501,10 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await expectCopiedStaffDenied("independent copied cookie after staff suspension");
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "suspended membership must remove existing-session tenant access");
-          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          assert.equal(new URL(member.url()).pathname, "/company/login",
+            "suspend/revoke permanently invalidates the original signed session rather than only denying tenant access");
           await member.goto(`${baseUrl}/company/team`, { waitUntil: "networkidle" });
-          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          assert.equal(new URL(member.url()).pathname, "/company/login");
           assert.equal(await member.getByRole("heading", { name: "HSE Verify could not complete this request.", exact: true }).count(), 0);
           console.log("ACTUAL_COMPANY_STAFF_SUSPENSION existing signed-in session loses Company tenant dashboard access");
 
@@ -511,8 +512,21 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
           await company.reload({ waitUntil: "networkidle" });
           memberCard = company.locator("article").filter({ hasText: "Journey Team Member" }).first();
           await memberCard.getByRole("button", { name: "Suspend" }).waitFor({ timeout: 15_000 });
+          // Re-activating membership does not restore the revoked old cookie.
+          await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
+          assert.equal(new URL(member.url()).pathname,"/company/login",
+            "reauthorizing an old signed-in session on reactivation would resurrect revoked access");
+          await expectCopiedStaffDenied("old copied cookie still denied after membership reactivation");
+          console.log("M10905_M10404_CHROMIUM_OLD_COMPANY_COOKIE_NEVER_REVIVES_AFTER_REACTIVATION");
+          // Fresh MFA is required for the next session. Wait for a new TOTP
+          // counter so the original accepted code cannot be replayed.
+          await new Promise(resolve=>setTimeout(resolve,30_000-(Date.now()%30_000)+350));
+          await login(member,baseUrl,"company",{
+            email:"journey.team.member@example.test",password:TEAM_PASSWORD,totpSecret:teamSecret
+          },1);
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).waitFor();
+          console.log("M10905_M10404_CHROMIUM_FRESH_MFA_REQUIRED_AFTER_MEMBERSHIP_REACTIVATION");
 
           await memberCard.getByRole("button", { name: "Revoke" }).click();
           await company.getByRole("dialog").getByRole("button", { name: "Revoke access" }).click();
@@ -525,9 +539,10 @@ test("Company owner completes organization, workforce, Team, assurance, policy, 
             "copied staff initially allowed, denied after revoke and forged role, allowed after regrant, denied on suspension and membership revocation");
           await member.goto(`${baseUrl}/company/dashboard`, { waitUntil: "networkidle" });
           assert.equal(await member.getByRole("heading", { name: "Independent Audit Company", exact: true }).count(), 0, "revoked membership must remove existing-session tenant access");
-          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          assert.equal(new URL(member.url()).pathname, "/company/login",
+            "suspend/revoke permanently invalidates the original signed session rather than only denying tenant access");
           await member.goto(`${baseUrl}/company/team`, { waitUntil: "networkidle" });
-          assert.equal(new URL(member.url()).pathname, "/access-denied");
+          assert.equal(new URL(member.url()).pathname, "/company/login");
           assert.equal(await member.getByRole("heading", { name: "HSE Verify could not complete this request.", exact: true }).count(), 0);
           console.log("ACTUAL_COMPANY_STAFF_REVOCATION reactivated signed-in session loses Company tenant dashboard access on revocation");
 

@@ -5,6 +5,7 @@ on:
     paths:
       - "tests/browser/company-complete-journey.browser.test.mjs"
       - "src/lib/authorization/**"
+      - "src/lib/auth/auth-repository.ts"
       - "src/app/api/company/workers/export/**"
       - "src/app/company/(portal)/team/**"
       - ".github/workflows/m1-04-staff-live-export-revocation.yml"
@@ -14,6 +15,7 @@ on:
     paths:
       - "tests/browser/company-complete-journey.browser.test.mjs"
       - "src/lib/authorization/**"
+      - "src/lib/auth/auth-repository.ts"
       - "src/app/api/company/workers/export/**"
       - "src/app/company/(portal)/team/**"
       - ".github/workflows/m1-04-staff-live-export-revocation.yml"

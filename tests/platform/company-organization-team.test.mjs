@@ -1291,8 +1291,8 @@ test("M1.09.05 actual PostgreSQL16 cached Company staff session suspension and r
       assert.equal(revoked.reason,"session_revoked");
     }
     console.log("M10905_REAL_PG16_SUSPEND_INVALIDATES_ALL_PREVIOUS_COMPANY_SESSION_TOKENS");
-    const issueNewCompanyToken=(client,id,role="company")=>new AuthenticationRepository(client).insertSession({
-      sessionId:id,accountId:managerAccount,activeRole:role,tokenHash:`hash-${id}`,
+    const issueNewCompanyToken=(client,id,accountId=managerAccount)=>new AuthenticationRepository(client).insertSession({
+      sessionId:id,accountId,activeRole:"company",tokenHash:`hash-${id}`,
       csrfTokenHash:`csrf-${id}`,userAgentHash:null,ipAddressHash:null,
       createdAt:NOW,lastSeenAt:NOW,expiresAt:FAR_FUTURE
     });
@@ -1300,6 +1300,24 @@ test("M1.09.05 actual PostgreSQL16 cached Company staff session suspension and r
       /active account|active Company|membership/i,
       "M1.09.05 suspended member can mint a new Company cookie, which would revive at reactivation");
     console.log("M10905_REAL_PG16_LOGIN_ISSUANCE_DURING_SUSPENSION_DENIED");
+    // Root staff invitations/new Company registration initially have no tenant
+    // membership. Their login must work for onboarding, but a valid Company
+    // session never confers another tenant's role or permissions.
+    const unboundAccount=await createAcceptedInviteAccount(first,
+      "m10905-unbound-onboarding@example.test","m10905-unbound-onboarding");
+    const unboundId="m10905_unbound_company_onboarding";
+    await issueNewCompanyToken(second,unboundId,unboundAccount);
+    const unbound=await tokenResolution(unboundId);
+    assert.equal(unbound.allowed,true);
+    assert.equal(unbound.principal.tenantMembership,null);
+    assert.equal(authorizePortalEntry({resolution:unbound,expectedRole:"company"}).allowed,true);
+    const unboundTenantAccess=authorizeCurrentTenantPermission({
+      resolution:unbound,permission:"company.workforce.read"
+    });
+    assert.equal(unboundTenantAccess.allowed,false);
+    assert.equal(unboundTenantAccess.reason,"tenant_context_missing");
+    assert.equal(authorizePortalEntry({resolution:unbound,expectedRole:"root"}).allowed,false);
+    console.log("M10905_REAL_PG16_UNBOUND_COMPANY_ONBOARDING_ALLOWED_NO_TENANT_OR_CROSS_ROLE_ACCESS");
     const reactivated=await memberService.changeMemberStatus(manage,{
       membershipId:managerMembership,expectedStatus:"suspended",
       expectedAccessRevision:suspended.accessRevision,targetStatus:"active"
@@ -1347,12 +1365,18 @@ test("M1.09.05 actual PostgreSQL16 cached Company staff session suspension and r
       final=await ownerRevocation;
       const late=await racingLogin;
       assert.equal(late.ok,false,"New Company login cannot commit after the competing membership was revoked");
-      assert.match(late.error?.message??"",/active Company membership/i);
+      assert.match(late.error?.message??"",/Company membership must be active/i);
       const racedSession=await second.query("SELECT 1 FROM auth_sessions WHERE session_id=$1",["m10905_racing_login_during_revoke"]);
       assert.equal(racedSession.rows.length,0);
       console.log("M10905_REAL_PG16_CONCURRENT_LOGIN_REVOKE_ROWLOCK_SERIALIZES_AND_FAILS_CLOSED");
     } finally {if(release)release();}
     assert.equal(final.status,"revoked");
+    await assert.rejects(issueNewCompanyToken(second,"m10905_revoked_new_login"),
+      /Company membership must be active/i,
+      "M1.09.05 revoked membership must not become unbound onboarding and mint a new session");
+    assert.equal((await second.query("SELECT 1 FROM auth_sessions WHERE session_id=$1",
+      ["m10905_revoked_new_login"])).rows.length,0);
+    console.log("M10905_REAL_PG16_REVOKED_MEMBERSHIP_CANNOT_BYPASS_AS_UNBOUND_ONBOARDING");
     const freshAfterRevocation=await tokenResolution(freshId);
     assert.equal(freshAfterRevocation.allowed,false);
     assert.equal(freshAfterRevocation.reason,"session_revoked");
