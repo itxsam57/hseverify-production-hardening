@@ -26,12 +26,18 @@ class VerificationRegisterTests(unittest.TestCase):
 
     def test_inventory_matches_previous_planning_estimate(self):
         self.assertEqual(self.report["entrypoint_types"]["http_method_handlers"], 40)
-        self.assertEqual(self.report["entrypoint_types"]["server_action_exports"], 211)
-        self.assertEqual(self.report["candidate_entrypoints"], 251)
+        self.assertEqual(self.report["entrypoint_types"]["server_action_exports"], 212)
+        self.assertEqual(self.report["candidate_entrypoints"], 252)
         self.assertEqual(self.report["responsive_page_files"], 117)
-        self.assertEqual(self.report["planned_checks"], 4975)
+        self.assertEqual(self.report["planned_checks"], 4983)
+        self.assertEqual(self.report["original_frozen_planned_checks"], 4975)
+        self.assertEqual(self.report["original_frozen_security_action_candidates"], 251)
+        self.assertEqual(self.report["additional_unfrozen_attack_family_slots"], 8)
+        self.assertEqual(self.report["reviewed_post_freeze_security_action_ids"], [
+            "ACTION:src/app/company/(portal)/workers/[linkId]/actions.ts:updateWorkerPlacementAction"
+        ])
         self.assertEqual(self.report["planned_check_categories"], {
-            "scenario_dimension": 2616, "security_candidate": 2008, "responsive_page": 351,
+            "scenario_dimension": 2616, "security_candidate": 2016, "responsive_page": 351,
         })
 
     def test_every_case_identifier_unique(self):
@@ -41,7 +47,7 @@ class VerificationRegisterTests(unittest.TestCase):
     def test_no_historical_pass_is_release_certified(self):
         self.assertEqual(self.report["release_certified_checks"], 0)
         self.assertEqual(self.report["release_certified_scenarios"], 0)
-        self.assertEqual(self.report["planned_checks_without_full_final_stage_attestation"], 4975)
+        self.assertEqual(self.report["planned_checks_without_full_final_stage_attestation"], 4983)
         self.assertTrue(all(x["release_certification"] == "NOT_CERTIFIED"
                             and not x["exact_sha_staging_attestation"] for x in self.rows))
         row = next(x for x in self.rows if x["check_id"] == "SCENARIO:M1.01.03:01")
