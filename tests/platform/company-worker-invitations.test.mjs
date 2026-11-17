@@ -422,7 +422,7 @@ async function m11001ActualPostgres16(scenario="M11001") {
     const e={...ENV,databaseDriver:"postgres",databaseUrl:url.href,
       releaseSha:"m11001-real-invite-race-"+process.pid};
     first=await openScriptDatabase(e);
-    await applyMigrationsThrough(first,e.releaseSha,scenario==="M11005"?"0134_company_worker_placement_audit":"0133_company_team_access_revision_cas");
+    await applyMigrationsThrough(first,e.releaseSha,["M11005","M11006"].includes(scenario)?"0134_company_worker_placement_audit":"0133_company_team_access_revision_cas");
     second=await openScriptDatabase(e);
     return {first,second,cleanup:async()=>{
       try{await second.close();}
@@ -1154,5 +1154,154 @@ test("M1.10.05 actual PostgreSQL16 active Worker Site Department move serializes
     const account=(await first.query("SELECT account_status FROM auth_accounts WHERE account_id=$1",
       [worker.accountId])).rows[0];assert.equal(account.account_status,"active");
     console.log("M11005_ACTUAL_PG16_ONE_MOVE_ONE_END_ORDERED_IMMUTABLE_AUDIT_NO_WRONG_TENANT_OR_WORKER_ID_MUTATION");
+  }finally{if(releaseHeld)releaseHeld();await cleanup();}
+});
+
+
+// M1.10.06 adds only the gap missing from the already-passing signed real
+// Chromium two-employer lifecycle: independent SQL-client concurrent consent,
+// live scoped placement while the other employer ends, and immutable DB proof.
+test("M1.10.06 actual PostgreSQL16 two simultaneously active employers retain independent Worker scope during cross-company end and placement",{
+  skip:!process.env.HSE_M11006_POSTGRES_TEST_DATABASE_URL,timeout:200000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16("M11006");
+  let releaseHeld;
+  try{
+    const companyA=await seedCompany(first,"L"),companyB=await seedCompany(first,"M");
+    const unitsA=await seedUnits(first,companyA,"L");
+    const unitsB=await seedUnits(first,companyB,"M");
+    const unitsBNew=await seedUnits(first,companyB,"N");
+    const worker=await seedWorker(first,"V","m11006-dual-worker@example.test");
+    const unrelated=await seedWorker(first,"W","m11006-unrelated@example.test");
+    const permanentId=await seedPermanentWorkerId(first,worker,"V");
+    const ownerA=companyPrincipal(companyA),ownerB=companyPrincipal(companyB);
+    const rightWorker=workerPrincipal(worker),foreignWorker=workerPrincipal(unrelated);
+    const serviceA=new CompanyWorkforceService(first,PEPPER,()=>new Date(NOW_DATE));
+    const serviceB=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const receiving=new CompanyWorkforceWorkerReadRepository(Promise.resolve(second),()=>new Date(NOW_DATE));
+    const defaults=(company,units)=>({
+      email:worker.email,siteId:units.siteId,departmentId:units.departmentId,
+      paymentResponsibility:company===companyA?"worker":"company",
+      assessmentReference:company===companyA?"M11006-FIRST":"M11006-SECOND"
+    });
+    const pendingA=await serviceA.requestPermanentWorkerLink(ownerA,permanentId,defaults(companyA,unitsA));
+    const pendingB=await serviceB.requestPermanentWorkerLink(ownerB,permanentId,defaults(companyB,unitsB));
+    assert.notEqual(pendingA.linkId,pendingB.linkId);
+    assert.equal(pendingA.status,"pending_worker_acceptance");
+    assert.equal(pendingB.status,"pending_worker_acceptance");
+    const twoPending=await receiving.listLinks(rightWorker);
+    assert.deepEqual(new Set(twoPending.map(x=>x.linkId)),new Set([pendingA.linkId,pendingB.linkId]));
+    assert(twoPending.every(x=>x.status==="pending_worker_acceptance"));
+    assert.deepEqual(await receiving.listLinks(foreignWorker),[]);
+    await assert.rejects(receiving.listLinks(ownerA),error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(serviceA.acceptWorkerLink(foreignWorker,pendingB.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(serviceB.acceptWorkerLink(ownerB,pendingA.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    const preAccept=(await first.query("SELECT COUNT(*)::integer n FROM platform_audit_events "+
+      "WHERE action_key='company_workforce.link.accepted' AND target_reference IN($1,$2)",
+      [pendingA.linkId,pendingB.linkId])).rows[0].n;
+    assert.equal(preAccept,0);
+    console.log("M11006_ACTUAL_PG16_TWO_COMPANIES_INDEPENDENT_PENDING_NO_WRONG_WORKER_OR_ROLE_CONSENT");
+
+    // Genuine separate Postgres16 connections attempt the two rightful
+    // Worker acceptances together; their shared signed Worker session is
+    // serialized, but BOTH Company link identities must remain independent.
+    const accepts=await Promise.all([
+      serviceA.acceptWorkerLink(rightWorker,pendingA.linkId),
+      serviceB.acceptWorkerLink(rightWorker,pendingB.linkId)
+    ]);
+    assert(accepts.every(x=>x.status==="active"));
+    assert.equal(new Set(accepts.map(x=>x.linkId)).size,2);
+    const bothActive=await receiving.listLinks(rightWorker);
+    assert.equal(bothActive.length,2);
+    assert(bothActive.every(x=>x.status==="active"));
+    const byTenant=Object.fromEntries(bothActive.map(x=>[x.tenantId,x]));
+    assert.equal(byTenant[companyA.tenantId]?.siteName,"Site L");
+    assert.equal(byTenant[companyB.tenantId]?.siteName,"Site M");
+    assert.equal(byTenant[companyA.tenantId]?.departmentName,"Dept L");
+    assert.equal(byTenant[companyB.tenantId]?.departmentName,"Dept M");
+    assert(bothActive.every(x=>x.permanentWorkerId===permanentId));
+    await assert.rejects(serviceA.updateWorkerPlacement(ownerA,{
+      linkId:pendingB.linkId,siteId:unitsA.siteId,departmentId:unitsA.departmentId
+    }),error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(serviceB.endWorkerRelationship(ownerB,{
+      linkId:pendingA.linkId,effectiveDate:"2026-08-16",
+      reason:"Attempted foreign tenant Company relationship termination."
+    }),error=>error?.name==="CompanyWorkforceAccessError");
+    console.log("M11006_ACTUAL_PG16_CONCURRENT_RIGHTFUL_CONSENT_TWO_ACTIVE_LINKS_SAME_WORKER_ID_TENANT_SCOPES_ISOLATED");
+
+    const endA={linkId:pendingA.linkId,effectiveDate:"2026-08-16",
+      reason:"First Company assignment ended while second independent Company remains active."};
+    const held=m11001HoldSuccessfulTransaction(first);releaseHeld=held.release;
+    const endingA=new CompanyWorkforceService(held.wrapped,PEPPER,()=>new Date(NOW_DATE))
+      .endWorkerRelationship(ownerA,endA);
+    await held.ready;
+    const moveB={linkId:pendingB.linkId,siteId:unitsBNew.siteId,departmentId:unitsBNew.departmentId};
+    const movingB=serviceB.updateWorkerPlacement(ownerB,moveB);
+    const movedBeforeA=await Promise.race([
+      movingB.then(()=>({done:true}),error=>({done:false,error})),
+      new Promise(resolve=>setTimeout(()=>resolve({done:false,timeout:true}),1100))
+    ]);
+    assert.equal(movedBeforeA.done,true,
+      "Second Company placement must independently commit while first Company end remains uncommitted");
+    await movingB;
+    const pendingEndingView=await receiving.listLinks(rightWorker);
+    assert.equal(pendingEndingView.find(x=>x.tenantId===companyA.tenantId).status,"active");
+    assert.equal(pendingEndingView.find(x=>x.tenantId===companyB.tenantId).siteName,"Site N");
+    held.release();releaseHeld=null;
+    await endingA;
+    const final=await receiving.listLinks(rightWorker);
+    const old=final.find(x=>x.tenantId===companyA.tenantId);
+    const active=final.find(x=>x.tenantId===companyB.tenantId);
+    assert.equal(final.length,2);
+    assert.equal(old.status,"revoked");assert(old.revokedAt);
+    assert.equal(old.siteName,"Site L");assert.equal(old.departmentName,"Dept L");
+    assert.equal(active.status,"active");assert.equal(active.revokedAt,null);
+    assert.equal(active.siteName,"Site N");assert.equal(active.departmentName,"Dept N");
+    assert(old.permanentWorkerId===permanentId&&active.permanentWorkerId===permanentId);
+    await assert.rejects(serviceA.endWorkerRelationship(ownerA,endA),
+      error=>error?.name==="CompanyWorkforceConflictError");
+    assert.equal((await serviceB.acceptWorkerLink(rightWorker,pendingB.linkId)).linkId,pendingB.linkId);
+    assert.deepEqual(await receiving.listLinks(foreignWorker),[]);
+    console.log("M11006_ACTUAL_PG16_FIRST_EMPLOYER_END_HELD_SECOND_SITE_MOVE_COMMITS_INDEPENDENTLY_WORKER_HISTORY_REMAINS");
+
+    const links=(await first.query("SELECT tenant_id,link_id,worker_account_id,permanent_worker_id,link_status,site_id,department_id "+
+      "FROM company_worker_links WHERE worker_account_id=$1 ORDER BY tenant_id",
+      [worker.accountId])).rows;
+    assert.equal(links.length,2);
+    assert.deepEqual(links.map(x=>x.link_status),["revoked","active"]);
+    assert.deepEqual(links.map(x=>x.tenant_id),[companyA.tenantId,companyB.tenantId]);
+    assert(links.every(x=>x.worker_account_id===worker.accountId&&x.permanent_worker_id===permanentId));
+    assert.equal(links[0].site_id,unitsA.siteId);
+    assert.equal(links[1].site_id,unitsBNew.siteId);
+    const identity=(await first.query(
+      "SELECT permanent_worker_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+      [worker.accountId])).rows;
+    assert.deepEqual(identity,[{permanent_worker_id:permanentId}]);
+    const audit=(await first.query(
+      "SELECT action_key,actor_account_id,actor_tenant_id,target_reference,metadata FROM platform_audit_events "+
+      "WHERE target_reference IN($1,$2) AND action_key LIKE 'company_workforce.link.%' ORDER BY audit_sequence",
+      [pendingA.linkId,pendingB.linkId])).rows;
+    assert.deepEqual(audit.map(x=>x.action_key).sort(),[
+      "company_workforce.link.requested","company_workforce.link.requested",
+      "company_workforce.link.accepted","company_workforce.link.accepted",
+      "company_workforce.link.placement_updated","company_workforce.link.revoked"
+    ].sort());
+    for(const event of audit){
+      const isA=event.target_reference===pendingA.linkId;
+      const expectedCompany=isA?companyA:companyB;
+      const expectedActor=event.action_key==="company_workforce.link.accepted"?worker.accountId:expectedCompany.accountId;
+      assert.equal(event.actor_account_id,expectedActor);
+      assert.equal(event.actor_tenant_id,event.action_key==="company_workforce.link.accepted"?null:expectedCompany.tenantId);
+      if(event.action_key==="company_workforce.link.placement_updated"){
+        const meta=typeof event.metadata==="string"?JSON.parse(event.metadata):event.metadata;
+        assert.equal(meta.oldSiteId,unitsB.siteId);
+        assert.equal(meta.siteId,unitsBNew.siteId);
+        assert.equal(meta.oldDepartmentId,unitsB.departmentId);
+        assert.equal(meta.departmentId,unitsBNew.departmentId);
+      }
+    }
+    console.log("M11006_ACTUAL_PG16_EXACT_TWO_LINKS_ONE_PERMANENT_WORKER_ID_SIX_ROLE_SCOPED_AUDITS_NO_FOREIGN_MUTATION_OR_REPLAY");
   }finally{if(releaseHeld)releaseHeld();await cleanup();}
 });
