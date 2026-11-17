@@ -1,0 +1,82 @@
+name: M1.10.06 actual PostgreSQL16 two active Company links independent Worker history and isolation
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/company/company-workforce-worker-read-repository.ts'
+      - 'src/lib/authorization/**'
+      - 'src/lib/audit/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-10-06-dual-employer-isolation-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/company/company-workforce-worker-read-repository.ts'
+      - 'src/lib/authorization/**'
+      - 'src/lib/audit/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-10-06-dual-employer-isolation-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11006-dual-employer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  real-postgres16-simultaneous-dual-company-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_dual_employer
+          POSTGRES_PASSWORD: synthetic_dual_employer_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_dual_employer -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Check out the exact PR source or signed QA merge SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact dependency lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify two independent Company links on real PG16, rights, simultaneous consent, release and audited Worker receiving state
+        shell: bash
+        env:
+          HSE_M11006_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_dual_employer:synthetic_dual_employer_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-worker-invitation-tests.mjs --test-name-pattern 'M1.10.06 actual PostgreSQL16' 2>&1 | tee .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          for marker in TWO_COMPANIES_INDEPENDENT_PENDING_NO_WRONG_WORKER_OR_ROLE_CONSENT CONCURRENT_RIGHTFUL_CONSENT_TWO_ACTIVE_LINKS_SAME_WORKER_ID_TENANT_SCOPES_ISOLATED FIRST_EMPLOYER_END_HELD_SECOND_SITE_MOVE_COMMITS_INDEPENDENTLY_WORKER_HISTORY_REMAINS EXACT_TWO_LINKS_ONE_PERMANENT_WORKER_ID_SIX_ROLE_SCOPED_AUDITS_NO_FOREIGN_MUTATION_OR_REPLAY; do
+            grep -q "M11006_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          done
+      - name: Archive exact SHA independent PG16 dual-company/Worker scope evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11006-dual-employer-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11006-real-postgres16-dual-employer.log
+          if-no-files-found: warn
+          retention-days: 30
