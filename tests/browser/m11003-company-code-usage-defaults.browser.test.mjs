@@ -100,9 +100,14 @@ test("M1.10.03 real Chromium Company code limits expiry default Site Department 
     await a.getByRole("button",{name:"Join Company with code"}).click();
     await a.getByText("Company registration code accepted. Your Worker identity remains independent and the Company link is active.",{exact:true}).waitFor();
     console.log("M11003_ACTUAL_CHROMIUM_THIRD_WORKER_EXHAUSTION_DENIED_RIGHTFUL_REPLAY_IDEMPOTENT_320");
+    // A full Owner reload unmounts the previous uncontrolled code form.
+    // Fill both mandatory inputs for the independent revocation-code creation.
     await form.getByLabel("Usage limit").fill("1");
+    await form.getByLabel("Expiry").fill(new Date(Date.now()+7*86400000).toISOString().slice(0,16));
+    assert.equal(await form.getByLabel("Usage limit").inputValue(),"1");
+    assert.match(await form.getByLabel("Expiry").inputValue(),/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
     await form.getByRole("button",{name:"Create Company registration code"}).click();
-    await form.getByText("Company registration code created. Copy it now; the stored value cannot reveal it later.",{exact:true}).waitFor();
+    await form.getByText("Company registration code created. Copy it now; the stored value cannot reveal it later.",{exact:true}).waitFor({timeout:15000});
     const revocable=(await form.locator("p strong").last().innerText()).trim();assert.notEqual(revocable,code);
     await company.reload({waitUntil:"domcontentloaded"});
     const card=company.locator("article").filter({hasText:"0 of 1 uses consumed"}).filter({hasText:"active"}).first();

@@ -3,6 +3,10 @@
 
 
 
+## 2026-11-17 — PR150 second exact-head M11003 code Chrome advanced through both Workers; revocation-code test re-entry fix required
+
+- **PR150 source HEAD b6d7a674397daf5a828c5b39aac40a2f4f50766c exact GitHub CI10/11 SUCCESS, M11003 signed Chromium RED 0/1**, run44111678920 job134138665853 log SHA256 `bf618a5eecd3b4be46af3277e7a40504a35b3af41de702964f205f785d56c8e1`. Real Owner new code displayed **0/2**, both Worker A & B independently redeemed and Owner received exhausted2/2; third Worker denied and rightful Worker replay idempotent. **New failure** later: test attempted a separate revocation-code creation after reloading Owner, filled usage1 but not required expiry (uncontrolled form reset to blank); HTTP200 error feedback and no creation, timeout. Test now fills and asserts usage1 + future expiry before second code creation. **No production-code change and no application defect proven.** New exact-head Chrome 1/1 and all 6 markers still mandatory. No merge until exact new HEAD all CI GREEN, protected final stage/pentest/providers/load/restore/Owner UAT still NO-GO.
+
 ## 2026-11-17 — M1.10.03 registration-code limits/defaults real PG16 last-slot 1/1 PASS; real Chromium local ENOSPC RED, exact-head GitHub Chromium verification required
 
 - **Current canonical signed QA `07d8bc3ae73a04ee3c858fa33908509988957221`**: PR149 source `f28846f91f015463fa0f8aca92ee4b8def6958c2` real bulk CSV root parser fix, exact source PR **9/9 green** including new Chrome+PG16 and old M11001 regressions; genuine signed GitHub two-parent merge (base693d51d+sourcef288) with **61/61 independent exact merged SHA GitHub workflows all SUCCESS**, no failed/pending. Still no protected production-like final-staging/owner approval, release NO-GO.
