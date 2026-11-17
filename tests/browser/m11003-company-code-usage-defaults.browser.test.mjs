@@ -92,6 +92,8 @@ test("M1.10.03 real Chromium Company code limits expiry default Site Department 
       .getByText(/M11003 Field Site.*M11003 Field Department/).waitFor();
     await company.reload({waitUntil:"domcontentloaded"});
     await company.locator("article").filter({hasText:"2 of 2 uses consumed"}).first().getByText("exhausted",{exact:true}).waitFor();
+    assert.equal(await a.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    assert.equal(await b.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     console.log("M11003_ACTUAL_CHROMIUM_WORKER_A_B_REDEEM_COMPANY_OBSERVES_EXHAUSTED_AND_DEFAULTS_390");
     await b.context().close();const c=await page(320);
     await redeem(c,email.c,code,false);
@@ -111,9 +113,15 @@ test("M1.10.03 real Chromium Company code limits expiry default Site Department 
     const revocable=(await form.locator("p strong").last().innerText()).trim();assert.notEqual(revocable,code);
     await company.reload({waitUntil:"domcontentloaded"});
     const card=company.locator("article").filter({hasText:"0 of 1 uses consumed"}).filter({hasText:"active"}).first();
+    const revokeCodeId=(await card.locator("h3").innerText()).trim();
+    assert.match(revokeCodeId,/^company_code_[A-Za-z0-9_-]{24}$/);
     await card.getByRole("button",{name:"Revoke code"}).click();
     await company.getByRole("dialog").getByRole("button",{name:"Revoke Company code"}).click();
-    await card.getByText("revoked",{exact:true}).waitFor({timeout:15000});
+    // Re-find by immutable code ID: a locator filtered for active ceases to
+    // match precisely when the revoke action succeeds.
+    const revokedCard=company.locator("article").filter({has:company.getByRole("heading",{name:revokeCodeId,exact:true})}).first();
+    await revokedCard.getByText("revoked",{exact:true}).waitFor({timeout:15000});
+    assert.equal(await revokedCard.getByRole("button",{name:"Revoke code"}).count(),0);
     const invalid=async secret=>{await c.getByLabel("Registration code").fill(secret);await c.getByRole("button",{name:"Join Company with code"}).click();await c.getByText("That Company registration code is invalid, expired, revoked, or no longer available.",{exact:true}).waitFor({timeout:15000});};
     await invalid(revocable);await invalid(expiredToken);await invalid("fake-invalid-code");
     await company.reload({waitUntil:"domcontentloaded"});

@@ -3,6 +3,10 @@
 
 
 
+## 2026-11-17 — PR150 third hosted head code revoke succeeded but active-filter test became impossible
+
+- PR150 **head `9b836f845022dd6c7ba544d986fdebe3384fb1e0`: 10/11 GitHub checks success**, only new M1.10.03 real Chromium 0/1 RED (run44112564104 job134141807634, raw SHA256 `139bf0768ae252c9755d66d9d2c6ccade7cba8ee8f090844ea22ee6e1060f806`). Owner create code, two Worker accept, exhausted, third deny, replay, second code creation all passed; real revoke action HTTP200. Final status assertion used locator filtering the card as `active` and then waiting for `revoked`—contradiction. New test locates immutable code ID and requires revoked status/no revoke button. Revoked-token/expired/tamper/anonymity/DB still **NOT EXECUTED** to the end; require next exact GitHub 1/1 full green. No verified product defect in tested path; release 0/218 and NO-GO.
+
 ## 2026-11-17 — PR150 second exact-head M11003 code Chrome advanced through both Workers; revocation-code test re-entry fix required
 
 - **PR150 source HEAD b6d7a674397daf5a828c5b39aac40a2f4f50766c exact GitHub CI10/11 SUCCESS, M11003 signed Chromium RED 0/1**, run44111678920 job134138665853 log SHA256 `bf618a5eecd3b4be46af3277e7a40504a35b3af41de702964f205f785d56c8e1`. Real Owner new code displayed **0/2**, both Worker A & B independently redeemed and Owner received exhausted2/2; third Worker denied and rightful Worker replay idempotent. **New failure** later: test attempted a separate revocation-code creation after reloading Owner, filled usage1 but not required expiry (uncontrolled form reset to blank); HTTP200 error feedback and no creation, timeout. Test now fills and asserts usage1 + future expiry before second code creation. **No production-code change and no application defect proven.** New exact-head Chrome 1/1 and all 6 markers still mandatory. No merge until exact new HEAD all CI GREEN, protected final stage/pentest/providers/load/restore/Owner UAT still NO-GO.

@@ -45694,7 +45694,7 @@
     "clean_pass_summary_logs": 1331,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 558,
-    "current_test_source_content_sha256": "2f72ecc896757d6ee72f668bf039d1cdd7bb30e1f57b0a389e6487eeca58ab1d",
+    "current_test_source_content_sha256": "701df2f301fa74af9d68e4b675f1156401a80c817dd3a96de75f21bf8a8be814",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45732,7 +45732,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "b6d7a674397daf5a828c5b39aac40a2f4f50766c",
+  "inventory_started_from_git_head_sha": "9b836f845022dd6c7ba544d986fdebe3384fb1e0",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
