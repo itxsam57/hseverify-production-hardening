@@ -403,3 +403,194 @@ test("M1.08.02 preissued Company code and invitation cannot be redeemed while te
       "after verified tenant activation, original code and invitation each enroll only intended independent Worker, exact two links and two accepted audits, single code use");
   }finally{await database.close();}
 });
+
+async function m11001ActualPostgres16() {
+  const raw=process.env.HSE_M11001_POSTGRES_TEST_DATABASE_URL;
+  if(!raw)throw new Error("M11001 real PG16 requires explicitly approved isolated localhost Postgres.");
+  const url=new URL(raw);
+  if(!["127.0.0.1","localhost"].includes(url.hostname)||url.pathname!=="/postgres"){
+    throw new Error("M11001 must never open shared application or external PostgreSQL.");
+  }
+  const root=await openScriptDatabase({...ENV,databaseDriver:"postgres",databaseUrl:url.href,releaseSha:"m11001-pg16-root"});
+  const dbName="m11001_invite_race_"+process.pid+"_"+Date.now();
+  let created=false,first,second;
+  try{
+    await root.execute('CREATE DATABASE "'+dbName+'"');created=true;
+    url.pathname="/"+dbName;
+    const e={...ENV,databaseDriver:"postgres",databaseUrl:url.href,
+      releaseSha:"m11001-real-invite-race-"+process.pid};
+    first=await openScriptDatabase(e);
+    await applyMigrationsThrough(first,e.releaseSha,"0133_company_team_access_revision_cas");
+    second=await openScriptDatabase(e);
+    return {first,second,cleanup:async()=>{
+      try{await second.close();}
+      finally{try{await first.close();}
+        finally{try{await root.execute('DROP DATABASE "'+dbName+'"');}
+          finally{await root.close();}}}
+    }};
+  }catch(error){
+    if(second)await second.close();if(first)await first.close();
+    try{if(created)await root.execute('DROP DATABASE "'+dbName+'"');}
+    finally{await root.close();}
+    throw error;
+  }
+}
+
+function m11001HoldSuccessfulTransaction(client){
+  let signal,release;
+  const ready=new Promise(resolve=>{signal=resolve;});
+  const permit=new Promise(resolve=>{release=resolve;});
+  const wrapped={transaction:callback=>client.transaction(async tx=>{
+    const result=await callback(tx);
+    signal();await permit;
+    return result;
+  })};
+  return {wrapped,ready,release};
+}
+
+test("M1.10.01 actual PostgreSQL16 Worker accept versus Owner revoke and resend races serialize with immutable cross-role evidence",{
+  skip:!process.env.HSE_M11001_POSTGRES_TEST_DATABASE_URL,timeout:190000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16();
+  let releaseHeld;
+  try{
+    const owner=await seedCompany(first,"Q"),foreign=await seedCompany(first,"F");
+    const workers=[];
+    for(const c of ["A","B","C","D","E"]){
+      workers.push(await seedWorker(first,c,"m11001-pg16-"+c.toLowerCase()+"@example.test"));
+    }
+    const pCompany=companyPrincipal(owner),pForeign=companyPrincipal(foreign);
+    const serviceOne=new CompanyWorkforceService(first,PEPPER,()=>new Date(NOW_DATE));
+    const serviceTwo=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const inviteData=email=>({email,siteId:null,departmentId:null,
+      paymentResponsibility:"company",assessmentReference:"M11001-PG16"});
+    const invitedA=await serviceOne.inviteWorker(pCompany,inviteData(workers[0].email));
+
+    // Worker accept completes its writes but stays uncommitted. Owner revoke
+    // on another SQL connection must wait; it cannot undo a committed accept.
+    const holdWorker=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=holdWorker.release;
+    const workerHeld=new CompanyWorkforceService(holdWorker.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const accepting=workerHeld.acceptInvitation(workerPrincipal(workers[0]),invitedA.invitationToken);
+    await holdWorker.ready;
+    const competingRevoke=serviceTwo.revokeInvitation(pCompany,invitedA.invitationId)
+      .then(()=>({ok:true}),error=>({ok:false,error}));
+    const earlyRevoke=await Promise.race([competingRevoke.then(()=>({finished:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))]);
+    assert.equal(earlyRevoke.waiting,true,"Owner revoke must block until Worker acceptance transaction commits");
+    holdWorker.release();releaseHeld=null;
+    const aLink=await accepting;
+    assert.equal(aLink.status,"active");
+    const revokeAfterAccept=await competingRevoke;
+    assert.equal(revokeAfterAccept.ok,false);
+    assert.equal(revokeAfterAccept.error?.name,"CompanyWorkforceConflictError");
+    const aReplay=await serviceTwo.acceptInvitation(workerPrincipal(workers[0]),invitedA.invitationToken);
+    assert.equal(aReplay.linkId,aLink.linkId,"Retrying accepted invitation by same Worker must be idempotent");
+    await assert.rejects(serviceTwo.acceptInvitation(workerPrincipal(workers[4]),invitedA.invitationToken),
+      error=>error?.name==="CompanyWorkforceSecretError");
+    console.log("M11001_ACTUAL_PG16_WORKER_ACCEPT_COMMIT_WINS_OWNER_REVOKE_BLOCKED_AND_REPLAY_ONE_LINK");
+
+    // Opposite interleaving: Owner revoke writes, then holds the transaction;
+    // Worker tries the now-revoked invitation on a separate SQL connection.
+    const invitedB=await serviceOne.inviteWorker(pCompany,inviteData(workers[1].email));
+    const holdOwner=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=holdOwner.release;
+    const ownerHeld=new CompanyWorkforceService(holdOwner.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const revoking=ownerHeld.revokeInvitation(pCompany,invitedB.invitationId);
+    await holdOwner.ready;
+    const conflictingAccept=serviceTwo.acceptInvitation(workerPrincipal(workers[1]),invitedB.invitationToken)
+      .then(value=>({ok:true,value}),error=>({ok:false,error}));
+    const earlyAccept=await Promise.race([conflictingAccept.then(()=>({finished:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))]);
+    assert.equal(earlyAccept.waiting,true,"Worker must wait until Owner revocation commits");
+    holdOwner.release();releaseHeld=null;
+    await revoking;
+    const afterRevoke=await conflictingAccept;
+    assert.equal(afterRevoke.ok,false,"Revoked invitation must never link Worker");
+    assert.equal(afterRevoke.error?.name,"CompanyWorkforceSecretError");
+    assert.equal((await first.query("SELECT COUNT(*)::integer AS n FROM company_worker_links WHERE worker_account_id=$1",[workers[1].accountId])).rows[0].n,0);
+    console.log("M11001_ACTUAL_PG16_OWNER_REVOKE_COMMIT_WINS_WORKER_ACCEPT_BLOCKED_NO_LINK");
+
+    // Resend commits a new token under the same locked invitation row. A
+    // simultaneous Worker with the original token cannot bypass rotation.
+    const invitedC=await serviceOne.inviteWorker(pCompany,inviteData(workers[2].email));
+    const later=new Date(NOW_DATE.getTime()+6*60*1000);
+    const holdResend=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=holdResend.release;
+    const ownerResend=new CompanyWorkforceService(holdResend.wrapped,PEPPER,()=>new Date(later));
+    const workerLater=new CompanyWorkforceService(second,PEPPER,()=>new Date(later));
+    const resending=ownerResend.resendInvitation(pCompany,invitedC.invitationId);
+    await holdResend.ready;
+    const staleWorker=workerLater.acceptInvitation(workerPrincipal(workers[2]),invitedC.invitationToken)
+      .then(value=>({ok:true,value}),error=>({ok:false,error}));
+    const earlyStale=await Promise.race([staleWorker.then(()=>({finished:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))]);
+    assert.equal(earlyStale.waiting,true,"Original token must block while Owner rotates it");
+    holdResend.release();releaseHeld=null;
+    const fresh=await resending;
+    assert.notEqual(fresh.invitationToken,invitedC.invitationToken);
+    const oldWorker=await staleWorker;
+    assert.equal(oldWorker.ok,false,"Stale token must fail after concurrent resend");
+    assert.equal(oldWorker.error?.name,"CompanyWorkforceSecretError");
+    const cLink=await workerLater.acceptInvitation(workerPrincipal(workers[2]),fresh.invitationToken);
+    assert.equal(cLink.status,"active");
+    await assert.rejects(serviceOne.revokeInvitation(pForeign,invitedC.invitationId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(serviceTwo.acceptInvitation(pCompany,fresh.invitationToken),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    console.log("M11001_ACTUAL_PG16_CONCURRENT_RESEND_ROTATES_TOKEN_OLD_WORKER_REPLAY_BLOCKED_FOREIGN_ROLE_DENIED");
+
+    // Actual expiry against the authoritative DB clock, no test sleeps.
+    const invitedD=await serviceOne.inviteWorker(pCompany,inviteData(workers[3].email));
+    const afterExpiry=new Date(NOW_DATE.getTime()+8*86400000);
+    const expiredWorker=new CompanyWorkforceService(second,PEPPER,()=>new Date(afterExpiry));
+    await assert.rejects(expiredWorker.acceptInvitation(workerPrincipal(workers[3]),invitedD.invitationToken),
+      error=>error?.name==="CompanyWorkforceSecretError");
+    const ownerAfterExpiry=new CompanyWorkforceService(first,PEPPER,()=>new Date(afterExpiry));
+    const replacement=await ownerAfterExpiry.inviteWorker(pCompany,inviteData(workers[3].email));
+    assert.notEqual(replacement.invitationId,invitedD.invitationId);
+    await assert.rejects(expiredWorker.acceptInvitation(workerPrincipal(workers[3]),invitedD.invitationToken),
+      error=>error?.name==="CompanyWorkforceSecretError");
+    console.log("M11001_ACTUAL_PG16_EXPIRED_TOKEN_DENIED_DURABLE_EXPIRY_AND_FRESH_INVITATION");
+
+    // Read the authoritative Company + Worker receiving records and actual
+    // immutable audit across both roles, including no success for failures.
+    const status=await first.query("SELECT invitation_id,email_normalized,invitation_status,resend_count,accepted_by_worker_account_id,token_hash "+
+      "FROM company_worker_invitations WHERE tenant_id=$1 ORDER BY email_normalized,created_at",
+      [owner.tenantId]);
+    const byId=new Map(status.rows.map(row=>[row.invitation_id,row]));
+    assert.equal(byId.get(invitedA.invitationId)?.invitation_status,"accepted");
+    assert.equal(byId.get(invitedB.invitationId)?.invitation_status,"revoked");
+    assert.equal(byId.get(invitedC.invitationId)?.invitation_status,"accepted");
+    assert.equal(Number(byId.get(invitedC.invitationId)?.resend_count),1);
+    assert.equal(byId.get(invitedD.invitationId)?.invitation_status,"expired");
+    assert.equal(byId.get(replacement.invitationId)?.invitation_status,"pending");
+    assert.equal(byId.get(invitedA.invitationId)?.accepted_by_worker_account_id,workers[0].accountId);
+    assert.equal(byId.get(invitedC.invitationId)?.accepted_by_worker_account_id,workers[2].accountId);
+    const links=await first.query("SELECT worker_account_id,link_status,invitation_id "+
+      "FROM company_worker_links WHERE tenant_id=$1 ORDER BY worker_account_id",[owner.tenantId]);
+    assert.deepEqual(links.rows.map(row=>[row.worker_account_id,row.link_status]),[
+      [workers[0].accountId,"active"],[workers[2].accountId,"active"]
+    ]);
+    const audits=await first.query("SELECT action_key,actor_account_id,target_reference "+
+      "FROM platform_audit_events WHERE target_reference IN ("+
+      "SELECT invitation_id FROM company_worker_invitations WHERE tenant_id=$1) "+
+      "AND action_key LIKE 'company_workforce.invitation.%' ORDER BY audit_sequence",[owner.tenantId]);
+    const types=audits.rows.map(row=>row.action_key);
+    const occurrences=(name)=>types.filter(x=>x===name).length;
+    assert.equal(occurrences("company_workforce.invitation.accepted"),2,
+      "Wrong Worker, replay, revoked and expired attempts cannot emit a successful accept audit");
+    assert.equal(occurrences("company_workforce.invitation.revoked"),1);
+    assert.equal(occurrences("company_workforce.invitation.resent"),1);
+    assert.equal(occurrences("company_workforce.invitation.created"),5);
+    assert.deepEqual(audits.rows.filter(x=>x.action_key==="company_workforce.invitation.accepted")
+      .map(x=>x.actor_account_id),[workers[0].accountId,workers[2].accountId]);
+    assert(audits.rows.filter(x=>x.action_key!=="company_workforce.invitation.accepted")
+      .every(x=>x.actor_account_id===owner.accountId),
+      "All Company issuer audit actions must name the authenticated Company Owner");
+    console.log("M11001_ACTUAL_PG16_ALL_FIVE_STATES_TWO_LINKS_EXACT_WORKER_COMPANY_IMMUTABLE_AUDIT");
+  }finally{
+    if(releaseHeld)releaseHeld();
+    await cleanup();
+  }
+});
