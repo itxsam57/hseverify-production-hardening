@@ -3845,17 +3845,41 @@
       "direct_scenarios": [
         "M1.10.01"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "264477bbf7fea66548ff30839cb31250bc765b267b9c1fe82ec35105384f2b19",
+          "source_log": "hseverify-m11001-company-worker-invite-20261117/.autopilot/artifacts/M11001_ACTUAL_CHROMIUM_COMPANY_WORKER_INVITE_LIFECYCLE_REDUCED_CONTEXT_RETEST_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 1,
       "scenario_ids": [
         "M1.10.01"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M1.10.01 real Chromium Company Worker invitation acceptance resend revocation expiry wrong role email and replay"
+    },
+    {
+      "case_id": "tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs#ad67a5f6cddd2dec",
+      "direct_scenarios": [
+        "M1.10.02"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.10.02"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.10.02 real Chromium bulk CSV quoted valid, malformed, duplicate, empty-first-cell, retry and Worker receiver persist per row"
     },
     {
       "case_id": "tests/browser/m2-01-assurance-order-case.browser.test.mjs#1b67f0d4bf1c8bfa",
@@ -7562,7 +7586,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 65,
+      "prior_log_pass_repetition_count": 66,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7621,7 +7645,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 65,
+      "prior_log_pass_repetition_count": 66,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7680,7 +7704,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 65,
+      "prior_log_pass_repetition_count": 66,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7739,7 +7763,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 65,
+      "prior_log_pass_repetition_count": 66,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7798,7 +7822,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 65,
+      "prior_log_pass_repetition_count": 66,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7857,7 +7881,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 65,
+      "prior_log_pass_repetition_count": 66,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7916,7 +7940,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 62,
+      "prior_log_pass_repetition_count": 63,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7948,7 +7972,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 61,
+      "prior_log_pass_repetition_count": 62,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -20185,17 +20209,41 @@
       "direct_scenarios": [
         "M1.10.01"
       ],
+      "evidence": [
+        {
+          "sha256": "1b20a6544f11ade57021d404dd7eefdf6231d9642cdefc1583dc6f9a13bac0e6",
+          "source_log": "hseverify-m11001-company-worker-invite-20261117/.autopilot/artifacts/M11001_ACTUAL_PG16_WORKER_ACCEPT_REVOKE_RESEND_RACE_FIRST_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/company-worker-invitations.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 1,
+      "scenario_ids": [
+        "M1.10.01"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "HISTORICAL_LOG_PASSED",
+      "title": "M1.10.01 actual PostgreSQL16 Worker accept versus Owner revoke and resend races serialize with immutable cross-role evidence"
+    },
+    {
+      "case_id": "tests/platform/company-worker-invitations.test.mjs#59ee5a8e6a4dc30a",
+      "direct_scenarios": [
+        "M1.10.02"
+      ],
       "evidence": [],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/company-worker-invitations.test.mjs",
       "is_security_related_title": true,
       "prior_log_pass_repetition_count": 0,
       "scenario_ids": [
-        "M1.10.01"
+        "M1.10.02"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
       "test_execution": "NO_PASS_LOG_EVIDENCE",
-      "title": "M1.10.01 actual PostgreSQL16 Worker accept versus Owner revoke and resend races serialize with immutable cross-role evidence"
+      "title": "M1.10.02 actual PostgreSQL16 concurrent Company bulk CSV duplicate recovery blocks stale sessions and cross-tenant units"
     },
     {
       "case_id": "tests/platform/company-worker-login-return.test.mjs#5cdc437a824290c8",
@@ -45589,10 +45637,10 @@
   "counts": {
     "ambiguous_or_changed_title_occurrences": 977,
     "ambiguous_or_changed_unique_titles": 234,
-    "clean_pass_summary_logs": 1324,
+    "clean_pass_summary_logs": 1327,
     "current_reference_CI_green_distinct_cases": 232,
-    "current_source_test_files": 556,
-    "current_test_source_content_sha256": "9e25970cda1c280c0058d21546caafade73aaa49a21350c6f1821108d52abb75",
+    "current_source_test_files": 557,
+    "current_test_source_content_sha256": "639b13a18d25d47e8d9c39cfe1b121fed0b414d537b13ce25e91b0a9338299ce",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45600,24 +45648,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 168,
+    "existing_source_cases_linked_to_an_exact_218_id": 170,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 57,
-    "historical_log_files_scanned": 2625,
-    "historical_only_green_distinct_cases": 1192,
+    "frozen_ids_with_at_least_one_sourced_green_case": 58,
+    "historical_log_files_scanned": 2635,
+    "historical_only_green_distinct_cases": 1194,
     "logs_with_no_clean_pass_summary_or_a_failure": 63,
-    "logs_with_pass_lines": 1387,
-    "matched_case_occurrences_with_duplicates": 6188,
+    "logs_with_pass_lines": 1390,
+    "matched_case_occurrences_with_duplicates": 6198,
     "passed_cases_needing_scenario_mapping": 1259,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1424,
-    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 188,
+    "previous_green_distinct_source_matched_cases": 1426,
+    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 190,
     "prior_result_TSV_files": 26,
     "source_tests_without_green_execution_proof": 170,
-    "static_existing_distinct_test_cases": 1594,
-    "unique_source_matched_historical_green_cases": 1424,
-    "worktrees_scanned": 133
+    "static_existing_distinct_test_cases": 1596,
+    "unique_source_matched_historical_green_cases": 1426,
+    "worktrees_scanned": 134
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45630,7 +45678,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "0a6e427159e0778cded9e73370faeeb63df7e297",
+  "inventory_started_from_git_head_sha": "693d51d05d65ba37a203b686ebbacf7c3d106195",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -46332,14 +46380,17 @@
       "family": "Invitations and employment links",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 2,
       "id": "M1.10.01",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs#d7f101a38efcfbaa",
+        "tests/platform/company-worker-invitations.test.mjs#01b1ed6bcb2d2d02"
+      ],
       "scenario": "Single invitation accepted, resent, revoked, expired and replayed"
     },
     {
       "brick": "M1.10",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 2,
       "family": "Invitations and employment links",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
