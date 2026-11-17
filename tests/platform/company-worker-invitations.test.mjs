@@ -800,3 +800,119 @@ test("M1.10.03 actual PostgreSQL16 Worker last-slot race enforces code expiry us
     console.log("M11003_ACTUAL_PG16_DB_ONE_EXHAUSTED_ONE_MULTI_ACTIVE_REVOKED_EXPIRED_REDEMPTION_DENIAL_THREE_ACTIVE_LINKS_CROSS_ROLE_AUDITS");
   }finally{if(releaseHeld)releaseHeld();await cleanup();}
 });
+
+test("M1.10.04 actual PostgreSQL16 wrong Worker copied link ID cannot accept during rightful cross-tenant Worker race",{
+  skip:!process.env.HSE_M11004_POSTGRES_TEST_DATABASE_URL,timeout:170000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16("M11004");
+  let releaseHeld;
+  try{
+    const companyA=await seedCompany(first,"V"),companyB=await seedCompany(first,"W");
+    const workerA=await seedWorker(first,"G","m11004.right-a@example.test");
+    const workerB=await seedWorker(first,"H","m11004.right-b@example.test");
+    const permanentA=await seedPermanentWorkerId(first,workerA,"G");
+    const permanentB=await seedPermanentWorkerId(first,workerB,"H");
+    const companyService=new CompanyWorkforceService(first,PEPPER,()=>new Date(NOW_DATE));
+    const workerService=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const input=email=>({email,siteId:null,departmentId:null,
+      paymentResponsibility:"company",assessmentReference:"M11004-INDEPENDENT-WORKER"});
+    const pendingA=await companyService.requestPermanentWorkerLink(
+      companyPrincipal(companyA),permanentA,input(workerA.email));
+    const pendingB=await companyService.requestPermanentWorkerLink(
+      companyPrincipal(companyB),permanentB,input(workerB.email));
+    assert.equal(pendingA.status,"pending_worker_acceptance");
+    assert.equal(pendingB.status,"pending_worker_acceptance");
+    await assert.rejects(workerService.acceptWorkerLink(workerPrincipal(workerB),pendingA.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(workerService.acceptWorkerLink(workerPrincipal(workerA),pendingB.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(workerService.acceptWorkerLink(companyPrincipal(companyA),pendingA.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(workerService.acceptWorkerLink({...workerPrincipal(workerB),accountId:workerA.accountId},pendingA.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(workerService.acceptWorkerLink({...workerPrincipal(workerA),sessionId:"session_m11004_nonexistent"},pendingA.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(workerService.acceptWorkerLink(workerPrincipal(workerB),"company_worker_link_"+"J".repeat(24)),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    const before=(await first.query("SELECT link_id,worker_account_id,tenant_id,link_status,worker_accepted_at "+
+      "FROM company_worker_links WHERE link_id IN ($1,$2) ORDER BY link_id",[pendingA.linkId,pendingB.linkId])).rows;
+    assert.equal(before.length,2);
+    assert(before.every(x=>x.link_status==="pending_worker_acceptance"&&x.worker_accepted_at===null));
+    const beforeAudit=(await first.query("SELECT COUNT(*)::integer AS n FROM platform_audit_events WHERE "+
+      "target_reference IN ($1,$2) AND action_key='company_workforce.link.accepted'",
+      [pendingA.linkId,pendingB.linkId])).rows[0].n;
+    assert.equal(beforeAudit,0,"Forged IDs, roles, sessions and cross-tenant Workers cannot emit success audit");
+    console.log("M11004_ACTUAL_PG16_COPIED_CROSS_TENANT_LINK_IDS_WRONG_ROLE_FORGED_SESSION_AND_INVALID_ID_DENIED_NO_MUTATION");
+
+    // Worker A completes all mutations but deliberately holds the PG16 SQL commit;
+    // wrong Worker B submits the copied link from an independent live SQL session.
+    const hold=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=hold.release;
+    const serviceHeld=new CompanyWorkforceService(hold.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const accepting=serviceHeld.acceptWorkerLink(workerPrincipal(workerA),pendingA.linkId);
+    await hold.ready;
+    const attacker=await workerService.acceptWorkerLink(workerPrincipal(workerB),pendingA.linkId)
+      .then(value=>({ok:true,value}),error=>({ok:false,error}));
+    assert.equal(attacker.ok,false,
+      "Copied victim link cannot be accepted even while rightful Worker transaction is in progress");
+    assert.equal(attacker.error?.name,"CompanyWorkforceAccessError");
+    hold.release();releaseHeld=null;
+    const acceptedA=await accepting;
+    assert.equal(acceptedA.linkId,pendingA.linkId);
+    assert.equal(acceptedA.status,"active");
+    await assert.rejects(workerService.acceptWorkerLink(workerPrincipal(workerB),pendingA.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    const replay=await workerService.acceptWorkerLink(workerPrincipal(workerA),pendingA.linkId);
+    assert.equal(replay.linkId,pendingA.linkId);
+    console.log("M11004_ACTUAL_PG16_WRONG_WORKER_DURING_REAL_UNCOMMITTED_RIGHTFUL_ACCEPT_DENIED_RIGHTFUL_REPLAY_ONE_LINK");
+
+    // Real revoked session cannot consume a pending link. It becomes
+    // actionable again only after controlled session recovery.
+    await second.query("UPDATE auth_sessions SET revoked_at=$2,revocation_reason='M11004 signed Worker session negative' "+
+      "WHERE session_id=$1",[workerB.sessionId,NOW]);
+    await assert.rejects(workerService.acceptWorkerLink(workerPrincipal(workerB),pendingB.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await second.query("UPDATE auth_sessions SET revoked_at=NULL,revocation_reason=NULL WHERE session_id=$1",
+      [workerB.sessionId]);
+    const acceptedB=await workerService.acceptWorkerLink(workerPrincipal(workerB),pendingB.linkId);
+    assert.equal(acceptedB.linkId,pendingB.linkId);
+    assert.equal(acceptedB.status,"active");
+    await assert.rejects(companyService.acceptWorkerLink(workerPrincipal(workerA),pendingB.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    console.log("M11004_ACTUAL_PG16_REVOKED_WORKER_SESSION_DENIED_RECOVERED_RIGHTFUL_WORKER_ACCEPTS_NO_TENANT_CROSSOVER");
+
+    const links=(await first.query("SELECT link_id,tenant_id,worker_account_id,link_status,worker_accepted_at,activated_at,"+
+      "permanent_worker_id,payment_responsibility,assessment_reference FROM company_worker_links "+
+      "WHERE link_id IN ($1,$2) ORDER BY link_id",[pendingA.linkId,pendingB.linkId])).rows;
+    assert.equal(links.length,2);
+    const byId=new Map(links.map(x=>[x.link_id,x]));
+    for(const [pending,company,worker,permanent] of [
+      [pendingA,companyA,workerA,permanentA],[pendingB,companyB,workerB,permanentB]]){
+      const row=byId.get(pending.linkId);
+      assert.equal(row.tenant_id,company.tenantId);
+      assert.equal(row.worker_account_id,worker.accountId);
+      assert.equal(row.permanent_worker_id,permanent);
+      assert.equal(row.link_status,"active");
+      assert.ok(row.worker_accepted_at&&row.activated_at);
+      assert.equal(row.payment_responsibility,"company");
+      assert.equal(row.assessment_reference,"M11004-INDEPENDENT-WORKER");
+    }
+    const audits=(await first.query("SELECT action_key,actor_account_id,target_reference FROM platform_audit_events "+
+      "WHERE target_reference IN ($1,$2) AND action_key LIKE 'company_workforce.link.%' "+
+      "ORDER BY audit_sequence",[pendingA.linkId,pendingB.linkId])).rows;
+    const accepted=audits.filter(x=>x.action_key==="company_workforce.link.accepted");
+    const requested=audits.filter(x=>x.action_key==="company_workforce.link.requested");
+    assert.equal(accepted.length,2);
+    assert.equal(requested.length,2);
+    assert.deepEqual(new Map(accepted.map(x=>[x.target_reference,x.actor_account_id])),new Map([
+      [pendingA.linkId,workerA.accountId],[pendingB.linkId,workerB.accountId]
+    ]));
+    assert.deepEqual(new Map(requested.map(x=>[x.target_reference,x.actor_account_id])),new Map([
+      [pendingA.linkId,companyA.accountId],[pendingB.linkId,companyB.accountId]
+    ]));
+    console.log("M11004_ACTUAL_PG16_TWO_COMPANIES_TWO_RIGHTFUL_WORKERS_ONE_SUCCESS_AUDIT_EACH_ZERO_FORGED_PERSISTED_STATES");
+  }finally{
+    if(releaseHeld)releaseHeld();
+    await cleanup();
+  }
+});
