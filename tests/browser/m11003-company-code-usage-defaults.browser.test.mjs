@@ -58,6 +58,10 @@ test("M1.10.03 real Chromium Company code limits expiry default Site Department 
     await form.getByText("Company code expiry must be within the next 90 days.",{exact:true}).waitFor();
     console.log("M11003_ACTUAL_CHROMIUM_OWNER_INVALID_USAGE_ZERO_10001_AND_PAST_EXPIRY_REJECTED");
     await form.getByLabel("Expiry").fill(future);
+    // React useActionState may reset the uncontrolled defaultValue=1 field
+    // after earlier validation errors; explicitly commit the intended limit.
+    await form.getByLabel("Usage limit").fill("2");
+    assert.equal(await form.getByLabel("Usage limit").inputValue(),"2");
     await form.getByLabel("Site default").selectOption(siteId);
     await form.getByLabel("Department default").selectOption(departmentId);
     await form.getByLabel("Future assessment payment default").selectOption("company");
@@ -65,6 +69,10 @@ test("M1.10.03 real Chromium Company code limits expiry default Site Department 
     await form.getByRole("button",{name:"Create Company registration code"}).click();
     await form.getByText("Company registration code created. Copy it now; the stored value cannot reveal it later.",{exact:true}).waitFor();
     const code=(await form.locator("p strong").last().innerText()).trim();assert(code.length>=24);
+    await company.reload({waitUntil:"domcontentloaded"});
+    const newCodeCard=company.locator("article").filter({hasText:"0 of 2 uses consumed"}).first();
+    await newCodeCard.getByText("active",{exact:true}).waitFor({timeout:15000});
+    await newCodeCard.getByText(/M11003 Field Site.*M11003 Field Department.*Company pays/).waitFor();
     console.log("M11003_ACTUAL_CHROMIUM_COMPANY_CREATED_CODE_LIMIT2_SITE_DEPARTMENT_DEFAULTS_AND_ONE_TIME_SECRET");
     const redeem=async(page,emailAddress,secret,valid)=>{
       await login(page,base,{...creds.worker,email:emailAddress},"worker");
