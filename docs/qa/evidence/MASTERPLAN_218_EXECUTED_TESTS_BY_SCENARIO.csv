@@ -1,6 +1,6 @@
 id,brick,family,scenario,existing_source_cases_linked,green_exact_reference_CI_cases_linked,green_history_only_cases_linked,full_scenario_verification
 M1.01.01,M1.01,Environment and release foundation,Runtime environments/secrets/demo isolation and startup,2,0,2,NOT_FULLY_VERIFIED
-M1.01.02,M1.01,Environment and release foundation,"All migrations apply, preserve history and rollback safely",4,1,3,NOT_FULLY_VERIFIED
+M1.01.02,M1.01,Environment and release foundation,"All migrations apply, preserve history and rollback safely",4,1,0,NOT_FULLY_VERIFIED
 M1.01.03,M1.01,Environment and release foundation,GitHub CI verifies exact canonical candidate,0,0,0,NOT_FULLY_VERIFIED
 M1.01.04,M1.01,Environment and release foundation,Production configuration/health/rollback evidence corresponds to candidate,0,0,0,NOT_FULLY_VERIFIED
 M1.02.01,M1.02,Global UI,"Public navigation, contact/demo/sign-in and role destinations",0,0,0,NOT_FULLY_VERIFIED
@@ -50,8 +50,8 @@ M1.09.06,M1.09,Organization and Team,Company staff cannot grant permissions abov
 M1.10.01,M1.10,Invitations and employment links,"Single invitation accepted, resent, revoked, expired and replayed",2,0,2,NOT_FULLY_VERIFIED
 M1.10.02,M1.10,Invitations and employment links,Bulk CSV mixed valid/invalid rows and duplicate recovery,2,0,2,NOT_FULLY_VERIFIED
 M1.10.03,M1.10,Invitations and employment links,Company code expiry/usage limit/default site and department,2,0,1,NOT_FULLY_VERIFIED
-M1.10.04,M1.10,Invitations and employment links,Unlinked/wrong Worker cannot accept another person's invitation,2,0,1,NOT_FULLY_VERIFIED
-M1.10.05,M1.10,Invitations and employment links,"Worker joins, moves placement, ends relationship and retains identity",0,0,0,NOT_FULLY_VERIFIED
+M1.10.04,M1.10,Invitations and employment links,Unlinked/wrong Worker cannot accept another person's invitation,2,0,2,NOT_FULLY_VERIFIED
+M1.10.05,M1.10,Invitations and employment links,"Worker joins, moves placement, ends relationship and retains identity",5,0,2,NOT_FULLY_VERIFIED
 M1.10.06,M1.10,Invitations and employment links,Second company link preserves first employer's history and isolation,0,0,0,NOT_FULLY_VERIFIED
 M1.11.01,M1.11,Evidence and supervisor observation,Qualification approval/rejection/changes requested to correction and re-review,0,0,0,NOT_FULLY_VERIFIED
 M1.11.02,M1.11,Evidence and supervisor observation,Experience approval/rejection/changes requested to correction and re-review,0,0,0,NOT_FULLY_VERIFIED

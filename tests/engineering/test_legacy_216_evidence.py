@@ -54,11 +54,11 @@ class LegacyScopedEvidenceTest(unittest.TestCase):
         import csv
         with (ROOT / 'docs/qa/evidence/MASTERPLAN_218_UNATTRIBUTED_CASE_REVIEW_20261114.csv').open(newline='') as fp:
             rows=list(csv.DictReader(fp))
-        self.assertEqual(len(rows),1110)
-        self.assertEqual(len({x['case_id'] for x in rows}),1110)
-        self.assertEqual(sum(x['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for x in rows),943)
+        self.assertEqual(len(rows),1109)
+        self.assertEqual(len({x['case_id'] for x in rows}),1109)
+        self.assertEqual(sum(x['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for x in rows),942)
         self.assertEqual(sum(x['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for x in rows),167)
-        self.assertEqual(sum(bool(x['suggested_frozen_ids_UNREVIEWED']) for x in rows),1102)
+        self.assertEqual(sum(bool(x['suggested_frozen_ids_UNREVIEWED']) for x in rows),1101)
         self.assertTrue(all(x['full_masterplan_verification']=='NOT_FULLY_VERIFIED' for x in rows))
 
     def test_no_old_reconciliation_claims_exact_release_signoff(self):

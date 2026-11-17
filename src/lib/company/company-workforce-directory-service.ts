@@ -12,6 +12,8 @@ export type CompanyWorkerDirectoryRow = Readonly<{
   email: string;
   workerId: string | null;
   status: string;
+  siteId: string | null;
+  departmentId: string | null;
   site: string | null;
   department: string | null;
   assessmentReference: string | null;
@@ -97,6 +99,8 @@ export class CompanyWorkforceDirectoryService {
             email_normalized: string;
             permanent_worker_id: string | null;
             link_status: string;
+            site_id: string | null;
+            department_id: string | null;
             site_name: string | null;
             department_name: string | null;
             assessment_reference: string | null;
@@ -105,7 +109,7 @@ export class CompanyWorkforceDirectoryService {
             next_action: string | null;
           }>(
             `SELECT links.link_id,links.worker_account_id,accounts.display_name,accounts.email_normalized,
-                    links.permanent_worker_id,links.link_status,
+                    links.permanent_worker_id,links.link_status,links.site_id,links.department_id,
                     sites.name AS site_name,departments.name AS department_name,
                     links.assessment_reference,latest_case.case_status,latest_case.credential_status,latest_case.next_action
                FROM company_worker_links AS links
@@ -154,6 +158,8 @@ export class CompanyWorkforceDirectoryService {
             email: row.email_normalized,
             workerId: row.permanent_worker_id,
             status: row.link_status,
+            siteId: row.site_id,
+            departmentId: row.department_id,
             site: row.site_name,
             department: row.department_name,
             assessmentReference: row.assessment_reference,
@@ -180,12 +186,12 @@ export class CompanyWorkforceDirectoryService {
       operation: async ({ database: scoped, tenantId }) => {
         const result = await scoped.query<{
           link_id: string; worker_account_id: string; display_name: string; email_normalized: string;
-          permanent_worker_id: string | null; link_status: string; site_name: string | null;
+          permanent_worker_id: string | null; link_status: string; site_id: string | null; department_id: string | null; site_name: string | null;
           department_name: string | null; assessment_reference: string | null;
           case_status: string | null; credential_status: string | null; next_action: string | null;
         }>(
           `SELECT links.link_id,links.worker_account_id,accounts.display_name,accounts.email_normalized,
-                  links.permanent_worker_id,links.link_status,sites.name AS site_name,
+                  links.permanent_worker_id,links.link_status,links.site_id,links.department_id,sites.name AS site_name,
                   departments.name AS department_name,links.assessment_reference,
                   latest_case.case_status,latest_case.credential_status,latest_case.next_action
              FROM company_worker_links AS links
@@ -211,6 +217,8 @@ export class CompanyWorkforceDirectoryService {
           email: row.email_normalized,
           workerId: row.permanent_worker_id,
           status: row.link_status,
+          siteId: row.site_id,
+          departmentId: row.department_id,
           site: row.site_name,
           department: row.department_name,
           assessmentReference: row.assessment_reference,

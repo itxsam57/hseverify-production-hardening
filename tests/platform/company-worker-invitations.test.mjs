@@ -12,6 +12,8 @@ const runtime = process.env.HSE_COMPANY_WORKFORCE_RUNTIME_DIST;
 assert.ok(runtime, "HSE_COMPANY_WORKFORCE_RUNTIME_DIST is required");
 const serviceModule = await import(pathToFileURL(join(runtime, "company", "company-workforce-service.js")).href);
 const domainModule = await import(pathToFileURL(join(runtime, "company", "company-workforce-domain.js")).href);
+const receiverModule = await import(pathToFileURL(join(runtime, "company", "company-workforce-worker-read-repository.js")).href);
+const { CompanyWorkforceWorkerReadRepository } = receiverModule;
 const {
   CompanyWorkforceService,
   CompanyWorkforceAccessError,
@@ -420,7 +422,7 @@ async function m11001ActualPostgres16(scenario="M11001") {
     const e={...ENV,databaseDriver:"postgres",databaseUrl:url.href,
       releaseSha:"m11001-real-invite-race-"+process.pid};
     first=await openScriptDatabase(e);
-    await applyMigrationsThrough(first,e.releaseSha,"0133_company_team_access_revision_cas");
+    await applyMigrationsThrough(first,e.releaseSha,scenario==="M11005"?"0134_company_worker_placement_audit":"0133_company_team_access_revision_cas");
     second=await openScriptDatabase(e);
     return {first,second,cleanup:async()=>{
       try{await second.close();}
@@ -915,4 +917,242 @@ test("M1.10.04 actual PostgreSQL16 wrong Worker copied link ID cannot accept dur
     if(releaseHeld)releaseHeld();
     await cleanup();
   }
+});
+
+test("M1.10.05 actual PostgreSQL16 Company termination race preserves Worker ID then independent second-employer placement and historical receiver",{
+  skip:!process.env.HSE_M11005_POSTGRES_TEST_DATABASE_URL,timeout:200000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16("M11005");
+  let releaseHeld;
+  try{
+    const oldCompany=await seedCompany(first,"X"),newCompany=await seedCompany(first,"Y");
+    const oldUnits=await seedUnits(first,oldCompany,"X");
+    const newUnits=await seedUnits(first,newCompany,"Y");
+    const worker=await seedWorker(first,"J","m11005-individual-worker@example.test");
+    const unrelatedWorker=await seedWorker(first,"K","m11005-other-worker@example.test");
+    const permanentId=await seedPermanentWorkerId(first,worker,"J");
+    const svc1=new CompanyWorkforceService(first,PEPPER,()=>new Date(NOW_DATE));
+    const svc2=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const receiver=new CompanyWorkforceWorkerReadRepository(Promise.resolve(second),()=>new Date(NOW_DATE));
+    const pOld=companyPrincipal(oldCompany),pNew=companyPrincipal(newCompany),pWorker=workerPrincipal(worker);
+    const defaults=(company,units)=>({email:worker.email,siteId:units.siteId,departmentId:units.departmentId,
+      paymentResponsibility:company===oldCompany?"worker":"company",
+      assessmentReference:company===oldCompany?"M11005-OLD-SCOPE":"M11005-NEW-SCOPE"});
+    const oldPending=await svc1.requestPermanentWorkerLink(pOld,permanentId,defaults(oldCompany,oldUnits));
+    assert.equal(oldPending.status,"pending_worker_acceptance");
+    const pendingView=await receiver.listLinks(pWorker);
+    assert.deepEqual(pendingView.map(x=>[x.linkId,x.status]),[[oldPending.linkId,"pending_worker_acceptance"]]);
+    assert.equal(pendingView[0].siteName,"Site X");
+    assert.equal(pendingView[0].departmentName,"Dept X");
+    await assert.rejects(receiver.listLinks(pOld),error=>error?.name==="CompanyWorkforceAccessError");
+    assert.deepEqual(await receiver.listLinks(workerPrincipal(unrelatedWorker)),[],
+      "Unrelated Worker cannot view the legitimate placement");
+    const oldActive=await svc2.acceptWorkerLink(pWorker,oldPending.linkId);
+    assert.equal(oldActive.status,"active");
+    assert.equal((await receiver.listLinks(pWorker))[0].status,"active");
+    console.log("M11005_ACTUAL_PG16_FIRST_COMPANY_PENDING_TO_RIGHTFUL_WORKER_ACTIVE_WITH_OWN_SITE_DEPARTMENT_RECEIVER");
+
+    const end={linkId:oldActive.linkId,effectiveDate:"2026-08-16",
+      reason:"Assignment complete; verified Worker has chosen a new employer."};
+    await assert.rejects(svc2.endWorkerRelationship(pNew,end),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(svc2.endWorkerRelationship(pWorker,end),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    const before=(await first.query("SELECT link_status,revoked_at FROM company_worker_links WHERE link_id=$1",[oldActive.linkId])).rows[0];
+    assert.equal(before.link_status,"active");assert.equal(before.revoked_at,null);
+    const hold=m11001HoldSuccessfulTransaction(first);
+    releaseHeld=hold.release;
+    const heldService=new CompanyWorkforceService(hold.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const firstEnding=heldService.endWorkerRelationship(pOld,end);
+    await hold.ready;
+    // Same verified Company, separate SQL connection and real session, must
+    // serialize the second end behind the first uncommitted transaction.
+    const competingEnd=svc2.endWorkerRelationship(pOld,end)
+      .then(()=>({ok:true}),error=>({ok:false,error}));
+    const waiting=await Promise.race([competingEnd.then(()=>({finished:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))]);
+    assert.equal(waiting.waiting,true,
+      "Second Company end must wait while the same relationship end is uncommitted");
+    hold.release();releaseHeld=null;
+    await firstEnding;
+    const secondEnd=await competingEnd;
+    assert.equal(secondEnd.ok,false);
+    assert.equal(secondEnd.error?.name,"CompanyWorkforceConflictError");
+    const afterEnd=await receiver.listLinks(pWorker);
+    assert.deepEqual(afterEnd.map(x=>[x.linkId,x.status]),[[oldActive.linkId,"revoked"]]);
+    assert.equal(afterEnd[0].siteName,"Site X");
+    assert.equal(afterEnd[0].departmentName,"Dept X");
+    assert.ok(afterEnd[0].revokedAt);
+    console.log("M11005_ACTUAL_PG16_TWO_CONNECTION_SAME_LINK_END_SERIALIZES_ONE_REVOKE_WORKER_HISTORY_RETAINS_OLD_PLACEMENT");
+
+    // Employer Y must create a brand-new pending consented link. The previous
+    // Company owner cannot mutate or re-use Y's scope or the Worker identity.
+    const nextPending=await svc2.requestPermanentWorkerLink(pNew,permanentId,defaults(newCompany,newUnits));
+    assert.equal(nextPending.status,"pending_worker_acceptance");
+    assert.notEqual(nextPending.linkId,oldActive.linkId);
+    const pendingNew=await receiver.listLinks(pWorker);
+    assert.deepEqual(pendingNew.map(x=>[x.linkId,x.status]),[
+      [nextPending.linkId,"pending_worker_acceptance"],[oldActive.linkId,"revoked"]
+    ]);
+    assert.equal(pendingNew[0].siteName,"Site Y");
+    assert.equal(pendingNew[0].departmentName,"Dept Y");
+    await assert.rejects(svc1.endWorkerRelationship(pOld,{...end,linkId:nextPending.linkId}),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(svc1.acceptWorkerLink(companyPrincipal(newCompany),nextPending.linkId),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    const newActive=await svc1.acceptWorkerLink(pWorker,nextPending.linkId);
+    assert.equal(newActive.status,"active");
+    assert.equal((await svc2.acceptWorkerLink(pWorker,nextPending.linkId)).linkId,newActive.linkId);
+    await assert.rejects(svc1.endWorkerRelationship(pOld,{...end,linkId:newActive.linkId}),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    console.log("M11005_ACTUAL_PG16_NEW_COMPANY_REQUIRES_FRESH_WORKER_CONSENT_REJECTS_OLD_TENANT_LINK_ID_AND_PRESERVES_WORKER_ID");
+
+    const finalView=await receiver.listLinks(pWorker);
+    assert.deepEqual(finalView.map(x=>[x.linkId,x.status]),[
+      [newActive.linkId,"active"],[oldActive.linkId,"revoked"]
+    ]);
+    assert.equal(finalView[0].companyName,newCompany.displayName);
+    assert.equal(finalView[1].companyName,oldCompany.displayName);
+    assert.equal(finalView[0].siteName,"Site Y");
+    assert.equal(finalView[0].departmentName,"Dept Y");
+    assert.equal(finalView[1].siteName,"Site X");
+    assert.equal(finalView[1].departmentName,"Dept X");
+    assert.equal(finalView[0].permanentWorkerId,permanentId);
+    assert.equal(finalView[1].permanentWorkerId,permanentId);
+    const identity=(await first.query("SELECT account_status FROM auth_accounts WHERE account_id=$1",[worker.accountId])).rows[0];
+    assert.equal(identity.account_status,"active");
+    const workerIds=(await first.query("SELECT permanent_worker_id,worker_account_id FROM worker_identity_worker_ids "+
+      "WHERE worker_account_id=$1",[worker.accountId])).rows;
+    assert.deepEqual(workerIds,[{permanent_worker_id:permanentId,worker_account_id:worker.accountId}]);
+    assert.deepEqual(await receiver.listLinks(workerPrincipal(unrelatedWorker)),[]);
+    console.log("M11005_ACTUAL_PG16_WORKER_RECEIVER_OLD_HISTORY_NEW_ACTIVE_SITE_DEPARTMENT_AND_PERMANENT_ID_UNCHANGED");
+
+    const links=(await first.query("SELECT tenant_id,link_id,worker_account_id,permanent_worker_id,link_status,site_id,department_id,payment_responsibility,assessment_reference,revoked_at "+
+      "FROM company_worker_links WHERE worker_account_id=$1 ORDER BY tenant_id",[worker.accountId])).rows;
+    assert.equal(links.length,2);
+    assert.deepEqual(links.map(x=>[x.tenant_id,x.link_id,x.link_status]),[
+      [oldCompany.tenantId,oldActive.linkId,"revoked"],[newCompany.tenantId,newActive.linkId,"active"]
+    ]);
+    assert.equal(links[0].site_id,oldUnits.siteId);assert.equal(links[0].department_id,oldUnits.departmentId);
+    assert.equal(links[1].site_id,newUnits.siteId);assert.equal(links[1].department_id,newUnits.departmentId);
+    assert.equal(links[0].payment_responsibility,"worker");
+    assert.equal(links[1].payment_responsibility,"company");
+    assert.equal(links[0].assessment_reference,"M11005-OLD-SCOPE");
+    assert.equal(links[1].assessment_reference,"M11005-NEW-SCOPE");
+    assert(links[0].revoked_at&&!links[1].revoked_at);
+    const audits=(await first.query("SELECT action_key,actor_account_id,actor_tenant_id,target_reference,metadata "+
+      "FROM platform_audit_events WHERE target_reference IN ($1,$2) "+
+      "AND action_key LIKE 'company_workforce.link.%' ORDER BY audit_sequence",
+      [oldActive.linkId,newActive.linkId])).rows;
+    const events=key=>audits.filter(x=>x.action_key==="company_workforce.link."+key);
+    assert.equal(events("requested").length,2);
+    assert.equal(events("accepted").length,2);
+    assert.equal(events("revoked").length,1);
+    assert.deepEqual(new Map(events("requested").map(x=>[x.target_reference,x.actor_account_id])),
+      new Map([[oldActive.linkId,oldCompany.accountId],[newActive.linkId,newCompany.accountId]]));
+    assert(events("accepted").every(x=>x.actor_account_id===worker.accountId));
+    assert.equal(events("revoked")[0].actor_account_id,oldCompany.accountId);
+    assert.equal(events("revoked")[0].actor_tenant_id,oldCompany.tenantId);
+    const metadata=typeof events("revoked")[0].metadata==="string"
+      ?JSON.parse(events("revoked")[0].metadata):events("revoked")[0].metadata;
+    assert.equal(metadata.reason,end.reason);
+    assert.equal(metadata.effectiveDate,end.effectiveDate);
+    console.log("M11005_ACTUAL_PG16_EXACT_TWO_CONSENTED_LINKS_ONE_END_FIVE_IMMUTABLE_ROLE_SCOPED_AUDITS_NO_REPLAY");
+  }finally{
+    if(releaseHeld)releaseHeld();
+    await cleanup();
+  }
+});
+
+test("M1.10.05 actual PostgreSQL16 active Worker Site Department move serializes with end and preserves receiver audit",{
+  skip:!process.env.HSE_M11005_POSTGRES_TEST_DATABASE_URL,timeout:180000
+},async()=>{
+  const {first,second,cleanup}=await m11001ActualPostgres16("M11005");
+  let releaseHeld;
+  try{
+    const company=await seedCompany(first,"C"),foreigner=await seedCompany(first,"D");
+    const initial=await seedUnits(first,company,"C");
+    const target=await seedUnits(first,company,"E");
+    const foreign=await seedUnits(first,foreigner,"D");
+    const worker=await seedWorker(first,"F","m11005-move-worker@example.test");
+    const permanentId=await seedPermanentWorkerId(first,worker,"F");
+    const svc1=new CompanyWorkforceService(first,PEPPER,()=>new Date(NOW_DATE));
+    const svc2=new CompanyWorkforceService(second,PEPPER,()=>new Date(NOW_DATE));
+    const receiver=new CompanyWorkforceWorkerReadRepository(Promise.resolve(second),()=>new Date(NOW_DATE));
+    const pCompany=companyPrincipal(company),pForeign=companyPrincipal(foreigner),pWorker=workerPrincipal(worker);
+    const request=await svc1.requestPermanentWorkerLink(pCompany,permanentId,{
+      email:worker.email,siteId:initial.siteId,departmentId:initial.departmentId,
+      paymentResponsibility:"company",assessmentReference:"M11005-MOVE"
+    });
+    const active=await svc2.acceptWorkerLink(pWorker,request.linkId);
+    assert.equal(active.status,"active");
+    const move=(siteId,departmentId)=>({linkId:active.linkId,siteId,departmentId});
+    await assert.rejects(svc2.updateWorkerPlacement(pForeign,move(target.siteId,target.departmentId)),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(svc2.updateWorkerPlacement(pWorker,move(target.siteId,target.departmentId)),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(svc2.updateWorkerPlacement(pCompany,move(foreign.siteId,target.departmentId)),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    await assert.rejects(svc2.updateWorkerPlacement(pCompany,move(target.siteId,foreign.departmentId)),
+      error=>error?.name==="CompanyWorkforceAccessError");
+    assert.equal((await receiver.listLinks(pWorker))[0].siteName,"Site C");
+    const before=(await first.query("SELECT site_id,department_id FROM company_worker_links WHERE link_id=$1",
+      [active.linkId])).rows[0];
+    assert.deepEqual(before,{site_id:initial.siteId,department_id:initial.departmentId});
+    const priorAudit=(await first.query("SELECT COUNT(*)::integer AS n FROM platform_audit_events "+
+      "WHERE target_reference=$1 AND action_key='company_workforce.link.placement_updated'",
+      [active.linkId])).rows[0].n;
+    assert.equal(priorAudit,0);
+    console.log("M11005_ACTUAL_PG16_MOVEMENT_WRONG_ROLE_FOREIGN_TENANT_SITE_DEPARTMENT_DENIED_NO_CHANGES");
+
+    const held=m11001HoldSuccessfulTransaction(first);releaseHeld=held.release;
+    const serviceHeld=new CompanyWorkforceService(held.wrapped,PEPPER,()=>new Date(NOW_DATE));
+    const relocation=serviceHeld.updateWorkerPlacement(pCompany,move(target.siteId,target.departmentId));
+    await held.ready;
+    const ending=svc2.endWorkerRelationship(pCompany,{
+      linkId:active.linkId,effectiveDate:"2026-08-16",
+      reason:"Contract complete after moving the Worker to the final assigned Site and Department."
+    }).then(()=>({ok:true}),error=>({ok:false,error}));
+    const early=await Promise.race([ending.then(()=>({done:true})),
+      new Promise(resolve=>setTimeout(()=>resolve({waiting:true}),300))]);
+    assert.equal(early.waiting,true,"End must wait while active Worker placement change is uncommitted");
+    held.release();releaseHeld=null;
+    const relocated=await relocation;
+    assert.equal(relocated.siteId,target.siteId);
+    assert.equal(relocated.departmentId,target.departmentId);
+    const result=await ending;assert.equal(result.ok,true);
+    await assert.rejects(svc1.updateWorkerPlacement(pCompany,move(initial.siteId,initial.departmentId)),
+      error=>error?.name==="CompanyWorkforceConflictError");
+    const final=(await receiver.listLinks(pWorker));
+    assert.equal(final.length,1);
+    assert.equal(final[0].status,"revoked");
+    assert.equal(final[0].siteName,"Site E");
+    assert.equal(final[0].departmentName,"Dept E");
+    assert.equal(final[0].permanentWorkerId,permanentId);
+    assert.ok(final[0].revokedAt);
+    console.log("M11005_ACTUAL_PG16_ACTIVE_PLACEMENT_MOVE_COMMITS_BEFORE_CONCURRENT_END_WORKER_HISTORY_SHOWS_LAST_SCOPE");
+
+    const links=(await first.query("SELECT site_id,department_id,worker_account_id,permanent_worker_id,link_status,revoked_at "+
+      "FROM company_worker_links WHERE link_id=$1 AND tenant_id=$2",[active.linkId,company.tenantId])).rows;
+    assert.equal(links.length,1);
+    assert.equal(links[0].site_id,target.siteId);assert.equal(links[0].department_id,target.departmentId);
+    assert.equal(links[0].worker_account_id,worker.accountId);
+    assert.equal(links[0].permanent_worker_id,permanentId);assert.equal(links[0].link_status,"revoked");
+    const events=(await first.query("SELECT action_key,actor_account_id,actor_tenant_id,metadata FROM platform_audit_events "+
+      "WHERE target_reference=$1 AND action_key LIKE 'company_workforce.link.%' ORDER BY audit_sequence",[active.linkId])).rows;
+    const acts=events.map(e=>e.action_key);
+    assert.deepEqual(acts,[
+      "company_workforce.link.requested","company_workforce.link.accepted",
+      "company_workforce.link.placement_updated","company_workforce.link.revoked"
+    ]);
+    assert.equal(events[2].actor_account_id,company.accountId);
+    assert.equal(events[2].actor_tenant_id,company.tenantId);
+    const meta=typeof events[2].metadata==="string"?JSON.parse(events[2].metadata):events[2].metadata;
+    assert.equal(meta.oldSiteId,initial.siteId);
+    assert.equal(meta.oldDepartmentId,initial.departmentId);
+    assert.equal(meta.siteId,target.siteId);assert.equal(meta.departmentId,target.departmentId);
+    const account=(await first.query("SELECT account_status FROM auth_accounts WHERE account_id=$1",
+      [worker.accountId])).rows[0];assert.equal(account.account_status,"active");
+    console.log("M11005_ACTUAL_PG16_ONE_MOVE_ONE_END_ORDERED_IMMUTABLE_AUDIT_NO_WRONG_TENANT_OR_WORKER_ID_MUTATION");
+  }finally{if(releaseHeld)releaseHeld();await cleanup();}
 });

@@ -155,7 +155,7 @@ export function createCompanyRegistrationCodeSecret(pepper: string): Readonly<{ 
   return Object.freeze({ raw, hash: hashOpaqueValue(raw, pepper, REGISTRATION_CODE_SECRET_CONTEXT) });
 }
 
-async function assertActiveUnits(database: DatabaseClient, tenantId: string, value: CompanyWorkforceDefaults): Promise<void> {
+async function assertActiveUnits(database: DatabaseClient, tenantId: string, value: Pick<CompanyWorkforceDefaults, "siteId" | "departmentId">): Promise<void> {
   if (value.siteId) {
     const site = await database.query(`SELECT 1 FROM company_sites WHERE tenant_id=$1 AND site_id=$2 AND site_status='active' FOR UPDATE`, [tenantId, value.siteId]);
     if (!site.rows[0]) throw new CompanyWorkforceAccessError();
@@ -453,6 +453,49 @@ export class CompanyWorkforceService {
         RETURNING link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,site_id,department_id,payment_responsibility,assessment_reference,worker_accepted_at,activated_at,revoked_at`,[linkId,tenantId,found.worker_account_id,id,scopeDefaults.siteId,scopeDefaults.departmentId,scopeDefaults.paymentResponsibility,scopeDefaults.assessmentReference,membershipId,nowIso]);
       await appendWorkforceAudit(database,principal,{action:"company_workforce.link.requested",targetReference:linkId,metadata:{tenantId,permanentWorkerId:id}});const row=inserted.rows[0];if(!row)throw new CompanyWorkforceConflictError();return linkRecord(row);
     }});}catch(error){if(knownCompanyError(error))throw error;if(isUniqueViolation(error))throw new CompanyWorkforceConflictError();throw new CompanyWorkforceAccessError();}
+  }
+
+  async updateWorkerPlacement(
+    principal: CompanyWorkforceManagePrincipal,
+    input: Readonly<{ linkId: string; siteId: string | null; departmentId: string | null }>
+  ): Promise<Readonly<{ siteId: string | null; departmentId: string | null }>> {
+    const id = input.linkId.trim();
+    if (!id) throw new CompanyWorkforceInputError("Worker relationship reference is required.");
+    const siteId = input.siteId?.trim() || null;
+    const departmentId = input.departmentId?.trim() || null;
+    const now = this.now();
+    try {
+      return await runVerifiedCompanyWorkforceCommand({ database:this.database, principal, now,
+        operation:async({database,tenantId})=>{
+          // Lock current units before the Worker link. Company archive takes
+          // the same unit->link order and must not race an inactive placement.
+          await assertActiveUnits(database,tenantId,{siteId,departmentId});
+          const found=await database.query<Pick<LinkRow,"site_id"|"department_id"|"link_status">>(
+            `SELECT site_id,department_id,link_status FROM company_worker_links
+             WHERE link_id=$1 AND tenant_id=$2 FOR UPDATE`,[id,tenantId]);
+          const row=found.rows[0];
+          if (!row) throw new CompanyWorkforceAccessError();
+          if (row.link_status!=="active") throw new CompanyWorkforceConflictError(
+            "Only an active Worker relationship can change placement.");
+          if (row.site_id===siteId && row.department_id===departmentId) {
+            return Object.freeze({siteId,departmentId});
+          }
+          const updated=await database.query(
+            `UPDATE company_worker_links SET site_id=$3,department_id=$4,updated_at=$5
+             WHERE link_id=$1 AND tenant_id=$2 AND link_status='active'`,
+            [id,tenantId,siteId,departmentId,now.toISOString()]);
+          if (updated.affectedRows!==1) throw new CompanyWorkforceConflictError();
+          await appendWorkforceAudit(database,principal,{
+            action:"company_workforce.link.placement_updated",targetReference:id,
+            metadata:{tenantId,oldSiteId:row.site_id,oldDepartmentId:row.department_id,siteId,departmentId}
+          });
+          return Object.freeze({siteId,departmentId});
+        }
+      });
+    }catch(error){
+      if (knownCompanyError(error)) throw error;
+      throw new CompanyWorkforceAccessError();
+    }
   }
 
   async endWorkerRelationship(

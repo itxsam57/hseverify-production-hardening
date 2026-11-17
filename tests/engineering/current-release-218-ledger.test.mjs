@@ -101,11 +101,11 @@ test("actual clean-worktree CLI produces readable no-go 218-row ledger with git 
 test("scoped historical test executions appear inside the SAME 218 ledger without promoting FULLY_VERIFIED", () => {
   const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
   const report = buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence });
-  assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1429);
-  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1599);
+  assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1427);
+  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1602);
   assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 232);
-  assert.equal(report.scoped_test_progress.older_historical_green_cases, 1197);
-  assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1258);
+  assert.equal(report.scoped_test_progress.older_historical_green_cases, 1195);
+  assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1256);
   assert.equal(report.scoped_test_progress.prior_ci_is_this_exact_sha, false);
   assert.equal(report.counts.full_verified, 0);
   assert.equal(report.release.decision, "NO_GO");

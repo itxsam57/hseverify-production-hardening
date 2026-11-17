@@ -29,7 +29,7 @@ def build():
     already={x['case_id'] for x in prior['cases'] if x['scenario_ids']}
     already.update(cid for row in legacy['scenarios'] for cid in row['candidate_case_ids_from_old_logs_NOT_COVERAGE_CERTIFICATION'])
     need=[x for x in prior['cases'] if x['case_id'] not in already]
-    if len(need)!=1110:
+    if len(need)!=1109:
         raise ValueError('Unmapped case count drift: reconcile prior evidence first')
     dest=[(r['id'],words(r['scenario']),words(r['family'])) for r in frozen]
     rows=[]
@@ -50,7 +50,7 @@ def build():
             'review_status':'TEXT_SUGGESTION_ONLY_NO_COVERAGE_CREDIT' if candidates else 'CROSS_CUTTING_OR_NO_TEXT_MATCH',
             'full_masterplan_verification':'NOT_FULLY_VERIFIED'
         })
-    assert len(rows)==len(need)==1110
+    assert len(rows)==len(need)==1109
     assert sum(r['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for r in rows) + sum(
         r['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for r in rows) == len(need)
     return rows
