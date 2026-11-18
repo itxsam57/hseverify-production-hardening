@@ -4,126 +4,15 @@
   "protocol": "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md",
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
-  "current_focus_scenario_id": "M1.11.02",
-  "current_focus_phase": "M11102_PRIOR_SIGNED_BROWSER_AND_PGLITE1OF1_GREEN_NEW_PG16_EXACT_CI_PENDING_ORIGINAL_1431OF1605",
-  "last_completed_action": "Canonical QA signed b589b59a3271d41e9448719fbb1cefa977e9eb99 true GitHub PR155 two-parent merge source ba4d270 exact8/8 and independently merged exact SHA68/68 all CI green, original real PG16 qualification 1/1 source CI SHA e54c5c2, signed QA merged real PG16 SHA fbcd6983; all 218 full ZERO, stage NO-GO. New sparse isolated worktree M11102 branch qa/m11102-experience-review-20261118 at baseline b589, V4 session5b4fdf40-1be5-4bea-8435-3d26aad9e743 cycle98ef32490fc64f728f302aea88021e4e, M11101 prior V4 session closed handover. Frozen M11102 old index 0 experience source links despite already passing actual Worker/Verifier experience REJECTED/CHANGES_REQUESTED/APPROVED Chrome 2/2 old SHAe701b635 and actual corrected file scan retry old 1/1 Chrome SHA8fabcd90, reproduced true frozen original source-link RED exit1 SHA6806317066bbb832c6c9b1b6f2e472ab3a53f60d44cfd5689c4698674ab6f6c3, manually added M11102 to source case already linked to M11101 without double counting, positive old source index check pass SHA93c1df574e24ae7e4d8fda6d51d3cf1bda493d53940bd8eb836e1a35ed571337. New actual M11102 experience-specific native PGlite 0/1 first FAIL synthetic duplicate token per Verifier SHA bedc09983bd56e54a005b52de6dc3aed61682cd80e2fbc92de5d45aecde0f1bc, fixed uniquely seeded synthetic Verifier and foreign Worker auth token/CSRF only; focused PGlite 1/1 PASS 0fail/skip SHA4cca4db886d3acc9b4e9056bf903759f0576e3b89cc161cfaa6096d100452222, four markers. New hosted actual PostgreSQL16 two physical client workflow added but not run. Before new test source index: historical green1431/1604 unmatched173, planned4975 partial693 uncertain90 unlinked4192 FINAL0. Source +1 requires reindex now; DO NOT treat native pass as hosted or full. Pentest incomplete original2008+8 supplements independent verified UNKNOWN external minimum blocked10 severe UNKNOWN NO-GO. After one new M11102 source test, original current 218/216/4975 reindex PASS log SHA d7eec91270bf3d8f442befddd9fdb330b8ab46a346ad822bb163989462fea371. Frozen FULL0/218; old source 1431/1605 matched, 174 with no historical pass (one new M11102 source denominator NO_PASS_LOG_EVIDENCE), original planned4975 partial693 uncertain90 unlinked4192 FINAL0; no fake release/pentest pass. Strict final original 218/216/4975 reindex after all new test and fixtures PASS logSHA5b7c415e7582e03838a65961fb347fd3d18e99affb88276d42b1d77e4d421a62, all original Python/Node/V4/audit/ESLint zero error one unchanged warning JS syntax PASS logSHAeb182d1fab5d4a5cf3bd7bac8623ef073e8b9c9a582f4a24417ed3654760d293.",
-  "next_exact_action": "M11102 signed QA b589b59 PR155 68/68 exact merged CI GREEN; prior actual experience Worker/Verifier Chrome2/2 and corrected scan recovery1/1 reused, original source-link gap RED SHA6806317 repaired green SHA93c1df5 without duplicate counting; new M11102 experience-specific PGlite 1/1 PASS zero fail/skip SHA4cca4db886d3acc9b4e9056bf903759f0576e3b89cc161cfaa6096d100452222; no product defect, first duplicate synthetic token fixture RED fixed. New real hosted PG16 two-physical-client race CI workflow created but NOT RUN, cannot claim hosted PG PASS. Original 218/216/4975 reindex PASS SHA5b7c415e7582e03838a65961fb347fd3d18e99affb88276d42b1d77e4d421a62, strict ALL original Python+Node/V4/ESLint JS PASS SHAeb182d1fab5d4a5cf3bd7bac8623ef073e8b9c9a582f4a24417ed3654760d293. Frozen FULL0/218, source past green1431/1605 unmatched174, old scoped216 not full, planned4975 partial693 uncertain90 unlinked4192 FINAL0, pentest original2008+8 supplemental independently completed unknown, external blocked10 highcritical unknown NO-GO. Host disk22MiB free 96GiB full, shared PG16 PID723113 preserved. NEXT V4 precommit, commit changes original frozen ledger evidence, source test, hosted CI, docs and audit, nonforce push qa/m11102-experience-review-20261118 PR vs signed QA b589b59, require hosted actual PG16 1/1 all four markers and PGlite 1/1 all four, all adjacent checks success, root fix if any RED, genuine signed two-parent GitHub merge then independently all exact merged SHA workflows green. Missing Company supervisor real signed browser/notification/deeplink/API tenant abuse, production provider, protected final stage, load/restore, full independent pentest and Owner UAT before fully verifying. Then next frozen M11103 if blocked.",
-  "next_exact_command": "python3 .autopilot/guard.py pre-commit --root . && git diff --check && git add .autopilot/audit/events.ndjson .github/workflows/m1-11-02-experience-stale-verifier-pg16.yml docs/qa/218_VERTICAL_EXECUTION_CURSOR.json docs/qa/CURRENT_RESUME_218.md docs/qa/M1_11_02_EXPERIENCE_REJECT_CORRECT_REVIEW_REAL_CHROMIUM_PG16_20261118.md docs/qa/evidence scripts/build-218-evidence-action-map.py tests/engineering/current-release-218-ledger.test.mjs tests/engineering/test_4975_prior_reconciliation.py tests/engineering/test_prior_test_evidence.py tests/engineering/test_vertical_218_progress.py tests/platform/independent-evidence-review-runtime.test.mjs && git commit -m \"test(M1.11.02): source-linked experience corrections and stale verifier real PG16 CI\" && git push origin qa/m11102-experience-review-20261118",
+  "current_focus_scenario_id": "M1.11.03",
+  "current_focus_phase": "HISTORIC_SKILL_REAL_CHROME_ONE_SOURCE_LINK_RECONCILED_NATIVE_PG16_AND_FINAL_STAGE_PENDING",
+  "last_completed_action": "M1.11.03 genuine prior signed Worker/Verifier Chromium skill approve/reject/changes-requested old 2/2 PASS reused without rerun; original evidence source-link/per-scenario RED 0!=1, historical-only repair green; source case identities remain 1431/1605 previous green and 174 no match; 66 frozen IDs now have at least one old scoped case, NOT fully verified; planned 4975 partial693 uncertain92 unlinked4190 FINAL0; FULL0/218 NO-GO. No current protected exact-SHA skill end-to-end, real providers, full pentest/load/restore or Owner UAT evidence.",
+  "next_exact_action": "M1.11.03 skill-specific test remains runnable and unfinished: add distinct actual PGlite + hosted PostgreSQL16 two-client skill v1 CHANGES_REQUESTED/corrected v2 approved, copied/stale verifier ID, wrong worker/company/tenant, claim/finalization race, immutable version/decision/Worker notifications and cross-role browser receiving at 320/390/desktop, then final protected staging/provider/security/Owner UAT; no full promotion. Keep running PID723113 PG16 untouched and use new isolated GitHub-hosted PG16. Signed QA after ops private vault merge e9c31522cb105140ec868c36ab484244e0c417a7; M11103 branch at old 751623ac with uncommitted mapping now to be guarded pushed as separate PR.",
+  "next_exact_command": "npm run qa:preflight-218 && python3 scripts/reconcile-218-prior-test-evidence.py --lookup-scenario M1.11.03 && rg -n \"M1.11.02 experience correction\" tests/platform/independent-evidence-review-runtime.test.mjs",
   "active_test_pid": null,
   "active_test_log": null,
-  "recent_failed_checks": [
-    {
-      "scenario_id": "M1.10.05",
-      "problem": "GitHub first exact PR152 SHA780cf99 21/22 SUCCESS including signed Chrome and PG16; only original provisional 4975 inventory test RED because one new Server Action adds8 current security attack candidates outside frozen baseline.",
-      "result": "LOCAL_SOURCE_AND_TEST_ROOT_REPAIR_7OF7_PASS_NEW_LIVE_CANDIDATES_4983_ORIGINAL_FROZEN_4975_IMMUTABLE; RAW_GH_RED_SHA6CD0E10; NEW_PR_SHA_HOSTED_CI_PENDING_NO_GO"
-    },
-    {
-      "scenario_id": "M1.10.05",
-      "problem": "Active Worker same Company Site/Department move feature missing from service/UI and SQL audit CHECK denies new event; real PG16 RED 0/1 missing method, then RED 0/1 23514 CHECK.",
-      "result": "ROOT_SERVICE_UI_AUDIT_MIGRATION_0134_AND_PG16_2OF2_GREEN_LOG_SHA_ACEEBDA; REAL_BROWSER_NEW_0OF1_NOT_RUN_GH_CI_NEEDED; FINAL_STAGE_UNVERIFIED_NO_GO"
-    },
-    {
-      "scenario_id": "M1.10.04",
-      "problem": "Original frozen M11004 lacked exact independent two Worker cross-tenant PG16 object abuse proof and one manually reviewed existing actual Chromium case had no direct scenario association.",
-      "result": "ACTUAL_PG16_1OF1_PASS_SHA58D45F13; OLD_CHROMIUM_REAL_1OF1_PASS_REUSED_SOURCE_MANUAL_ASSOCIATION_SCOPED_OLD_SHA_UNKNOWN; EXACT_CURRENT_PR_CI_PENDING_NOT_FULLY_VERIFIED"
-    },
-    {
-      "scenario_id": "M1.10.03",
-      "problem": "GH source9b836f8 Chrome0/1 RED: revoked card transition asserted through locator requiring active, thus unable to match revoked.",
-      "result": "TEST_ORACLE_FIX_TARGET_BY_IMMUTABLE_CODE_ID_REQUIRE_REVOKED_AND_NO_REVOKE_BUTTON; GH RUN44112564104 LOG_SHA139BF076; EXACT_NEW_HEAD_CHROME_PENDING; NO_GO"
-    },
-    {
-      "scenario_id": "M1.10.03",
-      "problem": "GH source b6d7 hosted Chrome0/1 RED at creation of second code after Owner reload. Owner had not filled required expiry; both Worker A/B success and third denied and replay succeeded.",
-      "result": "TEST_SECOND_CODE_REQUIRED_FUTURE_EXPIRY_REENTERED_AFTER_RELOAD; GH RUN44111678920 RAW_SHA_BF618A5E; NEW PR HEAD STRICT CHROME PENDING; NO_GO"
-    },
-    {
-      "scenario_id": "M1.10.03",
-      "problem": "Hosted GitHub exact PR150 first head62d8 real Chromium 0/1: Worker A code redemption succeeded, Worker B neutral invalid due first code may have usageLimit1 after React uncontrolled field reset following invalid form action.",
-      "result": "TEST_ORACLE_CORRECTION_USAGE_LIMIT2_REENTERED_AND_OWNER_CARD0OF2_REQUIRED; GITHUB_FIRST_HEAD10OF11_GREEN_NEW_CHROME_HEAD_RETEST_PENDING; NO_GO"
-    },
-    {
-      "scenario_id": "M1.10.03",
-      "problem": "Local signed Chromium first run failed second Worker response during real Next Turbopack ENOSPC, diagnostic webpack first invalid action hydrate timeout; neither is product vulnerability proof.",
-      "result": "ACTUAL_PG16_1OF1_PASS_SHA9294824D; ACTUAL_CHROMIUM_0OF1_RED_SHA_DCDADDEC_AND_568DEA20; REQUIRE_REAL_EXACT_PR_HEAD_CI_NONFAKE; NO_GO"
-    },
-    {
-      "scenario_id": "M1.10.02",
-      "problem": "Actual Company bulk CSV silently skipped nonblank empty first-cell row and did not decode quoted first email, shown by signed Chromium RED 0/1. Real PG16 first run fixture failed auth_sessions_revocation_state_check missing required revocation_reason after concurrency assertions already green.",
-      "result": "ROOT_PRODUCT_CSV_PARSER_FIXED_CHROME_1OF1_PASS_SHA0B734705; REAL_PG16_1OF1_PASS_SHA_AEA8D8E6; FINAL_STAGE_PENDING_NOT_FULLY_VERIFIED"
-    },
-    {
-      "scenario_id": "M1.10.01",
-      "problem": "Original frozen single Company Worker invitation lacked full signed-in Company->Worker live browser and independently two-client PG16 overlapping accept/revoke/resend proof. Four first local test attempts failed on synthetic DB constraint, neutral privacy error oracle, audit actor query, and storage-constrained Chromium crash; no product exploit proven.",
-      "result": "ACTUAL_CHROMIUM_1OF1_PASS_264477BBF; ACTUAL_PG16_1OF1_PASS_1B20A654; SCOPED_ONLY_NOT_FULLY_VERIFIED; EXTERNAL_FINAL_STAGE_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.09.06",
-      "problem": "Missing real independent PG16 Owner->Admin live permission ceiling race and real Owner desktop/Admin390 stale Manager/invitation UI receiving assertions",
-      "result": "COVERAGE_GAP_SOURCE_ONLY_RED_NOT_APP; ACTUAL_REAL_PG16_1OF1_PASS_AND_REAL_CHROMIUM_1OF1_PASS_LOCAL_EXACT_PR_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.09.05",
-      "problem": "PR146 exact head c9c275a 27/28 CI green, M10404 Company complete Chromium fails final DB assertion 2 sessions != old expected 1, after all security behavior assertions passed",
-      "result": "TEST_ORACLE_CORRECTED_TWO_DISTINCT_PERMANENTLY_REVOKED_COMPANY_STAFF_SESSIONS_AND_AUDITS_NEW_PR_HEAD_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.09.05",
-      "problem": "PR145 exact merged QA6c9 3 failed jobs M103 native Company recovery, M103 five-role staff browser, M10404 Company browser. Local full Company rerun page crashed due near-zero workstation disk, no product outcome proven.",
-      "result": "ROOT_COMPAT_FIX_POSTMERGE_NEW_BRANCH_PG16_1OF1_NATIVE_RECOVERY_1OF1_STAFF_CHROME_5OF5_GREEN_COMPANY_BROWSER_LOCAL_FAIL_INFRA_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.09.05",
-      "problem": "Real PG16 Company Team suspension retained two revivable old sessions and allowed a new Company login token while suspended; concurrent session issue vs revocation could survive",
-      "result": "ROOT_FIXED_ATOMIC_SESSION_REVOCATION_AND_COMPANY_MEMBERSHIP_ROW_LOCK_ACTUAL_PG16_BOTH_ORDERS_1OF1_AND_CHROMIUM_OWNER_MANAGER_1OF1_GREEN_LOCAL_EXACT_SHA_CI_PENDING_NOT_FULLY_VERIFIED"
-    },
-    {
-      "scenario_id": "M1.09.04",
-      "problem": "Actual two signed Company sessions stale same role/status form re-granted recently revoked Manager company.workforce.manage; local browser initial symlink resolution failures",
-      "result": "SQL0133_ACCESS_REVISION_CAS_AND_REAL_PG16_1OF1_GREEN_REAL_CHROMIUM_OWNER_ADMIN390_1OF1_GREEN_LOCAL_EXACT_PR_HEAD_CI_PENDING_NO_FULL_STAGE"
-    },
-    {
-      "scenario_id": "M1.09.03",
-      "problem": "Actual two-independent-connection PostgreSQL16 Company Team placement committed active after Company site archive while parent transition uncommitted",
-      "result": "FORWARD_MIGRATION_0132_TEAM_ASSIGNMENT_AND_INVITE_BINDING_ROW_LOCKS_TARGETED_PG16_1OF1_PASS_MIGRATION137_4OF4_PASS_ADJACENT_M10901_02_GREEN_LOCAL_EXACT_PR_SHA_PENDING"
-    },
-    {
-      "scenario_id": "M1.09.02",
-      "problem": "REAL_PG16 archive vs new Worker placement stale status snapshot leaked link to archived site",
-      "result": "ROOT_FIX_FORWARD_MIGRATION_0131_FOR_SHARE_ACTUAL_4_INTERLEAVINGS_1OF1_GREEN_AND_MIGRATION136_4OF4_GREEN_LOCAL_EXACT_PR_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.09.01",
-      "problem": "Old original M10901 real two independent PostgreSQL16 Company revision conflict source missing; red was source-only not exploit",
-      "result": "NEW_REAL_PG16_TEST_1_OF1_PASS_ISOLATED_LOCAL_ONLY_RAW_SHA256_4af8ba29_EXACT_PR_HEAD_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.08.04",
-      "problem": "PR139 7d72ca0 M1.08.03 adjacent native GitHub job run43929096376 had 11 native actual PASS but old CI oracle grep expected10",
-      "result": "CI_ORACLE_REQUIRE11_AND_BOTH_NEW_TERMINAL_GUARDS_UPDATED_EXACT_NEW_HEAD_CI_PENDING"
-    },
-    {
-      "scenario_id": "M1.08.04",
-      "problem": "PR139 first CI head original triage review CSV stale, Docker health command wrongly quoted",
-      "result": "ROOT_FIXED_SECOND_HEAD_7d72ca0_ORIGINAL_4975_AND_OWN_PGLITE_PG16_GITHUB_WORKFLOW_GREEN"
-    },
-    {
-      "scenario_id": "M1.08.04",
-      "problem": "Full real production providers, protected signed final browser/API/role/tenant and complete independent pentest, load/restore and Owner UAT still missing",
-      "result": "NOT_FULLY_VERIFIED_RELEASE_NO_GO"
-    },
-    {
-      "scenario_id": "M1.08.03",
-      "problem": "Stale Admin original v1 form could verify corrected Company v2 and activate tenant",
-      "result": "PR138_QA7c85093_ALL50_OF50_EXACT_MERGED_SHA_CI_GREEN_SCOPED_NOT_FINAL"
-    },
-    {
-      "scenario_id": "M1.07.04",
-      "problem": "Initial Worker identity REJECTED frozen contract vs implemented terminal state",
-      "result": "OWNER_CONTRACT_REVIEW_REQUIRED"
-    }
-  ],
+  "recent_failed_checks": [],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
   "no_new_localhost_environment_by_default": true,
-  "note": "This file is an execution cursor ONLY. Never store separate pass counts here or claim scenario certification. Derive all progress from original 218 ledger."
+  "note": "Original 218/216/4975 views strict rebuilt after M11103 old green case link; planned title candidates 92 NOT passes; real protected stage pending; 6-hour private GitHub evidence janitor source e9c signed QA separate from incomplete skill scenario."
 }
