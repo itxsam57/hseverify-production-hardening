@@ -80,6 +80,9 @@ body {
 .page-stack,
 .content-stack {
   display: grid;
+  /* The implicit auto track can inherit the 42rem table's min-content width,
+     expanding a 320px Company order page instead of scrolling inside .table-scroll. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 

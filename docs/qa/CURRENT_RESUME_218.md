@@ -1,5 +1,9 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-18 — M1.11.03 Company 320px overflow DOM-diagnosed + minmax-zero CSS root candidate
+
+- Third hosted exact PR head `44f8a5b1fc807caed6333a7c362171e73590ed29` run `44343714642` **RED**, raw browser SHA256 `455e7228fbe4b0bf194befa97f104aa927d1ec24de712c20db4a1d3eb481bad1`. Diagnostic confirmed **Company** Assurance Order detail page document 348px at viewport320, Worker had passed; wide case table computed right1073px. Existing `.table-scroll` uses `overflow-x:auto` and table minimum 42rem, but enclosing `.page-stack` grid had an implicit auto min-content track. Current product CSS root candidate: explicit `grid-template-columns:minmax(0,1fr)` for single-column page/content stacks, preserving horizontal scrolling inside the table. Static TDD RED before CSS, GREEN after. Hosted exact-SHA Chromium still pending — **do not mark PASS** until actual green.
+
 ## 2026-11-18 — M1.11.03 Company Skill original hosted Chrome locator RED and fix (PR #163)
 
 - **Exact PR head db356c8 test RED 0/1:** GitHub run `44341132159`, downloaded original raw SHA256 `95671ffd6f53411a52ec9eb290ca4ec34be110efaea0d4637646552f12710ab4`. Failed `getByLabel("Related trade",{exact:true})` because actual optional skill label includes an optional suffix. Test-only corrected to nonexact label matching for that one optional input; all mandatory labels remain exact. New static regression 2/2 GREEN; original 218/216/4975 indexes and 1,433/1,606 historical green intact. Re-run **real remote Chromium** on new exact PR SHA; no new Company PASS yet.

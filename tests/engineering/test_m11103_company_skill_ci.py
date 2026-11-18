@@ -23,6 +23,16 @@ class M11103CompanySkillCI(unittest.TestCase):
             self.assertIn(marker,text)
         self.assertIn("worker_evidence_versions",text)
         self.assertIn("HSE_M20106_REJECTED_ONLY",text) # original qualification test preserved
+    def test_company_order_grid_track_shrinks_to_viewport_and_table_scrolls(self):
+        css=(ROOT/"src/app/layout-containment.css").read_text()
+        self.assertIn(".table-scroll {",css)
+        table_rule=css.split(".table-scroll {",1)[1].split("}",1)[0]
+        self.assertIn("overflow-x: auto;",table_rule)
+        # Its immediate single-column grid must not use an auto/min-content track,
+        # or the 42rem table makes the whole Company page 348px at viewport 320px.
+        stack_rule=css.split(".page-stack,\n.content-stack {",1)[1].split("}",1)[0]
+        self.assertIn("grid-template-columns: minmax(0, 1fr);",stack_rule)
+
     def test_exact_sha_real_chromium_ci_requires_marker_and_fails_closed(self):
         text=CI.read_text()
         self.assertEqual(text.count(".github/workflows/m1-11-03-company-skill-receiving-chromium.yml"),2)
