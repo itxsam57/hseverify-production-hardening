@@ -1,0 +1,20 @@
+# M1.11.03 focused real Chromium Worker→Verifier skill correction (2026-11-18)
+
+**Release:** NO-GO, **FULLY VERIFIED 0/218**. Protected final staging, actual integrations, independent full pentest, realistic load/restore and Owner UAT remain outstanding. This is a distinct current-SHA *scoped browser test mode* for the existing genuine source case, not a new globally certified case.
+
+## What the real Chromium CI must demonstrate
+- Worker signs in, fills identity and uploads the identity document, photo and selfie; uploads a qualification, experience, skill and employment record. Independent Verifier signs in; Admin explicitly binds calibrated review framework. All browser forms/buttons and file operations must return successfully.
+- Verifier decides original skill v1 **CHANGES_REQUESTED**, and Worker sees reason on the receiving portal. Worker clicks **Start a new revision**, edits skill proficiency, uploads corrected evidence, checks queued scanning if needed and submits v2. Verifier claims, saves persistent draft and independently **APPROVES** the corrected version. Worker sees final **approved** state and immutable version 1/2 history after reload. Existing full test covers original review of other kinds too; this targeted mode exits after the skill journey.
+- Worker role's own HTTP request context must be denied access to both Verifier queue and copied skill task details, no successful HTTP 200; no real customer data or other tenants used.
+- Actual signed-in Worker skill evidence is revisited at **320, 390 and 1440 px** with approved status and visible version 2, without page-level horizontal overflow. Verifier queue is revisited at **320 and 390**; no browser page exceptions.
+- When the Next.js disposable PGlite server is cleanly shut down, a separate DB client must find exactly one Worker skill record, two immutable submitted versions (v1 superseded, v2 current), exactly two version-bound Verifier tasks (v1 CHANGES_REQUESTED and v2 APPROVED). Four named markers and 1/1 zero-failure and zero-skip are required in original CI logs.
+
+## Running and safeguards
+- `HSE_M11103_SKILL_BROWSER_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs`, run **only in disposable hosted GitHub Ubuntu runner**, not on the shared Oracle workstation. Browser service uses a separate local disposable PGlite fixture inside the CI VM. Existing PG16 PID723113, local HSE QA worktrees, six-hour evidence vault and production/provider endpoints are not modified.
+- New `.github/workflows/m1-11-03-skill-correction-chromium.yml` triggers on exact PR and signed QA push. It installs pinned dependencies and Chromium, fails unless exact four browser markers plus 1/1 Node test, and retains raw artifact 90 days. `tests/engineering/test_m11103_skill_browser_ci.py` checks the workflow self-trigger and all explicit assertions.
+- **Test is NOT credited as actual browser PASS until GitHub publishes the run on an exact source SHA, raw log downloaded and checked against every marker, and then exact two-parent merged-SHA hosted CI repeated.**
+
+## Unfinished even after this scoped browser pass
+- Full Company supervisor receiving and its notification/deep links, all other relevant 218 scenario roles, expiry/cancellation/outage and direct Server Action abuse, separate wrong-tenant Worker credentials, 320/390 form editing on every screen, accessibility, real file scanner/object-storage production provider, security assessment at final protected stage, realistic load/restore and Owner UAT. Do not promote M1.11.03 to FULLY_VERIFIED until every applicable gate has current exact-stage proof.
+
+**Source reindex note:** while refreshing source-content SHA for this existing browser case, the previous exact M11103 PGlite green raw log was finally matched to its already-present source identity; the historical counter increased from 1,432 to 1,433 without any new runtime test. Old hash proofs remain intact. Planned partial 693, uncertain 96, no precise link 4,186, final 0/4,975.
