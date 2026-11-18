@@ -171,6 +171,60 @@ def current_ci_matches(catalog: dict[str, set[str]], ci: dict) -> tuple[dict, di
     return hits, dict(counts)
 
 
+def reviewed_proof_if_archived(original: dict | None, path: str, title: str) -> dict | None:
+    """Retain immutable reviewed old GREEN provenance when raw files moved to the
+    verified private vault. Cannot credit a renamed/untested case or final release.
+    The original tracked index must contain hash-linked real raw proof identity.
+    """
+    if not isinstance(original, dict) or (original.get("file"), original.get("title")) != (path, title):
+        return None
+    expected_case = path + "#" + hashlib.sha256(title.encode()).hexdigest()[:16]
+    if original.get("case_id") != expected_case:
+        return None
+    status = original.get("test_execution")
+    if status not in {"HISTORICAL_LOG_PASSED", "EXACT_CI_SHA_PASSED"}:
+        return None
+    proofs = original.get("evidence")
+    if not isinstance(proofs, list) or not proofs:
+        return None
+    raw = [p for p in proofs if isinstance(p, dict) and
+           re.fullmatch(r"[a-f0-9]{64}", str(p.get("sha256", ""))) and
+           p.get("status") == "clean_green_summary_historical_worktree" and
+           isinstance(p.get("source_log"), str) and "/.autopilot/artifacts/" in p["source_log"]]
+    ci = [p for p in proofs if isinstance(p, dict) and
+          re.fullmatch(r"[a-f0-9]{64}", str(p.get("run_log_sha256", ""))) and
+          p.get("status") == "exact_CI_SHA_green_test_and_run" and
+          re.fullmatch(r"[a-f0-9]{40}", str(p.get("tested_commit_sha", "")))]
+    if status == "HISTORICAL_LOG_PASSED" and not raw:
+        return None
+    if status == "EXACT_CI_SHA_PASSED" and not ci:
+        return None
+    return {
+        "test_execution": status,
+        "evidence": proofs,
+        "prior_log_pass_repetition_count": original.get("prior_log_pass_repetition_count", 0),
+        "exact_ci_pass_count_runs": original.get("exact_ci_pass_count_runs", 0)
+    }
+
+
+def merge_stable_provenance(previous: list[dict], newly_observed: list[dict]) -> list[dict]:
+    """Keep ALL previously hash-linked proof rows; new runs cannot overwrite them.
+
+    A repeated archived log is still one unique source-test case. Provenance
+    entries are retained as historical receipts, never final-SHA certification.
+    """
+    merged: list[dict] = []
+    seen: set[str] = set()
+    for item in [*previous, *newly_observed]:
+        if not isinstance(item, dict):
+            continue
+        identity = json.dumps(item, sort_keys=True, separators=(",", ":"))
+        if identity not in seen:
+            seen.add(identity)
+            merged.append(item)
+    return merged
+
+
 def build(root: Path, ci: dict, scan_historical: bool = True) -> dict:
     frozen = frozen_rows(root)
     ids = {x["id"] for x in frozen}
@@ -207,17 +261,27 @@ def build(root: Path, ci: dict, scan_historical: bool = True) -> dict:
             elif len(candidates) > 1:
                 method = "ambiguous_multiple_report_links"
         original = preserved.get(case["case_id"])
+        reviewed = reviewed_proof_if_archived(original, case["file"], case["title"])
         if original and (original["file"], original["title"]) == (case["file"], case["title"]):
             if any(sid not in ids for sid in original["scenario_ids"]):
                 raise ValueError("Existing test association references an unfrozen scenario")
             association = original["scenario_ids"]
             method = original["scenario_link_kind"]
+        # Immutable old proofs remain historical after safe GitHub vault
+        # archival removes the original local log. A new source case still
+        # needs a genuinely observed successful log; old source != final SHA.
+        if reviewed and (not current or reviewed["test_execution"] == "EXACT_CI_SHA_PASSED"):
+            state = reviewed["test_execution"]
         expanded = {
             **case, "scenario_ids": association, "scenario_link_kind": method,
             "test_execution": state,
-            "exact_ci_pass_count_runs": len(current.get("run_ids", [])),
-            "prior_log_pass_repetition_count": history.get("count_repeated_runs", 0),
-            "evidence": current.get("proofs", []) + history.get("proofs", []),
+            "exact_ci_pass_count_runs": max(len(current.get("run_ids", [])),
+                                             reviewed["exact_ci_pass_count_runs"] if reviewed else 0),
+            "prior_log_pass_repetition_count": max(history.get("count_repeated_runs", 0),
+                                                   reviewed["prior_log_pass_repetition_count"] if reviewed else 0),
+            "evidence": merge_stable_provenance(
+                reviewed["evidence"] if reviewed else [],
+                current.get("proofs", []) + history.get("proofs", [])),
             "is_security_related_title": bool(PEN_KEYWORDS.search(case["title"])),
         }
         cases.append(expanded)

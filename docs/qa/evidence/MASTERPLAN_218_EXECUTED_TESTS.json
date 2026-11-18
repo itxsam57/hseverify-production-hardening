@@ -1220,6 +1220,12 @@
           "source_log": "hseverify-m308-operations-pentest-20261108/.autopilot/artifacts/20261108-M308-exact8f-admin-search-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "192c02863b03eebd26034ab0265f2808a11d426dee3032b567d3bda9263dc91e",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -1300,6 +1306,12 @@
         {
           "sha256": "0e6c930569a9161440e5cc26379d6cfd2fa95ee1d163838e6f6fe12afa903f87",
           "source_log": "hseverify-m10204-narrow-pages-20261114/.autopilot/artifacts/M10204_REAL_320_DENSE_SIX_ROLE_CHROMIUM.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "192c02863b03eebd26034ab0265f2808a11d426dee3032b567d3bda9263dc91e",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -1783,6 +1795,12 @@
           "source_log": "hseverify-m10203-reconciled-20261110/.autopilot/artifacts/M10203_QAB516_company-billing-validation.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "a57fe21676d33a6f9d036a3cd04b159f1dd3a726dc532e630bdae75157f51d76",
+          "source_log": "hseverify-m305-billing-20261107/.autopilot/artifacts/20261107-M305-exact581-company-billing-validation.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -2192,6 +2210,12 @@
           "source_log": "hseverify-m10202-header-20261110/.autopilot/artifacts/M10202_company-search.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "3a21353907de2e2e05c59da90595c3bd8490adf9a94f31a0967d0bf30bca207c",
+          "source_log": "hseverify-m10402-workforce-csv-20261112/.autopilot/artifacts/M10402_WORKFORCE_CSV_FILTER_PERMISSION_CHROMIUM_GREEN_20261112.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 2,
@@ -2255,6 +2279,18 @@
         {
           "sha256": "b3e9b60ea895f1b2f9e1858cdf7580ec633b2e59567e5f122619aa201fe1529d",
           "source_log": "hseverify-m10203-feedback-20261110/.autopilot/artifacts/M10203_BASELINE_consumer-validation.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "7b16e5e2da09f8762f4509c941fbbf67501cfac9d45f4f48d00235a77735744f",
+          "source_log": "hseverify-m10302-company-expiry-20261111/.autopilot/artifacts/M10302_F3_consumer-validation.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "192c02863b03eebd26034ab0265f2808a11d426dee3032b567d3bda9263dc91e",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -2481,6 +2517,12 @@
           "source_log": "hse-eb77b70-cavxd91n/.autopilot/artifacts/20261107-m21304-committed-crossrole-security-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e19a7add1955166f96c7b1d9b011b7c2cbb386aba3d2aee0c7ca416b5093ce60",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-resume-consumer-cohorts-browser-2.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -2584,6 +2626,12 @@
         {
           "sha256": "923a0eaffc95ed2de782157ba9df2a31c9794ce95d087dfe1eb72659e381df00",
           "source_log": "hseverify-m10203-feedback-20261110/.autopilot/artifacts/M10203_EXACT_COMMIT_CHROMIUM.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06578dfe60fe22648a9084e2dafa9c2561194353c6dd8924f7bdd94e5a7f9b46",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-18-test-error-recovery-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -5052,6 +5100,12 @@
           "source_log": "hseverify-m10202-header-20261110/.autopilot/artifacts/M10202_EXACT_COMMIT_CHROMIUM.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "192c02863b03eebd26034ab0265f2808a11d426dee3032b567d3bda9263dc91e",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -5091,6 +5145,18 @@
         {
           "sha256": "3623f2cada398db5046e17c20314a8af8461844f13b774288388d1e5ab01de17",
           "source_log": "hseverify-m10204-dialog-20261110/.autopilot/artifacts/M10204_CHROMIUM_DIALOG_BASEQA.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c43273ce90364974fe097964394c36a49e5fc66ec7dda5ec122a89b8a597cb11",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-access-portal-navigation-responsive.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "b3b6dc272c02968f4e087be06ef770a0fe9455f7ba53ea86d9149f93d7cbafd3",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-41-test-credential-concern-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -5783,6 +5849,12 @@
           "source_log": "hseverify-m308-operations-pentest-20261108/.autopilot/artifacts/20261108-M308-exact8f-root-invitation-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "192c02863b03eebd26034ab0265f2808a11d426dee3032b567d3bda9263dc91e",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -6283,6 +6355,12 @@
           "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e49e5eab60c0510d8d5634ffe1923bc88a88bef7b9b37c7671bdfb924c0f051f",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261107-567bf76-shard4-failure.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -6438,6 +6516,12 @@
         {
           "sha256": "e2428dea237da9f1ec38d557ae88041ccdce12a8efb4183ec64b8744abf03dbc",
           "source_log": "hseverify-m10203-feedback-20261110/.autopilot/artifacts/M10203_worker-file-upload-validation.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "fcdfdde537ec430f8f476b9958b6705c4f4fd76b0e9ef024f7450287ab03a63a",
+          "source_log": "hseverify-m10602-unsafe-upload-20261115/.autopilot/artifacts/M10602_SYNTHETIC_SERVER_ERROR_REASON_DIAGNOSTIC_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -7644,7 +7728,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 76,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7703,7 +7787,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 76,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7762,7 +7846,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 76,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7821,7 +7905,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 76,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7880,7 +7964,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 76,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7939,7 +8023,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 76,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7998,7 +8082,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 73,
+      "prior_log_pass_repetition_count": 78,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -8030,7 +8114,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 72,
+      "prior_log_pass_repetition_count": 77,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -10182,6 +10266,18 @@
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "46a67530c5ec696bc06e098c969449b0fd88a7741c76a24d579d786cac0d4283",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_NATIVE_AND_TSC_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -10223,6 +10319,18 @@
         {
           "sha256": "d3414d5f1a76adf8f69ff2fdb31bb041d715cc3aed23dfc04f6bd23d6a0508ca",
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "46a67530c5ec696bc06e098c969449b0fd88a7741c76a24d579d786cac0d4283",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_NATIVE_AND_TSC_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -10268,6 +10376,18 @@
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "46a67530c5ec696bc06e098c969449b0fd88a7741c76a24d579d786cac0d4283",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_NATIVE_AND_TSC_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -10309,6 +10429,18 @@
         {
           "sha256": "d3414d5f1a76adf8f69ff2fdb31bb041d715cc3aed23dfc04f6bd23d6a0508ca",
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "46a67530c5ec696bc06e098c969449b0fd88a7741c76a24d579d786cac0d4283",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_EXPIRY_POSTLOCK_NATIVE_AND_TSC_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
+          "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -14164,6 +14296,12 @@
           "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -14194,6 +14332,12 @@
         {
           "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
           "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -16850,6 +16994,12 @@
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "02a24aaa5e3c698bddca50eb01e5c730043c77ed65bb4092e6059c1d214ea73b",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-be2b496-final-checks.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -16880,6 +17030,12 @@
         {
           "sha256": "d3414d5f1a76adf8f69ff2fdb31bb041d715cc3aed23dfc04f6bd23d6a0508ca",
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "02a24aaa5e3c698bddca50eb01e5c730043c77ed65bb4092e6059c1d214ea73b",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-be2b496-final-checks.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -16914,6 +17070,12 @@
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "02a24aaa5e3c698bddca50eb01e5c730043c77ed65bb4092e6059c1d214ea73b",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-be2b496-final-checks.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -16944,6 +17106,12 @@
         {
           "sha256": "d3414d5f1a76adf8f69ff2fdb31bb041d715cc3aed23dfc04f6bd23d6a0508ca",
           "source_log": "hseverify-m10203-role-recovery-20261114/.autopilot/artifacts/M10203_ROLE_RECOVERY_SECURITY_NATIVE.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "02a24aaa5e3c698bddca50eb01e5c730043c77ed65bb4092e6059c1d214ea73b",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-be2b496-final-checks.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -18503,6 +18671,12 @@
           "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -18546,6 +18720,12 @@
         {
           "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
           "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -19257,6 +19437,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "b06d75f08b3014768cfac7e235b397eda7de64ac8939c466bbe6d523b88426cc",
+          "source_log": "hseverify-m10801-company-scanner-boundary-20261116/.autopilot/artifacts/M10801_LATEST_0130_ACTUAL_PG16_SCANNER_PENDING_DENIAL_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -19452,6 +19638,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -19482,6 +19674,12 @@
         {
           "sha256": "f614ea3ce9350a93489903b77d0393c2e39797bd675b5f04e1e89336ad80dd90",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -19516,6 +19714,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -19546,6 +19750,12 @@
         {
           "sha256": "f614ea3ce9350a93489903b77d0393c2e39797bd675b5f04e1e89336ad80dd90",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -19580,6 +19790,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -19610,6 +19826,12 @@
         {
           "sha256": "f614ea3ce9350a93489903b77d0393c2e39797bd675b5f04e1e89336ad80dd90",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -19644,6 +19866,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -19676,6 +19904,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -19706,6 +19940,12 @@
         {
           "sha256": "f614ea3ce9350a93489903b77d0393c2e39797bd675b5f04e1e89336ad80dd90",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-073-test-m1-08-final.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9fed51abf53dc4204efa361d2a22a63a19a2e07273c97db51cf4ab430e46a42d",
+          "source_log": "hseverify-m10803-stale-admin-review-20261116/.autopilot/artifacts/M10803_IMPACTED_COMPANY_NATIVE_REGRESSION_20261116.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21951,6 +22191,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "46045e5c48091f1ddf3822b95a7ee79a584c736b95b59e9bd53828f9e26cd759",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-reassessment-replacement-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21981,6 +22227,12 @@
         {
           "sha256": "96b887f000f7f204ec4452c466f4d736c0d7a955a89551f96e581c06e4c7d6e7",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "46045e5c48091f1ddf3822b95a7ee79a584c736b95b59e9bd53828f9e26cd759",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-reassessment-replacement-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22015,6 +22267,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-reassessment-replacement-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "789d0af1b7623a9f245f3a13292e9a9542a4a14185f1eb4cc97e15a05e69866c",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22045,6 +22303,12 @@
         {
           "sha256": "96b887f000f7f204ec4452c466f4d736c0d7a955a89551f96e581c06e4c7d6e7",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22079,6 +22343,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22109,6 +22379,12 @@
         {
           "sha256": "96b887f000f7f204ec4452c466f4d736c0d7a955a89551f96e581c06e4c7d6e7",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22143,6 +22419,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22173,6 +22455,12 @@
         {
           "sha256": "96b887f000f7f204ec4452c466f4d736c0d7a955a89551f96e581c06e4c7d6e7",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22207,6 +22495,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22237,6 +22531,12 @@
         {
           "sha256": "96b887f000f7f204ec4452c466f4d736c0d7a955a89551f96e581c06e4c7d6e7",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22271,6 +22571,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22301,6 +22607,12 @@
         {
           "sha256": "96b887f000f7f204ec4452c466f4d736c0d7a955a89551f96e581c06e4c7d6e7",
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22335,6 +22647,12 @@
           "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-085-test-credential-authentication.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22365,6 +22683,12 @@
         {
           "sha256": "7e91ece791e21a9b0f98093c808ca236cb583dc5c5ee8a31998b44d3b26da9d1",
           "source_log": "hse-eb77b70-cavxd91n/.autopilot/artifacts/20261107-m21304-committed-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22399,6 +22723,12 @@
           "source_log": "hse-eb77b70-cavxd91n/.autopilot/artifacts/20261107-m21304-committed-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22429,6 +22759,12 @@
         {
           "sha256": "7e91ece791e21a9b0f98093c808ca236cb583dc5c5ee8a31998b44d3b26da9d1",
           "source_log": "hse-eb77b70-cavxd91n/.autopilot/artifacts/20261107-m21304-committed-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22463,6 +22799,18 @@
         {
           "sha256": "3131ce2306fbdee1836f41397f365c96d3504bf77ef2d720eafd371412f5331b",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22501,6 +22849,18 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22535,6 +22895,18 @@
         {
           "sha256": "3131ce2306fbdee1836f41397f365c96d3504bf77ef2d720eafd371412f5331b",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22573,6 +22945,18 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22607,6 +22991,18 @@
         {
           "sha256": "3131ce2306fbdee1836f41397f365c96d3504bf77ef2d720eafd371412f5331b",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22722,6 +23118,12 @@
           "source_log": "hse-eb77b70-cavxd91n/.autopilot/artifacts/20261107-m21305-m21306-mfa-security.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "ea5dbf77bb51674b7a62fec16525c4ad8d7e3045f48eec7cddc62f8a4e24eb8a",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-pentest-platform-decision-engine-security-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22752,6 +23154,18 @@
         {
           "sha256": "3131ce2306fbdee1836f41397f365c96d3504bf77ef2d720eafd371412f5331b",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22786,6 +23200,18 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22816,6 +23242,18 @@
         {
           "sha256": "3131ce2306fbdee1836f41397f365c96d3504bf77ef2d720eafd371412f5331b",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-extra-npm-run-test-owner-acceptance-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3598df992455730cd9f0a65c2969c40e51c825f911ecfafe1b2f050f11cab97",
+          "source_log": "hseverify-m312-release-audit-20261109/.autopilot/artifacts/20261109-M312-exact0ba-owner-regressions.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "4cf736013079aaab59de3a5077300955da709c622f6de4cf41bdacf64cc4da8d",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-owner-acceptance-regressions.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -25355,17 +25793,41 @@
       "direct_scenarios": [
         "M1.11.02"
       ],
+      "evidence": [
+        {
+          "sha256": "4cca4db886d3acc9b4e9056bf903759f0576e3b89cc161cfaa6096d100452222",
+          "source_log": "hseverify-m11102-experience-review-20261118/.autopilot/artifacts/M11102_NATIVE_PGLITE_EXPERIENCE_CORRECTED_REVIEW_RETEST_20261118.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/independent-evidence-review-runtime.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 1,
+      "scenario_ids": [
+        "M1.11.02"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "HISTORICAL_LOG_PASSED",
+      "title": "M1.11.02 experience correction retains old review and rejects stale, foreign and simultaneous Verifier decisions on actual PostgreSQL16"
+    },
+    {
+      "case_id": "tests/platform/independent-evidence-review-runtime.test.mjs#1d9066bf69d25c2b",
+      "direct_scenarios": [
+        "M1.11.03"
+      ],
       "evidence": [],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/independent-evidence-review-runtime.test.mjs",
       "is_security_related_title": true,
       "prior_log_pass_repetition_count": 0,
       "scenario_ids": [
-        "M1.11.02"
+        "M1.11.03"
       ],
       "scenario_link_kind": "explicit_case_or_filename",
       "test_execution": "NO_PASS_LOG_EVIDENCE",
-      "title": "M1.11.02 experience correction retains old review and rejects stale, foreign and simultaneous Verifier decisions on actual PostgreSQL16"
+      "title": "M1.11.03 skill correction retains old review and rejects stale, foreign and simultaneous Verifier decisions on actual PostgreSQL16"
     },
     {
       "case_id": "tests/platform/integrity-capture-service.test.mjs#280c7101ac4427e2",
@@ -28940,6 +29402,24 @@
           "source_log": "hseverify-m10102-migrations-20261110/.autopilot/artifacts/M10102_PG16_ALL134_REVERSE_ATTEMPT.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "c63239f6bfa2d0ab93253aaa828f26718f07e921db8f1865b179931e21c451e3",
+          "source_log": "hseverify-m10705-correction-outcomes-20261116/.autopilot/artifacts/M10705_FIX_M10102_REAL_POSTGRES_135_INTEGRITY_20261116.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e548fc78059b9cc701e0d34cf0d8755dbcca6e2a36f8004a649b900cbae6afad",
+          "source_log": "hseverify-m10902-archive-placement-race-20261117/.autopilot/artifacts/M10902_ACTUAL_PG16_MIGRATION_0131_FULL_DOWN_REAPPLY_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "05e55e39032466cac75083fdda0f8b81a8a8ed23c577406b227f7dfcb72797fc",
+          "source_log": "hseverify-m10903-archived-team-placement-20261117/.autopilot/artifacts/M10903_ACTUAL_PG16_MIGRATION_0132_FULL137_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -30369,6 +30849,12 @@
           "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-B00-baseline-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "749b0d474b0a096e45d1e4b999c5c26d6071bd625ae394f485485c6cf41fc04a",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261106-baseline-env-migration-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -30410,6 +30896,12 @@
           "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-B00-baseline-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "749b0d474b0a096e45d1e4b999c5c26d6071bd625ae394f485485c6cf41fc04a",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261106-baseline-env-migration-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -30449,6 +30941,12 @@
         {
           "sha256": "91d1483cc034e8943a1e680236d089185c4f23226a28a1eda868ff059a38e4f0",
           "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-B00-baseline-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "749b0d474b0a096e45d1e4b999c5c26d6071bd625ae394f485485c6cf41fc04a",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261106-baseline-env-migration-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -30741,6 +31239,12 @@
           "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-notification-foundation.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dfd8c809c16e094443d2e52753324a760d8b2003565d2acc3349f95cf308ce18",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-notification-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -30773,6 +31277,12 @@
           "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-notification-foundation.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dfd8c809c16e094443d2e52753324a760d8b2003565d2acc3349f95cf308ce18",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-notification-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -30803,6 +31313,12 @@
         {
           "sha256": "01c4e8f08917267f974d8b29bb7cd6e01563ac2a647f203dc3ac73c58e0997e8",
           "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-notification-foundation.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dfd8c809c16e094443d2e52753324a760d8b2003565d2acc3349f95cf308ce18",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-notification-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -30901,6 +31417,12 @@
           "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-notification-routes.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dfd8c809c16e094443d2e52753324a760d8b2003565d2acc3349f95cf308ce18",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-notification-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -30933,6 +31455,12 @@
           "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-notification-routes.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dfd8c809c16e094443d2e52753324a760d8b2003565d2acc3349f95cf308ce18",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-notification-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -30963,6 +31491,12 @@
         {
           "sha256": "5fb4010ef679bdace96d89027fb362a6180864835f4b9255185363701a280ff1",
           "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-notification-routes.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dfd8c809c16e094443d2e52753324a760d8b2003565d2acc3349f95cf308ce18",
+          "source_log": "hseverify-release-governed-20261107/.autopilot/artifacts/20261107-governed-test-notification-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33325,6 +33859,12 @@
           "source_log": "hseverify-m10101-preflight-20261114/.autopilot/artifacts/M10101_ADJACENT_NODE_REGRESSION.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "b8ae4b4887e97eaa05958982dfeba55fa214a1b57b841c394ce25d3ab5a753e0",
+          "source_log": "hseverify-m310-provider-pentest-20261109/.autopilot/artifacts/20261109-M310-exact0ba-production-isolation-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33767,6 +34307,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33797,6 +34343,12 @@
         {
           "sha256": "9b2104296ef86b44632b82f37dd91b335f44c4d050f9d273301eabaacce429a5",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33831,6 +34383,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33861,6 +34419,12 @@
         {
           "sha256": "9b2104296ef86b44632b82f37dd91b335f44c4d050f9d273301eabaacce429a5",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33895,6 +34459,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33925,6 +34495,12 @@
         {
           "sha256": "9b2104296ef86b44632b82f37dd91b335f44c4d050f9d273301eabaacce429a5",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33959,6 +34535,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33989,6 +34571,12 @@
         {
           "sha256": "9b2104296ef86b44632b82f37dd91b335f44c4d050f9d273301eabaacce429a5",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -34023,6 +34611,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -34055,6 +34649,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -34085,6 +34685,12 @@
         {
           "sha256": "9b2104296ef86b44632b82f37dd91b335f44c4d050f9d273301eabaacce429a5",
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-provider-integrations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "bc558bd07ee06994aeadd5e7fcea0c71bbdf3d3f860d4d3b8f2f645f64a224fb",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-092-test-provider-integrations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -37192,6 +37798,12 @@
           "source_log": "hseverify-m10402-company-report-bola-20261112/.autopilot/artifacts/M10402_COMPANY_REPORT_TENANT_NATIVE_GREEN_20261112.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d7c0468c6e0701df91f96b860770e4f03266776b773d8137e33ffbdf84b4e672",
+          "source_log": "hseverify-m10402-pdf-parser-ci-20261114/.autopilot/artifacts/20261114_PR90_PARSER_NATIVE.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -37970,6 +38582,12 @@
           "source_log": "hseverify-a27-merged-release-20261107/.autopilot/artifacts/20261107-merged-test-restore-business-recovery.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "cf9b8965be95e486bec651b8e8f6a124e6620cd48a6805be2b2ceb59237cb182",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-091-test-restore-business-recovery.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -38709,6 +39327,12 @@
           "source_log": "hseverify-a27-postgres-worker-identity-20261107/.autopilot/artifacts/20261107-a27-security-test-secure-access-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d910df10c2910581d7d7c95ce877f7ee46af44d7baffc26e14e3366025f93f69",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-precommit-discovery-065-test-m1-06-final.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 2,
@@ -38757,6 +39381,12 @@
         {
           "sha256": "73f7b18d28464501319f06337c277df24dd1c1e27c77ea25c4ac4db1809bc0fc",
           "source_log": "hseverify-a27-postgres-worker-identity-20261107/.autopilot/artifacts/20261107-a27-security-test-secure-access-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3b207ebccb7ce7c37afa9223b8a22edd0bfb280d0be3472045429a99ec3907a",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-pentest-test-secure-access-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -38809,6 +39439,12 @@
           "source_log": "hseverify-a27-postgres-worker-identity-20261107/.autopilot/artifacts/20261107-a27-security-test-secure-access-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3b207ebccb7ce7c37afa9223b8a22edd0bfb280d0be3472045429a99ec3907a",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-pentest-test-secure-access-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 2,
@@ -38857,6 +39493,12 @@
         {
           "sha256": "73f7b18d28464501319f06337c277df24dd1c1e27c77ea25c4ac4db1809bc0fc",
           "source_log": "hseverify-a27-postgres-worker-identity-20261107/.autopilot/artifacts/20261107-a27-security-test-secure-access-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3b207ebccb7ce7c37afa9223b8a22edd0bfb280d0be3472045429a99ec3907a",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-pentest-test-secure-access-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -38909,6 +39551,12 @@
         {
           "sha256": "73f7b18d28464501319f06337c277df24dd1c1e27c77ea25c4ac4db1809bc0fc",
           "source_log": "hseverify-a27-postgres-worker-identity-20261107/.autopilot/artifacts/20261107-a27-security-test-secure-access-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f3b207ebccb7ce7c37afa9223b8a22edd0bfb280d0be3472045429a99ec3907a",
+          "source_log": "hseverify-eligibility-guard-20261107/.autopilot/artifacts/20261107-A28-pentest-test-secure-access-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -45860,12 +46508,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 980,
-    "ambiguous_or_changed_unique_titles": 237,
-    "clean_pass_summary_logs": 1348,
+    "ambiguous_or_changed_title_occurrences": 1000,
+    "ambiguous_or_changed_unique_titles": 241,
+    "clean_pass_summary_logs": 1295,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 559,
-    "current_test_source_content_sha256": "8fa9c1fb143e98898c37e9a50f275615caa3d54d63883a5dbe18e154efcc61f9",
+    "current_test_source_content_sha256": "06f9a13a0ee15426a1bdd4b0a535e9a715d682015c54614b6cdcb66d49d9f57e",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -45873,24 +46521,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 184,
+    "existing_source_cases_linked_to_an_exact_218_id": 185,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 66,
-    "historical_log_files_scanned": 2711,
-    "historical_only_green_distinct_cases": 1199,
+    "historical_log_files_scanned": 2537,
+    "historical_only_green_distinct_cases": 1200,
     "logs_with_no_clean_pass_summary_or_a_failure": 65,
-    "logs_with_pass_lines": 1413,
-    "matched_case_occurrences_with_duplicates": 6287,
+    "logs_with_pass_lines": 1360,
+    "matched_case_occurrences_with_duplicates": 6071,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1431,
-    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 194,
+    "previous_green_distinct_source_matched_cases": 1432,
+    "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 195,
     "prior_result_TSV_files": 26,
     "source_tests_without_green_execution_proof": 174,
-    "static_existing_distinct_test_cases": 1605,
-    "unique_source_matched_historical_green_cases": 1431,
-    "worktrees_scanned": 140
+    "static_existing_distinct_test_cases": 1606,
+    "unique_source_matched_historical_green_cases": 1432,
+    "worktrees_scanned": 145
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -45903,7 +46551,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "b589b59a3271d41e9448719fbb1cefa977e9eb99",
+  "inventory_started_from_git_head_sha": "6765ce2f430745ef330878ee1179570fe7144554",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -46702,16 +47350,17 @@
       "family": "Evidence and supervisor observation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 1,
+      "green_history_only_cases_linked": 2,
       "id": "M1.11.02",
       "linked_case_ids": [
-        "tests/browser/independent-worker-review-e2e.browser.test.mjs#3a38443c403dd7a9"
+        "tests/browser/independent-worker-review-e2e.browser.test.mjs#3a38443c403dd7a9",
+        "tests/platform/independent-evidence-review-runtime.test.mjs#90038ecede3418b4"
       ],
       "scenario": "Experience approval/rejection/changes requested to correction and re-review"
     },
     {
       "brick": "M1.11",
-      "existing_source_cases_linked": 1,
+      "existing_source_cases_linked": 2,
       "family": "Evidence and supervisor observation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,

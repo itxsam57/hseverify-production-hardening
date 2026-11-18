@@ -1,0 +1,94 @@
+name: M1.11.03 skill corrected version stale Verifier denial and real PostgreSQL16 concurrency
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/independent-evidence-review-runtime.test.mjs'
+      - 'src/lib/review/**'
+      - 'src/lib/worker/**'
+      - 'src/lib/authorization/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-03-skill-stale-verifier-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/independent-evidence-review-runtime.test.mjs'
+      - 'src/lib/review/**'
+      - 'src/lib/worker/**'
+      - 'src/lib/authorization/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-03-skill-stale-verifier-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11103-skill-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  skill-stale-verifier-pglite-and-real-postgres16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_skill
+          POSTGRES_PASSWORD: synthetic_skill_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_skill -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed merged QA commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned source dependency lockfile
+        run: npm ci --no-audit --no-fund
+      - name: In-memory PGlite skill correction and unauthorized reviewer denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 --test-name-pattern='M1.11.03 skill correction retains old review' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-skill-pglite.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-skill-pglite.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-skill-pglite.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-skill-pglite.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-skill-pglite.log
+          for marker in FOREIGN_WORKER_COMPANY_ROLE_AND_COPIED_VERIFIER_TASK_DENIED CORRECTED_V2_REQUEUED_ONCE_ONLY_AUTHORIZED_VERIFIER_FINALIZES STALE_VERIFIER_DECISION_REFUSED_WITH_ZERO_STALE_DECISIONS_CORRECTED_SOURCE_ACCEPTED IMMUTABLE_ORIGINAL_AND_CORRECTED_SKILL_VERSIONS_THREE_BOUND_DECISIONS_ONE_WORKER; do
+            grep -q "M11103_PGLITE_${marker}" .autopilot/artifacts/m11103-skill-pglite.log
+          done
+      - name: Genuine independent SQL clients concurrent claim/finalize on isolated real PostgreSQL16
+        shell: bash
+        env:
+          HSE_M11103_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_skill:synthetic_skill_ci_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 --test-name-pattern='M1.11.03 skill correction retains old review' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-skill-postgres16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-skill-postgres16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-skill-postgres16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-skill-postgres16.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-skill-postgres16.log
+          for marker in FOREIGN_WORKER_COMPANY_ROLE_AND_COPIED_VERIFIER_TASK_DENIED CORRECTED_V2_REQUEUED_ONCE_ONLY_AUTHORIZED_VERIFIER_FINALIZES STALE_VERIFIER_DECISION_REFUSED_WITH_ZERO_STALE_DECISIONS_CORRECTED_SOURCE_ACCEPTED IMMUTABLE_ORIGINAL_AND_CORRECTED_SKILL_VERSIONS_THREE_BOUND_DECISIONS_ONE_WORKER; do
+            grep -q "M11103_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11103-skill-postgres16.log
+          done
+      - name: Archive independently checkable exact commit PGlite and real PostgreSQL16 logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11103-skill-pg16-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m11103-skill-pglite.log
+            .autopilot/artifacts/m11103-skill-postgres16.log
+          if-no-files-found: warn
+          retention-days: 90
