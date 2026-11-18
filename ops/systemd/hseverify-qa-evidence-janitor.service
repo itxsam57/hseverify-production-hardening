@@ -1,0 +1,18 @@
+[Unit]
+Description=HSE Verify private GitHub SHA-verified QA evidence janitor
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/home/ubuntu/work/hseverify-archive-prune-20261118/scripts/qa-verified-evidence-vault.py
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+Environment=HOME=/home/ubuntu
+Environment=PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=/home/ubuntu/work/hseverify-archive-prune-20261118
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ExecStart=/usr/bin/python3 /home/ubuntu/work/hseverify-archive-prune-20261118/scripts/qa-verified-evidence-vault.py --apply --min-age-hours 24 --max-worktrees 16 --receipt /home/ubuntu/work/hseverify-archive-prune-20261118/.autopilot/artifacts/QA_JANITOR_LAST_EVIDENCE.json
+ExecStartPost=/usr/bin/python3 /home/ubuntu/work/hseverify-archive-prune-20261118/scripts/qa-workspace-prune.py --root /home/ubuntu/work --apply --older-than-days 2 --min-free-gib 99999 --max-entries 16 --require-remote --receipt /home/ubuntu/work/hseverify-archive-prune-20261118/.autopilot/artifacts/QA_JANITOR_LAST_CACHE.json

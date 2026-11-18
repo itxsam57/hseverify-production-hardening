@@ -7,6 +7,7 @@ Dry-run by default. Intended to run after a test unit/CI handoff or when disk lo
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -22,6 +23,28 @@ def git(root, *args):
         ("git", "-C", str(root), *args),
         text=True, capture_output=True, check=False, timeout=15,
     )
+
+
+def remote_source_sha_is_pushed(worktree):
+    """A clean local commit alone is NOT proof its code exists on GitHub."""
+    origin = git(worktree, "remote", "get-url", "origin")
+    if origin.returncode != 0 or not re.fullmatch(
+        r"(?:https://github\.com/|git@github\.com:)itxsam57/hseverify-production-hardening(?:\.git)?",
+        origin.stdout.strip()
+    ):
+        return False
+    head = git(worktree, "rev-parse", "HEAD")
+    sha = head.stdout.strip()
+    if head.returncode != 0 or not re.fullmatch(r"[a-f0-9]{40}", sha):
+        return False
+    try:
+        check = subprocess.run(
+            ["gh", "api", f"repos/itxsam57/hseverify-production-hardening/commits/{sha}", "--jq", ".sha"],
+            capture_output=True, text=True, check=False, timeout=20
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return check.returncode == 0 and check.stdout.strip() == sha
 
 
 def active_process_roots():
@@ -47,6 +70,7 @@ def main():
     parser.add_argument("--min-free-gib", type=float, default=20)
     parser.add_argument("--max-entries", type=int, default=16)
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--require-remote", action="store_true", help="Require this worktree exact Git SHA be retrievable on owner GitHub before cache removal")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--receipt")
     args = parser.parse_args()
@@ -96,6 +120,9 @@ def main():
                 continue
             if target.resolve().parent != worktree.resolve():
                 continue
+            if args.require_remote and not remote_source_sha_is_pushed(worktree):
+                skipped.append({"worktree": worktree.name, "reason": "source_sha_not_on_github"})
+                continue
             candidates.append(target)
 
     candidates.sort(key=lambda p: (p.stat().st_mtime, str(p)))
@@ -113,7 +140,10 @@ def main():
                 continue
             if any(p == worktree or worktree in p.parents for p in active_process_roots()):
                 continue
-            if git(worktree, "status", "--porcelain=v1", "--untracked-files=normal").stdout.strip():
+            checked = git(worktree, "status", "--porcelain=v1", "--untracked-files=normal")
+            if checked.returncode != 0 or checked.stdout.strip():
+                continue
+            if args.require_remote and not remote_source_sha_is_pushed(worktree):
                 continue
             if git(worktree, "check-ignore", "-q", "--", target.name).returncode != 0:
                 continue

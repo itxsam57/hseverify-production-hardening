@@ -52,6 +52,8 @@ jobs:
         run: node --test tests/engineering/current-release-218-ledger.test.mjs
       - name: Verify progress integrity, detached attestation and disk protection
         run: npm run qa:ops-regressions
+      - name: Reject unbacked evidence deletion and unsafe backup changes
+        run: npm run qa:archive-evidence-regressions
       - name: Reconcile all 218 scenarios from clean checkout
         run: npm run audit:current-218-scenarios
       - name: Assert exact QA SHA and fail-closed release

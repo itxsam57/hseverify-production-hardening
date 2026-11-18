@@ -1,7 +1,11 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-18 — Verified private raw QA vault and scheduled janitor (operations only; no scenario promoted)
 
-
+- Standalone private GitHub evidence vault created `itxsam57/hseverify-qa-evidence-vault`, remote `private=true`; real downloaded SHA256 verified backup of 19 raw receipts then exactly 19 safely pruned, 19 independently restored. Next 12-worktree private snapshots covered 341 more receipts, 35 selectively pruned only from clean idle worktrees with independently remote-retrievable code SHA; dirty originals preserved. Separate original source 218/216/4,975 integrity PASS, FULLY VERIFIED remains 0/218, release NO-GO.
+- Automation source `scripts/qa-verified-evidence-vault.py` and `ops/systemd/hseverify-qa-evidence-janitor.{service,timer}`: private GitHub Release content-addressed checksums, secret-indicator rejection, remote restored copies, no overwrite, repeat-backup avoidance for unchanged dirty worktrees, exact remote-code-SHA guard for disposable cache, 6-hour timer. See `docs/qa/QA_PRIVATE_EVIDENCE_VAULT_AUTO_CLEANUP_20261118.md`.
+- **Active scenario is still M1.11.03** in existing separate `qa/m11103-skill-review-20261118` worktree at starting QA SHA `751623ac81144d52c2143ba449578e7404b01db0`; it has two inherited uncommitted edits (source evidence index and V4 audit), untouched. Its old signed real Worker→Verifier skill-browser green source association exists but protected final stage/real providers/independent pentest/Owner UAT remain absent. Do not count partial work as final.
+- **NEXT:** complete safe source CI/merge for archive janitor; install/verify workstation 6h timer; resume M1.11.03 old-browser mapping root evidence test in its owned worktree. Never delete its dirty files or active PG16 PID723113.
 
 ## 2026-11-18 — M1.11.02 frozen source/4975 strict checks complete, exact hosted PostgreSQL16 PR next
 

@@ -206,9 +206,12 @@
     "test:masterplan-integration-browser": "node scripts/run-masterplan-integration-browser-tests.mjs",
     "test:assessment-variants-browser": "node scripts/run-assessment-variant-browser-tests.mjs",
     "qa:workspace-health": "python3 scripts/qa-workspace-prune.py",
-    "qa:workspace-prune": "python3 scripts/qa-workspace-prune.py --apply",
-    "qa:preflight-218": "python3 scripts/qa-workspace-prune.py --apply --min-free-gib 20 --max-entries 16 && node scripts/qa-progress-218.mjs",
-    "qa:ops-regressions": "node --test --test-concurrency=1 scripts/qa-ops-tests/*.test.mjs"
+    "qa:workspace-prune": "python3 scripts/qa-workspace-prune.py --apply --require-remote",
+    "qa:preflight-218": "python3 scripts/qa-workspace-prune.py --apply --require-remote --min-free-gib 20 --max-entries 16 && node scripts/qa-progress-218.mjs",
+    "qa:ops-regressions": "node --test --test-concurrency=1 scripts/qa-ops-tests/*.test.mjs",
+    "qa:archive-evidence-dry-run": "python3 scripts/qa-verified-evidence-vault.py --min-age-hours 24 --max-worktrees 16",
+    "qa:archive-evidence-verified": "python3 scripts/qa-verified-evidence-vault.py --apply --min-age-hours 24 --max-worktrees 16",
+    "qa:archive-evidence-regressions": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/qa-ops-tests -p \"test_verified*.py\" -v"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",
