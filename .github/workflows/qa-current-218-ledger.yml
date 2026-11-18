@@ -17,18 +17,7 @@ on:
   push:
     branches:
       - qa/a28-eligibility-read-guard-20261107
-    paths:
-      - "docs/qa/2026-10-02-evidence.json"
-      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
-      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
-      - "docs/qa/CURRENT_RESUME_218.md"
-      - "docs/qa/evidence/**"
-      - "scripts/build-218-evidence-action-map.py"
-      - "scripts/lib/current-release-218-ledger.mjs"
-      - "scripts/reconcile-current-release-218.mjs"
-      - "tests/engineering/current-release-218-ledger.test.mjs"
-      - "package.json"
-      - ".github/workflows/qa-current-218-ledger.yml"
+      - qa/masterplan-release-20261016
 
 permissions:
   contents: read
@@ -61,9 +50,11 @@ jobs:
           python3 scripts/build-218-evidence-action-map.py --verify
       - name: Reject historical PASS promotion and frozen scenario tampering
         run: node --test tests/engineering/current-release-218-ledger.test.mjs
+      - name: Verify progress integrity, detached attestation and disk protection
+        run: npm run qa:ops-regressions
       - name: Reconcile all 218 scenarios from clean checkout
         run: npm run audit:current-218-scenarios
-      - name: Assert exact QA SHA and NO-GO
+      - name: Assert exact QA SHA and fail-closed release
         run: |
           node --input-type=module -e '
           import assert from "node:assert/strict";
@@ -71,13 +62,33 @@ jobs:
           const report = JSON.parse(readFileSync(".autopilot/artifacts/current-release-218-ledger.json"));
           assert.equal(report.exact_sha, process.env.VERIFIED_SHA);
           assert.equal(report.counts.total, 218);
-          assert.equal(report.counts.full_verified, 0);
-          assert.equal(report.release.decision, "NO_GO");
+          assert(Number.isInteger(report.counts.full_verified));
+          assert(report.counts.full_verified >= 0 && report.counts.full_verified <= 218);
+          if (report.counts.full_verified < 218) assert.notEqual(report.release.decision, "GO");
+          if (report.release.decision === "GO") {
+            assert.equal(report.counts.full_verified, 218);
+            assert.equal(report.release.pentest, "COMPLETE");
+            assert(Object.values(report.release.required_gates).every(value => value === "PASS"));
+          }
           '
+      - name: Publish current automatically computed progress
+        run: |
+          npm run --silent qa:progress-218 -- --json > .autopilot/artifacts/current-release-218-progress.json
+          node --input-type=module -e 'import {readFileSync} from "node:fs"; JSON.parse(readFileSync(".autopilot/artifacts/current-release-218-progress.json","utf8"))'
+          {
+            echo '### HSE Verify exact-SHA progress'
+            echo '```text'
+            npm run --silent qa:progress-218
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat .autopilot/artifacts/current-release-218-progress.json
+
       - name: Retain 218-row exact-SHA machine-readable evidence
         uses: actions/upload-artifact@v4
         with:
-          name: hse-218-no-go-ledger-${{ env.VERIFIED_SHA }}
-          path: .autopilot/artifacts/current-release-218-ledger.json
+          name: hse-218-progress-and-ledger-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/current-release-218-ledger.json
+            .autopilot/artifacts/current-release-218-progress.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90

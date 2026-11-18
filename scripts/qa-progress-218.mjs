@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildCurrentReleaseLedger } from "./lib/current-release-218-ledger.mjs";
+import { loadOptionalFinalStageAttestation } from "./lib/load-final-stage-attestation.mjs";
 
 const json = file => JSON.parse(readFileSync(resolve(file), "utf8"));
 const cursor = json("docs/qa/218_VERTICAL_EXECUTION_CURSOR.json");
@@ -14,7 +15,8 @@ const legacy216Evidence = json("docs/qa/evidence/MASTERPLAN_218_LEGACY_216_OBSER
 const coverage4975Evidence = json("docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json");
 const sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const report = buildCurrentReleaseLedger({
-  source, commitSha: sha, priorTestEvidence, legacy216Evidence, coverage4975Evidence
+  source, commitSha: sha, priorTestEvidence, legacy216Evidence, coverage4975Evidence,
+  ...loadOptionalFinalStageAttestation()
 });
 assert.equal(cursor.schema_version, 1, "Unknown scenario cursor schema");
 assert.equal(cursor.source_of_release_truth, "npm run audit:current-218-scenarios");

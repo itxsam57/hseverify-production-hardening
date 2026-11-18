@@ -204,7 +204,11 @@
     "test:review-calibration-browser": "node --test tests/browser/evidence-review-calibration.browser.test.mjs",
     "test:masterplan-integration": "node --test --test-concurrency=1 tests/platform/integrity-human-review-runtime.test.mjs tests/platform/written-scoring-authority-runtime.test.mjs tests/platform/written-scoring-live-authority.test.mjs tests/platform/supervisor-observation-runtime.test.mjs tests/platform/credential-appeal-followup-runtime.test.mjs tests/platform/evidence-review-calibration-runtime.test.mjs tests/platform/written-review-assignment-runtime.test.mjs tests/platform/written-review-reassignment-runtime.test.mjs tests/platform/written-scoring-recovery-runtime.test.mjs tests/platform/evidence-review-quality-runtime.test.mjs tests/platform/duplicate-identity-review-runtime.test.mjs tests/platform/credential-appeal-interview-runtime.test.mjs tests/platform/credential-appeal-evidence-consumer-runtime.test.mjs tests/platform/appeal-response-notification-rollback.test.mjs",
     "test:masterplan-integration-browser": "node scripts/run-masterplan-integration-browser-tests.mjs",
-    "test:assessment-variants-browser": "node scripts/run-assessment-variant-browser-tests.mjs"
+    "test:assessment-variants-browser": "node scripts/run-assessment-variant-browser-tests.mjs",
+    "qa:workspace-health": "python3 scripts/qa-workspace-prune.py",
+    "qa:workspace-prune": "python3 scripts/qa-workspace-prune.py --apply",
+    "qa:preflight-218": "python3 scripts/qa-workspace-prune.py --apply --min-free-gib 20 --max-entries 16 && node scripts/qa-progress-218.mjs",
+    "qa:ops-regressions": "node --test --test-concurrency=1 scripts/qa-ops-tests/*.test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.4",

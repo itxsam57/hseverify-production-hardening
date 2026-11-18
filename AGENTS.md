@@ -27,6 +27,8 @@ The static source-case identities and compound planned check slots count **diffe
 **Write durable handoff every unit:** update same canonical `npm run audit:current-218-scenarios` ledger and 218 evidence/action queue, 4,975 view, case identity index, `CURRENT_RESUME_218.md`, cursor next ID/command, V4 audit and exact SHA/CI/failed checks. No parallel release ledgers. Preserve other running worktrees/tests. Reuse existing authorized Hands-Off workstation synthetic setup for safe verification; **do not create localhost server/database unless really needed**. Invasive final full pentest/load/real providers need explicitly approved isolated protected stage and scope; never run on unprotected shared services.
 
 Full protocol and 37 brick order: `docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md`. Do not change this permanent route unless owner explicitly changes it.
+**Required bounded QA disk preflight before each new local test unit:** run `npm run qa:preflight-218`. It safely reuses the current ledger and, only when below 20 GiB free, prunes a bounded set of old ignored dependency/build caches from clean idle worktrees; no source, untracked evidence, live shared dependency target, database or audit history may be deleted. Never recreate 141 per-scenario full dependency installs. One sparse worktree per active brick and one compatible lockfile-checked shared dependency install are preferred. The remote signed QA branch and latest exact-SHA CI artifact are the release progress source, not a manually frozen chat statistic.
+
 <!-- HSEVERIFY-PERMANENT-218-VERTICAL:END -->
 
 <!-- UNIVERSAL-AUTOPILOT-V3:BEGIN -->
