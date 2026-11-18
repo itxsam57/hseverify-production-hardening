@@ -5,13 +5,15 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.11.03",
-  "current_focus_phase": "M11103_SIGNED_40038E3_ALL68OF68_CI_PASSED_COMPANY_LINKED_SKILL_BROWSER_CI_PREPARED_NO_FULL_CERT",
-  "last_completed_action": "Signed QA40038e3 PR162 68/68 exact merged GitHub workflows success; scoped actual Worker/Verifier Chrome skill v1 CHANGES to corrected v2 APPROVED, Worker route denies, 320/390/1440 and DB history 1/1 green; native real PG16 1/1 green. New Company linked Worker/Verifier actual browser skill v1 changes v2 approved receiving, responsive and DB test TDD RED then static 2/2 GREEN, original qualification regression included; real hosted Company browser pending. Frozen 0/218 full, historical1433/1606, 4975 old partial693 uncertain96 unlinked4186 FINAL0.",
-  "next_exact_action": "Run Company skill targeted actual GitHub-hosted Chrome and original qualification regression on exact PR source, collect original signed raw logs including 4 markers, fix if failed, merge through standard QA only when exact-head CI all green; recheck merged SHA all jobs. Current no Company browser PASS. Then complete role/tenant API, Worker+Company notice projection, provider live scan, final protected staging, independent full pentest/load/restore/Owner UAT; release NO-GO.",
-  "next_exact_command": "python3 -m unittest discover -s tests/engineering -p test_m11103_company_skill_ci.py -v && python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && node --test tests/engineering/current-release-218-ledger.test.mjs && python3 .autopilot/guard.py pre-commit --root .",
+  "current_focus_phase": "M11103_COMPANY_SKILL_EXACT_HOSTED_CHROME_RED_OPTIONAL_LABEL_TEST_FIX_LOCAL_GREEN_PR_RETEST_NEEDED",
+  "last_completed_action": "Exact hosted PR #163 db356c8 real Chrome FAILED 0/1 in optional Related trade exact:true locator after 43s; raw downloaded SHA256 95671ffd6f53411a52ec9eb290ca4ec34be110efaea0d4637646552f12710ab4. Root was optional label suffix; test-only exact:false for Related trade while required form labels strict. Local TDD static2/2 and original frozen 218/216/4975 verification PASS, historical1433/1606 and FULL0. True hosted Company skill / adjacent qualification still pending, no pass.",
+  "next_exact_action": "Guarded commit and nonforce push focused test-only Related trade optional locator fix onto PR163, require hosted actual Company skill 1/1 and original qualification 1/1 with strict 4+1 markers and raw GitHub artifacts; fix other red if any. Then normal signed QA merge, all exact merged SHA CI independently pass; Company notice/provider/independent full pentest/stage/load/UAT outstanding.",
+  "next_exact_command": "gh pr checks 163 --repo itxsam57/hseverify-production-hardening && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/engineering -p test_m11103_company_skill_ci.py && python3 scripts/reconcile-218-prior-test-evidence.py --verify-index",
   "active_test_pid": null,
   "active_test_log": null,
-  "recent_failed_checks": [],
+  "recent_failed_checks": [
+    "PR163 exact source db356c8 hosted Company skill Chromium run44341132159 RED: optional Related trade exact:true locator Timeout 30000ms; fixed local not retested remotely"
+  ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
   "no_new_localhost_environment_by_default": true,
   "note": "PR162 merge40038e3 completed 68/68 exact SHA. Active separate Company linked Skill new browser not yet hosted. Preserve shared PG16 723113, 40GiB space and private janitor, old logs. Original fully0/218, pentest incomplete."

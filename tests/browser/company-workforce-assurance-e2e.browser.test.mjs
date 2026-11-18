@@ -127,7 +127,7 @@ async function submitSkill(page, baseUrl) {
   for(const [label,value] of [
     ["Skill","Permit to Work"],["Category","Safety systems"],
     ["Proficiency claim","Advanced"],["Experience (months)","48"],["Related trade","HSE"]
-  ]) await card.getByLabel(label,{exact:true}).fill(value);
+  ]) await card.getByLabel(label,{exact:label!=="Related trade"}).fill(value);
   await card.getByRole("button",{name:"Save metadata"}).click();
   await card.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor();
   await card.getByLabel("Evidence file",{exact:true}).setInputFiles({...PNG_FILE,name:"skill-proof.png"});

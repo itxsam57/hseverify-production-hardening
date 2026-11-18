@@ -12,3 +12,8 @@
 Previous signed QA baseline `40038e3deffb1101fe326ded82f829327305c9c8`: all **68/68 exact merged SHA CI** SUCCESS including separate M11103 Worker/Verifier Chromium and two-independent-SQL-client PostgreSQL16. Frozen release still **0/218 FULLY VERIFIED, NO-GO**; source historical 1,433/1,606 at starting HEAD, original 4,975 FINAL=0. Private SHA256 verified evidence vault/6-hour cleanup timer remains active.
 
 **Adjacent regression in the same hosted commit:** run existing unchanged Company qualification assurance flow with no environment flag after targeted Skill, require 1/1 success and original `ACTUAL_M20106_CHANGES_APPROVAL_DB` immutable-case marker; archive both raw logs for comparison.
+
+## Exact PR head first hosted Chromium RED and test root-cause fix
+
+- First exact head `db356c8be2aac757b0281e5e39014440570d772c` run `44341132159` **FAILED 0/1**, raw GitHub artifact downloaded and SHA256 `95671ffd6f53411a52ec9eb290ca4ec34be110efaea0d4637646552f12710ab4`. Failure is a test locator: Playwright waited for `getByLabel("Related trade",{exact:true})` but the production skill input explicitly declares an **optional** label. No production feature defect has been established at that step.
+- Changed only that optional field locator to `getByLabel(label,{exact:label!=="Related trade"})` without weakening other required-field matching. Added explicit static regression assertion, verified green local 2/2; original full 218/216/4975 indexes reverified and existing green source identities/proof hashes retained. **Second exact-head live Chromium is pending** until GitHub retest. Do not claim Company browser PASS before the original remote raw artifacts show it.

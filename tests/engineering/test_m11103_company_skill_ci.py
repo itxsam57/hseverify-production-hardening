@@ -10,6 +10,8 @@ class M11103CompanySkillCI(unittest.TestCase):
         text=TEST.read_text()
         self.assertIn("HSE_M11103_COMPANY_SKILL_ONLY",text)
         self.assertIn("submitSkill(",text)
+        self.assertIn('getByLabel(label,{exact:label!=="Related trade"})',text)
+
         for marker in (
             "M11103_COMPANY_SKILL_ACTUAL_CHROME_LINKED_WORKER_COMPANY_RECEIVING",
             "M11103_COMPANY_SKILL_ACTUAL_CHROME_CORRECTION_REVIEW_AND_TWO_PORTAL_HISTORY",

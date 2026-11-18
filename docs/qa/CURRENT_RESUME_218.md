@@ -1,5 +1,9 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-18 — M1.11.03 Company Skill original hosted Chrome locator RED and fix (PR #163)
+
+- **Exact PR head db356c8 test RED 0/1:** GitHub run `44341132159`, downloaded original raw SHA256 `95671ffd6f53411a52ec9eb290ca4ec34be110efaea0d4637646552f12710ab4`. Failed `getByLabel("Related trade",{exact:true})` because actual optional skill label includes an optional suffix. Test-only corrected to nonexact label matching for that one optional input; all mandatory labels remain exact. New static regression 2/2 GREEN; original 218/216/4975 indexes and 1,433/1,606 historical green intact. Re-run **real remote Chromium** on new exact PR SHA; no new Company PASS yet.
+
 ## 2026-11-18 — M1.11.03 linked Company Skill correction focused real Chrome (PR pending)
 
 - Signed QA **`40038e3deffb1101fe326ded82f829327305c9c8`** (PR162 true merge): **68/68 merged exact-SHA GitHub workflows PASS**. Worker/Verifier actual Chrome 1/1 and PostgreSQL16 two physical SQL clients 1/1 with explicit scoped proof markers; private GitHub evidence janitor timer active, disk about 40 GiB free. None of this is final protected stage.
