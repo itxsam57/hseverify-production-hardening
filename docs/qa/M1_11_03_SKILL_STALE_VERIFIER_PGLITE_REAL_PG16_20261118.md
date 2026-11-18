@@ -1,0 +1,25 @@
+# M1.11.03 Skill review — focused native PostgreSQL16 evidence, 2026-11-18
+
+## Release boundary
+**FULLY VERIFIED: 0/218; release NO-GO.** This scoped proof does not establish all-role browser UI, Company supervisor receiving notifications, final protected staging, live production providers, full pentest, load/restore or Owner UAT.
+
+Current signed QA baseline before new source: `6765ce2f430745ef330878ee1179570fe7144554` (PR #160 merged; all 65/65 exact-merged-SHA workflows SUCCESS). Original frozen scenario: **M1.11.03 Skill approval/rejection/changes requested to correction and re-review**.
+
+## Real completed tests (synthetic data, local)
+- New distinct `tests/platform/independent-evidence-review-runtime.test.mjs` case: `M1.11.03 skill correction retains old review and rejects stale, foreign and simultaneous Verifier decisions on actual PostgreSQL16`. Unique source ID `tests/platform/independent-evidence-review-runtime.test.mjs#1d9066bf69d25c2b`.
+- **PGlite 1/1 PASS**; raw log `.autopilot/artifacts/M11103_SKILL_PGLITE_FIRST_20261118.log` SHA256 `185c401d73763ca9ca5e970c7c6b204e879e5c15fef9a19d79a4f8d87b7c23e5`.
+- **Adjacent qualification + experience + skill PGlite 3/3 PASS**, 0 fail/skip; raw `.autopilot/artifacts/M11103_ADJACENT_REVIEW_PGLITE_20261118.log` SHA256 `01ec1310c4cd5030ab565b78dde9238fc2026465564bfa6ce273821cb100aa1a`.
+- Verified concrete behavior: copied Worker ID and company role denied; unassigned Verifier copied task ID denied; original skill v1 CHANGES_REQUESTED; corrected v2 queued exactly once and authorized Verifier finalizes; competing Verifier claim/finalization denied; stale old source version cannot be approved, zero stale decisions; original and corrected skill versions, three immutable version-bound decisions and only one Worker account persisted. The PGlite branch does **not** execute two real SQL clients simultaneously.
+- New isolated GitHub workflow `.github/workflows/m1-11-03-skill-stale-verifier-pg16.yml` will repeat the exact case in **PGlite and true PostgreSQL16 with two physical SQL connections**, checking all four behavior markers. Its initial self-trigger file-path defect was reproduced RED and fixed GREEN by a new CI configuration regression. **Hosted exact-head real PG16 pending** until this source is pushed and GitHub returns raw green logs.
+
+## Historical evidence protection during janitor
+- Existing historical source index had 1,431 previously green identities on signed QA. When archived raw logs disappeared or additional raw logs were found, the old reindex could drop prior SHA256 proof rows from 141 cases. New fail-closed `reviewed_proof_if_archived` + `merge_stable_provenance` keeps signed original case+title identity and hash-backed historical receipts while adding new distinct proof rows, without promoting any source to final certification.
+- Reproduced the new preservation test RED, fixed and verified. Restored the previous signed original index before reindex, compared all **1,431 prior green source cases** and confirmed **zero lost green identities, zero dropped original proof rows, zero repetition-count downgrades, zero lost reviewed scenario links**. Offline test with *all* historical worktree logs absent still keeps old SHA-linked proofs, and the newly added M1.11.03 source remains `NO_PASS_LOG_EVIDENCE` until actual hosted exact commit proof.
+- Current original indexes: previously green **1,432/1,606** (the newly discovered old M1.11.02 PGlite pass accounts for +1; M1.11.03 source denominator +1 is currently uncredited); prior scoped 216/218 is **not full**; planned **4,975 = 693 old partial + 94 uncertain + 4,188 lacking precise prior link, FINAL 0/4,975**. 94 uncertain are candidate links, NOT tests that passed. Independent pentest 2,008 preliminary attack slots, completed verified count unknown; 10 known external blockers; critical/high unknown.
+
+## Next exact action
+1. Require all original Node/Python 218/216/4975 strict index tests, archived-raw-log regression, focused PGlite/adjacent workflow, changed-source syntax/ESLint and the 11 local evidence-vault safety checks to pass. Guarded non-force push current isolated worktree; open PR against the latest signed QA SHA.
+2. Require isolated GitHub PostgreSQL16 actual two-independent-client case 1/1, PGlite 1/1 and each four marker strings on **exact PR head**, separately download/verify original logs and preserve SHA256. Fix any RED at the root. Only then true two-parent GitHub merge and independently recheck **all exact merged SHA** workflows, including same isolated PG16/PGlite.
+3. Continue unfinished M1.11.03 real signed-in role-specific Worker/Verifier/Company supervisor receiving, notifications/deep-links, mobile/desktop/keyboard, direct API tenant/role/session abuse, provider-backed storage/scanning, protected stage, full pentest/load/restore and Owner UAT. Stay NO-GO.
+
+Do not run a second local Next.js/PostgreSQL server. Preserve existing shared PG16 PID 723113 and worktrees; synthetic hosted test only.

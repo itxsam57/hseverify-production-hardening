@@ -2,6 +2,7 @@
 """Tests of real-run deduplication and conservative evidence linking."""
 import importlib.util
 import json
+import hashlib
 import subprocess
 from pathlib import Path
 import tempfile
@@ -50,14 +51,72 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         index = json.loads((ROOT / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json").read_text())
         self.assertEqual(index["frozen_scenarios"], 218)
         c = index["counts"]
-        self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1431)
+        self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1432)
         self.assertEqual(c["current_reference_CI_green_distinct_cases"], 232)
-        self.assertEqual(c["historical_only_green_distinct_cases"], 1199)
-        self.assertEqual(c["static_existing_distinct_test_cases"], 1605)
+        self.assertEqual(c["historical_only_green_distinct_cases"], 1200)
+        self.assertEqual(c["static_existing_distinct_test_cases"], 1606)
         self.assertEqual(c["source_tests_without_green_execution_proof"], 174)
         self.assertEqual(c["frozen_full_release_verified"], 0)
         self.assertEqual(len(index["scenarios"]), 218)
-        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1605)
+        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1606)
+
+    def test_archived_old_green_provenance_survives_local_cache_removal_without_new_pass(self):
+        prior_reviewed = {
+            "case_id": "tests/platform/x.test.mjs#" + hashlib.sha256(b"specific old true completed test").hexdigest()[:16], "file": "tests/platform/x.test.mjs",
+            "title": "specific old true completed test",
+            "test_execution": "HISTORICAL_LOG_PASSED",
+            "prior_log_pass_repetition_count": 3, "exact_ci_pass_count_runs": 0,
+            "evidence": [{"source_log": "older/.autopilot/artifacts/proof.log",
+                          "sha256": "a" * 64,
+                          "status": "clean_green_summary_historical_worktree",
+                          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"}]
+        }
+        preserved = prior.reviewed_proof_if_archived(prior_reviewed,
+                                                     prior_reviewed["file"],
+                                                     prior_reviewed["title"])
+        self.assertEqual(preserved["test_execution"], "HISTORICAL_LOG_PASSED")
+        self.assertEqual(preserved["prior_log_pass_repetition_count"], 3)
+        self.assertIsNone(prior.reviewed_proof_if_archived(prior_reviewed,
+                                                          "tests/platform/renamed.test.mjs",
+                                                          prior_reviewed["title"]))
+        tampered = {**prior_reviewed, "evidence": [{"sha256": "fake"}]}
+        self.assertIsNone(prior.reviewed_proof_if_archived(tampered,
+                                                          prior_reviewed["file"],
+                                                          prior_reviewed["title"]))
+        no_green = {**prior_reviewed, "test_execution": "NO_PASS_LOG_EVIDENCE"}
+        self.assertIsNone(prior.reviewed_proof_if_archived(no_green,
+                                                          no_green["file"], no_green["title"]))
+
+    def test_old_proof_hashes_are_never_replaced_by_new_historical_log(self):
+        old = {"sha256": "a" * 64, "source_log": "old/.autopilot/artifacts/original.log",
+               "status": "clean_green_summary_historical_worktree"}
+        new = {"sha256": "b" * 64, "source_log": "new/.autopilot/artifacts/new.log",
+               "status": "clean_green_summary_historical_worktree"}
+        ci = {"run_log_sha256": "c" * 64, "tested_commit_sha": "d" * 40,
+              "status": "exact_CI_SHA_green_test_and_run"}
+        result = prior.merge_stable_provenance([old, ci], [old, new, ci])
+        self.assertEqual(result, [old, ci, new])
+
+    def test_remote_archival_cannot_erase_previously_source_reviewed_green_or_create_skill_pass(self):
+        """A missing ignored old log must not downgrade the durable signed QA receipt.
+
+        This simulates all historical worktree raw logs being safely archived,
+        while preserving only previously hash-backed source case identities.
+        """
+        offline_ci = {"runs": [], "source_sha": "f" * 40,
+                      "github_workflows_successful": 0, "github_workflows_log_read": 0}
+        previous = prior.build(ROOT, offline_ci, scan_historical=False)
+        counts = previous["counts"]
+        self.assertEqual(counts["previous_green_distinct_source_matched_cases"], 1432)
+        self.assertEqual(counts["static_existing_distinct_test_cases"], 1606)
+        self.assertEqual(counts["frozen_full_release_verified"], 0)
+        old = next(c for c in previous["cases"] if c["title"].startswith(
+            "independent Worker submissions reach Verifier and approve"))
+        self.assertEqual(old["test_execution"], "HISTORICAL_LOG_PASSED")
+        self.assertIn("M1.11.03", old["scenario_ids"])
+        skill = next(c for c in previous["cases"] if c["title"].startswith(
+            "M1.11.03 skill correction retains old review"))
+        self.assertEqual(skill["test_execution"], "NO_PASS_LOG_EVIDENCE")
 
     def test_existing_case_lookup_is_read_only_and_clearly_uncredited(self):
         result = subprocess.run(["python3", "scripts/reconcile-218-prior-test-evidence.py",
