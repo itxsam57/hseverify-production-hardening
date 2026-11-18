@@ -1,0 +1,79 @@
+name: M1.11.03 Company linked Worker skill receiving real Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/company-workforce-assurance-e2e.browser.test.mjs'
+      - 'src/lib/assurance/**'
+      - 'src/lib/review/**'
+      - 'src/app/company/**'
+      - '.github/workflows/m1-11-03-company-skill-receiving-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/company-workforce-assurance-e2e.browser.test.mjs'
+      - 'src/lib/assurance/**'
+      - 'src/lib/review/**'
+      - 'src/app/company/**'
+      - '.github/workflows/m1-11-03-company-skill-receiving-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11103-company-skill-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  company-skill-receiving-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Company skill real Worker Verifier and Company receiving
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          HSE_M11103_COMPANY_SKILL_ONLY=true node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-company-skill-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-company-skill-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-company-skill-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-company-skill-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-company-skill-chromium.log
+          for marker in LINKED_WORKER_COMPANY_RECEIVING CORRECTION_REVIEW_AND_TWO_PORTAL_HISTORY RESPONSIVE_320_390_1440; do
+            grep -q "M11103_COMPANY_SKILL_ACTUAL_CHROME_${marker}" .autopilot/artifacts/m11103-company-skill-chromium.log
+          done
+          grep -q 'M11103_COMPANY_SKILL_ACTUAL_DB_TWO_VERSIONS_TWO_DECISIONS_ONE_CASE' .autopilot/artifacts/m11103-company-skill-chromium.log
+      - name: Adjacent original Company qualification workflow regression on same exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-company-original-qualification-regression.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-company-original-qualification-regression.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-company-original-qualification-regression.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-company-original-qualification-regression.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-company-original-qualification-regression.log
+          grep -q 'ACTUAL_M20106_CHANGES_APPROVAL_DB' .autopilot/artifacts/m11103-company-original-qualification-regression.log
+      - name: Archive exact-SHA original real Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11103-company-skill-chromium-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m11103-company-skill-chromium.log
+            .autopilot/artifacts/m11103-company-original-qualification-regression.log
+          if-no-files-found: warn
+          retention-days: 90

@@ -115,11 +115,36 @@ async function submitQualification(page, baseUrl) {
   await page.getByText("active · submitted", { exact: true }).first().waitFor({ timeout: 15_000 });
 }
 
+async function submitSkill(page, baseUrl) {
+  await page.goto(`${baseUrl}/worker/evidence`, {waitUntil:"domcontentloaded"});
+  await page.getByLabel("Record type").selectOption("skill");
+  await Promise.all([
+    page.waitForResponse(r=>r.request().method()==="POST"),
+    page.getByRole("button",{name:"Create draft"}).click()
+  ]);
+  await page.reload({waitUntil:"domcontentloaded"});
+  const card=page.locator("article").filter({hasText:"Skill record"}).first();
+  for(const [label,value] of [
+    ["Skill","Permit to Work"],["Category","Safety systems"],
+    ["Proficiency claim","Advanced"],["Experience (months)","48"],["Related trade","HSE"]
+  ]) await card.getByLabel(label,{exact:true}).fill(value);
+  await card.getByRole("button",{name:"Save metadata"}).click();
+  await card.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor();
+  await card.getByLabel("Evidence file",{exact:true}).setInputFiles({...PNG_FILE,name:"skill-proof.png"});
+  await card.getByRole("button",{name:"Upload file"}).click();
+  await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({timeout:15000});
+  await card.getByRole("button",{name:"Submit this version"}).click();
+  await card.getByText("active · submitted",{exact:true}).waitFor({timeout:15000});
+}
+
 test(
   "Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end",
   { timeout: 300_000 },
   async () => {
     const root = process.cwd();
+    const skillOnly=process.env.HSE_M11103_COMPANY_SKILL_ONLY==="true";
+    const evidenceKind=skillOnly?"skill":"qualification";
+    const orderName=skillOnly?"Linked Worker Skill Assurance":"Linked Worker Qualification Assurance";
     const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-company-assurance-"));
     const port = await freePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -167,7 +192,8 @@ test(
           const admin = await adminContext.newPage();
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
-            await submitQualification(worker, baseUrl);
+            if(skillOnly)await submitSkill(worker,baseUrl);
+            else await submitQualification(worker, baseUrl);
 
             await login(company, baseUrl, credentials.company, "company");
             await company.goto(`${baseUrl}/company/organization`, { waitUntil: "domcontentloaded" });
@@ -244,9 +270,9 @@ test(
             await company.getByText("revoked", { exact: true }).first().waitFor({ timeout: 15_000 });
 
             await company.goto(`${baseUrl}/company/assurance-orders/new`, { waitUntil: "domcontentloaded" });
-            await company.getByLabel("Order name").fill("Linked Worker Qualification Assurance");
+            await company.getByLabel("Order name").fill(orderName);
             await company.getByLabel("Order reference", { exact: true }).fill("ASSURE-LINK-001");
-            await company.getByLabel("Requested evidence checks").fill("qualification");
+            await company.getByLabel("Requested evidence checks").fill(evidenceKind);
             await company.getByRole("checkbox", { name: /audit_worker_account_20260901/i }).check();
             await company.getByRole("button", { name: "Save Draft" }).click();
             await company.waitForURL(/\/company\/assurance-orders\/.+/, { timeout: 15_000 });
@@ -263,7 +289,7 @@ test(
             await verifier.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
             const caseReviewRow = verifier.locator("tbody tr")
               .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
-              .filter({ has: verifier.locator("td", { hasText: "qualification" }) })
+              .filter({ has: verifier.locator("td", { hasText: evidenceKind }) })
               .last();
             await caseReviewRow.getByRole("link", { name: "Review", exact: true }).click();
             await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
@@ -289,7 +315,7 @@ test(
             await verifier.getByLabel("Reason", { exact: true }).fill(
               terminalReject
                 ? "Original qualification document was proven invalid; do not accept this submitted version."
-                : "Correct the certificate number before this Company case can proceed."
+                : (skillOnly?"Provide corrected skill proficiency evidence before this Company case can proceed.":"Correct the certificate number before this Company case can proceed.")
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText(verdict, { exact: true }).waitFor({ timeout: 15_000 });
@@ -309,18 +335,21 @@ test(
               return;
             }
             await worker.getByText("Evidence pending", { exact: true }).first().waitFor({ timeout: 15_000 });
+            if(skillOnly)console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_LINKED_WORKER_COMPANY_RECEIVING");
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
-            const qualification = worker.locator("article").filter({ hasText: "Qualification record" }).first();
-            await qualification.getByRole("button", { name: "Start a new revision" }).click();
-            await qualification.getByText("active · draft", { exact: true }).waitFor({ timeout: 15_000 });
-            await qualification.getByLabel("Certificate / candidate number").fill("IOSH-LINK-002");
-            await qualification.getByRole("button", { name: "Save metadata" }).click();
-            await qualification.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
-            await qualification.getByLabel("Primary certificate file").setInputFiles(PNG_FILE);
-            await qualification.getByRole("button", { name: "Upload file" }).click();
-            await qualification.getByText(/uploaded, security-scanned and bound/).waitFor({ timeout: 15_000 });
-            await qualification.getByRole("button", { name: "Submit this version" }).click();
-            await qualification.getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
+            const record=worker.locator("article").filter({hasText:skillOnly?"Skill record":"Qualification record"}).first();
+            await record.getByRole("button", { name: "Start a new revision" }).click();
+            await record.getByText("active · draft", { exact: true }).waitFor({ timeout: 15_000 });
+            await record.getByLabel(skillOnly?"Proficiency claim":"Certificate / candidate number").fill(
+              skillOnly?"Observed independent skill competence supported by corrected training record.":"IOSH-LINK-002");
+            await record.getByRole("button", { name: "Save metadata" }).click();
+            await record.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
+            await record.getByLabel(skillOnly?"Evidence file":"Primary certificate file").setInputFiles(
+              {...PNG_FILE,name:skillOnly?"skill-corrected.png":"qualification.png"});
+            await record.getByRole("button", { name: "Upload file" }).click();
+            await record.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({ timeout: 15_000 });
+            await record.getByRole("button", { name: "Submit this version" }).click();
+            await record.getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
 
             await company.goto(orderUrl, { waitUntil: "domcontentloaded" });
             await company.getByRole("button", { name: "Queue evidence review" }).click();
@@ -328,7 +357,7 @@ test(
             await verifier.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
             const correctedReview = verifier.locator("tbody tr")
               .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
-              .filter({ has: verifier.locator("td", { hasText: "qualification" }) }).last();
+              .filter({ has: verifier.locator("td", { hasText: evidenceKind }) }).last();
             await correctedReview.getByRole("link", { name: "Review", exact: true }).click();
             await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
             const correctedTaskId = new URL(verifier.url()).pathname.split("/").filter(Boolean).at(-1);
@@ -344,18 +373,52 @@ test(
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("APPROVED");
             await verifier.getByLabel("Reason", { exact: true }).fill(
-              "Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
+              skillOnly?"Case-scoped skill review confirms the corrected proficiency and attached evidence.":"Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText("APPROVED", { exact: true }).waitFor({ timeout: 15_000 });
 
             await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
-            await worker.getByText("Linked Worker Qualification Assurance", { exact: true }).waitFor({ timeout: 15_000 });
+            await worker.getByText(orderName, { exact: true }).waitFor({ timeout: 15_000 });
             await worker.getByText("Assessment pending", { exact: true }).first().waitFor({ timeout: 15_000 });
 
             await company.goto(`${baseUrl}/company/dashboard`, { waitUntil: "domcontentloaded" });
-            await company.getByRole("heading", { name: "Linked Worker Qualification Assurance", exact: true }).first().waitFor({ timeout: 15_000 });
+            await company.getByRole("heading", { name: orderName, exact: true }).first().waitFor({ timeout: 15_000 });
             await company.getByText("1", { exact: true }).first().waitFor();
+            if (skillOnly) {
+              // Company-assurance case, Worker receiving and review history must persist after reload.
+              await worker.goto(`${baseUrl}/worker/evidence`, {waitUntil:"domcontentloaded"});
+              const skill=worker.locator("article").filter({hasText:"Skill record"}).first();
+              await skill.getByText(/Independent verification: approved/).waitFor({timeout:15000});
+              const skillHistory=skill.getByRole("region",{name:"skill history"});
+              for(const n of [1,2])await skillHistory.getByText(new RegExp("Version "+n)).first().waitFor();
+              await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor({timeout:15000});
+              await worker.reload({waitUntil:"domcontentloaded"});
+              await skill.getByText(/Independent verification: approved/).waitFor();
+              await company.reload({waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor();
+              console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_CORRECTION_REVIEW_AND_TWO_PORTAL_HISTORY");
+
+              for(const width of [320,390,1440]) {
+                await worker.setViewportSize({width,height:900});
+                await company.setViewportSize({width,height:900});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+                await worker.locator("article").filter({hasText:"Skill record"}).first()
+                  .getByText(/Independent verification: approved/).waitFor({timeout:15000});
+                await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                  .getByText("Assessment pending",{exact:true}).waitFor({timeout:15000});
+                for(const page of [worker,company]) {
+                  const size=await page.evaluate(()=>({viewport:window.innerWidth,scroll:document.documentElement.scrollWidth}));
+                  assert.ok(size.scroll<=size.viewport+2,
+                    "Linked Company or Worker skill receiving overflow at "+width+"px: "+JSON.stringify(size));
+                }
+              }
+              console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_RESPONSIVE_320_390_1440");
+            }
           } finally {
             await companyContext.close();
             await workerContext.close();
@@ -402,16 +465,17 @@ test(
           assert.equal(reviewed[0].source_version_id,original[0].version_id);
           console.log("ACTUAL_M20106_REJECTED_DB one retained original Worker qualification version, terminal Verifier REJECTED exact source-linked task and Company case with no owner; Company order remains SUBMITTED");
         } else {
-          const versions=(await database.query("SELECT versions.version_id,versions.version_number,versions.version_status FROM worker_evidence_versions versions JOIN worker_evidence_records records ON records.record_id=versions.record_id WHERE records.worker_account_id='audit_worker_account_20260901' AND records.record_kind='qualification' ORDER BY versions.version_number")).rows;
+          const versions=(await database.query("SELECT versions.version_id,versions.version_number,versions.version_status FROM worker_evidence_versions versions JOIN worker_evidence_records records ON records.record_id=versions.record_id WHERE records.worker_account_id='audit_worker_account_20260901' AND records.record_kind=$1 ORDER BY versions.version_number",[evidenceKind])).rows;
           assert.equal(versions.length,2,"Worker must retain both original and corrected qualification versions.");
           assert.deepEqual(versions.map(version=>version.version_number),[1,2]);
           assert.deepEqual(versions.map(version=>version.version_status),["superseded","submitted"],
             "Corrected qualification must preserve the old immutable submitted evidence as superseded and retain new active submitted evidence.");
-          const decisions=(await database.query("SELECT decisions.outcome,decisions.source_version_id FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id IN (SELECT cases.case_id FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id WHERE orders.order_reference='ASSURE-LINK-001') AND tasks.evidence_kind='qualification' ORDER BY decisions.decided_at")).rows;
+          const decisions=(await database.query("SELECT decisions.outcome,decisions.source_version_id FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id IN (SELECT cases.case_id FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id WHERE orders.order_reference='ASSURE-LINK-001') AND tasks.evidence_kind=$1 ORDER BY decisions.decided_at",[evidenceKind])).rows;
           assert.equal(decisions.length,2,"Both independent final Verifier decisions must remain source-linked.");
           assert.ok(decisions.some(decision=>decision.outcome==="CHANGES_REQUESTED"&&decision.source_version_id===versions[0].version_id),"Original correction decision source lost.");
           assert.ok(decisions.some(decision=>decision.outcome==="APPROVED"&&decision.source_version_id===versions[1].version_id),"Corrected accepted decision source lost.");
-          console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
+          if(skillOnly)console.log("M11103_COMPANY_SKILL_ACTUAL_DB_TWO_VERSIONS_TWO_DECISIONS_ONE_CASE");
+          else console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
         }
       } finally {
         await database.close();
