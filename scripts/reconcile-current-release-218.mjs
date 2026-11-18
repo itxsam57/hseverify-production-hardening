@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { buildCurrentReleaseLedger } from "./lib/current-release-218-ledger.mjs";
+import { loadOptionalFinalStageAttestation } from "./lib/load-final-stage-attestation.mjs";
 
 const commitSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const source = JSON.parse(await readFile(resolve("docs/qa/2026-10-02-evidence.json"), "utf8"));
@@ -14,7 +15,10 @@ const legacy216Evidence = JSON.parse(await readFile(
 const coverage4975Evidence = JSON.parse(await readFile(
   resolve("docs/qa/evidence/MASTERPLAN_218_4975_DEDUP_SUMMARY_20261114.json"), "utf8"
 ));
-const report = buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence, legacy216Evidence, coverage4975Evidence });
+const report = buildCurrentReleaseLedger({
+  source, commitSha, priorTestEvidence, legacy216Evidence, coverage4975Evidence,
+  ...loadOptionalFinalStageAttestation()
+});
 const artifact = resolve(".autopilot/artifacts/current-release-218-ledger.json");
 await mkdir(resolve(".autopilot/artifacts"), { recursive: true });
 await writeFile(artifact, JSON.stringify(report, null, 2) + "\n", "utf8");

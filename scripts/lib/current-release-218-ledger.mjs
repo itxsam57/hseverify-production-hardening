@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { verifyFinalStageAttestation } from "./final-stage-signed-certification.mjs";
 
 // Pinned to the 218 frozen IDs, bricks, roles and scenario statements.
 // Editing a source scenario silently must NOT redefine the release target.
@@ -191,7 +192,9 @@ function reconcileLegacy216ScopedEvidence({ legacy, scenarios, prior }) {
   };
 }
 
-export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, legacy216Evidence = null, coverage4975Evidence = null, generatedAt = new Date().toISOString() }) {
+export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence = null, legacy216Evidence = null,
+  coverage4975Evidence = null, finalStageAttestation = null, finalStagePublicKey = null,
+  validPlannedCheckIds = null, generatedAt = new Date().toISOString() }) {
   assert.match(commitSha ?? "", /^[a-f0-9]{40}$/, "A full exact Git SHA is mandatory");
   const rows = source?.expanded_scenario_verification?.scenarios;
   assert(Array.isArray(rows) && rows.length === 218, "Frozen Masterplan must contain exactly 218 scenarios");
@@ -228,6 +231,29 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
       }
     };
   });
+  // Detached protected-stage attestation is intentionally absent in ordinary PR CI.
+  // Never turn a historical test pass or unsiged local JSON into FULLY_VERIFIED.
+  const signedStage = finalStageAttestation
+    ? verifyFinalStageAttestation({
+      envelope: finalStageAttestation,
+      trustedPublicKey: finalStagePublicKey,
+      candidateSha: commitSha,
+      validCheckIds: validPlannedCheckIds,
+      scenarioIds: new Set(scenarios.map(row => row.id))
+    })
+    : null;
+  if (signedStage) {
+    for (const row of scenarios) {
+      const proof = signedStage.verified.get(row.id);
+      if (!proof) continue;
+      row.status = "FULLY_VERIFIED";
+      row.blockers = [];
+      row.current_task = null;
+      row.missing_acceptance = [];
+      row.evidence.current_sha = proof;
+      row.evidence.certificate = "DETACHED_ED25519_OWNER_PROTECTED_STAGE";
+    }
+  }
   const counts = {
     total: scenarios.length,
     full_verified: scenarios.filter(row => row.status === "FULLY_VERIFIED").length,
@@ -290,7 +316,19 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
       status: "NO_GO_SCOPED_HISTORY_NOT_FULL_RELEASE_VERIFICATION"
     };
   }
-  const required_gates = Object.fromEntries(RELEASE_GATES.map(gate => [gate, "NOT_VERIFIED"]));
+  if (signedStage && planned_check_progress) {
+    planned_check_progress.final_stage_certified = signedStage.certified.size;
+    planned_check_progress.full_stage_checks_still_required =
+      planned_check_progress.planning_slots_total - signedStage.certified.size;
+    planned_check_progress.status = "TRUSTED_SIGNED_EXACT_STAGE_PARTIAL_OR_FULL";
+  }
+  const required_gates = signedStage
+    ? signedStage.gates
+    : Object.fromEntries(RELEASE_GATES.map(gate => [gate, "NOT_VERIFIED"]));
+  const allGatesPassed = Object.values(required_gates).every(value => value === "PASS");
+  const releaseGo = counts.full_verified === 218 && signedStage &&
+    (planned_check_progress?.full_stage_checks_still_required ?? 4975) === 0 &&
+    allGatesPassed && signedStage.pentest === "COMPLETE" && signedStage.openSevere === 0;
   return {
     report_type: "CURRENT_FINAL_RELEASE_CANDIDATE_218_EVIDENCE_LEDGER",
     generated_at: generatedAt,
@@ -302,12 +340,14 @@ export function buildCurrentReleaseLedger({ source, commitSha, priorTestEvidence
     ...(legacy_216_scope ? { legacy_216_scope } : {}),
     ...(planned_check_progress ? { planned_check_progress } : {}),
     release: {
-      decision: "NO_GO",
+      decision: releaseGo ? "GO" : "NO_GO",
       required_gates,
-      pentest: "INCOMPLETE",
-      known_blockers_are_exhaustive: false
+      pentest: signedStage?.pentest ?? "INCOMPLETE",
+      known_blockers_are_exhaustive: Boolean(releaseGo)
     },
-    disclaimer: "No current-SHA FULLY_VERIFIED assertions exist. Historical statuses and isolated local tests do not count as release certification.",
+    disclaimer: signedStage
+      ? "Only separately signed owner-authorized protected-stage scenario receipts have been credited. Historical and local-only passes are excluded."
+      : "No current-SHA signed protected-stage certification is present. Historical and isolated local tests do not count as release certification.",
     scenarios
   };
 }
