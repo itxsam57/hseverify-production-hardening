@@ -51,11 +51,11 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         index = json.loads((ROOT / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json").read_text())
         self.assertEqual(index["frozen_scenarios"], 218)
         c = index["counts"]
-        self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1432)
+        self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1433)
         self.assertEqual(c["current_reference_CI_green_distinct_cases"], 232)
-        self.assertEqual(c["historical_only_green_distinct_cases"], 1200)
+        self.assertEqual(c["historical_only_green_distinct_cases"], 1201)
         self.assertEqual(c["static_existing_distinct_test_cases"], 1606)
-        self.assertEqual(c["source_tests_without_green_execution_proof"], 174)
+        self.assertEqual(c["source_tests_without_green_execution_proof"], 173)
         self.assertEqual(c["frozen_full_release_verified"], 0)
         self.assertEqual(len(index["scenarios"]), 218)
         self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1606)
@@ -107,7 +107,7 @@ class PreviousTestEvidenceTests(unittest.TestCase):
                       "github_workflows_successful": 0, "github_workflows_log_read": 0}
         previous = prior.build(ROOT, offline_ci, scan_historical=False)
         counts = previous["counts"]
-        self.assertEqual(counts["previous_green_distinct_source_matched_cases"], 1432)
+        self.assertEqual(counts["previous_green_distinct_source_matched_cases"], 1433)
         self.assertEqual(counts["static_existing_distinct_test_cases"], 1606)
         self.assertEqual(counts["frozen_full_release_verified"], 0)
         old = next(c for c in previous["cases"] if c["title"].startswith(
@@ -116,7 +116,8 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         self.assertIn("M1.11.03", old["scenario_ids"])
         skill = next(c for c in previous["cases"] if c["title"].startswith(
             "M1.11.03 skill correction retains old review"))
-        self.assertEqual(skill["test_execution"], "NO_PASS_LOG_EVIDENCE")
+        self.assertEqual(skill["test_execution"], "HISTORICAL_LOG_PASSED")
+        self.assertTrue(any(proof.get("status") == "clean_green_summary_historical_worktree" for proof in skill["evidence"]))
 
     def test_existing_case_lookup_is_read_only_and_clearly_uncredited(self):
         result = subprocess.run(["python3", "scripts/reconcile-218-prior-test-evidence.py",

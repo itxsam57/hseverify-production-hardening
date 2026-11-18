@@ -27,9 +27,9 @@ class Dedup4975Tests(unittest.TestCase):
         self.assertEqual(self.summary['slot_historical_link_states'],{
             'OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED':693,
             'OLD_MIXED_LOG_UNCERTAIN_REVIEW_REQUIRED':17,
-            'PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED':77,
-            'NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE':4188})
-        self.assertEqual(self.summary['scoped_prior_source_tests_green_distinct'],1432)
+            'PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED':79,
+            'NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE':4186})
+        self.assertEqual(self.summary['scoped_prior_source_tests_green_distinct'],1433)
         self.assertEqual(self.summary['scoped_source_test_case_total'],1606)
         self.assertEqual(self.summary['final_stage_certified_slots'],0)
         self.assertEqual(self.summary['release_scenarios_fully_verified'],0)
@@ -74,8 +74,8 @@ class Dedup4975Tests(unittest.TestCase):
         coverage=ledger['planned_check_progress']
         self.assertEqual(coverage['planning_slots_total'],4975)
         self.assertEqual(coverage['historically_scoped_partial_not_certified'],693)
-        self.assertEqual(coverage['uncertain_mixed_or_title_only_not_certified'],94)
-        self.assertEqual(coverage['without_precise_old_dimension_link'],4188)
+        self.assertEqual(coverage['uncertain_mixed_or_title_only_not_certified'],96)
+        self.assertEqual(coverage['without_precise_old_dimension_link'],4186)
         self.assertEqual(coverage['final_stage_certified'],0)
         self.assertEqual(ledger['counts']['full_verified'],0)
         self.assertEqual(ledger['release']['decision'],'NO_GO')
