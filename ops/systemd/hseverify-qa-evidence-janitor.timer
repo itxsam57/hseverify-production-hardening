@@ -1,0 +1,11 @@
+[Unit]
+Description=Run HSE Verify protected evidence archival and verified cache cleanup every 6 hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:15:00
+Persistent=true
+RandomizedDelaySec=5min
+Unit=hseverify-qa-evidence-janitor.service
+
+[Install]
+WantedBy=timers.target
