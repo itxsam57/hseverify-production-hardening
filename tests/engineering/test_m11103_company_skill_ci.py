@@ -11,6 +11,8 @@ class M11103CompanySkillCI(unittest.TestCase):
         self.assertIn("HSE_M11103_COMPANY_SKILL_ONLY",text)
         self.assertIn("submitSkill(",text)
         self.assertIn('getByLabel(label,{exact:label!=="Related trade"})',text)
+        self.assertIn('role+" linked skill receiving page overflow',text)
+        self.assertIn('document.documentElement.scrollWidth',text)
 
         for marker in (
             "M11103_COMPANY_SKILL_ACTUAL_CHROME_LINKED_WORKER_COMPANY_RECEIVING",

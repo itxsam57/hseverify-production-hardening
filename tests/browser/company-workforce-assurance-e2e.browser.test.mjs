@@ -411,10 +411,21 @@ test(
                   .getByText(/Independent verification: approved/).waitFor({timeout:15000});
                 await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
                   .getByText("Assessment pending",{exact:true}).waitFor({timeout:15000});
-                for(const page of [worker,company]) {
-                  const size=await page.evaluate(()=>({viewport:window.innerWidth,scroll:document.documentElement.scrollWidth}));
-                  assert.ok(size.scroll<=size.viewport+2,
-                    "Linked Company or Worker skill receiving overflow at "+width+"px: "+JSON.stringify(size));
+                for(const [role,page] of [["worker",worker],["company",company]]) {
+                  const measured=await page.evaluate(()=>{
+                    const viewport=window.innerWidth;
+                    const overflow=[...document.querySelectorAll("body *")]
+                      .map(el=>({tag:el.tagName.toLowerCase(),cls:typeof el.className==="string"?el.className.slice(0,110):"",
+                        right:Math.round(el.getBoundingClientRect().right),
+                        width:Math.round(el.getBoundingClientRect().width),
+                        scrollWidth:el.scrollWidth}))
+                      .filter(item=>item.right>viewport+2)
+                      .sort((a,b)=>b.right-a.right)
+                      .slice(0,10);
+                    return {viewport,scroll:document.documentElement.scrollWidth,overflow};
+                  });
+                  assert.ok(measured.scroll<=measured.viewport+2,
+                    role+" linked skill receiving page overflow at "+width+"px: "+JSON.stringify(measured));
                 }
               }
               console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_RESPONSIVE_320_390_1440");
