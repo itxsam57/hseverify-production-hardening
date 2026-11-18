@@ -1,5 +1,9 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-18 — M1.11.03 Company grid-track candidate insufficient, targeted un-clipped DOM diagnosis next
+
+- Exact PR head `def3aaca4972d2e7ae75e38a1208bab791d015b6` real Chrome run `44345083625` **RED 0/1**, Company document still 348px at 320px after Worker+Company v2 APPROVED, raw SHA256 `a7a62dbf19fb50e516ceda388a8e5d185cd3d994efa79ca9dd9437f25bcc37b5`. Simple `.page-stack` minmax-zero CSS was **insufficient**. More focused fail-closed DOM diagnosis now filters wide cells inside the intentional table-scroll wrapper and reports actual parent/header offender role and geometry, without text/PII; hosted CI pending. Release FULL 0/218, FINAL 0/4,975 remains NO-GO.
+
 ## 2026-11-18 — M1.11.03 Company 320px overflow DOM-diagnosed + minmax-zero CSS root candidate
 
 - Third hosted exact PR head `44f8a5b1fc807caed6333a7c362171e73590ed29` run `44343714642` **RED**, raw browser SHA256 `455e7228fbe4b0bf194befa97f104aa927d1ec24de712c20db4a1d3eb481bad1`. Diagnostic confirmed **Company** Assurance Order detail page document 348px at viewport320, Worker had passed; wide case table computed right1073px. Existing `.table-scroll` uses `overflow-x:auto` and table minimum 42rem, but enclosing `.page-stack` grid had an implicit auto min-content track. Current product CSS root candidate: explicit `grid-template-columns:minmax(0,1fr)` for single-column page/content stacks, preserving horizontal scrolling inside the table. Static TDD RED before CSS, GREEN after. Hosted exact-SHA Chromium still pending — **do not mark PASS** until actual green.

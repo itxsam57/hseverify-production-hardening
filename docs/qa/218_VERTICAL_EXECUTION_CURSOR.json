@@ -5,14 +5,14 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.11.03",
-  "current_focus_phase": "M11103_COMPANY_SKILL_320_RESPONSIVE_DOM_ROOT_CANDIDATE_GRID_MINMAX_ZERO_LOCAL_GREEN_HOSTED_RETEST_PENDING",
-  "last_completed_action": "PR163 third hosted run44343714642 exact44f8a5b1 real Chrome failed 320 Company page scrollWidth348, Worker responsive okay. Table minimum 42rem geometrically right1073, existing table-scroll overflow-x:auto. Implicit page-stack grid auto track may force min-content width. Added explicit minmax(0,1fr) for page-stack/content-stack CSS; focused CSS static contract RED→GREEN 3/3. No remote green yet; original FULL0/218, 4975 FINAL0, historical1433/1606.",
-  "next_exact_action": "Commit and push CSS single-column minmax-zero fix and TDD to PR163, run same real Chromium Company skill & original qualification exact PR SHA with 320/390/1440 and DB checks. Fix actual width if RED, download raw evidence, true signed QA merge and all exact merged SHA CI green. No final stage/pentest/Owner UAT claims.",
-  "next_exact_command": "python3 -m unittest discover -s tests/engineering -p test_m11103_company_skill_ci.py && python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 .autopilot/guard.py pre-commit --root .",
+  "current_focus_phase": "M11103_COMPANY_320PX_OVERFLOW_REAL_RED_GRID_MINMAX_INSUFFICIENT_UNCLIPPED_DOM_DIAGNOSTIC_HOSTED_PENDING",
+  "last_completed_action": "Exact PR163 def3aaca run44345083625 real Chromium FAILED at same Company page 320px document348 after full Worker+Company v1 CHANGES to v2 approved; raw SHA256 a7a62dbf19fb50e516ceda388a8e5d185cd3d994efa79ca9dd9437f25bcc37b5. Grid minmax0 alone insufficient. Strengthened DOM diagnostics exclude intended table-scroll clipped descendants and capture top page/header/container bounds with no PII; hosted run pending; original 0/218 and 0/4975 final.",
+  "next_exact_action": "Push diagnostic-only change exact SHA to PR163; inspect hosted un-clipped elements and parent layout roles causing 320px overflow, then fix CSS/component root and rerun same complete real skill+qualification Chromium. No merge on red or false full pass. Independent pentest/providers/Owner UAT still missing.",
+  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 -m unittest discover -s tests/engineering -p test_m11103_company_skill_ci.py && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
-    "PR163 exact44f8a5b1 run44343714642 real Company Skill Chrome RED: Company order document scrollWidth348 at viewport320, table content width1058 inside intended table-scroll; raw SHA256 455e7228fbe4b0bf194befa97f104aa927d1ec24de712c20db4a1d3eb481bad1. CSS minmax0 not yet hosted."
+    "PR163 real Chromium def3aaca run44345083625 RED: Company 320px document scrollWidth348 after minmax0 CSS, table legitimate scroll container width1058; root still unidentified. Raw SHA256 a7a62dbf19fb50e516ceda388a8e5d185cd3d994efa79ca9dd9437f25bcc37b5."
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
   "no_new_localhost_environment_by_default": true,

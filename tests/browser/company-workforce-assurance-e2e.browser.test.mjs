@@ -414,15 +414,33 @@ test(
                 for(const [role,page] of [["worker",worker],["company",company]]) {
                   const measured=await page.evaluate(()=>{
                     const viewport=window.innerWidth;
-                    const overflow=[...document.querySelectorAll("body *")]
-                      .map(el=>({tag:el.tagName.toLowerCase(),cls:typeof el.className==="string"?el.className.slice(0,110):"",
-                        right:Math.round(el.getBoundingClientRect().right),
-                        width:Math.round(el.getBoundingClientRect().width),
-                        scrollWidth:el.scrollWidth}))
-                      .filter(item=>item.right>viewport+2)
-                      .sort((a,b)=>b.right-a.right)
-                      .slice(0,10);
-                    return {viewport,scroll:document.documentElement.scrollWidth,overflow};
+                    // Wide table cells may be outside the viewport *inside*
+                    // the intentional .table-scroll container. Exclude those
+                    // while finding elements that actually widen the page.
+                    const all=[...document.querySelectorAll("body *")].map(el=>{
+                      const rect=el.getBoundingClientRect();
+                      const style=getComputedStyle(el);
+                      return {tag:el.tagName.toLowerCase(),
+                        cls:typeof el.className==="string"?el.className.slice(0,100):"",
+                        left:Math.round(rect.left),right:Math.round(rect.right),
+                        width:Math.round(rect.width),
+                        minWidth:style.minWidth,
+                        gridCols:style.gridTemplateColumns,
+                        overflowX:style.overflowX,
+                        inTableScroll:Boolean(el.closest(".table-scroll")&& !el.matches(".table-scroll"))};
+                    });
+                    const unclipped=all.filter(item=>item.right>viewport+2 && !item.inTableScroll)
+                      .sort((a,b)=>a.right-b.right).slice(0,22);
+                    const frames=["html","body",".portal-shell",".portal-header",".header-actions",
+                      ".portal-main-column",".portal-content",".page-stack",".detail-card",".table-scroll"]
+                      .flatMap(selector=>[...document.querySelectorAll(selector)].slice(0,3).map(el=>{
+                        const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
+                        return {selector,cls:typeof el.className==="string"?el.className.slice(0,90):"",
+                          left:Math.round(rect.left),right:Math.round(rect.right),
+                          clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,
+                          gridCols:style.gridTemplateColumns,overflowX:style.overflowX};
+                      }));
+                    return {viewport,scroll:document.documentElement.scrollWidth,unclipped,frames};
                   });
                   assert.ok(measured.scroll<=measured.viewport+2,
                     role+" linked skill receiving page overflow at "+width+"px: "+JSON.stringify(measured));
