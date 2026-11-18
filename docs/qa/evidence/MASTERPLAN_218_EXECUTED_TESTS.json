@@ -2842,9 +2842,10 @@
       "prior_log_pass_repetition_count": 15,
       "scenario_ids": [
         "M1.11.01",
-        "M1.11.02"
+        "M1.11.02",
+        "M1.11.03"
       ],
-      "scenario_link_kind": "manually_reviewed_original_M11101_M11102_signed_Worker_Verifier_qualification_experience_revisions_all_outcomes",
+      "scenario_link_kind": "manually_reviewed_signed_real_Worker_Verifier_qualification_experience_skill_REJECTED_CHANGES_REQUESTED_APPROVED_exact_versions",
       "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI"
     },
@@ -45874,7 +45875,7 @@
     },
     "existing_source_cases_linked_to_an_exact_218_id": 184,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 65,
+    "frozen_ids_with_at_least_one_sourced_green_case": 66,
     "historical_log_files_scanned": 2711,
     "historical_only_green_distinct_cases": 1199,
     "logs_with_no_clean_pass_summary_or_a_failure": 65,
@@ -46710,13 +46711,15 @@
     },
     {
       "brick": "M1.11",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 1,
       "family": "Evidence and supervisor observation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 1,
       "id": "M1.11.03",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/browser/independent-worker-review-e2e.browser.test.mjs#3a38443c403dd7a9"
+      ],
       "scenario": "Skill approval/rejection/changes requested to correction and re-review"
     },
     {
