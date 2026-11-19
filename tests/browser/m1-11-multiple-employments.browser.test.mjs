@@ -29,7 +29,11 @@ test("M1.11.05 ending one of two submitted employments retains other active reco
       probe:async({output})=>{
         const browser=await chromium.launch({headless:true});
         try{
-          const page=await browser.newPage({viewport:{width:390,height:844}});
+          // An explicit browser context supports a genuine second tab with
+          // the same authenticated session. Playwright's browser.newPage()
+          // convenience owner context intentionally rejects context.newPage().
+          const workerContext=await browser.newContext({viewport:{width:390,height:844}});
+          const page=await workerContext.newPage();
           const fatal=[];
           page.on("pageerror",error=>fatal.push(error.message));
           page.on("response",response=>{if(response.status()>=500)fatal.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);});
