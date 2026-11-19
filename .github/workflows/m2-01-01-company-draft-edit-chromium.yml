@@ -1,0 +1,108 @@
+name: M2.01.01 Company Assurance Order edit draft linked Workers validate submit real Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/**'
+      - 'src/components/company/**'
+      - 'src/lib/assurance/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m2-01-01-company-draft-edit-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/**'
+      - 'src/components/company/**'
+      - 'src/lib/assurance/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m2-01-01-company-draft-edit-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20101-order-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  company-draft-edit-two-worker-submit-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real Company draft edit cold reload validate and two linked Worker cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20101-company-order-edit-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20101-company-order-edit-chromium.log
+          done
+          for marker in M20101_ACTUAL_COMPANY_DRAFT_EDIT_SAVED_AND_COLD_RELOADED M20101_ACTUAL_DB_EDITED_DRAFT_PERSISTED_WITH_SUBMITTED_TWO_WORKER_SCOPE ACTUAL_M20103_04_BROWSER ACTUAL_M20103_04_DB; do
+            grep -q "$marker" .autopilot/artifacts/m20101-company-order-edit-chromium.log
+          done
+      - name: Original real Chromium original raw proof retained
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20101-company-order-edit-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20101-company-order-edit-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
+  original-m20102-no-company-credits-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20102_NO_CREDIT_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact same SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real Company no-credit validation cannot submit unreserved cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20101-original-no-company-credits-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20101-original-no-company-credits-chromium.log
+          done
+          grep -q 'ACTUAL_M20102_NO_CREDIT_BROWSER' .autopilot/artifacts/m20101-original-no-company-credits-chromium.log
+          grep -q 'ACTUAL_M20102_NO_CREDIT_DB' .autopilot/artifacts/m20101-original-no-company-credits-chromium.log
+      - name: Original no-credit browser proof retained
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20101-original-no-company-credits-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20101-original-no-company-credits-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
