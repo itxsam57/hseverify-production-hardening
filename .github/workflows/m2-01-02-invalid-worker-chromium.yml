@@ -1,0 +1,109 @@
+name: M2.01.02 real Company unlinked and revoked Worker validation denial Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/**'
+      - 'src/components/company/**'
+      - 'src/lib/assurance/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m2-01-02-invalid-worker-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/**'
+      - 'src/components/company/**'
+      - 'src/lib/assurance/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m2-01-02-invalid-worker-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20102-invalid-worker-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  company-order-zero-selected-workers-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20102_NO_TARGET_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout immutable PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependencies and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Actual Company draft with no selected linked Workers must fail validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20102-no-selected-worker-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20102-no-selected-worker-chromium.log
+          done
+          grep -q 'M20102_ACTUAL_NO_LINKED_WORKER_SELECTION_VALIDATION_FAILED_COLD_RELOAD_NO_SUBMIT' .autopilot/artifacts/m20102-no-selected-worker-chromium.log
+          grep -q 'M20102_ACTUAL_DB_NO_WORKERS_VALIDATION_FAIL_ZERO_CASES_OR_FUNDS' .autopilot/artifacts/m20102-no-selected-worker-chromium.log
+      - name: Archive exact-SHA original no Worker raw proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20102-no-selected-worker-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20102-no-selected-worker-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
+  company-order-worker-link-revoked-after-draft-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20102_REVOKED_LINK_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact same immutable SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependencies and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real previously active Worker revoked between draft save and later validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20102-revoked-link-after-draft-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20102-revoked-link-after-draft-chromium.log
+          done
+          for marker in M20102_ACTUAL_WORKER_LINKS_ADDED_TO_DRAFT_BEFORE_REVOKE M20102_ACTUAL_REVOKED_PREVIOUSLY_LINKED_WORKER_VALIDATION_FAILED_AFTER_RESTART_NO_SUBMIT M20102_ACTUAL_DB_REVOKED_LINK_INELIGIBLE_NO_CASES_OR_FUNDS_AFTER_RESTART; do
+            grep -q "$marker" .autopilot/artifacts/m20102-revoked-link-after-draft-chromium.log
+          done
+      - name: Archive exact-SHA original revoked Worker raw proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20102-revoked-link-after-draft-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20102-revoked-link-after-draft-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
