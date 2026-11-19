@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:net";
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { dirname, join } from "node:path";
 import { deflateSync } from "node:zlib";
 import test from "node:test";
@@ -30,6 +30,21 @@ function realPng(pixel){
 const LETTER_V1=realPng([11,42,72,255]),LETTER_V2=realPng([63,175,227,255]);
 assert.notDeepEqual(LETTER_V1,LETTER_V2);
 const sha=bytes=>createHash("sha256").update(bytes).digest("hex");
+// Independently re-sign an expired copy of the real private capability, not
+// an arbitrary malformed token. Tests authorization expiration itself.
+function expiredValidHmac(original,secret){
+  const [encoded,signature]=original.split(".");
+  assert.ok(encoded&&signature);
+  const key=createHmac("sha256",secret).update("hse-verify-secure-file-access-key-v1").digest();
+  const sign=value=>createHmac("sha256",key).update("hse-verify-secure-file-access-token-v1")
+    .update("\u0000").update(value,"ascii").digest("base64url");
+  assert.equal(sign(encoded),signature,"Only an authentic signed private leaving-letter URL can be expired.");
+  const payload=JSON.parse(Buffer.from(encoded,"base64url").toString("utf8"));
+  assert.equal(payload.exp-payload.iat,120);
+  const now=Math.floor(Date.now()/1000);
+  const expired=Buffer.from(JSON.stringify({...payload,iat:now-135,exp:now-15})).toString("base64url");
+  return expired+"."+sign(expired);
+}
 async function freePort(){
   return new Promise((resolve,reject)=>{
     const server=createServer();
@@ -153,6 +168,24 @@ test("M1.11.06 leaving letter replacement preserves versioned exact employment b
           await history.locator("p").filter({hasText:"Leaving letter: alpha-leaving-v2.png · active"}).waitFor();
           assert.doesNotMatch(await b.innerText(),/alpha-leaving-v[12]\.png/);
           console.log("ACTUAL_M11106_REPLACEMENT_BROWSER original and replacement scanned and bound to Alpha alone; Beta unchanged");
+          // A second genuinely signed-in Worker cannot read an old or current
+          // leaving letter using copied preview URLs or forged identity headers.
+          const foreignContext=await browser.newContext({viewport:{width:390,height:844}});
+          try{
+            const foreign=await foreignContext.newPage();
+            foreign.on("pageerror",error=>fatal.push(error.message));
+            foreign.on("response",response=>{
+              if(response.status()>=500)fatal.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);
+            });
+            await foreign.goto(base+"/worker/login",{waitUntil:"domcontentloaded"});
+            await foreign.getByLabel("Email address").fill("search.foreign@example.test");
+            await foreign.getByLabel("Password").fill(fixture.credentials.worker.password);
+            await foreign.getByRole("button",{name:"Sign in",exact:true}).click();
+            await foreign.waitForURL("**/worker/dashboard",{timeout:15000});
+            await foreign.goto(base+"/worker/evidence",{waitUntil:"domcontentloaded"});
+            assert.doesNotMatch(await foreign.locator("main").innerText(),/Employer Alpha|Employer Beta/,
+              "Foreign Worker sees another Worker's employment and leaving-letter records.");
+
           for(const [filename,expected] of [["alpha-leaving-v1.png",LETTER_V1],["alpha-leaving-v2.png",LETTER_V2]]){
             const row=history.locator("p").filter({hasText:"Leaving letter: "+filename}).first();
             await row.getByRole("button",{name:"Prepare private preview",exact:true}).click({timeout:8000});
@@ -168,8 +201,53 @@ test("M1.11.06 leaving letter replacement preserves versioned exact employment b
             const stranger=await browser.newContext();
             try{assert.equal((await stranger.request.get(base+url)).status(),404);}
             finally{await stranger.close();}
+            const foreignCopy=await foreignContext.request.get(base+url,{
+              headers:{"range":"bytes=0-10","x-hse-account-id":fixture.credentials.worker.accountId,
+                "x-hse-role":"worker"}
+            });
+            assert.equal(foreignCopy.status(),404,"Foreign Worker replayed copied "+filename+" preview.");
+            assert.equal((await foreignCopy.body()).length,0,"Foreign Worker got private leaving-letter bytes.");
+            assert.match(foreignCopy.headers()["cache-control"]??"",/private.*no-store/i);
+            const token=new URL(base+url).searchParams.get("access");
+            assert.ok(token);
+            const expired=expiredValidHmac(token,fixture.environment.HSE_SESSION_SECRET);
+            assert.notEqual(expired,token);
+            const past=await page.context().request.get(
+              base+"/api/secure-files/preview?access="+encodeURIComponent(expired));
+            assert.equal(past.status(),404,"Correctly signed expired "+filename+" URL served private bytes.");
+            assert.equal((await past.body()).length,0);
+            assert.match(past.headers()["cache-control"]??"",/private.*no-store/i);
+            const purpose=await page.context().request.get(base+url.replace("/preview?","/download?"));
+            assert.equal(purpose.status(),404,"A preview-only private token was accepted for download.");
+            assert.equal((await purpose.body()).length,0);
+            const [encoded,sig]=token.split(".");
+            assert.ok(encoded&&sig);
+            const changed=(encoded.startsWith("A")?"B":"A")+encoded.slice(1)+"."+sig;
+            const tampered=await page.context().request.get(
+              base+"/api/secure-files/preview?access="+encodeURIComponent(changed));
+            assert.equal(tampered.status(),404,"Tampered private leaving-letter token served bytes.");
+            assert.equal((await tampered.body()).length,0);
             console.log("ACTUAL_M11106_PRIVATE_PREVIEW",filename,"matching original bytes; anonymous denied");
           }
+          }finally{await foreignContext.close();}
+          console.log("M11106_ACTUAL_FOREIGN_WORKER_COPIED_PREVIEW_DENIED");
+          console.log("M11106_ACTUAL_SIGNED_EXPIRED_LETTER_PREVIEW_DENIED");
+          console.log("M11106_ACTUAL_WRONG_PURPOSE_AND_TAMPERED_TOKEN_DENIED");
+          for(const width of [320,390,1440]){
+            await page.setViewportSize({width,height:900});
+            await page.goto(base+"/worker/evidence",{waitUntil:"domcontentloaded"});
+            await a.getByText("ended · submitted",{exact:true}).waitFor();
+            await b.getByText("active · submitted",{exact:true}).waitFor();
+            await a.getByRole("region",{name:"employment history"}).getByText(/Leaving letter: alpha-leaving-v1.png/).waitFor();
+            await a.getByRole("region",{name:"employment history"}).getByText(/Leaving letter: alpha-leaving-v2.png/).waitFor();
+            const dimensions=await page.evaluate(()=>({
+              viewport:document.documentElement.clientWidth,
+              content:document.documentElement.scrollWidth
+            }));
+            assert.ok(dimensions.content<=dimensions.viewport+2,
+              "Leaving-letter history page overflow at "+width+"px: "+JSON.stringify(dimensions));
+          }
+          console.log("M11106_ACTUAL_RESPONSIVE_LETTERS_320_390_1440");
           assert.deepEqual(fatal,[],output());
           console.log("ACTUAL_M11106_BROWSER Alpha ended with two historical private letter previews, Beta active and isolated");
         }finally{await browser.close();}
