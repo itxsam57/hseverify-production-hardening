@@ -1,0 +1,66 @@
+name: M2.01.02 real Company sign-out revoked session Next Server Action replay Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-02-revoked-company-session-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-02-revoked-company-session-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20102-real-company-revoked-session-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-company-validation-revoked-session-actual-browser-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20102_REVOKED_SESSION_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout immutable PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real Company sign-out then copied revoked cookie actual Server Action POST and private page denied; original Company validated once
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20102-company-revoked-session-action-replay.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20102-company-revoked-session-action-replay.log
+          done
+          for marker in M20102_ACTUAL_GENUINE_COMPANY_VALIDATE_ACTION_CAPTURED_NO_MUTATION M20102_ACTUAL_COMPANY_VALIDATE_SERVER_ACTION_FIVE_FOREIGN_ROLES_AND_ANONYMOUS_REPLAY_DENIED M20102_ACTUAL_DB_ONLY_AUTHORIZED_COMPANY_VALIDATION_ONE_AUDIT_TWO_ELIGIBLE_TARGETS_ZERO_CASES_CREDITS M20102_ACTUAL_COMPANY_SIGNOUT_REVOKED_COOKIE_ACTION_REPLAY_AND_PAGE_DENIED M20102_ACTUAL_DB_COMPANY_SESSION_USER_LOGOUT_AND_NO_REPLAY_ORDER_MUTATION; do
+            grep -q "$marker" .autopilot/artifacts/m20102-company-revoked-session-action-replay.log
+          done
+      - name: Retain original exact SHA revoked cookie POST and authoritative Company database proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20102-company-revoked-session-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20102-company-revoked-session-action-replay.log
+          if-no-files-found: warn
+          retention-days: 90

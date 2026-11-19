@@ -41,7 +41,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const invalidLink=process.env.HSE_M20102_INVALID_LINK_ONLY==="true";
   const foreignLink=process.env.HSE_M20102_FOREIGN_TENANT_LINK_ONLY==="true";
   const actionReplay=process.env.HSE_M20102_ACTION_REPLAY_ONLY==="true";
-  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const sessionReplay=process.env.HSE_M20102_REVOKED_SESSION_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay,sessionReplay].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
   const foreignTenantId=id("tenant","foreign-company"),foreignLinkId=id("company_worker_link","foreign-company");
   let revokedDraftUrl="";
   let originalAuthenticatedCompanyCookies=[];
@@ -124,7 +125,7 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
-          if(actionReplay){
+          if(actionReplay||sessionReplay){
             let captured=null;
             let receiveCapture;
             const capture=new Promise(resolve=>{receiveCapture=resolve;});
@@ -183,6 +184,34 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
             await page.getByText("READY",{exact:true}).waitFor();
             await page.reload({waitUntil:"domcontentloaded"});
             await page.getByText("READY",{exact:true}).waitFor();
+            if(sessionReplay){
+              const previouslyAuthenticatedCookies=await context.cookies();
+              assert.ok(previouslyAuthenticatedCookies.some(cookie=>cookie.name.toLowerCase().includes("session")),
+                "Must capture a genuine authenticated Company cookie before UI sign-out");
+              await page.locator("details.profile-menu summary").click();
+              await page.locator("details.profile-menu").getByRole("button",{name:"Sign out",exact:true}).click();
+              await page.getByRole("dialog").getByRole("button",{name:"Sign out",exact:true}).click();
+              await page.waitForURL(url=>url.pathname==="/company/login"&&url.searchParams.get("reason")==="signed-out");
+              const copiedContext=await browser.newContext({viewport:{width:390,height:844}});
+              try{
+                await copiedContext.addCookies(previouslyAuthenticatedCookies);
+                const response=await copiedContext.request.post(orderUrl,{
+                  data:captured.body,headers:baseHeaders,maxRedirects:0,timeout:30000
+                });
+                const body=await response.text();
+                const redirect=response.headers()["x-action-redirect"]||response.headers().location||"";
+                assert.ok(response.status()<500,"Stale Company session POST must fail closed without server error");
+                assert.ok(redirect.includes("/company/login")||body.includes("/company/login"),
+                  "Copied revoked Company cookie cannot invoke the genuine Next Server Action");
+                assert.ok(!body.includes("Both linked Workers need the same scoped safety review."),
+                  "Revoked session must not receive private Company order notes");
+                const copiedPage=await copiedContext.newPage();
+                await copiedPage.goto(orderUrl,{waitUntil:"domcontentloaded"});
+                assert.equal(new URL(copiedPage.url()).pathname,"/company/login",
+                  "Copied revoked Company cookie cannot reopen its former private draft");
+              }finally{await copiedContext.close();}
+              console.log("M20102_ACTUAL_COMPANY_SIGNOUT_REVOKED_COOKIE_ACTION_REPLAY_AND_PAGE_DENIED");
+            }
             await context.close();
             return;
           }
@@ -357,7 +386,7 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
-      if(actionReplay){
+      if(actionReplay||sessionReplay){
         assert.equal(order.tenant_id,company.tenantId);
         assert.equal(order.order_status,"READY");
         assert.equal(order.submitted_at,null);
@@ -372,6 +401,14 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
         }
         assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0);
         console.log("M20102_ACTUAL_DB_ONLY_AUTHORIZED_COMPANY_VALIDATION_ONE_AUDIT_TWO_ELIGIBLE_TARGETS_ZERO_CASES_CREDITS");
+        if(sessionReplay){
+          const sessions=(await verifyDb.query(
+            "SELECT revoked_at,revocation_reason FROM auth_sessions WHERE account_id=$1",[company.accountId]
+          )).rows;
+          assert.ok(sessions.some(session=>session.revoked_at&&session.revocation_reason==="user_logout"),
+            "Actual Company UI sign-out must persist authoritative session revocation");
+          console.log("M20102_ACTUAL_DB_COMPANY_SESSION_USER_LOGOUT_AND_NO_REPLAY_ORDER_MUTATION");
+        }
         return;
       }
       if(foreignLink){
