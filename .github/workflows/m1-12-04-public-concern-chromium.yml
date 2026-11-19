@@ -1,0 +1,71 @@
+name: M1.12.04 public credential concern scanned evidence Admin reasoned review Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/credential-concern-review.browser.test.mjs'
+      - 'src/app/verify/**'
+      - 'src/app/admin/credential-concerns/**'
+      - 'src/lib/public-verification/**'
+      - 'src/lib/secure-files/**'
+      - 'src/lib/decision/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-12-04-public-concern-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/credential-concern-review.browser.test.mjs'
+      - 'src/app/verify/**'
+      - 'src/app/admin/credential-concerns/**'
+      - 'src/lib/public-verification/**'
+      - 'src/lib/secure-files/**'
+      - 'src/lib/decision/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-12-04-public-concern-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11204-public-concern-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public-concern-private-scanned-admin-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout immutable PR head or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install lockfile dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Original public concern invalid draft real scan private Admin review amendment stale denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/credential-concern-review.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11204-public-concern-original-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11204-public-concern-original-chromium.log
+          done
+          for marker in INVALID_PUBLIC_CONCERN_DRAFT_PRESERVED_NO_REFERENCE SIGNED_CREDENTIAL_PUBLIC_CONCERN_QUEUED_PRIVATE_PDF SCANNED_EVIDENCE_PRIVATE_ADMIN_EXACT_BYTES_AND_SIGNEDOUT_DENIAL_NEXT DB_REASONED_AMENDMENT_TWO_REVIEWS_PRIVATE_AUDIT_CREDENTIAL_VALID; do
+            grep -q "M11204_ACTUAL_${marker}" .autopilot/artifacts/m11204-public-concern-original-chromium.log
+          done
+      - name: Retain original exact SHA real public concern/scan/Admin raw proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11204-public-concern-original-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11204-public-concern-original-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
