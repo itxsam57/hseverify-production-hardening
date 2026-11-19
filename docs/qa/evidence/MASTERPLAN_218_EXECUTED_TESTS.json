@@ -47070,7 +47070,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "b15f40987d126cbfbaf702ac0b96ced7d93a5b4c",
+  "inventory_started_from_git_head_sha": "59a0cb03b8600083f2e57de3ef5b45c874e31248",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,

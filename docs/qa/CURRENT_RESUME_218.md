@@ -1,5 +1,9 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-20 — PR185 source-inventory Python gate repair (no new scenario pass)
+
+- PR185 first head 59a0cb03b8600083f2e57de3ef5b45c874e31248 original release inventory run44641773851 FAILED: Python test expectations static 1609 vs newly added 1610, and unlinked 174 vs 175, even though original 218/216/4975 index verified. Source actual 1610 and prior matched green1435 unchanged; fixed three existing Python engineering test files only, preserved frozen218/4975 and no fabricated pass. Local all original CI Python suites and Node ledger8 PASS. CI failure original raw log SHA256 c3123c0019672f4be2e2aeff0eee14f6d32917ae542d53aa21a4a281434f7c3e. A follow-up PR head is necessary; all hosted checks must rerun.
+
 ## 2026-11-20 — CURRENT M2.01.02 repeated READY validation duplicate event root fix (local only)
 
 - PR184 M2.01.03 Worker receiving real Chromium head a949c062d4b57ac4cf4f761bb6f79de64266d4ac 1/1 seven original markers, 13/13 PR checks, original run44639133229 raw SHA256 1bb7090b5edd992e7a697a59a7c9681460b7004b248bd23f1c7f850f426aa9c9. Normal merged signed QA b15f40987d126cbfbaf702ac0b96ced7d93a5b4c, signed merge and two parents verified. Original signed merged M20103 jobs succeeded.
