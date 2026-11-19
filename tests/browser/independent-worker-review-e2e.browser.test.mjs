@@ -624,7 +624,7 @@ test(
             if (process.env.HSE_M11104_EMPLOYMENT_BROWSER_ONLY === "true") {
               const card = worker.locator("article").filter({hasText:"Employment record"}).first();
               const recordId = await card.getAttribute("id");
-              assert.match(recordId ?? "",/^evidence_record_[A-Za-z0-9_-]{24}$/);
+              assert.match(recordId ?? "",/^evidence_record_[0-9a-f]{32}$/);
               await card.getByText(/Independent verification: approved/).waitFor();
               const history = card.getByRole("region",{name:"employment history"});
               for (const number of [1,2,3,4]) await history.getByText(new RegExp("Version "+number)).first().waitFor();
