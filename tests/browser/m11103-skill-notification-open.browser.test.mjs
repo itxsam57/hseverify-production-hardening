@@ -120,10 +120,12 @@ test("M1.11.03 actual Worker bell and Open skill correction v1 to approved v2, f
   try {
     const worker = await fundingPrincipal(db, credentials.worker);
     const verifier = await fundingPrincipal(db, credentials.verifier, "verifier");
-    // Existing separate account becomes an authorized Worker only to verify tenant/user isolation;
-    // it receives no access to the original Worker's evidence or notifications.
-    await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'worker') ON CONFLICT DO NOTHING",
-      [credentials.assessor.accountId]);
+    // Existing fixture has a distinct, real authenticated Worker, not an
+    // Assessor account recast as a Worker (which has Assessor MFA metadata).
+    const foreignAccount = (await db.query(
+      "SELECT account_id FROM auth_accounts WHERE email_normalized='search.foreign@example.test'"
+    )).rows[0];
+    assert.equal(foreignAccount?.account_id, "search_foreign_worker");
     const evidence = new WorkerEvidenceService(Promise.resolve(db));
     const reviews = new EvidenceReviewService(db);
     const draft = await evidence.createDraft(worker, "skill");
@@ -163,7 +165,9 @@ test("M1.11.03 actual Worker bell and Open skill correction v1 to approved v2, f
 
         // Signed-in wrong-role, separately signed-in foreign Worker and signed-out browser
         // must not display the copied Worker evidence or the original notice.
-        const roles = [["verifier", credentials.verifier], ["worker", credentials.assessor]];
+        const roles = [["verifier", credentials.verifier], ["worker", {
+          email: "search.foreign@example.test", password: credentials.worker.password
+        }]];
         const foreignContexts = [];
         try {
           for (const [role, identity] of roles) {
@@ -171,6 +175,7 @@ test("M1.11.03 actual Worker bell and Open skill correction v1 to approved v2, f
             foreignContexts.push(context);
             const page = await context.newPage();
             attachErrors(page, errors);
+            console.log("M11103_SKILL_NOTICE_TESTING_SIGNED_ROLE", role);
             await login(page, baseUrl, identity, role);
             await page.goto(baseUrl + "/" + role + "/notifications", {waitUntil: "domcontentloaded"});
             assert.equal(await page.locator('input[name="notificationId"][value="' + first.notice.notificationId + '"]').count(), 0,
