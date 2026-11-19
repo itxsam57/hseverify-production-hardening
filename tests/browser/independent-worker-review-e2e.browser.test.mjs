@@ -590,6 +590,55 @@ test(
                 for(const version of [1,2,3])assert.match(skillHistory,new RegExp("Version "+version));
                 await worker.goto(`${baseUrl}/worker/dashboard`,{waitUntil:"domcontentloaded"});
                 await skillsMetric.getByText(/Skills:\s*0 verified/).waitFor({timeout:15000});
+                // Direct authenticated roles and signed-out copied routes must
+                // never expose another portal's submitted inactive skill.
+                for (const route of ["/verifier/reviews","/company/observations"]) {
+                  const forbidden=await workerContext.request.get(baseUrl+route,{maxRedirects:0});
+                  assert.notEqual(forbidden.status(),200,"Worker copied restricted portal route: "+route);
+                }
+                const companyContext=await browser.newContext({viewport:{width:390,height:900}});
+                const anonymousContext=await browser.newContext();
+                try {
+                  const company=await companyContext.newPage();
+                  await login(company,baseUrl,credentials.company,"company");
+                  const denied=await companyContext.request.get(baseUrl+"/worker/evidence",{maxRedirects:0});
+                  assert.notEqual(denied.status(),200,"Company opened private Worker inactive skill evidence.");
+                  assert.doesNotMatch(await denied.text(),/Permit to Work|skill history/i,
+                    "Company private Worker skill history leaked through copied page.");
+                  for(const route of ["/worker/evidence","/verifier/reviews"]){
+                    const anonymous=await anonymousContext.request.get(baseUrl+route,{maxRedirects:0});
+                    assert.notEqual(anonymous.status(),200,"Anonymous role-bound evidence route exposed "+route);
+                  }
+                }finally{await companyContext.close();await anonymousContext.close();}
+                console.log("M11108_ACTUAL_HTTP_ROLE_AND_ANONYMOUS_PRIVATE_SKILL_DENIED");
+
+                for(const width of [320,390,1440]){
+                  await worker.setViewportSize({width,height:900});
+                  for(const [route,expect] of [
+                    ["/worker/evidence","inactive"],
+                    ["/worker/dashboard","metric"]
+                  ]){
+                    await worker.goto(baseUrl+route,{waitUntil:"domcontentloaded"});
+                    if(expect==="inactive"){
+                      const card=worker.locator("article").filter({hasText:"Skill record"}).first();
+                      await card.getByText("inactive · submitted",{exact:true}).waitFor();
+                      await card.getByText(/This skill is inactive and excluded from current verified competency counts/).waitFor();
+                      assert.equal(await card.getByRole("button",{name:"Mark skill inactive"}).count(),0);
+                      const history=await card.getByRole("region",{name:"skill history"}).innerText();
+                      for(const version of [1,2,3])assert.match(history,new RegExp("Version "+version));
+                    }else{
+                      await skillsMetric.getByText(/Skills:\s*0 verified/).waitFor();
+                    }
+                    const layout=await worker.evaluate(()=>({
+                      viewport:document.documentElement.clientWidth,
+                      content:document.documentElement.scrollWidth
+                    }));
+                    assert.ok(layout.content<=layout.viewport+2,
+                      "Inactive skill Worker "+route+" overflow at "+width+": "+JSON.stringify(layout));
+                  }
+                }
+                console.log("M11108_ACTUAL_RESPONSIVE_INACTIVE_SKILL_320_390_1440");
+                console.log("M11108_ACTUAL_SIGNED_INACTIVE_HISTORY_UNCHANGED");
                 console.log("ACTUAL_M11108_BROWSER independently approved skill 1 verified -> inactive preserved three versions and dashboard 0 verified after cold reload");
                 return;
               }
