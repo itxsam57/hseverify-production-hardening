@@ -1,0 +1,66 @@
+name: M2.01.03 real Company two-case Worker receiving and case ownership browser
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-03-worker-case-receiving-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-03-worker-case-receiving-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20103-two-worker-receiving-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-two-case-worker-receiving-browser-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20103_RECEIVING_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout immutable PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Actual Company two-case submit plus real Worker dashboard own case, foreign 404 and company role denied at three widths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20103-worker-receiving-real-browser.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20103-worker-receiving-real-browser.log
+          done
+          for marker in ACTUAL_M20103_04_BROWSER ACTUAL_M20103_04_DB M20103_ACTUAL_WORKER_OWN_CASE_AND_NEXT_ACTION_REAL_DASHBOARD_LINK M20103_ACTUAL_WORKER_CASE_320_390_1440_RESPONSIVE M20103_ACTUAL_FOREIGN_WORKER_CASE_AND_WORKER_COMPANY_ORDER_DENIED M20103_ACTUAL_COMPANY_AND_ANONYMOUS_WORKER_CASE_PORTAL_DENIED M20103_ACTUAL_DB_TWO_UNIQUE_WORKER_RECEIVING_CASES_NO_DUPLICATES; do
+            grep -q "$marker" .autopilot/artifacts/m20103-worker-receiving-real-browser.log
+          done
+      - name: Retain original exact SHA Company to Worker receiving private cross-role Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20103-company-worker-receiving-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20103-worker-receiving-real-browser.log
+          if-no-files-found: warn
+          retention-days: 90
