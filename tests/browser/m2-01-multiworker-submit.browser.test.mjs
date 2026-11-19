@@ -21,7 +21,9 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const noTargets=process.env.HSE_M20102_NO_TARGET_ONLY==="true";
   const revoked=process.env.HSE_M20102_REVOKED_LINK_ONLY==="true";
   const invalidLink=process.env.HSE_M20102_INVALID_LINK_ONLY==="true";
-  assert.ok([noCredits,noTargets,revoked,invalidLink].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const foreignLink=process.env.HSE_M20102_FOREIGN_TENANT_LINK_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const foreignTenantId=id("tenant","foreign-company"),foreignLinkId=id("company_worker_link","foreign-company");
   let revokedDraftUrl="";
   let originalAuthenticatedCompanyCookies=[];
   const baseUrl="http://127.0.0.1:"+(await freePort());
@@ -46,6 +48,20 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           VALUES($1,$2,$3,'invitation',$4,'active',$5,$6,'worker',$7,$8,$8,$8,$8)`,
         [link,company.tenantId,accountId,inv,site,department,company.membershipId,now]);
         linkIds.push(link);
+      }
+      if(foreignLink){
+        const foreignOwner=id("account","foreign-company"),foreignMembership=id("membership","foreign-company"),foreignInvitation=id("worker_invitation","foreign-company"),foreignVerification=id("company_verification","foreign-company");
+        const foreignWorker=workerAccounts[1];
+        const foreignEmail=(await db.query("SELECT email_normalized FROM auth_accounts WHERE account_id=$1",[foreignWorker])).rows[0].email_normalized;
+        const ownerHash=(await db.query("SELECT password_hash FROM auth_accounts WHERE account_id=$1",[company.accountId])).rows[0].password_hash;
+        await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,'m201-foreign-owner@example.test','Other Company Ownership','active',$2,$3,$3,$3,$3)",[foreignOwner,ownerHash,now]);
+        await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'company',$2)",[foreignOwner,now]);
+        await db.query("INSERT INTO platform_tenants(tenant_id,tenant_type,display_name,tenant_status,created_by_account_id,created_at,updated_at,activated_at) VALUES($1,'company','Other Company Private Tenant','active',$2,$3,$3,$3)",[foreignTenantId,foreignOwner,now]);
+        await db.query("INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at) VALUES($1,$2,$3,'company','owner','active',$3,$4,$4,$4)",[foreignMembership,foreignTenantId,foreignOwner,now]);
+        await db.query("INSERT INTO company_verification_cases(case_id,tenant_id,owner_account_id,case_status,lock_version,created_at,updated_at,verified_at) VALUES($1,$2,$3,'verified',0,$4,$4,$4)",[foreignVerification,foreignTenantId,foreignOwner,now]);
+        await db.query("INSERT INTO company_worker_invitations(invitation_id,tenant_id,email_normalized,token_hash,invitation_status,payment_responsibility,invited_by_membership_id,accepted_by_worker_account_id,resend_available_at,expires_at,accepted_at,created_at,updated_at) VALUES($1,$2,$3,$4,'accepted','worker',$5,$6,$7,$8,$7,$7,$7)",[foreignInvitation,foreignTenantId,foreignEmail,id("invitehash","foreign-company"),foreignMembership,foreignWorker,now,new Date(Date.now()+86400000).toISOString()]);
+        await db.query("INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,link_source,invitation_id,link_status,payment_responsibility,requested_by_membership_id,worker_accepted_at,activated_at,created_at,updated_at) VALUES($1,$2,$3,'invitation',$4,'active','worker',$5,$6,$6,$6,$6)",[foreignLinkId,foreignTenantId,foreignWorker,foreignInvitation,foreignMembership,now]);
+        assert.deepEqual((await db.query("SELECT tenant_id,link_status FROM company_worker_links WHERE link_id=$1",[foreignLinkId])).rows,[{tenant_id:foreignTenantId,link_status:"active"}]);
       }
     }finally{await db.close();}
     const result=await runDevelopmentServer({
@@ -89,6 +105,22 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
+          if(foreignLink){
+            await page.getByLabel("Active Worker link ID").fill(foreignLinkId);
+            await page.getByRole("button",{name:"Add Workers",exact:true}).click();
+            const otherTenantAlert=page.getByRole("alert").filter({hasText:"Worker link is not available for this Company."});
+            await otherTenantAlert.waitFor({timeout:15000});
+            assert.equal((await otherTenantAlert.innerText()).trim(),"Worker link is not available for this Company.");
+            assert.equal(new URL(page.url()).pathname,new URL(orderUrl).pathname);
+            assert.equal((await page.locator("main").innerText()).includes("Other Company Private Tenant"),false);
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("DRAFT",{exact:true}).waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            assert.deepEqual(errors,[],output());
+            console.log("M20102_ACTUAL_FOREIGN_COMPANY_ACTIVE_WORKER_LINK_ADD_FORM_DENIED_NEUTRALLY");
+            await context.close();
+            return;
+          }
           if(invalidLink){
             await page.getByLabel("Active Worker link ID").fill(id("company_worker_link","not-a-current-company-link"));
             await page.getByRole("button",{name:"Add Workers",exact:true}).click();
@@ -244,6 +276,23 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
+      if(foreignLink){
+        assert.equal(order.tenant_id,company.tenantId);
+        assert.equal(order.order_status,"DRAFT");
+        assert.equal(order.submitted_at,null);
+        const targets=(await verifyDb.query("SELECT worker_link_id FROM assurance_order_workers WHERE order_id=$1",[order.order_id])).rows;
+        assert.deepEqual(targets.map(target=>target.worker_link_id).sort(),[...linkIds].sort());
+        const foreign=(await verifyDb.query("SELECT tenant_id,link_status,worker_account_id FROM company_worker_links WHERE link_id=$1",[foreignLinkId])).rows;
+        assert.deepEqual(foreign,[{tenant_id:foreignTenantId,link_status:"active",worker_account_id:workerAccounts[1]}]);
+        assert.equal((await verifyDb.query("SELECT count(*)::int AS n FROM assurance_order_workers WHERE worker_link_id=$1",[foreignLinkId])).rows[0].n,0);
+        for(const table of ["assurance_cases","assurance_action_items"]){
+          assert.equal((await verifyDb.query(`SELECT COUNT(*)::int AS n FROM ${table} WHERE order_id=$1`,[order.order_id])).rows[0].n,0);
+        }
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_submitted'",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0);
+        console.log("M20102_ACTUAL_DB_FOREIGN_ACTIVE_LINK_REMAINS_PRIVATE_LOCAL_TWO_WORKER_DRAFT_UNCHANGED_NO_CASES_OR_CREDITS");
+        return;
+      }
       if(invalidLink){
         assert.equal(order.order_status,"DRAFT");
         assert.equal(order.submitted_at,null);
