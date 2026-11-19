@@ -596,7 +596,7 @@
     "This index is incorporated into the SAME original 218-row release ledger, no new competing certification count."
   ],
   "original_a28_snapshot_sha256": "85947e060449b1a6ea51d1937903a23c42df7f80ab5e654b9fd6aaae4fbb32b5",
-  "prior_distinct_test_index_sha256": "f9097ab33c1878942ab7ea7b4649bc6e30348d82e379adf8dfc2c6e7702a64da",
+  "prior_distinct_test_index_sha256": "ed07822fd488d7add05cac2ff811fe7cb825ac1f09f2ad7e1454c0477508cb3d",
   "report_type": "LEGACY_A28_HISTORICAL_SCOPED_EVIDENCE_NOT_RELEASE_CERTIFICATION",
   "scenarios": [
     {

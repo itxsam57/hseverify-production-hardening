@@ -1372,6 +1372,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-assessment-appeal-reassessment.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "10a6e591651b60136e4fa300b5e8561ea4939ac3f87060da6db6b8e578fdd2f7",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-35-test-assessment-eligibility-browser.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -2363,6 +2369,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261107-M307-exact749-credential-appeal-interview.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e258318b7b64f2d961680d196fb0f6f70f2957fa38347711afe45276b1a0bda2",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-42-test-masterplan-integration-browser.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -2399,6 +2411,12 @@
         {
           "sha256": "f1ee214d7496efe48d8b759ac1e31a6fdea6b373b59336b77bf2dbf37067c64b",
           "source_log": "hseverify-m307-appeal-race-20261109/.autopilot/artifacts/20261109-M307-race-race-browser-repeat.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "1faaccf2fb74510113d42353eb600c9ce01d1673b8d0d50271bc0ff2cd57f227",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-appeal-api-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21099,6 +21117,18 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact3fb-test-m3-07.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "8d5f181ce008a4e26825aaed7b913da827fd6499503aa6fcc3693de570490d2b",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-combined-stage93-masterplan-GREEN.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21129,6 +21159,18 @@
         {
           "sha256": "ea5a876f012a1665a97ee216adab91364d10b285948885b4eb24f534ce1c142e",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-appeal-followup-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "8d5f181ce008a4e26825aaed7b913da827fd6499503aa6fcc3693de570490d2b",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-combined-stage93-masterplan-GREEN.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21163,6 +21205,18 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-appeal-interview-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "8d5f181ce008a4e26825aaed7b913da827fd6499503aa6fcc3693de570490d2b",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-combined-stage93-masterplan-GREEN.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21193,6 +21247,18 @@
         {
           "sha256": "3fc6bd3f9f275f765b89cca609283d6d0925710a95320d6037e6a84fe62d0502",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-appeal-interview-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "8d5f181ce008a4e26825aaed7b913da827fd6499503aa6fcc3693de570490d2b",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-combined-stage93-masterplan-GREEN.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21227,6 +21293,18 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9905673f28334be113850082118af6a8a3af58f41c3066ef7f4a03d1a5be8458",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-B01-appeal-diagnostic.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21257,6 +21335,18 @@
         {
           "sha256": "789d0af1b7623a9f245f3a13292e9a9542a4a14185f1eb4cc97e15a05e69866c",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9905673f28334be113850082118af6a8a3af58f41c3066ef7f4a03d1a5be8458",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-B01-appeal-diagnostic.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21291,6 +21381,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261107-M307-exact749-credential-appeals-domain.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21321,6 +21417,12 @@
         {
           "sha256": "a2610c9bb0244f249a92766c56de090b6cf79b4fd8158bb342599b3ba4d60d05",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261107-M307-exact749-credential-appeals-domain.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21361,6 +21463,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261107-M307-exact749-credential-appeals-independence-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21399,6 +21507,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21431,6 +21545,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact3fb-test-m3-07.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21461,6 +21581,12 @@
         {
           "sha256": "19d170291959b992c2efdf36992ea283323e3dc480ced7ec38b2171b9d0bb987",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact3fb-test-m3-07.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21499,6 +21625,12 @@
         {
           "sha256": "789d0af1b7623a9f245f3a13292e9a9542a4a14185f1eb4cc97e15a05e69866c",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -22352,6 +22484,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-reassessment-replacement-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22390,6 +22528,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-reassessment-replacement-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -22426,6 +22570,18 @@
         {
           "sha256": "789d0af1b7623a9f245f3a13292e9a9542a4a14185f1eb4cc97e15a05e69866c",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "06488b54ef1485eb7df5ac0bb8bf919e91502410cdcf301a871bb5ea9cdfb73f",
+          "source_log": "hseverify-m307-merged-security-20261108/.autopilot/artifacts/20261108-M307-exactmerged8f-canonical-m3-07-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "997b82a90195234cea4dec56c06140a84c59c7494045983031acfc4ef742df08",
+          "source_log": "hseverify-release-squash/.autopilot/artifacts/20261105-appeal-locking-adjacent-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33397,6 +33553,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33427,6 +33589,12 @@
         {
           "sha256": "44ac115dfa67584e154b8a118d18eeab01edfc01068fbd49a3c71293b0b57e83",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33461,6 +33629,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33491,6 +33665,12 @@
         {
           "sha256": "44ac115dfa67584e154b8a118d18eeab01edfc01068fbd49a3c71293b0b57e83",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33525,6 +33705,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33555,6 +33741,12 @@
         {
           "sha256": "44ac115dfa67584e154b8a118d18eeab01edfc01068fbd49a3c71293b0b57e83",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33589,6 +33781,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33619,6 +33817,12 @@
         {
           "sha256": "44ac115dfa67584e154b8a118d18eeab01edfc01068fbd49a3c71293b0b57e83",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33653,6 +33857,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33683,6 +33893,12 @@
         {
           "sha256": "44ac115dfa67584e154b8a118d18eeab01edfc01068fbd49a3c71293b0b57e83",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -33717,6 +33933,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33749,6 +33971,12 @@
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -33779,6 +34007,12 @@
         {
           "sha256": "44ac115dfa67584e154b8a118d18eeab01edfc01068fbd49a3c71293b0b57e83",
           "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-privacy-operations.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "e0d9f01a322e89c45a04b62c8578da26f5dc5e6893d6347285005a4a066c6979",
+          "source_log": "hseverify-m309-privacy-pentest-20261109/.autopilot/artifacts/20261109-M309-exact0ba-privacy-operations-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -46778,12 +47012,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 1139,
+    "ambiguous_or_changed_title_occurrences": 1128,
     "ambiguous_or_changed_unique_titles": 241,
-    "clean_pass_summary_logs": 1262,
+    "clean_pass_summary_logs": 1218,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 561,
-    "current_test_source_content_sha256": "be43de6ccf149954b2738b8da95cd0f65760133c914e99004fdd474b1c9db9f4",
+    "current_test_source_content_sha256": "79268ada2101ec4210795216c2d4f50f641897c690f06d60b2228e41c0453140",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -46794,11 +47028,11 @@
     "existing_source_cases_linked_to_an_exact_218_id": 188,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 67,
-    "historical_log_files_scanned": 2616,
+    "historical_log_files_scanned": 2548,
     "historical_only_green_distinct_cases": 1203,
-    "logs_with_no_clean_pass_summary_or_a_failure": 62,
-    "logs_with_pass_lines": 1324,
-    "matched_case_occurrences_with_duplicates": 6003,
+    "logs_with_no_clean_pass_summary_or_a_failure": 59,
+    "logs_with_pass_lines": 1277,
+    "matched_case_occurrences_with_duplicates": 5819,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
@@ -46807,8 +47041,8 @@
     "prior_result_TSV_files": 26,
     "source_tests_without_green_execution_proof": 174,
     "static_existing_distinct_test_cases": 1609,
-    "unique_source_matched_historical_green_cases": 1411,
-    "worktrees_scanned": 164
+    "unique_source_matched_historical_green_cases": 1398,
+    "worktrees_scanned": 165
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -46821,7 +47055,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "7330ffbe3c956325c5d13b0812599e260b187472",
+  "inventory_started_from_git_head_sha": "348e3515835ee87377b9f52cdf57d1b8d9e05472",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
