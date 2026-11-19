@@ -1,0 +1,82 @@
+name: M1.11.03 Worker skill notification actual 320 390 desktop Chromium UI
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m11103-skill-notification-open.browser.test.mjs'
+      - 'src/components/notifications/**'
+      - 'src/app/notifications/**'
+      - 'src/lib/notifications/**'
+      - 'src/lib/review/**'
+      - 'src/lib/worker-evidence/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-03-skill-notification-open-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m11103-skill-notification-open.browser.test.mjs'
+      - 'src/components/notifications/**'
+      - 'src/app/notifications/**'
+      - 'src/lib/notifications/**'
+      - 'src/lib/review/**'
+      - 'src/lib/worker-evidence/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-03-skill-notification-open-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11103-skill-notification-chromium-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  worker-real-chromium-skill-notice-open:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact PR head or signed QA commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Worker real 320 390 desktop Skill v1 correction and v2 approval notification Open and bell
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m11103-skill-notification-open.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+          for marker in ACTUAL_WORKER_V1_OPEN_BUTTON_RECORD_320_390_1440 ACTUAL_FOREIGN_WORKER_VERIFIER_AND_ANONYMOUS_COPIED_LINK_DENIED ACTUAL_APPROVED_V2_BELL_OPEN_AND_320_390_1440 ACTUAL_TWO_UI_READ_AT_AUDIT_AND_IMMUTABLE_SOURCE_VERSIONS; do
+            grep -q "M11103_SKILL_NOTICE_${marker}" .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+          done
+      - name: Adjacent original all role notification bell and Open real Chromium regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/browser/all-role-notification-workflow.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-original-all-role-notice-chromium-regression.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-original-all-role-notice-chromium-regression.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-original-all-role-notice-chromium-regression.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-original-all-role-notice-chromium-regression.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-original-all-role-notice-chromium-regression.log
+      - name: Archive exact-SHA raw browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11103-skill-notice-browser-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m11103-skill-notice-open-chromium.log
+            .autopilot/artifacts/m11103-original-all-role-notice-chromium-regression.log
+          if-no-files-found: warn
+          retention-days: 90
