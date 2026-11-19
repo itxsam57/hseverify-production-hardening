@@ -1,0 +1,76 @@
+name: M1.11.03 skill correction Worker notification real PGlite and role isolation
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/m11103-skill-notification-receiving-runtime.test.mjs'
+      - 'tests/platform/assurance-event-notification-producer-runtime.test.mjs'
+      - 'src/lib/notifications/**'
+      - 'src/lib/review/**'
+      - 'src/lib/worker-evidence/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-03-skill-notice-runtime.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/m11103-skill-notification-receiving-runtime.test.mjs'
+      - 'tests/platform/assurance-event-notification-producer-runtime.test.mjs'
+      - 'src/lib/notifications/**'
+      - 'src/lib/review/**'
+      - 'src/lib/worker-evidence/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-03-skill-notice-runtime.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11103-skill-notice-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-worker-skill-notification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact PR head or signed QA commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned test dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Actual skill v1 CHANGES to corrected v2 APPROVED Worker notice and denied foreign
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/platform/m11103-skill-notification-receiving-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-skill-notification.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-skill-notification.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-skill-notification.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-skill-notification.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-skill-notification.log
+          for marker in WORKER_CHANGES_REQUESTED_V1_DEEP_LINK_AND_SINGLE_PROJECTION FOREIGN_WORKER_VERIFIER_DIRECT_NOTICE_AND_MARK_READ_DENIED WORKER_APPROVED_V2_DEEP_LINK_AND_SINGLE_PROJECTION TWO_IMMUTABLE_VERSIONS_TWO_BOUND_DECISIONS_FORGED_REPLAY_DENIED; do
+            grep -q "M11103_SKILL_NOTICE_${marker}" .autopilot/artifacts/m11103-skill-notification.log
+          done
+      - name: Original event notification email retry and foreign-denial regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/platform/assurance-event-notification-producer-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-original-assurance-event-notification-regression.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-original-assurance-event-notification-regression.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-original-assurance-event-notification-regression.log
+      - name: Preserve raw exact-source notification and regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11103-skill-notice-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m11103-skill-notification.log
+            .autopilot/artifacts/m11103-original-assurance-event-notification-regression.log
+          if-no-files-found: warn
+          retention-days: 90
