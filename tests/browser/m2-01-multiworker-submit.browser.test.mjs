@@ -92,12 +92,16 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           if(invalidLink){
             await page.getByLabel("Active Worker link ID").fill(id("company_worker_link","not-a-current-company-link"));
             await page.getByRole("button",{name:"Add Workers",exact:true}).click();
-            await page.getByRole("alert").getByText("Worker link is not available for this Company.",{exact:true}).waitFor({timeout:15000});
+            const unknownNotice=page.getByRole("alert").filter({hasText:"Worker link is not available for this Company."});
+            await unknownNotice.waitFor({timeout:15000});
+            assert.equal((await unknownNotice.innerText()).trim(),"Worker link is not available for this Company.");
             assert.equal(new URL(page.url()).pathname,new URL(orderUrl).pathname);
             await page.goto(orderUrl,{waitUntil:"domcontentloaded"});
             await page.getByLabel("Active Worker link ID").fill("bad");
             await page.getByRole("button",{name:"Add Workers",exact:true}).click();
-            await page.getByRole("alert").getByText("Worker link is invalid.",{exact:true}).waitFor({timeout:15000});
+            const malformedNotice=page.getByRole("alert").filter({hasText:"Worker link is invalid."});
+            await malformedNotice.waitFor({timeout:15000});
+            assert.equal((await malformedNotice.innerText()).trim(),"Worker link is invalid.");
             assert.equal(new URL(page.url()).pathname,new URL(orderUrl).pathname);
             await page.goto(orderUrl,{waitUntil:"domcontentloaded"});
             await page.getByText("DRAFT",{exact:true}).waitFor();

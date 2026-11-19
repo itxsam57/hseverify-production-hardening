@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { getDatabaseClient } from "@/lib/database/database";
-import { AssuranceOrderInputError, AssuranceOrderConflictError, normalizeAssuranceReference, type AssuranceFundingMethod } from "@/lib/assurance/assurance-order-domain";
+import { AssuranceOrderAccessError, AssuranceOrderInputError, AssuranceOrderConflictError, normalizeAssuranceReference, type AssuranceFundingMethod } from "@/lib/assurance/assurance-order-domain";
 import { AssuranceOrderService } from "@/lib/assurance/assurance-order-service";
 import { EvidenceReviewService } from "@/lib/review/evidence-review-service";
 
@@ -30,7 +30,28 @@ export async function createAssuranceOrderAction(formData:FormData):Promise<void
   refresh(created.orderId); redirect(`/company/assurance-orders/${created.orderId}`);
 }
 export async function saveAssuranceOrderDraftAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).saveDraft(principal,orderId,draft(formData)); refresh(orderId); }
-export async function addAssuranceOrderWorkerAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const fundingRaw=text(formData,"fundingMethod"); if(fundingRaw!=="company"&&fundingRaw!=="worker") throw new AssuranceOrderInputError("Choose Company or Worker funding."); const orderId=text(formData,"orderId"); await (await service()).addWorkerTarget(principal,orderId,text(formData,"workerLinkId"),fundingRaw); refresh(orderId); }
+export async function addAssuranceOrderWorkerAction(formData:FormData):Promise<void>{
+  const principal=await requireCurrentTenantPermission("company.orders.manage");
+  const fundingRaw=text(formData,"fundingMethod");
+  if(fundingRaw!=="company"&&fundingRaw!=="worker") throw new AssuranceOrderInputError("Choose Company or Worker funding.");
+  const orderId=text(formData,"orderId");
+  let rejection:string|null=null;
+  try {
+    await (await service()).addWorkerTarget(principal,orderId,text(formData,"workerLinkId"),fundingRaw);
+  } catch(error) {
+    if(error instanceof AssuranceOrderAccessError) rejection="Worker link is not available for this Company.";
+    else if(error instanceof AssuranceOrderInputError) rejection=error.message;
+    else throw error;
+  }
+  if(rejection!==null){
+    const canonical=normalizeAssuranceReference(orderId,"assurance_order");
+    if(!canonical)throw new AssuranceOrderInputError("Assurance Order reference is invalid.");
+    // Never reveal whether the supplied link exists in any other tenant.
+    // Next.js redirect is control flow: keep it outside try/catch.
+    redirect(`/company/assurance-orders/${canonical}?error=${encodeURIComponent(rejection)}`);
+  }
+  refresh(orderId);
+}
 export async function removeAssuranceOrderWorkerAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).removeWorkerTarget(principal,orderId,text(formData,"targetId")); refresh(orderId); }
 export async function validateAssuranceOrderAction(formData:FormData):Promise<void>{ const principal=await requireCurrentTenantPermission("company.orders.manage"); const orderId=text(formData,"orderId"); await (await service()).validateOrder(principal,orderId); refresh(orderId); }
 export async function submitAssuranceOrderAction(formData:FormData):Promise<void>{
