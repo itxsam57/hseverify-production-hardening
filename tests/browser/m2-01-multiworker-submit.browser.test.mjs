@@ -83,6 +83,18 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
+          if(!noCredits){
+            const edit=page.locator("section.form-card").filter({has:page.getByRole("heading",{name:"Edit draft",exact:true})});
+            await edit.getByLabel("Order name").fill("Two Worker Safety Assessment Revised");
+            await edit.getByLabel("Company notes").fill("Both linked Workers need the same scoped safety review.");
+            await edit.getByRole("button",{name:"Save Draft",exact:true}).click();
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("DRAFT",{exact:true}).waitFor();
+            const saved=page.locator("section.form-card").filter({has:page.getByRole("heading",{name:"Edit draft",exact:true})});
+            assert.equal(await saved.getByLabel("Order name").inputValue(),"Two Worker Safety Assessment Revised");
+            assert.equal(await saved.getByLabel("Company notes").inputValue(),"Both linked Workers need the same scoped safety review.");
+            console.log("M20101_ACTUAL_COMPANY_DRAFT_EDIT_SAVED_AND_COLD_RELOADED");
+          }
           await page.getByRole("button",{name:"Validate Order",exact:true}).click();
           if(noCredits){
             await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor({timeout:20000});
@@ -143,6 +155,12 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
+      if(!noCredits){
+        const edited=(await verifyDb.query("SELECT order_name,company_notes FROM assurance_orders WHERE order_id=$1",[order.order_id])).rows[0];
+        assert.equal(edited.order_name,"Two Worker Safety Assessment Revised");
+        assert.equal(edited.company_notes,"Both linked Workers need the same scoped safety review.");
+        console.log("M20101_ACTUAL_DB_EDITED_DRAFT_PERSISTED_WITH_SUBMITTED_TWO_WORKER_SCOPE");
+      }
       if(noCredits){
         assert.equal(order.tenant_id,company.tenantId);
         assert.equal(order.order_status,"VALIDATION_FAILED");
