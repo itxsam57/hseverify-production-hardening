@@ -15,9 +15,13 @@ async function freePort(){
     });
   });
 }
-test("M2.01 actual two Worker cases keep scope/site/deadline and stale second submit cannot duplicate cases", {timeout:180000},async()=>{
+test("M2.01 actual two Worker cases keep scope/site/deadline and stale second submit cannot duplicate cases", {timeout:300000},async()=>{
   const fixture=await workerAssessmentSearchFixture();
   const noCredits=process.env.HSE_M20102_NO_CREDIT_ONLY==="true";
+  const noTargets=process.env.HSE_M20102_NO_TARGET_ONLY==="true";
+  const revoked=process.env.HSE_M20102_REVOKED_LINK_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  let revokedDraftUrl="";
   const baseUrl="http://127.0.0.1:"+(await freePort());
   const company=fixture.credentials.company;
   const site=id("site","north"),department=id("department","safety");
@@ -77,12 +81,30 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.getByLabel("Requested evidence checks").fill("qualification");
           await page.getByLabel("Interview required").check();
           await page.getByLabel("Deadline").fill(deadline.slice(0,16));
-          for(const link of linkIds)await page.locator('input[name="workerLinkIds"][value="'+link+'"]').check();
+          if(!noTargets)for(const link of linkIds)await page.locator('input[name="workerLinkIds"][value="'+link+'"]').check();
           await page.getByLabel("Funding method").selectOption(noCredits?"company":"worker");
           await page.getByRole("button",{name:"Save Draft"}).click();
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
+          if(revoked){
+            revokedDraftUrl=orderUrl;
+            console.log("M20102_ACTUAL_WORKER_LINKS_ADDED_TO_DRAFT_BEFORE_REVOKE");
+            await context.close();
+            return;
+          }
+          if(noTargets){
+            await page.getByRole("button",{name:"Validate Order",exact:true}).click();
+            await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor({timeout:20000});
+            await page.getByText("Add at least one active linked Worker before validation.").waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor();
+            await page.getByText("Add at least one active linked Worker before validation.").waitFor();
+            console.log("M20102_ACTUAL_NO_LINKED_WORKER_SELECTION_VALIDATION_FAILED_COLD_RELOAD_NO_SUBMIT");
+            await context.close();
+            return;
+          }
           if(!noCredits){
             const edit=page.locator("section.form-card").filter({has:page.getByRole("heading",{name:"Edit draft",exact:true})});
             await edit.getByLabel("Order name").fill("Two Worker Safety Assessment Revised");
@@ -150,11 +172,81 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       }
     });
     assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
+    if(revoked){
+      assert.ok(revokedDraftUrl.includes("/company/assurance-orders/assurance_order_"));
+      const changed=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+      try{
+        const revocationTime=new Date().toISOString();
+        await changed.query("UPDATE company_worker_links SET link_status='revoked',revoked_at=$2,updated_at=$2 WHERE link_id=$1",[linkIds[0],revocationTime]);
+        const state=(await changed.query("SELECT link_status FROM company_worker_links WHERE link_id=$1",[linkIds[0]])).rows[0];
+        assert.equal(state.link_status,"revoked");
+      }finally{await changed.close();}
+      const second=await runDevelopmentServer({
+        args:["--hostname","127.0.0.1","--port",new URL(baseUrl).port],
+        projectRoot:process.cwd(),probeUrl:baseUrl+"/company/login",environment:fixture.environment,
+        probe:async({output})=>{
+          const browser=await chromium.launch({headless:true});
+          try{
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[];page.on("pageerror",error=>errors.push(error.message));
+            await page.goto(baseUrl+"/company/login",{waitUntil:"domcontentloaded"});
+            await page.getByLabel("Email address").fill(company.email);
+            await page.getByLabel("Password",{exact:true}).fill(company.password);
+            if(company.totpSecret){
+              const {createHmac}=await import("node:crypto");
+              const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+              let bits="";
+              for(const c of company.totpSecret.toUpperCase().replace(/=+$/g,""))bits+=alphabet.indexOf(c).toString(2).padStart(5,"0");
+              const bytes=[];for(let i=0;i+8<=bits.length;i+=8)bytes.push(parseInt(bits.slice(i,i+8),2));
+              const counter=Buffer.alloc(8);counter.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
+              const digest=createHmac("sha1",Buffer.from(bytes)).update(counter).digest(),offset=digest.at(-1)&15;
+              await page.getByLabel("Authenticator code").fill(String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0"));
+            }
+            await page.getByRole("button",{name:"Sign in",exact:true}).click();
+            await page.waitForURL("**/company/dashboard");
+            await page.goto(revokedDraftUrl,{waitUntil:"domcontentloaded"});
+            await page.getByText("DRAFT",{exact:true}).waitFor();
+            await page.getByRole("button",{name:"Validate Order",exact:true}).click();
+            await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor({timeout:20000});
+            await page.getByText(/Worker link is no longer active for this Company/).waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor();
+            await page.getByText(/Worker link is no longer active for this Company/).waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            assert.deepEqual(errors,[],output());
+            console.log("M20102_ACTUAL_REVOKED_PREVIOUSLY_LINKED_WORKER_VALIDATION_FAILED_AFTER_RESTART_NO_SUBMIT");
+          }finally{await browser.close();}
+        }
+      });
+      assert.equal(second.requestedSignal,"SMOKE_COMPLETE");
+    }
     const verifyDb=await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
     try{
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
+      if(noTargets||revoked){
+        assert.equal(order.tenant_id,company.tenantId);
+        assert.equal(order.order_status,"VALIDATION_FAILED");
+        assert.equal(order.submitted_at,null);
+        const targets=(await verifyDb.query("SELECT worker_link_id,target_status,validation_reason FROM assurance_order_workers WHERE order_id=$1 ORDER BY worker_link_id",[order.order_id])).rows;
+        if(noTargets)assert.equal(targets.length,0);
+        else{
+          assert.equal(targets.length,2);
+          const denied=targets.find(target=>target.worker_link_id===linkIds[0]);
+          assert.ok(denied);
+          assert.equal(denied.target_status,"ineligible");
+          assert.match(denied.validation_reason,/Worker link is no longer active/i);
+          assert.equal(targets.filter(target=>target.target_status==="eligible").length,1);
+        }
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE order_id=$1",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_action_items WHERE order_id=$1",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_submitted'",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0);
+        console.log(noTargets?"M20102_ACTUAL_DB_NO_WORKERS_VALIDATION_FAIL_ZERO_CASES_OR_FUNDS":"M20102_ACTUAL_DB_REVOKED_LINK_INELIGIBLE_NO_CASES_OR_FUNDS_AFTER_RESTART");
+        return;
+      }
       if(!noCredits){
         const edited=(await verifyDb.query("SELECT order_name,company_notes FROM assurance_orders WHERE order_id=$1",[order.order_id])).rows[0];
         assert.equal(edited.order_name,"Two Worker Safety Assessment Revised");
