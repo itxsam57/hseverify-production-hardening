@@ -108,6 +108,9 @@ jobs:
           for marker in ACTUAL_M11106_REPLACEMENT_BROWSER ACTUAL_M11106_PRIVATE_PREVIEW ACTUAL_M11106_BROWSER ACTUAL_M11106_DB; do
             grep -q "$marker" .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
           done
+          for marker in FOREIGN_WORKER_COPIED_PREVIEW_DENIED SIGNED_EXPIRED_LETTER_PREVIEW_DENIED WRONG_PURPOSE_AND_TAMPERED_TOKEN_DENIED RESPONSIVE_LETTERS_320_390_1440; do
+            grep -q "M11106_ACTUAL_${marker}" .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
+          done
       - name: Retain original adjacent M1.11.06 browser evidence
         if: always()
         uses: actions/upload-artifact@v4
