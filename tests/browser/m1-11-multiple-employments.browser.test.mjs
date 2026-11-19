@@ -29,7 +29,11 @@ test("M1.11.05 ending one of two submitted employments retains other active reco
       probe:async({output})=>{
         const browser=await chromium.launch({headless:true});
         try{
-          const page=await browser.newPage({viewport:{width:390,height:844}});
+          // An explicit browser context supports a genuine second tab with
+          // the same authenticated session. Playwright's browser.newPage()
+          // convenience owner context intentionally rejects context.newPage().
+          const workerContext=await browser.newContext({viewport:{width:390,height:844}});
+          const page=await workerContext.newPage();
           const fatal=[];
           page.on("pageerror",error=>fatal.push(error.message));
           page.on("response",response=>{if(response.status()>=500)fatal.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);});
@@ -86,6 +90,30 @@ test("M1.11.05 ending one of two submitted employments retains other active reco
           assert.equal(new Set(created.map(item=>item.id)).size,2);
           const a=cardFor(created[0].id),b=cardFor(created[1].id);
           assert.equal(await b.getByLabel("Employment end date").count(),1);
+          // A chronological failure must not end either current employment or
+          // allocate a new immutable version; observe actual Worker form errors.
+          await a.getByLabel("Employment end date",{exact:true}).fill("2023-12-31");
+          await a.getByRole("button",{name:"End employment and preserve history",exact:true}).click();
+          await a.getByText("End date cannot be before start date.",{exact:true}).waitFor({timeout:15000});
+          assert.equal(await a.getByText("active · submitted",{exact:true}).count(),1);
+          assert.equal(await b.getByText("active · submitted",{exact:true}).count(),1);
+          await page.reload({waitUntil:"domcontentloaded"});
+          assert.equal(await a.getByText("active · submitted",{exact:true}).count(),1);
+          assert.equal(await b.getByText("active · submitted",{exact:true}).count(),1);
+          console.log("M11105_ACTUAL_INVALID_END_BEFORE_START_BOTH_RECORDS_UNCHANGED");
+
+          // A second tab holds the exact old optimistic revision through a
+          // successful end. Its stale form must never create a third version.
+          const stale=await page.context().newPage();
+          stale.on("pageerror",error=>fatal.push(error.message));
+          stale.on("response",response=>{
+            if(response.status()>=500)fatal.push("HTTP "+response.status()+" "+new URL(response.url()).pathname);
+          });
+          await stale.goto(base+"/worker/evidence",{waitUntil:"domcontentloaded"});
+          const staleA=stale.locator('article[id="'+created[0].id+'"]');
+          await staleA.getByText("active · submitted",{exact:true}).waitFor();
+          await staleA.getByLabel("Employment end date",{exact:true}).fill("2026-05-01");
+          await staleA.getByLabel("End reason",{exact:false}).fill("Stale parallel form must be rejected.");
           await a.getByLabel("Employment end date",{exact:true}).fill("2026-04-30");
           await a.getByLabel("End reason",{exact:false}).fill("Alpha contract completed; Beta employment remains active.");
           await a.getByRole("button",{name:"End employment and preserve history",exact:true}).click();
@@ -95,6 +123,33 @@ test("M1.11.05 ending one of two submitted employments retains other active reco
           assert.equal(await b.getByText("active · submitted",{exact:true}).count(),1);
           assert.equal(await a.getByRole("button",{name:"End employment and preserve history"}).count(),0);
           assert.equal(await b.getByRole("button",{name:"End employment and preserve history"}).count(),1);
+          // Do not accept a stale second end, even if the Worker leaves an
+          // older browser tab open and submits its copied record/revision.
+          await staleA.getByRole("button",{name:"End employment and preserve history",exact:true}).click();
+          await staleA.getByText(/The evidence record is unavailable|This evidence record changed in another request/).waitFor({timeout:15000});
+          await stale.close();
+          await page.reload({waitUntil:"domcontentloaded"});
+          assert.equal(await a.getByText("ended · submitted",{exact:true}).count(),1);
+          assert.equal(await b.getByText("active · submitted",{exact:true}).count(),1);
+          console.log("M11105_ACTUAL_STALE_DUPLICATE_END_REJECTED");
+
+          // Actual Worker responsive controls remain usable for both ended
+          // and active cards; page width must not exceed the viewport.
+          for(const width of [320,390,1440]){
+            await page.setViewportSize({width,height:900});
+            await page.goto(base+"/worker/evidence",{waitUntil:"domcontentloaded"});
+            await a.getByText("ended · submitted",{exact:true}).waitFor();
+            await b.getByText("active · submitted",{exact:true}).waitFor();
+            assert.equal(await a.getByRole("button",{name:"End employment and preserve history"}).count(),0);
+            assert.equal(await b.getByRole("button",{name:"End employment and preserve history"}).count(),1);
+            const dimensions=await page.evaluate(()=>({
+              viewport:document.documentElement.clientWidth,
+              content:document.documentElement.scrollWidth
+            }));
+            assert.ok(dimensions.content<=dimensions.viewport+2,
+              "M1.11.05 Worker evidence overflow "+width+"px: "+JSON.stringify(dimensions));
+          }
+          console.log("M11105_ACTUAL_RESPONSIVE_EXACT_END_WORKER_320_390_1440");
           const aHistory=await a.getByRole("region",{name:"employment history"}).innerText();
           const bHistory=await b.getByRole("region",{name:"employment history"}).innerText();
           assert.match(aHistory,/Version 1/);
@@ -138,6 +193,7 @@ test("M1.11.05 ending one of two submitted employments retains other active reco
         }
       }
       console.log("ACTUAL_M11105_DB two distinct employment records, only Alpha ended, old submitted history preserved and Beta unchanged.");
+      console.log("M11105_ACTUAL_DB_NEGATIVE_STALE_NO_EXTRA_VERSION_OR_FOREIGN_FILE");
     }finally{await db.close();}
   }finally{await fixture.cleanup();}
 });
