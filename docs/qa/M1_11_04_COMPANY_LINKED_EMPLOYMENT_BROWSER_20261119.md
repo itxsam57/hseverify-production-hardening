@@ -21,3 +21,7 @@ Workflow `.github/workflows/m1-11-04-company-employment-chromium.yml`: independe
 Explicit direct Worker/Company/Verifier session+tenant BOLA/IDOR/API abuse, stale submission/race, expiry, duplicate/retry/interruption, notifications/deep links where emitted, full independent pen test, real provider, staging at same exact final deployable SHA, operational load/restore and Owner UAT. Frozen **FULLY0/218**, original `4,975` planned **0 final**, legacy `216` is scoped not full, pentest provisional 2,008 incomplete, external blockers≥10 and release **NO-GO**. No shared PG16 or other worktree changes.
 
 **NEXT:** original 218/216/4975 reindex & strict regressions, guarded commit and push isolated branch, host real two-browser jobs, download exact raw hashes, fix any RED, merge only after PR green, verify merged exact-SHA all workflow jobs; then continue remaining API/security work.
+
+## PR167 hosted RED and exact selector correction
+
+Original head ec756c459a0785f246444fdc3507a2efbaf0a198, run44534073175: linked Company employment 0/1 raw SHA256 20e3f41b2453c8d317b7bc444a828bc62bf056f98f6c9f7c46e9baf43c2c2759. The test helper used exact:true for optional Duties accessible field, unlike existing working original employment helper. Corrected only this helper to exact:label!=="Duties" within the Employment record. Existing original Company skill 1/1 raw SHA256 eaad57bb90c42c070490d5172b69bfcb4b7f78a404915e768f21880cd87d886b. Remaining linked Company test not yet passed; require complete hosted rerun and log hashes.

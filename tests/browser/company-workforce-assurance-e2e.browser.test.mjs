@@ -151,7 +151,7 @@ async function submitEmployment(page,baseUrl) {
     ["Employer","Independent Audit Employer"],["Role title","HSE Coordinator"],
     ["Country","Pakistan"],["Start date","2023-01-01"],
     ["Duties","Coordinate risk assessments and safe systems of work."]
-  ]) await card.getByLabel(label,{exact:true}).fill(value);
+  ]) await card.getByLabel(label,{exact:label!=="Duties"}).fill(value);
   await card.getByRole("button",{name:"Save metadata"}).click();
   await card.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor();
   await card.getByLabel("Evidence file",{exact:true}).setInputFiles({...PNG_FILE,name:"employment-original.png"});

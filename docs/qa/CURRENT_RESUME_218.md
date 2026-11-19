@@ -1,5 +1,11 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-19 — M1.11.04 PR167 first real linked Company Chrome RED, test selector corrected
+
+- Original exact PR167 head ec756c459a0785f246444fdc3507a2efbaf0a198, hosted run 44534073175, linked Company employment real Chrome 0/1 FAIL. Original raw SHA256 20e3f41b2453c8d317b7bc444a828bc62bf056f98f6c9f7c46e9baf43c2c2759. The test helper tried an exact Duties label, but the app's Field optional renders a longer accessible name. The existing real Worker evidence suite uses a partial label match. Repaired ONLY the new test helper to exact:false for Duties scoped inside the unique Employment record. No product or authorization assertions changed; Company linked positive workflow is NOT yet passed.
+- Original unchanged linked Company skill real Chromium was 1/1 PASS from same run; downloaded raw SHA256 eaad57bb90c42c070490d5172b69bfcb4b7f78a404915e768f21880cd87d886b. First run PR 6/7 green, one employment RED; do not merge until new exact-head Chrome 1/1 and original 1/1, raw evidence downloaded.
+- Signed QA remains ae18a3f8 with 73/73 exact merged-SHA GitHub CI green. Frozen FULL0/218, historical1434/1608, FINAL0/4975, pentest incomplete, external blockers>=10, release NO-GO.
+
 ## 2026-11-19 — QA merge ae18 73/73; M1.11.04 linked Company employment positive browser source (await hosted)
 
 - **Latest signed QA SHA** `ae18a3f87766f9305c37e74b990702d0703dadb8`, PR #166 merged standard two-parent. **73/73 exact merged-SHA GitHub workflows SUCCESS, failed0 pending0.** Exact merged run `44531736567` downloaded original **employment Worker+Verifier real Chromium 1/1 PASS** raw SHA256 `7d0f1d5df98b76c255065722c0c33e35adf480c548429f91815322c784f85a08` (initial APPROVED, corrections REJECTED/CHANGES_REQUESTED/APPROVED, responsive Worker/Verifier, Company/wrong-role/signed-out privacy denial, 4 original immutable DB versions/decisions/files), original adjacent skill Chromium **1/1 PASS** raw SHA256 `f9b909987290f189485ce22df0d0fd6da6285b71d89f98fccfa34d2ab7ba7f78`. All known workflows exact SHA green; this is *scoped synthetic test*, not protected staging pentest/provider signoff.
