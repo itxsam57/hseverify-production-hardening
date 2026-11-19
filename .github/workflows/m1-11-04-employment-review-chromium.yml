@@ -1,0 +1,120 @@
+name: M1.11.04 employment correction actual Worker Verifier Company Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/independent-worker-review-e2e.browser.test.mjs'
+      - 'src/lib/review/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/components/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/app/worker/**'
+      - 'src/app/company/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-04-employment-review-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/independent-worker-review-e2e.browser.test.mjs'
+      - 'src/lib/review/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/components/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/app/worker/**'
+      - 'src/app/company/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-04-employment-review-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11104-employment-real-chromium-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-employment-correction-all-reviews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M11104_EMPLOYMENT_BROWSER_ONLY: 'true'
+    steps:
+      - name: Checkout exact target SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real employment Worker revisions rejected changes and approved, Verifier Company role denial, DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11104-employment-correction-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11104-employment-correction-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11104-employment-correction-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11104-employment-correction-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11104-employment-correction-chromium.log
+          for marker in WORKER_FOUR_RETAINED_VERSIONS_AND_ALL_REVIEW_OUTCOMES RESPONSIVE_WORKER_VERIFIER_320_390_1440 WRONG_ROLE_COMPANY_WORKER_AND_SIGNEDOUT_API_DENIAL DB_FOUR_IMMUTABLE_VERSIONS_FOUR_BOUND_DECISIONS_AND_PROOFS; do
+            grep -q "M11104_ACTUAL_EMPLOYMENT_${marker}" .autopilot/artifacts/m11104-employment-correction-chromium.log
+          done
+          for outcome in REJECTED CHANGES_REQUESTED APPROVED; do
+            grep -q "M11104_ACTUAL_EMPLOYMENT_WORKER_VERIFIER_REVIEW $outcome" .autopilot/artifacts/m11104-employment-correction-chromium.log
+          done
+      - name: Preserve raw employment browser log exact SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11104-employment-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11104-employment-correction-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  original-skill-review-chromium-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M11103_SKILL_BROWSER_ONLY: 'true'
+    steps:
+      - name: Checkout identical target SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Protect original M1.11.03 Worker Verifier browser and responsive 320 390 1440
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11104-original-skill-review-regression.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11104-original-skill-review-regression.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11104-original-skill-review-regression.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11104-original-skill-review-regression.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11104-original-skill-review-regression.log
+          for marker in M11103_ACTUAL_CHROME_WORKER_VERIFIER_SKILL_V1_CHANGES_V2_APPROVED M11103_ACTUAL_CHROME_WORKER_ROLE_VERIFIER_ROUTE_DENIED M11103_ACTUAL_CHROME_RESPONSIVE_320_390_1440; do
+            grep -q "$marker" .autopilot/artifacts/m11104-original-skill-review-regression.log
+          done
+      - name: Preserve original raw adjacent skill browser log exact SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11104-skill-regression-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11104-original-skill-review-regression.log
+          if-no-files-found: warn
+          retention-days: 90
