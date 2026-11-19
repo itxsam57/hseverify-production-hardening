@@ -20,6 +20,18 @@ const PNG_FILE = {
     "base64"
   )
 };
+// Distinct valid one-pixel RGB PNG so the corrected employment reviewer cannot
+// accidentally receive the old version's bytes and still pass this HTTP test.
+const EMPLOYMENT_CORRECTED_PNG = {
+  ...PNG_FILE,
+  name: "employment-corrected.png",
+  buffer: Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYPgPAAEDAQAIicLsAAAAAElFTkSuQmCC",
+    "base64"
+  )
+};
+assert.notDeepEqual(EMPLOYMENT_CORRECTED_PNG.buffer,PNG_FILE.buffer,
+  "Employment v1/v2 proof fixtures must not have identical bytes");
 
 function decode32(value) {
   let bits = 0;
@@ -335,8 +347,48 @@ test(
             await verifier.reload({ waitUntil: "domcontentloaded" });
             const claimButton = verifier.getByRole("button", { name: "Claim review" });
             if (!(await claimButton.count())) throw new Error(`Claim review unavailable after explicit governance setup: ${await verifier.locator("main").innerText()}`);
+            if (employmentOnly) {
+              const unclaimed = await verifierContext.request.get(
+                `${baseUrl}/verifier/reviews/${taskId}/preview`,{maxRedirects:0});
+              assert.equal(unclaimed.status(),404,"Unclaimed employment task cannot disclose Worker proof");
+              assert.notDeepEqual(Buffer.from(await unclaimed.body()),PNG_FILE.buffer,
+                "Unclaimed task returned original private employment proof bytes");
+              assert.match(unclaimed.headers()["cache-control"]??"",/private.*no-store/i);
+              console.log("M11104_EMPLOYMENT_HTTP_UNCLAIMED_PREVIEW_DENIED");
+            }
             await claimButton.click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
+            if (employmentOnly) {
+              const previewUrl=`${baseUrl}/verifier/reviews/${taskId}/preview`;
+              const authorized=await verifierContext.request.get(previewUrl);
+              assert.equal(authorized.status(),200,"Assigned Verifier cannot preview exact Worker employment evidence");
+              assert.deepEqual(Buffer.from(await authorized.body()),PNG_FILE.buffer,
+                "Authorized preview did not return exact uploaded employment proof bytes");
+              assert.match(authorized.headers()["cache-control"]??"",/private.*no-store/i,
+                "Authorized employment proof response must not be shared/cacheable");
+              console.log("M11104_EMPLOYMENT_HTTP_ASSIGNED_VERIFIER_EXACT_PROOF_200_NO_STORE");
+              const attempts=[
+                ["Worker",workerContext.request,{}],
+                ["Company",companyContext.request,{}],
+                ["Company-forged-tenant",companyContext.request,{
+                  "x-hse-tenant-id":credentials.company.tenantId,
+                  "x-hse-account-id":credentials.verifier.accountId,
+                  "x-hse-role":"verifier"
+                }]
+              ];
+              const anonymousContext=await browser.newContext();
+              try {
+                attempts.push(["signed-out",anonymousContext.request,{}]);
+                for(const [name,request,headers] of attempts) {
+                  const denied=await request.get(previewUrl,{maxRedirects:0,headers});
+                  assert.notEqual(denied.status(),200,
+                    name+" accessed assigned Verifier's private employment HTTP proof");
+                  assert.notDeepEqual(Buffer.from(await denied.body()),PNG_FILE.buffer,
+                    name+" received private employment proof bytes");
+                }
+              }finally{await anonymousContext.close();}
+              console.log("M11104_EMPLOYMENT_HTTP_WORKER_COMPANY_ANON_FORGED_VERIFIER_HEADER_DENIED");
+            }
             const terminalReject = process.env.HSE_M20106_REJECTED_ONLY === "true";
             const verdict = terminalReject ? "REJECTED" : "CHANGES_REQUESTED";
             await verifier.getByLabel("Decision").selectOption(verdict);
@@ -378,7 +430,8 @@ test(
             await record.getByRole("button", { name: "Save metadata" }).click();
             await record.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
             await record.getByLabel(skillOnly||employmentOnly?"Evidence file":"Primary certificate file").setInputFiles(
-              {...PNG_FILE,name:employmentOnly?"employment-corrected.png":skillOnly?"skill-corrected.png":"qualification.png"});
+              employmentOnly ? EMPLOYMENT_CORRECTED_PNG :
+                {...PNG_FILE,name:skillOnly?"skill-corrected.png":"qualification.png"});
             await record.getByRole("button", { name: "Upload file" }).click();
             await record.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({ timeout: 15_000 });
             await record.getByRole("button", { name: "Submit this version" }).click();
@@ -404,6 +457,19 @@ test(
             await verifier.reload({ waitUntil: "domcontentloaded" });
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
+            if (employmentOnly) {
+              const v2Url=`${baseUrl}/verifier/reviews/${correctedTaskId}/preview`;
+              const corrected=await verifierContext.request.get(v2Url);
+              assert.equal(corrected.status(),200,"Assigned corrected employment review cannot preview submitted v2");
+              assert.deepEqual(Buffer.from(await corrected.body()),EMPLOYMENT_CORRECTED_PNG.buffer,
+                "Corrected employment preview did not return distinct actual v2 uploaded proof bytes");
+              assert.notDeepEqual(Buffer.from(await corrected.body()),PNG_FILE.buffer,
+                "Corrected employment preview returned stale v1 proof bytes");
+              assert.match(corrected.headers()["cache-control"]??"",/private.*no-store/i);
+              const denied=await workerContext.request.get(v2Url,{maxRedirects:0});
+              assert.notEqual(denied.status(),200,"Worker copied corrected Verifier preview task");
+              console.log("M11104_EMPLOYMENT_HTTP_CORRECTED_ASSIGNED_V2_PREVIEW_AND_WORKER_DENIAL");
+            }
             await verifier.getByLabel("Decision").selectOption("APPROVED");
             await verifier.getByLabel("Reason", { exact: true }).fill(
               employmentOnly?"Case-scoped employment review confirms the corrected duties and attributable evidence.":

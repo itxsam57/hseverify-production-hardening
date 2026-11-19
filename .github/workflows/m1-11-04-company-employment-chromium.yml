@@ -64,6 +64,9 @@ jobs:
           for marker in CHROME_LINKED_WORKER_COMPANY_CHANGES_RECEIVING CHROME_CORRECTED_APPROVED_WORKER_AND_COMPANY_RELOADED CHROME_RESPONSIVE_WORKER_COMPANY_320_390_1440 CHROME_ROLE_AND_SIGNEDOUT_RAW_EVIDENCE_DENIAL DB_ONE_LINKED_TENANT_CASE_TWO_IMMUTABLE_VERSIONS_DECISIONS_AND_PROOFS; do
             grep -q "M11104_COMPANY_EMPLOYMENT_ACTUAL_${marker}" .autopilot/artifacts/m11104-company-linked-employment-chromium.log
           done
+          for marker in UNCLAIMED_PREVIEW_DENIED ASSIGNED_VERIFIER_EXACT_PROOF_200_NO_STORE WORKER_COMPANY_ANON_FORGED_VERIFIER_HEADER_DENIED CORRECTED_ASSIGNED_V2_PREVIEW_AND_WORKER_DENIAL; do
+            grep -q "M11104_EMPLOYMENT_HTTP_${marker}" .autopilot/artifacts/m11104-company-linked-employment-chromium.log
+          done
       - name: Retain original head linked Company employment browser log
         if: always()
         uses: actions/upload-artifact@v4
