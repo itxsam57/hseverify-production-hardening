@@ -5,14 +5,14 @@
   "frozen_queue": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
   "signed_qa_baseline_sha_before_protocol": "474886649f9c7d33935b27533ff8388d7d274815",
   "current_focus_scenario_id": "M1.11.03",
-  "current_focus_phase": "M11103_COMPANY_320PX_OVERFLOW_REAL_RED_GRID_MINMAX_INSUFFICIENT_UNCLIPPED_DOM_DIAGNOSTIC_HOSTED_PENDING",
-  "last_completed_action": "Exact PR163 def3aaca run44345083625 real Chromium FAILED at same Company page 320px document348 after full Worker+Company v1 CHANGES to v2 approved; raw SHA256 a7a62dbf19fb50e516ceda388a8e5d185cd3d994efa79ca9dd9437f25bcc37b5. Grid minmax0 alone insufficient. Strengthened DOM diagnostics exclude intended table-scroll clipped descendants and capture top page/header/container bounds with no PII; hosted run pending; original 0/218 and 0/4975 final.",
-  "next_exact_action": "Push diagnostic-only change exact SHA to PR163; inspect hosted un-clipped elements and parent layout roles causing 320px overflow, then fix CSS/component root and rerun same complete real skill+qualification Chromium. No merge on red or false full pass. Independent pentest/providers/Owner UAT still missing.",
-  "next_exact_command": "python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && python3 -m unittest discover -s tests/engineering -p test_m11103_company_skill_ci.py && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
+  "current_focus_phase": "M11103_REAL_CHROMIUM_320_COMPANY_POLICY_WORKER_ID_STRONG_OVERFLOW_ROOT_SCOPED_WRAP_CSS_LOCAL3OF3_GREEN_HOSTED_PENDING",
+  "last_completed_action": "PR163 exact f46f29325edae6f1db1b56c518f3b88db0a0f7c8 real Chrome run44346155189 RED; original raw SHA256 4ecf1496def45ce5453af53bb4bd0a5665f82a31a454176d1023c96cad241530. Company page width348 at viewport320 caused by unbroken Worker ID strong left54 right348 in policy summary; table scroll correctly isolated. Scoped policy section wrapping implemented, ineffective global page-stack minmax-zero reverted; local contract3/3 and ledger Node8/8/strict source green. Real remote retest not yet attempted. Frozen release0/218; 0/4975 FINAL.",
+  "next_exact_action": "Guarded commit/push PR163 scoped Company policy summary wrap fix; run actual GitHub Chromium Worker+Company linked Skill and original qualification regression at exact head SHA and 320/390/1440; download and verify 4 markers and separate original DB marker, fix further failure before merge. Then standard signed QA merge, all merged SHA gates and partial scoping. Full 218 protected staging, pentest, providers, Owner UAT still pending.",
+  "next_exact_command": "python3 -m unittest discover -s tests/engineering -p test_m11103_company_skill_ci.py -v && node --test tests/engineering/current-release-218-ledger.test.mjs && python3 scripts/reconcile-218-prior-test-evidence.py --verify-index && git diff --check && python3 .autopilot/guard.py pre-commit --root .",
   "active_test_pid": null,
   "active_test_log": null,
   "recent_failed_checks": [
-    "PR163 real Chromium def3aaca run44345083625 RED: Company 320px document scrollWidth348 after minmax0 CSS, table legitimate scroll container width1058; root still unidentified. Raw SHA256 a7a62dbf19fb50e516ceda388a8e5d185cd3d994efa79ca9dd9437f25bcc37b5."
+    "PR163 exact f46f2932 hosted Chrome run44346155189 failed Company policy Worker opaque ID <strong> left54 right348 at viewport320; raw SHA256 4ecf1496def45ce5453af53bb4bd0a5665f82a31a454176d1023c96cad241530. Scoped CSS root candidate not yet retested remotely."
   ],
   "owner_required_before_invasive_testing": "Approved restricted staging scope, only synthetic test users and data, provider credentials and defined load ceilings",
   "no_new_localhost_environment_by_default": true,

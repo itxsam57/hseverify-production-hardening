@@ -23,15 +23,20 @@ class M11103CompanySkillCI(unittest.TestCase):
             self.assertIn(marker,text)
         self.assertIn("worker_evidence_versions",text)
         self.assertIn("HSE_M20106_REJECTED_ONLY",text) # original qualification test preserved
-    def test_company_order_grid_track_shrinks_to_viewport_and_table_scrolls(self):
+    def test_policy_summary_long_worker_id_wraps_without_clipping_or_hiding(self):
+        page=(ROOT/"src/app/company/(portal)/assurance-orders/[orderId]/page.tsx").read_text()
         css=(ROOT/"src/app/layout-containment.css").read_text()
+        self.assertIn('className="effective-policy-summary"',page)
+        self.assertIn("<strong>{snapshot.workerAccountId}</strong>",page)
+        self.assertIn(".effective-policy-summary strong",css)
+        rule=css.split(".effective-policy-summary strong",1)[1].split("}",1)[0]
+        self.assertIn("overflow-wrap: anywhere;",rule)
+        self.assertIn("word-break: break-word;",rule)
+        self.assertNotIn("overflow: hidden;",rule)
+        self.assertNotIn("display: none;",rule)
         self.assertIn(".table-scroll {",css)
         table_rule=css.split(".table-scroll {",1)[1].split("}",1)[0]
         self.assertIn("overflow-x: auto;",table_rule)
-        # Its immediate single-column grid must not use an auto/min-content track,
-        # or the 42rem table makes the whole Company page 348px at viewport 320px.
-        stack_rule=css.split(".page-stack,\n.content-stack {",1)[1].split("}",1)[0]
-        self.assertIn("grid-template-columns: minmax(0, 1fr);",stack_rule)
 
     def test_exact_sha_real_chromium_ci_requires_marker_and_fails_closed(self):
         text=CI.read_text()

@@ -80,9 +80,6 @@ body {
 .page-stack,
 .content-stack {
   display: grid;
-  /* The implicit auto track can inherit the 42rem table's min-content width,
-     expanding a 320px Company order page instead of scrolling inside .table-scroll. */
-  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -113,6 +110,17 @@ body {
   overflow-x: auto;
   overscroll-behavior-inline: contain;
 }
+
+/* The Company policy summary contains long opaque Worker/Version IDs and
+   serialized policy values. Wrap visibly instead of widening a 320px page. */
+.effective-policy-summary li,
+.effective-policy-summary strong,
+.effective-policy-summary code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 
 @media (max-width: 680px) {
   .form-grid {
