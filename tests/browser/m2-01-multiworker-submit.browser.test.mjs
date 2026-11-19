@@ -22,6 +22,7 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const revoked=process.env.HSE_M20102_REVOKED_LINK_ONLY==="true";
   assert.ok([noCredits,noTargets,revoked].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
   let revokedDraftUrl="";
+  let originalAuthenticatedCompanyCookies=[];
   const baseUrl="http://127.0.0.1:"+(await freePort());
   const company=fixture.credentials.company;
   const site=id("site","north"),department=id("department","safety");
@@ -89,6 +90,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.getByText("DRAFT",{exact:true}).waitFor();
           if(revoked){
             revokedDraftUrl=orderUrl;
+            originalAuthenticatedCompanyCookies=await context.cookies();
+            assert.ok(originalAuthenticatedCompanyCookies.length>0,"Original Company must have an actual authenticated browser session before restart");
             console.log("M20102_ACTUAL_WORKER_LINKS_ADDED_TO_DRAFT_BEFORE_REVOKE");
             await context.close();
             return;
@@ -187,24 +190,16 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
         probe:async({output})=>{
           const browser=await chromium.launch({headless:true});
           try{
-            const page=await browser.newPage({viewport:{width:390,height:844}});
+            // Preserve the genuine authenticated Company session across the
+            // controlled server restart. Re-using the just-consumed MFA code
+            // for a second immediate login can hit replay protection and does
+            // not test stale Worker-link validation.
+            const context=await browser.newContext({viewport:{width:390,height:844}});
+            await context.addCookies(originalAuthenticatedCompanyCookies);
+            const page=await context.newPage();
             const errors=[];page.on("pageerror",error=>errors.push(error.message));
-            await page.goto(baseUrl+"/company/login",{waitUntil:"domcontentloaded"});
-            await page.getByLabel("Email address").fill(company.email);
-            await page.getByLabel("Password",{exact:true}).fill(company.password);
-            if(company.totpSecret){
-              const {createHmac}=await import("node:crypto");
-              const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-              let bits="";
-              for(const c of company.totpSecret.toUpperCase().replace(/=+$/g,""))bits+=alphabet.indexOf(c).toString(2).padStart(5,"0");
-              const bytes=[];for(let i=0;i+8<=bits.length;i+=8)bytes.push(parseInt(bits.slice(i,i+8),2));
-              const counter=Buffer.alloc(8);counter.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
-              const digest=createHmac("sha1",Buffer.from(bytes)).update(counter).digest(),offset=digest.at(-1)&15;
-              await page.getByLabel("Authenticator code").fill(String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0"));
-            }
-            await page.getByRole("button",{name:"Sign in",exact:true}).click();
-            await page.waitForURL("**/company/dashboard");
             await page.goto(revokedDraftUrl,{waitUntil:"domcontentloaded"});
+            assert.equal(new URL(page.url()).pathname,new URL(revokedDraftUrl).pathname,"Company authenticated session must survive restart without login replay");
             await page.getByText("DRAFT",{exact:true}).waitFor();
             await page.getByRole("button",{name:"Validate Order",exact:true}).click();
             await page.getByText("VALIDATION_FAILED",{exact:true}).waitFor({timeout:20000});
