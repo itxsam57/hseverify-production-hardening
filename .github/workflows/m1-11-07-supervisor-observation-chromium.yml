@@ -1,0 +1,83 @@
+name: M1.11.07 Company signed supervisor observation Worker acknowledgement and independent Verifier Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/supervisor-observation-journey.browser.test.mjs'
+      - 'tests/helpers/evidence-review-calibration-browser.mjs'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/app/admin/**'
+      - 'src/lib/review/**'
+      - 'src/lib/supervisor-observations/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-07-supervisor-observation-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/supervisor-observation-journey.browser.test.mjs'
+      - 'tests/helpers/evidence-review-calibration-browser.mjs'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/app/admin/**'
+      - 'src/lib/review/**'
+      - 'src/lib/supervisor-observations/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-07-supervisor-observation-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11107-supervisor-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-supervisor-full-matrix-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR or QA signed SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real Company signed Worker acknowledged independent Verifier matrix and DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/supervisor-observation-journey.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11107-supervisor-observation-real-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11107-supervisor-observation-real-chromium.log
+          done
+          for marker in COMPANY_SIGNED_WORKER_ACK_ALL_12_BROWSER_CASES NINE_VERIFIER_DECISIONS_WORKER_COMPANY_RECEIVING THREE_PREEXISTING_ESCALATION_BLOCKERS_UNCHANGED DB_15_ACK_SIGNED_9_IMMUTABLE_DECISIONS_AND_3_BLOCKERS; do
+            grep -q "M11107_ACTUAL_${marker}" .autopilot/artifacts/m11107-supervisor-observation-real-chromium.log
+          done
+          for decision in APPROVED REJECTED CHANGES_REQUESTED; do
+            for outcome in demonstrated partially_demonstrated not_demonstrated; do
+              grep -q "SCENARIO ${outcome} -> ${decision} -> Worker/Company feedback persisted" .autopilot/artifacts/m11107-supervisor-observation-real-chromium.log
+            done
+          done
+          for prior in ESCALATED UNABLE_TO_VERIFY CHANGES_REQUESTED; do
+            grep -q "MIXED ACK preserved ${prior} existing owner and route" .autopilot/artifacts/m11107-supervisor-observation-real-chromium.log
+          done
+      - name: Archive original exact-SHA raw Worker Company Verifier full browser log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11107-supervisor-original-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11107-supervisor-observation-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 90

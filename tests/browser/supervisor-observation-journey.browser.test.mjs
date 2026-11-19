@@ -146,6 +146,10 @@ Safety controls applied`);
     await company.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();
     console.log("SCENARIO "+outcome+" -> "+decision+" -> Worker/Company feedback persisted");
    }
+   assert.equal(n,12,"Supervisor observation scenario matrix must execute all nine independent outcomes and three existing blocker cases.");
+   console.log("M11107_ACTUAL_COMPANY_SIGNED_WORKER_ACK_ALL_12_BROWSER_CASES");
+   console.log("M11107_ACTUAL_NINE_VERIFIER_DECISIONS_WORKER_COMPANY_RECEIVING");
+   console.log("M11107_ACTUAL_THREE_PREEXISTING_ESCALATION_BLOCKERS_UNCHANGED");
   } finally {await browser.close()}
  }});
  assert.equal(result.requestedSignal,"SMOKE_COMPLETE");
@@ -153,6 +157,7 @@ Safety controls applied`);
   assert.equal((await proof.query("SELECT count(*)::int AS n FROM supervisor_observation_details WHERE worker_acknowledged_at IS NOT NULL")).rows[0].n,15);
   for(let n=10;n<=12;n++){const actual=(await proof.query("SELECT case_status,owner_kind FROM assurance_cases WHERE case_id=$1",[oid("assurance_case",n)])).rows[0];assert.deepEqual(actual,{case_status:n===10?"Review pending":"Evidence pending",owner_kind:n===10?"admin":"worker"});}
   const counts=await proof.query("SELECT outcome,count(*)::int AS n FROM evidence_review_decisions GROUP BY outcome ORDER BY outcome");assert.deepEqual(counts.rows,[{outcome:"APPROVED",n:3},{outcome:"CHANGES_REQUESTED",n:3},{outcome:"REJECTED",n:3}]);
+  console.log("M11107_ACTUAL_DB_15_ACK_SIGNED_9_IMMUTABLE_DECISIONS_AND_3_BLOCKERS");
  }finally{await proof.close()}
  }finally{await rm(dir,{recursive:true,force:true})}
 });
