@@ -67,7 +67,7 @@ M1.12.03,M1.12,Public verification and concerns,Private identity/answers/reviewe
 M1.12.04,M1.12,Public verification and concerns,"Concern form validation, evidence upload, staff intake and reasoned resolution",0,0,0,NOT_FULLY_VERIFIED
 M1.12.05,M1.12,Public verification and concerns,Abuse/rate limit and expired signed preview deny safely,0,0,0,NOT_FULLY_VERIFIED
 M2.01.01,M2.01,Assurance Orders and Cases,"Draft save/edit, add linked Workers, validate and submit",0,0,0,NOT_FULLY_VERIFIED
-M2.01.02,M2.01,Assurance Orders and Cases,Invalid/unlinked/ineligible Worker and missing funding explained,0,0,0,NOT_FULLY_VERIFIED
+M2.01.02,M2.01,Assurance Orders and Cases,Invalid/unlinked/ineligible Worker and missing funding explained,1,0,0,NOT_FULLY_VERIFIED
 M2.01.03,M2.01,Assurance Orders and Cases,Multi-worker cases created once with correct scope/site/deadline,0,0,0,NOT_FULLY_VERIFIED
 M2.01.04,M2.01,Assurance Orders and Cases,Duplicate submission and competing credit reservations stay idempotent,1,0,1,NOT_FULLY_VERIFIED
 M2.01.05,M2.01,Assurance Orders and Cases,Worker/company/mixed funding reaches assessment and final credential,0,0,0,NOT_FULLY_VERIFIED

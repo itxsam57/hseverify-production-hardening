@@ -178,7 +178,12 @@ export class AssuranceOrderService {
       // Positive final decisions issue the retained credential target through the credential engine.
       // interviewRequired remains an explicit M2.01 boundary field; Interview scheduling is integrated through M2.11+ without changing the M2.01 order boundary.
       if(order.deadline && Date.parse(order.deadline)<=now.getTime()) errors.push("Assurance Order deadline must be in the future.");
-      const normalized=Object.freeze([...new Set(errors)]); const ready=normalized.length===0; const updated=await repository.recordValidation({tenantId:scope.tenantId,orderId:id,ready,errors:normalized,targetResults,now:now.toISOString()}); if(!updated) throw new AssuranceOrderConflictError();
+      const normalized=Object.freeze([...new Set(errors)]); const ready=normalized.length===0;
+      // Recheck all live links, funding and policy above, but don't record a
+      // second event/audit for an unchanged READY -> READY transition. A
+      // revoked link or changed policy still records VALIDATION_FAILED below.
+      if(order.orderStatus==="READY" && ready)return Object.freeze({ready,errors:normalized});
+      const updated=await repository.recordValidation({tenantId:scope.tenantId,orderId:id,ready,errors:normalized,targetResults,now:now.toISOString()}); if(!updated) throw new AssuranceOrderConflictError();
       await repository.insertTimeline({eventId:createAssuranceTimelineEventId(),tenantId:scope.tenantId,orderId:id,caseId:null,eventType:"order_validated",fromStatus:order.orderStatus,toStatus:ready?"READY":"VALIDATION_FAILED",owner:"company",nextAction:ready?"Submit the validated Assurance Order.":"Resolve every validation error and validate again.",actorAccountId:scope.accountId,actorRole:"company",now:now.toISOString()});
       await audit(database,principal,"assurance_order.validated",id,{ready,errorCount:normalized.length}); return Object.freeze({ready,errors:normalized});
     }});

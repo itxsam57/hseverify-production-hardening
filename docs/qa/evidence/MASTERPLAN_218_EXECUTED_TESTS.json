@@ -15332,6 +15332,21 @@
       "title": "M2.01 concurrent submit race produces exactly one submission and no duplicate cases/actions"
     },
     {
+      "case_id": "tests/platform/assurance-order-case-runtime.test.mjs#385c7c3a57ac092c",
+      "direct_scenarios": [],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/assurance-order-case-runtime.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M2.01.02"
+      ],
+      "scenario_link_kind": "single_scenario_historical_report_link",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M2.01 repeated READY validation is idempotent but still rejects subsequently revoked Worker links"
+    },
+    {
       "case_id": "tests/platform/assurance-order-case-runtime.test.mjs#d374b89a7cfd35ca",
       "direct_scenarios": [],
       "evidence": [
@@ -47014,10 +47029,10 @@
   "counts": {
     "ambiguous_or_changed_title_occurrences": 1156,
     "ambiguous_or_changed_unique_titles": 241,
-    "clean_pass_summary_logs": 1227,
+    "clean_pass_summary_logs": 1228,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 561,
-    "current_test_source_content_sha256": "2ecb074767c6c8ca7741b39c36813af0c26d9e78e9ca5b7b19b0b43ec35a240f",
+    "current_test_source_content_sha256": "5e313e613b37c980e3cd1ea95546d8ee10c8fa79c3656f01ec5ad56e59c442d0",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -47025,24 +47040,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 188,
+    "existing_source_cases_linked_to_an_exact_218_id": 189,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 67,
-    "historical_log_files_scanned": 2614,
+    "historical_log_files_scanned": 2622,
     "historical_only_green_distinct_cases": 1203,
     "logs_with_no_clean_pass_summary_or_a_failure": 59,
-    "logs_with_pass_lines": 1286,
-    "matched_case_occurrences_with_duplicates": 5859,
+    "logs_with_pass_lines": 1287,
+    "matched_case_occurrences_with_duplicates": 5867,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
     "previous_green_distinct_source_matched_cases": 1435,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 198,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 174,
-    "static_existing_distinct_test_cases": 1609,
+    "source_tests_without_green_execution_proof": 175,
+    "static_existing_distinct_test_cases": 1610,
     "unique_source_matched_historical_green_cases": 1398,
-    "worktrees_scanned": 170
+    "worktrees_scanned": 172
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -47055,7 +47070,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "de31eef9cc6f5e35c6c18660c86768ddc369806e",
+  "inventory_started_from_git_head_sha": "b15f40987d126cbfbaf702ac0b96ced7d93a5b4c",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -48006,7 +48021,7 @@
     },
     {
       "brick": "M2.01",
-      "existing_source_cases_linked": 0,
+      "existing_source_cases_linked": 1,
       "family": "Assurance Orders and Cases",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
