@@ -22,7 +22,7 @@ export default async function AssuranceOrderDetailPage({params,searchParams}:{pa
     <div className="page-heading"><div><p className="eyebrow">Company assurance</p><h1>Assurance order</h1><p>{order.orderReference} · {order.orderStatus}</p></div></div>
     {typeof error==="string"&&error?<p role="alert" className="status-banner status-error">{error.slice(0,500)}</p>:null}
     <AssuranceOrderWorkspace order={order} cases={cases} interviewSchedules={interviewSchedules} credentialStatuses={credentialStatuses}/>
-    <section aria-labelledby="effective-policy-summary">
+    <section className="effective-policy-summary" aria-labelledby="effective-policy-summary">
       <h2 id="effective-policy-summary">Applied effective policy</h2>
       {policySnapshots.length===0?<p>No case policy snapshot has been pinned yet. Submitted cases lock the exact applied policy version.</p>:<ul>{policySnapshots.map(snapshot=><li key={snapshot.caseId}><strong>{snapshot.workerAccountId}</strong> — global version <code>{snapshot.globalPolicyVersionId}</code> — {snapshot.tenantOverrideApplied?"Company tightening applied":"global policy only"}. Resolved policy: <code>{JSON.stringify(snapshot.effectiveValue)}</code></li>)}</ul>}
     </section>

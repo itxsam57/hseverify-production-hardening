@@ -111,6 +111,17 @@ body {
   overscroll-behavior-inline: contain;
 }
 
+/* The Company policy summary contains long opaque Worker/Version IDs and
+   serialized policy values. Wrap visibly instead of widening a 320px page. */
+.effective-policy-summary li,
+.effective-policy-summary strong,
+.effective-policy-summary code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+
 @media (max-width: 680px) {
   .form-grid {
     grid-template-columns: minmax(0, 1fr);
