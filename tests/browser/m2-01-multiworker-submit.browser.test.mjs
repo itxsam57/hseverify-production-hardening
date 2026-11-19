@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { createServer } from "node:net";
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
@@ -15,6 +15,24 @@ async function freePort(){
     });
   });
 }
+async function signInSyntheticRole(page,baseUrl,identity,role){
+  await page.goto(baseUrl+"/"+role+"/login",{waitUntil:"domcontentloaded"});
+  await page.getByLabel("Email address").fill(identity.email);
+  await page.getByLabel("Password",{exact:true}).fill(identity.password);
+  if(identity.totpSecret){
+    const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let bits="";for(const c of identity.totpSecret.toUpperCase().replace(/=+$/g,"")){
+      const offset=alphabet.indexOf(c);assert.ok(offset>=0);bits+=offset.toString(2).padStart(5,"0");
+    }
+    const bytes=[];for(let i=0;i+8<=bits.length;i+=8)bytes.push(parseInt(bits.slice(i,i+8),2));
+    const counter=Buffer.alloc(8);counter.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
+    const digest=createHmac("sha1",Buffer.from(bytes)).update(counter).digest(),offset=digest.at(-1)&15;
+    await page.getByLabel("Authenticator code").fill(String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0"));
+  }
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await page.waitForURL("**/"+role+"/dashboard",{timeout:30000});
+}
+
 test("M2.01 actual two Worker cases keep scope/site/deadline and stale second submit cannot duplicate cases", {timeout:300000},async()=>{
   const fixture=await workerAssessmentSearchFixture();
   const noCredits=process.env.HSE_M20102_NO_CREDIT_ONLY==="true";
@@ -22,7 +40,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const revoked=process.env.HSE_M20102_REVOKED_LINK_ONLY==="true";
   const invalidLink=process.env.HSE_M20102_INVALID_LINK_ONLY==="true";
   const foreignLink=process.env.HSE_M20102_FOREIGN_TENANT_LINK_ONLY==="true";
-  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const actionReplay=process.env.HSE_M20102_ACTION_REPLAY_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
   const foreignTenantId=id("tenant","foreign-company"),foreignLinkId=id("company_worker_link","foreign-company");
   let revokedDraftUrl="";
   let originalAuthenticatedCompanyCookies=[];
@@ -105,6 +124,68 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
+          if(actionReplay){
+            let captured=null;
+            let receiveCapture;
+            const capture=new Promise(resolve=>{receiveCapture=resolve;});
+            await page.route("**/company/assurance-orders/**",async route=>{
+              const request=route.request();
+              if(request.method()==="POST"){
+                captured={body:request.postDataBuffer(),headers:await request.allHeaders()};
+                receiveCapture();
+                await route.abort("blockedbyclient");
+                return;
+              }
+              await route.continue();
+            });
+            await page.getByRole("button",{name:"Validate Order",exact:true}).click();
+            await Promise.race([capture,new Promise((_,reject)=>setTimeout(()=>reject(Error("Actual Company Validate Server Action POST was not captured")),20000))]);
+            await page.unroute("**/company/assurance-orders/**");
+            assert.ok(captured.body?.length>0,"Genuine form POST bytes required");
+            assert.ok(captured.headers["next-action"],"Genuine immutable Next Server Action ID required");
+            const baseHeaders={
+              "next-action":captured.headers["next-action"],
+              "content-type":captured.headers["content-type"],
+              "accept":captured.headers.accept||"text/x-component",
+              "origin":baseUrl
+            };
+            if(captured.headers["next-router-state-tree"])baseHeaders["next-router-state-tree"]=captured.headers["next-router-state-tree"];
+            console.log("M20102_ACTUAL_GENUINE_COMPANY_VALIDATE_ACTION_CAPTURED_NO_MUTATION");
+            for(const role of ["worker","verifier","assessor","admin","root"]){
+              const foreignContext=await browser.newContext({viewport:{width:320,height:740}});
+              try{
+                const foreignPage=await foreignContext.newPage();
+                await signInSyntheticRole(foreignPage,baseUrl,fixture.credentials[role],role);
+                assert.ok((await foreignContext.cookies()).some(cookie=>cookie.name.toLowerCase().includes("session")),role+" must authenticate before replay");
+                const response=await foreignContext.request.post(orderUrl+"?role=company&activeRole=company",{
+                  data:captured.body,headers:{...baseHeaders,"x-hse-role":"company","x-hse-active-role":"company","x-hse-account-id":company.accountId},
+                  maxRedirects:0,timeout:30000
+                });
+                const body=await response.text();
+                const redirected=response.headers()["x-action-redirect"]||response.headers().location||"";
+                assert.ok(response.status()<500,role+" replay must not trigger unhandled server failure");
+                assert.ok(redirected.includes("/access-denied")||body.includes("/access-denied")||redirected.includes("/company/login")||body.includes("/company/login"),role+" attempted genuine Company Server Action must be denied");
+                assert.ok(!body.includes("Both linked Workers need the same scoped safety review."),role+" replay returned private Company draft content");
+              }finally{await foreignContext.close();}
+            }
+            const anonymous=await browser.newContext();
+            try{
+              const response=await anonymous.request.post(orderUrl,{data:captured.body,headers:baseHeaders,maxRedirects:0,timeout:30000});
+              const body=await response.text();
+              const redirected=response.headers()["x-action-redirect"]||response.headers().location||"";
+              assert.ok(response.status()<500);
+              assert.ok(redirected.includes("/login")||body.includes("/login"),"Signed-out exact Company Server Action replay must require login");
+            }finally{await anonymous.close();}
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("DRAFT",{exact:true}).waitFor();
+            console.log("M20102_ACTUAL_COMPANY_VALIDATE_SERVER_ACTION_FIVE_FOREIGN_ROLES_AND_ANONYMOUS_REPLAY_DENIED");
+            await page.getByRole("button",{name:"Validate Order",exact:true}).click();
+            await page.getByText("READY",{exact:true}).waitFor();
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.getByText("READY",{exact:true}).waitFor();
+            await context.close();
+            return;
+          }
           if(foreignLink){
             await page.getByLabel("Active Worker link ID").fill(foreignLinkId);
             await page.getByRole("button",{name:"Add Workers",exact:true}).click();
@@ -276,6 +357,23 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
+      if(actionReplay){
+        assert.equal(order.tenant_id,company.tenantId);
+        assert.equal(order.order_status,"READY");
+        assert.equal(order.submitted_at,null);
+        const targetRows=(await verifyDb.query("SELECT worker_link_id,target_status FROM assurance_order_workers WHERE order_id=$1",[order.order_id])).rows;
+        assert.equal(targetRows.length,2);
+        assert.deepEqual(targetRows.map(row=>row.worker_link_id).sort(),[...linkIds].sort());
+        assert.ok(targetRows.every(row=>row.target_status==="eligible"));
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_validated'",[order.order_id])).rows[0].n,1);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assurance_order.validated' AND target_reference=$1",[order.order_id])).rows[0].n,1);
+        for(const table of ["assurance_cases","assurance_action_items"]){
+          assert.equal((await verifyDb.query(`SELECT COUNT(*)::int AS n FROM ${table} WHERE order_id=$1`,[order.order_id])).rows[0].n,0);
+        }
+        assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0);
+        console.log("M20102_ACTUAL_DB_ONLY_AUTHORIZED_COMPANY_VALIDATION_ONE_AUDIT_TWO_ELIGIBLE_TARGETS_ZERO_CASES_CREDITS");
+        return;
+      }
       if(foreignLink){
         assert.equal(order.tenant_id,company.tenantId);
         assert.equal(order.order_status,"DRAFT");
