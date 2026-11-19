@@ -20,7 +20,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const noCredits=process.env.HSE_M20102_NO_CREDIT_ONLY==="true";
   const noTargets=process.env.HSE_M20102_NO_TARGET_ONLY==="true";
   const revoked=process.env.HSE_M20102_REVOKED_LINK_ONLY==="true";
-  assert.ok([noCredits,noTargets,revoked].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const invalidLink=process.env.HSE_M20102_INVALID_LINK_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked,invalidLink].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
   let revokedDraftUrl="";
   let originalAuthenticatedCompanyCookies=[];
   const baseUrl="http://127.0.0.1:"+(await freePort());
@@ -88,6 +89,24 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           await page.waitForURL(/\/company\/assurance-orders\/assurance_order_/);
           const orderUrl=page.url();
           await page.getByText("DRAFT",{exact:true}).waitFor();
+          if(invalidLink){
+            await page.getByLabel("Active Worker link ID").fill(id("company_worker_link","not-a-current-company-link"));
+            await page.getByRole("button",{name:"Add Workers",exact:true}).click();
+            await page.getByRole("alert").getByText("Worker link is not available for this Company.",{exact:true}).waitFor({timeout:15000});
+            assert.equal(new URL(page.url()).pathname,new URL(orderUrl).pathname);
+            await page.goto(orderUrl,{waitUntil:"domcontentloaded"});
+            await page.getByLabel("Active Worker link ID").fill("bad");
+            await page.getByRole("button",{name:"Add Workers",exact:true}).click();
+            await page.getByRole("alert").getByText("Worker link is invalid.",{exact:true}).waitFor({timeout:15000});
+            assert.equal(new URL(page.url()).pathname,new URL(orderUrl).pathname);
+            await page.goto(orderUrl,{waitUntil:"domcontentloaded"});
+            await page.getByText("DRAFT",{exact:true}).waitFor();
+            assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
+            assert.deepEqual(errors,[],output());
+            console.log("M20102_ACTUAL_INVALID_AND_UNKNOWN_WORKER_LINK_FORMS_NEUTRAL_DENIAL_NO_CASE");
+            await context.close();
+            return;
+          }
           if(revoked){
             revokedDraftUrl=orderUrl;
             originalAuthenticatedCompanyCookies=await context.cookies();
@@ -221,6 +240,19 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       const orders=(await verifyDb.query("SELECT order_id,tenant_id,site_id,department_id,deadline,interview_required,order_status,submitted_at FROM assurance_orders WHERE order_reference='M201-TWO-WORKERS'")).rows;
       assert.equal(orders.length,1);
       const order=orders[0];
+      if(invalidLink){
+        assert.equal(order.order_status,"DRAFT");
+        assert.equal(order.submitted_at,null);
+        const allTargets=(await verifyDb.query("SELECT worker_link_id FROM assurance_order_workers WHERE order_id=$1",[order.order_id])).rows;
+        assert.equal(allTargets.length,2);
+        assert.deepEqual(allTargets.map(row=>row.worker_link_id).sort(),[...linkIds].sort());
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_cases WHERE order_id=$1",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_action_items WHERE order_id=$1",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_submitted'",[order.order_id])).rows[0].n,0);
+        assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0);
+        console.log("M20102_ACTUAL_DB_INVALID_LINK_ATTEMPTS_LEAVE_TWO_LEGIT_WORKERS_NO_CASES_OR_CREDITS");
+        return;
+      }
       if(noTargets||revoked){
         assert.equal(order.tenant_id,company.tenantId);
         assert.equal(order.order_status,"VALIDATION_FAILED");
