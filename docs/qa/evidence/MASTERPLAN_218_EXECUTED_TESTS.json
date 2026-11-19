@@ -2395,6 +2395,12 @@
           "source_log": "hseverify-m307-api-evidence-20261108/.autopilot/artifacts/20261108-M307-direct-api-db-invariants-GREEN.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "f1ee214d7496efe48d8b759ac1e31a6fdea6b373b59336b77bf2dbf37067c64b",
+          "source_log": "hseverify-m307-appeal-race-20261109/.autopilot/artifacts/20261109-M307-race-race-browser-repeat.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -2425,6 +2431,12 @@
         {
           "sha256": "08d1d0174e5181642f7d333b4f0a03a7d7b87932eef8fe02b2acceef57eabbfb",
           "source_log": "hseverify-m307-api-evidence-20261108/.autopilot/artifacts/20261108-M307-api-adjacent-retry-credential-appeal-rejection-stale.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "b706dc7b0f97ffd4c3996f5397e295c85efa9efdcc3f2aa53ab418d845d8c524",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-exact749-credential-appeal-rejection-stale.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21343,6 +21355,12 @@
           "source_log": "hseverify-m307-api-evidence-20261108/.autopilot/artifacts/20261108-M307-api-exacta315-appeal-review-native.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "008412c1e4392884345006378b1fda790f825da36d09de0cae2988f48cda1bc7",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261107-M307-exact749-credential-appeals-independence-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -21373,6 +21391,12 @@
         {
           "sha256": "7a9eb6bb7de8cf7bc24bfe0a6a5e58e7fdeed0be75cb2f39ffafc9d816f69c0a",
           "source_log": "hseverify-m307-api-evidence-20261108/.autopilot/artifacts/20261108-M307-api-exacta315-appeal-review-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "789d0af1b7623a9f245f3a13292e9a9542a4a14185f1eb4cc97e15a05e69866c",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -21469,6 +21493,12 @@
         {
           "sha256": "d55015db489d3d71ffa9ecfbc1b21292c0b61ec1c8ae7b454406390b9897b97a",
           "source_log": "hseverify-m307-api-evidence-20261108/.autopilot/artifacts/20261108-M307-api-exacta315-appeal-security-native.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "789d0af1b7623a9f245f3a13292e9a9542a4a14185f1eb4cc97e15a05e69866c",
+          "source_log": "hseverify-m307-appeals-pentest-20261107/.autopilot/artifacts/20261108-M307-fixedgate-test-m3-07.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -25906,6 +25936,18 @@
           "source_log": "hseverify-m11103-native-pg16-20261118/.autopilot/artifacts/M11103_ADJACENT_REVIEW_PGLITE_20261118.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "32ab97af63752f9e4c9fab9ce14197e46b73b1521426a6cc8c58bb554fcd87fc",
+          "source_log": "hseverify-m11103-native-pg16-20261118/.autopilot/artifacts/M11103_FINAL_EXACT_SOURCE_PGLITE_20261118.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "616d9a1b703f2e91f465688ce622907a2b56d503528d026fc171e87613326bce",
+          "source_log": "hseverify-m11103-native-pg16-20261118/.autopilot/artifacts/M11103_EXACT_HEAD_PGLITE_20261118.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -25940,6 +25982,12 @@
         {
           "sha256": "32ab97af63752f9e4c9fab9ce14197e46b73b1521426a6cc8c58bb554fcd87fc",
           "source_log": "hseverify-m11103-native-pg16-20261118/.autopilot/artifacts/M11103_FINAL_EXACT_SOURCE_PGLITE_20261118.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "616d9a1b703f2e91f465688ce622907a2b56d503528d026fc171e87613326bce",
+          "source_log": "hseverify-m11103-native-pg16-20261118/.autopilot/artifacts/M11103_EXACT_HEAD_PGLITE_20261118.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -46706,12 +46754,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 1035,
+    "ambiguous_or_changed_title_occurrences": 1041,
     "ambiguous_or_changed_unique_titles": 241,
-    "clean_pass_summary_logs": 1275,
+    "clean_pass_summary_logs": 1230,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 561,
-    "current_test_source_content_sha256": "5845bb63c56e68b93d50c757b1b21aa214c6848869a1dfffa14dbaceefd0fd78",
+    "current_test_source_content_sha256": "9d3c1f041722ecc4431b4fe66c584525a389e56c481da457231eecee0ca6c65d",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -46722,11 +46770,11 @@
     "existing_source_cases_linked_to_an_exact_218_id": 187,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 66,
-    "historical_log_files_scanned": 2530,
+    "historical_log_files_scanned": 2385,
     "historical_only_green_distinct_cases": 1202,
-    "logs_with_no_clean_pass_summary_or_a_failure": 65,
-    "logs_with_pass_lines": 1340,
-    "matched_case_occurrences_with_duplicates": 6040,
+    "logs_with_no_clean_pass_summary_or_a_failure": 60,
+    "logs_with_pass_lines": 1290,
+    "matched_case_occurrences_with_duplicates": 5873,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
@@ -46735,8 +46783,8 @@
     "prior_result_TSV_files": 26,
     "source_tests_without_green_execution_proof": 174,
     "static_existing_distinct_test_cases": 1608,
-    "unique_source_matched_historical_green_cases": 1427,
-    "worktrees_scanned": 150
+    "unique_source_matched_historical_green_cases": 1410,
+    "worktrees_scanned": 151
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -46749,7 +46797,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "e02fabaf85f5b07e6348c969efad7450d41c891c",
+  "inventory_started_from_git_head_sha": "ec756c459a0785f246444fdc3507a2efbaf0a198",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,

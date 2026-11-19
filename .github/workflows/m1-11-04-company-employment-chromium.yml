@@ -1,0 +1,116 @@
+name: M1.11.04 linked Company Worker employment correction and role denial Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/company-workforce-assurance-e2e.browser.test.mjs'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/lib/review/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-04-company-employment-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/company-workforce-assurance-e2e.browser.test.mjs'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/lib/review/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-04-company-employment-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11104-linked-company-employment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linked-company-employment-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M11104_COMPANY_EMPLOYMENT_ONLY: 'true'
+    steps:
+      - name: Checkout exact PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Linked Company employment real Worker Verifier approved correction and receiving
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11104-company-linked-employment-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11104-company-linked-employment-chromium.log
+          done
+          for marker in CHROME_LINKED_WORKER_COMPANY_CHANGES_RECEIVING CHROME_CORRECTED_APPROVED_WORKER_AND_COMPANY_RELOADED CHROME_RESPONSIVE_WORKER_COMPANY_320_390_1440 CHROME_ROLE_AND_SIGNEDOUT_RAW_EVIDENCE_DENIAL DB_ONE_LINKED_TENANT_CASE_TWO_IMMUTABLE_VERSIONS_DECISIONS_AND_PROOFS; do
+            grep -q "M11104_COMPANY_EMPLOYMENT_ACTUAL_${marker}" .autopilot/artifacts/m11104-company-linked-employment-chromium.log
+          done
+      - name: Retain original head linked Company employment browser log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11104-company-linked-employment-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11104-company-linked-employment-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  original-linked-company-skill-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M11103_COMPANY_SKILL_ONLY: 'true'
+    steps:
+      - name: Checkout identical target SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Preserve original Company linked Worker skill correction receiving real Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/company-workforce-assurance-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11104-original-linked-company-skill-regression.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11104-original-linked-company-skill-regression.log
+          done
+          for marker in CHROME_LINKED_WORKER_COMPANY_RECEIVING CHROME_CORRECTION_REVIEW_AND_TWO_PORTAL_HISTORY CHROME_RESPONSIVE_320_390_1440 DB_TWO_VERSIONS_TWO_DECISIONS_ONE_CASE; do
+            grep -q "M11103_COMPANY_SKILL_ACTUAL_${marker}" .autopilot/artifacts/m11104-original-linked-company-skill-regression.log
+          done
+      - name: Retain original head adjacent linked Company skill browser log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11104-original-linked-company-skill-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11104-original-linked-company-skill-regression.log
+          if-no-files-found: warn
+          retention-days: 90

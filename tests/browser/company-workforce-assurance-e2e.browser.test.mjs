@@ -137,14 +137,41 @@ async function submitSkill(page, baseUrl) {
   await card.getByText("active · submitted",{exact:true}).waitFor({timeout:15000});
 }
 
+// The current Company-linked browser path is extended rather than duplicated.
+async function submitEmployment(page,baseUrl) {
+  await page.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+  await page.getByLabel("Record type").selectOption("employment");
+  await Promise.all([
+    page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")),
+    page.getByRole("button",{name:"Create draft"}).click()
+  ]);
+  await page.reload({waitUntil:"domcontentloaded"});
+  const card=page.locator("article").filter({hasText:"Employment record"}).first();
+  for(const [label,value] of [
+    ["Employer","Independent Audit Employer"],["Role title","HSE Coordinator"],
+    ["Country","Pakistan"],["Start date","2023-01-01"],
+    ["Duties","Coordinate risk assessments and safe systems of work."]
+  ]) await card.getByLabel(label,{exact:label!=="Duties"}).fill(value);
+  await card.getByRole("button",{name:"Save metadata"}).click();
+  await card.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor();
+  await card.getByLabel("Evidence file",{exact:true}).setInputFiles({...PNG_FILE,name:"employment-original.png"});
+  await card.getByRole("button",{name:"Upload file",exact:true}).click();
+  await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({timeout:15000});
+  await card.getByRole("button",{name:"Submit this version"}).click();
+  await card.getByText("active · submitted",{exact:true}).waitFor({timeout:15000});
+}
+
 test(
   "Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end",
   { timeout: 300_000 },
   async () => {
     const root = process.cwd();
     const skillOnly=process.env.HSE_M11103_COMPANY_SKILL_ONLY==="true";
-    const evidenceKind=skillOnly?"skill":"qualification";
-    const orderName=skillOnly?"Linked Worker Skill Assurance":"Linked Worker Qualification Assurance";
+    const employmentOnly=process.env.HSE_M11104_COMPANY_EMPLOYMENT_ONLY==="true";
+    assert.ok(!(skillOnly&&employmentOnly),"Independent focused browser modes must not overlap.");
+    const evidenceKind=employmentOnly?"employment":skillOnly?"skill":"qualification";
+    const orderName=employmentOnly?"Linked Worker Employment Assurance":
+      skillOnly?"Linked Worker Skill Assurance":"Linked Worker Qualification Assurance";
     const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-company-assurance-"));
     const port = await freePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -192,7 +219,8 @@ test(
           const admin = await adminContext.newPage();
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
-            if(skillOnly)await submitSkill(worker,baseUrl);
+            if(employmentOnly)await submitEmployment(worker,baseUrl);
+            else if(skillOnly)await submitSkill(worker,baseUrl);
             else await submitQualification(worker, baseUrl);
 
             await login(company, baseUrl, credentials.company, "company");
@@ -315,7 +343,9 @@ test(
             await verifier.getByLabel("Reason", { exact: true }).fill(
               terminalReject
                 ? "Original qualification document was proven invalid; do not accept this submitted version."
-                : (skillOnly?"Provide corrected skill proficiency evidence before this Company case can proceed.":"Correct the certificate number before this Company case can proceed.")
+                : (employmentOnly?"Provide corrected employment duties and attributable evidence before this Company case can proceed.":
+                  skillOnly?"Provide corrected skill proficiency evidence before this Company case can proceed.":
+                  "Correct the certificate number before this Company case can proceed.")
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText(verdict, { exact: true }).waitFor({ timeout: 15_000 });
@@ -336,16 +366,19 @@ test(
             }
             await worker.getByText("Evidence pending", { exact: true }).first().waitFor({ timeout: 15_000 });
             if(skillOnly)console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_LINKED_WORKER_COMPANY_RECEIVING");
+            if(employmentOnly)console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_LINKED_WORKER_COMPANY_CHANGES_RECEIVING");
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
-            const record=worker.locator("article").filter({hasText:skillOnly?"Skill record":"Qualification record"}).first();
+            const record=worker.locator("article").filter({hasText:
+              employmentOnly?"Employment record":skillOnly?"Skill record":"Qualification record"}).first();
             await record.getByRole("button", { name: "Start a new revision" }).click();
             await record.getByText("active · draft", { exact: true }).waitFor({ timeout: 15_000 });
-            await record.getByLabel(skillOnly?"Proficiency claim":"Certificate / candidate number").fill(
+            await record.getByLabel(employmentOnly?"Duties":skillOnly?"Proficiency claim":"Certificate / candidate number").fill(
+              employmentOnly?"Corrected attributable HSE coordination, field permits and inspection records.":
               skillOnly?"Observed independent skill competence supported by corrected training record.":"IOSH-LINK-002");
             await record.getByRole("button", { name: "Save metadata" }).click();
             await record.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
-            await record.getByLabel(skillOnly?"Evidence file":"Primary certificate file").setInputFiles(
-              {...PNG_FILE,name:skillOnly?"skill-corrected.png":"qualification.png"});
+            await record.getByLabel(skillOnly||employmentOnly?"Evidence file":"Primary certificate file").setInputFiles(
+              {...PNG_FILE,name:employmentOnly?"employment-corrected.png":skillOnly?"skill-corrected.png":"qualification.png"});
             await record.getByRole("button", { name: "Upload file" }).click();
             await record.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({ timeout: 15_000 });
             await record.getByRole("button", { name: "Submit this version" }).click();
@@ -373,7 +406,9 @@ test(
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
             await verifier.getByLabel("Decision").selectOption("APPROVED");
             await verifier.getByLabel("Reason", { exact: true }).fill(
-              skillOnly?"Case-scoped skill review confirms the corrected proficiency and attached evidence.":"Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
+              employmentOnly?"Case-scoped employment review confirms the corrected duties and attributable evidence.":
+              skillOnly?"Case-scoped skill review confirms the corrected proficiency and attached evidence.":
+              "Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText("APPROVED", { exact: true }).waitFor({ timeout: 15_000 });
@@ -448,6 +483,53 @@ test(
               }
               console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_RESPONSIVE_320_390_1440");
             }
+            if (employmentOnly) {
+              // Positive Company-linked case: receiving state is the authorized
+              // case status, not an unrestricted raw Worker employment document.
+              await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor();
+              await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+              const employment=worker.locator("article").filter({hasText:"Employment record"}).first();
+              await employment.getByText(/Independent verification: approved/).waitFor();
+              const history=employment.getByRole("region",{name:"employment history"});
+              for(const n of [1,2])await history.getByText(new RegExp("Version "+n)).first().waitFor();
+              await company.reload({waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor();
+              await worker.reload({waitUntil:"domcontentloaded"});
+              await employment.getByText(/Independent verification: approved/).waitFor();
+              console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_CORRECTED_APPROVED_WORKER_AND_COMPANY_RELOADED");
+
+              for(const width of [320,390,1440]) {
+                await worker.setViewportSize({width,height:900});
+                await company.setViewportSize({width,height:900});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+                await worker.locator("article").filter({hasText:"Employment record"}).first()
+                  .getByText(/Independent verification: approved/).waitFor();
+                await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                  .getByText("Assessment pending",{exact:true}).waitFor();
+                for(const [role,page] of [["worker",worker],["company",company]]) {
+                  const measured=await page.evaluate(()=>({viewport:window.innerWidth,page:document.documentElement.scrollWidth}));
+                  assert.ok(measured.page<=measured.viewport+2,
+                    role+" Company-linked employment page horizontal overflow "+width+": "+JSON.stringify(measured));
+                }
+              }
+              console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_RESPONSIVE_WORKER_COMPANY_320_390_1440");
+              // Being a linked Company is not consent to fetch private Worker
+              // evidence or to impersonate the independently assigned Verifier.
+              const companyRaw=await companyContext.request.get(`${baseUrl}/worker/evidence`,{maxRedirects:0});
+              assert.notEqual(companyRaw.status(),200,"Company saw private raw Worker employment evidence");
+              const workerReview=await workerContext.request.get(`${baseUrl}/verifier/reviews`,{maxRedirects:0});
+              assert.notEqual(workerReview.status(),200,"Worker saw private Verifier review queue");
+              const anonymousContext=await browser.newContext();
+              try {
+                const anon=await anonymousContext.request.get(`${baseUrl}/worker/evidence`,{maxRedirects:0});
+                assert.notEqual(anon.status(),200,"Signed-out user saw private Worker employment evidence");
+              } finally { await anonymousContext.close(); }
+              console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_ROLE_AND_SIGNEDOUT_RAW_EVIDENCE_DENIAL");
+            }
           } finally {
             await companyContext.close();
             await workerContext.close();
@@ -504,7 +586,29 @@ test(
           assert.ok(decisions.some(decision=>decision.outcome==="CHANGES_REQUESTED"&&decision.source_version_id===versions[0].version_id),"Original correction decision source lost.");
           assert.ok(decisions.some(decision=>decision.outcome==="APPROVED"&&decision.source_version_id===versions[1].version_id),"Corrected accepted decision source lost.");
           if(skillOnly)console.log("M11103_COMPANY_SKILL_ACTUAL_DB_TWO_VERSIONS_TWO_DECISIONS_ONE_CASE");
-          else console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
+          else if(employmentOnly) {
+            const records=(await database.query(
+              "SELECT record_id,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='employment'",
+              ["audit_worker_account_20260901"])).rows;
+            assert.equal(records.length,1);
+            assert.equal(records[0].current_version_id,versions[1].version_id);
+            const attachments=(await database.query(
+              "SELECT version_id,display_filename FROM worker_evidence_attachments WHERE record_id=$1",
+              [records[0].record_id])).rows;
+            for(const version of versions) {
+              assert.ok(attachments.some(a=>a.version_id===version.version_id),
+                "Missing original/corrected linked Company employment proof: "+version.version_number);
+            }
+            const caseBound=(await database.query(
+              "SELECT t.task_status,t.source_version_id,t.case_id,c.tenant_id FROM evidence_review_tasks t JOIN assurance_cases c ON c.case_id=t.case_id WHERE t.worker_account_id=$1 AND t.evidence_kind='employment' ORDER BY t.created_at",
+              ["audit_worker_account_20260901"])).rows;
+            assert.equal(caseBound.length,2);
+            assert.equal(new Set(caseBound.map(t=>t.case_id)).size,1);
+            assert.equal(new Set(caseBound.map(t=>t.tenant_id)).size,1);
+            assert.ok(caseBound.some(t=>t.task_status==="CHANGES_REQUESTED"&&t.source_version_id===versions[0].version_id));
+            assert.ok(caseBound.some(t=>t.task_status==="APPROVED"&&t.source_version_id===versions[1].version_id));
+            console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_DB_ONE_LINKED_TENANT_CASE_TWO_IMMUTABLE_VERSIONS_DECISIONS_AND_PROOFS");
+          } else console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
         }
       } finally {
         await database.close();
