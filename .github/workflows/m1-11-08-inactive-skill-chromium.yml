@@ -1,0 +1,75 @@
+name: M1.11.08 inactive Skill verified count and history real Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/independent-worker-review-e2e.browser.test.mjs'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/lib/review/**'
+      - 'src/app/layout-containment.css'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-08-inactive-skill-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/independent-worker-review-e2e.browser.test.mjs'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/lib/review/**'
+      - 'src/app/layout-containment.css'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-08-inactive-skill-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11108-inactive-skill-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actual-worker-inactive-current-skill-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+      HSE_INACTIVE_SKILL_ONLY: 'true'
+    steps:
+      - name: Checkout exact pull request head or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install original locked dependencies and genuine Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Worker approved Skill one becomes inactive zero; history role and mobile safeguards
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11108-inactive-skill-original-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11108-inactive-skill-original-chromium.log
+          done
+          grep -q 'ACTUAL_M11108_BROWSER independently approved skill 1 verified -> inactive preserved three versions and dashboard 0 verified after cold reload' .autopilot/artifacts/m11108-inactive-skill-original-chromium.log
+          grep -q 'ACTUAL_M11108_DB inactive skill retains three versions and past reviews but contributes zero current approved competencies' .autopilot/artifacts/m11108-inactive-skill-original-chromium.log
+          for marker in HTTP_ROLE_AND_ANONYMOUS_PRIVATE_SKILL_DENIED RESPONSIVE_INACTIVE_SKILL_320_390_1440 SIGNED_INACTIVE_HISTORY_UNCHANGED; do
+            grep -q "M11108_ACTUAL_${marker}" .autopilot/artifacts/m11108-inactive-skill-original-chromium.log
+          done
+      - name: Archive exact-sha original M11108 real browser raw log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11108-inactive-skill-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11108-inactive-skill-original-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
