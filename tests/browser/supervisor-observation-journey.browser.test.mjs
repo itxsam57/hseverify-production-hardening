@@ -195,8 +195,29 @@ Safety controls applied`);
             viewport:document.documentElement.clientWidth,
             content:document.documentElement.scrollWidth
           }));
+          if(dimensions.content>dimensions.viewport+2){
+            const offenders=await page.evaluate(()=>{
+              const viewport=document.documentElement.clientWidth;
+              return [...document.querySelectorAll("body *")]
+                .map(el=>{
+                  const r=el.getBoundingClientRect();
+                  const css=getComputedStyle(el);
+                  return {
+                    tag:el.tagName.toLowerCase(),className:String(el.className).slice(0,75),
+                    left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width),
+                    scroll:el.scrollWidth,client:el.clientWidth,
+                    minWidth:css.minWidth,whiteSpace:css.whiteSpace,overflowWrap:css.overflowWrap,
+                    text:(el.textContent??"").trim().slice(0,60)
+                  };
+                })
+                .filter(x=>x.right>viewport+5||x.scroll>x.client+5)
+                .sort((a,b)=>b.right-a.right)
+                .slice(0,20);
+            });
+            console.log("M11107_REAL_320_OVERFLOW_TRACE",JSON.stringify({path,width,dimensions,offenders}));
+          }
           assert.ok(dimensions.content<=dimensions.viewport+2,
-            "Signed supervisor observation role page overflow at "+width+": "+JSON.stringify(dimensions));
+            "Signed supervisor observation role page overflow "+path+" at "+width+": "+JSON.stringify(dimensions));
         }
         await company.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();
         await worker.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();

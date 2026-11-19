@@ -4,6 +4,7 @@ on:
     paths:
       - 'tests/browser/supervisor-observation-journey.browser.test.mjs'
       - 'tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs'
+      - 'src/app/layout-containment.css'
       - 'src/app/company/**'
       - 'src/app/worker/**'
       - 'src/app/verifier/**'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'tests/browser/supervisor-observation-journey.browser.test.mjs'
       - 'tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs'
+      - 'src/app/layout-containment.css'
       - 'src/app/company/**'
       - 'src/app/worker/**'
       - 'src/app/verifier/**'
