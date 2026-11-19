@@ -54,11 +54,11 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1433)
         self.assertEqual(c["current_reference_CI_green_distinct_cases"], 232)
         self.assertEqual(c["historical_only_green_distinct_cases"], 1201)
-        self.assertEqual(c["static_existing_distinct_test_cases"], 1606)
-        self.assertEqual(c["source_tests_without_green_execution_proof"], 173)
+        self.assertEqual(c["static_existing_distinct_test_cases"], 1607)
+        self.assertEqual(c["source_tests_without_green_execution_proof"], 174)
         self.assertEqual(c["frozen_full_release_verified"], 0)
         self.assertEqual(len(index["scenarios"]), 218)
-        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1606)
+        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1607)
 
     def test_archived_old_green_provenance_survives_local_cache_removal_without_new_pass(self):
         prior_reviewed = {
@@ -108,7 +108,7 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         previous = prior.build(ROOT, offline_ci, scan_historical=False)
         counts = previous["counts"]
         self.assertEqual(counts["previous_green_distinct_source_matched_cases"], 1433)
-        self.assertEqual(counts["static_existing_distinct_test_cases"], 1606)
+        self.assertEqual(counts["static_existing_distinct_test_cases"], 1607)
         self.assertEqual(counts["frozen_full_release_verified"], 0)
         old = next(c for c in previous["cases"] if c["title"].startswith(
             "independent Worker submissions reach Verifier and approve"))

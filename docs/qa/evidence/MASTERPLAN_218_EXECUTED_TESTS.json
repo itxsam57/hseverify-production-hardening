@@ -2216,6 +2216,12 @@
           "source_log": "hseverify-m10402-workforce-csv-20261112/.autopilot/artifacts/M10402_WORKFORCE_CSV_FILTER_PERMISSION_CHROMIUM_GREEN_20261112.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "8c550b52462abb35d65af20d4bc898a13814416678be6d2c1700168f9bcf0cee",
+          "source_log": "hseverify-m304-workforce-20261107/.autopilot/artifacts/20261107-M304-exact581-company-workforce-pagination.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 2,
@@ -2771,6 +2777,12 @@
         {
           "sha256": "4bc1b8c92ff660c0125b865ccad5bbce680dc629158042dd3b1688968d6984d7",
           "source_log": "hseverify-m10205-unsaved-20261110/.autopilot/artifacts/M10205_EXACT_COMMIT_BROWSER.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "192c02863b03eebd26034ab0265f2808a11d426dee3032b567d3bda9263dc91e",
+          "source_log": "hseverify-release-candidate-20261107/.autopilot/artifacts/20261107-browser-matrix-40-test-consumer-cohorts-browser.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -5016,6 +5028,12 @@
           "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_MFA_MANAGEMENT_POST_SESSION_LOCK_CHROME_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "8b1ccc110e20437f108cc3c7eb1b01ebd2ff6df8dc97adf9fd5a614d3fdcf6fe",
+          "source_log": "hseverify-m308-operations-pentest-20261108/.autopilot/artifacts/20261108-M308-exact8f-mfa-management-boundaries.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -5055,6 +5073,12 @@
         {
           "sha256": "45062728e58b7420b4187c8e3bbf00fdcc8a86e09d11b82fd5ed442462476874",
           "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_SESSION_VALIDITY_SIX_ROLE_CHROMIUM_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "a2a2f8967156d35e9436a41d3232420c9ca44da07815e418aa0be0ef920eaead",
+          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_SIX_ROLE_PASSWORD_COPY_REPLAY_GREEN_20261111.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -6524,6 +6548,12 @@
           "source_log": "hseverify-m10602-unsafe-upload-20261115/.autopilot/artifacts/M10602_SYNTHETIC_SERVER_ERROR_REASON_DIAGNOSTIC_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "3cab61593c95e929d96fb480834ba5a2b9a1a1bdba0fd1cec92734f2647a4042",
+          "source_log": "hseverify-m311-pentest-load-20261109/.autopilot/artifacts/20261109-M311-exact0ba-deep-worker-malicious-upload-browser.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -6653,6 +6683,12 @@
         {
           "sha256": "72f51aaf79414bcd1c3b8c3a9641c4552bc256b96a758eacd0e4a9e6f19fc655",
           "source_log": "hseverify-m10301-cta-geometry-20261111/.autopilot/artifacts/M10301_CTA_GEOMETRY_LOCAL_CHROMIUM_GREEN_20261111.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "a8546cbd15c0ce264d4d4f8a173fde99c56fbc699e2dd3da3a7079ba543dd71c",
+          "source_log": "hseverify-m10301-worker-validation-20261111/.autopilot/artifacts/M10301_MOBILE_POLICY_CHROMIUM_GREEN_20261111.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -10223,6 +10259,12 @@
           "source_log": "hseverify-m10308-password-race-20261114/.autopilot/artifacts/M10308_ACCOUNT_SECURITY_NATIVE_REGRESSION.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "0a49f9906aa0dc83e39f3c21b092f1d2d6af80f85cdfe6a8152ce6f324db7583",
+          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_NATIVE_PASSWORD_ROLLBACK10_GREEN_20261111.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -10276,6 +10318,18 @@
         {
           "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
           "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "0a49f9906aa0dc83e39f3c21b092f1d2d6af80f85cdfe6a8152ce6f324db7583",
+          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_NATIVE_PASSWORD_ROLLBACK10_GREEN_20261111.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d3a8e746315191604d41221abea3730d90ee21192669a69b126368df0600bcd1",
+          "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-account-security-notification-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -10333,6 +10387,18 @@
           "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "0a49f9906aa0dc83e39f3c21b092f1d2d6af80f85cdfe6a8152ce6f324db7583",
+          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_NATIVE_PASSWORD_ROLLBACK10_GREEN_20261111.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d3a8e746315191604d41221abea3730d90ee21192669a69b126368df0600bcd1",
+          "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-account-security-notification-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -10388,6 +10454,18 @@
           "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "0a49f9906aa0dc83e39f3c21b092f1d2d6af80f85cdfe6a8152ce6f324db7583",
+          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_NATIVE_PASSWORD_ROLLBACK10_GREEN_20261111.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d3a8e746315191604d41221abea3730d90ee21192669a69b126368df0600bcd1",
+          "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-account-security-notification-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
@@ -10441,6 +10519,18 @@
         {
           "sha256": "d60930dbc1a0d61643d21e75e1b0afcca41ed47d9e1d71b8da7971e24f686f3c",
           "source_log": "hseverify-m10308-origin-20261114/.autopilot/artifacts/M10308_TS_AUDIT_NOTIFICATIONS_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "0a49f9906aa0dc83e39f3c21b092f1d2d6af80f85cdfe6a8152ce6f324db7583",
+          "source_log": "hseverify-m10308-password-sessions-20261111/.autopilot/artifacts/M10308_NATIVE_PASSWORD_ROLLBACK10_GREEN_20261111.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d3a8e746315191604d41221abea3730d90ee21192669a69b126368df0600bcd1",
+          "source_log": "hseverify-m308-notifications-pentest-20261108/.autopilot/artifacts/20261109-M30803-exact8f-account-security-notification-runtime.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -18812,6 +18902,12 @@
           "source_log": "hseverify-m10501-audit-actor-history-20261115/.autopilot/artifacts/M10501_ADJACENT_NATIVE_TYPECHECK_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "107de8ce6a13d1eae7d0bd10e992781c941076fe60b13158e087677b2d9a25e4",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_FULL_NATIVE_TEAM_SERVICE_REGRESSION_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -18844,6 +18940,12 @@
           "source_log": "hseverify-m10501-audit-actor-history-20261115/.autopilot/artifacts/M10501_ADJACENT_NATIVE_TYPECHECK_20261115.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "107de8ce6a13d1eae7d0bd10e992781c941076fe60b13158e087677b2d9a25e4",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_FULL_NATIVE_TEAM_SERVICE_REGRESSION_20261117.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -18874,6 +18976,12 @@
         {
           "sha256": "6f201b28378abe75c88efc0d3e51e744dbd6e4e226416c692011b9c8a425eedd",
           "source_log": "hseverify-m10501-audit-actor-history-20261115/.autopilot/artifacts/M10501_ADJACENT_NATIVE_TYPECHECK_20261115.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "107de8ce6a13d1eae7d0bd10e992781c941076fe60b13158e087677b2d9a25e4",
+          "source_log": "hseverify-m10904-team-stale-permission-20261117/.autopilot/artifacts/M10904_FULL_NATIVE_TEAM_SERVICE_REGRESSION_20261117.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -29860,6 +29968,23 @@
       "title": "M1.07 final Worker route exposes identity through service contracts without creating reviewer or later-brick routes"
     },
     {
+      "case_id": "tests/platform/m11103-skill-notification-receiving-runtime.test.mjs#8dd6295fe29feb57",
+      "direct_scenarios": [
+        "M1.11.03"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/m11103-skill-notification-receiving-runtime.test.mjs",
+      "is_security_related_title": true,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.11.03"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.11.03 actual skill CHANGES v1 and APPROVED corrected v2 project Worker-only immutable deep links, deny foreign and replay"
+    },
+    {
       "case_id": "tests/platform/m2-10-calibration-live-runtime.test.mjs#6002c50ec69d00c7",
       "direct_scenarios": [
         "M2.10.05"
@@ -37839,6 +37964,12 @@
         {
           "sha256": "d7c0468c6e0701df91f96b860770e4f03266776b773d8137e33ffbdf84b4e672",
           "source_log": "hseverify-m10402-pdf-parser-ci-20261114/.autopilot/artifacts/20261114_PR90_PARSER_NATIVE.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "5592e634a25f09e99f0271a2a0e84c4bcbe237e60360069226644f13215c165a",
+          "source_log": "hseverify-m10402-report-cleanqa-20261114/.autopilot/artifacts/20261114_M10402_QA006FF_NATIVE.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -46547,10 +46678,10 @@
   "counts": {
     "ambiguous_or_changed_title_occurrences": 1021,
     "ambiguous_or_changed_unique_titles": 241,
-    "clean_pass_summary_logs": 1309,
+    "clean_pass_summary_logs": 1266,
     "current_reference_CI_green_distinct_cases": 232,
-    "current_source_test_files": 559,
-    "current_test_source_content_sha256": "fe26c3fd3b4f557cb2080d22819eed4dc25c2daa21f50c54d6cd328f827cba70",
+    "current_source_test_files": 560,
+    "current_test_source_content_sha256": "dd8f037e3637b8a7c8803b574abe8e752793ea14dab8b69a256cd417a042a71f",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -46558,24 +46689,24 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 185,
+    "existing_source_cases_linked_to_an_exact_218_id": 186,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 66,
-    "historical_log_files_scanned": 2617,
+    "historical_log_files_scanned": 2482,
     "historical_only_green_distinct_cases": 1201,
-    "logs_with_no_clean_pass_summary_or_a_failure": 67,
-    "logs_with_pass_lines": 1376,
-    "matched_case_occurrences_with_duplicates": 6137,
+    "logs_with_no_clean_pass_summary_or_a_failure": 63,
+    "logs_with_pass_lines": 1329,
+    "matched_case_occurrences_with_duplicates": 5993,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
     "previous_green_distinct_source_matched_cases": 1433,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 196,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 173,
-    "static_existing_distinct_test_cases": 1606,
-    "unique_source_matched_historical_green_cases": 1433,
-    "worktrees_scanned": 147
+    "source_tests_without_green_execution_proof": 174,
+    "static_existing_distinct_test_cases": 1607,
+    "unique_source_matched_historical_green_cases": 1426,
+    "worktrees_scanned": 148
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -46588,7 +46719,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "def3aaca4972d2e7ae75e38a1208bab791d015b6",
+  "inventory_started_from_git_head_sha": "98e82b218da8bbbc00d5be2f1d12fbf505d8f20c",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -47397,7 +47528,7 @@
     },
     {
       "brick": "M1.11",
-      "existing_source_cases_linked": 2,
+      "existing_source_cases_linked": 3,
       "family": "Evidence and supervisor observation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
