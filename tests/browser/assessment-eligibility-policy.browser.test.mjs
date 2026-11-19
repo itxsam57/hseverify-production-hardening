@@ -109,6 +109,7 @@ test("Actual Worker waiting/date, forged apply and Company submit denial become 
       assert.equal((await database.query("SELECT order_status FROM assurance_orders WHERE order_id=$1",[fixture.draft.orderId])).rows[0].order_status,"READY");
       assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM assessment_attempts WHERE worker_account_id=$1",[fixture.worker.accountId])).rows[0].n,1);
       assert.equal((await database.query("SELECT COUNT(*)::int AS n FROM worker_assessment_applications WHERE worker_account_id=$1 AND application_status<>'CANCELLED'",[fixture.worker.accountId])).rows[0].n,2);
+      console.log("M20102_ACTUAL_POLICY_WAIT_OWNED_WORKER_COMPANY_DENIAL_COLD_DB_READY_ONE_ATTEMPT_TWO_APPLICATIONS");
     } finally {await database.close();}
   } finally {await browser.close();await fixture.cleanup();}
 });
@@ -173,6 +174,7 @@ test("Configured qualification gates Worker and Company until original Verifier 
    const snapshot=(await database.query("SELECT effective_value_json FROM assurance_case_policy_snapshots WHERE case_id=$1",[caseId])).rows[0];
    assert.deepEqual(snapshot.effective_value_json.assessmentEligibility,{qualificationCategories:["safety"],qualificationTitles:["Trade Safety Certificate"]});
    assert.equal((await database.query("SELECT task_status FROM evidence_review_tasks WHERE task_id=$1",[fixture.qualificationTaskId])).rows[0].task_status,"APPROVED");
+   console.log("M20102_ACTUAL_QUALIFICATION_INELIGIBLE_COMPANY_WORKER_UNTIL_VERIFIER_APPROVAL_COLD_DB_PINNED_POLICY");
   }finally{await database.close();}
  }finally{await browser.close();await fixture.cleanup();}
 });

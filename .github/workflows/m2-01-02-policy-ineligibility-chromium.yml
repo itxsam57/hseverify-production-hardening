@@ -1,0 +1,71 @@
+name: M2.01.02 real Worker and Company assessment policy ineligibility and Verifier approval Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/assessment-eligibility-policy.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/assessment-catalogue/**'
+      - 'src/lib/policy/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m2-01-02-policy-ineligibility-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/assessment-eligibility-policy.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/assessment-catalogue/**'
+      - 'src/lib/policy/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m2-01-02-policy-ineligibility-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20102-policy-ineligible-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-worker-company-verifier-policy-ineligible-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install lockfile dependencies and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Two original real browser policy waiting and qualification ineligible cross role journeys
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/assessment-eligibility-policy.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20102-policy-ineligible-real-chromium.log
+          for line in 'ℹ tests 2' 'ℹ pass 2' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20102-policy-ineligible-real-chromium.log
+          done
+          for marker in ACTUAL_ELIGIBILITY_BROWSER ACTUAL_ELIGIBILITY_CONTEXT_BROWSER M20102_ACTUAL_POLICY_WAIT_OWNED_WORKER_COMPANY_DENIAL_COLD_DB_READY_ONE_ATTEMPT_TWO_APPLICATIONS M20102_ACTUAL_QUALIFICATION_INELIGIBLE_COMPANY_WORKER_UNTIL_VERIFIER_APPROVAL_COLD_DB_PINNED_POLICY; do
+            grep -q "$marker" .autopilot/artifacts/m20102-policy-ineligible-real-chromium.log
+          done
+      - name: Archive original exact SHA real policy cross-role browser raw proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20102-policy-ineligible-real-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20102-policy-ineligible-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
