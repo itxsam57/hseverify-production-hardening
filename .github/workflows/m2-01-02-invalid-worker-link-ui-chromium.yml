@@ -1,0 +1,66 @@
+name: M2.01.02 actual Company invalid Worker link form denial real Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/components/company/assurance-order-workspace.tsx'
+      - 'src/lib/assurance/**'
+      - '.github/workflows/m2-01-02-invalid-worker-link-ui-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/components/company/assurance-order-workspace.tsx'
+      - 'src/lib/assurance/**'
+      - '.github/workflows/m2-01-02-invalid-worker-link-ui-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20102-invalid-link-form-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  company-invalid-and-unknown-worker-link-form-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20102_INVALID_LINK_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real Company unknown and malformed Worker link Add Workers form denied without cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20102-invalid-worker-link-form-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20102-invalid-worker-link-form-chromium.log
+          done
+          for marker in M20102_ACTUAL_INVALID_AND_UNKNOWN_WORKER_LINK_FORMS_NEUTRAL_DENIAL_NO_CASE M20102_ACTUAL_DB_INVALID_LINK_ATTEMPTS_LEAVE_TWO_LEGIT_WORKERS_NO_CASES_OR_CREDITS; do
+            grep -q "$marker" .autopilot/artifacts/m20102-invalid-worker-link-form-chromium.log
+          done
+      - name: Archive original exact SHA malformed/unknown form denial raw log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20102-invalid-worker-link-form-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m20102-invalid-worker-link-form-chromium.log
+          if-no-files-found: warn
+          retention-days: 90

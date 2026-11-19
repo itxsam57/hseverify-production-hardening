@@ -46778,12 +46778,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 1132,
+    "ambiguous_or_changed_title_occurrences": 1139,
     "ambiguous_or_changed_unique_titles": 241,
-    "clean_pass_summary_logs": 1260,
+    "clean_pass_summary_logs": 1262,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 561,
-    "current_test_source_content_sha256": "cb81d58c36255546618ad413d2f1ac7d8305beecfa92ffc71c34beb9c66555df",
+    "current_test_source_content_sha256": "be43de6ccf149954b2738b8da95cd0f65760133c914e99004fdd474b1c9db9f4",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -46794,11 +46794,11 @@
     "existing_source_cases_linked_to_an_exact_218_id": 188,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 67,
-    "historical_log_files_scanned": 2601,
+    "historical_log_files_scanned": 2616,
     "historical_only_green_distinct_cases": 1203,
     "logs_with_no_clean_pass_summary_or_a_failure": 62,
-    "logs_with_pass_lines": 1322,
-    "matched_case_occurrences_with_duplicates": 5995,
+    "logs_with_pass_lines": 1324,
+    "matched_case_occurrences_with_duplicates": 6003,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
@@ -46808,7 +46808,7 @@
     "source_tests_without_green_execution_proof": 174,
     "static_existing_distinct_test_cases": 1609,
     "unique_source_matched_historical_green_cases": 1411,
-    "worktrees_scanned": 163
+    "worktrees_scanned": 164
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -46821,7 +46821,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "e6a242c94055ca27f07c7ec8e82303644c2834e7",
+  "inventory_started_from_git_head_sha": "7330ffbe3c956325c5d13b0812599e260b187472",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
