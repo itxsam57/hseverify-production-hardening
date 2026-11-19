@@ -42,7 +42,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const foreignLink=process.env.HSE_M20102_FOREIGN_TENANT_LINK_ONLY==="true";
   const actionReplay=process.env.HSE_M20102_ACTION_REPLAY_ONLY==="true";
   const sessionReplay=process.env.HSE_M20102_REVOKED_SESSION_ONLY==="true";
-  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay,sessionReplay].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const workerReceiving=process.env.HSE_M20103_RECEIVING_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay,sessionReplay,workerReceiving].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
   const foreignTenantId=id("tenant","foreign-company"),foreignLinkId=id("company_worker_link","foreign-company");
   let revokedDraftUrl="";
   let originalAuthenticatedCompanyCookies=[];
@@ -335,6 +336,58 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
             assert.equal(await page.getByRole("button",{name:"Cancel Submitted Order",exact:true}).count(),0);
             console.log("ACTUAL_M20107_BROWSER Company cancels two pending Worker cases from SUBMITTED, persists CANCELLED after cold reload, each case shows Closed/No pending action and cancellation button is removed");
           }
+          if(workerReceiving){
+            const ownCaseId=await page.locator("tbody tr").filter({hasText:fixture.credentials.worker.accountId}).getAttribute("id");
+            const otherCaseId=await page.locator("tbody tr").filter({hasText:"search_foreign_worker"}).getAttribute("id");
+            assert.match(ownCaseId||"",/^assurance_case_[A-Za-z0-9_-]{24}$/);
+            assert.match(otherCaseId||"",/^assurance_case_[A-Za-z0-9_-]{24}$/);
+            assert.notEqual(ownCaseId,otherCaseId,"Two independent Workers must receive separate immutable cases");
+            const workerContext=await browser.newContext({viewport:{width:390,height:844}});
+            try{
+              const workerPage=await workerContext.newPage();
+              const workerErrors=[];workerPage.on("pageerror",error=>workerErrors.push(error.message));
+              await signInSyntheticRole(workerPage,baseUrl,fixture.credentials.worker,"worker");
+              const ownLink="/worker/assurance-cases/"+ownCaseId;
+              const foreignLink="/worker/assurance-cases/"+otherCaseId;
+              await workerPage.locator('#next-action a[href="'+ownLink+'"]').waitFor({timeout:20000});
+              assert.equal(await workerPage.locator('#next-action a[href="'+foreignLink+'"]').count(),0);
+              await workerPage.locator('#next-action a[href="'+ownLink+'"]').click();
+              await workerPage.waitForURL("**"+ownLink,{timeout:20000});
+              const ownCase=workerPage.locator("article.panel#"+ownCaseId);
+              assert.match(await ownCase.innerText(),/Identity pending/);
+              assert.match(await ownCase.innerText(),/Next action:/);
+              assert.match(await ownCase.innerText(),new RegExp(ownCaseId));
+              console.log("M20103_ACTUAL_WORKER_OWN_CASE_AND_NEXT_ACTION_REAL_DASHBOARD_LINK");
+              for(const width of [320,390,1440]){
+                await workerPage.setViewportSize({width,height:850});
+                await workerPage.goto(baseUrl+ownLink,{waitUntil:"domcontentloaded"});
+                assert.equal(new URL(workerPage.url()).pathname,ownLink);
+                const dimensions=await workerPage.evaluate(()=>({inner:window.innerWidth,document:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
+                assert.ok(dimensions.document<=width+1&&dimensions.body<=width+1,
+                  "Worker assurance case page horizontal overflow at "+width+": "+JSON.stringify(dimensions));
+                assert.match(await workerPage.locator("article.panel#"+ownCaseId).innerText(),/Identity pending/);
+              }
+              console.log("M20103_ACTUAL_WORKER_CASE_320_390_1440_RESPONSIVE");
+              const foreignResponse=await workerPage.goto(baseUrl+foreignLink,{waitUntil:"domcontentloaded"});
+              assert.equal(foreignResponse.status(),404,"Worker must not read another Worker's known opaque assurance case ID");
+              assert.equal((await workerPage.locator("body").innerText()).includes(otherCaseId),false,
+                "Foreign case ID must not be rendered in unauthorized main content");
+              await workerPage.goto(orderUrl,{waitUntil:"domcontentloaded"});
+              assert.equal(new URL(workerPage.url()).pathname,"/access-denied","Worker cannot open the Company order by copying URL");
+              console.log("M20103_ACTUAL_FOREIGN_WORKER_CASE_AND_WORKER_COMPANY_ORDER_DENIED");
+              assert.deepEqual(workerErrors,[],output());
+            }finally{await workerContext.close();}
+            await page.goto(baseUrl+"/worker/assurance-cases/"+ownCaseId,{waitUntil:"domcontentloaded"});
+            assert.equal(new URL(page.url()).pathname,"/access-denied","Company cannot impersonate Worker case detail portal");
+            const anonymousContext=await browser.newContext({viewport:{width:320,height:750}});
+            try{
+              const anonymousPage=await anonymousContext.newPage();
+              await anonymousPage.goto(baseUrl+"/worker/assurance-cases/"+ownCaseId,{waitUntil:"domcontentloaded"});
+              assert.equal(new URL(anonymousPage.url()).pathname,"/worker/login",
+                "Anonymous copied case URL must require authentic Worker sign-in");
+            }finally{await anonymousContext.close();}
+            console.log("M20103_ACTUAL_COMPANY_AND_ANONYMOUS_WORKER_CASE_PORTAL_DENIED");
+          }
           await context.close();
         }finally{await browser.close();}
       }
@@ -518,6 +571,14 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0,"No payment credits were purchased; cancellation must not invent credit or refund ledger entries.");
       if(cancellation)console.log("ACTUAL_M20107_DB retained immutable original SUBMITTED two target scope, case-created timeline; two case-cancelled + one order-cancelled events, both cases Closed, actions resolved, zero unsolicited billing-credit mutations");
       else console.log("ACTUAL_M20103_04_DB one submitted order, exact immutable site/dept/deadline/interview scope, two separate submitted targets/cases/action obligations, one order-submission event and two case-created events after duplicate-tab attempt");
+      if(workerReceiving){
+        const receiving=(await verifyDb.query("SELECT case_id,worker_account_id,case_status,next_action FROM assurance_cases WHERE order_id=$1 ORDER BY worker_account_id",[order.order_id])).rows;
+        assert.equal(receiving.length,2);
+        assert.deepEqual(receiving.map(record=>record.worker_account_id),[...workerAccounts].sort());
+        assert.ok(receiving.every(record=>record.case_status==="Identity pending"&&typeof record.next_action==="string"&&record.next_action.length>0));
+        assert.equal(new Set(receiving.map(record=>record.case_id)).size,2);
+        console.log("M20103_ACTUAL_DB_TWO_UNIQUE_WORKER_RECEIVING_CASES_NO_DUPLICATES");
+      }
     }finally{await verifyDb.close();}
   }finally{await fixture.cleanup();}
 });
