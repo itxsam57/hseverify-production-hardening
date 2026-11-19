@@ -113,6 +113,16 @@ body {
   max-width: 100%;
 }
 
+/* Immutable Worker and evidence-version identifiers on Verifier details are
+   opaque, unbroken strings. Keep the full identifier visible by wrapping
+   within its definition field, not expanding the entire mobile portal. */
+.detail-grid dd {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .table-scroll {
   width: 100%;
   min-width: 0;
