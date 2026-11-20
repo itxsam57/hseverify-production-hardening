@@ -2,6 +2,14 @@
 
 **Owner-approved 2026-11-14. Applies to all builders, QA agents and future ChatGPT chats until owner explicitly changes it. Read with root `AGENTS.md`, `PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md` and `CURRENT_RESUME_218.md` before executing.** It extends the ORIGINAL 218-scenario mission; it does not create a competing release/test system.
 
+## Immediate M1 exit gate (owner change 2026-11-20)
+
+**M1 is NOT complete. Exactly 67 M1 frozen IDs exist; 67/67 must be independently full-release-certified before the active cursor may enter M2.** Current actual certification is M1 `0/67`, total `0/218` on signed QA `0d0e0eef184d7242bbec382ab5cca02652435e82`. Historical partial scoped reports do not count. The M2.01.05 mixed Worker/Company case worktree is preserved as uncommitted deferred work, not discarded or silently merged.
+
+For each M1 ID, reuse valid earlier evidence; execute only missing or invalidated form/browser/role/DB/negative/race/API/pentest/provider/ops assertions; record all dimensions and raw artifacts in the same canonical ledger. **Do not move to M2 due to an M1 BLOCKED_EXTERNAL.** Work toward clearing that actual external prerequisite or test another runnable M1 ID, retaining the blocked ID and exact owner-required input; if none can close, report M1 closure blocked instead of spinning or restarting from the beginning. Cross-brick common protected-stage/real-provider/pentest/load/restore/Owner-UAT gates should be established now for M1 rather than postponed until all bricks have been traversed. Final exact-SHA revalidation after later source changes remains required and should be targeted at changed/affected behavior plus mandatory end-to-end release regressions, not a fresh uncontrolled restart.
+
+The owner-approved M1 exit rule takes precedence over generic "move to the next scenario if blocked" instructions below. `scripts/qa-progress-218.mjs` must reject a cursor outside M1 whenever M1 has an uncertified ID, and must expose the independent M1 `x/67` fully-certified count without lowering verification standards.
+
 ## 1. One line of work, from 218 remaining toward zero
 
 The work queue is the **existing frozen Masterplan order**, 218 IDs in 37 bricks, recorded in `docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv`. Work on **one scenario ID at a time**, with an exact action and owned logs. Start with the first unfinished actionable ID (initially `M1.01.01`), but fix actual known-red regressions before continuing. Do not skip a role, tab, feature or workflow. Related checks may run together to save time; record each tested assertion separately against its applicable scenario/check ID. Reuse unchanged passing assertions and avoid restarting old suites without a reason.

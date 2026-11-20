@@ -29,6 +29,8 @@ The static source-case identities and compound planned check slots count **diffe
 Full protocol and 37 brick order: `docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md`. Do not change this permanent route unless owner explicitly changes it.
 **Required bounded QA disk preflight before each new local test unit:** run `npm run qa:preflight-218`. It safely reuses the current ledger and, only when below 20 GiB free, prunes a bounded set of old ignored dependency/build caches from clean idle worktrees; no source, untracked evidence, live shared dependency target, database or audit history may be deleted. Never recreate 141 per-scenario full dependency installs. One sparse worktree per active brick and one compatible lockfile-checked shared dependency install are preferred. The remote signed QA branch and latest exact-SHA CI artifact are the release progress source, not a manually frozen chat statistic.
 
+**Owner M1 completion override (2026-11-20):** Do not advance the active test cursor to M2 or M3 while any of the 67 frozen M1 scenario IDs lack final exact-SHA `FULLY_VERIFIED` evidence. Prioritize shared staging/provider/security/load/restore/Owner UAT blockers inside M1; report owner-required input instead of skipping blocks. Preserve existing M2 mixed-funding work. Reuse valid M1 scoped tests and execute missing/final SHA checks; never manufacture a pass or weaken the release gate. Read `docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md` for the enforced rule.
+
 <!-- HSEVERIFY-PERMANENT-218-VERTICAL:END -->
 
 <!-- UNIVERSAL-AUTOPILOT-V3:BEGIN -->

@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildCurrentReleaseLedger } from "./lib/current-release-218-ledger.mjs";
+import { assertM1CompletionBeforeAdvance } from "./lib/m1-completion-gate.mjs";
 import { loadOptionalFinalStageAttestation } from "./lib/load-final-stage-attestation.mjs";
 
 const json = file => JSON.parse(readFileSync(resolve(file), "utf8"));
@@ -29,6 +30,7 @@ assert(typeof cursor.next_exact_action === "string" && cursor.next_exact_action.
 const focus = report.scenarios.find(row => row.id === cursor.current_focus_scenario_id);
 assert(focus, "Focus ID must exist in the frozen 218 scenario list");
 assert(focus.status !== "FULLY_VERIFIED", "Execution cursor points at already fully verified scenario");
+const { fullyVerified: m1Full } = assertM1CompletionBeforeAdvance(report.scenarios, focus.id);
 assert.equal(report.counts.total, 218);
 assert.equal(report.counts.full_verified + report.counts.in_progress +
   report.counts.blocked_external_known + report.counts.failed + report.counts.not_started, 218);
@@ -49,7 +51,7 @@ const plan = report.planned_check_progress;
 const old = report.legacy_216_scope;
 const fmt = number => number.toLocaleString("en-US");
 const taskbar = [
-  `FULLY VERIFIED ${nums.full_verified}/218 | LEFT ${218 - nums.full_verified} | NOW ${focus.id} ${cursor.current_focus_phase} | RELEASE ${report.release.decision.replaceAll("_", "-")}`,
+  `FULLY VERIFIED ${nums.full_verified}/218 | M1 FULL ${m1Full}/67 | LEFT ${218 - nums.full_verified} | NOW ${focus.id} ${cursor.current_focus_phase} | RELEASE ${report.release.decision.replaceAll("_", "-")}`,
   `TEST CASES HISTORIC GREEN ${fmt(tests.previous_distinct_green_cases)}/${fmt(tests.existing_static_source_cases)} (NO MATCH ${fmt(tests.not_yet_supported_by_previous_green_execution)}) | OLD SCOPED ${old.historical_scoped_216_of_218}/218 (NOT FULL)`,
   `PLANNED ${fmt(plan.historically_scoped_partial_not_certified)}/${fmt(plan.planning_slots_total)} PARTIAL | ${fmt(plan.uncertain_mixed_or_title_only_not_certified)} UNCERTAIN | ${fmt(plan.without_precise_old_dimension_link)} UNLINKED | FINAL ${fmt(plan.final_stage_certified)}/${fmt(plan.planning_slots_total)}`,
   `PENTEST ${report.release.pentest} (2,008 preliminary attack slots; independently verified UNKNOWN) | BLOCKED ${nums.blocked_external_known} | HIGH/CRITICAL OPEN UNKNOWN | NEXT ${cursor.next_exact_command}`
@@ -64,6 +66,8 @@ const payload = {
   next_exact_command: cursor.next_exact_command,
   release: report.release.decision,
   fully_verified: nums.full_verified,
+  m1_fully_verified: m1Full,
+  m1_scenarios_total: 67,
   scenarios_total: 218,
   scenarios_remaining: 218 - nums.full_verified,
   scenarios_in_progress: nums.in_progress,
