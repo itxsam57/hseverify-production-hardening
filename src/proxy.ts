@@ -64,6 +64,16 @@ export function proxy(request: NextRequest): NextResponse {
     return redirect;
   }
 
+  // The request nonce is for HTML documents and their GET/HEAD render path.
+  // Do not rewrap a multipart Server Action POST: copying its request headers
+  // through proxy can truncate a large streamed FormData body (HTTP 500,
+  // "Unexpected end of form") before the actual file-size guard can run.
+  // The earlier no-cookie redirect still runs for the original protected
+  // portal paths; all other POST authorization belongs to server actions.
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return NextResponse.next();
+  }
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
@@ -76,5 +86,27 @@ export function proxy(request: NextRequest): NextResponse {
 // static bytes. Do not omit a role login page: its inline React scripts must
 // be supplied the matching request nonce to remain functional.
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"]
+  matcher: [
+    // Next's server action forms use multipart bodies and a Next-Action header.
+    // They are not HTML document responses and MUST NOT be consumed by the
+    // per-document nonce proxy: large evidence uploads otherwise arrive
+    // truncated ("Unexpected end of form") before validation can run.
+    {
+      source: "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+      missing: [{ type: "header", key: "next-action" }]
+    },
+    // Preserve the exact pre-nonce matcher for optimistic signed-out redirects,
+    // even on protected Server Action POSTs. DB-backed action auth remains final.
+    "/worker/dashboard/:path*",
+    "/worker/profile/:path*",
+    "/worker/onboarding/:path*",
+    "/company/dashboard/:path*",
+    "/company/tenant-scope/:path*",
+    "/assessor/dashboard/:path*",
+    "/verifier/dashboard/:path*",
+    "/admin/dashboard/:path*",
+    "/admin/staff/:path*",
+    "/root/dashboard/:path*",
+    "/root/staff/:path*"
+  ]
 };
