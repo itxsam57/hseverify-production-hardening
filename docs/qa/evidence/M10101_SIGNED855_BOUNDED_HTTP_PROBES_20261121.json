@@ -1,0 +1,275 @@
+{
+  "utc": "2026-11-20T23:32:44.929480+00:00",
+  "source_sha": "85554af4aac9dd110627a3176425bf8bf07eff2b",
+  "target": "isolated loopback TLS stage PostgreSQL16",
+  "count": 26,
+  "passed_http_cases": 26,
+  "nonce_unique": true,
+  "hostile_cors_denied": true,
+  "all_pass": true,
+  "cases": [
+    {
+      "name": "anon-worker",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/worker/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "anon-company",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/company/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "anon-verifier",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/verifier/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "anon-assessor",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/assessor/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "anon-admin",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/admin/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "anon-root",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/root/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "middleware-spoof-worker",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/worker/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "middleware-spoof-company",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/company/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "middleware-spoof-verifier",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/verifier/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "middleware-spoof-assessor",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/assessor/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "middleware-spoof-admin",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/admin/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "middleware-spoof-root",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/root/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "role-tenant-spoof-worker",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/worker/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "role-tenant-spoof-company",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/company/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "role-tenant-spoof-verifier",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/verifier/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "role-tenant-spoof-assessor",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/assessor/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "role-tenant-spoof-admin",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/admin/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "role-tenant-spoof-root",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/root/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "forwarded-host-root",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/root/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "host-only-root",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/root/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "protected-readiness",
+      "status": 401,
+      "curl_exit": 0,
+      "location": null,
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "private-export",
+      "status": 307,
+      "curl_exit": 0,
+      "location": "/company/login?reason=session-required",
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "file-forged",
+      "status": 404,
+      "curl_exit": 0,
+      "location": null,
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "nonce-a",
+      "status": 200,
+      "curl_exit": 0,
+      "location": null,
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "nonce-b",
+      "status": 200,
+      "curl_exit": 0,
+      "location": null,
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    },
+    {
+      "name": "cors-preflight",
+      "status": 204,
+      "curl_exit": 0,
+      "location": null,
+      "passed": true,
+      "has_csp": true,
+      "cors_origin": null,
+      "cors_credentials": null
+    }
+  ],
+  "raw_artifact_sha256": "36fb31ff51ded9feba5c751565c3c0a4650201cd55a2fa0a9c2ca8eab7651e67",
+  "original_script_on_workstation": ".autopilot/artifacts/m10101-signed855-bounded-http-probes.py",
+  "qualification": "Scoped authorized loopback synthetic HTTP/header/CSP checks only; not independent full pentest or external staging certification."
+}
