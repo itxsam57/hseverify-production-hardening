@@ -1,5 +1,13 @@
 # HSE Verify — current QA continuation checkpoint
 
+## 2026-11-21 — M1.01.01 signed QA 85554a exact-stage 26 new bounded header/CSP probes PASS; full 218 NO-GO
+
+- **Current signed QA release head** `85554af4aac9dd110627a3176425bf8bf07eff2b` is normal merged PR #201; checked **91/91 actual hosted workflow runs completed success** and remote QA branch points to this exact SHA. This supersedes earlier stale PR-pending cursor. Not owner certified.
+- **Existing isolated workstation stage unchanged:** `https://127.0.0.1:45279`, certificate trusted only by the local test CA (not a publicly trusted staging endpoint), PG16 and outbox active; exact `status.sh` says signed855, stage HTTPS 200. Existing original signed855 evidence had **42/42 seven-context authenticated private API probes**, eight-state monitor drill, and real isolated PostgreSQL physical restore of **193 tables / 693 rows** with identical dataset digest and **9 restored-app HTTP checks**, all scoped PASS.
+- **NEW exact signed855 safe staging pentest scope:** a genuinely executed bounded 26/26 HTTP read-only/OPTIONS regression PASS: six-role signed-out redirects 6; Next middleware-subrequest spoofing denial 6; forged role/tenant header denial 6; forwarded/Host spoof external redirect prevention 2; private readiness/export/file denial 3; per-request CSP nonce rotation 2; hostile Origin preflight not given permissive CORS 1. No cross-company private data accessed. Actual raw probe JSON SHA256 `36fb31ff51ded9feba5c751565c3c0a4650201cd55a2fa0a9c2ca8eab7651e67`, reproducible script and sanitized receipt under `docs/qa/evidence/M10101_SIGNED855_BOUNDED_HTTP_PROBES_20261121.{py,json}`; runtime raw files `.autopilot/artifacts/m10101-signed855-bounded-http-probes.*` in separate isolated worktree.
+- **Strict distinction:** signed QA code 855 and limited synthetic localhost stage checks are NOT full independent feature-wide pentest, real externally trusted staging, real on-call delivery, approved realistic concurrency/rollback, provider activation, nor Owner UAT. User deferred email/SMS until final provider phase; mark BLOCKED_EXTERNAL, never PASS. **FULLY VERIFIED 0/218, M1 0/67, final 0/4,975, blocked 10, high/critical UNKNOWN, RELEASE NO-GO**.
+- **NEXT actionable within same M1.01.01:** inspect actual signed-state-changing Next Server Action CSRF/forged Origin + replay against fixture sessions, verify DB and audit denial, then address approved external stage/on-call/load/provider/owner requirements. Do not disturb current signed stage, other worktrees or their processes. Do not advance M1.01.02.
+
 
 ## 2026-11-21 — M1.01.01 critical signed QA 145bdf40 CSP hydration/multipart regressions FIXED locally at exact code 02d04fc8 (awaiting new PR/CI)
 
