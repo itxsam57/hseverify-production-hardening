@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildCurrentReleaseLedger } from "./lib/current-release-218-ledger.mjs";
-import { assertM1CompletionBeforeAdvance } from "./lib/m1-completion-gate.mjs";
+import { assertScenarioClosureBeforeAdvance } from "./lib/scenario-completion-gate.mjs";
 import { loadOptionalFinalStageAttestation } from "./lib/load-final-stage-attestation.mjs";
 
 const json = file => JSON.parse(readFileSync(resolve(file), "utf8"));
@@ -29,8 +29,8 @@ assert(typeof cursor.next_exact_command === "string" && cursor.next_exact_comman
 assert(typeof cursor.next_exact_action === "string" && cursor.next_exact_action.length > 10);
 const focus = report.scenarios.find(row => row.id === cursor.current_focus_scenario_id);
 assert(focus, "Focus ID must exist in the frozen 218 scenario list");
-assert(focus.status !== "FULLY_VERIFIED", "Execution cursor points at already fully verified scenario");
-const { fullyVerified: m1Full } = assertM1CompletionBeforeAdvance(report.scenarios, focus.id);
+if (report.counts.full_verified < 218) assert(focus.status !== "FULLY_VERIFIED", "Execution cursor points at already fully verified scenario");
+const { fullyVerified: m1Full } = assertScenarioClosureBeforeAdvance(report.scenarios, focus.id);
 assert.equal(report.counts.total, 218);
 assert.equal(report.counts.full_verified + report.counts.in_progress +
   report.counts.blocked_external_known + report.counts.failed + report.counts.not_started, 218);

@@ -47099,7 +47099,7 @@
     "clean_pass_summary_logs": 1200,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 561,
-    "current_test_source_content_sha256": "e5fad24c524f71d170eb32b735bb56f8f075f6b915eeaeac8267f1d6128fa054",
+    "current_test_source_content_sha256": "ab67b2f54b98a393278fc29500214e563f29df64f265d0f3fac9620a29cf09e0",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -47110,7 +47110,7 @@
     "existing_source_cases_linked_to_an_exact_218_id": 189,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 68,
-    "historical_log_files_scanned": 2627,
+    "historical_log_files_scanned": 2628,
     "historical_only_green_distinct_cases": 1204,
     "logs_with_no_clean_pass_summary_or_a_failure": 58,
     "logs_with_pass_lines": 1258,
@@ -47124,7 +47124,7 @@
     "source_tests_without_green_execution_proof": 174,
     "static_existing_distinct_test_cases": 1610,
     "unique_source_matched_historical_green_cases": 1397,
-    "worktrees_scanned": 178
+    "worktrees_scanned": 179
   },
   "disclaimers": [
     "Source test title plus file path is the dedupe identity, regardless of repeated logs and CI workflows.",
@@ -47137,7 +47137,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "f227c6239975ab30bf4bc4810e8ca057b7c2743f",
+  "inventory_started_from_git_head_sha": "d09a69179006ec3f442b627c0417aff82c781f85",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
