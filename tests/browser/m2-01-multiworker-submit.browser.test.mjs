@@ -311,6 +311,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
             // This prevents a fast first response turning the test into the
             // existing sequential stale-tab scenario.
             const arrived=[];
+            const actionResponses=[];
+            stale.on("pageerror",error=>errors.push("stale Company tab: "+error.message));
             let release;
             const bothPostRequests=new Promise(resolve=>{release=resolve;});
             let timeoutId;
@@ -318,6 +320,10 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
               timeoutId=setTimeout(()=>reject(new Error("Two actual Company tab Submit POSTs never arrived together")),25000);
             });
             for(const [label,tab] of [["first",page],["second",stale]]){
+              tab.on("response",response=>{
+                if(response.request().method()==="POST"&&response.url().startsWith(orderUrl))
+                  actionResponses.push({tab:label,status:response.status()});
+              });
               await tab.route("**/company/assurance-orders/**",async route=>{
                 if(route.request().method()!=="POST")return route.continue();
                 assert.ok(route.request().headers()["next-action"],
@@ -345,13 +351,24 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
               stale.unroute("**/company/assurance-orders/**")]);
             const outcomes=await Promise.all([page,stale].map(async tab=>
               Promise.any([
-                tab.getByText("SUBMITTED",{exact:true}).waitFor({timeout:20000}).then(()=>"accepted"),
-                tab.getByRole("alert").getByText(/Only a READY Assurance Order can be submitted/).waitFor({timeout:20000}).then(()=>"conflict")
+                tab.getByText("SUBMITTED",{exact:true}).waitFor({timeout:20000}).then(()=>"shows-submitted"),
+                tab.getByRole("alert").getByText(/Only a READY Assurance Order can be submitted/).waitFor({timeout:20000}).then(()=>"shows-safe-conflict")
               ])
             ));
-            assert.deepEqual(outcomes.sort(),["accepted","conflict"],
-              "Two genuinely simultaneous submits must have one successful tab and one safe conflict");
-            console.log("M20104_ACTUAL_TWO_COMPANY_TABS_GENUINE_SIMULTANEOUS_POST_ONE_WIN_ONE_CONFLICT");
+            // The losing tab can render the now-SUBMITTED order through RSC
+            // revalidation instead of retaining its transient action error.
+            // UI status alone cannot prove either request committed. Enforce
+            // exactly one committed submission and audit below using a fresh DB.
+            assert.ok(outcomes.includes("shows-submitted"),
+              "At least one genuine browser tab must render the completed order");
+            assert.ok(outcomes.every(outcome=>["shows-submitted","shows-safe-conflict"].includes(outcome)),
+              "Neither tab may show an error or unexpected final state: "+JSON.stringify(outcomes));
+            assert.equal(actionResponses.length,2,
+              "Both genuine browser action POSTs must receive an actual server response");
+            assert.ok(actionResponses.every(response=>response.status<500),
+              "Duplicate race must not produce unhandled Server Action 500: "+JSON.stringify(actionResponses));
+            console.log("M20104_ACTUAL_TWO_COMPANY_TABS_GENUINE_SIMULTANEOUS_POST_UI_CONVERGES_OR_SAFE_CONFLICT",
+              JSON.stringify({outcomes,actionResponses}));
           }else{
             await page.getByRole("button",{name:"Submit Order",exact:true}).click();
             await page.getByText("SUBMITTED",{exact:true}).waitFor({timeout:20000});
