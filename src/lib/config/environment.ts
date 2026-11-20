@@ -95,6 +95,9 @@ export function validateRuntimeEnvironment(
 ): RuntimeEnvironment {
   const issues: string[] = [];
   const appEnvironment = readAppEnvironment(input);
+  if (input.NODE_ENV === "production" && (appEnvironment === "development" || appEnvironment === "test")) {
+    issues.push("NODE_ENV=production cannot use HSE_APP_ENV=development or test.");
+  }
   const requestedDriver = input.HSE_DATABASE_DRIVER?.trim();
   const databaseDriver: HseDatabaseDriver =
     requestedDriver === "pglite" || requestedDriver === "postgres"
