@@ -15,6 +15,16 @@ test("otherwise valid production configuration is accepted by both application a
   assert.equal(result.appEnvironment,"production");assert.equal(result.databaseDriver,"postgres");
   assert.equal(result.demoAuthEnabled,false);assert.equal(result.demoDataEnabled,false);assert.equal(result.authSandboxEnabled,false);
  }
+ // NODE_ENV=production cannot be downgraded using HSE_APP_ENV.
+ for (const mode of ["development", "test"]) {
+  for (const validate of [validateScriptEnvironment,validateRuntimeEnvironment]) {
+   assert.throws(() => validate({...base,HSE_APP_ENV:mode,HSE_DATABASE_DRIVER:"pglite",
+    HSE_ENABLE_WORKER_DEMO_AUTH:"true",HSE_USE_WORKER_DEMO_DATA:"true"}),/NODE_ENV=production/);
+  }
+ }
+ for (const validate of [validateScriptEnvironment,validateRuntimeEnvironment]) {
+  assert.equal(validate({...base,HSE_APP_ENV:"preview"}).appEnvironment,"preview");
+ }
 });
 const cases=[
  ["demo authentication",{HSE_ENABLE_WORKER_DEMO_AUTH:"true"},/demo/i],

@@ -66,6 +66,7 @@ test("HSE-X03 built-in video adapter is executable without external provider cre
 
 test("HSE-X03 production gateway rejects local fixture providers but keeps built-in video", async () => {
   const previous = process.env.HSE_APP_ENV;
+  const previousNode = process.env.NODE_ENV;
   process.env.HSE_APP_ENV = "production";
   try {
     const email = await executeExternalRequest({
@@ -94,8 +95,24 @@ test("HSE-X03 production gateway rejects local fixture providers but keeps built
     });
     assert.equal(video.status, "accepted");
     assert.equal(video.provider, "video");
+
+    // A spoofed development app mode cannot activate fake providers on production Node.
+    process.env.NODE_ENV = "production";
+    process.env.HSE_APP_ENV = "development";
+    for (const provider of ["email", "malware_scanning"]) {
+      const denied = await executeExternalRequest({
+        provider,
+        requestId: `req-production-mode-downgrade-${provider}`,
+        actor: { id: "adapter", role: "provider_adapter" },
+        payload: { message: "synthetic" }
+      });
+      assert.equal(denied.status, "rejected");
+      assert.equal(denied.reason, "external_configuration_required");
+    }
   } finally {
     if (previous === undefined) delete process.env.HSE_APP_ENV;
     else process.env.HSE_APP_ENV = previous;
+    if (previousNode === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNode;
   }
 });

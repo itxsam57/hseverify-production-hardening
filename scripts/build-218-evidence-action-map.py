@@ -27,6 +27,7 @@ REQUIRED=(
 )
 # Mirrors the existing frozen QA release blocker inventory; never assume it is exhaustive.
 CURRENT_SCOPED_REPORTS_NOT_FINAL={
+ "M1.01.01":"docs/qa/M1_01_01_PRODUCTION_MODE_SECURITY_AND_STAGE_20261120.md",
  "M1.03.08":"docs/qa/M1_03_08_SESSION_LOCK_REVALIDATION_20261115.md",
  "M1.04.01":"docs/qa/M1_04_01_CROSSPORTAL_SERVER_ACTION_POST_20261115.md",
  "M1.04.02":"docs/qa/M1_04_02_CONDITIONAL_HTTP_PRIVATE_PDF_20261115.md",

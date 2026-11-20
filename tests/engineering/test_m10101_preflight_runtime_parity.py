@@ -103,7 +103,9 @@ class M10101RuntimePreflightParity(unittest.TestCase):
         for overrides, expected in (
             ({'HSE_PUBLIC_BASE_URL': 'http://public.example.org'}, 'HSE_PUBLIC_BASE_URL'),
             ({'HSE_OTP_EMAIL_API_KEY': 'synthetic-email-api-key'}, 'OTP email'),
-            ({'HSE_OTP_SMS_ACCOUNT_SID': 'invalid'}, 'OTP SMS')
+            ({'HSE_OTP_SMS_ACCOUNT_SID': 'invalid'}, 'OTP SMS'),
+            ({'HSE_APP_ENV': 'development', 'HSE_DATABASE_DRIVER': 'pglite',
+              'HSE_ENABLE_WORKER_DEMO_AUTH': 'true'}, 'NODE_ENV=production')
         ):
             run = subprocess.run(['node', 'scripts/validate-environment.mjs'],
                                  cwd=ROOT, env={**base, **overrides},

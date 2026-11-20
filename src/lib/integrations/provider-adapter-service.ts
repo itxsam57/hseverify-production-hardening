@@ -10,9 +10,9 @@ const LOCAL_FIXTURE_ADAPTERS = new Set<ProviderKey>(["email", "malware_scanning"
 const BUILT_IN_ADAPTERS = new Set<ProviderKey>(["video"]);
 
 function localFixtureEnvironment(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
   const explicit = process.env.HSE_APP_ENV?.trim();
-  if (explicit) return explicit === "development" || explicit === "test";
-  return process.env.NODE_ENV !== "production";
+  return !explicit || explicit === "development" || explicit === "test";
 }
 
 function getAdapterState(provider: ProviderKey) {
