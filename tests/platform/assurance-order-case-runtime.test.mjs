@@ -187,6 +187,37 @@ test("M2.01 concurrent submit race produces exactly one submission and no duplic
   } finally { await database.close(); }
 });
 
+test("M2.01 repeated READY validation is idempotent but still rejects subsequently revoked Worker links",async()=>{
+  const database=await db();
+  try{
+    const company=await seedCompany(database,"Q");
+    const worker=await seedWorkerLink(database,company,"R");
+    const {service,principal,order}=await readyOrder(database,company,[worker],"RUNTIME-VALIDATION-IDEMPOTENT");
+    for(let index=0;index<3;index++){
+      const repeated=await service.validateOrder(principal,order.orderId,NOW_DATE);
+      assert.equal(repeated.ready,true,"An unchanged READY order remains valid");
+      assert.deepEqual(repeated.errors,[]);
+    }
+    const concurrent=await Promise.all(Array.from({length:8},()=>service.validateOrder(principal,order.orderId,NOW_DATE)));
+    assert.ok(concurrent.every(value=>value.ready&&value.errors.length===0),
+      "Eight simultaneous READY revalidations must all succeed without duplicate persisted events");
+    const before=(await database.query(`SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_validated'`,[order.orderId])).rows[0].n;
+    assert.equal(before,1,"Repeated identical successful validation must not create duplicate timeline events");
+    const beforeAudit=(await database.query(`SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assurance_order.validated' AND target_reference=$1`,[order.orderId])).rows[0].n;
+    assert.equal(beforeAudit,1,"Repeated identical successful validation must not double count audit events");
+    await database.query(`UPDATE company_worker_links SET link_status='revoked',revoked_at=$2,updated_at=$2 WHERE link_id=$1`,[worker.linkId,NOW]);
+    const invalid=await service.validateOrder(principal,order.orderId,NOW_DATE);
+    assert.equal(invalid.ready,false,"READY revalidation must still re-check revoked Worker links");
+    assert.match(invalid.errors.join(" "),/no longer active/i);
+    const orderStatus=(await database.query(`SELECT order_status FROM assurance_orders WHERE order_id=$1`,[order.orderId])).rows[0].order_status;
+    assert.equal(orderStatus,"VALIDATION_FAILED");
+    const after=(await database.query(`SELECT COUNT(*)::int AS n FROM assurance_case_timeline_events WHERE order_id=$1 AND event_type='order_validated'`,[order.orderId])).rows[0].n;
+    assert.equal(after,2,"First valid transition and later revoked-link failure are both preserved");
+    const afterAudit=(await database.query(`SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assurance_order.validated' AND target_reference=$1`,[order.orderId])).rows[0].n;
+    assert.equal(afterAudit,2,"A failed validation with changed eligibility must retain an auditable event");
+  }finally{await database.close();}
+});
+
 test("M2.01 copied IDs cannot cross tenants and stale Worker links fail closed",async()=>{
   const database=await db();
   try {
