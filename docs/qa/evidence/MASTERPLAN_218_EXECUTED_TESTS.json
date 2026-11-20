@@ -7811,7 +7811,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7870,7 +7870,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7929,7 +7929,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -7988,7 +7988,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -8047,7 +8047,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -8106,7 +8106,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -8165,7 +8165,7 @@
       "exact_ci_pass_count_runs": 4,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 85,
+      "prior_log_pass_repetition_count": 89,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -8197,7 +8197,7 @@
       "exact_ci_pass_count_runs": 0,
       "file": "tests/engineering/current-release-218-ledger.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 84,
+      "prior_log_pass_repetition_count": 88,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
@@ -15249,7 +15249,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 7,
+      "prior_log_pass_repetition_count": 10,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15279,12 +15279,18 @@
           "source_log": "hseverify-masterplan-release/.autopilot/artifacts/20261031-A28-d5b111b-M20102-company-credit-availability-first-fix.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "dffd843e72160f47a1e5976c2ade74edc90a68740ecd5e943f7cea6008f45d09",
+          "source_log": "hseverify-m20102-validation-idempotency-20261120/.autopilot/artifacts/m20102-validation-repeated-ready-green-concurrent.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 2,
+      "prior_log_pass_repetition_count": 5,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15325,7 +15331,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 7,
+      "prior_log_pass_repetition_count": 10,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15334,16 +15340,35 @@
     {
       "case_id": "tests/platform/assurance-order-case-runtime.test.mjs#385c7c3a57ac092c",
       "direct_scenarios": [],
-      "evidence": [],
+      "evidence": [
+        {
+          "sha256": "dffd843e72160f47a1e5976c2ade74edc90a68740ecd5e943f7cea6008f45d09",
+          "source_log": "hseverify-m20102-validation-idempotency-20261120/.autopilot/artifacts/m20102-validation-repeated-ready-green-concurrent.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "111697e7da474a1abd9374dceb7e708e4aa5444e31b42caf366d4956c399070f",
+          "source_log": "hseverify-m20102-validation-idempotency-20261120/.autopilot/artifacts/m20102-validation-exact-59a0-runtime.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d7ab4e80dfda7175f473bdc6f2f217c6f4e7c60330026a17288889c2483a9e84",
+          "source_log": "hseverify-m20102-validation-idempotency-20261120/.autopilot/artifacts/m20102-validation-repeated-ready-green.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        }
+      ],
       "exact_ci_pass_count_runs": 0,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 0,
+      "prior_log_pass_repetition_count": 3,
       "scenario_ids": [
         "M2.01.02"
       ],
       "scenario_link_kind": "single_scenario_historical_report_link",
-      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "M2.01 repeated READY validation is idempotent but still rejects subsequently revoked Worker links"
     },
     {
@@ -15381,7 +15406,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": true,
-      "prior_log_pass_repetition_count": 7,
+      "prior_log_pass_repetition_count": 10,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15422,7 +15447,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 7,
+      "prior_log_pass_repetition_count": 10,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15463,7 +15488,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 7,
+      "prior_log_pass_repetition_count": 10,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15504,7 +15529,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 6,
+      "prior_log_pass_repetition_count": 9,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15545,7 +15570,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 5,
+      "prior_log_pass_repetition_count": 8,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -15586,7 +15611,7 @@
       "exact_ci_pass_count_runs": 1,
       "file": "tests/platform/assurance-order-case-runtime.test.mjs",
       "is_security_related_title": false,
-      "prior_log_pass_repetition_count": 7,
+      "prior_log_pass_repetition_count": 10,
       "scenario_ids": [],
       "scenario_link_kind": "unmapped",
       "test_execution": "EXACT_CI_SHA_PASSED",
@@ -26768,6 +26793,18 @@
           "source_log": "hseverify-pentest-integrated-qa-20261107/.autopilot/artifacts/20261107-qa-integrity-npm_run_test_platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "d66b71c2910147406b30c7bba4d4dd4717ca031191ecb31e715856e0a443f74f",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-staging-auth-test-GREEN.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9a5a024bfe86d6a743f0872f17653992bf276d5d2d01fd1191a21379da220562",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-exact-commit-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -32498,6 +32535,12 @@
           "source_log": "hseverify-pentest-integrated-qa-20261107/.autopilot/artifacts/20261107-qa-integrity-npm_run_test_platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9a5a024bfe86d6a743f0872f17653992bf276d5d2d01fd1191a21379da220562",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-exact-commit-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -32528,6 +32571,12 @@
         {
           "sha256": "1956a7374a2b7ae67867706dfd1069fc861393749134d68a99dadce9b09cf093",
           "source_log": "hseverify-pentest-integrated-qa-20261107/.autopilot/artifacts/20261107-qa-integrity-npm_run_test_platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9a5a024bfe86d6a743f0872f17653992bf276d5d2d01fd1191a21379da220562",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-exact-commit-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -32562,6 +32611,12 @@
           "source_log": "hseverify-pentest-integrated-qa-20261107/.autopilot/artifacts/20261107-qa-integrity-npm_run_test_platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9a5a024bfe86d6a743f0872f17653992bf276d5d2d01fd1191a21379da220562",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-exact-commit-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -32594,6 +32649,12 @@
           "source_log": "hseverify-pentest-integrated-qa-20261107/.autopilot/artifacts/20261107-qa-integrity-npm_run_test_platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9a5a024bfe86d6a743f0872f17653992bf276d5d2d01fd1191a21379da220562",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-exact-commit-platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
       ],
       "exact_ci_pass_count_runs": 0,
@@ -32624,6 +32685,12 @@
         {
           "sha256": "1956a7374a2b7ae67867706dfd1069fc861393749134d68a99dadce9b09cf093",
           "source_log": "hseverify-pentest-integrated-qa-20261107/.autopilot/artifacts/20261107-qa-integrity-npm_run_test_platform.log",
+          "status": "clean_green_summary_historical_worktree",
+          "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
+        },
+        {
+          "sha256": "9a5a024bfe86d6a743f0872f17653992bf276d5d2d01fd1191a21379da220562",
+          "source_log": "hseverify-pentest-integrity-auth-20261107/.autopilot/artifacts/20261107-integrity-exact-commit-platform.log",
           "status": "clean_green_summary_historical_worktree",
           "tested_commit_sha": "UNKNOWN_FROM_LOG_NOT_RELEASE_ATTESTATION"
         }
@@ -47027,12 +47094,12 @@
     }
   ],
   "counts": {
-    "ambiguous_or_changed_title_occurrences": 1156,
+    "ambiguous_or_changed_title_occurrences": 1150,
     "ambiguous_or_changed_unique_titles": 241,
-    "clean_pass_summary_logs": 1228,
+    "clean_pass_summary_logs": 1194,
     "current_reference_CI_green_distinct_cases": 232,
     "current_source_test_files": 561,
-    "current_test_source_content_sha256": "5e313e613b37c980e3cd1ea95546d8ee10c8fa79c3656f01ec5ad56e59c442d0",
+    "current_test_source_content_sha256": "a820728b5745da9f33004f18b2013fb14b8aa10fc59dac73cb6ec90af288ecc2",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -47042,19 +47109,19 @@
     },
     "existing_source_cases_linked_to_an_exact_218_id": 189,
     "frozen_full_release_verified": 0,
-    "frozen_ids_with_at_least_one_sourced_green_case": 67,
-    "historical_log_files_scanned": 2622,
-    "historical_only_green_distinct_cases": 1203,
-    "logs_with_no_clean_pass_summary_or_a_failure": 59,
-    "logs_with_pass_lines": 1287,
-    "matched_case_occurrences_with_duplicates": 5867,
+    "frozen_ids_with_at_least_one_sourced_green_case": 68,
+    "historical_log_files_scanned": 2582,
+    "historical_only_green_distinct_cases": 1204,
+    "logs_with_no_clean_pass_summary_or_a_failure": 60,
+    "logs_with_pass_lines": 1254,
+    "matched_case_occurrences_with_duplicates": 5798,
     "passed_cases_needing_scenario_mapping": 1254,
     "previous_QA_CI_successful_workflows": 30,
     "previous_QA_CI_workflows_with_logs_read": 30,
-    "previous_green_distinct_source_matched_cases": 1435,
+    "previous_green_distinct_source_matched_cases": 1436,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 198,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 175,
+    "source_tests_without_green_execution_proof": 174,
     "static_existing_distinct_test_cases": 1610,
     "unique_source_matched_historical_green_cases": 1398,
     "worktrees_scanned": 172
@@ -47070,7 +47137,7 @@
     "0/218 fully verified is preserved. Future final stage certification requires separate exact-SHA evidence for every applicable acceptance criterion."
   ],
   "frozen_scenarios": 218,
-  "inventory_started_from_git_head_sha": "59a0cb03b8600083f2e57de3ef5b45c874e31248",
+  "inventory_started_from_git_head_sha": "a215da06eeb2a2e26850c02b8ecb5711a7157220",
   "last_scoped_CI_reference_sha": "f5fe6eb8f5b522c7ed702c9591e8687f906025bb",
   "original_goal": "All 218 frozen Masterplan scenarios FULLY_VERIFIED and full independent pentest",
   "report_version": 1,
@@ -48025,9 +48092,11 @@
       "family": "Assurance Orders and Cases",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 0,
-      "green_history_only_cases_linked": 0,
+      "green_history_only_cases_linked": 1,
       "id": "M2.01.02",
-      "linked_case_ids": [],
+      "linked_case_ids": [
+        "tests/platform/assurance-order-case-runtime.test.mjs#385c7c3a57ac092c"
+      ],
       "scenario": "Invalid/unlinked/ineligible Worker and missing funding explained"
     },
     {

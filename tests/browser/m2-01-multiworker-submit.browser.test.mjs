@@ -43,7 +43,8 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
   const actionReplay=process.env.HSE_M20102_ACTION_REPLAY_ONLY==="true";
   const sessionReplay=process.env.HSE_M20102_REVOKED_SESSION_ONLY==="true";
   const workerReceiving=process.env.HSE_M20103_RECEIVING_ONLY==="true";
-  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay,sessionReplay,workerReceiving].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
+  const twoTabRace=process.env.HSE_M20104_CONCURRENT_TABS_ONLY==="true";
+  assert.ok([noCredits,noTargets,revoked,invalidLink,foreignLink,actionReplay,sessionReplay,workerReceiving,twoTabRace].filter(Boolean).length<=1,"Exactly one scoped rejection path is allowed");
   const foreignTenantId=id("tenant","foreign-company"),foreignLinkId=id("company_worker_link","foreign-company");
   let revokedDraftUrl="";
   let originalAuthenticatedCompanyCookies=[];
@@ -304,7 +305,61 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
           const stale=await context.newPage();
           await stale.goto(orderUrl,{waitUntil:"domcontentloaded"});
           await stale.getByRole("button",{name:"Submit Order",exact:true}).waitFor();
-          await page.getByRole("button",{name:"Submit Order",exact:true}).click();
+          if(twoTabRace){
+            // Hold both *genuine* Next Server Action POSTs until they have been
+            // independently emitted from two real signed-in Company tabs.
+            // This prevents a fast first response turning the test into the
+            // existing sequential stale-tab scenario.
+            const arrived=[];
+            let release;
+            const bothPostRequests=new Promise(resolve=>{release=resolve;});
+            let timeoutId;
+            const timeout=new Promise((_,reject)=>{
+              timeoutId=setTimeout(()=>reject(new Error("Two actual Company tab Submit POSTs never arrived together")),25000);
+            });
+            for(const [label,tab] of [["first",page],["second",stale]]){
+              await tab.route("**/company/assurance-orders/**",async route=>{
+                if(route.request().method()!=="POST")return route.continue();
+                assert.ok(route.request().headers()["next-action"],
+                  label+" must send genuine Next Server Action POST, not a synthetic API substitute");
+                arrived.push(label);
+                if(arrived.length===2)release();
+                await Promise.race([bothPostRequests,timeout]);
+                await route.continue();
+              });
+            }
+            const clicks=Promise.allSettled([page,stale].map(tab=>
+              tab.getByRole("button",{name:"Submit Order",exact:true}).click({timeout:35000})
+            ));
+            try{
+              await Promise.race([bothPostRequests,timeout]);
+              const settled=await clicks;
+              assert.ok(settled.every(result=>result.status==="fulfilled"),
+                "Both actual browser click actions must dispatch: "+JSON.stringify(settled));
+            }finally{
+              clearTimeout(timeoutId);
+            }
+            assert.deepEqual(arrived.sort(),["first","second"],
+              "Two independent real browser action POSTs must enter the same gate before release");
+            await Promise.all([page.unroute("**/company/assurance-orders/**"),
+              stale.unroute("**/company/assurance-orders/**")]);
+            const outcomes=await Promise.all([page,stale].map(async tab=>
+              Promise.any([
+                tab.getByText("SUBMITTED",{exact:true}).waitFor({timeout:20000}).then(()=>"accepted"),
+                tab.getByRole("alert").getByText(/Only a READY Assurance Order can be submitted/).waitFor({timeout:20000}).then(()=>"conflict")
+              ])
+            ));
+            assert.deepEqual(outcomes.sort(),["accepted","conflict"],
+              "Two genuinely simultaneous submits must have one successful tab and one safe conflict");
+            console.log("M20104_ACTUAL_TWO_COMPANY_TABS_GENUINE_SIMULTANEOUS_POST_ONE_WIN_ONE_CONFLICT");
+          }else{
+            await page.getByRole("button",{name:"Submit Order",exact:true}).click();
+            await page.getByText("SUBMITTED",{exact:true}).waitFor({timeout:20000});
+            // Real stale browser submit must not add cases or overwrite history.
+            await stale.getByRole("button",{name:"Submit Order",exact:true}).click();
+            await stale.getByRole("alert").getByText(/Only a READY Assurance Order can be submitted/).waitFor({timeout:15000});
+          }
+          await page.goto(orderUrl,{waitUntil:"domcontentloaded"});
           await page.getByText("SUBMITTED",{exact:true}).waitFor({timeout:20000});
           await page.locator("tbody tr").first().waitFor();
           assert.equal(await page.locator("tbody tr").count(),2);
@@ -313,14 +368,10 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
             assert.equal(await row.count(),1);
             assert.match(await row.innerText(),/Identity pending/);
           }
-          // Real stale browser submit must not add cases or overwrite history.
-          await stale.getByRole("button",{name:"Submit Order",exact:true}).click();
-          await stale.getByRole("alert").getByText(/Only a READY Assurance Order can be submitted/).waitFor({timeout:15000});
-          await page.reload({waitUntil:"domcontentloaded"});
-          assert.equal(await page.locator("tbody tr").count(),2);
           assert.equal(await page.getByRole("button",{name:"Submit Order",exact:true}).count(),0);
           assert.deepEqual(errors,[],output());
-          console.log("ACTUAL_M20103_04_BROWSER Company creates and validates two scoped linked Workers, one case each with separate required next action; stale second browser submit returns safe conflict; cold reload shows exactly two immutable cases");
+          if(twoTabRace)console.log("M20104_ACTUAL_TWO_TAB_COLD_RELOAD_SUBMITTED_TWO_UNIQUE_WORKER_CASES");
+          else console.log("ACTUAL_M20103_04_BROWSER Company creates and validates two scoped linked Workers, one case each with separate required next action; stale second browser submit returns safe conflict; cold reload shows exactly two immutable cases");
           if(process.env.HSE_M20107_CANCEL_SUBMITTED_ONLY==="true"){
             const caseIds=await page.locator("tbody tr").evaluateAll(rows=>rows.map(row=>row.id));
             assert.equal(caseIds.length,2);
@@ -569,6 +620,20 @@ test("M2.01 actual two Worker cases keep scope/site/deadline and stale second su
       assert.equal(events.filter(x=>x.event_type==="case_cancelled").length,cancellation?2:0);
       assert.equal(new Set(events.filter(x=>x.event_type==="case_cancelled").map(x=>x.case_id)).size,cancellation?2:0);
       assert.equal((await verifyDb.query("SELECT COALESCE(SUM(credit_delta),0)::int AS n FROM billing_credit_ledger WHERE tenant_id=$1",[company.tenantId])).rows[0].n,0,"No payment credits were purchased; cancellation must not invent credit or refund ledger entries.");
+      if(twoTabRace){
+        const submittedAudit=(await verifyDb.query(
+          "SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assurance_order.submitted' AND target_reference=$1",[order.order_id]
+        )).rows[0].n;
+        const createdCaseAudit=(await verifyDb.query(
+          "SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assurance_case.created' AND target_reference IN (SELECT case_id FROM assurance_cases WHERE order_id=$1)",[order.order_id]
+        )).rows[0].n;
+        const createdActionAudit=(await verifyDb.query(
+          "SELECT COUNT(*)::int AS n FROM platform_audit_events WHERE action_key='assurance_action.created' AND target_reference IN (SELECT action_id FROM assurance_action_items WHERE order_id=$1)",[order.order_id]
+        )).rows[0].n;
+        assert.deepEqual([submittedAudit,createdCaseAudit,createdActionAudit],[1,2,2],
+          "Genuine concurrent tabs must not double-write immutable order/case/action audit events");
+        console.log("M20104_ACTUAL_DB_ONE_SUBMISSION_TWO_CASES_TWO_ACTIONS_ONE_ORDER_AND_FOUR_CHILD_AUDITS_ZERO_DUPLICATES");
+      }
       if(cancellation)console.log("ACTUAL_M20107_DB retained immutable original SUBMITTED two target scope, case-created timeline; two case-cancelled + one order-cancelled events, both cases Closed, actions resolved, zero unsolicited billing-credit mutations");
       else console.log("ACTUAL_M20103_04_DB one submitted order, exact immutable site/dept/deadline/interview scope, two separate submitted targets/cases/action obligations, one order-submission event and two case-created events after duplicate-tab attempt");
       if(workerReceiving){

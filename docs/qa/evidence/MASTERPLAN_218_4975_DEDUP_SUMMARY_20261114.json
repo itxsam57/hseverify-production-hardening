@@ -1350,7 +1350,7 @@
   "previous_green_source_cases_without_a_precise_planned_dimension_link": 1023,
   "release_decision": "NO_GO",
   "release_scenarios_fully_verified": 0,
-  "scoped_prior_source_tests_green_distinct": 1435,
+  "scoped_prior_source_tests_green_distinct": 1436,
   "scoped_source_test_case_total": 1610,
   "slot_historical_link_states": {
     "NO_EXACT_DIMENSION_LINK_FROM_OLD_EVIDENCE": 4182,
@@ -1358,7 +1358,7 @@
     "OLD_SCOPED_CLAUSE_PARTIAL_REVIEW_REQUIRED": 693,
     "PRIOR_PASSED_CASE_TITLE_CANDIDATE_REVIEW_REQUIRED": 83
   },
-  "source_cases_used_in_preliminary_dimension_candidate_links": 412,
+  "source_cases_used_in_preliminary_dimension_candidate_links": 413,
   "source_sha_at_initial_plan": "8c60c0b789513f427fb56db3fa96dad4afe38d47",
   "source_sha_at_reconciliation": "1c9954a770edb9e9f1a23b1bab59e680fb5bdcc5"
 }
