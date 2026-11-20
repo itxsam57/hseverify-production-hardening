@@ -1,0 +1,76 @@
+name: M2.01.04 real two-tab Company simultaneous submit and one-credit race
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-04-real-two-tab-submit-and-credit-race.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m2-01-multiworker-submit.browser.test.mjs'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-04-real-two-tab-submit-and-credit-race.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20104-two-tab-real-race-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-two-tab-submit-plus-credit-race-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20104_CONCURRENT_TABS_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout immutable PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Two actual Company tabs simultaneously submit the same READY order with DB/audit proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m2-01-multiworker-submit.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20104-two-tab-real-submit-browser.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20104-two-tab-real-submit-browser.log
+          done
+          for marker in M20104_ACTUAL_TWO_COMPANY_TABS_GENUINE_SIMULTANEOUS_POST_UI_CONVERGES_OR_SAFE_CONFLICT M20104_ACTUAL_TWO_TAB_COLD_RELOAD_SUBMITTED_TWO_UNIQUE_WORKER_CASES M20104_ACTUAL_DB_ONE_SUBMISSION_TWO_CASES_TWO_ACTIONS_ONE_ORDER_AND_FOUR_CHILD_AUDITS_ZERO_DUPLICATES ACTUAL_M20103_04_DB; do
+            grep -q "$marker" .autopilot/artifacts/m20104-two-tab-real-submit-browser.log
+          done
+      - name: Original one-purchased-credit two competing Worker funding approvals atomic PGlite proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/platform/assessment-funding-notification-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m20104-one-credit-funding-runtime.log
+          for line in 'ℹ tests 8' 'ℹ pass 8' 'ℹ fail 0' 'ℹ skipped 0' 'ACTUAL_M20104_FUNDING_CONCURRENT'; do
+            grep -q "$line" .autopilot/artifacts/m20104-one-credit-funding-runtime.log
+          done
+      - name: Retain original exact SHA simultaneous Company tab Chromium and one-credit funding evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20104-company-two-tab-and-credit-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m20104-two-tab-real-submit-browser.log
+            .autopilot/artifacts/m20104-one-credit-funding-runtime.log
+          if-no-files-found: warn
+          retention-days: 90
