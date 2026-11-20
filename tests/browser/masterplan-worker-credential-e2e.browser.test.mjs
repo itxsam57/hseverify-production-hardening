@@ -116,7 +116,34 @@ async function assertCandidateQuestionBoundary(page) {
 async function freePort(){return new Promise((resolve,reject)=>{const s=createServer();s.once("error",reject);s.listen(0,"127.0.0.1",()=>{const a=s.address();s.close(e=>e?reject(e):!a||typeof a==="string"?reject(new Error("No port")):resolve(a.port));});});}
 async function login(page,baseUrl,credential,role){await page.goto(`${baseUrl}/${role}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("Email address").fill(credential.email);await page.getByLabel("Password").fill(credential.password);if(credential.totpSecret)await page.getByLabel("Authenticator code").fill(await freshTotp(credential.email,credential.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL(`**/${role}/dashboard`,{timeout:30000});}
 async function sandboxCode(page,baseUrl,channel,destination){await page.goto(`${baseUrl}/worker/register/sandbox`,{waitUntil:"domcontentloaded"});await page.getByLabel("Delivery channel").selectOption(channel);await page.getByLabel("Delivery destination").fill(destination);await page.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await page.getByRole("button",{name:"Open latest sandbox delivery"}).click();const status=page.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor({timeout:15000});return (await status.locator("strong").innerText()).trim();}
-async function uploadIdentity(page,heading,name,document=false){const card=page.getByRole("region",{name:heading,exact:true});if(document){await card.getByLabel("Document type").selectOption("passport");await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");await card.getByLabel("Issue date").fill("2025-01-01");await card.getByLabel("Expiry date").fill("2035-01-01");}await card.getByLabel("Choose file").setInputFiles({...PNG,name});await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/identity")),card.getByRole("button",{name:"Upload evidence"}).click()]);}
+async function uploadIdentity(page,heading,name,document=false){
+  const card=page.getByRole("region",{name:heading,exact:true});
+  if(document){
+    await card.getByLabel("Document type").selectOption("passport");
+    await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");
+    await card.getByLabel("Issue date").fill("2025-01-01");
+    await card.getByLabel("Expiry date").fill("2035-01-01");
+  }
+  await card.getByLabel("Choose file").setInputFiles({...PNG,name});
+  const responseReady=page.waitForResponse(r=>
+    r.request().method()==="POST"&&new URL(r.url()).pathname==="/worker/identity",
+  {timeout:30000});
+  await card.getByRole("button",{name:"Upload evidence"}).click();
+  const response=await responseReady;
+  assert.equal(response.status(),200,heading+" real identity upload Server Action must return HTTP200");
+  try {
+    // The Server Action revalidates and can replace the transient toast before
+    // Chromium observes it. Require the authoritative server-owned binding
+    // instead: it can only render after the file passed scanning and binding.
+    await card.getByText("Evidence attached",{exact:true}).waitFor({timeout:30000});
+  } catch(error) {
+    throw new Error(heading+" upload did not show a secured attachment. Actual UI: "+await card.innerText(),{cause:error});
+  }
+  await page.reload({waitUntil:"domcontentloaded"});
+  await page.getByRole("region",{name:heading,exact:true})
+    .getByText("Evidence attached",{exact:true}).waitFor({timeout:20000});
+  console.log("ACTUAL_M20105_IDENTITY_SECURE_ATTACHMENT_ACK_BROWSER "+heading);
+}
 async function approveReview(page,adminPage,baseUrl,kind,reason){
   await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});
   const row=page.locator("tbody tr").filter({hasText:kind}).filter({hasText:"QUEUED"}).first();
@@ -359,7 +386,21 @@ async function phaseOne(baseUrl,environment,credentials){
         await worker.getByLabel("Primary occupation or trade").fill("Safety Officer");await worker.getByLabel("Years of experience").fill("7");await worker.getByLabel("Current employment status").selectOption("employed");await worker.getByLabel("Preferred work countries").fill("Pakistan, Saudi Arabia");await worker.getByRole("button",{name:"Save changes"}).click();await worker.reload();await worker.getByRole("button",{name:"Submit profile"}).click();await worker.getByText("Profile submitted",{exact:true}).waitFor({timeout:15000});
 
         await worker.goto(`${baseUrl}/worker/identity`);await worker.getByLabel("Legal first name").fill("Masterplan");await worker.getByLabel("Legal last name").fill("Worker");await worker.getByLabel("Date of birth").fill("1990-01-15");await worker.getByLabel("Nationality").fill("Pakistani");await worker.getByLabel("Country of residence").fill("Pakistan");await worker.getByRole("button",{name:"Save identity details"}).click();await worker.reload();
-        await uploadIdentity(worker,"Identity document","passport.png",true);await uploadIdentity(worker,"Profile photo","profile.png");await uploadIdentity(worker,"Selfie evidence","selfie.png");await worker.reload();await worker.getByRole("button",{name:"Submit identity"}).click();await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:15000});
+        await uploadIdentity(worker,"Identity document","passport.png",true);
+        await uploadIdentity(worker,"Profile photo","profile.png");
+        await uploadIdentity(worker,"Selfie evidence","selfie.png");
+        await worker.getByRole("button",{name:"Submit identity"}).click();
+        try {
+          // Manual review is the actual server-side lifecycle after validation
+          // and automated checks; ephemeral action messages can be remounted.
+          await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:30000});
+          await worker.reload({waitUntil:"domcontentloaded"});
+          await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:20000});
+        } catch(error) {
+          throw new Error("Worker identity was not visibly submitted and queued for manual review. Actual UI: "+
+            await worker.locator("main").innerText(),{cause:error});
+        }
+        console.log("ACTUAL_M20105_IDENTITY_SUBMISSION_MANUAL_REVIEW_ACK_BROWSER");
 
         await worker.goto(`${baseUrl}/worker/evidence`);await worker.getByLabel("Record type").selectOption("qualification");await worker.getByRole("button",{name:"Create draft"}).click();await worker.reload();
         const article=worker.locator("article").filter({hasText:"Qualification record"}).first();await article.getByLabel("Qualification title").fill("Masterplan Safety Certificate");await article.getByLabel("Category").fill("Occupational Safety");await article.getByLabel("Issuing organization").fill("HSE Institute");await article.getByLabel("Certificate / candidate number").fill("MP-E2E-001");await article.getByLabel("Level").fill("Level 3");await article.getByLabel("Issue date").fill("2025-01-01");await article.getByLabel("Country").fill("Pakistan");await article.getByLabel("I confirm these qualification details").check();await article.getByRole("button",{name:"Save metadata"}).click();await worker.reload();
