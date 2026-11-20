@@ -11,6 +11,9 @@ import "@/app/design-system-integrations.css";
 import "@/app/company-scope-demonstration.css";
 import "@/app/notification-foundation.css";
 
+// Per-request CSP nonces cannot be attached to prerendered HTML.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     default: "HSE Verify",

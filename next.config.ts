@@ -59,21 +59,15 @@ const commandBoundary: Partial<NextConfig> =
             }
           : {};
 
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
+// JSON/API requests do not render Next.js inline scripts. Document responses
+// instead receive a fresh strict nonce-based CSP from src/proxy.ts.
+const apiContentSecurityPolicy = [
+  "default-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  commandMode === "development"
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self' 'unsafe-inline'",
-  "connect-src 'self'",
-  "media-src 'self' blob:",
-  "worker-src 'self' blob:"
+  "script-src 'none'"
 ].join("; ");
 
 const nextConfig: NextConfig = {
@@ -102,7 +96,6 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "Content-Security-Policy", value: contentSecurityPolicy },
           {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains"
@@ -114,6 +107,12 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(self), microphone=(self), geolocation=()"
           }
+        ]
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: apiContentSecurityPolicy }
         ]
       },
       {
