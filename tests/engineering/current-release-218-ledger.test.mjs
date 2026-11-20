@@ -7,7 +7,7 @@ import {
   FROZEN_MASTERPLAN_DIGEST,
   buildCurrentReleaseLedger
 } from "../../scripts/lib/current-release-218-ledger.mjs";
-import { assertM1CompletionBeforeAdvance } from "../../scripts/lib/m1-completion-gate.mjs";
+import { assertScenarioClosureBeforeAdvance } from "../../scripts/lib/scenario-completion-gate.mjs";
 
 const source = JSON.parse(readFileSync("docs/qa/2026-10-02-evidence.json", "utf8"));
 const SOURCE_SHA = "b54421302fe7000c0284864b92cbff258c2903a0";
@@ -30,20 +30,34 @@ test("218 frozen scenarios and 37 bricks reconcile at current SHA without histor
   assert(report.scenarios.every(row => row.status !== "FULLY_VERIFIED"));
   // M1-first policy is fail-closed without manufacturing any release certification.
   const m1 = report.scenarios.filter(row => row.id.startsWith("M1."));
-  assert.deepEqual(assertM1CompletionBeforeAdvance(report.scenarios, "M1.01.01"),
+  assert.deepEqual(assertScenarioClosureBeforeAdvance(report.scenarios, "M1.01.01"),
     { fullyVerified: 0, total: 67, remaining: 67 });
   // Also gate the actual tracked execution cursor so CI fails if future work silently jumps back to M2.
   const actualCursor = JSON.parse(readFileSync("docs/qa/218_VERTICAL_EXECUTION_CURSOR.json", "utf8"));
-  assertM1CompletionBeforeAdvance(report.scenarios, actualCursor.current_focus_scenario_id);
-  assert.throws(() => assertM1CompletionBeforeAdvance(report.scenarios, "M2.01.05"),
-    /Owner M1 completion gate: 67 M1 scenarios remain uncertified/);
+  assertScenarioClosureBeforeAdvance(report.scenarios, actualCursor.current_focus_scenario_id);
+  assert.throws(() => assertScenarioClosureBeforeAdvance(report.scenarios, "M2.01.05"),
+    /M1.01.01/);
   const nearlyCertified = report.scenarios.map(row => row.id === m1[66].id ?
     row : row.id.startsWith("M1.") ? { ...row, status: "FULLY_VERIFIED" } : row);
-  assert.throws(() => assertM1CompletionBeforeAdvance(nearlyCertified, "M2.01.05"),
-    /1 M1 scenarios remain uncertified/);
+  assert.throws(() => assertScenarioClosureBeforeAdvance(nearlyCertified, "M2.01.05"),
+    /M1.12.05/);
   const allM1Certified = report.scenarios.map(row => row.id.startsWith("M1.") ?
     { ...row, status: "FULLY_VERIFIED" } : row);
-  assert.deepEqual(assertM1CompletionBeforeAdvance(allM1Certified, "M2.01.05"),
+  assert.throws(() => assertScenarioClosureBeforeAdvance(allM1Certified, "M2.01.05"),
+    /M2.01.01/);
+  assert.deepEqual(assertScenarioClosureBeforeAdvance(allM1Certified, "M2.01.01"),
+    { fullyVerified: 67, total: 67, remaining: 0 });
+  // The next M1 ID is blocked until its predecessor has final evidence.
+  assert.throws(() => assertScenarioClosureBeforeAdvance(report.scenarios, "M1.02.01"),
+    /M1.01.01/);
+  const afterFirst = report.scenarios.map((row, index) => index === 0 ?
+    { ...row, status: "FULLY_VERIFIED" } : row);
+  assert.deepEqual(assertScenarioClosureBeforeAdvance(afterFirst, "M1.01.02"),
+    { fullyVerified: 1, total: 67, remaining: 66 });
+  assert.throws(() => assertScenarioClosureBeforeAdvance(afterFirst, "M1.01.03"),
+    /M1.01.02/);
+  const allCertified = report.scenarios.map(row => ({ ...row, status: "FULLY_VERIFIED" }));
+  assert.deepEqual(assertScenarioClosureBeforeAdvance(allCertified, report.scenarios.at(-1).id),
     { fullyVerified: 67, total: 67, remaining: 0 });
 });
 
