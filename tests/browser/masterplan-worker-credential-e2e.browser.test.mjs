@@ -132,11 +132,12 @@ async function uploadIdentity(page,heading,name,document=false){
   const response=await responseReady;
   assert.equal(response.status(),200,heading+" real identity upload Server Action must return HTTP200");
   try {
-    await card.locator('p.profile-action-success[role="status"]')
-      .filter({hasText:"Evidence uploaded, security-scanned and attached to this identity version."})
-      .waitFor({timeout:30000});
+    // The Server Action revalidates and can replace the transient toast before
+    // Chromium observes it. Require the authoritative server-owned binding
+    // instead: it can only render after the file passed scanning and binding.
+    await card.getByText("Evidence attached",{exact:true}).waitFor({timeout:30000});
   } catch(error) {
-    throw new Error(heading+" upload did not confirm secured attachment. Actual UI: "+await card.innerText(),{cause:error});
+    throw new Error(heading+" upload did not show a secured attachment. Actual UI: "+await card.innerText(),{cause:error});
   }
   await page.reload({waitUntil:"domcontentloaded"});
   await page.getByRole("region",{name:heading,exact:true})
@@ -390,8 +391,9 @@ async function phaseOne(baseUrl,environment,credentials){
         await uploadIdentity(worker,"Selfie evidence","selfie.png");
         await worker.getByRole("button",{name:"Submit identity"}).click();
         try {
-          await worker.locator('p.profile-action-success[role="status"]')
-            .filter({hasText:/^Identity submitted/}).waitFor({timeout:30000});
+          // Manual review is the actual server-side lifecycle after validation
+          // and automated checks; ephemeral action messages can be remounted.
+          await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:30000});
           await worker.reload({waitUntil:"domcontentloaded"});
           await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:20000});
         } catch(error) {
