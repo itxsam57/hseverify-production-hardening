@@ -1427,7 +1427,21 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
            WHERE applications.assurance_case_id=$1`,[journeyCaseId])).rows;
         assert.equal(lineage.length,1,"Only one original Company-funded Worker case can produce the final credential");
         const f=lineage[0];
-        assert.equal(f.application_status,"CASE_CREATED");
+        // The Worker revisits eligibility after approval. The real application lifecycle
+        // then closes the retained CASE_CREATED application; the funded case/credential
+        // linkage must survive its terminal COMPLETED transition.
+        assert.equal(f.application_status,"COMPLETED");
+        const applicationEvents=(await verify.query(
+          `SELECT from_status,to_status,actor_account_id,actor_role
+             FROM worker_assessment_application_events
+            WHERE application_id=(SELECT application_id FROM worker_assessment_applications WHERE assurance_case_id=$1)
+            ORDER BY occurred_at,event_id`,[journeyCaseId])).rows;
+        assert.equal(applicationEvents.filter(event=>event.to_status==="CASE_CREATED").length,1,
+          "Exactly one Company-approved funded application must create the original case");
+        const terminalEvents=applicationEvents.filter(event=>event.from_status==="CASE_CREATED"&&event.to_status==="COMPLETED");
+        assert.equal(terminalEvents.length,1,"The real post-decision application closure must retain exactly one immutable transition");
+        assert.equal(terminalEvents[0].actor_account_id,workerAccountId);
+        assert.equal(terminalEvents[0].actor_role,"worker");
         assert.equal(f.worker_account_id,workerAccountId);
         assert.equal(f.company_tenant_id,companyTenantId);
         assert.equal(f.tenant_id,companyTenantId);
