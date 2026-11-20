@@ -30,6 +30,7 @@ const TRANSPORT_ONLY=process.env.HSE_MASTERPLAN_TRANSPORT_ONLY === "true";
 const SCREEN_ERRORS=process.env.HSE_MASTERPLAN_A12_SCREEN_ERRORS === "true";
 const DEVICE_DENIAL=process.env.HSE_MASTERPLAN_DEVICE_DENIAL === "true";
 const COMPANY_CREDENTIAL_TARGET_MODE=process.env.HSE_MASTERPLAN_COMPANY_CREDENTIAL_TARGET === "true";
+const M20105_COMPANY_FUNDED_CREDENTIAL=process.env.HSE_M20105_FUNDED_CREDENTIAL_RECEIPT==="true";
 const ISSUED_QUALIFICATION=COMPANY_CREDENTIAL_TARGET_MODE ? "Company Issued Safety Competency" : "End-to-End Worker Assessment";
 const COMPLETE_REASSESSMENT=process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true";
 const REPLACED_RESTRICTION="This issuance has been replaced. Verify the current credential shared by the Worker.";
@@ -525,8 +526,10 @@ async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env
  console.log("ACTUAL_ASSURANCE_NOTIFICATION_BROWSER original retained sources, registered worker, owned Open/read and foreign denial passed");
 }
 
-test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an active Worker exam" : SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
+test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an active Worker exam" : SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:M20105_COMPANY_FUNDED_CREDENTIAL?660000:420000},async()=>{
   const companyFunded=process.env.HSE_MASTERPLAN_FUNDING_MODE === "company" || COMPANY_CREDENTIAL_TARGET_MODE;
+  assert.ok(!M20105_COMPANY_FUNDED_CREDENTIAL||(companyFunded&&!COMPANY_CREDENTIAL_TARGET_MODE),
+    "M20105 receiving and credit-lineage mode must use real Worker-initiated Company funding, not Company direct-order or self-payment");
   const root=process.cwd(),dbDir=await mkdtemp(join(tmpdir(),"hse-masterplan-worker-e2e-")),port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
   const env={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dbDir,HSE_RELEASE_SHA:"masterplan-worker-e2e",HSE_CREDENTIAL_SIGNING_SECRET:"synthetic-masterplan-worker-signing-secret-2026",HSE_SESSION_SECRET:"masterplan-worker-e2e-session-secret-2026-more-than-32",HSE_AUTH_PEPPER:"masterplan-worker-e2e-auth-pepper-2026-more-than-32",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   try{
@@ -1018,6 +1021,18 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${journeyCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();try{await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});}catch(error){throw new Error("Final decision failed at actual browser boundary.\nADMIN URL: "+admin.url()+"\nADMIN:\n"+await admin.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
           if(COMPANY_CREDENTIAL_TARGET_MODE){await company.reload();await company.getByText("COMPANY-CREDENTIAL-TARGET-BROWSER · COMPLETED",{exact:true}).waitFor();console.log("ACTUAL_COMPANY_ORDER_COMPLETED_BROWSER original Company order completed after real final decision");}
+          if(M20105_COMPANY_FUNDED_CREDENTIAL){
+            await company.goto(`${baseUrl}/company/assurance-orders`,{waitUntil:"domcontentloaded"});
+            await company.getByRole("heading",{name:"Assurance orders",exact:true}).waitFor();
+            const fundedOrder=company.locator("tbody tr").filter({hasText:"Worker assessment · End-to-End Worker Assessment"}).first();
+            await fundedOrder.getByText("COMPLETED",{exact:true}).waitFor({timeout:20000});
+            await fundedOrder.getByRole("link",{name:"Open order",exact:true}).click();
+            const fundedCase=company.locator('tbody tr[id="'+journeyCaseId+'"]');
+            await fundedCase.getByText("Approved",{exact:true}).waitFor({timeout:20000});
+            await fundedCase.getByText("valid",{exact:true}).waitFor({timeout:20000});
+            assert.equal(await fundedCase.count(),1,"Paying Company must view exactly its own completed original funded Worker case");
+            console.log("M20105_ACTUAL_PAYER_COMPANY_BROWSER_ORIGINAL_FUNDED_CASE_APPROVED_AND_VALID_CREDENTIAL");
+          }
           await worker.goto(`${baseUrl}/worker/passport`);
           const qualificationRecords = worker.getByRole("region", { name: "Qualification passport records" });
           const qualificationRow = qualificationRecords.getByRole("row").filter({ hasText: "Masterplan Safety Certificate" });
@@ -1396,6 +1411,39 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
       }
       assert.ok(journeyCaseId,"Preserved Worker journey did not expose its Assurance Case ID.");
       const c=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0];assert.equal(c.case_status,"Approved");assert.ok(c.decision_reference);assert.ok(c.credential_reference);
+      if(M20105_COMPANY_FUNDED_CREDENTIAL){
+        const lineage=(await verify.query(`
+          SELECT applications.application_status,applications.worker_account_id,applications.company_tenant_id,
+                 applications.assurance_order_id,applications.assurance_case_id,
+                 funding.status AS funding_status,funding.reserved_credit_units,
+                 orders.order_status,orders.tenant_id,cases.permanent_worker_id,
+                 cases.credential_reference,issued.worker_id AS issued_worker_id,
+                 issued.qualification AS issued_qualification
+            FROM worker_assessment_applications applications
+            JOIN funding_requests funding ON funding.funding_request_id=applications.funding_request_id
+            JOIN assurance_orders orders ON orders.order_id=applications.assurance_order_id
+            JOIN assurance_cases cases ON cases.case_id=applications.assurance_case_id
+            JOIN credential_issuances issued ON issued.credential_id=cases.credential_reference
+           WHERE applications.assurance_case_id=$1`,[journeyCaseId])).rows;
+        assert.equal(lineage.length,1,"Only one original Company-funded Worker case can produce the final credential");
+        const f=lineage[0];
+        assert.equal(f.application_status,"CASE_CREATED");
+        assert.equal(f.worker_account_id,workerAccountId);
+        assert.equal(f.company_tenant_id,companyTenantId);
+        assert.equal(f.tenant_id,companyTenantId);
+        assert.equal(f.assurance_case_id,journeyCaseId);
+        assert.match(f.assurance_order_id,/^assurance_order_/);
+        assert.equal(f.funding_status,"APPROVED");
+        assert.equal(f.reserved_credit_units,1);
+        assert.equal(f.order_status,"COMPLETED");
+        assert.equal(f.permanent_worker_id,permanentWorkerId);
+        assert.equal(f.credential_reference,c.credential_reference);
+        assert.equal(f.issued_worker_id,permanentWorkerId);
+        assert.equal(f.issued_qualification,ISSUED_QUALIFICATION);
+        const attempts=(await verify.query("SELECT status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        assert.deepEqual(attempts,[{status:"SUBMITTED"}],"One real originally Company-funded Worker assessment attempt must have been submitted");
+        console.log("M20105_ACTUAL_DB_COMPANY_FUNDING_APPROVED_RESERVED_CREDIT_SAME_SUBMITTED_ATTEMPT_ADMIN_APPROVAL_ISSUED_CREDENTIAL");
+      }
       if(COMPANY_CREDENTIAL_TARGET_MODE) {
         const produced=(await verify.query(`SELECT orders.credential_target,orders.interview_required,orders.order_status,
           cases.worker_account_id,cases.permanent_worker_id,issuances.qualification,issuances.worker_id,
