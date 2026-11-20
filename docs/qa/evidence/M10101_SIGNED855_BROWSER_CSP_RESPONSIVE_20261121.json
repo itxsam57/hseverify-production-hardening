@@ -1,0 +1,390 @@
+{
+  "utc": "2026-11-20T23:43:30.436Z",
+  "source_sha": "85554af4aac9dd110627a3176425bf8bf07eff2b",
+  "endpoint": "isolated signed855 localhost-only production HTTPS",
+  "browser": "Playwright Chromium",
+  "scope": "six role real browser login responsive and keyboard plus nonce-CSP, no authenticated actions or external providers",
+  "rows": [
+    {
+      "role": "worker",
+      "width": 320,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "worker",
+      "width": 390,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "worker",
+      "width": 1280,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "company",
+      "width": 320,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "company",
+      "width": 390,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "company",
+      "width": 1280,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "verifier",
+      "width": 320,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "verifier",
+      "width": 390,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "verifier",
+      "width": 1280,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "assessor",
+      "width": 320,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "assessor",
+      "width": 390,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "assessor",
+      "width": 1280,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "admin",
+      "width": 320,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "admin",
+      "width": 390,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "admin",
+      "width": 1280,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "root",
+      "width": 320,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "root",
+      "width": 390,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    },
+    {
+      "role": "root",
+      "width": 1280,
+      "pass": true,
+      "status": 200,
+      "csp_nonce_present": true,
+      "csp_strict_dynamic": true,
+      "csp_no_unsafe_inline_script": true,
+      "email": true,
+      "password": true,
+      "submit": true,
+      "geometry": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280
+      },
+      "no_horizontal_overflow": true,
+      "keyboard_tab_to_password": true,
+      "keyboard_shift_tab_to_email": true,
+      "page_errors": [],
+      "console_errors": []
+    }
+  ],
+  "checks": 18,
+  "passed": 18,
+  "all_pass": true
+}
