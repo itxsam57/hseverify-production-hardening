@@ -1,0 +1,102 @@
+{
+  "current_evidence_branch": "qa/m10101-stage-signed7ff-prep-20261121",
+  "date": "2026-11-21",
+  "final_check_slots_certified": 0,
+  "first_release_full_certification_scenario": "M1.01.01",
+  "frozen_full": 0,
+  "frozen_total": 218,
+  "independent_complete_pentest": "NOT COMPLETE",
+  "product_runtime_and_original_tests_identical_to_signed_SHA": true,
+  "real_provider_email_sms": "owner deferred to end and NOT TESTED",
+  "receipts": [
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.07.03-M1.07.06",
+      "passed": 11,
+      "raw_log_workstation": ".autopilot/artifacts/m10703-owner-approved-independent-identity-review-native-20261121.log",
+      "scope": "Verifier manual review, approver/rejector/return notifications, immutable history and replays (PGlite/PG16 tests)",
+      "sha256": "1f31f035520def2f70d287afe6285291d7195f215e78c16c6be6ce9b230c05fd",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.07.03-M1.07.04",
+      "passed": 1,
+      "raw_log_workstation": ".autopilot/artifacts/m10703_04-owner-approved-initial-identity-rejection-browser-20261121.log",
+      "scope": "Initial Worker identity rejection reason, unchanged original submitted version, no permanent Worker ID actual browser",
+      "sha256": "1c3ba74cf8b41c1ee1e4597c1dfedff6983bacb377b621075c300d2fb2bae7c6",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.07.05-M1.07.06",
+      "passed": 12,
+      "raw_log_workstation": ".autopilot/artifacts/m10705_06-owner-approved-identity-correction-history-native-20261121.log",
+      "scope": "Verified identity correction version, original evidence, wrong-role/session and rejection native",
+      "sha256": "ff548fd14c1cba0e5a3d231176fa51fcdab6a42eb62057ebb6b14ce6ac4b58e8",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.07.07",
+      "passed": 3,
+      "raw_log_workstation": ".autopilot/artifacts/m10707-exact7ff-disposable-postgres-identity-race.log",
+      "scope": "Actual isolated PostgreSQL16 two Admin duplicate resolution, race and Worker permanent ID refusal",
+      "sha256": "3d79b749164c2958153cdb6f4d03d9536f90a2d957662b8a578dd694d7c13413",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.07.07",
+      "passed": 1,
+      "raw_log_workstation": ".autopilot/artifacts/m10707-owner-approved-admin-duplicate-worker-resolution-browser-20261121.log",
+      "scope": "Actual Admin two separate Workers and duplicate disposition real browser",
+      "sha256": "34207d790ad8a347a83fe79b4a8cd137cebeecdd355f9384158eb714505176c7",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.08.01-M1.08.05",
+      "passed": 12,
+      "raw_log_workstation": ".autopilot/artifacts/m10801_05-owner-approved-company-verification-native-20261121.log",
+      "scope": "Original Company registration/scan/application/correction/review/reject/approval native test suite, PGlite",
+      "sha256": "5a6c698ae9dff1176a58bc21bca8fcd21878203415af85965b870d196d0fb89f",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.08.02",
+      "passed": 1,
+      "raw_log_workstation": ".autopilot/artifacts/m10802-owner-approved-pending-company-high-risk-denial-browser-20261121.log",
+      "scope": "Pending Company high-risk blocked invite/order/credits, reactivation correct browser",
+      "sha256": "e08c7f725f146ef5cf51728667385b36a908a8ae67ce7a5f597aa6a5d623c24c",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 0,
+      "frozen_id_scoped": "M1.08.03-M1.08.05",
+      "passed": 3,
+      "raw_log_workstation": ".autopilot/artifacts/m10805-exact7ff-disposable-postgres-company-decision-race.log",
+      "scope": "Actual isolated PostgreSQL16 stale Admin corrected version, Company terminal rejection, two Admin approval/rejection races",
+      "sha256": "582ab24833b5fc391b023adf391dee1e914a833d805f756a32115d0879f68e45",
+      "status": "SCOPED_PASS_NOT_FULL_CERT"
+    },
+    {
+      "failed": 1,
+      "frozen_id_scoped": "M1.08.01-M1.08.05",
+      "passed": 0,
+      "raw_log_workstation": ".autopilot/artifacts/m10801_05-owner-approved-company-verification-full-browser-20261121.log",
+      "scope": "Original first full real-browser Company registration test RED: 15000ms navigation timeout at Company application form; not a product pass",
+      "sha256": "94daa126dfaf2667bf68ff3eecc36a19477528f6965d85709a1b0d796a0b1457",
+      "status": "REPRODUCED_REAL_BROWSER_RED_INVESTIGATING"
+    }
+  ],
+  "release_verdict": "NO-GO",
+  "running_cases": [
+    "M1.07.03-M1.07.04 long independent Worker\u2192Verifier\u2192Worker cross-role browser PID1189368, see .autopilot/artifacts/m10703_04-owner-approved-independent-worker-review-crossrole-browser-20261121.log",
+    "M1.08 original real browser RED rerun PID1202524, see .autopilot/artifacts/m10801_05-owner-approved-company-verification-browser-repro-20261121.log"
+  ],
+  "scopes": "owner-authorized synthetic PGlite/Chromium and isolated PG16; no customer data, no email/SMS real providers",
+  "software_focus": "M1.08 Company registration RED first; not certified",
+  "source_code_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+}
