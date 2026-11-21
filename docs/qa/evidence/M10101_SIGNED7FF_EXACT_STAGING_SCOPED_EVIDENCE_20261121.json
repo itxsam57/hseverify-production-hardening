@@ -1,0 +1,130 @@
+{
+  "checks": {
+    "dependency_audit": {
+      "not_a_full_pentest": true,
+      "reported_vulnerabilities": {
+        "critical": 0,
+        "high": 0,
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "total": 0
+      },
+      "tool": "npm audit --omit=dev --audit-level=moderate"
+    },
+    "http_read_only": {
+      "passed": 26,
+      "scope": "six-role anonymous redirection; middleware, role, tenant, Host spoof checks; private paths; CSP nonce, hostile CORS",
+      "tested": 26
+    },
+    "postgres_restore": {
+      "disposable_database_and_restored_app_stopped": true,
+      "exact_data_fingerprint_match": true,
+      "live_db_unchanged": true,
+      "restored_app_get_checks_passed": 9,
+      "rows": 693,
+      "tables": 193
+    },
+    "private_api_role_contexts": {
+      "contexts": 7,
+      "endpoints": 6,
+      "passed": 42,
+      "scope": "Read-only private API non-exposure using synthetic sessions; existing script does not independently prove all owner-positive outcomes",
+      "tested": 42
+    },
+    "real_chromium_ui": {
+      "passed": 18,
+      "roles": [
+        "worker",
+        "company",
+        "verifier",
+        "assessor",
+        "admin",
+        "root"
+      ],
+      "scope": "signed-out login forms, keyboard tab/shift-tab, responsive no overflow, request CSP, no JS page errors",
+      "tested": 18,
+      "widths": [
+        320,
+        390,
+        1280
+      ]
+    }
+  },
+  "date_utc": "2026-11-21",
+  "exact_merged_qa_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "first_unfinished_frozen_scenario": "M1.01.01",
+  "github_hosted_workflow_checks": {
+    "completed_success": 91,
+    "failures": 0,
+    "total": 91
+  },
+  "normal_pr_205_merge": true,
+  "raw_local_or_private_receipts": [
+    {
+      "bytes": 7889,
+      "name": "bounded_unauthenticated_http",
+      "path": ".autopilot/artifacts/m10101-signed7ff-bounded-http-probes.json",
+      "sha256": "cfde5a74031352efe255bc59bcdd70c68cdc57390eeb8e163459a5cf19583f8d"
+    },
+    {
+      "bytes": 10001,
+      "name": "real_chromium_six_role_three_viewports",
+      "path": ".autopilot/artifacts/m10101-signed7ff-browser-csp-responsive.json",
+      "sha256": "0b6981769471789a8e7619d6610e23a3d0045edc914c9aadeb215ad40e638e9a"
+    },
+    {
+      "bytes": 6296,
+      "name": "signed_in_seven_context_private_api",
+      "path": "/home/ubuntu/work/hseverify-m10101-staging/logs/signed7ff-seven-context-private-api.json",
+      "sha256": "fb4ac538580d1fb5ab27a22d4115c3bb837e767d3f1141a2dea4373a318e700e"
+    },
+    {
+      "bytes": 1226,
+      "name": "native_postgresql_restore_and_restored_app",
+      "path": "/home/ubuntu/work/hseverify-m10101-staging/logs/signed7ff-pg16-restore-with-app.json",
+      "sha256": "24b0d4abef167b6b7702d5e0af855de858a7204490c6021fe549575655915e0d"
+    },
+    {
+      "bytes": 364,
+      "name": "production_npm_dependency_audit",
+      "path": ".autopilot/qa7ff-stage-audit.json",
+      "sha256": "16dede15794c78133409e7fa70aef67c5d59d8bfd1d137759e8114e8f88d9e33"
+    }
+  ],
+  "remaining_unverified": [
+    "external public/protected staging trust and real provider readiness",
+    "complete independent authorized feature-wide penetration testing and exploit retests",
+    "authenticated cross-origin state-mutating Server Action CSRF/replay test was tool-safety blocked earlier, NOT_TESTED",
+    "real third-party email/SMS and other production providers (owner deferred email/SMS to final)",
+    "approved realistic load/concurrency and operational rollback/recovery including actual on-call delivery",
+    "Owner UAT, full positive/negative/retry/tenant/API/DB 218-scenario final exact-SHA signoff"
+  ],
+  "staging": {
+    "app_http_login": 200,
+    "local_rollback_private_dump_mode": "0600",
+    "old_signed855_app_worktree_retained": true,
+    "outbox_worker_running": true,
+    "postgres_running": true,
+    "provider_signoff": false,
+    "rollback_dump_sha256": "6e5bc9937560e6938a72564c74b9c83e3827c3b341cc5de9a18431077d617bb4",
+    "scope": "Existing local synthetic PG16 + TLS localhost only; NOT public/trusted externally protected staging",
+    "stage_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+  },
+  "strict_release_counters": {
+    "external_blockers_known_minimum": 10,
+    "final_check_slots_certified": 0,
+    "final_check_slots_total": 4975,
+    "frozen_scenarios": 218,
+    "fully_verified_scenarios": 0,
+    "high_critical_open": "unknown",
+    "historical_green_cases": 1436,
+    "independent_pentest": "incomplete",
+    "m1_fully_verified": 0,
+    "m1_total": 67,
+    "old_partial_slots": 693,
+    "prior_scoped_scenarios": 216,
+    "release": "NO-GO",
+    "source_cases": 1610
+  }
+}

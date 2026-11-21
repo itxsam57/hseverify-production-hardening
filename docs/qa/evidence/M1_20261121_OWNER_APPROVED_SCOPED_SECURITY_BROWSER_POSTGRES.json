@@ -1,0 +1,376 @@
+{
+  "canonical_counters": {
+    "external_blocked_known_minimum": 10,
+    "final_check_slots_certified": 0,
+    "final_check_slots_total": 4975,
+    "frozen_scenarios": 218,
+    "fully_verified_scenarios": 0,
+    "high_critical": "UNKNOWN",
+    "historical_green": 1436,
+    "m1_frozen": 67,
+    "m1_fully_verified": 0,
+    "old_partial_check_slots": 693,
+    "pentest": "INCOMPLETE",
+    "prior_scoped_scenarios": 216,
+    "release": "NO-GO",
+    "source_cases": 1610
+  },
+  "controlled_test_environment": "Existing localhost-only self-signed PG16 staging plus disposable real PG16/PGlite and Chromium, synthetic credentials only",
+  "date_utc": "2026-11-21",
+  "exact_release_GitHub_ci": "91/91 completed success before this testing batch",
+  "frozen_current_certification_focus": "M1.01.01",
+  "owner_approval": "Authorized isolated feature-by-feature penetration/security regression; defer real email and SMS providers until after software-scenario testing, never count delivery as PASS without real provider",
+  "real_product_code_mutation": false,
+  "release_gates_remaining": [
+    "All 218 frozen scenarios final exact SHA protected trusted stage with all cross-role positive/negative/retry/expiry/race UI/API/DB/audit/notification criteria",
+    "Full independent authorized pentest across all roles APIs/tenants and remediation/retest; earlier forged-Origin mutation test tool safety BLOCKED/NOT_TESTED",
+    "Real provider behavior including owner-deferred email and SMS after software scenarios, video/scanning/storage/identity/payment as applicable",
+    "Production-scale approved load and on-call backup/restore/real monitoring plus owner UAT"
+  ],
+  "release_source_sha_under_test": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "result_receipts": [
+    {
+      "bytes": 2361,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.01.01",
+      "raw_sha256": "aa810c587e9009f793edd4021a93e1a0ca940d3e3bb316f0d5f51fc01e51f66a",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/owner-approved-m10101-pentest-native-browser-20261121.log",
+      "scope": "production secret/tenant/header guard and CSP native/browser",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 19,
+        "tests": 19
+      }
+    },
+    {
+      "bytes": 150307,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.01.02",
+      "raw_sha256": "f1f508cbb4f26f6ce3aed26ff6b2ffb7969d9a6e0d639c1841517910fd1ab5f6",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10102-exact7ff-disposable-postgres-migrations.log",
+      "scope": "actual isolated PG16 139 migration up/down/negative/rollback",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 4,
+        "tests": 4
+      }
+    },
+    {
+      "bytes": 960,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.02.01",
+      "raw_sha256": "4f6730d8a1c997417ab70f9876c935ae9e0f15768690aeb9b3a5e4d1c5f8d553",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10201-owner-approved-public-intake-browser-security-20261121.log",
+      "scope": "public navigation, contact/demo intake and private staff processing",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 6,
+        "tests": 6
+      }
+    },
+    {
+      "bytes": 1148,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.02.02",
+      "raw_sha256": "ec5f50c1802d37199d88e2c2a57487828c35c1722e0b73ada1b865655ebffe5c",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10202-owner-approved-six-role-bell-help-browser-20261121.log",
+      "scope": "six-role notification deep-link/read plus help/account navigation browser",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 2,
+        "tests": 2
+      }
+    },
+    {
+      "bytes": 1743,
+      "classification": "BASELINE_FIXTURE_RED_KEPT",
+      "original_frozen_link": "M1.02.03-M1.02.05",
+      "raw_sha256": "13bf4ef4cd7106646c52472cb8a4f0def37c1c3dc00d9ae549a0584d1659f3c1",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10203-05-owner-approved-ui-error-responsive-keyboard-browser-20261121.log",
+      "scope": "initial browser UI error/responsive/form attempt (real fixture RED)",
+      "scoped_test_result": {
+        "failed": 1,
+        "passed": 5,
+        "tests": 6
+      }
+    },
+    {
+      "bytes": 235,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.02.03",
+      "raw_sha256": "19290715d09bb2a921f3e62bb2c12e123a687d605ec4dbad841b4687bf11ab90",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10203-owner-approved-short-temp-pg16-error-recovery-green-20261121.log",
+      "scope": "same original PG16 error and retry browser with valid short Unix socket path",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 453,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.01",
+      "raw_sha256": "e3fcc9cc6dd0c0dae1b461e92df1ff56e58c4ba7779c7420d1e7edcebcd3c582",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10301-owner-approved-worker-registration-policy-native-20261121.log",
+      "scope": "Worker registration terms/privacy country password native",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 3,
+        "tests": 3
+      }
+    },
+    {
+      "bytes": 2345,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.01",
+      "raw_sha256": "8fbae507e2cbea5745e1691bc2bc3882bf1ae17141ee2b9b0dd05a18cb51fcee",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10301-owner-approved-worker-policy-actual-browser-20261121.log",
+      "scope": "Worker registration form real browser validation 320/390",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 3042,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.02",
+      "raw_sha256": "e2f84227f48af5e0a2dc5ef3ac4a298fc94d3d492e9c4355797c7cd3d766caa1",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10302-owner-approved-otp-native-security-20261121.log",
+      "scope": "Worker+Company email phone OTP, six-role recovery exhaustion/expiry/retry native",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 27,
+        "tests": 27
+      }
+    },
+    {
+      "bytes": 578,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.02",
+      "raw_sha256": "0e0a1d2de240d1e259c88e0a735a90d151e7a68d6544a7d7dd9f297f67a0acc6",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10302-owner-approved-worker-email-phone-otp-browser-20261121.log",
+      "scope": "Worker email phone OTP wrong/expired/resend/exhausted actual Chromium",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 2,
+        "tests": 2
+      }
+    },
+    {
+      "bytes": 1515,
+      "classification": "BASELINE_FIXTURE_RED_KEPT",
+      "original_frozen_link": "M1.03.03",
+      "raw_sha256": "fbc28c4e089d75b7e5db6ac65237e6307b70dc493f28e50f627a31478f22778e",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10303-owner-approved-duplicate-worker-staff-identity-native-20261121.log",
+      "scope": "original direct-run native batch with one missing required build env (harness RED)",
+      "scoped_test_result": {
+        "failed": 1,
+        "passed": 5,
+        "tests": 6
+      }
+    },
+    {
+      "bytes": 1756,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.03",
+      "raw_sha256": "e98df1a9f1a324bb4e11882eb16f5c1517fe0cb043fc435df280d4352b762e0f",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10303-owner-approved-worker-eligibility-proper-runner-20261121.log",
+      "scope": "original Worker identity eligibility proper compile/wrapped runner native",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 15,
+        "tests": 15
+      }
+    },
+    {
+      "bytes": 1250,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.03",
+      "raw_sha256": "d41c85cfe52b05ee9520e174b1337409ea872e3370ed7e8dea66409c3695dbeb",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10303-owner-approved-worker-duplicate-recovery-browser-20261121.log",
+      "scope": "two-account duplicate Worker contacts/recovery and post-OTP Worker ID actual browser",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 2,
+        "tests": 2
+      }
+    },
+    {
+      "bytes": 1326,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.04",
+      "raw_sha256": "05e8a154f0edf8c3d68d1381bd49e38299b2dda7145953a33604b5b91e77c11b",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10304-owner-approved-company-registration-mfa-browser-20261121.log",
+      "scope": "Company pending email MFA owner-only activation real browser",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 36076,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.04",
+      "raw_sha256": "d66d44d1e32448f6ce8f4a1b3feeb4708c47a716dadb1dc869eb1880226fc2f4",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10304-exact7ff-disposable-postgres-mfa-rowlock.log",
+      "scope": "real disposable PG16 six independent clients MFA row lock race",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 1384,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.05",
+      "raw_sha256": "248b5a83e085dfdb15a1d4caf06358438a1959ea396b425f77fba8763c757a7c",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10305-owner-approved-staff-invite-token-security-native-20261121.log",
+      "scope": "staff invite cross-role, expiry, used, revoked, audit/issuer native",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 13,
+        "tests": 13
+      }
+    },
+    {
+      "bytes": 2559,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.05",
+      "raw_sha256": "a58285c2ba92133a52fe132885fb4c86de533adcaf14abe4a634834accab2931",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10305-owner-approved-staff-invite-role-ttl-revocation-browser-20261121.log",
+      "scope": "five staff role real browser MFA accept/expiry/unknown/revoke/cancel",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 5,
+        "tests": 5
+      }
+    },
+    {
+      "bytes": 1027,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.06",
+      "raw_sha256": "80d71fa33dda784f99e5443e7e56e15a08e59ec5fa1b18c74b5b44f0575c7004",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10306-owner-approved-all-role-auth-isolation-native-20261121.log",
+      "scope": "six-portal fixed role, session audit, wrong password, route native",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 10,
+        "tests": 10
+      }
+    },
+    {
+      "bytes": 2616,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.06",
+      "raw_sha256": "75adf966e4fba006e9ca431b739c8ca62c1c49317a85ae1478666a7e33d42e01",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10306-owner-approved-six-role-mobile-auth-boundaries-browser-20261121.log",
+      "scope": "six roles 320/390 real invalid password/MFA and cross-portal browser",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 1346,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.07",
+      "raw_sha256": "17d3c8176f29d3783bbfe66915991568b2cff0cc647f640bd4a3a64fd51afd62",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/owner-approved-m10307-six-role-session-replay-20261121.log",
+      "scope": "six role copied-cookie session revoke/exit vs signout browser synthetic",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 1595,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.08",
+      "raw_sha256": "46b67cf91bf77e2ad5809b51a6b0126999a5a7802ffde3a4e81d2b67c35ff2f7",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10308-owner-approved-account-notification-audit-native-20261121.log",
+      "scope": "account security audit, notification queue producer rollback/retry native",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 8,
+        "tests": 8
+      }
+    },
+    {
+      "bytes": 51433,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.08",
+      "raw_sha256": "6a378dd47c8f300467e2f95002e60c99602fa1daa673fe7687af2e2383e2e96c",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10308-exact7ff-disposable-postgres-password-race.log",
+      "scope": "real isolated PG16 concurrent password change/logout/session expiry rowlocks",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 5,
+        "tests": 5
+      }
+    },
+    {
+      "bytes": 3121,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.03.08",
+      "raw_sha256": "f68436d62fa532a32fccfbfff16cc2262611b24272e0a244ded63ea6a75296bd",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10308-owner-approved-six-role-password-change-browser-20261121.log",
+      "scope": "six-role real password reauth/revoke other session+notification browser",
+      "scoped_test_result": {
+        "failed": 0,
+        "passed": 1,
+        "tests": 1
+      }
+    },
+    {
+      "bytes": 2533,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.01.01",
+      "raw_sha256": "e8354dc4d851945a472ce0479b026923e38df7391b087587c505ef70246425bd",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10101-signed7ff-sixrole-cookie-hardening.log",
+      "scope": "six role real staging __Host cookie secure HttpOnly Lax TTL and 42 private APIs",
+      "scoped_test_result": "manual bounded assert PASS (not 218 final)"
+    },
+    {
+      "bytes": 1039,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.01.01",
+      "raw_sha256": "e683d723e4fa9dc5462bfd9857898e1fb04ba2e93994ac56db8b8cdf20d8e2ea",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10101-signed7ff-exposure-surface-bounded-20261121.log",
+      "scope": "14 bounded local private files/config/debug endpoint exposure GET checks",
+      "scoped_test_result": "manual bounded assert PASS (not 218 final)"
+    },
+    {
+      "bytes": 567,
+      "classification": "ACTUAL_SCOPED_GREEN_NOT_FULL_RELEASE",
+      "original_frozen_link": "M1.01.04",
+      "raw_sha256": "e5af7c24a5b8ae39319a63fdcbf405d31e03c33ca40c2114e5014b3b189ff939",
+      "raw_workstation_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10104-signed7ff-stage-app-rollback.log",
+      "scope": "real controlled 7ff -> 855 -> 7ff local HTTPS app rollback, PG PID same",
+      "scoped_test_result": "manual bounded assert PASS (not 218 final)"
+    }
+  ],
+  "schema_version": 1,
+  "security_governance_change": {
+    "finding": "QA branch previously unprotected",
+    "readback_verified": true,
+    "release_source_sha_changed": false,
+    "remediation": "GitHub branch protection required PR, strict compliance check, enforced admins, no force push/delete, zero review approvals to preserve sole owner merge workflow"
+  },
+  "software_scoped_test_focus_last": "M1.03.08",
+  "software_scoped_test_focus_next": "M1.04.01",
+  "source_test_case_identity_mutation": false,
+  "staging_source_unchanged": true,
+  "summary_of_source_test_receipt_groups": {
+    "earlier_real_red_groups_retained": 2,
+    "groups_with_actual_scoped_zero_fail": 21,
+    "manual_bounded_evidence_controls": 3,
+    "note": "Distinct test identities/repeated cases overlap; never sum bundles into 218 frozen scenarios or 4975 final check slots"
+  }
+}
