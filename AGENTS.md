@@ -8,6 +8,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Owner superseding work-sequence instruction — 2026-11-21 (explicit owner approval)
+
+The owner **changed the order of work**: execute and security-test **all 218 frozen scenarios** through the actual UI, APIs, six-role receiving flows, PostgreSQL persistence/audit, negative/replay/race/outage and abuse cases **before** final external activation and personal acceptance. The Chief Engineer/security reviewer is authorized to run these tests on existing **owned, isolated synthetic environments**. Do not stall engineering on external service credentials, domain purchase, on-call setup, or personal Owner UAT; move to the next uncovered/actionable original scenario after logging exactly what was exercised and any remaining deferred dependency. Treat any discovered product security RED as priority for root-cause fix and exploit/regression retest. Safe test scope excludes third-party systems, real user data and disruptive load on shared/public infrastructure.
+
+Call the **Final Step**: procure/configure the HSE Verify domain, activate actual provider accounts/credentials (including email, SMS, payments, identity, document/object providers and other required services), test real deliveries/receipts and production-provider safety, complete protected trusted exact-SHA staging plus approved load/restore/on-call and independent comprehensive pentest reconciliation, then **Owner's personal UAT** and final release signoff. During engineering coverage, test each existing provider adapter's contract, authorization, retries and fail-closed behavior with controlled fixtures. If an adapter is absent or underspecified, ask the owner only for the product decision needed to implement it; do not request production integration/configuration early. Keep final integrations as NOT_REAL_PROVIDER_VERIFIED until Final Step.
+
+**Counting invariant is unchanged:** maintain ONE original 218-row ledger and 4,975 planned checks. The release `current_focus_scenario_id` remains first uncertified (currently M1.01.01); a separate `current_software_scenario_id` may track active engineering verification *within the same cursor file*, not a new ledger. A scoped engineering PASS is not `FULLY_VERIFIED`, not a certified final planned check and not permission to say 218/218 release-ready. Final exact-SHA retesting, full independent pentest closure, and Owner UAT remain mandatory at release. This supersedes earlier **STOP at the first external block** instructions, not the strict release-certification standard.
+
 <!-- HSEVERIFY-PERMANENT-218-VERTICAL:BEGIN -->
 ## HSE Verify owner-approved permanent 218/4975 test-and-counting rule (2026-11-14)
 

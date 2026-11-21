@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "date_utc": "2026-11-21",
+  "purpose": "OWNER_VERIFICATION_SEQUENCE_OVERRIDE_FIRST_SCOPED_SOFTWARE_EVIDENCE",
+  "stage_signed_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "evidence_branch_prior_head": "670936574236512734a6d460fcd3c9ea16293ced",
+  "release_production_source_files_changed": false,
+  "owner_authorized_synthetic_scoped_pentest": true,
+  "external_deployments_changed": false,
+  "protected_release_branch": "qa/a28-eligibility-read-guard-20261107",
+  "protected_branch_reported": true,
+  "github_commit_signature_verified": true,
+  "github_exact_commit_ci": {
+    "total": 91,
+    "success": 91,
+    "non_success": 0,
+    "same_head_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+  },
+  "existing_same_source_receipts_rechecked_no_duplicate_credit": [
+    "M1.01.02 4/4 original PG16 prior exact7ff receipt",
+    "M1.02.01 public route/contact intake real browser 6/6 prior exact7ff receipt",
+    "M1.02.02 six-role header/notification real browser 2/2 prior exact7ff receipt",
+    "M1.02.03 first 6-case original mixed log with fixture RED preserved, original independent retry suite 1/1 PASS prior exact7ff receipt"
+  ],
+  "previous_receipt_manifest": "docs/qa/evidence/M1_20261121_OWNER_APPROVED_SCOPED_SECURITY_BROWSER_POSTGRES.json",
+  "new_receipts": [
+    {
+      "scenario_id": "M1.01.02",
+      "classification": "FIXTURE_STARTUP_RED_NOT_PRODUCT_TEST",
+      "log": ".autopilot/artifacts/m10102-owner-approved-pg16-all139-migration-rollbacks-startup-red-20261121.log",
+      "bytes": 332,
+      "sha256": "9427711348055579f063bcbd101d8b6758fc7204e710c7379c14c7b542ca7167",
+      "result": null,
+      "scope": "First owned disposable PG16 initdb success but original preflight failed on an overlong Unix socket path; no product test ran"
+    },
+    {
+      "scenario_id": "M1.01.02",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10102-owner-approved-pg16-all139-migration-rollbacks-20261121.log",
+      "bytes": 150584,
+      "sha256": "b5cf0bcd27f6be8c5c571c2c57becb016f439e6156444deb727730f36b5de5e4",
+      "result": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Actual owned localhost disposable PostgreSQL16 all139 migration up/down, unknown ledger fail closed, checksum tamper denied, production rollback forbidden, record history preserved, reapply idempotent, cleaned after test"
+    },
+    {
+      "scenario_id": "M1.01.04",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10104-owner-authorized-production-config-adapter-contract-release-gates-20261121.log",
+      "bytes": 2905,
+      "sha256": "88673b502852929613b63ba6657b7796fd00176bae9869c3a5643ac675e48f91",
+      "result": {
+        "total": 25,
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Original production environment negative and valid config tests; adapter readiness not delivery proof; static full release gate selections"
+    }
+  ],
+  "canonical_release_counters_unchanged": {
+    "fully_verified_218": 0,
+    "final_checks_4975": 0,
+    "historic_green_cases": 1436,
+    "historic_distinct_cases": 1610,
+    "old_scoped_scenarios": 216,
+    "old_partial_dimensions": 693,
+    "release": "NO-GO"
+  },
+  "testing_order": "all original 218 engineering/security software scope, defer external accounts and real dependencies plus final personal UAT, keep full release gate unchanged",
+  "staging_pg_port": 45277,
+  "disposable_pg_port": 45329,
+  "disposable_stopped_and_cleaned": true,
+  "next_focus_software_scenario": "M1.02.04",
+  "next_test": "original six-role 49-route Chromium 320/390/1440 real portal layout; process in progress on evidence worktree, then inspect result and defend failure before new scenario",
+  "next_test_log": ".autopilot/artifacts/m10204-owner-authorized-sixrole-49route-3203901440-browser-20261121.log"
+}
