@@ -78,9 +78,18 @@ jobs:
           node --check scripts/independent-audit-browser.mjs
           node --check scripts/independent-audit-contract-corrections.mjs
           node --check scripts/independent-audit-finalize.mjs
+          node --check scripts/independent-audit-axe.mjs
+          node --check scripts/independent-audit-exact-sha.mjs
+          node --check scripts/independent-audit-extensions-report.mjs
 
       - name: Fresh static and dead-code audit
         run: node scripts/independent-audit-static.mjs
+
+      - name: Reconcile frozen 218 scenarios on the checked-out exact SHA
+        run: |
+          npm run audit:current-218-scenarios > artifacts/independent-audit/218-ledger-command.json
+          node scripts/independent-audit-exact-sha.mjs
+          npm run qa:progress-218 -- --json > artifacts/independent-audit/218-progress-command.log
 
       - name: Fresh database migration and integrity audit
         run: node scripts/independent-audit-database.mjs
@@ -121,13 +130,15 @@ jobs:
       - name: Seed independent role fixtures
         run: node scripts/independent-audit-seed.mjs
 
-      - name: Install pinned Playwright without changing the repository lockfile
-        run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Install pinned Playwright and axe integration without changing lockfile
+        run: npm install --no-save --package-lock=false playwright@1.55.0 @axe-core/playwright@4.10.2
 
       - name: Install Chromium runtime
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
-      - name: Start application in production mode when build passed, otherwise development fallback for continued bug discovery
+      # Synthetic sandbox test credentials require development mode. Production-mode
+      # configuration intentionally rejects HSE_APP_ENV=test (do not bypass it).
+      - name: Start isolated synthetic localhost application in supported development mode
         shell: bash
         run: |
           audit_port=$(node --input-type=module -e 'import net from "node:net"; const server=net.createServer(); server.listen(0,"127.0.0.1",()=>{const port=server.address().port; server.close(()=>console.log(port));}); server.on("error",()=>process.exit(1));')
@@ -135,14 +146,8 @@ jobs:
           echo "PORT=${audit_port}" >> "$GITHUB_ENV"
           echo "HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
           echo "HSE_BROWSER_BASE_URL=${audit_base}" >> "$GITHUB_ENV"
-          build_code=$(awk -F '\t' '$1=="production_build" {print $2}' artifacts/independent-audit/commands.tsv | tail -1)
-          if [ "$build_code" = "0" ]; then
-            echo production > artifacts/independent-audit/server-mode.txt
-            PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/start-production.mjs > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
-          else
-            echo development-fallback > artifacts/independent-audit/server-mode.txt
-            PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
-          fi
+          echo development-synthetic > artifacts/independent-audit/server-mode.txt
+          PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
           echo $! > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid
           for attempt in $(seq 1 150); do
             if ! kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)" 2>/dev/null; then
@@ -150,7 +155,6 @@ jobs:
               exit 1
             fi
             if curl --silent --output /dev/null --write-out '%{http_code}' "$audit_base/" | grep -Eq '^[234][0-9][0-9]$'; then
-              kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)" 2>/dev/null || exit 1
               exit 0
             fi
             sleep 1
@@ -160,6 +164,43 @@ jobs:
 
       - name: Fresh consumer and UI UX Chromium audit
         run: node scripts/independent-audit-browser.mjs
+
+      - name: Scan public and signed-out six-role pages with axe WCAG rules
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts/independent-audit
+          set +e
+          node scripts/independent-audit-axe.mjs > artifacts/independent-audit/axe.log 2>&1
+          code=$?
+          printf 'axe_accessibility\t%s\n' "$code" >> artifacts/independent-audit/commands.tsv
+          echo "axe baseline exit ${code}; see axe.json and axe.log"
+          exit 0
+
+      - name: Run passive ZAP baseline against disposable localhost only
+        if: always()
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          mkdir -p artifacts/independent-audit/zap
+          chmod 777 artifacts/independent-audit/zap
+          set +e
+          node --input-type=module -e 'const u=new URL(process.env.HSE_BROWSER_BASE_URL); if(u.protocol!=="http:" || u.hostname!=="127.0.0.1" || u.pathname!=="/") process.exit(2);'
+          safe=$?
+          if [ "$safe" -ne 0 ]; then
+            code=3
+            echo "BLOCKED: only an isolated localhost HTTP target is authorized" > artifacts/independent-audit/zap/zap.log
+          else
+            timeout -k 10s 480s docker run --rm --network host \
+              -v "$PWD/artifacts/independent-audit/zap:/zap/wrk/:rw" \
+              ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+              -t "$HSE_BROWSER_BASE_URL" -m 1 -T 4 -J zap.json -r zap.html -I \
+              > artifacts/independent-audit/zap/zap.log 2>&1
+            code=$?
+          fi
+          printf 'passive_zap\t%s\n' "$code" >> artifacts/independent-audit/commands.tsv
+          echo "ZAP passive baseline exit ${code}; see zap.json, zap.html and zap.log"
+          exit 0
 
       - name: Re-probe known audit-harness ambiguities with production contracts
         if: always()
@@ -174,6 +215,10 @@ jobs:
       - name: Produce complete independent defect ledger
         if: always()
         run: node scripts/independent-audit-finalize.mjs
+
+      - name: Generate exact-SHA accessibility and passive-security summary
+        if: always()
+        run: node scripts/independent-audit-extensions-report.mjs
 
       - name: Upload pre-crosscheck independent audit evidence
         if: always()
@@ -226,6 +271,10 @@ jobs:
             process.exit(1);
           }
           NODE
+
+      - name: Enforce independent QA extension evidence and real findings
+        if: always()
+        run: node scripts/independent-audit-extensions-report.mjs --enforce
 
       - name: Stop only this audit's server process group
         if: always()
