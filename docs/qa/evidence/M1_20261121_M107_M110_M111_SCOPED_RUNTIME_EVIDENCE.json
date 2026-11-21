@@ -1,0 +1,119 @@
+{
+  "date": "2026-11-21",
+  "evidence_only_branch": "qa/m10101-stage-signed7ff-prep-20261121",
+  "exact_signed_runtime_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "external_providers_email_sms": "owner deferred until final provider integration; NOT_TESTED",
+  "final_planned_slots_certified": 0,
+  "first_not_fully_certified": "M1.01.01",
+  "frozen_total": 218,
+  "fully_verified": 0,
+  "independent_complete_pentest": "NOT COMPLETE",
+  "isolated_rerun": "Original source test body only added nonsecret role/login diagnostic; all four roles signed in, full 12-scenario crossrole workflow passed, node test exited0, authoritative DB verified.",
+  "note": "Re-running same named original source test does not add a new distinct case or full scenario; final exact-SHA protected stage and Owner UAT not done",
+  "pg16_disposable_cluster": "Port45322 was owned, verified cleaned, and does not touch signed stage PG16 port45277",
+  "receipts": [
+    {
+      "log_path_workstation": ".autopilot/artifacts/m10703_06-owner-approved-independent-worker-review-full-budget-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.07.03-M1.07.06",
+      "sha256": "043d77334c6e19cee9ad13489775a65752952efe013f9a386c28ffa7e11d7b15",
+      "tested_dimensions": "Full original Worker\u2194Verifier review: initial, qualification, experience, skill, employment, corrections, receiving, audit, DB; 1100-line browser",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 1
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11001-owner-approved-company-worker-invitation-lifecycle-browser-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.10.01",
+      "sha256": "d83ac9d99e70265ff72463aec7e61e5a4e6dc20a90fa5d06cd24b48b6c3e8ce0",
+      "tested_dimensions": "Company sends Worker invitations, wrong role/user, expiration, resend, revoke, replay, receiving",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 1
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11002-owner-approved-company-bulk-worker-csv-browser-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.10.02",
+      "sha256": "4645278faa8376434c30b73907e1eba3c365b362a1a11c8b112a87d6aa5dbc7d",
+      "tested_dimensions": "Company mixed valid/invalid CSV, duplicate, correction retry, Worker receiver/DB",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 1
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11003-owner-approved-company-code-usage-defaults-browser-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.10.03",
+      "sha256": "386d15c7c713e1235d933bcaefb996801e9f869729fb1ea59e2f0115d9061f07",
+      "tested_dimensions": "Company registration code expiry, usage cap, default units, Worker receiver, replay",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 1
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11004_06-owner-approved-dual-employer-worker-transfer-end-browser-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.10.04-M1.10.06",
+      "sha256": "f4aebec851fc3ba9a18ac51cf6e2d25fb1c016eb95bbdd284d60c616ca7ca8ee",
+      "tested_dimensions": "Company dual employer history, end relationship, Worker unit placement, foreign ID/tenant denial",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 3
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m110pg-exact7ff-disposable-postgres-worker-invite-races.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.10.01-M1.10.06",
+      "sha256": "999b2572a8d36490c621429724a1c8251291ed03184ba174a16f97a40ac10bc6",
+      "tested_dimensions": "Original full owned scratch PostgreSQL16 test gate with seven race cases and 30 other runtime/rollback/security tests",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 37
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11105_06-owner-approved-employment-history-leaving-letter-browser-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.11.05-M1.11.06",
+      "sha256": "d21c2ad3b183975ea82f0eef0e0ee57b1ec6b08a624c40763beed68e898ec4fc",
+      "tested_dimensions": "Actual Worker two submitted employments; end only Alpha; replacement leaving letter exact current version and private previews denied foreign/tampered/expired",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 2
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11101_08-owner-approved-worker-evidence-record-lifecycle-native-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.11.01-M1.11.08",
+      "sha256": "303a932be9ce7f88565f08e3195eb8ad4b16b03d51c6aa74aaf3d6b21395e33b",
+      "tested_dimensions": "Original Worker evidence native suite owner/record version/immutability/withdrawal/skill inactivity/SQL guards/audit",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 28
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11107-owner-approved-supervisor-observation-crossrole-browser-20261121.log",
+      "result": "REAL_BROWSER_FAIL_NOT_CERTIFIED",
+      "scenario_ids_scoped_not_certified": "M1.11.07",
+      "sha256": "229a68e2cf35110b69fc77ccef4dd5426e0b246d281a8f4ef7f343b6902ac0d7",
+      "tested_dimensions": "Original real supervisor observation \u2192 Worker acknowledge \u2192 Verifier outcome browser failed initial Company login navigation",
+      "tests_cancelled": 0,
+      "tests_failed": 1,
+      "tests_passed": 0
+    },
+    {
+      "log_path_workstation": ".autopilot/artifacts/m11107-owner-approved-supervisor-observation-login-diagnostic-repro-20261121.log",
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FULL",
+      "scenario_ids_scoped_not_certified": "M1.11.07",
+      "sha256": "5ed8b5b1d55a6350c045c343726ac22fdd63a6364bedbcc228c10a55945a3756",
+      "tested_dimensions": "15 signed supervisor Worker acknowledgments, nine independent Verifier decisions and receiving Worker/Company DB views, three preserved prior blockers, unsigned & replay denied, cross role/signed-out protection, 320/390/1440 responsive",
+      "tests_cancelled": 0,
+      "tests_failed": 0,
+      "tests_passed": 1
+    }
+  ],
+  "release_verdict": "NO-GO",
+  "run_type": "owner-approved synthetic isolated browser, PGlite and real disposable PostgreSQL16, no live third-party provider",
+  "true_original_red": "First original M1.11.07 browser Company login navigation20s RED while other concurrent test servers active; original red log retained as separate receipt, no product fix proved."
+}

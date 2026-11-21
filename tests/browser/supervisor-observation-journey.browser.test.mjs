@@ -56,7 +56,20 @@ async function login(page, baseUrl, credential, role) {
     await page.getByLabel("Authenticator code").fill(totp(credential.totpSecret));
   }
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
+  try {
+    await page.waitForURL(`**/${role}/dashboard`, { timeout: 20_000 });
+  } catch (error) {
+    // Do not log credentials, cookies, MFA codes or the page's private content.
+    const alerts = await page.getByRole("alert").allTextContents().catch(() => []);
+    const status = await page.getByRole("status").allTextContents().catch(() => []);
+    console.error("M11107_LOGIN_DENIAL_DIAGNOSTIC", JSON.stringify({
+      role, path: new URL(page.url()).pathname,
+      alerts: alerts.map(text => text.trim().slice(0, 170)),
+      status: status.map(text => text.trim().slice(0, 170))
+    }));
+    throw error;
+  }
+  console.log("M11107_REAL_ROLE_LOGIN", role, new URL(page.url()).pathname);
 }
 
 
