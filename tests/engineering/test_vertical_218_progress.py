@@ -22,13 +22,23 @@ class VerticalProtocolTest(unittest.TestCase):
         cls.report = json.loads(run.stdout)
 
     def test_permanent_rules_and_resume_files(self):
-        self.assertIn('HSEVERIFY-PERMANENT-218-VERTICAL:BEGIN',self.rules)
-        self.assertIn('UNIVERSAL-AUTOPILOT-V3:BEGIN',self.rules)
-        for text in (self.rules,self.mission):
-            self.assertIn('218_VERTICAL_EXECUTION_PROTOCOL.md',text)
-        for text in (self.rules,self.mission,self.protocol):
-            for value in ('qa:progress-218','4,975','693','54','4,228','1,392','1,566'):
-                self.assertIn(value,text)
+        # The owner changed the test sequencing on 2026-11-21; old M1-stall
+        # instructions are superseded while original release checks remain.
+        self.assertIn('HSEVERIFY-PERMANENT-218-VERTICAL:BEGIN', self.rules)
+        self.assertIn('UNIVERSAL-AUTOPILOT-V3:BEGIN', self.rules)
+        self.assertIn('qa:preflight-218', self.rules)
+        for text in (self.rules, self.mission, self.protocol):
+            self.assertIn('AGENCY_ZERO_PROTOCOL.md', text)
+            self.assertIn('218', text)
+        self.assertIn('AGENCY_ZERO_BATCHES.json', self.rules)
+        self.assertIn('OWNER TESTING READY', self.rules)
+        self.assertIn('no more than five independently executed test cases', self.rules)
+        self.assertIn('superseded', self.protocol.lower())
+        self.assertIn('AGENCY_ZERO_RESUME.md',
+                      (ROOT/'docs/qa/CURRENT_RESUME_218.md').read_text())
+        # Existing release ledger remains a separate strict final-release check.
+        self.assertIn('NO_GO', self.report['release'])
+
 
     def test_order_still_exact_frozen_218_and_37_bricks(self):
         ids=[r['frozen_id'] for r in self.queue]

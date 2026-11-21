@@ -16,6 +16,11 @@
 - Corrected **only** `counts.current_test_source_content_sha256` in the original `MASTERPLAN_218_EXECUTED_TESTS.json` and the new index's SHA256 parent pointer in original `MASTERPLAN_218_LEGACY_216_OBSERVATIONS.json`. All **four** original index verification commands and original **8+5+9** reconciliation tests passed locally; original 218 ID, 1,610 cases, 1,436 historical green, and 4,975 planned dimensions unchanged. **Re-run hosted checks on the guarded fix commit before merge.**
 - Still **no product source edits, no staging changes, no Owner-ready scenario pass and no independent full pentest**.
 
+## 2026-11-21 legacy-policy assertion migration
+
+- Hosted exact-SHA ledger and 4975 integrity checks still RED on `1a5fe54` because two legacy *policy text* tests demanded old M1-first wording in `AGENTS.md`, which the owner explicitly superseded. **The underlying original 218/37 source, 1436/1610 historical case proof, 4975 slot reconciler and scope counters passed.**
+- Restored the existing safe bounded `npm run qa:preflight-218` requirement in the new AGENTS block; updated only the old policy-assertion test `tests/engineering/test_vertical_218_progress.py` to enforce the current ZERO owner rules, while retaining all original strict release-ledger numeric and scenario-order checks. Local vertical policy **4/4 PASS**, disk automation **2/2 PASS**. New guarded push/hosted recheck required.
+
 ## Open genuine red and pending checks
 - Independent audit [GitHub run 44917041107](https://github.com/itxsam57/hseverify-production-hardening/actions/runs/44917041107) on `fb220061ae78c3aae957184e366f22e7a85acb54`: existing `npm run verify:full` failed on a PG rollback test `tests/platform/interview-finalization-runtime.test.mjs:333`, "Appeal response notification contract drift prevents rollback". **Not fixed, no false green.** Determine application migration drift vs test fixture, preserve exact evidence, open a scoped fix only once independently reproduced. This is a known-red release gate, not a reason to stop unrelated read-only testing.
 - Same CI run: 21/21 automated signed-out axe page+viewport scans produced zero axe violations; passive unauthenticated localhost ZAP found 14 alert categories, zero high-risk **in that limited synthetic scan**. Neither is authenticated/full security certification. Other full test/product issues may exist.
