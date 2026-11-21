@@ -1,0 +1,84 @@
+{
+  "complete_pentest": "INCOMPLETE",
+  "date": "2026-11-21",
+  "evidence_branch_source_test_update": "tests/browser/m1-08-company-verification.browser.test.mjs only; production code/database/scripts unchanged",
+  "fix": "Wait for Admin policy-published redirect+status before separate Company overrides; after Company click confirm immutable override appears before and after hard reload instead of broad unrelated text",
+  "long_worker_verifier_review_suite": "NOT_PASS, canceled due 780-second monolithic harness timeout; focused two Worker correction browser green and previous native 11/12 green not substitutes",
+  "next_action": "M1.09 original Company site, archive, worker placement, staff permissions; separately split long M1.07 cross-role browser into bounded independently certified test dimensions",
+  "old_repro_failures_retained": 2,
+  "owner_email_sms": "deferred final provider integration, NOT_TESTED",
+  "regression_result": "PASS one full real browser after test synchronization, not proof the unpatched test is reliable",
+  "related_policy_negative_regression": "PASS 6/6 native",
+  "release_verdict": "NO-GO",
+  "runtime_source_signed_qa_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "strict_frozen_total": 218,
+  "strict_full": 0,
+  "test_receipts": [
+    {
+      "cancelled": 0,
+      "description": "original Company end-to-end real browser first red at registration /verify 15s timeout",
+      "fail": 1,
+      "log_workstation_path": ".autopilot/artifacts/m10801_05-owner-approved-company-verification-full-browser-20261121.log",
+      "pass": 0,
+      "raw_sha256": "94daa126dfaf2667bf68ff3eecc36a19477528f6965d85709a1b0d796a0b1457",
+      "release_full_certification": "NOT_CERTIFIED",
+      "scenario_scoped": "M1.08.01\u201305",
+      "total": 1
+    },
+    {
+      "cancelled": 0,
+      "description": "unchanged original Company full browser second red after Admin policy publish Company override missing after reload",
+      "fail": 1,
+      "log_workstation_path": ".autopilot/artifacts/m10801_05-owner-approved-company-verification-browser-repro-20261121.log",
+      "pass": 0,
+      "raw_sha256": "da8d958947bed31f513de561e83fe44f484a9feadb1a6fa3a1cb9f62f9a0e2c8",
+      "release_full_certification": "NOT_CERTIFIED",
+      "scenario_scoped": "M1.08.01\u201305",
+      "total": 1
+    },
+    {
+      "cancelled": 0,
+      "description": "Company full browser with awaited Admin policy published server action and immutable override verification before and after reload",
+      "fail": 0,
+      "log_workstation_path": ".autopilot/artifacts/m10801_05-company-policy-publish-sync-regression-20261121.log",
+      "pass": 1,
+      "raw_sha256": "950d73978e2a0e7a5a0b53d7925fdc3730cc7f20976538433274926c150e5c39",
+      "release_full_certification": "NOT_CERTIFIED",
+      "scenario_scoped": "M1.08.01\u201305",
+      "total": 1
+    },
+    {
+      "cancelled": 0,
+      "description": "native global policy forbidden weakening, wrong tenant, immutable pin, allowed tightening",
+      "fail": 0,
+      "log_workstation_path": ".autopilot/artifacts/m108-policy-override-native-negative-20261121.log",
+      "pass": 6,
+      "raw_sha256": "252f3aa80dd7a382c9b16a49558770c1ac93df777b7c47622ea125565923b558",
+      "release_full_certification": "NOT_CERTIFIED",
+      "scenario_scoped": "M1.08.01\u201305 shared policy regression",
+      "total": 6
+    },
+    {
+      "cancelled": 0,
+      "description": "targeted real two Worker identity corrected parent and second duplicate account Admin review",
+      "fail": 0,
+      "log_workstation_path": ".autopilot/artifacts/m10705-owner-approved-two-worker-correction-independent-browser-20261121.log",
+      "pass": 1,
+      "raw_sha256": "9b478aad166e77a36c9140b878d147384ae0985c7964c675a79b5f773aee9b21",
+      "release_full_certification": "NOT_CERTIFIED",
+      "scenario_scoped": "M1.07.05\u201307",
+      "total": 1
+    },
+    {
+      "cancelled": 1,
+      "description": "original monolithic 1100-line cross-role Worker Verifier review 780s timeout, late correction processing, no final assert/persist completion",
+      "fail": 0,
+      "log_workstation_path": ".autopilot/artifacts/m10703_04-owner-approved-independent-worker-review-crossrole-browser-20261121.log",
+      "pass": 0,
+      "raw_sha256": "d3ff67f75e49597bc4289aea8f0a551d3e396b4bef48e95e1c2b46617970e9a7",
+      "release_full_certification": "NOT_CERTIFIED",
+      "scenario_scoped": "M1.07.03\u201306",
+      "total": 1
+    }
+  ]
+}

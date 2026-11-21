@@ -531,15 +531,20 @@ async function runBrowserAcceptance(baseUrl, output) {
     await publishPolicy.getByLabel("Title").fill("M1.08 Safety Standard");
     await publishPolicy.getByLabel("Effective from").fill("2026-01-01T00:00");
     await publishPolicy.getByRole("button", { name: "Publish immutable version" }).click();
+    // A separate Company browser must not race an uncommitted Admin Server Action.
+    await adminSession.page.waitForURL("**/admin/frameworks?status=policy-published", { timeout: 20_000 });
+    await adminSession.page.getByRole("status").filter({ hasText: "Immutable policy version published." }).waitFor();
 
     await gotoOk(companyPage, baseUrl, "/company/settings/policy", "Effective policy");
     await companyPage.getByLabel("Policy reference").fill("POLICY-M108");
     await companyPage.getByLabel("Override values JSON").fill('{"pass_mark":85}');
     await companyPage.getByLabel("Effective from").fill("2026-09-19T00:00");
     await companyPage.getByRole("button", { name: "Save immutable override version" }).click();
-    await companyPage.getByText("POLICY-M108", { exact: false }).first().waitFor({ timeout: 15_000 });
+    // Verify real persisted list content, not a coincidental form label or input value.
+    const activeOverride = companyPage.getByRole("listitem").filter({ hasText: "POLICY-M108" });
+    await activeOverride.getByText('"pass_mark":85', { exact: false }).waitFor({ timeout: 20_000 });
     await companyPage.reload({ waitUntil: "domcontentloaded" });
-    await companyPage.getByRole("listitem").filter({ hasText: "POLICY-M108" }).getByText('"pass_mark":85', { exact: false }).waitFor({ timeout: 15_000 });
+    await companyPage.getByRole("listitem").filter({ hasText: "POLICY-M108" }).getByText('"pass_mark":85', { exact: false }).waitFor({ timeout: 20_000 });
 
     await companyPage.setViewportSize({ width: 390, height: 844 });
     const companyOverflow = await companyPage.evaluate(() => ({

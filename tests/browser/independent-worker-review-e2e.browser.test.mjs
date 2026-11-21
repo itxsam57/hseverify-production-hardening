@@ -225,7 +225,10 @@ async function decideQueueItem(page, adminPage, baseUrl, kind, outcome, reason) 
 
 test(
   "independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI",
-  { timeout: 780_000 },
+  // One synthetic end-to-end case crosses initial identity, four evidence kinds,
+  // 12 independent Verifier decisions, corrections, queue faults and DB history.
+  // Keep per-action waits bounded; this total budget must cover all stages.
+  { timeout: 1_500_000 },
   async () => {
     const root = process.cwd();
     const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-independent-review-"));

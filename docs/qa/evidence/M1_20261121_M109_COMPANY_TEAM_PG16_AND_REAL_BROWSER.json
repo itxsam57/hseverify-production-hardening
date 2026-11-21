@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-21",
+  "external_providers": "email and SMS owner deferred until after software scenarios; real provider signoff and Owner UAT still not tested",
+  "final_certified_slots": 0,
+  "frozen_total": 218,
+  "fully_verified": 0,
+  "next": "M1.10 Company Worker invites/codes/CSV/placements real PG16 and browser currently running; M1.07 extended whole crossrole E2E retesting with per-action timeouts unchanged",
+  "release": "NO-GO",
+  "runtime_release_code_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "safely_scoped_original_tests": [
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "fail": 0,
+      "frozen_scenario_scoped": "M1.09.01-06",
+      "pass": 4,
+      "purpose": "initial Company organization native/PGlite (real PG16 race tests skipped)",
+      "raw_log_workstation": ".autopilot/artifacts/m10901_06-owner-approved-company-org-team-authorization-native-20261121.log",
+      "sha256": "b95bff2cfce39f1a24d006b2775a6c5764eb9a7594436c171dbcf77003659e28",
+      "skipped": 6,
+      "source_test_overlap": "repeats are not additive"
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "fail": 0,
+      "frozen_scenario_scoped": "M1.09.01-06",
+      "pass": 10,
+      "purpose": "actual isolated PostgreSQL16 + PGlite all ten source cases, including 6 race cases",
+      "raw_log_workstation": ".autopilot/artifacts/m109pg-exact7ff-disposable-postgres-company-team-races.log",
+      "sha256": "f6e96c40530bcb33ab058d26532ec237501aaec1a30a58e319948b6d36d0b9d1",
+      "skipped": 0,
+      "source_test_overlap": "repeats are not additive"
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "fail": 0,
+      "frozen_scenario_scoped": "M1.09.01",
+      "pass": 1,
+      "purpose": "real Company organization/team route browser",
+      "raw_log_workstation": ".autopilot/artifacts/m10901-owner-approved-company-organization-real-browser-20261121.log",
+      "sha256": "e0995c580672e9f5a73cbb7987207231f8a823ec278c54d36099d5aae35d7aad",
+      "skipped": 0,
+      "source_test_overlap": "repeats are not additive"
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "fail": 0,
+      "frozen_scenario_scoped": "M1.09.05",
+      "pass": 1,
+      "purpose": "real browser Owner suspends/revokes Company Team and old manager cookie never revives",
+      "raw_log_workstation": ".autopilot/artifacts/m10905-owner-approved-company-staff-session-revocation-browser-20261121.log",
+      "sha256": "3a55154015b179b85000a09ebcd1f51f948e5af15e07bee3ecd3f42c0e7c62c0",
+      "skipped": 0,
+      "source_test_overlap": "repeats are not additive"
+    }
+  ],
+  "scratch_pg16": "127.0.0.1:45321 isolated, stopped and removed after 10 tests; stage PG16:45277 intact"
+}
