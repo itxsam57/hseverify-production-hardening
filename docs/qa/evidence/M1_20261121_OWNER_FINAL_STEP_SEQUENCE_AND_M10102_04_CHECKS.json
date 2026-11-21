@@ -60,6 +60,76 @@
         "skipped": 0
       },
       "scope": "Original production environment negative and valid config tests; adapter readiness not delivery proof; static full release gate selections"
+    },
+    {
+      "scenario_id": "M1.02.04",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10204-owner-authorized-sixrole-49route-3203901440-browser-20261121.log",
+      "bytes": 246,
+      "sha256": "1666c9b6b600a5708d641d7d4c0d8f75b9e92067d8901bc65f6bc69ffada931f",
+      "result": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "One original headless Chromium 1/1, all six roles, 50 authenticated portal routes checked 1440 and 390 widths; 16 dense route controls/tables verified at 320, overlap, focus, overflow, screenshots and notifications; original suite exit0 137122ms; signed QA7ff source byte-identical"
+    },
+    {
+      "scenario_id": "M1.02.05",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10205-owner-authorized-unsaved-evidence-history-fallback-browser-20261121.log",
+      "bytes": 322,
+      "sha256": "2373d1e8534fa091f863bbdee267f1a6a1c7b5cab898f465c35c737f31c88cfd",
+      "result": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Two original real Chromium Worker evidence metadata unsaved navigation history-fallback false/true; valid/invalid corrections, recover after rejected save and re-open, persisted authoritative record and role session/navigation checks; original suite exit0 91085ms, no changes to actual QA7ff source"
+    },
+    {
+      "scenario_id": "M1.03.01",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10301-owner-authorized-registration-queue-audit-persistence-native-20261121.log",
+      "bytes": 3004,
+      "sha256": "54739138f51cb425dbad9f6cc8e531c56e2295999b4d2f16583a46e34b83bb7f",
+      "result": {
+        "total": 28,
+        "passed": 28,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Original native Worker+Company registration non-sandbox encrypted OTP intent and durable outbox, synthetic transport fetch only, invalid/partial settings fail closed, audits/rollback atomic, lease expiry/retry/idempotency, stale/consumed/expired/forged challenge invalidation, malicious encrypted payload tamper and FK history; raw exit0 106299ms; no external provider delivery proved"
+    },
+    {
+      "scenario_id": "M1.03.02",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10302-owner-authorized-worker-email-phone-otp-security-browser-20261121.log",
+      "bytes": 578,
+      "sha256": "e662d9731ef1b6a90e2087fdaf5c8c22fcfbc646f5765df4c7d90fe791c02b5b",
+      "result": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Original Worker registration real Chromium both independent email+phone OTP wrong/expired/resend activation, two actual captured preexpiry POSTs rejected after backend expiry, forged origin/resend cooldown denied, five rejected codes per channel exhaust, fresh challenge recover, persistence; original 2/2 exit0 80655ms; sandbox OTP delivery not actual external provider"
+    },
+    {
+      "scenario_id": "M1.03.03",
+      "classification": "SCOPED_PASS_NOT_FINAL",
+      "log": ".autopilot/artifacts/m10303-owner-authorized-sixrole-recovery-provider-contract-native-20261121.log",
+      "bytes": 2745,
+      "sha256": "0761eb234588a0ab5e1012791391a9623854260ff3b7b86a1bdf34c2050c6a0f",
+      "result": {
+        "total": 26,
+        "passed": 26,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Original six-role Worker/Company/Assessor/Verifier/Admin/Root configured account recovery provider interface (mock-fetched only) and session revocation; wrong/unknown role enumeration denied, role revocation, expired/invalidated/consumed/exhausted authority, audit rollback, same challenge idempotent retry, resend and clock/lock races, malicious encrypted JSON null, schema downgrade/rollback/reapply, invalid outbox origin denied. 26/26 PASS exit0 104819ms. Original seven directly linked M1.03.03 tests already exact-CI green and not rerun."
     }
   ],
   "canonical_release_counters_unchanged": {
@@ -75,7 +145,7 @@
   "staging_pg_port": 45277,
   "disposable_pg_port": 45329,
   "disposable_stopped_and_cleaned": true,
-  "next_focus_software_scenario": "M1.02.04",
-  "next_test": "original six-role 49-route Chromium 320/390/1440 real portal layout; process in progress on evidence worktree, then inspect result and defend failure before new scenario",
-  "next_test_log": ".autopilot/artifacts/m10204-owner-authorized-sixrole-49route-3203901440-browser-20261121.log"
+  "next_focus_software_scenario": "M1.03.04",
+  "next_test": "Review original Company registration pending email OTP and MFA 7 source cases already signed QA7ff exact-CI green, find untested role/session/race/API negative; then M1.03.05 original staff invitation.",
+  "remaining_final_acceptance": "Do NOT count a software scoped test as FULLY_VERIFIED. Owner moved external final activation and personal Owner UAT to the Final Step after all engineering checks. Current final checks still 0/4975 and all 218 release unverified."
 }
