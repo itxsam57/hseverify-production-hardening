@@ -2,6 +2,10 @@
 
 **CURRENT CONTROL:** [AGENCY_ZERO_PROTOCOL.md](AGENCY_ZERO_PROTOCOL.md), not the old M1-first owner-signoff loop.
 
+## Frozen application source (prevents progress-reset loop)
+
+`docs/qa/AGENCY_ZERO_CANDIDATE.json` currently pins application runtime/config to **`7ff30ea140a5145e5d5ba761f7c7aef24c895269`**. Later QA policy/report/attestation commits have a different Git HEAD, but do **not** alter this app version or invalidate its technical evidence. Any actual `src`, database, public/config/ops/package/build/runtime-file change fails the ZERO pin check until a source-candidate review and affected regression revalidation. Never silently repin after a new app fix.
+
 ## Immutable starting inventory (read-only)
 - Frozen original Masterplan: **218 scenarios**, **37 related bricks**, **4,975 historical planned check slots** (these slots are not 4,975 verified test executions).
 - Deterministic initial agency test scope: **58 batches**, maximum **5 related scenarios/test units per batch**; first **ZERO-001** (M1.01, 4).

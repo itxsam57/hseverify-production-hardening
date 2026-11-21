@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Zero batch manifest matches immutable Masterplan
         run: python3 scripts/agency_zero_control.py --check
       - name: Independent schema and tamper tests

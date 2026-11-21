@@ -24,6 +24,7 @@ SOURCE = ROOT / "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_2
 HISTORICAL = ROOT / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"
 MANIFEST = ROOT / "docs/qa/AGENCY_ZERO_BATCHES.json"
 EVIDENCE = ROOT / "docs/qa/AGENCY_ZERO_EVIDENCE.json"
+CANDIDATE = ROOT / "docs/qa/AGENCY_ZERO_CANDIDATE.json"
 MAX_ITEMS = 5
 SHA_PATTERN = re.compile(r"^[a-f0-9]{40}$")
 TEST_CASE_PATTERN = re.compile(r"^tests/[A-Za-z0-9_./-]+[.]test[.]mjs#[a-f0-9]+$")
@@ -36,6 +37,27 @@ def load_json(path: Path):
 
 def exact_sha():
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+
+
+def pinned_candidate_sha():
+    """Pin app code separately from documentation/evidence QA branch commits.
+
+    Reject any actual changed application runtime/configuration until the
+    owner-reviewed candidate is explicitly repinned and affected tests rerun.
+    """
+    candidate = load_json(CANDIDATE)
+    sha = candidate.get("source_commit_sha", "")
+    if candidate.get("schema_version") != 1 or not SHA_PATTERN.fullmatch(sha):
+        raise ValueError("Invalid pinned application candidate SHA")
+    git = ["git", "rev-parse", "--verify", sha + "^{commit}"]
+    found = subprocess.run(git, cwd=ROOT, capture_output=True, text=True, check=False)
+    if found.returncode != 0:
+        raise ValueError("Pinned application commit missing from checked-out Git history")
+    app_paths = ["src/", "database/", "public/", "config/", "ops/", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "eslint.config.mjs", ".env.example", "scripts/build-production.mjs", "scripts/run-development.mjs"]
+    diff = subprocess.check_output(["git", "diff", "--name-only", sha, "HEAD", "--", *app_paths], cwd=ROOT, text=True)
+    if diff.strip():
+        raise ValueError("Pinned application candidate has runtime drift; retarget candidate and selectively recheck: " + ", ".join(diff.splitlines()[:10]))
+    return sha
 
 
 def manifest_from_source():
@@ -106,6 +128,7 @@ def manifest_from_source():
 
 
 def validate_manifest(document):
+    pinned_candidate_sha()
     expect = manifest_from_source()
     if document != expect:
         raise ValueError("Agency batch manifest differs from frozen queue. Regenerate intentionally and review diff")
@@ -180,7 +203,7 @@ def current_evidence(manifest):
 
 def status(manifest):
     accepted = current_evidence(manifest)
-    sha = exact_sha()
+    sha = pinned_candidate_sha()
     passed = {sid for (sid, source_sha) in accepted if source_sha == sha}
     total = manifest["original_scenario_count"]
     cells = round(20 * len(passed) / total)
@@ -188,7 +211,7 @@ def status(manifest):
     pending = next((unit for batch in manifest["batches"]
                     for unit in batch["units"] if unit["scenario_id"] not in passed), None)
     print(f"ZERO | TECH FULLY VERIFIED {len(passed)}/{total} [{bar}] | LEFT {total-len(passed)} | OWNER TEST READY {'YES' if len(passed)==total else 'NO'}")
-    print(f"ZERO | BATCHES {len(manifest['batches'])} (MAX 5) | NEXT {pending['scenario_id'] if pending else 'NONE'} | RELEASE APPROVAL SEPARATE")
+    print(f"ZERO | BATCHES {len(manifest['batches'])} (MAX 5) | APP SHA {sha[:8]} PINNED | NEXT {pending['scenario_id'] if pending else 'NONE'} | RELEASE APPROVAL SEPARATE")
     older = {sid for (sid, prior_sha) in accepted if prior_sha != sha and sid not in passed}
     print(f"ZERO | PRIOR-SHA TECH RECEIPTS {len(older)} (targeted revalidation needed) | Historic source test greens do NOT count")
 
@@ -203,7 +226,8 @@ def find_batch(manifest, batch_id):
 def run_scoped_smokes(manifest, batch_id, output_dir, max_seconds):
     batch = find_batch(manifest, batch_id)
     output_dir.mkdir(parents=True, exist_ok=True)
-    sha = exact_sha()
+    sha = pinned_candidate_sha()
+    tooling_sha = exact_sha()
     outcomes = []
     for unit in batch["units"]:
         case = unit["sample_existing_case"]
@@ -247,7 +271,7 @@ def run_scoped_smokes(manifest, batch_id, output_dir, max_seconds):
                              "selected_case_id": case["case_id"], "technical_fully_verified": False})
     report = {
         "report_type": "SCOPED_ONLY_NOT_AGENCY_CERTIFICATION",
-        "batch_id": batch_id, "source_sha": sha,
+        "batch_id": batch_id, "source_sha": sha, "qa_tooling_sha": tooling_sha,
         "run_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "scheduled_test_cases": sum(x["sample_existing_case"] is not None for x in batch["units"]),
         "max_scheduled_test_cases": MAX_ITEMS,
@@ -286,7 +310,7 @@ def main():
     manifest = validate_manifest(load_json(MANIFEST))
     if args.check:
         current_evidence(manifest)
-        print(f"ZERO | PLAN VALID | {manifest['original_scenario_count']} scenarios / {manifest['original_brick_count']} related groups / {manifest['batch_count']} batches / <=5 cases each")
+        print(f"ZERO | PLAN VALID | {manifest['original_scenario_count']} scenarios / {manifest['original_brick_count']} related groups / {manifest['batch_count']} batches / <=5 cases each | APP SHA {pinned_candidate_sha()[:8]}")
         return 0
     if args.status:
         status(manifest)

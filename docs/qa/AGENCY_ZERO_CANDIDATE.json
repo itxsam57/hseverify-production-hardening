@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "source_commit_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "source_branch": "qa/a28-eligibility-read-guard-20261107",
+  "candidate_purpose": "Technical owner-testing readiness; the application source is pinned independently of QA evidence/docs commits",
+  "app_runtime_match_required": true,
+  "production_stage_approved": false
+}

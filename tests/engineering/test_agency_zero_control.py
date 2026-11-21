@@ -85,6 +85,16 @@ class AgencyZeroPlanContract(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Independent expert review"):
                     CONTROL.current_evidence(self.plan)
 
+    def test_candidate_pin_survives_documentation_head_changes(self):
+        pinned = CONTROL.load_json(CONTROL.CANDIDATE)["source_commit_sha"]
+        self.assertEqual(CONTROL.pinned_candidate_sha(), pinned)
+        self.assertRegex(pinned, r"^[a-f0-9]{40}$")
+
+    def test_runtime_drift_blocks_automatic_certification(self):
+        with patch.object(CONTROL.subprocess, "check_output", return_value="src/app/page.tsx\n"):
+            with self.assertRaisesRegex(ValueError, "runtime drift"):
+                CONTROL.pinned_candidate_sha()
+
     def test_matrix_only_existing_batches(self):
         selected = CONTROL.find_batch(self.plan, "ZERO-001")
         self.assertEqual(selected["batch_id"], "ZERO-001")
