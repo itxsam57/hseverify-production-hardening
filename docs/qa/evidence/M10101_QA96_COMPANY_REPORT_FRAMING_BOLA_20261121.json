@@ -1,0 +1,60 @@
+{
+  "actual_transport": {
+    "bytesLength": 196,
+    "contentEncoding": "gzip",
+    "contentLength": null,
+    "contentType": "text/csv; charset=utf-8",
+    "format": "csv",
+    "status": 200,
+    "transferEncoding": "chunked"
+  },
+  "app_dependency": "Next.js 16.4.6",
+  "browser_retest": {
+    "anonymous_status": 307,
+    "artifact_digest_checks": "matched exact generated private bytes",
+    "exit_code": 0,
+    "failed": 0,
+    "foreign_company_status": 404,
+    "foreign_report_deliveries": 0,
+    "forged_role_tenant_status": 404,
+    "formats": [
+      "csv",
+      "pdf",
+      "print"
+    ],
+    "owner_report_deliveries": 3,
+    "owner_status": 200,
+    "passed": 1,
+    "tests": 1
+  },
+  "date_utc": "2026-11-21",
+  "failing_ci_job": "44841043595",
+  "failing_merged_qa_sha": "96b942a7027b12ba2dfd4c1930bf7bd3696d5fc4",
+  "fix": "Existing original 1,610-case source test: accept unambiguous positive Content-Length or HTTP/1.1 chunked transfer framing; reject combined Content-Length and Transfer-Encoding, unknown encodings; if identity encoded, enforce exact length; retain decoded-bytes equality to stored private artifact, digest and tenant denial.",
+  "problem": "Test assumes Content-Length is present and equals decoded browser body; Next.js compressed HTTP/1.1 response can use transfer-encoding chunked without Content-Length.",
+  "raw_receipts": [
+    {
+      "bytes": 1485,
+      "file": ".autopilot/qa96-report-red-repro.log",
+      "sha256": "421fc9a0fd14ecc4551fa3de16e01fa160eb85e3b5a27e48b189c7dbd1a63084"
+    },
+    {
+      "bytes": 1681,
+      "file": ".autopilot/qa96-report-header-diagnostic.log",
+      "sha256": "6c7d079ca832caaeb74ed674cca70d72859245351e86f4d6d862ea7c1de56223"
+    },
+    {
+      "bytes": 627,
+      "file": ".autopilot/qa96-report-fixed-e2e.log",
+      "sha256": "167d32ef453f5a0a1aea7d7cb4b5f76f623dced6a2633883bd695b5c8d334020"
+    }
+  ],
+  "regression_scope": "Only existing browser source test assertion and its two original evidence source-fingerprint bindings changed. App runtime code and 218 frozen scenario identities remain untouched. Previous signed855 staging still serves, new exact commit/merged SHA hosted CI pending.",
+  "release_verdict": "NO-GO; 0/218 fully verified, M1 0/67, final 0/4975, known external blockers 10, independent feature pentest incomplete/high-critical unknown.",
+  "reproduced_red": {
+    "actual": "Number(undefined) is NaN; expected decoded 196 bytes",
+    "command": "node --test --test-concurrency=1 --test-name-pattern=\"An authenticated Company can request, generate and download actual scoped CSV, PDF and printable reports\" tests/browser/report-company-generation.browser.test.mjs",
+    "exit_code": 1
+  },
+  "scenario": "M1.01.01 (shared security/CI prerequisite), related impacted test original M1.04 Company report CSV/PDF/print BOLA"
+}
