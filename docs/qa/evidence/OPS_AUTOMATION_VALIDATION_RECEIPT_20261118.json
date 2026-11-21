@@ -1,0 +1,24 @@
+{
+  "cleanup": {
+    "path": "docs/qa/evidence/OPS_DISK_RECOVERY_20261118.json",
+    "sha256": "c8c1f136e0d86ff8532b56d01420c1f2e7158241441b4bd670d5e6bbd920caaa",
+    "bytes": 3140
+  },
+  "backup_inventory": {
+    "path": "docs/qa/evidence/OPS_LOCAL_WORKTREE_REMOTE_BACKUP_GAPS_20261118.json",
+    "sha256": "56b1d7771b9522732e1daa7403c09341248d4db098175abba46293ced45a13d7",
+    "bytes": 3308
+  },
+  "canonical_index": {
+    "path": "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json",
+    "sha256": "271975939ca00514920cd378c7e7302b9b4a2ed33a490b6f7581d4cbce80101c",
+    "bytes": 2463683
+  },
+  "tests": {
+    "ops_qa_regressions": "7/7 PASS",
+    "original_218_engineering": "8/8 PASS",
+    "index_218": "1605 case identities; 1431 previously green",
+    "original_4975": "4975 reconciled; final_stage_certified=0",
+    "final_full_verified": "0/218"
+  }
+}

@@ -30,6 +30,8 @@ const TRANSPORT_ONLY=process.env.HSE_MASTERPLAN_TRANSPORT_ONLY === "true";
 const SCREEN_ERRORS=process.env.HSE_MASTERPLAN_A12_SCREEN_ERRORS === "true";
 const DEVICE_DENIAL=process.env.HSE_MASTERPLAN_DEVICE_DENIAL === "true";
 const COMPANY_CREDENTIAL_TARGET_MODE=process.env.HSE_MASTERPLAN_COMPANY_CREDENTIAL_TARGET === "true";
+const M20105_COMPANY_FUNDED_CREDENTIAL=process.env.HSE_M20105_FUNDED_CREDENTIAL_RECEIPT==="true";
+const M20105_WORKER_SELF_PAID_CREDENTIAL=process.env.HSE_M20105_WORKER_SELF_PAID_CREDENTIAL==="true";
 const ISSUED_QUALIFICATION=COMPANY_CREDENTIAL_TARGET_MODE ? "Company Issued Safety Competency" : "End-to-End Worker Assessment";
 const COMPLETE_REASSESSMENT=process.env.HSE_MASTERPLAN_COMPLETE_REASSESSMENT === "true";
 const REPLACED_RESTRICTION="This issuance has been replaced. Verify the current credential shared by the Worker.";
@@ -115,7 +117,34 @@ async function assertCandidateQuestionBoundary(page) {
 async function freePort(){return new Promise((resolve,reject)=>{const s=createServer();s.once("error",reject);s.listen(0,"127.0.0.1",()=>{const a=s.address();s.close(e=>e?reject(e):!a||typeof a==="string"?reject(new Error("No port")):resolve(a.port));});});}
 async function login(page,baseUrl,credential,role){await page.goto(`${baseUrl}/${role}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("Email address").fill(credential.email);await page.getByLabel("Password").fill(credential.password);if(credential.totpSecret)await page.getByLabel("Authenticator code").fill(await freshTotp(credential.email,credential.totpSecret));await page.getByRole("button",{name:"Sign in",exact:true}).click();await page.waitForURL(`**/${role}/dashboard`,{timeout:30000});}
 async function sandboxCode(page,baseUrl,channel,destination){await page.goto(`${baseUrl}/worker/register/sandbox`,{waitUntil:"domcontentloaded"});await page.getByLabel("Delivery channel").selectOption(channel);await page.getByLabel("Delivery destination").fill(destination);await page.getByLabel("Sandbox access key").fill(SANDBOX_KEY);await page.getByRole("button",{name:"Open latest sandbox delivery"}).click();const status=page.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor({timeout:15000});return (await status.locator("strong").innerText()).trim();}
-async function uploadIdentity(page,heading,name,document=false){const card=page.getByRole("region",{name:heading,exact:true});if(document){await card.getByLabel("Document type").selectOption("passport");await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");await card.getByLabel("Issue date").fill("2025-01-01");await card.getByLabel("Expiry date").fill("2035-01-01");}await card.getByLabel("Choose file").setInputFiles({...PNG,name});await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/identity")),card.getByRole("button",{name:"Upload evidence"}).click()]);}
+async function uploadIdentity(page,heading,name,document=false){
+  const card=page.getByRole("region",{name:heading,exact:true});
+  if(document){
+    await card.getByLabel("Document type").selectOption("passport");
+    await card.getByLabel("Document number").fill("PK-MASTERPLAN-E2E-001");
+    await card.getByLabel("Issue date").fill("2025-01-01");
+    await card.getByLabel("Expiry date").fill("2035-01-01");
+  }
+  await card.getByLabel("Choose file").setInputFiles({...PNG,name});
+  const responseReady=page.waitForResponse(r=>
+    r.request().method()==="POST"&&new URL(r.url()).pathname==="/worker/identity",
+  {timeout:30000});
+  await card.getByRole("button",{name:"Upload evidence"}).click();
+  const response=await responseReady;
+  assert.equal(response.status(),200,heading+" real identity upload Server Action must return HTTP200");
+  try {
+    // The Server Action revalidates and can replace the transient toast before
+    // Chromium observes it. Require the authoritative server-owned binding
+    // instead: it can only render after the file passed scanning and binding.
+    await card.getByText("Evidence attached",{exact:true}).waitFor({timeout:30000});
+  } catch(error) {
+    throw new Error(heading+" upload did not show a secured attachment. Actual UI: "+await card.innerText(),{cause:error});
+  }
+  await page.reload({waitUntil:"domcontentloaded"});
+  await page.getByRole("region",{name:heading,exact:true})
+    .getByText("Evidence attached",{exact:true}).waitFor({timeout:20000});
+  console.log("ACTUAL_M20105_IDENTITY_SECURE_ATTACHMENT_ACK_BROWSER "+heading);
+}
 async function approveReview(page,adminPage,baseUrl,kind,reason){
   await page.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});
   const row=page.locator("tbody tr").filter({hasText:kind}).filter({hasText:"QUEUED"}).first();
@@ -358,7 +387,21 @@ async function phaseOne(baseUrl,environment,credentials){
         await worker.getByLabel("Primary occupation or trade").fill("Safety Officer");await worker.getByLabel("Years of experience").fill("7");await worker.getByLabel("Current employment status").selectOption("employed");await worker.getByLabel("Preferred work countries").fill("Pakistan, Saudi Arabia");await worker.getByRole("button",{name:"Save changes"}).click();await worker.reload();await worker.getByRole("button",{name:"Submit profile"}).click();await worker.getByText("Profile submitted",{exact:true}).waitFor({timeout:15000});
 
         await worker.goto(`${baseUrl}/worker/identity`);await worker.getByLabel("Legal first name").fill("Masterplan");await worker.getByLabel("Legal last name").fill("Worker");await worker.getByLabel("Date of birth").fill("1990-01-15");await worker.getByLabel("Nationality").fill("Pakistani");await worker.getByLabel("Country of residence").fill("Pakistan");await worker.getByRole("button",{name:"Save identity details"}).click();await worker.reload();
-        await uploadIdentity(worker,"Identity document","passport.png",true);await uploadIdentity(worker,"Profile photo","profile.png");await uploadIdentity(worker,"Selfie evidence","selfie.png");await worker.reload();await worker.getByRole("button",{name:"Submit identity"}).click();await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:15000});
+        await uploadIdentity(worker,"Identity document","passport.png",true);
+        await uploadIdentity(worker,"Profile photo","profile.png");
+        await uploadIdentity(worker,"Selfie evidence","selfie.png");
+        await worker.getByRole("button",{name:"Submit identity"}).click();
+        try {
+          // Manual review is the actual server-side lifecycle after validation
+          // and automated checks; ephemeral action messages can be remounted.
+          await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:30000});
+          await worker.reload({waitUntil:"domcontentloaded"});
+          await worker.getByText("Manual review",{exact:true}).first().waitFor({timeout:20000});
+        } catch(error) {
+          throw new Error("Worker identity was not visibly submitted and queued for manual review. Actual UI: "+
+            await worker.locator("main").innerText(),{cause:error});
+        }
+        console.log("ACTUAL_M20105_IDENTITY_SUBMISSION_MANUAL_REVIEW_ACK_BROWSER");
 
         await worker.goto(`${baseUrl}/worker/evidence`);await worker.getByLabel("Record type").selectOption("qualification");await worker.getByRole("button",{name:"Create draft"}).click();await worker.reload();
         const article=worker.locator("article").filter({hasText:"Qualification record"}).first();await article.getByLabel("Qualification title").fill("Masterplan Safety Certificate");await article.getByLabel("Category").fill("Occupational Safety");await article.getByLabel("Issuing organization").fill("HSE Institute");await article.getByLabel("Certificate / candidate number").fill("MP-E2E-001");await article.getByLabel("Level").fill("Level 3");await article.getByLabel("Issue date").fill("2025-01-01");await article.getByLabel("Country").fill("Pakistan");await article.getByLabel("I confirm these qualification details").check();await article.getByRole("button",{name:"Save metadata"}).click();await worker.reload();
@@ -437,7 +480,7 @@ async function seedAssessment(database,credentials){
 }
 
 
-async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env,credentials,workerAccountId,journeyCaseId}){
+async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env,credentials,workerAccountId,journeyCaseId,foreignCompanyOrderId=null}){
  const {openScriptDatabase}=await import("../../scripts/lib/database.mjs");
  const {loadWorkerRegistrationTs,setWorkerRegistrationRuntimeEnvironment}=await import("../helpers/worker-registration-runtime-loader.mjs");
  const {DatabaseOutboxRepository}=loadWorkerRegistrationTs("src/lib/outbox/outbox-repository.ts");
@@ -512,6 +555,19 @@ async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env
      assert.equal(denied.status(),404,"A different real Worker cannot access the notification recipient\'s owned case.");
      assert.equal((await foreignWorker.locator("main").innerText()).includes(journeyCaseId),false);
     }finally{await foreignContext.close();}
+    if(foreignCompanyOrderId){
+      const foreignCompanyContext=await browser.newContext({viewport:{width:1280,height:900}});
+      const company=await foreignCompanyContext.newPage();
+      try{
+        await login(company,baseUrl,credentials.company,"company");
+        const denied=await company.goto(baseUrl+"/company/assurance-orders/"+foreignCompanyOrderId,{waitUntil:"domcontentloaded"});
+        assert.equal(denied.status(),404,"Foreign Company must receive HTTP404 for known Worker self-funded independent order");
+        const pageText=await company.locator("body").innerText();
+        assert.equal(pageText.includes(journeyCaseId),false,"Foreign Company learned the independent Worker's case ID");
+        assert.equal(pageText.includes(ISSUED_QUALIFICATION),false,"Foreign Company learned Worker self-funded private credential");
+        console.log("M20105_ACTUAL_FOREIGN_COMPANY_KNOWN_SELF_FUNDED_ORDER_404_NO_CREDENTIAL");
+      }finally{await foreignCompanyContext.close();}
+    }
     return {code:0,signal:"SMOKE_COMPLETE"};
    }finally{await context.close();await browser.close();}
   }
@@ -525,8 +581,12 @@ async function verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env
  console.log("ACTUAL_ASSURANCE_NOTIFICATION_BROWSER original retained sources, registered worker, owned Open/read and foreign denial passed");
 }
 
-test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an active Worker exam" : SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:420000},async()=>{
+test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an active Worker exam" : SCREEN_ERRORS ? "A12 real Worker exam invalid answers, autosave retry and durable submission" : "Masterplan preserved Worker journey: register to credential, share and appeal on one record",{timeout:M20105_COMPANY_FUNDED_CREDENTIAL?660000:420000},async()=>{
   const companyFunded=process.env.HSE_MASTERPLAN_FUNDING_MODE === "company" || COMPANY_CREDENTIAL_TARGET_MODE;
+  assert.ok(!M20105_COMPANY_FUNDED_CREDENTIAL||(companyFunded&&!COMPANY_CREDENTIAL_TARGET_MODE),
+    "M20105 receiving and credit-lineage mode must use real Worker-initiated Company funding, not Company direct-order or self-payment");
+  assert.ok(!M20105_WORKER_SELF_PAID_CREDENTIAL||(!companyFunded&&!COMPANY_CREDENTIAL_TARGET_MODE),
+    "M20105 self-paying mode must use original Worker self-pay UI, not Company-funded or Company-ordered case");
   const root=process.cwd(),dbDir=await mkdtemp(join(tmpdir(),"hse-masterplan-worker-e2e-")),port=await freePort(),baseUrl=`http://127.0.0.1:${port}`;
   const env={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:dbDir,HSE_RELEASE_SHA:"masterplan-worker-e2e",HSE_CREDENTIAL_SIGNING_SECRET:"synthetic-masterplan-worker-signing-secret-2026",HSE_SESSION_SECRET:"masterplan-worker-e2e-session-secret-2026-more-than-32",HSE_AUTH_PEPPER:"masterplan-worker-e2e-auth-pepper-2026-more-than-32",HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   try{
@@ -550,7 +610,7 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
       if(companyFunded)await db.query(`INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,permanent_worker_id,link_source,link_status,worker_accepted_at,activated_at,created_at,updated_at) VALUES($1,$2,$3,$4,'permanent_worker_id','active',NOW(),NOW(),NOW(),NOW())`,[stableId("company_worker_link","funded-masterplan-worker"),companyTenantId,workerAccountId,permanentWorkerId]);
     } finally {await db.close();}
 
-    let journeyCaseId=null;
+    let journeyCaseId=null,independentSelfPaidOrderId=null;
     const journeyTenantId=companyFunded ? companyTenantId : "tenant_independent_worker_scope";
     const phase2=await runDevelopmentServer({
       args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:`${baseUrl}/worker/login`,projectRoot:root,environment:env,
@@ -1018,6 +1078,18 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
           await admin.goto(`${baseUrl}/admin/decisions?tenantId=${journeyTenantId}&caseId=${journeyCaseId}`,{waitUntil:"domcontentloaded"});const decisionForm=admin.locator("form").filter({has:admin.getByRole("button",{name:"Create decision"})});await decisionForm.getByLabel("State").selectOption("APPROVED");await decisionForm.getByLabel("Reason code").fill("all_stages_passed");await decisionForm.getByLabel("Explanation").fill("Identity, qualification, assessment, human scoring and structured interview are all complete.");await decisionForm.getByLabel("Rule version").fill("masterplan-e2e-v1");await decisionForm.getByLabel("Input references").fill(`${attemptId},${interviewId}`);await decisionForm.getByRole("button",{name:"Create decision"}).click();try{await admin.getByRole("heading",{name:"APPROVED",exact:true}).waitFor({timeout:20000});}catch(error){throw new Error("Final decision failed at actual browser boundary.\nADMIN URL: "+admin.url()+"\nADMIN:\n"+await admin.locator("body").innerText()+"\nSERVER:\n"+output(),{cause:error});}
 
           if(COMPANY_CREDENTIAL_TARGET_MODE){await company.reload();await company.getByText("COMPANY-CREDENTIAL-TARGET-BROWSER · COMPLETED",{exact:true}).waitFor();console.log("ACTUAL_COMPANY_ORDER_COMPLETED_BROWSER original Company order completed after real final decision");}
+          if(M20105_COMPANY_FUNDED_CREDENTIAL){
+            await company.goto(`${baseUrl}/company/assurance-orders`,{waitUntil:"domcontentloaded"});
+            await company.getByRole("heading",{name:"Assurance orders",exact:true}).waitFor();
+            const fundedOrder=company.locator("tbody tr").filter({hasText:"Worker assessment · End-to-End Worker Assessment"}).first();
+            await fundedOrder.getByText("COMPLETED",{exact:true}).waitFor({timeout:20000});
+            await fundedOrder.getByRole("link",{name:"Open order",exact:true}).click();
+            const fundedCase=company.locator('tbody tr[id="'+journeyCaseId+'"]');
+            await fundedCase.getByText("Approved",{exact:true}).waitFor({timeout:20000});
+            await fundedCase.getByText("valid",{exact:true}).waitFor({timeout:20000});
+            assert.equal(await fundedCase.count(),1,"Paying Company must view exactly its own completed original funded Worker case");
+            console.log("M20105_ACTUAL_PAYER_COMPANY_BROWSER_ORIGINAL_FUNDED_CASE_APPROVED_AND_VALID_CREDENTIAL");
+          }
           await worker.goto(`${baseUrl}/worker/passport`);
           const qualificationRecords = worker.getByRole("region", { name: "Qualification passport records" });
           const qualificationRow = qualificationRecords.getByRole("row").filter({ hasText: "Masterplan Safety Certificate" });
@@ -1396,6 +1468,101 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
       }
       assert.ok(journeyCaseId,"Preserved Worker journey did not expose its Assurance Case ID.");
       const c=(await verify.query("SELECT case_status,decision_reference,credential_reference FROM assurance_cases WHERE case_id=$1",[journeyCaseId])).rows[0];assert.equal(c.case_status,"Approved");assert.ok(c.decision_reference);assert.ok(c.credential_reference);
+      if(M20105_WORKER_SELF_PAID_CREDENTIAL){
+        const selfPaid=(await verify.query(`
+          SELECT applications.application_id,applications.application_status,applications.funding_mode,
+                 applications.worker_account_id,applications.permanent_worker_id,
+                 applications.sandbox_payment_reference,applications.company_tenant_id,
+                 applications.funding_request_id,applications.assurance_order_id,applications.assurance_case_id,
+                 orders.order_status,orders.order_reference,orders.tenant_id,
+                 cases.worker_account_id AS case_worker_account_id,cases.permanent_worker_id AS case_worker_id,
+                 cases.credential_reference,issued.worker_id AS issued_worker_id,
+                 issued.qualification AS issued_qualification
+            FROM worker_assessment_applications AS applications
+            JOIN assurance_orders AS orders ON orders.order_id=applications.assurance_order_id
+            JOIN assurance_cases AS cases ON cases.case_id=applications.assurance_case_id
+            JOIN credential_issuances AS issued ON issued.credential_id=cases.credential_reference
+           WHERE applications.assurance_case_id=$1`,[journeyCaseId])).rows;
+        assert.equal(selfPaid.length,1,"Only one original Worker self-funded application can issue this case credential");
+        const paid=selfPaid[0];
+        assert.match(paid.application_id,/^assessment_application_[A-Za-z0-9_-]{24}$/);
+        assert.equal(paid.application_status,"COMPLETED");
+        assert.equal(paid.funding_mode,"WORKER_PAY");
+        assert.equal(paid.worker_account_id,workerAccountId);
+        assert.equal(paid.permanent_worker_id,permanentWorkerId);
+        assert.equal(paid.sandbox_payment_reference,"sandbox_worker_payment_"+paid.application_id.slice(-24));
+        assert.equal(paid.company_tenant_id,null);
+        assert.equal(paid.funding_request_id,null);
+        assert.match(paid.assurance_order_id,/^assurance_order_[A-Za-z0-9_-]{24}$/);
+        assert.equal(paid.assurance_case_id,journeyCaseId);
+        assert.equal(paid.tenant_id,"tenant_independent_worker_scope");
+        assert.equal(paid.order_reference,"WORKER-"+paid.application_id.slice(-18));
+        assert.equal(paid.order_status,"COMPLETED");
+        assert.equal(paid.case_worker_account_id,workerAccountId);
+        assert.equal(paid.case_worker_id,permanentWorkerId);
+        assert.equal(paid.credential_reference,c.credential_reference);
+        assert.equal(paid.issued_worker_id,permanentWorkerId);
+        assert.equal(paid.issued_qualification,ISSUED_QUALIFICATION);
+        const fundedEvents=(await verify.query(
+          "SELECT from_status,to_status,actor_account_id,actor_role FROM worker_assessment_application_events WHERE application_id=$1",
+          [paid.application_id]
+        )).rows;
+        assert.deepEqual(fundedEvents.map(e=>(e.from_status??"NULL")+">"+e.to_status).sort(),
+          ["NULL>PAYMENT_REQUIRED","PAYMENT_REQUIRED>FUNDED","FUNDED>CASE_CREATED","CASE_CREATED>COMPLETED"].sort(),
+          "Worker self-payment and case closure require one immutable event for each real state transition");
+        assert.ok(fundedEvents.every(e=>e.actor_account_id===workerAccountId&&e.actor_role==="worker"));
+        const ownAttempts=(await verify.query("SELECT status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        assert.deepEqual(ownAttempts,[{status:"SUBMITTED"}]);
+        independentSelfPaidOrderId=paid.assurance_order_id;
+        console.log("M20105_ACTUAL_DB_WORKER_SELF_PAY_ORIGINAL_APPLICATION_TO_ISSUED_CREDENTIAL");
+      }
+      if(M20105_COMPANY_FUNDED_CREDENTIAL){
+        const lineage=(await verify.query(`
+          SELECT applications.application_status,applications.worker_account_id,applications.company_tenant_id,
+                 applications.assurance_order_id,applications.assurance_case_id,
+                 funding.status AS funding_status,funding.reserved_credit_units,
+                 orders.order_status,orders.tenant_id,cases.permanent_worker_id,
+                 cases.credential_reference,issued.worker_id AS issued_worker_id,
+                 issued.qualification AS issued_qualification
+            FROM worker_assessment_applications applications
+            JOIN funding_requests funding ON funding.funding_request_id=applications.funding_request_id
+            JOIN assurance_orders orders ON orders.order_id=applications.assurance_order_id
+            JOIN assurance_cases cases ON cases.case_id=applications.assurance_case_id
+            JOIN credential_issuances issued ON issued.credential_id=cases.credential_reference
+           WHERE applications.assurance_case_id=$1`,[journeyCaseId])).rows;
+        assert.equal(lineage.length,1,"Only one original Company-funded Worker case can produce the final credential");
+        const f=lineage[0];
+        // The Worker revisits eligibility after approval. The real application lifecycle
+        // then closes the retained CASE_CREATED application; the funded case/credential
+        // linkage must survive its terminal COMPLETED transition.
+        assert.equal(f.application_status,"COMPLETED");
+        const applicationEvents=(await verify.query(
+          `SELECT from_status,to_status,actor_account_id,actor_role
+             FROM worker_assessment_application_events
+            WHERE application_id=(SELECT application_id FROM worker_assessment_applications WHERE assurance_case_id=$1)
+            ORDER BY occurred_at,event_id`,[journeyCaseId])).rows;
+        assert.equal(applicationEvents.filter(event=>event.to_status==="CASE_CREATED").length,1,
+          "Exactly one Company-approved funded application must create the original case");
+        const terminalEvents=applicationEvents.filter(event=>event.from_status==="CASE_CREATED"&&event.to_status==="COMPLETED");
+        assert.equal(terminalEvents.length,1,"The real post-decision application closure must retain exactly one immutable transition");
+        assert.equal(terminalEvents[0].actor_account_id,workerAccountId);
+        assert.equal(terminalEvents[0].actor_role,"worker");
+        assert.equal(f.worker_account_id,workerAccountId);
+        assert.equal(f.company_tenant_id,companyTenantId);
+        assert.equal(f.tenant_id,companyTenantId);
+        assert.equal(f.assurance_case_id,journeyCaseId);
+        assert.match(f.assurance_order_id,/^assurance_order_/);
+        assert.equal(f.funding_status,"APPROVED");
+        assert.equal(f.reserved_credit_units,1);
+        assert.equal(f.order_status,"COMPLETED");
+        assert.equal(f.permanent_worker_id,permanentWorkerId);
+        assert.equal(f.credential_reference,c.credential_reference);
+        assert.equal(f.issued_worker_id,permanentWorkerId);
+        assert.equal(f.issued_qualification,ISSUED_QUALIFICATION);
+        const attempts=(await verify.query("SELECT status FROM assessment_attempts WHERE case_id=$1",[journeyCaseId])).rows;
+        assert.deepEqual(attempts,[{status:"SUBMITTED"}],"One real originally Company-funded Worker assessment attempt must have been submitted");
+        console.log("M20105_ACTUAL_DB_COMPANY_FUNDING_APPROVED_RESERVED_CREDIT_SAME_SUBMITTED_ATTEMPT_ADMIN_APPROVAL_ISSUED_CREDENTIAL");
+      }
       if(COMPANY_CREDENTIAL_TARGET_MODE) {
         const produced=(await verify.query(`SELECT orders.credential_target,orders.interview_required,orders.order_status,
           cases.worker_account_id,cases.permanent_worker_id,issuances.qualification,issuances.worker_id,
@@ -1448,7 +1615,7 @@ test(DEVICE_DENIAL ? "A13 fresh authenticated unbound browser cannot view an act
       const order=(await verify.query("SELECT order_status FROM assurance_orders WHERE order_id=(SELECT order_id FROM assurance_cases WHERE case_id=$1)",[journeyCaseId])).rows[0];assert.equal(order.order_status,"COMPLETED");
       const living=await verify.query("SELECT v.version,v.status FROM living_record_competencies c JOIN living_record_versions v ON v.competency_id=c.competency_id WHERE c.source_credential_id=$1 ORDER BY v.version",[c.credential_reference]);assert.deepEqual(living.rows.map(r=>r.status),COMPLETE_REASSESSMENT?["valid","reassessment_required","revoked"]:["valid","reassessment_required"]);
     } finally {await verify.close();}
-    if(ASSURANCE_NOTIFICATIONS)await verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env,credentials,workerAccountId,journeyCaseId});
+    if(ASSURANCE_NOTIFICATIONS)await verifyAssuranceNotificationConsumers({root,dbDir,baseUrl,port,env,credentials,workerAccountId,journeyCaseId,foreignCompanyOrderId:independentSelfPaidOrderId});
   } finally {
     await rm(dbDir, { recursive: true, force: true });
   }

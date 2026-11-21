@@ -1,0 +1,98 @@
+name: M1.04 Company workforce CSV tenant filters and revocation QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/company-workforce-pagination.browser.test.mjs"
+      - "src/lib/company/company-workforce-directory-service.ts"
+      - "src/app/api/company/workers/export/route.ts"
+      - "src/app/company/(portal)/workers/**"
+      - "src/lib/authorization/**"
+      - ".github/workflows/m1-04-company-workforce-csv-tenant-isolation.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/company-workforce-pagination.browser.test.mjs"
+      - "src/lib/company/company-workforce-directory-service.ts"
+      - "src/app/api/company/workers/export/route.ts"
+      - "src/app/company/(portal)/workers/**"
+      - "src/lib/authorization/**"
+      - ".github/workflows/m1-04-company-workforce-csv-tenant-isolation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10402-company-workforce-csv-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actual-chromium-workforce-private-csv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium without Ubuntu apt dependency fetch
+        run: npx playwright install chromium
+      - name: Company workforce 1440 390 320 CSV forged tenant role filters and permission revocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/company-workforce-pagination.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10402-workforce-csv-browser.log
+      - name: Archive exact SHA browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10402-workforce-csv-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10402-workforce-csv-browser.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-tenant-scoped-directory-and-records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Tenant scoped read write and live permission recheck native
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/platform/authorization-tenant-scope-repository.test.mjs 2>&1 | tee .autopilot/artifacts/m10402-workforce-tenant-native.log
+      - name: Archive exact SHA native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10402-workforce-tenant-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10402-workforce-tenant-native.log
+          if-no-files-found: warn
+          retention-days: 30

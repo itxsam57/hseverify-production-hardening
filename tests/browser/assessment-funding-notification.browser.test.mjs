@@ -61,7 +61,8 @@ async function login(page, baseUrl, identity, role) {
 
 
 
-test("Actual Worker request and Company approval deliver actionable bells through the built worker", { timeout: 240000 }, async () => {
+test("Actual Worker request and Company approval deliver actionable bells through the built worker", { timeout: 300000 }, async () => {
+  const fundedAssessment=process.env.HSE_M20105_FUNDED_ASSESSMENT_ONLY==="true";
   const fixture = await assessmentFundingFixture(), port = await freePort(), baseUrl = "http://127.0.0.1:" + port;
   const browser = await chromium.launch({ headless: true });
   const workerContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -114,13 +115,14 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       }
       assert(attempt < 12, "The real CLI did not deliver the exact funding bell within its bounded drain.");
       const result = spawnSync(process.execPath, ["scripts/run-outbox-worker.mjs", "--once"], { env: fixture.environment, encoding: "utf8" });
+      assert.ok(result.stdout?.trim(), "Outbox CLI returned no JSON. Build and verify the real worker before this browser test. " + (result.stderr || String(result.error ?? "")));
       const processed = JSON.parse(result.stdout.trim());
       assert.equal(processed.processed, 1, result.stderr || result.stdout);
       assert(["succeeded", "retry_wait"].includes(processed.status), result.stderr || result.stdout);
       assert.equal(result.status, processed.status === "succeeded" ? 0 : 1, result.stderr || result.stdout);
     }
   };
-  let application, funded;
+  let application, funded, fundedAttemptId=null;
   try {
     assert.equal((await server(async () => {
       await login(workerPage, baseUrl, fixture.credentials.worker, "worker");
@@ -181,6 +183,28 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       await assessment.getByRole("button", { name: "Start assessment", exact: true }).click();
       await workerPage.waitForURL(url => url.pathname === "/worker/available-assessments/precheck" && url.searchParams.get("caseId") === funded.assurance_case_id && url.searchParams.get("catalogueVersionId") === fixture.fundingInput.catalogueVersionId);
       await workerPage.screenshot({ path: ".autopilot/artifacts/20261009-funding-browser-worker-next-action.png" });
+      if(fundedAssessment){
+        assert.equal(await workerPage.getByRole("button",{name:"Begin assessment",exact:true}).isDisabled(),true,
+          "Funded Worker cannot begin without required precheck");
+        await workerPage.getByRole("button",{name:"Run device checks",exact:true}).click();
+        await workerPage.getByText("Device checks completed.",{exact:true}).waitFor({timeout:20000});
+        await workerPage.getByLabel("I confirm I am the Worker assigned to this assessment.").check();
+        for(const text of [/I confirm my environment is suitable/,/I consent to the monitoring signals/]){
+          const control=workerPage.getByLabel(text);
+          if(await control.count())await control.check();
+        }
+        await workerPage.getByRole("button",{name:"Begin assessment",exact:true}).click();
+        await workerPage.waitForURL(url=>/^\/worker\/assessments\/assessment_attempt_[A-Za-z0-9_-]{24}$/.test(url.pathname),{timeout:25000});
+        fundedAttemptId=new URL(workerPage.url()).pathname.split("/").pop();
+        assert.match(fundedAttemptId,/^assessment_attempt_[A-Za-z0-9_-]{24}$/);
+        await workerPage.reload({waitUntil:"domcontentloaded"});
+        assert.equal(new URL(workerPage.url()).pathname,"/worker/assessments/"+fundedAttemptId);
+        console.log("M20105_ACTUAL_COMPANY_FUNDED_WORKER_PRECHECK_THEN_OWN_ASSESSMENT_ATTEMPT_RELOAD");
+        await companyPage.goto(baseUrl+"/worker/assessments/"+fundedAttemptId,{waitUntil:"domcontentloaded"});
+        assert.equal(new URL(companyPage.url()).pathname,"/access-denied",
+          "Company that approved credits must not see the funded Worker's private attempt");
+        console.log("M20105_ACTUAL_COMPANY_FUNDING_PAYER_DENIED_WORKER_ATTEMPT_URL");
+      }
       await workerPage.goto(baseUrl + "/worker/dashboard", { waitUntil: "domcontentloaded" });
       assert.equal(await workerPage.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");
       await workerPage.reload({ waitUntil: "domcontentloaded" });
@@ -190,6 +214,14 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       assert.equal(await foreignPage.locator("details.notification-menu > summary").getAttribute("aria-label"), "0 unread notifications");
       await foreignPage.goto(baseUrl + "/worker/notifications", { waitUntil: "domcontentloaded" });
       assert.equal(await foreignPage.getByRole("heading", { name: "Assessment funding approved", exact: true }).count(), 0);
+      if(fundedAssessment){
+        const foreignResponse=await foreignPage.goto(baseUrl+"/worker/assessments/"+fundedAttemptId,{waitUntil:"domcontentloaded"});
+        assert.equal(foreignResponse.status(),404,
+          "Other authenticated Worker must receive real 404 for funded attempt ID");
+        assert.equal((await foreignPage.locator("body").innerText()).includes("Which action is safe?"),false,
+          "Private funded assessment question must not leak to foreign Worker");
+        console.log("M20105_ACTUAL_FOREIGN_WORKER_FUNDED_ATTEMPT_HTTP404_NO_QUESTION_LEAK");
+      }
       await foreignContext.close();
       assert.deepEqual(errors, []);
       console.log("ACTUAL_FUNDING_BROWSER Worker request action -> committed event job -> built CLI -> authorized Company bell/request anchor -> Company approval action -> owned assessment case -> built CLI -> Worker bell/case anchor -> Start assessment/prechecks; read persists and unrelated Worker receives none.");
@@ -204,6 +236,25 @@ test("Actual Worker request and Company approval deliver actionable bells throug
       assert.equal(notices[1].tenant_id, null);
       assert.ok(notices.every(notice => notice.read_at));
       assert.equal((await database.query("SELECT count(*)::int AS n FROM platform_outbox_jobs WHERE job_type='notification.assessment.funding' AND status='succeeded'")).rows[0].n, 2);
+      if(fundedAssessment){
+        const attempts=(await database.query(
+          "SELECT attempt_id,case_id,worker_account_id,catalogue_version_id,status,question_count FROM assessment_attempts WHERE case_id=$1",
+          [funded.assurance_case_id]
+        )).rows;
+        assert.equal(attempts.length,1,"Funding approval must open exactly one durable bound Worker attempt");
+        assert.equal(attempts[0].attempt_id,fundedAttemptId);
+        assert.equal(attempts[0].case_id,funded.assurance_case_id);
+        assert.equal(attempts[0].worker_account_id,fixture.worker.accountId);
+        assert.equal(attempts[0].catalogue_version_id,fixture.fundingInput.catalogueVersionId);
+        assert.equal(attempts[0].status,"IN_PROGRESS");
+        assert.ok(Number(attempts[0].question_count)>=1);
+        const reserved=(await database.query(
+          "SELECT status,reserved_credit_units FROM funding_requests WHERE funding_request_id=$1",
+          [application.funding_request_id]
+        )).rows[0];
+        assert.deepEqual(reserved,{status:"APPROVED",reserved_credit_units:1});
+        console.log("M20105_ACTUAL_DB_FUNDED_CASE_ONE_OWNED_ACTIVE_ASSESSMENT_ATTEMPT_AND_ONE_RESERVED_CREDIT");
+      }
     } finally { await database.close(); }
   } finally { await browser.close(); await fixture.cleanup(); }
 });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { IntegrityCaptureService } from "@/lib/integrity/integrity-capture-service";
 import { IntegrityCaptureIntegration } from "@/lib/integrity/integrity-capture-integration";
-import { requireWorkerSession } from "@/lib/auth/worker-session";
+import { readWorkerSession } from "@/lib/auth/worker-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,37 +24,36 @@ async function localIntegrityAttemptId() {
   return generated;
 }
 
-async function integritySession() {
-  try {
-    return await requireWorkerSession();
-  } catch (error) {
-    // Local deterministic fixture for disposable runtime/browser verification.
-    // Production requests still require the authenticated worker boundary.
-    if (process.env.NODE_ENV !== "production") {
-      return {
-        workerId: await localIntegrityAttemptId()
-      };
-    }
-    throw error;
+// Anonymous capture is a synthetic local fixture, never a staging/production auth bypass.
+async function integritySession(): Promise<{ workerId: string } | null> {
+  const session = await readWorkerSession();
+  if (session) return session;
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.HSE_APP_ENV === "development" &&
+    process.env.HSE_ENABLE_INTEGRITY_DEV_FIXTURE === "true"
+  ) {
+    return { workerId: await localIntegrityAttemptId() };
   }
+
+  return null;
 }
 
 export async function GET(): Promise<Response> {
   const session = await integritySession();
+  if (!session) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
   return NextResponse.json({
     integrity: await integrationForAttempt(session.workerId).currentAssessmentIntegrityState()
   });
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let session: { workerId: string };
-  try {
-    session = await integritySession();
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Authentication required." },
-      { status: 401 }
-    );
+  const session = await integritySession();
+  if (!session) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
   try {

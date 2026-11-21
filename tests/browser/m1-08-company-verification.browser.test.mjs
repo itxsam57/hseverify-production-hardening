@@ -293,6 +293,23 @@ async function runBrowserAcceptance(baseUrl, output) {
       console.log("ACTUAL_M10804_BROWSER actual Company submits scanned registration PDF, Admin rejects exact submitted version; Company remains rejected with pending-tenant notice, immutable details/evidence after reload, no edit/resubmit, case leaves Admin queue");
       return;
     }
+    // Keep the already-rendered version-1 Admin decision form on a separate
+    // signed tab. It must not silently approve corrected version 2 later.
+    const staleAdminTab = await adminSession.context.newPage();
+    await staleAdminTab.setViewportSize({width:390,height:844});
+    await gotoOk(staleAdminTab,baseUrl,"/admin/company-verifications","Company verification review");
+    const staleCard = staleAdminTab.locator("article[data-case-id]")
+      .filter({hasText:COMPANY_LEGAL_NAME}).first();
+    await staleCard.getByRole("button",{name:"Verify Company"}).waitFor();
+    const staleV1Id = await staleCard.locator(
+      'form:has(button:has-text("Verify Company")) input[name="expectedVersionId"]'
+    ).inputValue();
+    const staleV1Lock = await staleCard.locator(
+      'form:has(button:has-text("Verify Company")) input[name="expectedLockVersion"]'
+    ).inputValue();
+    assert.match(staleV1Id,/^company_verification_version_[A-Za-z0-9_-]{24}$/);
+    assert.match(staleV1Lock,/^(?:0|[1-9][0-9]*)$/);
+
     await card.getByRole("button", { name: "Request changes" }).click();
     await adminSession.page.waitForURL(/result=decision-recorded/, { timeout: 15_000 });
 
@@ -324,8 +341,35 @@ async function runBrowserAcceptance(baseUrl, output) {
     await card.getByRole("button", { name: "Begin review" }).click();
     await adminSession.page.waitForURL(/result=review-started/, { timeout: 15_000 });
     card = adminSession.page.locator("article[data-case-id]").filter({ hasText: COMPANY_LEGAL_NAME }).first();
+    const currentV2Id = await card.locator(
+      'form:has(button:has-text("Verify Company")) input[name="expectedVersionId"]'
+    ).inputValue();
+    const currentV2Lock = await card.locator(
+      'form:has(button:has-text("Verify Company")) input[name="expectedLockVersion"]'
+    ).inputValue();
+    assert.notEqual(currentV2Id,staleV1Id);
+    assert.notEqual(currentV2Lock,staleV1Lock);
+
+    await staleCard.getByRole("button",{name:"Verify Company"}).click();
+    await staleAdminTab.waitForURL(/result=conflict/,{timeout:15000});
+    await staleAdminTab.getByText(
+      "That Company verification changed in another request. The current queue has been reloaded.",
+      {exact:true}
+    ).waitFor({timeout:15000});
+    await adminSession.page.reload({waitUntil:"domcontentloaded"});
+    card = adminSession.page.locator("article[data-case-id]").filter({hasText:COMPANY_LEGAL_NAME}).first();
+    await card.getByText("version 2",{exact:false}).waitFor();
+    assert.equal(await card.getByRole("button",{name:"Verify Company"}).count(),1,
+      "Stale Admin v1 form cannot resolve the current v2 review.");
+    assert.equal(await staleAdminTab.evaluate(()=>document.documentElement.scrollWidth <=
+      window.innerWidth + 2),true,"M1.08.03 signed 390px Admin conflict banner must not overflow");
+    console.log("ACTUAL_M10803_STALE_V1_ADMIN_FORM_BROWSER_DENIED_V2_REMAINS_UNDER_REVIEW",
+      "MFA Admin old exact v1 decision at 390px rejected with conflict; current v2 review remains active");
+
     await card.getByRole("button", { name: "Verify Company" }).click();
     await adminSession.page.waitForURL(/result=decision-recorded/, { timeout: 15_000 });
+    console.log("ACTUAL_M10803_FRESH_V2_ADMIN_BROWSER_APPROVAL",
+      "fresh version-bound decision accepted only for submitted corrected v2");
 
     await companyPage.reload({ waitUntil: "domcontentloaded" });
     await companyPage.getByRole("heading", { name: "Verified", exact: true }).waitFor({ timeout: 15_000 });

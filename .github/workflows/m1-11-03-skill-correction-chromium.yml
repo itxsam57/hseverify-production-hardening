@@ -1,0 +1,66 @@
+name: M1.11.03 real Chromium skill correction Worker Verifier mobile and role denial
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/independent-worker-review-e2e.browser.test.mjs'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/review/**'
+      - '.github/workflows/m1-11-03-skill-correction-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/independent-worker-review-e2e.browser.test.mjs'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/review/**'
+      - '.github/workflows/m1-11-03-skill-correction-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11103-chromium-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  worker-verifier-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed QA commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned dependencies and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Exact real Worker and Verifier actions, mobile and direct private route denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          HSE_M11103_SKILL_BROWSER_ONLY=true node --test --test-concurrency=1 tests/browser/independent-worker-review-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          for marker in WORKER_VERIFIER_SKILL_V1_CHANGES_V2_APPROVED WORKER_ROLE_VERIFIER_ROUTE_DENIED RESPONSIVE_320_390_1440 DB_TWO_SKILL_VERSIONS_TWO_BOUND_REVIEWS; do
+            grep -q "M11103_ACTUAL_CHROME_${marker}" .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          done
+      - name: Retain exact SHA independently checkable Chromium raw proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11103-skill-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11103-skill-correction-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 90

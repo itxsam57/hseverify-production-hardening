@@ -79,10 +79,23 @@ test("All six roles change passwords with reauthentication, keep current session
   await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:root,environment,probe:async()=>{
    browser=await chromium.launch({headless:true});
    for(const role of roles){
-    const identity=credentials[role],context=await browser.newContext(),otherContext=await browser.newContext(),primary=await context.newPage(),other=await otherContext.newPage();
+    const identity=credentials[role],context=await browser.newContext({viewport:{width:390,height:844}}),otherContext=await browser.newContext({viewport:{width:320,height:740}}),primary=await context.newPage(),other=await otherContext.newPage();
     await signIn(primary,identity,role,identity.password,-1);await primary.waitForURL("**/"+role+"/dashboard");
     await signIn(other,identity,role,identity.password,0);await other.waitForURL("**/"+role+"/dashboard");
+    const copiedOtherSessionCookies=(await otherContext.cookies(baseUrl)).filter(cookie=>cookie.name==="hse_session");
+    assert.equal(copiedOtherSessionCookies.length,1,role+" expected exactly one opaque other-session cookie");
+    assert.ok(copiedOtherSessionCookies[0].httpOnly,role+" session cookie must be HTTP-only");
     await primary.goto(baseUrl+"/account/security");
+    const securityViewport=await primary.evaluate(()=>({
+     viewport:document.documentElement.clientWidth,
+     document:document.documentElement.scrollWidth,
+     overflow:Array.from(document.querySelectorAll("body *")).filter(el=>{
+      const b=el.getBoundingClientRect();return b.left< -1||b.right>document.documentElement.clientWidth+1;
+     }).length
+    }));
+    console.log("M10308_PASSWORD_CHANGE_390_VIEWPORT",role,JSON.stringify(securityViewport));
+    assert.equal(securityViewport.viewport,390);
+    assert.ok(securityViewport.document<=391&&securityViewport.overflow===0,role+" password security page horizontal overflow");
     const section=primary.locator("section").filter({has:primary.getByRole("heading",{name:"Change password",exact:true})});
     async function submit(password,mfa){
      await section.getByLabel("Current password",{exact:true}).fill(password);await section.getByLabel("New password",{exact:true}).fill(newPassword);await section.getByLabel("Confirm new password",{exact:true}).fill(newPassword);
@@ -101,6 +114,18 @@ test("All six roles change passwords with reauthentication, keep current session
     changed[role]=Math.floor(Date.now()/30000)+1;
     await primary.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(primary.url()).pathname,"/"+role+"/dashboard");
     await other.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(other.url()).pathname,"/"+role+"/login");
+    // A second session that existed BEFORE password rotation must not become
+    // valid again if its opaque HttpOnly cookie is injected into a fresh tab.
+    const replayContext=await browser.newContext({viewport:{width:320,height:740}});
+    try{
+     await replayContext.addCookies(copiedOtherSessionCookies);
+     const replay=await replayContext.newPage();
+     await replay.goto(baseUrl+"/"+role+"/dashboard");
+     assert.equal(new URL(replay.url()).pathname,"/"+role+"/login",role+" stale cookie regained protected dashboard after password change");
+     await replay.goto(baseUrl+"/account/security");
+     assert.notEqual(new URL(replay.url()).pathname,"/account/security",role+" stale cookie regained security settings after password change");
+    }finally{await replayContext.close();}
+    console.log("M10308_STALE_PASSWORD_SESSION_REPLAY_DENIED",role,"320/390");
     await signIn(other,identity,role,identity.password,1);await other.getByRole("alert").waitFor();
     await other.goto(baseUrl+"/"+role+"/dashboard");assert.equal(new URL(other.url()).pathname,"/"+role+"/login");
     await context.close();await otherContext.close();

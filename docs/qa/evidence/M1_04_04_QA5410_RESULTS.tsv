@@ -1,0 +1,6 @@
+scenario_id	signed_qa_base	command	status	pass	fail	evidence	limitation
+M1.04.04	5410bcf8397f1c596adf787e2fbdcdfc93e108aa	rg -n ACTUAL_COMPANY_STAFF_EXPORT_API_LIVE_REVOKE tests/browser/company-complete-journey.browser.test.mjs	EXPECTED_COVERAGE_RED	0	1	.autopilot/artifacts/M10404_STAFF_EXPORT_API_LIVE_REVOKE_COVERAGE_RED_20261113.log	Missing direct live permission HTTP regression only; no product exploit proved
+M1.04.04	5410bcf8397f1c596adf787e2fbdcdfc93e108aa	node --test --test-concurrency=1 tests/browser/company-complete-journey.browser.test.mjs	LOCAL_REAL_CHROMIUM_PASS	1	0	.autopilot/artifacts/M10404_COMPANY_JOURNEY_LIVE_EXPORT_CHROMIUM_20261113.log	Local synthetic MFA/DB, not full production-like staging or provider
+M1.04.04	5410bcf8397f1c596adf787e2fbdcdfc93e108aa	node --test --test-concurrency=1 tests/platform/authorization-{policy-ceiling,session-context,membership-context,tenant-scope-repository}.test.mjs	LOCAL_NATIVE_PASS	9	0	.autopilot/artifacts/M10404_NATIVE_20261113.log	Native only, not every role and API
+M1.04.04	5410bcf8397f1c596adf787e2fbdcdfc93e108aa	npm run typecheck	PASS	1	0	.autopilot/artifacts/M10404_TYPECHECK_20261113.log	Strict TypeScript only
+M1.04.04	5410bcf8397f1c596adf787e2fbdcdfc93e108aa	npm run lint	PASS_WITH_WARNINGS	1	0	.autopilot/artifacts/M10404_LINT_20261113.log	0 errors 9 inherited warnings

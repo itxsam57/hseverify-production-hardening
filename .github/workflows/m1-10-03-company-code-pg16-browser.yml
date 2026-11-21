@@ -1,0 +1,120 @@
+name: M1.10.03 Company codes expiry usage defaults real Chromium and PG16
+on:
+  pull_request:
+    paths:
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - 'src/app/worker/(portal)/company-access/actions.ts'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'tests/browser/m11003-company-code-usage-defaults.browser.test.mjs'
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - '.github/workflows/m1-10-03-company-code-pg16-browser.yml'
+  push:
+    branches: [qa/a28-eligibility-read-guard-20261107]
+    paths:
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - 'src/app/worker/(portal)/company-access/actions.ts'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'tests/browser/m11003-company-code-usage-defaults.browser.test.mjs'
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - '.github/workflows/m1-10-03-company-code-pg16-browser.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11003-code-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-postgres16-company-code-last-slot-race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_code_usage
+          POSTGRES_PASSWORD: synthetic_code_usage_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U synthetic_code_usage -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Two Worker last-slot registration code expiry PG16 authorization
+        shell: bash
+        env:
+          HSE_M11003_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_code_usage:synthetic_code_usage_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-worker-invitation-tests.mjs --test-name-pattern 'M1.10.03 actual PostgreSQL16 Worker last-slot race enforces code expiry usage/default Site Department and immutable cross-role audit' 2>&1 | tee .autopilot/artifacts/m11003-real-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11003-real-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11003-real-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11003-real-pg16.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11003-real-pg16.log
+          for marker in INVALID_CODE_LIMIT_EXPIRY_FOREIGN_SITE_DEPARTMENT_WRONG_ROLE_DENIED TWO_INDEPENDENT_WORKERS_LAST_SLOT_ONE_WINS_OTHER_FAILS_IDEMPOTENT MULTI_USE_REMAINS_ACTIVE_REVOKE_EXPIRED_TAMPERED_DENIED_FOREIGN_OWNER_BLOCKED DB_ONE_EXHAUSTED_ONE_MULTI_ACTIVE_REVOKED_EXPIRED_REDEMPTION_DENIAL_THREE_ACTIVE_LINKS_CROSS_ROLE_AUDITS; do
+            grep -q "M11003_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11003-real-pg16.log
+          done
+      - name: Archive exact-SHA PostgreSQL16 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11003-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11003-real-pg16.log
+          if-no-files-found: warn
+          retention-days: 30
+  signed-company-worker-actual-chromium-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exact lockfile and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Company code Site Department expiry real Worker receiving
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/m11003-company-code-usage-defaults.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11003-real-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11003-real-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11003-real-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11003-real-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11003-real-chromium.log
+          for marker in OWNER_INVALID_USAGE_ZERO_10001_AND_PAST_EXPIRY_REJECTED COMPANY_CREATED_CODE_LIMIT2_SITE_DEPARTMENT_DEFAULTS_AND_ONE_TIME_SECRET WORKER_A_B_REDEEM_COMPANY_OBSERVES_EXHAUSTED_AND_DEFAULTS_390 THIRD_WORKER_EXHAUSTION_DENIED_RIGHTFUL_REPLAY_IDEMPOTENT_320 OWNER_REVOKE_EXPIRED_TAMPERED_DENIED_ANONYMOUS_DENIED_RESPONSIVE_320_390_1440 DB_THREE_CODES_TWO_ACTIVE_LINKS_SCOPE_DEFAULTS_OWNER2_WORKERS2_REVOKE1_AUDIT_NO_REPLAY; do
+            grep -q "M11003_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m11003-real-chromium.log
+          done
+      - name: Archive exact-SHA Chromium role and audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11003-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11003-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 30

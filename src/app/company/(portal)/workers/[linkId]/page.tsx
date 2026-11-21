@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { EndWorkerRelationshipForm } from "@/components/company/end-worker-relationship-form";
+import { WorkerPlacementForm } from "@/components/company/worker-placement-form";
 import { notFound } from "next/navigation";
 
 import { requireCurrentTenantPermission } from "@/lib/authorization/authorization-service";
 import { getCompanyWorkforceDirectoryService } from "@/lib/company/company-workforce-directory-service";
+import { getCompanyOrganizationRepository } from "@/lib/company/company-organization-repository";
 
 export default async function CompanyWorkerDetailPage({
   params
@@ -11,8 +13,16 @@ export default async function CompanyWorkerDetailPage({
   params: Promise<{ linkId: string }>;
 }): Promise<React.JSX.Element> {
   const { linkId } = await params;
-  const principal = await requireCurrentTenantPermission("company.workforce.manage");
-  const worker = await getCompanyWorkforceDirectoryService().find(principal, linkId);
+  const [principal,tenantReadPrincipal] = await Promise.all([
+    requireCurrentTenantPermission("company.workforce.manage"),
+    requireCurrentTenantPermission("company.tenant.read")
+  ]);
+  const organizations = getCompanyOrganizationRepository();
+  const [worker,sites,departments] = await Promise.all([
+    getCompanyWorkforceDirectoryService().find(principal,linkId),
+    organizations.list(tenantReadPrincipal,"site"),
+    organizations.list(tenantReadPrincipal,"department")
+  ]);
   if (!worker) notFound();
 
   return (
@@ -42,7 +52,11 @@ export default async function CompanyWorkerDetailPage({
         {worker.workerId ? <Link href={`/verify/worker/${encodeURIComponent(worker.workerId)}`}>Open public verification</Link> : null}
       </section>
       {worker.status === "active" ? (
-        <EndWorkerRelationshipForm linkId={linkId} today={new Date().toISOString().slice(0, 10)} />
+        <>
+          <WorkerPlacementForm linkId={linkId} siteId={worker.siteId} departmentId={worker.departmentId}
+            sites={sites} departments={departments} />
+          <EndWorkerRelationshipForm linkId={linkId} today={new Date().toISOString().slice(0, 10)} />
+        </>
       ) : worker.status === "revoked" ? (
         <p role="status">This Company relationship has ended. The Worker identity and prior history remain intact.</p>
       ) : null}

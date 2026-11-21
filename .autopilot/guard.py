@@ -8,6 +8,8 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
+import tempfile
 import shutil
 import stat
 import subprocess
@@ -198,15 +200,26 @@ def _validate_project_contract(root: Path) -> None:
         raise ValueError("AUTOPILOT_V3_RECOVERY_REQUIRED: " + "; ".join(dict.fromkeys(errors)))
 
 
+def _has_executable_compliance_gate(contents: str) -> bool:
+    return (
+        "UNIVERSAL_AUTOPILOT_V3_WORKFLOW" in contents
+        and "Verify guarded commits" in contents
+        and re.search(
+            r'(?m)^\s+python3? \.autopilot/guard\.py ci --root \. --base-sha .+ --head-sha .+',
+            contents
+        ) is not None
+    )
+
+
 def _verify_guard_installation(root: Path) -> None:
     agents = root / "AGENTS.md"
     workflow = root / ".github" / "workflows" / "autopilot-compliance.yml"
     if not agents.is_file() or AGENTS_BEGIN not in agents.read_text(encoding="utf-8"):
         raise ValueError("AUTOPILOT_V3_RECOVERY_REQUIRED: managed AGENTS.md block is missing")
-    if not workflow.is_file() or "UNIVERSAL_AUTOPILOT_V3_WORKFLOW" not in workflow.read_text(
-        encoding="utf-8"
+    if not workflow.is_file() or not _has_executable_compliance_gate(
+        workflow.read_text(encoding="utf-8")
     ):
-        raise ValueError("AUTOPILOT_V3_RECOVERY_REQUIRED: compliance workflow is missing")
+        raise ValueError("AUTOPILOT_V3_RECOVERY_REQUIRED: executable compliance workflow is missing")
     for name in ("pre-commit", "prepare-commit-msg", "pre-push"):
         hook = _hook_path(root, name)
         if not hook.is_file() or "UNIVERSAL_AUTOPILOT_V3_WRAPPER" not in hook.read_text(
@@ -560,6 +573,82 @@ def _commit_message(root: Path | str, sha: str) -> str:
     return _run_git(root, ["show", "-s", "--format=%B", sha], f"cannot read commit {sha}")
 
 
+GITHUB_MERGE_SIGNER_FINGERPRINT = "968479A1AFF927E37D1A566BB5690EEEBB952194"
+GITHUB_MERGE_PUBLIC_KEY = "tests/engineering/fixtures/github-webflow-signing-2024.asc"
+
+
+def _require_verified_github_merge_signature(root: Path, sha: str) -> None:
+    """Verify the actual GitHub-signed merge commit against a pinned public key.
+
+    A self-reported Git committer/email or a PR-shaped message is never sufficient.
+    The dedicated temporary keyring cannot trust keys installed on the CI host.
+    """
+    key_path = root / GITHUB_MERGE_PUBLIC_KEY
+    if not key_path.is_file():
+        raise ValueError("pinned GitHub merge signing key is missing")
+    with tempfile.TemporaryDirectory(prefix="hse-github-merge-keyring-") as home:
+        Path(home).chmod(0o700)
+        environment = {**os.environ, "GNUPGHOME": home}
+        try:
+            imported = subprocess.run(
+                ["gpg", "--batch", "--no-tty", "--import", str(key_path)],
+                env=environment, text=True, capture_output=True, check=False
+            )
+            if imported.returncode != 0:
+                raise ValueError("pinned GitHub merge signing key could not be imported")
+            checked = subprocess.run(
+                ["git", "verify-commit", "--raw", sha],
+                cwd=root, env=environment, text=True, capture_output=True, check=False
+            )
+        except OSError as error:
+            raise ValueError("GitHub merge signature verification tool is unavailable") from error
+        lines = (checked.stdout + "\n" + checked.stderr).splitlines()
+        valid = any(
+            line.startswith(f"[GNUPG:] VALIDSIG {GITHUB_MERGE_SIGNER_FINGERPRINT} ")
+            for line in lines
+        )
+        good = any(line.startswith("[GNUPG:] GOODSIG ") for line in lines)
+        if checked.returncode != 0 or not valid or not good:
+            raise ValueError(f"commit {sha} lacks a valid pinned GitHub merge signature")
+
+
+def _validate_signed_github_merge(
+    root: Path, sha: str, message: str, validate_source: Any
+) -> None:
+    """Accept only authenticated, conflict-free GitHub merge commits.
+
+    All commits newly introduced by the PR's second parent still need complete
+    Autopilot session/feature/cycle checks. No generated merge can hide unaudited
+    source code, arbitrary conflict resolutions or a forged unsigned message.
+    """
+    head = message.splitlines()[0] if message.splitlines() else ""
+    if not re.fullmatch(r"Merge pull request #[1-9][0-9]* from [A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+", head):
+        raise ValueError(f"commit {sha} has missing or invalid Autopilot-Cycle trailer")
+    committer = _run_git(root, ["show", "-s", "--format=%cn%n%ce", sha], "cannot read merge committer")
+    if committer.splitlines() != ["GitHub", "noreply@github.com"]:
+        raise ValueError(f"commit {sha} is not a GitHub-created merge")
+    parents = _run_git(root, ["rev-list", "--parents", "-n", "1", sha], "cannot inspect merge parents").split()
+    if len(parents) != 3 or parents[0] != sha:
+        raise ValueError(f"commit {sha} is not an exact two-parent GitHub PR merge")
+    _require_verified_github_merge_signature(root, sha)
+
+    original_tree = _run_git(root, ["rev-parse", f"{sha}^{{tree}}"], "cannot read merged tree")
+    expected_tree = _run_git(
+        root, ["merge-tree", "--write-tree", parents[1], parents[2]],
+        "GitHub PR merge contains conflicts or cannot be reconstructed"
+    )
+    if original_tree != expected_tree:
+        raise ValueError(f"commit {sha} includes non-standard merge-tree modifications")
+    source_commits = _run_git(
+        root, ["rev-list", "--reverse", f"{parents[1]}..{parents[2]}"],
+        "cannot enumerate GitHub merge source commits"
+    ).splitlines()
+    if not source_commits:
+        raise ValueError(f"commit {sha} contains no independently audited PR source")
+    for source_sha in source_commits:
+        validate_source(source_sha)
+
+
 def check_ci(root: Path | str, commits: Iterable[str]) -> dict[str, Any]:
     project = _root(root)
     audit_path = project / ".autopilot" / "autopilot_audit.py"
@@ -575,35 +664,57 @@ def check_ci(root: Path | str, commits: Iterable[str]) -> dict[str, Any]:
     if not audit_valid:
         raise ValueError(f"invalid autopilot audit chain: {audit_detail}")
     known_sessions = audit_module.sessions(audit_events)
-    checked = 0
+    verified: set[str] = set()
+    visiting: set[str] = set()
+
+    def verify_one(sha: str) -> None:
+        if sha in verified:
+            return
+        if sha in visiting:
+            raise ValueError("cyclic merge audit dependency")
+        visiting.add(sha)
+        try:
+            message = _commit_message(project, sha)
+            parsed: dict[str, list[str]] = {}
+            for line in message.splitlines():
+                if ":" not in line:
+                    continue
+                key, value = line.split(":", 1)
+                if key in {"Autopilot-Cycle", "Autopilot-Feature", "Autopilot-Session"}:
+                    parsed.setdefault(key, []).append(value.strip())
+            if not parsed:
+                _validate_signed_github_merge(project, sha, message, verify_one)
+            else:
+                for key in ("Autopilot-Cycle", "Autopilot-Feature", "Autopilot-Session"):
+                    values = parsed.get(key, [])
+                    if len(values) != 1 or not values[0] or any(char.isspace() for char in values[0]):
+                        raise ValueError(f"commit {sha} has missing or invalid {key} trailer")
+                session = known_sessions.get(parsed["Autopilot-Session"][0])
+                if session is None:
+                    raise ValueError(f"commit {sha} references an unknown Autopilot-Session")
+                if session.get("cycle_id") != parsed["Autopilot-Cycle"][0]:
+                    raise ValueError(f"commit {sha} cycle trailer does not match its audit session")
+                if session.get("feature_id") != parsed["Autopilot-Feature"][0]:
+                    raise ValueError(f"commit {sha} feature trailer does not match its audit session")
+                if session.get("activities", 0) < 1:
+                    raise ValueError(f"commit {sha} audit session contains no recorded activity")
+            verified.add(sha)
+        finally:
+            visiting.discard(sha)
+
+    count = 0
     for sha in commits:
         if not sha or sha == ZERO_SHA:
             continue
-        message = _commit_message(project, sha)
-        parsed: dict[str, list[str]] = {}
-        for line in message.splitlines():
-            if ":" not in line:
-                continue
-            key, value = line.split(":", 1)
-            if key in {"Autopilot-Cycle", "Autopilot-Feature", "Autopilot-Session"}:
-                parsed.setdefault(key, []).append(value.strip())
-        for key in ("Autopilot-Cycle", "Autopilot-Feature", "Autopilot-Session"):
-            values = parsed.get(key, [])
-            if len(values) != 1 or not values[0] or any(char.isspace() for char in values[0]):
-                raise ValueError(f"commit {sha} has missing or invalid {key} trailer")
-        session = known_sessions.get(parsed["Autopilot-Session"][0])
-        if session is None:
-            raise ValueError(f"commit {sha} references an unknown Autopilot-Session")
-        if session.get("cycle_id") != parsed["Autopilot-Cycle"][0]:
-            raise ValueError(f"commit {sha} cycle trailer does not match its audit session")
-        if session.get("feature_id") != parsed["Autopilot-Feature"][0]:
-            raise ValueError(f"commit {sha} feature trailer does not match its audit session")
-        if session.get("activities", 0) < 1:
-            raise ValueError(f"commit {sha} audit session contains no recorded activity")
-        checked += 1
-    if checked == 0:
+        verify_one(sha)
+        count += 1
+    if count == 0:
         raise ValueError("no commits were supplied to the compliance check")
-    return {"receipt": "AUTOPILOT_V4_CI_COMPLIANT", "checked_commits": checked}
+    return {
+        "receipt": "AUTOPILOT_V4_CI_COMPLIANT",
+        "checked_commits": count,
+        "authenticated_source_commits": len(verified)
+    }
 
 
 def _replace_managed_block(path: Path, begin: str, end: str, block: str) -> None:
@@ -740,7 +851,19 @@ def install_guard(root: Path | str, source: Path | str) -> dict[str, Any]:
         backup.parent.mkdir(parents=True, exist_ok=True)
         if not backup.exists():
             shutil.copy2(workflow, backup)
-    workflow.write_text(WORKFLOW, encoding="utf-8")
+    # Never downgrade an existing managed workflow. It may contain stricter
+    # canonical-range and regression checks than this bootstrap fallback.
+    if not workflow.exists():
+        workflow.write_text(WORKFLOW, encoding="utf-8")
+    else:
+        existing_workflow = workflow.read_text(encoding="utf-8", errors="replace")
+        if "UNIVERSAL_AUTOPILOT_V3_WORKFLOW" not in existing_workflow:
+            workflow.write_text(WORKFLOW, encoding="utf-8")
+        elif not _has_executable_compliance_gate(existing_workflow):
+            raise ValueError(
+                "existing managed compliance workflow has no executable guard; "
+                "refusing to silently approve or overwrite it"
+            )
     _activate_project_hook_directory(project)
     for name in ("pre-commit", "prepare-commit-msg", "pre-push"):
         _install_hook(project, name)

@@ -2,10 +2,10 @@
 
 export default function RootError({
   error,
-  reset
+  retry
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }): React.JSX.Element {
   return (
     <main className="public-verification-page">
@@ -14,7 +14,7 @@ export default function RootError({
         <h1>HSE Verify could not complete this request.</h1>
         <p>No internal error details or protected records have been exposed.</p>
         {error.digest ? <p className="error-reference">Reference: {error.digest}</p> : null}
-        <button className="button button-primary" onClick={reset} type="button">
+        <button className="button button-primary" onClick={retry} type="button">
           Try again
         </button>
       </section>

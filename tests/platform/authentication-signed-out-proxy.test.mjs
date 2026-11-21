@@ -21,7 +21,19 @@ test("signed-out portal proxy performs only an optimistic missing-cookie redirec
   assert.match(proxy, /ROLE_LOGIN_PATHS\[role\]/);
   assert.match(proxy, /reason", "session-required"/);
   assert.match(proxy, /NextResponse\.redirect\(loginUrl, 307\)/);
+  // The nonce-aware pass-through still performs no database authorization;
+  // it carries per-request CSP headers for the legitimate Next.js page render.
+  assert.match(proxy, /NextResponse\.next\(\{\s*request:\s*\{ headers: requestHeaders \}\s*\}\)/);
+  assert.match(proxy, /requestHeaders\.set\("x-nonce", nonce\)/);
+  assert.match(proxy, /requestHeaders\.set\("Content-Security-Policy", contentSecurityPolicy\)/);
+  assert.match(proxy, /response\.headers\.set\("Content-Security-Policy", contentSecurityPolicy\)/);
+  assert.match(proxy, /return response;/);
+  // Nonce CSP must not intercept streamed Server Action multipart POSTs.
+  assert.match(proxy, /missing:\s*\[\{ type: "header", key: "next-action" \}\]/);
+  assert.match(proxy, /request\.method !== "GET" && request\.method !== "HEAD"/);
   assert.match(proxy, /return NextResponse\.next\(\)/);
+  assert.match(proxy, /isOptimisticallyProtectedPortalPath\(request\.nextUrl\.pathname\)/);
+  assert.match(proxy, /pathname === prefix \|\| pathname\.startsWith\(prefix \+ "\/"\)/);
   assert.doesNotMatch(
     proxy,
     /getDatabaseClient|getAuthorizationContextRepository|evaluatePlatformPermission|evaluateTenantPermission|requirePortalAuthorization|requireCurrentTenantPermission|tenantId\s*[:=]|membershipId\s*[:=]/
@@ -35,8 +47,10 @@ test("signed-out portal proxy performs only an optimistic missing-cookie redirec
     "admin",
     "root"
   ]) {
+    assert.match(proxy, new RegExp(`"/${role}/dashboard"`));
     assert.match(proxy, new RegExp(`/${role}/dashboard/:path\\*`));
   }
+  assert.match(proxy, /"\/company\/tenant-scope"/);
   assert.match(proxy, /\/company\/tenant-scope\/:path\*/);
 
   assert.match(cookieName, /__Host-hse_session/);

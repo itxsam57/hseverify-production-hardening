@@ -13,6 +13,39 @@ function totp(secret){
  return String((digest.readUInt32BE(offset)&0x7fffffff)%1000000).padStart(6,"0");
 }
 async function port(){return new Promise((resolve,reject)=>{const s=createServer();s.once("error",reject);s.listen(0,"127.0.0.1",()=>{const p=s.address().port;s.close(e=>e?reject(e):resolve(p));});});}
+async function assertResponsiveConfirmDialog(page,role,width) {
+  const menu=page.locator("details.profile-menu");
+  const trigger=menu.getByRole("button",{name:"Sign out",exact:true});
+  const openMenu=async()=>{
+    if(!(await menu.evaluate(element=>element.open))) await menu.locator("summary").first().click();
+    await trigger.waitFor({state:"visible"});
+  };
+  await openMenu();
+  await trigger.click();
+  const dialog=page.getByRole("dialog");
+  await dialog.waitFor({state:"visible"});
+  await dialog.getByRole("heading",{name:/^Sign out of the .* Portal\?$/}).waitFor();
+  const size=await dialog.boundingBox();
+  assert(size && size.x>=0 && size.y>=0 && size.x+size.width<=width+1,
+    role+" sign-out dialog escapes "+width+"px viewport: "+JSON.stringify(size));
+  assert(await dialog.evaluate(element=>element.open),role+" must use a native open modal");
+  await dialog.getByRole("button",{name:"Cancel",exact:true}).focus();
+  await page.keyboard.press("Tab");
+  assert(await page.evaluate(()=>document.activeElement?.closest("dialog")!==null),
+    role+" native modal did not trap keyboard focus");
+  await page.keyboard.press("Escape");
+  await dialog.waitFor({state:"hidden"});
+  assert.equal(new URL(page.url()).pathname,"/"+role+"/dashboard",role+" Esc canceled and must not sign out");
+  await openMenu();
+  await trigger.click();
+  await dialog.waitFor({state:"visible"});
+  await dialog.getByRole("button",{name:"Cancel",exact:true}).click();
+  await dialog.waitFor({state:"hidden"});
+  assert.equal(new URL(page.url()).pathname,"/"+role+"/dashboard",role+" Cancel must preserve session");
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+    role+" modal open/close caused horizontal overflow at "+width);
+}
+
 test("Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation",{timeout:300000},async()=>{
  const f=await workerAssessmentSearchFixture(),base="http://127.0.0.1:"+await port();
  const browser=await chromium.launch({headless:true}),errors=[];
@@ -38,10 +71,12 @@ test("Every portal exposes usable mobile navigation at 320/390 pixels and preser
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,role+" open mobile menu overflow at "+width);
  await page.screenshot({path:".autopilot/artifacts/concern-"+role+"-mobile-"+width+".png"});
  await menu.locator("summary").click();
+ await assertResponsiveConfirmDialog(page,role,width);
  }
  await page.setViewportSize({width:1280,height:900});
  await page.locator(".portal-sidebar").waitFor({state:"visible"});assert.equal(await page.locator(".mobile-nav-menu").isVisible(),false);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,role+" desktop overflow");
+ await assertResponsiveConfirmDialog(page,role,1280);
  }finally{await context.close();}
  }
  }});

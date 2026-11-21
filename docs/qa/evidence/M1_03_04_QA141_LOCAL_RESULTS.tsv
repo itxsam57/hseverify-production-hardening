@@ -1,0 +1,7 @@
+scenario_id	source_qa_sha	command	status	pass	fail	evidence	caveat
+M1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	git grep -n six simultaneous ... HEAD -- tests/platform/company-registration-otp-runtime.test.mjs	EXPECTED_COVERAGE_RED	0	1	.autopilot/artifacts/M10304_BASELINE_CONCURRENCY_COVERAGE_RED_20261111.log	Missing committed test; not proven vulnerability
+M1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	node --test --test-name-pattern six simultaneous Company MFA activation requests tests/platform/company-registration-otp-runtime.test.mjs	PASS	1	0	.autopilot/artifacts/M10304_FRESH_NATIVE9_QA141.log	PGlite in-process only
+M1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	npm run test:company-registration-otp	PASS	9	0	.autopilot/artifacts/M10304_FRESH_NATIVE9_QA141.log	PGlite local; no external provider
+M1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	node --test tests/browser/company-registration-boundaries.browser.test.mjs	PASS	1	0	.autopilot/artifacts/M10304_FRESH_BROWSER_QA141.log	Local Chromium; no final stage
+M1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	npm run typecheck	PASS	1	0	local process a5d23f04-16cb-4332-8370-58ca4de470da	No full build
+M1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	python3 .autopilot/autopilot_state.py validate	PASS	1	0	V4 state valid	Scope-onlyM1.03.04	141aae46b6517033db8fa8efa45cc809e2a74b44	npm run lint	PASS_WITH_WARNINGS	1	0	.autopilot/artifacts/M10304_FRESH_LINT_QA141.log	0 errors, 9 inherited warnings

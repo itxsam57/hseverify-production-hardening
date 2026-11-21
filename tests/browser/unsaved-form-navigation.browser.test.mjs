@@ -69,17 +69,35 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
    await page.getByText("Qualification draft created.",{exact:true}).waitFor({timeout:20000});
    await page.reload({waitUntil:"domcontentloaded"});const article=page.locator("article").filter({hasText:"Qualification record"}).first();
    const title=article.getByLabel("Qualification title",{exact:true});await title.fill("Unsaved protected qualification");
-   await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
+   await page.setViewportSize({width:320,height:740});
+   await title.focus();
+   assert(await title.evaluate(node=>document.activeElement===node),"The labeled draft input must accept keyboard focus at 320px");
+   await page.keyboard.press("Tab");
+   const focus=await page.evaluate(()=>{
+     const node=document.activeElement,style=getComputedStyle(node);
+     return {tag:node?.tagName,outline:style.outlineStyle,shadow:style.boxShadow};
+   });
+   assert(["INPUT","TEXTAREA","SELECT","BUTTON","A"].includes(focus.tag),
+     "Keyboard Tab must move to an interactive control: "+JSON.stringify(focus));
+   assert(focus.outline!=="none"||focus.shadow!=="none",
+     "Keyboard Tab target must have visible focus: "+JSON.stringify(focus));
+   const mobileNav=page.locator("details.mobile-nav-menu");
+   await mobileNav.locator("summary").first().click();
+   await mobileNav.locator(".mobile-nav-panel").getByRole("link",{name:"Dashboard",exact:true}).first().click();
    await page.waitForTimeout(350);
    if(new URL(page.url()).pathname!=="/worker/evidence")await page.goto(baseUrl+"/worker/evidence");
    const retained=await page.locator("article").filter({hasText:"Qualification record"}).first().getByLabel("Qualification title",{exact:true}).inputValue();
    assert.ok(dialogs>0||retained==="Unsaved protected qualification","Visible navigation discarded unsaved metadata without warning or recovery");
    assert.equal(retained,"Unsaved protected qualification");
    assert.equal(dialogs,1,"Cancel must prompt once and keep the current values");
+   await page.setViewportSize({width:390,height:844});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+     "Rejected navigation must preserve a usable 390px evidence form");
    await page.goBack({waitUntil:"domcontentloaded",timeout:5000}).catch(()=>null);
    assert.equal(new URL(page.url()).pathname,"/worker/evidence","Canceled browser Back preserves route");
    assert.equal(await title.inputValue(),"Unsaved protected qualification");
    assert.equal(dialogs,2,"Browser history traversal also prompts once");
+   await page.setViewportSize({width:1365,height:900});
    await title.fill("");
    await page.getByRole("link",{name:"Dashboard",exact:true}).first().click();
    await page.waitForURL("**/worker/dashboard");assert.equal(dialogs,2,"Reverted form is clean");
@@ -151,6 +169,72 @@ for (const historyFallback of [false,true]) test("Unsaved evidence metadata is p
      "The delayed save must persist its submitted snapshot, not the later edit or discarded value"
    );
 
+   // M10205_NONWORKER_UNSAVED_DRAFT: the established Worker/browser-history
+   // cases above already passed. Reuse their live authenticated Next fixture
+   // only once (normal navigation mode) to verify distinct Company and Admin
+   // forms; no extra server/database, test ID, or historical green count.
+   if (!historyFallback) {
+     const nonWorkerForms = [
+       { role: "company", route: "/company/organization", selector: "#unit-name" },
+       { role: "admin", route: "/admin/frameworks", selector: 'form input[name="reference"]' }
+     ];
+     for (const { role, route, selector } of nonWorkerForms) {
+       const roleContext = await browser.newContext({ viewport: { width: 320, height: 844 } });
+       const rolePage = await roleContext.newPage();
+       let prompted = 0;
+       let discard = false;
+       rolePage.on("dialog", async dialog => {
+         prompted++;
+         if (discard) await dialog.accept();
+         else await dialog.dismiss();
+       });
+       try {
+         await login(rolePage, baseUrl, f.credentials[role], role);
+         await rolePage.goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded" });
+         const field = rolePage.locator(selector).first();
+         await field.waitFor({ state: "visible", timeout: 15_000 });
+         assert.equal(await field.isEditable(), true, `${role} expected editable labeled form`);
+         const initialValue = await field.inputValue();
+         const draft = `Uncommitted ${role} draft for M1.02.05`;
+         await field.fill(draft);
+         await field.focus();
+         assert.equal(await field.evaluate(node => document.activeElement === node), true,
+           `${role} editable input must be keyboard-focusable at 320px`);
+         await rolePage.keyboard.press("Tab");
+         const focus = await rolePage.evaluate(() => {
+           const element = document.activeElement;
+           const style = element && getComputedStyle(element);
+           return { tag: element?.tagName, outline: style?.outlineStyle, shadow: style?.boxShadow };
+         });
+         assert(["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"].includes(focus.tag),
+           `${role} keyboard Tab must reach an interactive control: ${JSON.stringify(focus)}`);
+         assert(focus.outline !== "none" || (focus.shadow && focus.shadow !== "none"),
+           `${role} focused control must show keyboard focus: ${JSON.stringify(focus)}`);
+         const nav = rolePage.locator("details.mobile-nav-menu");
+         await nav.locator("summary").click();
+         const dashboard = nav.locator(".mobile-nav-panel").getByRole("link", { name: "Dashboard", exact: true }).first();
+         await dashboard.click();
+         await rolePage.waitForTimeout(200);
+         assert.equal(new URL(rolePage.url()).pathname, route,
+           `${role} rejected navigation must not discard unsaved form`);
+         assert.equal(await field.inputValue(), draft, `${role} canceled leave must preserve exact draft`);
+         assert.equal(prompted, 1, `${role} canceled navigation should prompt exactly once`);
+         discard = true;
+         await dashboard.click();
+         await rolePage.waitForURL(`**/${role}/dashboard`, { timeout: 15_000 });
+         assert.equal(prompted, 2, `${role} intentional discard must prompt exactly once`);
+         await rolePage.goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded" });
+         const reopened = rolePage.locator(selector).first();
+         await reopened.waitFor({ state: "visible", timeout: 15_000 });
+         assert.equal(await reopened.inputValue(), initialValue,
+           `${role} discarded draft must never persist in the database or reopened form`);
+         assert.equal(await rolePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true,
+           `${role} focused/navigated form must not overflow 320px`);
+       } finally {
+         await roleContext.close();
+       }
+     }
+   }
 
   }});
  }finally{await browser?.close();await f.cleanup();}

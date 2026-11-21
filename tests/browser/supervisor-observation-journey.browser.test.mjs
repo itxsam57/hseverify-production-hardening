@@ -92,6 +92,26 @@ test("Company signed observation -> Worker acknowledgement -> Verifier outcomes 
    await login(company,baseUrl,credentials.company,"company");await login(worker,baseUrl,credentials.worker,"worker");await login(verifier,baseUrl,credentials.verifier,"verifier");
    await login(admin,baseUrl,credentials.admin,"admin");
    const bindReview=await prepareReviewCalibrationBrowser(admin,baseUrl,credentials.verifier.email,"SUPERVISOR-PROOF");
+   // Real signed-in browser sessions must not cross another portal's role
+   // boundary even by copying a deep link (no redirect-follow false pass).
+   const anonymous=await browser.newContext();
+   try {
+     for(const [actor,path] of [
+       [worker,"/company/observations"],
+       [company,"/worker/observations"],
+       [verifier,"/company/observations"]
+     ]) {
+       const denied=await actor.context().request.get(baseUrl+path,{maxRedirects:0});
+       assert.notEqual(denied.status(),200,"Copied supervisor observation portal exposed to wrong role: "+path);
+       assert.doesNotMatch(await denied.text(),/Create observation|Acknowledge observation/,
+         "Wrong-role response leaked supervisor observation form.");
+     }
+     for(const path of ["/company/observations","/worker/observations","/verifier/reviews"]) {
+       const denied=await anonymous.request.get(baseUrl+path,{maxRedirects:0});
+       assert.notEqual(denied.status(),200,"Signed-out supervisor/review deep link exposed: "+path);
+     }
+   }finally{await anonymous.close();}
+   console.log("M11107_ACTUAL_ROLE_AND_SIGNED_OUT_OBSERVATION_ROUTES_DENIED");
    let n=0;
    const scenarios=[...["demonstrated","partially_demonstrated","not_demonstrated"].flatMap(outcome=>["APPROVED","REJECTED","CHANGES_REQUESTED"].map(decision=>[outcome,decision,null])),...["ESCALATED","UNABLE_TO_VERIFY","CHANGES_REQUESTED"].map(blocker=>["demonstrated",null,blocker])];
    for(const [outcome,decision,blockerStatus] of scenarios){
@@ -109,6 +129,16 @@ Safety controls applied`);
     await company.getByLabel("Restrictions / conditions").fill("Controlled training equipment only");
     await company.getByLabel("Observation notes").fill("Worker independently demonstrated isolation controls during the observed task "+n);
     await company.locator('select[name="outcome"]').selectOption(outcome);
+    if(n===1){
+      const signature=company.getByLabel("I sign this supervisor declaration.");
+      assert.equal(await signature.isChecked(),false);
+      await company.getByRole("button",{name:"Submit observation for Worker acknowledgement"}).click();
+      assert.equal(await signature.evaluate(el=>el.validity.valueMissing),true,
+        "Unsigned supervisor declaration submitted despite the required signature.");
+      assert.equal(await company.getByText("Observation submitted to the Worker for acknowledgement.").count(),0,
+        "Unsigned supervisor observation appeared as submitted.");
+      console.log("M11107_ACTUAL_UNSIGNED_DECLARATION_BROWSER_REFUSED");
+    }
     await company.getByLabel("I sign this supervisor declaration.").check();
     await company.getByRole("button",{name:"Submit observation for Worker acknowledgement"}).click();
     await company.getByText("Observation submitted to the Worker for acknowledgement.",{exact:true}).waitFor();
@@ -117,6 +147,14 @@ Safety controls applied`);
     await record.getByLabel("Your comment (optional)").fill("I saw this signed observation "+n);
     await record.getByRole("button",{name:"Acknowledge observation",exact:true}).click();
     await worker.getByText("Observation acknowledged and queued for independent verification.",{exact:true}).waitFor();
+    if(n===1){
+      await worker.reload({waitUntil:"domcontentloaded"});
+      const acknowledged=worker.locator("article").filter({has:worker.getByRole("heading",{name:competency,exact:true})});
+      assert.equal(await acknowledged.getByRole("button",{name:"Acknowledge observation",exact:true}).count(),0,
+        "Acknowledged supervisor record permits duplicate Worker acknowledgement.");
+      await acknowledged.getByText("I saw this signed observation "+n,{exact:false}).waitFor();
+      console.log("M11107_ACTUAL_REPLAY_ACKNOWLEDGEMENT_CANNOT_REPEAT");
+    }
     if(blockerStatus){
       await worker.goto(baseUrl+"/worker/assurance-cases/"+caseId);
       await worker.getByText("Status: "+(blockerStatus==="ESCALATED"?"Review pending":"Evidence pending"),{exact:true}).waitFor();
@@ -144,6 +182,48 @@ Safety controls applied`);
     await worker.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();
     await company.goto(baseUrl+"/company/observations");
     await company.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();
+    if(n===1){
+      for(const width of [320,390,1440]){
+        for(const [page,path] of [
+          [company,"/company/observations"],
+          [worker,"/worker/observations"],
+          [verifier,new URL(verifier.url()).pathname]
+        ]){
+          await page.setViewportSize({width,height:900});
+          await page.goto(baseUrl+path,{waitUntil:"domcontentloaded"});
+          const dimensions=await page.evaluate(()=>({
+            viewport:document.documentElement.clientWidth,
+            content:document.documentElement.scrollWidth
+          }));
+          if(dimensions.content>dimensions.viewport+2){
+            const offenders=await page.evaluate(()=>{
+              const viewport=document.documentElement.clientWidth;
+              return [...document.querySelectorAll("body *")]
+                .map(el=>{
+                  const r=el.getBoundingClientRect();
+                  const css=getComputedStyle(el);
+                  return {
+                    tag:el.tagName.toLowerCase(),className:String(el.className).slice(0,75),
+                    left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width),
+                    scroll:el.scrollWidth,client:el.clientWidth,
+                    minWidth:css.minWidth,whiteSpace:css.whiteSpace,overflowWrap:css.overflowWrap,
+                    text:(el.textContent??"").trim().slice(0,60)
+                  };
+                })
+                .filter(x=>x.right>viewport+5||x.scroll>x.client+5)
+                .sort((a,b)=>b.right-a.right)
+                .slice(0,20);
+            });
+            console.log("M11107_REAL_320_OVERFLOW_TRACE",JSON.stringify({path,width,dimensions,offenders}));
+          }
+          assert.ok(dimensions.content<=dimensions.viewport+2,
+            "Signed supervisor observation role page overflow "+path+" at "+width+": "+JSON.stringify(dimensions));
+        }
+        await company.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();
+        await worker.locator("article").filter({hasText:competency}).getByText(reason,{exact:false}).waitFor();
+      }
+      console.log("M11107_ACTUAL_RESPONSIVE_COMPANY_WORKER_VERIFIER_320_390_1440");
+    }
     console.log("SCENARIO "+outcome+" -> "+decision+" -> Worker/Company feedback persisted");
    }
   } finally {await browser.close()}
@@ -152,7 +232,7 @@ Safety controls applied`);
  const proof=new PGlite(dir);try{
   assert.equal((await proof.query("SELECT count(*)::int AS n FROM supervisor_observation_details WHERE worker_acknowledged_at IS NOT NULL")).rows[0].n,15);
   for(let n=10;n<=12;n++){const actual=(await proof.query("SELECT case_status,owner_kind FROM assurance_cases WHERE case_id=$1",[oid("assurance_case",n)])).rows[0];assert.deepEqual(actual,{case_status:n===10?"Review pending":"Evidence pending",owner_kind:n===10?"admin":"worker"});}
-  const counts=await proof.query("SELECT outcome,count(*)::int AS n FROM evidence_review_decisions GROUP BY outcome ORDER BY outcome");assert.deepEqual(counts.rows,[{outcome:"APPROVED",n:3},{outcome:"CHANGES_REQUESTED",n:3},{outcome:"REJECTED",n:3}]);
+  const counts=await proof.query("SELECT outcome,count(*)::int AS n FROM evidence_review_decisions GROUP BY outcome ORDER BY outcome");assert.deepEqual(counts.rows,[{outcome:"APPROVED",n:3},{outcome:"CHANGES_REQUESTED",n:3},{outcome:"REJECTED",n:3}]);console.log("M11107_ACTUAL_DB_15_ACK_9_DECISIONS_3_BLOCKERS_IMMUTABLE");
  }finally{await proof.close()}
  }finally{await rm(dir,{recursive:true,force:true})}
 });

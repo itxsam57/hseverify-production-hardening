@@ -20,6 +20,7 @@ const migrationDown = source("database/migrations/0020_worker_identity_duplicate
 const auditDomain = source("src/lib/audit/audit-domain.ts");
 const domain = source("src/lib/identity/worker-identity-eligibility-domain.ts");
 const repository = source("src/lib/identity/worker-identity-eligibility-repository.ts");
+const identityRepository = source("src/lib/identity/worker-identity-repository.ts");
 const service = source("src/lib/identity/worker-identity-eligibility-service.ts");
 const runner = source("scripts/run-worker-identity-eligibility-tests.mjs");
 const domainTests = source("tests/identity/worker-identity-eligibility-domain.test.mjs");
@@ -116,7 +117,7 @@ for (const marker of [
   "worker_identity_worker_ids",
   "lifecycle_status !== \"verified\"",
   "ON CONFLICT DO NOTHING",
-  "WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL"
+  "WORKER_IDENTITY_READ_SESSION_GUARD_SQL"
 ]) {
   mustContain(
     repository,
@@ -124,6 +125,27 @@ for (const marker of [
     `S5 repository must retain ${marker}.`
   );
 }
+// The Worker Identity own-read endpoint must still validate the live session.
+// This check deliberately protects the non-locking read guard: exclusive
+// account/session row locks on GET caused native PostgreSQL 40P01 deadlocks.
+// State-changing eligibility operations retain their separate authority guard.
+const ownStatus = repository.split("async loadOwnStatus(")[1]?.split("\n  async ")[0];
+assert.ok(ownStatus, "S5 must retain its own-status read method.");
+mustContain(
+  ownStatus,
+  /const authority = await transaction\.query<[\s\S]{0,80}\(\s*WORKER_IDENTITY_READ_SESSION_GUARD_SQL/,
+  "S5 own-status read must revalidate the live account and session."
+);
+mustContain(
+  ownStatus,
+  /authority\.rows\.length !== 1[\s\S]{0,95}throw new WorkerIdentityAccessDeniedError\(/,
+  "S5 own-status read must deny revoked or inactive sessions."
+);
+mustContain(
+  identityRepository,
+  /export const WORKER_IDENTITY_READ_SESSION_GUARD_SQL\s*=\s*WORKER_IDENTITY_LIVE_SESSION_GUARD_SQL\.replace\(/,
+  "S5 read authorization must derive from the complete live-session guard."
+);
 for (const forbidden of [
   /DELETE\s+FROM\s+worker_identities/i,
   /UPDATE\s+auth_accounts/i,

@@ -44,6 +44,8 @@ test("real HTTP login and signed-out redirects enforce CSP, HSTS, frame and cont
           assert.match(csp, /frame-ancestors 'none'/);
           assert.match(csp, /object-src 'none'/);
           assert.match(csp, /form-action 'self'/);
+          assert.match(csp, /script-src[^;]*'nonce-[^']+'/, "per-request CSP nonce is required");
+          assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/, "do not permit arbitrary inline scripts");
           assert.match(headers["strict-transport-security"] ?? "", /max-age=31536000/);
           assert.equal(headers["x-content-type-options"], "nosniff");
           assert.equal(headers["x-frame-options"], "DENY");
@@ -53,7 +55,36 @@ test("real HTTP login and signed-out redirects enforce CSP, HSTS, frame and cont
           const body = await response.text();
           assert.equal(body.includes(environment.HSE_SESSION_SECRET), false, "Session secret leaked to browser");
           assert.equal(body.includes(environment.HSE_AUTH_PEPPER), false, "Auth pepper leaked to browser");
+
+          // Test normal HTML inline event handling, not page.evaluate's
+          // privileged script injection (strict-dynamic may trust those).
+          const documentResponse = await page.goto(baseUrl + path, { waitUntil: "domcontentloaded" });
+          assert.equal(documentResponse.status(), 200);
+          const policy = documentResponse.headers()["content-security-policy"] ?? "";
+          assert.match(policy, /script-src[^;]*'nonce-[^']+'/);
+          const proof = await page.evaluate(async () => {
+            const violations = [];
+            const onViolation = (event) => violations.push(event.violatedDirective);
+            document.addEventListener("securitypolicyviolation", onViolation);
+            const image = document.createElement("img");
+            image.setAttribute("onerror", 'document.documentElement.dataset.hseCspTest = "ran"');
+            image.src = "/hse-nonce-csp-harmless-missing-image.png";
+            document.body.appendChild(image);
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            const executed = document.documentElement.dataset.hseCspTest === "ran";
+            delete document.documentElement.dataset.hseCspTest;
+            image.remove();
+            document.removeEventListener("securitypolicyviolation", onViolation);
+            return { executed, violations };
+          });
+          assert.equal(proof.executed, false, "non-nonced inline event handler must not execute");
+          assert.ok(proof.violations.includes("script-src-attr"), "browser must enforce script-src-attr");
         }
+        const deniedFile = await page.request.get(baseUrl + "/api/secure-files/preview", { maxRedirects: 0 });
+        assert.equal(deniedFile.status(), 404);
+        assert.match(deniedFile.headers()["content-security-policy"] ?? "", /script-src 'none'/);
+        assert.match(deniedFile.headers()["cache-control"] ?? "", /no-store/);
+
         const redirect = await page.request.get(baseUrl + "/worker/dashboard", { maxRedirects: 0 });
         assert.equal(redirect.status(), 307);
         assert.match(redirect.headers().location ?? "", /^\/worker\/login\?reason=session-required$/);

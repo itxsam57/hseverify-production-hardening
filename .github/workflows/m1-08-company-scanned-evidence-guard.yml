@@ -1,0 +1,76 @@
+name: M1.08.01 pending Company clean-scanned PDF evidence PGlite and PostgreSQL16
+on:
+  pull_request:
+    paths:
+      - "tests/platform/company-verification-latest-schema-regression.test.mjs"
+      - ".github/workflows/m1-08-company-scanned-evidence-guard.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/platform/company-verification-latest-schema-regression.test.mjs"
+      - ".github/workflows/m1-08-company-scanned-evidence-guard.yml"
+permissions:
+  contents: read
+concurrency:
+  group: m10801-pending-clean-scanned-evidence-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  company-scanned-evidence-real-postgres-and-pglite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_company_ci
+          POSTGRES_PASSWORD: disposable_company_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_company_ci -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact feature head or merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: PGlite pending Company quarantine and scan-pending denial plus clean recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-verification-tests.mjs tests/platform/company-verification-latest-schema-regression.test.mjs 2>&1 | tee .autopilot/artifacts/m10801-company-scanned-evidence-pglite.log
+          test "$(grep -c 'M10801_QUARANTINED_AND_SCAN_PENDING_REJECTED_BEFORE_CLEAN' .autopilot/artifacts/m10801-company-scanned-evidence-pglite.log)" -eq 2
+          grep -q 'M10801_CLEAN_SCAN_PENDING_COMPANY_SUBMITTED_DB' .autopilot/artifacts/m10801-company-scanned-evidence-pglite.log
+      - name: Real PostgreSQL16 latest schema 0130 Company scanner fail-closed and clean retry
+        shell: bash
+        env:
+          HSE_M10801_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_company_ci:disposable_company_ci_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          node scripts/run-company-verification-tests.mjs tests/platform/company-verification-latest-schema-regression.test.mjs 2>&1 | tee .autopilot/artifacts/m10801-company-scanned-evidence-postgres16.log
+          test "$(grep -c 'M10801_QUARANTINED_AND_SCAN_PENDING_REJECTED_BEFORE_CLEAN' .autopilot/artifacts/m10801-company-scanned-evidence-postgres16.log)" -eq 2
+          grep -q 'M10801_CLEAN_SCAN_PENDING_COMPANY_SUBMITTED_DB' .autopilot/artifacts/m10801-company-scanned-evidence-postgres16.log
+      - name: Archive exact-SHA source PGlite and PostgreSQL16 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10801-company-scanned-evidence-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m10801-company-scanned-evidence-pglite.log
+            .autopilot/artifacts/m10801-company-scanned-evidence-postgres16.log
+          if-no-files-found: warn
+          retention-days: 30

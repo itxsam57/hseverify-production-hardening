@@ -1,0 +1,8 @@
+exact_code_sha	command_group	exit_code
+497a06cd174d02c634291e6f5524e9f85074956b	prod-env-negative	0
+497a06cd174d02c634291e6f5524e9f85074956b	next-config-isolation	0
+497a06cd174d02c634291e6f5524e9f85074956b	development-startup	0
+497a06cd174d02c634291e6f5524e9f85074956b	signed-out-six-roles	0
+497a06cd174d02c634291e6f5524e9f85074956b	runtime-existing-db	0
+497a06cd174d02c634291e6f5524e9f85074956b	http-security-headers	0
+497a06cd174d02c634291e6f5524e9f85074956b	six-role-auth-boundaries	0

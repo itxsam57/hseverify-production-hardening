@@ -1,0 +1,77 @@
+{
+  "date_utc": "2026-11-21",
+  "original_frozen_scenario": "M1.01.01",
+  "base_signed_qa_sha": "2ca2645dd45d83bf2ffe9c3b52a28c2229bccfb6",
+  "live_stage_still_pinned_sha": "85554af4aac9dd110627a3176425bf8bf07eff2b",
+  "test_mode": "separate isolated QA worktree; source patch uncommitted during these precommit test runs; exact-commit native PG16 HTTPS and hosted CI pending",
+  "finding": {
+    "package": "next",
+    "prior_version": "16.4.3",
+    "fixed_version": "16.4.6",
+    "severity": "moderate",
+    "affected_direct_packages": 1,
+    "advisory_ids": [
+      "GHSA-mfr8-8qww-v76h",
+      "GHSA-vc7v-qv4w-wrv8",
+      "GHSA-7qx7-33qx-rqx2",
+      "GHSA-f3mh-rxg3-f5g2",
+      "GHSA-pc58-hwjq-p385",
+      "GHSA-rhh4-g77r-r9qj",
+      "GHSA-vvgp-ww4w-46vf"
+    ],
+    "proven_exploit": false,
+    "prior_npm_audit_moderate_exit": 1,
+    "patched_npm_audit_moderate_exit": 0,
+    "patched_vulnerability_counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "fix": {
+    "package_json": {
+      "next": "16.4.6",
+      "@next/env": "16.4.6"
+    },
+    "package_lock_exact_versions_match": true,
+    "duplicate_nested_next_env": false
+  },
+  "engineering_suite_commands": [
+    "npm run lint",
+    "npm run typecheck",
+    "npm run build"
+  ],
+  "engineering_suite_results": [
+    "lint\tPASS\t0",
+    "typecheck\tPASS\t0",
+    "build\tPASS\t0"
+  ],
+  "focused_suite_commands": [
+    "npm run test:next-system",
+    "node --test tests/platform/production-environment-isolation.test.mjs tests/platform/authentication-signed-out-proxy.test.mjs",
+    "node --test tests/browser/security-response-headers.browser.test.mjs",
+    "npm run test:m1-06-worker-file-retry-browser"
+  ],
+  "focused_suite_results": [
+    "next-system\tPASS\t0",
+    "auth-and-production-guards\tPASS\t0",
+    "browser-security-headers\tPASS\t0",
+    "worker-file-browser\tPASS\t0"
+  ],
+  "focused_native_test_count_from_test_receipts": 19,
+  "raw_artifact_sha256": {
+    "m10101-next1646-base-audit-red.json": "sha256:074f9599e500a72e919d0711daf594b248ffa12adc9e5d33764bc22c7bcf0fed",
+    "m10101-next1646-patched-audit.json": "sha256:16dede15794c78133409e7fa70aef67c5d59d8bfd1d137759e8114e8f88d9e33",
+    "m10101-next1646-lint.log": "sha256:8b8fa51eba8e8c5847ef1cc4d55f414daf9ded3774511b74b3f0807dc5f1f428",
+    "m10101-next1646-typecheck.log": "sha256:75ed9d0116d6c593e654d3b7adba0ca5a3207cca70bb283fb98ad276d9b059c1",
+    "m10101-next1646-build.log": "sha256:89d520ae949f06b1ce52703018d216739fe66061587d11e0f67ba6a21540ef46",
+    "m10101-next1646-next-system.log": "sha256:706c7e1fc003423c41b0cf7a78e38a89dcf6ec6ee69076c1ed36a06bca0af564",
+    "m10101-next1646-auth-and-production-guards.log": "sha256:ddc2972d8f7f9983f65234aebf49ce06b79f0d667b4a9848e786df85ed81516c",
+    "m10101-next1646-browser-security-headers.log": "sha256:de043b96186f65ddaef39c5a8f0657c7271958eb06cf5adf20ff2a298f144749",
+    "m10101-next1646-worker-file-browser.log": "sha256:87eb7c8aab62219a7fa15bfe3b05273abee2364aa4320b06dffc1d1d59ea5ed8"
+  },
+  "release_scope": "Security advisory source remediated locally only; final signed exact-SHA stage, full independent pentest, provider and Owner UAT NOT_CERTIFIED; counters FULL0/218 M1FULL0/67 final0/4975, release NO-GO."
+}

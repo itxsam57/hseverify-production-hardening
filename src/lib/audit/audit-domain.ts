@@ -107,6 +107,7 @@ export const AUDIT_ACTIONS = [
   "company_workforce.code.redeemed",
   "company_workforce.link.requested",
   "company_workforce.link.accepted",
+  "company_workforce.link.placement_updated",
   "company_workforce.link.revoked",
   "worker_evidence.record.created",
   "worker_evidence.draft.saved",

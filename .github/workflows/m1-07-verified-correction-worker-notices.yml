@@ -1,0 +1,85 @@
+name: M1.07.05 verified identity correction notices on PGlite and PostgreSQL
+on:
+  pull_request:
+    paths:
+      - "database/migrations/0130_verified_identity_correction_notices.*.sql"
+      - "tests/platform/independent-evidence-review-runtime.test.mjs"
+      - ".github/workflows/m1-07-verified-correction-worker-notices.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "database/migrations/0130_verified_identity_correction_notices.*.sql"
+      - "tests/platform/independent-evidence-review-runtime.test.mjs"
+      - ".github/workflows/m1-07-verified-correction-worker-notices.yml"
+permissions:
+  contents: read
+concurrency:
+  group: m10705-verified-correction-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-verified-correction-postgres-and-pglite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: hseverify_synthetic
+          POSTGRES_PASSWORD: synthetic_ci_only_do_not_reuse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hseverify_synthetic -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile dependency install
+        run: npm ci --no-audit --no-fund
+      - name: Isolated PGlite original approval and three correction results
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 --test-name-pattern='independent identity manual review reaches Verifier' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10705_ALL_THREE_VERIFIED_CORRECTION_WORKER_NOTICES' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10705_0130_ROLLBACK_REAPPLY_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10705_0130_TAMPERED_EVENT_WRONG_WORKER_DENIAL_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10706_ORIGINAL_EVIDENCE_ID_TAMPER_DENIED_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+          grep -q 'M10706_VERIFIED_PARENT_CORRECTION_RETENTION_DB' .autopilot/artifacts/m10705-pglite-three-outcomes.log
+      - name: Isolated PostgreSQL 16 original corrections, security, and reversible migration
+        shell: bash
+        env:
+          HSE_M10705_POSTGRES_TEST_DATABASE_URL: postgresql://hseverify_synthetic:synthetic_ci_only_do_not_reuse@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 --test-name-pattern='independent identity manual review reaches Verifier' tests/platform/independent-evidence-review-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10705_CORRECTION_OUTCOME_NOTICE REJECTED' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10705_CORRECTION_OUTCOME_NOTICE CHANGES_REQUESTED' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10705_0130_ROLLBACK_REAPPLY_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10705_0130_TAMPERED_EVENT_WRONG_WORKER_DENIAL_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10706_ORIGINAL_EVIDENCE_ID_TAMPER_DENIED_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          grep -q 'M10706_VERIFIED_PARENT_CORRECTION_RETENTION_DB' .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+      - name: Preserve exact-SHA original native and actual PostgreSQL logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10705-original-correction-postgres-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m10705-pglite-three-outcomes.log
+            .autopilot/artifacts/m10705-postgres16-three-outcomes.log
+          if-no-files-found: warn
+          retention-days: 30

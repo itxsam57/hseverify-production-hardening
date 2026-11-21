@@ -1,0 +1,74 @@
+name: M1.07.01 incomplete Worker profile identity no premature receiver QA
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs"
+      - "src/lib/identity/**"
+      - "src/lib/worker/profile-**"
+      - "src/app/worker/**"
+      - "src/app/verifier/**"
+      - "src/app/admin/**"
+      - ".github/workflows/m1-07-incomplete-identity-receiving.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs"
+      - "src/lib/identity/**"
+      - "src/lib/worker/profile-**"
+      - "src/app/worker/**"
+      - "src/app/verifier/**"
+      - "src/app/admin/**"
+      - ".github/workflows/m1-07-incomplete-identity-receiving.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10701-incomplete-receiving-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-worker-verifier-admin-negative-receiving:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Lockfile install
+        run: npm ci --no-audit --no-fund
+      - name: Real Chromium
+        run: npx playwright install chromium
+      - name: Signed Worker incomplete profile identity and receiving-role negative DB audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_PROFILE_INCOMPLETE_BROWSER' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_EMPTY_BROWSER' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_DRAFT_BROWSER' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_VERIFIER_EMPTY_QUEUE' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_ADMIN_EMPTY_FRAMEWORK' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_WORKER_DRAFT_CROSS_ROLE_PERSISTED' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          grep -q 'ACTUAL_M10701_CROSS_ROLE_NO_FALSE_NOTIFICATION_AUDIT_DB' .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+      - name: Archive exact SHA real receiving UI and PGlite proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10701-signed-three-role-receiving-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10701-incomplete-receiving-browser.log
+          if-no-files-found: warn
+          retention-days: 30

@@ -4,7 +4,19 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 const dataDirectory = process.env.HSE_PGLITE_DATA_DIR;
 const pepper = process.env.HSE_AUTH_PEPPER;
-if (!dataDirectory || !pepper) throw new Error("HSE_PGLITE_DATA_DIR and HSE_AUTH_PEPPER are required.");
+const disposablePostgres = process.env.HSE_DATABASE_DRIVER === "postgres";
+if (!pepper || (!disposablePostgres && !dataDirectory)) {
+  throw new Error("HSE_AUTH_PEPPER and a local test data directory are required.");
+}
+// Existing audit fixture can seed a PostgreSQL test only when the caller
+// explicitly opts into an isolated loopback instance; never touch shared DBs.
+if (disposablePostgres && (
+  process.env.NODE_ENV === "production" || process.env.HSE_APP_ENV === "production" ||
+  process.env.HSE_DISPOSABLE_POSTGRES_QA !== "true" ||
+  !/^postgres(?:ql)?:\/\/[^/]*@(?:127\.0\.0\.1|localhost):\d+\/postgres(?:\?|$)/.test(process.env.DATABASE_URL ?? "")
+)) {
+  throw new Error("Independent audit PostgreSQL seeding requires disposable loopback PostgreSQL.");
+}
 
 const PASSWORD = "IndependentAudit!Password2026";
 const now = new Date().toISOString();
@@ -32,7 +44,9 @@ function encryptSecret(plaintext) {
   const tag = cipher.getAuthTag();
   return `v1.${iv.toString("base64url")}.${tag.toString("base64url")}.${ciphertext.toString("base64url")}`;
 }
-const database = await PGlite.create(dataDirectory);
+const database = disposablePostgres
+  ? await (await import("./lib/database.mjs")).openScriptDatabase({ databaseDriver: "postgres", databaseUrl: process.env.DATABASE_URL })
+  : await PGlite.create(dataDirectory);
 const credentials = {};
 try {
   for (const role of roles) {

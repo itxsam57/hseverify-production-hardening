@@ -94,6 +94,9 @@ async function appendAudit(input: {
   await audit.append(bindTrustedAuditActor(input.principal), {
     action: input.action,
     outcome: "succeeded",
+    // This is the machine-readable cause of the transition, not a user's
+    // free-text rationale. Never invent a human-entered justification.
+    reason: `organization_unit_${input.action.slice("company_organization.".length)}`,
     target: { type: "resource", reference: input.unit.unitId },
     metadata: {
       unitKind: input.unit.kind,

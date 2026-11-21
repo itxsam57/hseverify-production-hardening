@@ -1,0 +1,82 @@
+name: M1.01 exact PostgreSQL migration integrity
+
+on:
+  pull_request:
+    paths:
+      - "scripts/lib/migrations.mjs"
+      - "tests/platform/m1-01-exact-postgres-migrations.test.mjs"
+      - ".github/workflows/m1-01-postgres-migration-integrity.yml"
+      - "database/migrations/**"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "scripts/lib/migrations.mjs"
+      - "tests/platform/m1-01-exact-postgres-migrations.test.mjs"
+      - ".github/workflows/m1-01-postgres-migration-integrity.yml"
+      - "database/migrations/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m101-pg16-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  applied-migration-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hseqa
+          POSTGRES_PASSWORD: isolated-m10102-testing-only
+          POSTGRES_DB: hseqa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hseqa -d hseqa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_POSTGRES_TEST_DATABASE_URL: postgres://hseqa:isolated-m10102-testing-only@127.0.0.1:5432/hseqa
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test actual PostgreSQL 16 full migration ledger, refused unknowns, safe rollback
+        env:
+          HSE_RELEASE_SHA: ${{ env.VERIFIED_SHA }}
+        shell: bash
+        run: |
+          mkdir -p .autopilot/artifacts
+          set -o pipefail
+          node --test --test-concurrency=1 tests/platform/m1-01-exact-postgres-migrations.test.mjs 2>&1 | tee .autopilot/artifacts/m10102-real-pg16.log
+      - name: Verify existing approved checksum normalization and unknown checksum refusal
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/platform/migration-checksum-repair.test.mjs 2>&1 | tee .autopilot/artifacts/m10102-checksum-regression.log
+      - name: Preserve actual PostgreSQL evidence even if a gate fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10102-real-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10102-*.log
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Verify source mutation does not invalidate migration engine
+        run: node --check scripts/lib/migrations.mjs

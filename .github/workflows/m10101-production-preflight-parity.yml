@@ -1,0 +1,73 @@
+name: M1.01 production preflight runtime parity
+on:
+  pull_request:
+    paths:
+      - scripts/lib/environment.mjs
+      - src/lib/config/environment.ts
+      - src/lib/integrations/provider-adapter-service.ts
+      - tests/platform/production-environment-isolation.test.mjs
+      - tests/platform/provider-execution-gateway-runtime.test.mjs
+      - tests/engineering/test_m10101_preflight_runtime_parity.py
+      - .github/workflows/m10101-production-preflight-parity.yml
+  push:
+    branches: [qa/a28-eligibility-read-guard-20261107]
+    paths:
+      - scripts/lib/environment.mjs
+      - src/lib/config/environment.ts
+      - src/lib/integrations/provider-adapter-service.ts
+      - tests/platform/production-environment-isolation.test.mjs
+      - tests/platform/provider-execution-gateway-runtime.test.mjs
+      - tests/engineering/test_m10101_preflight_runtime_parity.py
+      - .github/workflows/m10101-production-preflight-parity.yml
+permissions:
+  contents: read
+jobs:
+  synthetic-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Run synthetic preflight parity checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          PYTHONDONTWRITEBYTECODE=1 python3 tests/engineering/test_m10101_preflight_runtime_parity.py 2>&1 | tee .autopilot/artifacts/m10101-parity.log
+      - name: Adjacent environment, signing and provider regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/platform/production-environment-isolation.test.mjs tests/platform/credential-signing-configuration.test.mjs tests/platform/provider-execution-gateway-runtime.test.mjs 2>&1 | tee .autopilot/artifacts/m10101-native.log
+      - name: Existing startup, portal, and DB smoke groups
+        shell: bash
+        run: |
+          set -euo pipefail
+          for group in development portal-redirects runtime-db; do
+            npm run "test:${group}" 2>&1 | tee ".autopilot/artifacts/m10101-${group}.log"
+          done
+      - name: Install actual Chromium
+        run: npx playwright install chromium
+      - name: Existing real Chromium security headers and six-role access
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/browser/security-response-headers.browser.test.mjs tests/browser/authentication-boundaries-e2e.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10101-real-browser.log
+      - name: Validate script syntax
+        run: node --check scripts/lib/environment.mjs
+      - name: Archive exact-SHA logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10101-preflight-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10101-*.log
+          if-no-files-found: warn
+          retention-days: 30

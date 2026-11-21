@@ -67,13 +67,18 @@ function defaults(formData: FormData) {
 }
 
 function csvEmails(value: string): readonly string[] {
-  const lines = value.replaceAll("\r\n", "\n").split("\n");
+  const lines = value.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
   const emails: string[] = [];
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
-    const firstCell = line.split(",", 1)[0]?.trim() ?? "";
-    if (!firstCell) continue;
+    // A CSV exporter may quote the email column, with doubled quote escapes.
+    // Keep malformed and empty first cells as explicit per-row errors instead
+    // of silently dropping them and shifting every later row number.
+    const quoted = /^"((?:[^"]|"")*)"\s*(?:,|$)/.exec(line);
+    const firstCell = quoted
+      ? quoted[1]!.replaceAll('""', '"').trim()
+      : (line.split(",", 1)[0]?.trim() ?? "");
     if (emails.length === 0 && firstCell.toLowerCase() === "email") continue;
     emails.push(firstCell);
   }

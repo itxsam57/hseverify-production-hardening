@@ -1,0 +1,71 @@
+name: M1.07.07 two Admin duplicate-disposition PostgreSQL race and safe retry
+on:
+  pull_request:
+    paths:
+      - "tests/platform/worker-identity-issuance-race-postgres.test.mjs"
+      - "src/lib/identity/duplicate-identity-review-service.ts"
+      - "src/lib/identity/worker-identity-eligibility-service.ts"
+      - ".github/workflows/m1-07-duplicate-two-admin-race.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/platform/worker-identity-issuance-race-postgres.test.mjs"
+      - "src/lib/identity/duplicate-identity-review-service.ts"
+      - "src/lib/identity/worker-identity-eligibility-service.ts"
+      - ".github/workflows/m1-07-duplicate-two-admin-race.yml"
+permissions:
+  contents: read
+concurrency:
+  group: m10707-two-admin-race-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  postgres16-duplicate-two-admin-race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: hse_dup_synthetic
+          POSTGRES_PASSWORD: disposable_synthetic_ci_account_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hse_dup_synthetic -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact signed candidate commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Concurrent two MFA Admins one duplicate signal and safe fresh retry
+        shell: bash
+        env:
+          HSE_POSTGRES_TEST_DATABASE_URL: postgresql://hse_dup_synthetic:disposable_synthetic_ci_account_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 --test-name-pattern='M1.07.07 two genuine Admins racing duplicate dispositions' tests/platform/worker-identity-issuance-race-postgres.test.mjs 2>&1 | tee .autopilot/artifacts/m10707-real-postgres-two-admin-duplicate-race.log
+          grep -q 'M10707_REAL_POSTGRES_CONCURRENT_ADMIN_DECISION_WINNER' .autopilot/artifacts/m10707-real-postgres-two-admin-duplicate-race.log
+          grep -q 'M10707_REAL_POSTGRES_STALE_RETRY_ONLY_FRESH_REVISION' .autopilot/artifacts/m10707-real-postgres-two-admin-duplicate-race.log
+      - name: Archive raw exact-SHA real PostgreSQL16 audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10707-two-admin-race-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10707-real-postgres-two-admin-duplicate-race.log
+          if-no-files-found: warn
+          retention-days: 30

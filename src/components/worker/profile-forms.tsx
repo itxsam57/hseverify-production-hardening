@@ -136,7 +136,7 @@ function PersonalForm({ record }: { record: WorkerProfileRecord }): React.JSX.El
         </label>
         <label className="profile-field">
           <span>Date of birth</span>
-          <input type="date" name="dateOfBirth" value={draft.dateOfBirth} onChange={event => setDraft(previous => ({ ...previous, dateOfBirth: event.target.value }))} disabled={locked} required />
+          <input key={record.version} type="date" name="dateOfBirth" defaultValue={record.personal.dateOfBirth} disabled={locked} required />
           {locked ? <input type="hidden" name="dateOfBirth" value={record.personal.dateOfBirth} /> : null}
           <FieldError state={state} name="dateOfBirth" />
         </label>

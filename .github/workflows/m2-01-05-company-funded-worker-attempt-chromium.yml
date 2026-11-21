@@ -1,0 +1,92 @@
+name: M2.01.05 Company funded Worker actual assessment begin and cross-role denial browser
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/assessment-funding-notification.browser.test.mjs'
+      - 'tests/helpers/assessment-funding-fixture.mjs'
+      - 'src/app/worker/**'
+      - 'src/lib/assessment-attempt/**'
+      - 'src/lib/billing/**'
+      - 'src/lib/notifications/**'
+      - 'src/lib/outbox/**'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-05-company-funded-worker-attempt-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/assessment-funding-notification.browser.test.mjs'
+      - 'tests/helpers/assessment-funding-fixture.mjs'
+      - 'src/app/worker/**'
+      - 'src/lib/assessment-attempt/**'
+      - 'src/lib/billing/**'
+      - 'src/lib/notifications/**'
+      - 'src/lib/outbox/**'
+      - 'src/app/company/(portal)/assurance-orders/**'
+      - 'src/lib/assurance/**'
+      - 'src/lib/authorization/**'
+      - '.github/workflows/m2-01-05-company-funded-worker-attempt-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m20105-company-funded-assessment-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-company-funded-worker-assessment-attempt-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      HSE_M20105_FUNDED_ASSESSMENT_ONLY: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout immutable PR or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Pinned Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Compile the real outbox worker required by notification delivery
+        run: npm run build:worker
+      - name: Actual Company-approved Worker assessment begin and direct Company/foreign Worker attempts denied
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/assessment-funding-notification.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20105-funded-worker-attempt-real-browser.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m20105-funded-worker-attempt-real-browser.log
+          done
+          for marker in ACTUAL_FUNDING_BROWSER M20105_ACTUAL_COMPANY_FUNDED_WORKER_PRECHECK_THEN_OWN_ASSESSMENT_ATTEMPT_RELOAD M20105_ACTUAL_COMPANY_FUNDING_PAYER_DENIED_WORKER_ATTEMPT_URL M20105_ACTUAL_FOREIGN_WORKER_FUNDED_ATTEMPT_HTTP404_NO_QUESTION_LEAK M20105_ACTUAL_DB_FUNDED_CASE_ONE_OWNED_ACTIVE_ASSESSMENT_ATTEMPT_AND_ONE_RESERVED_CREDIT; do
+            grep -q "$marker" .autopilot/artifacts/m20105-funded-worker-attempt-real-browser.log
+          done
+      - name: Preserve existing Worker-to-Company-to-Worker real notification journey without new-mode branch
+        env:
+          HSE_M20105_FUNDED_ASSESSMENT_ONLY: 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/browser/assessment-funding-notification.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m20105-original-funding-notification-regression.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0' 'ACTUAL_FUNDING_BROWSER'; do
+            grep -q "$line" .autopilot/artifacts/m20105-original-funding-notification-regression.log
+          done
+      - name: Retain original exact SHA Company funded Worker assessment and cross-role denial browser
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m20105-company-funded-attempt-${{ env.VERIFIED_SHA }}
+          path: |
+            .autopilot/artifacts/m20105-funded-worker-attempt-real-browser.log
+            .autopilot/artifacts/m20105-original-funding-notification-regression.log
+          if-no-files-found: warn
+          retention-days: 90

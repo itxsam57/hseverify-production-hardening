@@ -220,6 +220,7 @@ async function decideQueueItem(page, adminPage, baseUrl, kind, outcome, reason) 
     await page.getByRole("button", { name: "Finalize review" }).click();
     await page.getByText(outcome, { exact: true }).waitFor({ timeout: 15_000 });
   }
+  return taskId;
 }
 
 test(
@@ -526,9 +527,50 @@ test(
             for (const [kind,label,value] of [["experience","Duties / experience detail","Corrected experience supported by attributable site records."],["skill","Proficiency claim","Evidence verified practical proficiency"]]) {
               console.log("SCENARIO: correct and resubmit " + kind);
               await reviseEvidence(worker, baseUrl, kind, label, value);
-              await decideQueueItem(verifier, admin, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
+              const finalizedTaskId=await decideQueueItem(verifier, admin, baseUrl, kind, "APPROVED", "Corrected version independently verified with retained original history.");
               await worker.goto(`${baseUrl}/worker/evidence`);
               await worker.locator("article").filter({hasText: `${kind[0].toUpperCase()}${kind.slice(1)} record`}).first().getByText(/Independent verification: approved/).waitFor();
+              if (process.env.HSE_M11103_SKILL_BROWSER_ONLY === "true" && kind === "skill") {
+                // Real signed-in Worker and independent Verifier screens, not a redirect-only smoke test.
+                const pageErrors=[];
+                worker.on("pageerror",error=>pageErrors.push(error.message));
+                verifier.on("pageerror",error=>pageErrors.push(error.message));
+                const approvedSkill=worker.locator("article").filter({hasText:"Skill record"}).first();
+                await approvedSkill.getByText(/Independent verification: approved/).waitFor({timeout:15_000});
+                const history=approvedSkill.getByRole("region",{name:"skill history"});
+                for(const number of [1,2])await history.getByText(new RegExp("Version "+number)).first().waitFor();
+                await history.getByText(/skill-corrected-/).first().waitFor();
+                console.log("M11103_ACTUAL_CHROME_WORKER_VERIFIER_SKILL_V1_CHANGES_V2_APPROVED");
+
+                // No Worker session may read Verifier queue or a copied task ID, even directly over HTTP.
+                for(const route of ["/verifier/reviews",`/verifier/reviews/${finalizedTaskId}`]) {
+                  const response=await workerContext.request.get(`${baseUrl}${route}`,{maxRedirects:0});
+                  assert.notEqual(response.status(),200,`Worker fetched private Verifier route ${route}`);
+                  assert.ok([301,302,303,307,308,401,403,404].includes(response.status()),
+                    `Unexpected Verifier route denial HTTP ${response.status()}`);
+                }
+                console.log("M11103_ACTUAL_CHROME_WORKER_ROLE_VERIFIER_ROUTE_DENIED");
+
+                for(const width of [320,390,1440]) {
+                  await worker.setViewportSize({width,height:900});
+                  await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                  const card=worker.locator("article").filter({hasText:"Skill record"}).first();
+                  await card.getByText(/Independent verification: approved/).waitFor();
+                  await card.getByRole("region",{name:"skill history"}).getByText(/Version 2/).first().waitFor();
+                  const layout=await worker.evaluate(()=>({page:document.documentElement.scrollWidth,viewport:window.innerWidth}));
+                  assert.ok(layout.page<=layout.viewport+2,`Worker skill evidence has horizontal page overflow at ${width}: ${JSON.stringify(layout)}`);
+                }
+                for(const width of [320,390]) {
+                  await verifier.setViewportSize({width,height:900});
+                  await verifier.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});
+                  await verifier.getByRole("heading",{name:"Evidence review queue"}).waitFor({timeout:15000});
+                  const layout=await verifier.evaluate(()=>({page:document.documentElement.scrollWidth,viewport:window.innerWidth}));
+                  assert.ok(layout.page<=layout.viewport+2,`Verifier queue has horizontal page overflow at ${width}: ${JSON.stringify(layout)}`);
+                }
+                assert.deepEqual(pageErrors,[],"Mobile or desktop skill browser encountered runtime errors");
+                console.log("M11103_ACTUAL_CHROME_RESPONSIVE_320_390_1440");
+                return;
+              }
               if (process.env.HSE_INACTIVE_SKILL_ONLY === "true" && kind === "skill") {
                 await worker.goto(`${baseUrl}/worker/dashboard`,{waitUntil:"domcontentloaded"});
                 const skillsMetric=worker.locator("article.metric-card").filter({hasText:"Evidence verification"});
@@ -563,6 +605,7 @@ test(
 
 
             for (const [kind,label] of [["qualification","Qualification title"],["experience","Duties / experience detail"],["skill","Proficiency claim"],["employment","Duties"]]) {
+              if (process.env.HSE_M11104_EMPLOYMENT_BROWSER_ONLY === "true" && kind !== "employment") continue;
               for (const outcome of ["REJECTED","CHANGES_REQUESTED","APPROVED"]) {
                 console.log("SCENARIO: " + kind + " revision -> " + outcome);
                 await reviseEvidence(worker, baseUrl, kind, label, kind === "qualification" ? "NEBOSH International General Certificate" : "Versioned evidence supports the claimed work and requires independent review.");
@@ -571,7 +614,66 @@ test(
                 const card = worker.locator("article").filter({hasText:`${kind[0].toUpperCase()}${kind.slice(1)} record`}).first();
                 await card.getByText("Independent verification: " + outcome.toLowerCase().replaceAll("_"," ") + ".",{exact:true}).waitFor();
                 await card.getByRole("heading",{name:"Version and file history"}).waitFor();
+                if (process.env.HSE_M11104_EMPLOYMENT_BROWSER_ONLY === "true" && kind === "employment") {
+                  await card.getByRole("region",{name:"employment history"}).getByText(new RegExp("Version " + (["REJECTED","CHANGES_REQUESTED","APPROVED"].indexOf(outcome) + 2))).first().waitFor();
+                  console.log("M11104_ACTUAL_EMPLOYMENT_WORKER_VERIFIER_REVIEW",outcome);
+                }
               }
+            }
+
+            if (process.env.HSE_M11104_EMPLOYMENT_BROWSER_ONLY === "true") {
+              const card = worker.locator("article").filter({hasText:"Employment record"}).first();
+              const recordId = await card.getAttribute("id");
+              assert.match(recordId ?? "",/^evidence_record_[0-9a-f]{32}$/);
+              await card.getByText(/Independent verification: approved/).waitFor();
+              const history = card.getByRole("region",{name:"employment history"});
+              for (const number of [1,2,3,4]) await history.getByText(new RegExp("Version "+number)).first().waitFor();
+              console.log("M11104_ACTUAL_EMPLOYMENT_WORKER_FOUR_RETAINED_VERSIONS_AND_ALL_REVIEW_OUTCOMES");
+              const errors = [];
+              worker.on("pageerror",error=>errors.push("Worker "+error.message));
+              verifier.on("pageerror",error=>errors.push("Verifier "+error.message));
+              for (const width of [320,390,1440]) {
+                await worker.setViewportSize({width,height:900});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                await worker.locator('article[id="'+recordId+'"]').getByText(/Independent verification: approved/).waitFor();
+                await worker.locator('article[id="'+recordId+'"]').getByRole("region",{name:"employment history"}).getByText(/Version 4/).first().waitFor();
+                const dims=await worker.evaluate(()=>({viewport:innerWidth,page:document.documentElement.scrollWidth}));
+                assert.ok(dims.page<=dims.viewport+2,"Worker employment page overflow at "+width+": "+JSON.stringify(dims));
+              }
+              for (const width of [320,390,1440]) {
+                await verifier.setViewportSize({width,height:900});
+                await verifier.goto(`${baseUrl}/verifier/reviews`,{waitUntil:"domcontentloaded"});
+                await verifier.getByRole("heading",{name:"Evidence review queue"}).waitFor();
+                const dims=await verifier.evaluate(()=>({viewport:innerWidth,page:document.documentElement.scrollWidth}));
+                assert.ok(dims.page<=dims.viewport+2,"Verifier review queue overflow at "+width+": "+JSON.stringify(dims));
+              }
+              console.log("M11104_ACTUAL_EMPLOYMENT_RESPONSIVE_WORKER_VERIFIER_320_390_1440");
+              // A standalone Worker's private employment is not a Company assurance order.
+              // Company must not gain implicit raw evidence access merely by holding its role.
+              const companyContext=await browser.newContext({viewport:{width:320,height:900}});
+              const company=await companyContext.newPage();
+              try {
+                company.on("pageerror",error=>errors.push("Company "+error.message));
+                await login(company,baseUrl,credentials.company,"company");
+                await company.goto(`${baseUrl}/company/workers`,{waitUntil:"domcontentloaded"});
+                await company.getByRole("heading",{name:"Workers",exact:true}).waitFor();
+                const forbiddenCompany=await companyContext.request.get(`${baseUrl}/worker/evidence`,{maxRedirects:0});
+                assert.notEqual(forbiddenCompany.status(),200,"Company must not read standalone Worker's evidence URL");
+                await company.goto(`${baseUrl}/worker/evidence#${recordId}`,{waitUntil:"domcontentloaded"});
+                assert.equal(await company.locator('article[id="'+recordId+'"]').count(),0,"Company copied Worker evidence link exposed private employment");
+                const forbiddenWorker=await workerContext.request.get(`${baseUrl}/verifier/reviews`,{maxRedirects:0});
+                assert.notEqual(forbiddenWorker.status(),200,"Worker must not read private Verifier queue");
+                const anonymousContext=await browser.newContext();
+                try {
+                  const copied=await anonymousContext.request.get(`${baseUrl}/worker/evidence`,{maxRedirects:0});
+                  assert.notEqual(copied.status(),200,"Signed-out caller must not read private Worker evidence");
+                }finally{await anonymousContext.close();}
+              }finally{await companyContext.close();}
+              assert.deepEqual(errors,[],"Employment focused UI had unexpected browser runtime errors");
+              console.log("M11104_ACTUAL_EMPLOYMENT_WRONG_ROLE_COMPANY_WORKER_AND_SIGNEDOUT_API_DENIAL");
+              // Formal Company assurance case-scoped positive receiver requires an
+              // explicitly linked Worker and request, covered in a separate browser test.
+              return;
             }
 
             await worker.goto(`${baseUrl}/worker/identity`);
@@ -732,6 +834,37 @@ test(
 
       const database = new PGlite(databaseDirectory);
       try {
+        if (process.env.HSE_M11104_EMPLOYMENT_BROWSER_ONLY === "true") {
+          const workerId="audit_worker_account_20260901";
+          const records=(await database.query(
+            "SELECT record_id,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='employment'",[workerId])).rows;
+          assert.equal(records.length,1,"Exactly one original employment record should be revised, never replaced");
+          const versions=(await database.query(
+            "SELECT version_id,version_number,version_status,submitted_at FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",[records[0].record_id])).rows;
+          assert.equal(versions.length,4,"Original accepted employment and 3 corrected versions must all survive");
+          assert.deepEqual(versions.map(v=>v.version_number),[1,2,3,4]);
+          assert.deepEqual(versions.map(v=>v.version_status),["superseded","superseded","superseded","submitted"]);
+          assert.ok(versions.every(v=>v.submitted_at),"Every reviewed employment version must have been submitted");
+          assert.equal(records[0].current_version_id,versions[3].version_id);
+          const reviews=(await database.query(
+            "SELECT task_status,source_version_id,task_id FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='employment'",[workerId])).rows;
+          assert.equal(reviews.length,4,"Initial and each corrected employment version must have a distinct review");
+          for(const [i,status] of ["APPROVED","REJECTED","CHANGES_REQUESTED","APPROVED"].entries()) {
+            assert.ok(reviews.some(r=>r.source_version_id===versions[i].version_id&&r.task_status===status),
+              "Missing independent "+status+" for immutable employment version "+(i+1));
+          }
+          const decisions=(await database.query(
+            "SELECT d.source_version_id,d.outcome FROM evidence_review_decisions d JOIN evidence_review_tasks t ON t.task_id=d.task_id WHERE t.worker_account_id=$1 AND t.evidence_kind='employment'",[workerId])).rows;
+          assert.equal(decisions.length,4);
+          for(const [i,status] of ["APPROVED","REJECTED","CHANGES_REQUESTED","APPROVED"].entries())
+            assert.ok(decisions.some(d=>d.source_version_id===versions[i].version_id&&d.outcome===status));
+          const attachments=(await database.query(
+            "SELECT version_id FROM worker_evidence_attachments WHERE record_id=$1 ORDER BY created_at,attachment_id",[records[0].record_id])).rows;
+          assert.ok(attachments.length>=4,"Every original/corrected employment review needs retained file evidence");
+          for(const v of versions) assert.ok(attachments.some(a=>a.version_id===v.version_id),"Missing immutable proof for employment version "+v.version_number);
+          console.log("M11104_ACTUAL_EMPLOYMENT_DB_FOUR_IMMUTABLE_VERSIONS_FOUR_BOUND_DECISIONS_AND_PROOFS");
+          return;
+        }
         if (process.env.HSE_IDENTITY_QUEUE_FAILURE === "true") {
           assert.equal((await database.query("SELECT lifecycle_status FROM worker_identities WHERE worker_account_id='audit_worker_account_20260901'")).rows[0].lifecycle_status,"verified");
           const reviews = (await database.query("SELECT task_status FROM evidence_review_tasks tasks JOIN worker_identity_versions versions ON versions.identity_version_id=tasks.source_version_id WHERE versions.version_kind='correction'")).rows;
@@ -800,6 +933,22 @@ test(
           const rate=await database.query("SELECT COUNT(*)::int AS count FROM public_verification_rate_limits WHERE action='lookup'");
           assert.ok(Number(rate.rows[0]?.count)>=1,"Public Worker lookup must consume a persisted rate-limit bucket.");
           console.log("ACTUAL_M11201_PUBLIC_WORKER_DB verified Worker-ID version bound and persisted public lookup throttling");
+          return;
+        }
+        if (process.env.HSE_M11103_SKILL_BROWSER_ONLY === "true") {
+          const workerId="audit_worker_account_20260901";
+          const rows=(await database.query("SELECT record_id,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='skill'",[workerId])).rows;
+          assert.equal(rows.length,1,"One Worker skill record must survive the complete browser flow");
+          const versions=(await database.query("SELECT version_id,version_number,version_status,submitted_at FROM worker_evidence_versions WHERE record_id=$1 ORDER BY version_number",[rows[0].record_id])).rows;
+          assert.equal(versions.length,2);
+          assert.deepEqual(versions.map(row=>row.version_status),["superseded","submitted"]);
+          assert.equal(rows[0].current_version_id,versions[1].version_id);
+          assert.ok(versions.every(row=>row.submitted_at));
+          const tasks=(await database.query("SELECT source_version_id,task_status FROM evidence_review_tasks WHERE worker_account_id=$1 AND evidence_kind='skill' ORDER BY created_at,task_id",[workerId])).rows;
+          assert.equal(tasks.length,2);
+          assert.ok(tasks.some(row=>row.source_version_id===versions[0].version_id&&row.task_status==="CHANGES_REQUESTED"));
+          assert.ok(tasks.some(row=>row.source_version_id===versions[1].version_id&&row.task_status==="APPROVED"));
+          console.log("M11103_ACTUAL_CHROME_DB_TWO_SKILL_VERSIONS_TWO_BOUND_REVIEWS");
           return;
         }
         if (process.env.HSE_INACTIVE_SKILL_ONLY === "true") {

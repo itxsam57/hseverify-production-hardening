@@ -1,0 +1,104 @@
+name: M1.03 six-role login responsive authorization QA
+
+on:
+  pull_request:
+    paths:
+      - "src/app/auth/**"
+      - "src/lib/auth/auth-login-service.ts"
+      - "src/lib/auth/auth-session-service.ts"
+      - "src/lib/auth/auth-access-repository.ts"
+      - "src/components/auth/role-login-*.tsx"
+      - "src/app/globals.css"
+      - "tests/browser/authentication-boundaries-e2e.browser.test.mjs"
+      - "tests/browser/six-role-mobile-auth-boundaries.browser.test.mjs"
+      - ".github/workflows/m1-03-six-role-login-responsive.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "src/app/auth/**"
+      - "src/lib/auth/auth-login-service.ts"
+      - "src/lib/auth/auth-session-service.ts"
+      - "src/lib/auth/auth-access-repository.ts"
+      - "src/components/auth/role-login-*.tsx"
+      - "src/app/globals.css"
+      - "tests/browser/authentication-boundaries-e2e.browser.test.mjs"
+      - "tests/browser/six-role-mobile-auth-boundaries.browser.test.mjs"
+      - ".github/workflows/m1-03-six-role-login-responsive.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10306-six-role-auth-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-all-six-roles-mobile-negative-and-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install actual Chromium
+        run: npx playwright install chromium
+      - name: All six signed-out, wrong credentials/MFA, cross-role deep links, mobile and audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/authentication-boundaries-e2e.browser.test.mjs tests/browser/six-role-mobile-auth-boundaries.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10306-six-role-browser.log
+      - name: Retain exact-SHA Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10306-six-role-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10306-six-role-browser.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-session-and-role-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Role-fixed server actions and optimistic proxy cannot bypass DB authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/platform/authentication-portal-isolation.test.mjs tests/platform/authentication-signed-out-proxy.test.mjs 2>&1 | tee .autopilot/artifacts/m10306-six-role-native.log
+      - name: Retain exact-SHA role-boundary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10306-six-role-native-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10306-six-role-native.log
+          if-no-files-found: warn
+          retention-days: 30

@@ -528,6 +528,24 @@ export class AuthenticationRepository {
        FROM auth_accounts
        WHERE account_id = $2
          AND account_status = 'active'
+         -- Company accounts without any membership (new registration or Root
+         -- staff onboarding) may sign in, but have NO tenant permissions.
+         -- As soon as any membership exists, only an active Company membership
+         -- may issue tokens. Suspended, invited and revoked accounts cannot
+         -- bypass this by falling back to onboarding. Lock the active row:
+         -- a concurrent Team suspension/revocation sweeps login-first tokens
+         -- or blocks revoke-first issuance after the row becomes inactive.
+         AND ($3 <> 'company'
+           OR NOT EXISTS (
+             SELECT 1 FROM auth_tenant_memberships AS previous
+             WHERE previous.account_id=$2 AND previous.portal_role='company'
+           )
+           OR EXISTS (
+             SELECT 1 FROM auth_tenant_memberships AS membership
+             WHERE membership.account_id=$2 AND membership.portal_role='company'
+               AND membership.membership_status='active'
+             FOR SHARE
+           ))
        RETURNING session_id`,
       [
         input.sessionId,
@@ -543,7 +561,7 @@ export class AuthenticationRepository {
       ]
     );
     if (result.rows.length !== 1) {
-      throw new Error("A session can only be created for an active account.");
+      throw new Error("A session requires an active account and any existing Company membership must be active.");
     }
   }
 

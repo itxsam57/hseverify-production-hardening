@@ -1,0 +1,9 @@
+exact_source_sha	test_scope	passing_cases	exit_code	raw_evidence_log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	worker-native-otp	5	0	.autopilot/artifacts/M10302_F3_worker-registration-otp-runtime.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	company-native-otp	8	0	.autopilot/artifacts/M10302_F3_company-registration-otp-runtime.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	consumer-mobile-validation	1	0	.autopilot/artifacts/M10302_F3_consumer-validation.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	worker-email-phone-otp-browser	2	0	.autopilot/artifacts/M10302_F3_worker-registration-otp-boundaries.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	company-registration-mfa-browser	1	0	.autopilot/artifacts/M10302_F3_company-registration-boundaries.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	company-expired-otp-forged-origin-browser	1	0	.autopilot/artifacts/M10302_COMPANY_OTP_CSS_AND_EXPIRY_GREEN.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	typecheck	0	0	.autopilot/artifacts/M10302_QAF3_typecheck.log
+f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552	lint	0	0	.autopilot/artifacts/M10302_QAF3_lint.log

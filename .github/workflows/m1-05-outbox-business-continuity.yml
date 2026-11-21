@@ -1,0 +1,99 @@
+name: M1.05.04 interview outbox outage retains committed schedule
+
+on:
+  pull_request:
+    paths:
+      - "tests/browser/interview-email-delivery-visibility.browser.test.mjs"
+      - "tests/platform/outbox-foundation.test.mjs"
+      - "src/lib/outbox/**"
+      - "src/lib/interviews/**"
+      - ".github/workflows/m1-05-outbox-business-continuity.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "tests/browser/interview-email-delivery-visibility.browser.test.mjs"
+      - "tests/platform/outbox-foundation.test.mjs"
+      - "src/lib/outbox/**"
+      - "src/lib/interviews/**"
+      - ".github/workflows/m1-05-outbox-business-continuity.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m10504-interview-outbox-continuity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-chromium-interview-email-outage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install real Chromium
+        run: npx playwright install chromium
+      - name: Real Worker interview survives unconfigured email, retry and restored controlled transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/interview-email-delivery-visibility.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10504-interview-outage-chromium.log
+          grep -q 'M10504_SCHEDULE_PERSISTS_THROUGH_DELIVERY_FAILURE' .autopilot/artifacts/m10504-interview-outage-chromium.log
+          grep -q 'ACTUAL_EMAIL_STATE_BROWSER' .autopilot/artifacts/m10504-interview-outage-chromium.log
+      - name: Archive exact SHA browser observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10504-interview-outage-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10504-interview-outage-chromium.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  native-business-state-outbox-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Use Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Existing native transactional business/outbox retry and stale lease regression at exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-name-pattern='M1.05 notification delivery outage does not roll back committed business state' tests/platform/outbox-foundation.test.mjs 2>&1 | tee .autopilot/artifacts/m10504-native-business-outbox.log
+          grep -q 'ACTUAL_M105_OUTBOX_DB' .autopilot/artifacts/m10504-native-business-outbox.log
+      - name: Archive exact SHA native observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10504-native-outbox-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10504-native-business-outbox.log
+          if-no-files-found: warn
+          retention-days: 30

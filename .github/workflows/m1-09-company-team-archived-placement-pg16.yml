@@ -1,0 +1,78 @@
+name: M1.09.03 Company Team archived-unit placement and invitation race PostgreSQL16
+on:
+  pull_request:
+    paths:
+      - 'database/migrations/0132_company_team_archived_scope_serialization.*.sql'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'scripts/run-company-organization-team-tests.mjs'
+      - '.github/workflows/m1-09-company-team-archived-placement-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'database/migrations/0132_company_team_archived_scope_serialization.*.sql'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'scripts/run-company-organization-team-tests.mjs'
+      - '.github/workflows/m1-09-company-team-archived-placement-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m10903-team-archived-placement-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  team-assign-invite-site-department-postgres16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_team_archive
+          POSTGRES_PASSWORD: synthetic_team_archive_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_team_archive -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Install locked Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exact lockfile dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Genuine PostgreSQL16 Team archived-unit concurrent assignment, invitation and reverse acceptance
+        shell: bash
+        env:
+          HSE_M10903_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_team_archive:synthetic_team_archive_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-organization-team-tests.mjs --test-name-pattern 'M1.09.03 actual PostgreSQL16 Company Team placement and invite acceptance race against archived units' 2>&1 | tee .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+          for category in SITE DEPARTMENT; do
+            for marker in ARCHIVED_TEAM_ASSIGNMENT_DENIED TEAM_ACCEPTANCE_DENIED_AFTER_ARCHIVE TEAM_INVITE_BINDING_DENIED_AFTER_ARCHIVE ACCEPT_FIRST_ARCHIVE_ENDS_TEAM_HISTORY_ONCE SERVICE_AND_FOREIGN_TENANT_DENIED; do
+              grep -q "M10903_ACTUAL_PG16_${category}_${marker}" .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+            done
+          done
+          grep -q 'M10903_0132_ROLLBACK_REAPPLY_RETAINS_TEAM_INVITE_ROW_LOCKS' .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+      - name: Archive exact source SHA real PostgreSQL16 raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10903-team-archive-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10903-team-archived-unit-pg16.log
+          if-no-files-found: warn
+          retention-days: 30

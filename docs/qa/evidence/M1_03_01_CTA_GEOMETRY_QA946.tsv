@@ -1,0 +1,5 @@
+scenario_id	qa_base_sha	command	result	pass	fail	evidence	limitations
+M1.03.01	94644f656c17885f42da787c8e5b1e228dfff610	GitHub Actions run 43052417382 job 130632829209 browser	RED	0	1	.autopilot/artifacts/M10301_390_CTA_MERGED_SHA_RED_20261111.log	Original x86 bounding box not logged; CTA clipped/too small assertion at 390 mismatch
+M1.03.01	94644f656c17885f42da787c8e5b1e228dfff610	node --test tests/browser/worker-registration-policy-e2e.browser.test.mjs	LOCAL_PASS	1	0	.autopilot/artifacts/M10301_CTA_GEOMETRY_LOCAL_CHROMIUM_GREEN_20261111.log	Actual ARM Chromium synthetic, exact GitHub x86 candidate still pending
+M1.03.01	94644f656c17885f42da787c8e5b1e228dfff610	node --test tests/platform/worker-registration-policy-runtime.test.mjs	PASS	3	0	.autopilot/artifacts/M10301_CTA_POLICY_NATIVE3_GREEN_20261111.log	Local PGlite, no genuine provider
+M1.03.01	94644f656c17885f42da787c8e5b1e228dfff610	npm run typecheck	PASS	1	0	local typecheck stdout	Source quality onlyM1.03.01	94644f656c17885f42da787c8e5b1e228dfff610	npm run lint	PASS_WITH_WARNINGS	1	0	local ESLint stdout	0 errors, 9 inherited warnings

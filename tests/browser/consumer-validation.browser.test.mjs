@@ -31,36 +31,44 @@ test("consumer forms preserve context, expose every required error, and retain v
       const browser = await chromium.launch({ headless: true });
       try {
         const page = await browser.newPage({ viewport: { width: 1365, height: 768 } });
+        for (const width of [1365, 390, 320]) {
+          await page.setViewportSize({ width, height: 768 });
+          await page.goto(`${baseUrl}/worker/register`, { waitUntil: "domcontentloaded" });
+          await page.getByRole("button", { name: "Create Worker account" }).click();
+          await page.getByText("Check the highlighted registration details.", { exact: true }).waitFor();
+          const confirmation = page.getByLabel("Confirm password");
+          assert.equal(await confirmation.getAttribute("aria-invalid"), "true");
+          await page.getByText("Confirm your password.", { exact: true }).waitFor();
+          assert.match(await confirmation.getAttribute("aria-describedby") ?? "", /confirmPassword-error/);
 
-        await page.goto(`${baseUrl}/worker/register`, { waitUntil: "domcontentloaded" });
-        await page.getByRole("button", { name: "Create Worker account" }).click();
-        await page.getByText("Check the highlighted registration details.", { exact: true }).waitFor();
-        const confirmation = page.getByLabel("Confirm password");
-        assert.equal(await confirmation.getAttribute("aria-invalid"), "true");
-        await page.getByText("Confirm your password.", { exact: true }).waitFor();
-        assert.match(await confirmation.getAttribute("aria-describedby") ?? "", /confirmPassword-error/);
+          await page.goto(`${baseUrl}/company/register`, { waitUntil: "domcontentloaded" });
+          await page.getByRole("button", { name: "Create Company application" }).click();
+          await page.getByText("Check the highlighted Company registration details.", { exact: true }).waitFor();
+          assert.equal(new URL(page.url()).pathname, "/company/register");
+          assert.equal(await page.getByLabel("Legal Company name").getAttribute("aria-invalid"), "true");
 
-        await page.goto(`${baseUrl}/company/register`, { waitUntil: "domcontentloaded" });
-        await page.getByRole("button", { name: "Create Company application" }).click();
-        await page.getByText("Check the highlighted Company registration details.", { exact: true }).waitFor();
-        assert.equal(new URL(page.url()).pathname, "/company/register");
-        assert.equal(await page.getByLabel("Legal Company name").getAttribute("aria-invalid"), "true");
-
-        await page.goto(`${baseUrl}/worker/login`, { waitUntil: "domcontentloaded" });
-        const signIn = page.getByRole("button", { name: "Sign in" });
-        await signIn.focus();
-        const focus = await signIn.evaluate((element) => {
-          const style = getComputedStyle(element);
-          return {
-            outlineStyle: style.outlineStyle,
-            outlineWidth: style.outlineWidth,
-            outlineColor: style.outlineColor,
-            boxShadow: style.boxShadow
-          };
-        });
-        const hasOutline = focus.outlineStyle !== "none" && Number.parseFloat(focus.outlineWidth) >= 2;
-        const hasShadow = focus.boxShadow !== "none";
-        assert(hasOutline || hasShadow, `Primary button has no visible focus indicator: ${JSON.stringify(focus)}`);
+          await page.goto(`${baseUrl}/worker/login`, { waitUntil: "domcontentloaded" });
+          const signIn = page.getByRole("button", { name: "Sign in" });
+          await signIn.focus();
+          const focus = await signIn.evaluate((element) => {
+            const style = getComputedStyle(element);
+            return {
+              outlineStyle: style.outlineStyle,
+              outlineWidth: style.outlineWidth,
+              outlineColor: style.outlineColor,
+              boxShadow: style.boxShadow
+            };
+          });
+          const hasOutline = focus.outlineStyle !== "none" && Number.parseFloat(focus.outlineWidth) >= 2;
+          const hasShadow = focus.boxShadow !== "none";
+          assert(hasOutline || hasShadow, `Primary button has no visible focus indicator: ${JSON.stringify(focus)}`);
+          const dimensions = await page.evaluate(() => ({
+            documentWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+            viewportWidth: document.documentElement.clientWidth
+          }));
+          assert(dimensions.documentWidth <= dimensions.viewportWidth + 2,
+            "Form validation layout overflows at " + width + "px: " + JSON.stringify(dimensions));
+        }
       } finally {
         await browser.close();
       }

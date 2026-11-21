@@ -82,6 +82,25 @@ export async function getNotificationMenu(
   });
 }
 
+// The bell is non-authoritative page chrome. If *only* its notification
+// read query hits a missing table, preserve the authenticated shell so the
+// actual Notifications route can show its protected Retry boundary. Never
+// turn an authorization, session or other SQL failure into a successful view.
+export async function getNotificationMenuForShell(
+  role: AuthRole
+): Promise<NotificationMenuProjection & Readonly<{ unavailable: boolean }>> {
+  try {
+    return { ...(await getNotificationMenu(role)), unavailable: false };
+  } catch (error) {
+    const code = error instanceof Error && "code" in error ? String(error.code) : null;
+    if (code !== "42P01") throw error;
+    // A missing authorization table could also raise 42P01; fail closed by
+    // explicitly validating the current role and tenant again before fallback.
+    await requirePortalAuthorization(role);
+    return { notifications: [], unreadCount: 0, unavailable: true };
+  }
+}
+
 export async function getNotificationCenter(
   role: AuthRole,
   repository: NotificationRepository = getNotificationRepository()

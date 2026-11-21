@@ -50,12 +50,14 @@ test("Real signed issuance → public Verify/Concern/scanned evidence → Admin 
  assert.equal(await publicPage.getByLabel("What is wrong?").inputValue(),"short","Invalid concern must retain the user's draft.");
  assert.equal(await publicPage.getByLabel("Email",{exact:true}).inputValue(),"concern.browser@example.test");
  assert.equal(await publicPage.getByText("Concern reference:",{exact:true}).count(),0,"Invalid concern must not mint a reference.");
+ console.log("M11204_ACTUAL_INVALID_PUBLIC_CONCERN_DRAFT_PRESERVED_NO_REFERENCE");
  await publicPage.getByLabel("What is wrong?").fill("Review this signed credential with independent evidence; no fraud finding is asserted.");
  await publicPage.getByLabel("Evidence (optional)").setInputFiles({name:"concern-proof.pdf",mimeType:"application/pdf",buffer:bytes});
  await publicPage.getByRole("button",{name:"Submit concern",exact:true}).click();
  const status=publicPage.locator(".public-form-status");await status.getByText(/Concern reference:/).waitFor();
  concernId=(await status.innerText()).match(/public_concern_[A-Za-z0-9_-]{24}/)[0];
  assert.match(await status.innerText(),/stored privately and queued for malware scanning/);
+ console.log("M11204_ACTUAL_SIGNED_CREDENTIAL_PUBLIC_CONCERN_QUEUED_PRIVATE_PDF");
  await adminPage.goto(base+"/admin/login");
  await adminPage.getByLabel("Email address").fill(f.credentials.admin.email);await adminPage.getByLabel("Password",{exact:true}).fill(f.credentials.admin.password);
  await adminPage.getByLabel("Authenticator code").fill(totp(f.credentials.admin.totpSecret));await adminPage.getByRole("button",{name:"Sign in",exact:true}).click();await adminPage.waitForURL("**/admin/dashboard");
@@ -101,6 +103,7 @@ test("Real signed issuance → public Verify/Concern/scanned evidence → Admin 
  const evidence=adminPage.getByRole("link",{name:"Download scanned evidence: concern-proof.pdf",exact:true});
  const download=await adminPage.context().request.get(await evidence.getAttribute("href").then(h=>base+h));
  assert.equal(download.status(),200);assert.equal(download.headers()["cache-control"],"private, no-store");assert.deepEqual(await download.body(),bytes);
+ console.log("M11204_ACTUAL_SCANNED_EVIDENCE_PRIVATE_ADMIN_EXACT_BYTES_AND_SIGNEDOUT_DENIAL_NEXT");
  const other=await browser.newPage();await other.goto(base+"/admin/credential-concerns/"+concernId);
  assert(!other.url().includes("/credential-concerns/"+concernId),"Signed-out concern detail must be denied");
  const stale=await adminPage.context().newPage();await stale.goto(base+"/admin/credential-concerns/"+concernId);
@@ -126,6 +129,7 @@ test("Real signed issuance → public Verify/Concern/scanned evidence → Admin 
  assert.equal(Number((await final.query("SELECT count(*) count FROM public_verification_concern_reviews WHERE concern_id=$1",[concernId])).rows[0].count),2);
  assert.equal((await final.query("SELECT status FROM credential_issuances WHERE credential_id=$1",[credential])).rows[0].status,"valid");
  assert.equal(Number((await final.query("SELECT count(*) count FROM platform_audit_events WHERE action_key='public_verification.concern.evidence.served'")).rows[0].count),1);
+ console.log("M11204_ACTUAL_DB_REASONED_AMENDMENT_TWO_REVIEWS_PRIVATE_AUDIT_CREDENTIAL_VALID");
  }finally{await final.close();}
  }finally{await db.close().catch(()=>{});await browser?.close();await f.cleanup();}
 });

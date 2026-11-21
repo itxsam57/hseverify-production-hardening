@@ -1,0 +1,3 @@
+issue	original_sha	workflow_runs	failure	remediation	new_sha_status	full_verification
+M10401_CI_UBUNTU_DNS	696f2b1e1f72b267c64b93ae0102f730df67a614	43048789467,43048786043,43048785350,43048785229	5 Chromium jobs fail apt DNS before tests	Change all 18 Playwright install steps in 14 workflows from --with-deps chromium to chromium	PENDING_EXACT_SHA_CI	NOT_FULL
+M10401_CI_LOCAL_VALIDATION	696f2b1e1f72b267c64b93ae0102f730df67a614	local	14 YAML files parsed; 18 install steps retained; Playwright dry-run command exit0	No product code changed, actual Chromium still required	PASS_LOCAL_ONLY	NOT_FULL

@@ -1,0 +1,4 @@
+scenario_id	base_sha	test	status	postgres_version	parallel_clients	lock_waiters_before_release	completed_before_release	mfa_enrollments	audit_entries	auth_sessions	evidence
+M1.03.04	2b25709df679d2a3849d5b46cc523075e2d2ae92	node --test tests/platform/company-registration-mfa-postgres.test.mjs	PASS	16.15	6	6	0	1	1	0	.autopilot/artifacts/M10304_FRESH_REAL_PG16_QA2B.log
+M1.03.04	2b25709df679d2a3849d5b46cc523075e2d2ae92	pg_ctl -D .autopilot/m10304-pg16-20261111 -w stop -m fast	PASS	16.15	-	-	-	-	-	-	.autopilot/artifacts/M10304_PG16_SERVER.logM1.03.04	2b25709df679d2a3849d5b46cc523075e2d2ae92	npm run typecheck	PASS	-	-	-	-	-	-	-	local strict Next typecheck
+M1.03.04	2b25709df679d2a3849d5b46cc523075e2d2ae92	npm run lint	PASS_WITH_WARNINGS	-	-	-	-	-	-	-	0 errors; 9 inherited warnings

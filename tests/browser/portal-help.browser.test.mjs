@@ -72,7 +72,7 @@ test("All six role account menus reach support at desktop and mobile widths with
    try {for(const role of ["worker","company","assessor","verifier","admin","root"]){
     const context=await browser.newContext();
     try {const page=await context.newPage();await login(page,baseUrl,credentials[role],role);
-     for(const width of [1440,390]){
+     for(const width of [1440,390,320]){
       await page.setViewportSize({width,height:1000});
       await page.goto(baseUrl+"/"+role+"/dashboard",{waitUntil:"domcontentloaded"});
       const header=page.locator("header.portal-header");await header.locator(".profile-menu > summary").click();
@@ -87,6 +87,27 @@ test("All six role account menus reach support at desktop and mobile widths with
       assert.equal(await page.getByRole("button",{name:"Send message",exact:true}).count(),1);
       await page.goto(baseUrl+"/"+role+"/dashboard",{waitUntil:"domcontentloaded"});
       assert.equal(new URL(page.url()).pathname,"/"+role+"/dashboard","support navigation must preserve portal session");
+      await header.locator(".profile-menu > summary").click();
+      const menu=header.locator(".profile-menu");
+      const lang=menu.getByRole("link",{name:"Language: English",exact:true});
+      const securityPath=role==="worker"?"/worker/security":"/account/security";
+      assert.equal(await lang.getAttribute("href"),securityPath+"#interface-language");
+      assert.equal(await menu.getByRole("link",{name:"Security",exact:true}).getAttribute("href"),securityPath);
+      assert.equal(await menu.getByRole("link",{name:"Active sessions",exact:true}).getAttribute("href"),"/account/sessions");
+      await lang.click();
+      await page.waitForURL(url=>url.pathname===securityPath&&url.hash==="#interface-language");
+      const language=page.getByRole("region",{name:"Interface language",exact:true});
+      await language.getByText("English",{exact:true}).waitFor();
+      await language.getByText("This release is available in English.",{exact:true}).waitFor();
+      assert.equal(await page.locator("html").getAttribute("lang"),"en");
+      await page.goto(baseUrl+"/"+role+"/dashboard",{waitUntil:"domcontentloaded"});
+      assert.equal(new URL(page.url()).pathname,"/"+role+"/dashboard","language destination must retain role session");
+      await header.locator(".profile-menu > summary").click();
+      await header.getByRole("link",{name:"Active sessions",exact:true}).click();
+      await page.waitForURL("**/account/sessions");
+      await page.getByRole("heading",{level:1}).first().waitFor();
+      await page.goto(baseUrl+"/"+role+"/dashboard",{waitUntil:"domcontentloaded"});
+      assert.equal(new URL(page.url()).pathname,"/"+role+"/dashboard","active-session navigation must retain role session");
      }
     }finally{await context.close();}
    }}finally{await browser.close();}

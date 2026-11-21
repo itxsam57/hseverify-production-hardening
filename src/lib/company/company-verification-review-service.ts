@@ -34,6 +34,7 @@ export type CompanyVerificationReviewEvidence = Readonly<{
 export type CompanyVerificationReviewCase = Readonly<{
   caseId: string;
   tenantId: string;
+  versionId: string;
   caseStatus: Extract<CompanyVerificationCaseStatus, "submitted" | "under_review">;
   lockVersion: number;
   versionNumber: number;
@@ -54,6 +55,7 @@ export type CompanyVerificationReviewCase = Readonly<{
 type ReviewCaseRow = {
   case_id: string;
   tenant_id: string;
+  version_id: string;
   case_status: "submitted" | "under_review";
   lock_version: number | string;
   version_number: number | string;
@@ -185,6 +187,7 @@ export class CompanyVerificationReviewService {
          cases.tenant_id,
          cases.case_status,
          cases.lock_version,
+         versions.version_id,
          versions.version_number,
          versions.legal_name,
          versions.trading_name,
@@ -255,6 +258,7 @@ export class CompanyVerificationReviewService {
     return Object.freeze(cases.rows.map((row) => Object.freeze({
       caseId: row.case_id,
       tenantId: row.tenant_id,
+      versionId: row.version_id,
       caseStatus: row.case_status,
       lockVersion: Number(row.lock_version),
       versionNumber: Number(row.version_number),

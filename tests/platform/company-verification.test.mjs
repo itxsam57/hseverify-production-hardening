@@ -437,6 +437,15 @@ async function reserveAvailableEvidence(database, principal, label) {
   return reservation.file.fileId;
 }
 
+// Pin every Admin review to the submitted version and case revision shown.
+async function currentReviewExpected(service, companyPrincipal) {
+  const snapshot = await service.loadOwn(companyPrincipal);
+  return {
+    expectedVersionId: snapshot.currentVersion.versionId,
+    expectedLockVersion: snapshot.case.lockVersion
+  };
+}
+
 test("M1.08 registration creates a pending Company, verifies email/TOTP and blocks exact duplicate registration claims", async () => {
   const env = environment("m1-08-registration-runtime");
   const database = await openScriptDatabase(env);
@@ -609,10 +618,11 @@ test("M1.08 same-tenant Company admins cannot rewrite the registration-verified 
       principal: company.principal,
       expectedLockVersion: snapshot.case.lockVersion
     });
-    await service.beginReview({ principal: platformAdmin, caseId: company.caseId });
+    await service.beginReview({ principal: platformAdmin, caseId: company.caseId, ...(await currentReviewExpected(service,company.principal)) });
     await service.decide({
       principal: platformAdmin,
       caseId: company.caseId,
+      ...(await currentReviewExpected(service,company.principal)),
       outcome: "changes_requested"
     });
 
@@ -845,20 +855,22 @@ test("M1.08 review transitions reject duplicate begin-review and decision replay
       expectedLockVersion: snapshot.case.lockVersion
     });
 
-    await service.beginReview({ principal: admin, caseId: company.caseId });
+    await service.beginReview({ principal: admin, caseId: company.caseId, ...(await currentReviewExpected(service,company.principal)) });
     await assert.rejects(
-      () => service.beginReview({ principal: admin, caseId: company.caseId }),
+      async () => service.beginReview({ principal: admin, caseId: company.caseId, ...(await currentReviewExpected(service,company.principal)) }),
       CompanyVerificationConflictError
     );
     await service.decide({
       principal: admin,
       caseId: company.caseId,
+      ...(await currentReviewExpected(service,company.principal)),
       outcome: "changes_requested"
     });
     await assert.rejects(
-      () => service.decide({
+      async () => service.decide({
         principal: admin,
         caseId: company.caseId,
+        ...(await currentReviewExpected(service,company.principal)),
         outcome: "verified"
       }),
       CompanyVerificationConflictError
@@ -964,10 +976,10 @@ test("M1.08 Company verification preserves submitted history, creates correction
     );
 
     assert.throws(
-      () => service.beginReview({ principal: company.principal, caseId: company.caseId }),
+      () => service.beginReview({ principal: company.principal, caseId: company.caseId, expectedVersionId:snapshot.currentVersion.versionId, expectedLockVersion:snapshot.case.lockVersion }),
       CompanyVerificationAccessDeniedError
     );
-    await service.beginReview({ principal: admin, caseId: company.caseId });
+    await service.beginReview({ principal: admin, caseId: company.caseId, ...(await currentReviewExpected(service,company.principal)) });
     await assert.rejects(
       () =>
         service.withdraw({
@@ -979,6 +991,7 @@ test("M1.08 Company verification preserves submitted history, creates correction
     await service.decide({
       principal: admin,
       caseId: company.caseId,
+      ...(await currentReviewExpected(service,company.principal)),
       outcome: "changes_requested"
     });
 
@@ -1011,10 +1024,11 @@ test("M1.08 Company verification preserves submitted history, creates correction
       principal: company.principal,
       expectedLockVersion: snapshot.case.lockVersion
     });
-    await service.beginReview({ principal: admin, caseId: company.caseId });
+    await service.beginReview({ principal: admin, caseId: company.caseId, ...(await currentReviewExpected(service,company.principal)) });
     await service.decide({
       principal: admin,
       caseId: company.caseId,
+      ...(await currentReviewExpected(service,company.principal)),
       outcome: "verified"
     });
 
@@ -1038,3 +1052,486 @@ test("M1.08 Company verification preserves submitted history, creates correction
     await database.close();
   }
 });
+
+
+// This NEW security regression runs against the original isolated PGlite
+// fixture by default and a unique disposable PostgreSQL16 database when
+// explicitly configured. Never migrate or drop another test's database.
+async function m10803IsolatedDatabase() {
+  const connection = process.env.HSE_M10803_POSTGRES_TEST_DATABASE_URL;
+  if (!connection) {
+    const env = environment("m10803-stale-admin-version-cross-review");
+    const database = await openScriptDatabase(env);
+    try { await applyMigrationsThrough(database,env.releaseSha,OWNED_MIGRATION); }
+    catch(error) { await database.close(); throw error; }
+    return { database,dispose:async()=>database.close() };
+  }
+  const url = new URL(connection);
+  if (!["127.0.0.1","localhost"].includes(url.hostname) || url.pathname !== "/postgres") {
+    throw new Error("M1.08.03 destructive synthetic migration requires localhost PG and postgres maintenance database.");
+  }
+  const admin = await openScriptDatabase({...environment("m10803-pg-maintenance"),
+    databaseDriver:"postgres",databaseUrl:connection});
+  const name = "m10803_stale_admin_"+process.pid+"_"+Date.now();
+  let database,created = false;
+  try {
+    await admin.execute('CREATE DATABASE "'+name+'"');
+    created = true;
+    url.pathname="/"+name;
+    const env={...environment("m10803-real-pg-"+process.pid),
+      databaseDriver:"postgres",databaseUrl:url.href};
+    database=await openScriptDatabase(env);
+    await applyMigrationsThrough(database,env.releaseSha,
+      "0130_verified_identity_correction_notices");
+    return {database,dispose:async()=>{
+      try { await database.close(); }
+      finally { try { await admin.execute('DROP DATABASE "'+name+'"'); }
+        finally { await admin.close(); } }
+    }};
+  } catch(error) {
+    if(database) await database.close();
+    try { if(created) await admin.execute('DROP DATABASE "'+name+'"'); }
+    finally { await admin.close(); }
+    throw error;
+  }
+}
+
+test("M1.08.03 stale Admin version one review cannot decide a corrected version two without re-review", async () => {
+  const {database,dispose}=await m10803IsolatedDatabase();
+  try{
+    const company=await registerCompany(database,"stale-admin-v1-v2");
+    const admin=await seedAdmin(database,"stale-admin-v1-v2");
+    const service=new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+    let state=await service.loadOwn(company.principal);
+    const oldVersionId=state.currentVersion.versionId;
+    const file1=await reserveAvailableEvidence(database,company.principal,"m10803-v1");
+    await service.bindEvidence({principal:company.principal,
+      secureFileId:file1,evidenceLabel:"Company registration evidence",
+      expectedActiveBindingId:null});
+    state=await service.submit({
+      principal:company.principal,expectedLockVersion:state.case.lockVersion
+    });
+    await service.beginReview({
+      principal:admin,caseId:company.caseId,
+      expectedVersionId:oldVersionId,expectedLockVersion:state.case.lockVersion
+    });
+    state=await service.loadOwn(company.principal);
+    assert.equal(state.case.caseStatus,"under_review");
+    const staleAdminForm=Object.freeze({
+      caseId:company.caseId,expectedVersionId:oldVersionId,
+      expectedLockVersion:state.case.lockVersion,outcome:"verified"
+    });
+    await service.decide({
+      principal:admin,caseId:company.caseId,outcome:"changes_requested",
+      expectedVersionId:oldVersionId,expectedLockVersion:state.case.lockVersion
+    });
+    state=await service.loadOwn(company.principal);
+    assert.equal(state.case.caseStatus,"changes_requested");
+    state=await service.startCorrection({
+      principal:company.principal,expectedLockVersion:state.case.lockVersion
+    });
+    assert.equal(state.currentVersion.versionNumber,2);
+    assert.equal(state.currentVersion.parentVersionId,oldVersionId);
+    const correctedVersionId=state.currentVersion.versionId;
+    assert.notEqual(correctedVersionId,oldVersionId);
+    const file2=await reserveAvailableEvidence(database,company.principal,"m10803-v2");
+    await service.bindEvidence({
+      principal:company.principal,secureFileId:file2,
+      evidenceLabel:"Company registration evidence",expectedActiveBindingId:null
+    });
+    state=await service.submit({
+      principal:company.principal,expectedLockVersion:state.case.lockVersion
+    });
+    const beforeFreshBegin = state.case.lockVersion;
+    await assert.rejects(
+      service.beginReview({principal:admin,caseId:company.caseId,
+        expectedVersionId:oldVersionId,expectedLockVersion:beforeFreshBegin}),
+      CompanyVerificationConflictError,
+      "Old Admin v1 begin-review form must not begin reviewing a corrected v2 submission"
+    );
+    let unchanged=await service.loadOwn(company.principal);
+    assert.equal(unchanged.case.caseStatus,"submitted");
+    assert.equal(unchanged.case.lockVersion,beforeFreshBegin);
+    assert.equal(unchanged.currentVersion.versionId,correctedVersionId);
+    await service.beginReview({
+      principal:admin,caseId:company.caseId,
+      expectedVersionId:correctedVersionId,expectedLockVersion:state.case.lockVersion
+    });
+    state=await service.loadOwn(company.principal);
+    assert.equal(state.case.caseStatus,"under_review");
+    const currentAdminForm=Object.freeze({
+      caseId:company.caseId,expectedVersionId:correctedVersionId,
+      expectedLockVersion:state.case.lockVersion,outcome:"verified"
+    });
+    assert.notEqual(staleAdminForm.expectedLockVersion,currentAdminForm.expectedLockVersion);
+    await assert.rejects(
+      service.decide({principal:admin,caseId:company.caseId,outcome:"verified",
+        expectedVersionId:correctedVersionId,
+        expectedLockVersion:staleAdminForm.expectedLockVersion}),
+      CompanyVerificationConflictError,
+      "Current version with stale case revision must not approve the corrected Company"
+    );
+    await assert.rejects(
+      service.decide({principal:admin,caseId:company.caseId,outcome:"verified",
+        expectedVersionId:"company_verification_version_"+"X".repeat(24),
+        expectedLockVersion:currentAdminForm.expectedLockVersion}),
+      CompanyVerificationConflictError,
+      "Forged well-shaped version ID cannot approve a Company"
+    );
+    const stale=await service.decide({
+      principal:admin,...staleAdminForm
+    }).then(()=>({accepted:true}),error=>({accepted:false,name:error.name,message:error.message}));
+    const observed=(await database.query(
+      "SELECT cases.case_status,cases.current_version_id,tenants.tenant_status "+
+      "FROM company_verification_cases cases JOIN platform_tenants tenants ON tenants.tenant_id=cases.tenant_id "+
+      "WHERE cases.case_id=$1",[company.caseId]
+    )).rows[0];
+    console.log("M10803_STALE_ADMIN_V1_FORM_ACTUAL_RESULT",
+      JSON.stringify({accepted:stale.accepted,error:stale.name??null,caseStatus:observed.case_status,
+        currentVersionIsV2:observed.current_version_id===correctedVersionId,tenantStatus:observed.tenant_status}));
+    assert.equal(stale.accepted,false,
+      "SECURITY RED: old Admin v1 decision form must NEVER authorize v2 after correction and independently begun review.");
+    assert.equal(stale.name,"CompanyVerificationConflictError");
+    assert.equal(observed.case_status,"under_review");
+    assert.equal(observed.current_version_id,correctedVersionId);
+    assert.equal(observed.tenant_status,"pending");
+    const premature=(await database.query(
+      "SELECT COUNT(*)::int n FROM platform_audit_events "+
+      "WHERE action_key='company_verification.status.changed' "+
+      "AND target_reference=$1 AND metadata->>'to'='verified'",[company.caseId]
+    )).rows[0].n;
+    assert.equal(premature,0,"Stale v1 Admin form cannot create v2 verification audit.");
+    console.log("M10803_STALE_V1_ADMIN_REVIEW_DENIED_NO_TENANT_ACTIVATION",
+      "v2 stays under review pending, old form rejected, no verified audit");
+
+    await service.decide({principal:admin,...currentAdminForm});
+    const final=await service.loadOwn(company.principal);
+    assert.equal(final.case.caseStatus,"verified");
+    assert.equal(final.currentVersion.versionId,correctedVersionId);
+    assert.equal(final.currentVersion.versionNumber,2);
+    assert.equal((await database.query(
+      "SELECT tenant_status FROM platform_tenants WHERE tenant_id=$1",[company.tenantId]
+    )).rows[0].tenant_status,"active");
+    assert.equal((await database.query(
+      "SELECT COUNT(*)::int n FROM platform_audit_events "+
+      "WHERE action_key='company_verification.status.changed' "+
+      "AND target_reference=$1 AND metadata->>'to'='verified' AND metadata->>'versionNumber'='2'",
+      [company.caseId]
+    )).rows[0].n,1);
+    assert.equal((await database.query(
+      "SELECT COUNT(*)::int n FROM company_verification_evidence "+
+      "WHERE case_id=$1 AND version_id=$2 AND secure_file_id=$3",
+      [company.caseId,oldVersionId,file1]
+    )).rows[0].n,1,"Original v1 scanned evidence cannot be silently overwritten.");
+    assert.equal((await database.query(
+      "SELECT COUNT(*)::int n FROM company_verification_evidence "+
+      "WHERE case_id=$1 AND version_id=$2 AND secure_file_id=$3",
+      [company.caseId,correctedVersionId,file2]
+    )).rows[0].n,1,"Corrected v2 independently scanned evidence remains bound.");
+    console.log("M10803_FRESH_V2_ADMIN_VERSION_BOUND_APPROVAL",
+      "new Admin review revision authorizes exactly v2, one audit and tenant activation, old version and both PDFs immutable");
+  }finally{await dispose();}
+});
+
+async function m10804IsolatedRejectedCompanyDatabase() {
+  const connection=process.env.HSE_M10804_POSTGRES_TEST_DATABASE_URL;
+  if(!connection){
+    const env=environment("m10804-company-terminal-rejection");
+    const database=await openScriptDatabase(env);
+    try { await applyMigrationsThrough(database,env.releaseSha,OWNED_MIGRATION); }
+    catch(error){await database.close();throw error;}
+    return {database,dispose:async()=>database.close()};
+  }
+  const url=new URL(connection);
+  if(!["127.0.0.1","localhost"].includes(url.hostname)||url.pathname!=="/postgres"){
+    throw new Error("M10804 synthetic test may only create and drop a unique database on a localhost postgres maintenance endpoint.");
+  }
+  const admin=await openScriptDatabase({...environment("m10804-pg-maintenance"),
+    databaseDriver:"postgres",databaseUrl:connection});
+  const name="m10804_terminal_rejected_"+process.pid+"_"+Date.now();
+  let database,created=false;
+  try{
+    await admin.execute('CREATE DATABASE "'+name+'"');
+    created=true;
+    url.pathname="/"+name;
+    const env={...environment("m10804-realpg-"+process.pid),
+      databaseDriver:"postgres",databaseUrl:url.href};
+    database=await openScriptDatabase(env);
+    await applyMigrationsThrough(database,env.releaseSha,
+      "0130_verified_identity_correction_notices");
+    return {database,dispose:async()=>{
+      try{await database.close();}
+      finally{try{await admin.execute('DROP DATABASE "'+name+'"');}
+        finally{await admin.close();}}
+    }};
+  }catch(error){
+    if(database)await database.close();
+    try{if(created)await admin.execute('DROP DATABASE "'+name+'"');}
+    finally{await admin.close();}
+    throw error;
+  }
+}
+
+test("M1.08.04 terminal Company rejection preserves pending tenant, original evidence and denies stale resurrection", async()=>{
+  const {database,dispose}=await m10804IsolatedRejectedCompanyDatabase();
+  try{
+    const company=await registerCompany(database,"terminal-rejected-v1");
+    const admin=await seedAdmin(database,"terminal-rejected-v1");
+    const service=new CompanyVerificationService(
+      new CompanyVerificationRepository(Promise.resolve(database))
+    );
+    const review=new CompanyVerificationReviewService(database);
+    let state=await service.loadOwn(company.principal);
+    const versionId=state.currentVersion.versionId;
+    const fileId=await reserveAvailableEvidence(database,company.principal,"m10804-original-v1");
+    await service.bindEvidence({principal:company.principal,secureFileId:fileId,
+      evidenceLabel:"Original Company registration evidence",expectedActiveBindingId:null});
+    state=await service.submit({
+      principal:company.principal,expectedLockVersion:state.case.lockVersion
+    });
+    await service.beginReview({
+      principal:admin,caseId:company.caseId,
+      expectedVersionId:versionId,expectedLockVersion:state.case.lockVersion
+    });
+    const beforeDecision=await service.loadOwn(company.principal);
+    assert.equal(beforeDecision.case.caseStatus,"under_review");
+    const originalAdminForm={
+      caseId:company.caseId,expectedVersionId:versionId,
+      expectedLockVersion:beforeDecision.case.lockVersion
+    };
+    assert.equal((await review.listForReview(admin)).some(x=>x.caseId===company.caseId),true);
+    await service.decide({...originalAdminForm,principal:admin,outcome:"rejected"});
+    const rejected=await service.loadOwn(company.principal);
+    assert.equal(rejected.case.caseStatus,"rejected");
+    assert.equal(rejected.currentVersion.versionId,versionId);
+    assert.equal(rejected.currentVersion.versionStatus,"rejected");
+    assert.equal(rejected.currentVersion.versionNumber,1);
+    assert.ok(rejected.case.rejectedAt&&rejected.currentVersion.terminalAt);
+    assert.equal(rejected.case.verifiedAt,null);
+    const frozenLock=rejected.case.lockVersion;
+    const frozenDraft=rejected.currentVersion.draftRevision;
+    assert.equal((await review.listForReview(admin)).some(x=>x.caseId===company.caseId),false,
+      "Rejected terminal cases must leave the actionable Admin decision queue.");
+    const tenant=(await database.query(
+      "SELECT tenant_status,activated_at FROM platform_tenants WHERE tenant_id=$1",
+      [company.tenantId])).rows;
+    assert.deepEqual(tenant,[{tenant_status:"pending",activated_at:null}]);
+
+    await assert.rejects(
+      service.decide({...originalAdminForm,principal:admin,outcome:"verified"}),
+      CompanyVerificationConflictError,
+      "An old signed Admin Verify form must not resurrect an already rejected Company.");
+    await assert.rejects(
+      service.decide({...originalAdminForm,principal:admin,outcome:"rejected"}),
+      CompanyVerificationConflictError,
+      "A replayed Reject form must not create a second immutable decision.");
+    await assert.rejects(
+      service.decide({principal:admin,caseId:company.caseId,
+        expectedVersionId:versionId,expectedLockVersion:frozenLock,outcome:"verified"}),
+      CompanyVerificationConflictError,
+      "Even a forged current revision must not convert terminal rejection to verified.");
+    await assert.rejects(
+      service.beginReview({principal:admin,caseId:company.caseId,
+        expectedVersionId:versionId,expectedLockVersion:frozenLock}),
+      CompanyVerificationConflictError,
+      "A rejected application cannot be placed back under review by replaying an old Admin form.");
+    await assert.rejects(
+      service.startCorrection({principal:company.principal,expectedLockVersion:frozenLock}),
+      CompanyVerificationConflictError,
+      "Only changes_requested, never terminal rejected, may start a correction.");
+    await assert.rejects(
+      service.submit({principal:company.principal,expectedLockVersion:frozenLock}),
+      CompanyVerificationConflictError,
+      "Company cannot resubmit a rejected version.");
+    await assert.rejects(
+      service.withdraw({principal:company.principal,expectedLockVersion:frozenLock}),
+      CompanyVerificationConflictError,
+      "Company cannot alter a final rejection by withdrawing.");
+    await assert.rejects(
+      service.saveDraft({principal:company.principal,expectedDraftRevision:frozenDraft,
+        draft:{
+          legalName:rejected.currentVersion.legalName,
+          tradingName:"Unapproved rejected rewrite",
+          registrationNumber:rejected.currentVersion.registrationNumber,
+          country:rejected.currentVersion.country,
+          industry:rejected.currentVersion.industry,
+          companySize:rejected.currentVersion.companySize,
+          website:rejected.currentVersion.website,
+          authorizedRepresentative:rejected.currentVersion.authorizedRepresentative,
+          businessPhone:rejected.currentVersion.businessPhone
+        }}),
+      CompanyVerificationConflictError,
+      "Company may not edit a rejected submission from a stale tab.");
+    const after=await service.loadOwn(company.principal);
+    assert.equal(after.case.caseStatus,"rejected");
+    assert.equal(after.case.lockVersion,frozenLock);
+    assert.equal(after.currentVersion.versionId,versionId);
+    assert.equal(after.currentVersion.versionStatus,"rejected");
+    assert.equal(after.currentVersion.tradingName,rejected.currentVersion.tradingName);
+    assert.equal((await database.query(
+      "SELECT count(*)::int n FROM company_verification_versions WHERE case_id=$1",
+      [company.caseId])).rows[0].n,1,"Terminal rejection must retain one immutable original version.");
+    const evidence=(await database.query(
+      "SELECT e.version_id,e.binding_status,f.lifecycle_status,f.detected_mime "+
+      "FROM company_verification_evidence e JOIN platform_secure_files f "+
+      "ON f.file_id=e.secure_file_id WHERE e.case_id=$1 AND e.secure_file_id=$2",
+      [company.caseId,fileId])).rows;
+    assert.deepEqual(evidence,[{version_id:versionId,binding_status:"active",
+      lifecycle_status:"available",detected_mime:"application/pdf"}]);
+    const audit=(await database.query(
+      "SELECT metadata->>'from' as prior,metadata->>'to' as outcome "+
+      "FROM platform_audit_events WHERE target_reference=$1 "+
+      "AND action_key='company_verification.status.changed'",
+      [company.caseId])).rows;
+    assert.equal(audit.filter(x=>x.prior==="under_review"&&x.outcome==="rejected").length,1);
+    assert.equal(audit.filter(x=>x.outcome==="verified").length,0);
+    assert.equal(audit.filter(x=>x.outcome==="rejected").length,1);
+    assert.equal((await database.query(
+      "SELECT tenant_status FROM platform_tenants WHERE tenant_id=$1",
+      [company.tenantId])).rows[0].tenant_status,"pending");
+    console.log("M10804_TERMINAL_REJECTION_DENIES_RESURRECTION_DB",
+      "old and forged Admin Verify/Reject replays, new review and Company edit/correct/submit/withdraw all conflict; zero verified audits and tenant remains pending");
+    console.log("M10804_REJECTED_COMPANY_ADMIN_QUEUE_AND_EVIDENCE_PERSISTED",
+      "one original scanned PDF/one rejected version/one final Admin audit, rejected Company still readable but absent from active Admin review queue");
+  }finally{await dispose();}
+});
+
+async function m10805IsolatedPostgres() {
+  const base = process.env.HSE_M10805_POSTGRES_TEST_DATABASE_URL;
+  const url = new URL(base);
+  if (!["127.0.0.1","localhost"].includes(url.hostname) || url.pathname !== "/postgres")
+    throw new Error("M10805 permits only an isolated temporary database on localhost PostgreSQL.");
+  const maintenance = await openScriptDatabase({...environment("m10805-maintenance"),databaseDriver:"postgres",databaseUrl:base});
+  const dbname = "m10805_admin_race_"+process.pid+"_"+Date.now();
+  let first,second,created=false;
+  try {
+    await maintenance.execute('CREATE DATABASE "'+dbname+'"');
+    created=true;
+    url.pathname="/"+dbname;
+    const config={...environment("m10805-"+process.pid),databaseDriver:"postgres",databaseUrl:url.href};
+    first=await openScriptDatabase(config);
+    await applyMigrationsThrough(first,config.releaseSha,"0130_verified_identity_correction_notices");
+    second=await openScriptDatabase(config);
+    return {first,second,async dispose(){
+      try{await second.close();await first.close();}
+      finally{try{await maintenance.execute('DROP DATABASE "'+dbname+'"');}
+        finally{await maintenance.close();}}
+    }};
+  } catch(error) {
+    await Promise.allSettled([second?.close(),first?.close()]);
+    try{if(created)await maintenance.execute('DROP DATABASE "'+dbname+'"');}
+    finally{await maintenance.close();}
+    throw error;
+  }
+}
+
+if(process.env.HSE_M10805_POSTGRES_TEST_DATABASE_URL) {
+  test("M1.08.05 two Admins race Company final approval or rejection on real PostgreSQL16", {timeout:180000}, async()=>{
+    const {first,second,dispose}=await m10805IsolatedPostgres();
+    try{
+      for(const win of ["verified","rejected"]){
+        const suffix="m10805-"+win;
+        const company=await registerCompany(first,suffix);
+        const adminA=await seedAdmin(first,suffix+"-a");
+        const adminB=await seedAdmin(first,suffix+"-b");
+        const service=new CompanyVerificationService(
+          new CompanyVerificationRepository(Promise.resolve(first)));
+        let snapshot=await service.loadOwn(company.principal);
+        const versionId=snapshot.currentVersion.versionId;
+        const fileId=await reserveAvailableEvidence(first,company.principal,suffix+"-pdf");
+        await service.bindEvidence({principal:company.principal,secureFileId:fileId,
+          evidenceLabel:"Company original scanned evidence",expectedActiveBindingId:null});
+        snapshot=await service.submit({
+          principal:company.principal,expectedLockVersion:snapshot.case.lockVersion});
+        await service.beginReview({principal:adminA,caseId:company.caseId,
+          expectedVersionId:versionId,expectedLockVersion:snapshot.case.lockVersion});
+        snapshot=await service.loadOwn(company.principal);
+        const revision=snapshot.case.lockVersion;
+        const form=Object.freeze({caseId:company.caseId,expectedVersionId:versionId,
+          expectedLockVersion:revision});
+        let release,signalled;
+        const commitGate=new Promise(r=>release=r);
+        const firstWrote=new Promise(r=>signalled=r);
+        const held={
+          ...first,
+          async transaction(callback){
+            return first.transaction(async tx=>{
+              const value=await callback(tx);
+              signalled();
+              await commitGate;
+              return value;
+            });
+          }
+        };
+        const decidingA=new CompanyVerificationService(
+          new CompanyVerificationRepository(Promise.resolve(held)));
+        const decidingB=new CompanyVerificationService(
+          new CompanyVerificationRepository(Promise.resolve(second)));
+        let aPromise,bPromise;
+        try{
+          aPromise=decidingA.decide({principal:adminA,...form,outcome:win});
+          const writeStatus=await Promise.race([
+            firstWrote.then(()=>"uncommitted"),
+            aPromise.then(()=>"unexpected_commit",err=>{throw err;}),
+            new Promise(r=>setTimeout(()=>r("first_not_ready"),10000))
+          ]);
+          assert.equal(writeStatus,"uncommitted");
+          bPromise=decidingB.decide({principal:adminB,...form,
+            outcome:win==="verified"?"rejected":"verified"
+          }).then(()=>({accepted:true}),error=>({accepted:false,name:error.name,message:error.message}));
+          const early=await Promise.race([
+            bPromise.then(()=>"premature_second_decision"),
+            new Promise(r=>setTimeout(()=>r("second_waited"),1100))
+          ]);
+          assert.equal(early,"second_waited","Second independent Admin cannot decide before first DB commit.");
+          release();
+          await aPromise;
+          const loser=await bPromise;
+          assert.equal(loser.accepted,false,"Both Admin decisions cannot succeed for one case revision.");
+          assert.equal(loser.name,"CompanyVerificationConflictError");
+        }finally{
+          release?.();
+          await Promise.allSettled([aPromise,bPromise]);
+        }
+        await assert.rejects(
+          service.decide({principal:adminA,...form,outcome:win}),
+          CompanyVerificationConflictError,"Previously accepted Admin decision cannot be replayed.");
+        const row=(await first.query(
+          "SELECT c.case_status,c.lock_version,c.current_version_id,v.version_status,"+
+          "t.tenant_status,t.activated_at FROM company_verification_cases c "+
+          "JOIN company_verification_versions v ON v.version_id=c.current_version_id "+
+          "JOIN platform_tenants t ON t.tenant_id=c.tenant_id WHERE c.case_id=$1",
+          [company.caseId])).rows[0];
+        assert.equal(row.case_status,win);
+        assert.equal(row.version_status,win);
+        assert.equal(row.current_version_id,versionId);
+        assert.equal(Number(row.lock_version),revision+1);
+        assert.equal(row.tenant_status,win==="verified"?"active":"pending");
+        assert.equal(Boolean(row.activated_at),win==="verified");
+        const decisionEvents=(await first.query(
+          "SELECT metadata->>'to' decision FROM platform_audit_events "+
+          "WHERE target_reference=$1 AND action_key='company_verification.status.changed' "+
+          "AND metadata->>'from'='under_review'",
+          [company.caseId])).rows;
+        assert.deepEqual(decisionEvents,[{decision:win}],
+          "Exactly one winning decision audit; no losing or replayed audit.");
+        assert.equal((await first.query(
+          "SELECT count(*)::int n FROM company_verification_versions WHERE case_id=$1",
+          [company.caseId])).rows[0].n,1);
+        assert.equal((await first.query(
+          "SELECT count(*)::int n FROM company_verification_evidence "+
+          "WHERE case_id=$1 AND version_id=$2 AND secure_file_id=$3",
+          [company.caseId,versionId,fileId])).rows[0].n,1);
+        assert.equal((await new CompanyVerificationReviewService(first)
+          .listForReview(adminB)).some(x=>x.caseId===company.caseId),false);
+        console.log("M10805_TWO_ADMIN_REAL_PG16_DECISION_SERIALIZED_DB",
+          JSON.stringify({winner:win,loser:"denied",singleAudit:true,
+            tenantStatus:row.tenant_status,caseRevision:Number(row.lock_version)}));
+        console.log("M10805_PENDING_OR_ACTIVATED_TENANT_SINGLE_AUDIT_REPLAY_DENIED",
+          win,"original Company PDF and v1 remain, old decision form rejects, one terminal audit");
+      }
+    }finally{await dispose();}
+  });
+}

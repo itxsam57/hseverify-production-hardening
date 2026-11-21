@@ -1,0 +1,127 @@
+name: M1.11.07 real signed supervisor observation Worker ack and Verifier security Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/supervisor-observation-journey.browser.test.mjs'
+      - 'tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs'
+      - 'src/app/layout-containment.css'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/review/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-07-supervisor-observation-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/supervisor-observation-journey.browser.test.mjs'
+      - 'tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs'
+      - 'src/app/layout-containment.css'
+      - 'src/app/company/**'
+      - 'src/app/worker/**'
+      - 'src/app/verifier/**'
+      - 'src/lib/review/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-07-supervisor-observation-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11107-supervisor-observation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  company-worker-verifier-observations-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact pull request or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Company signed observation Worker acknowledgement Verifier decisions and denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/supervisor-observation-journey.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11107-supervisor-original-real-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11107-supervisor-original-real-chromium.log
+          done
+          for marker in ROLE_AND_SIGNED_OUT_OBSERVATION_ROUTES_DENIED UNSIGNED_DECLARATION_BROWSER_REFUSED REPLAY_ACKNOWLEDGEMENT_CANNOT_REPEAT RESPONSIVE_COMPANY_WORKER_VERIFIER_320_390_1440 DB_15_ACK_9_DECISIONS_3_BLOCKERS_IMMUTABLE; do
+            grep -q "M11107_ACTUAL_${marker}" .autopilot/artifacts/m11107-supervisor-original-real-chromium.log
+          done
+          for observed in demonstrated partially_demonstrated not_demonstrated; do
+            for decision in APPROVED REJECTED CHANGES_REQUESTED; do
+              grep -q "SCENARIO $observed -> $decision -> Worker/Company feedback persisted" .autopilot/artifacts/m11107-supervisor-original-real-chromium.log
+            done
+          done
+          for blocker in ESCALATED UNABLE_TO_VERIFY CHANGES_REQUESTED; do
+            grep -q "MIXED ACK preserved $blocker existing owner and route" .autopilot/artifacts/m11107-supervisor-original-real-chromium.log
+          done
+      - name: Preserve original exact-SHA 12-scene supervisor browser log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11107-supervisor-browser-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11107-supervisor-original-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  adjacent-m11106-private-letter-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout identical exact SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked dependencies and actual Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Original M1.11.06 private v1/v2 preview and foreign Worker regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11107-original-m11106-private-letter.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11107-original-m11106-private-letter.log
+          done
+          for marker in FOREIGN_WORKER_COPIED_PREVIEW_DENIED SIGNED_EXPIRED_LETTER_PREVIEW_DENIED WRONG_PURPOSE_AND_TAMPERED_TOKEN_DENIED RESPONSIVE_LETTERS_320_390_1440; do
+            grep -q "M11106_ACTUAL_${marker}" .autopilot/artifacts/m11107-original-m11106-private-letter.log
+          done
+          for marker in ACTUAL_M11106_REPLACEMENT_BROWSER ACTUAL_M11106_PRIVATE_PREVIEW ACTUAL_M11106_BROWSER ACTUAL_M11106_DB; do
+            grep -q "$marker" .autopilot/artifacts/m11107-original-m11106-private-letter.log
+          done
+      - name: Preserve original exact-SHA adjacent private letter browser log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11107-original-m11106-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11107-original-m11106-private-letter.log
+          if-no-files-found: warn
+          retention-days: 90

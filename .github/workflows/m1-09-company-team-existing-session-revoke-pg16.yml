@@ -1,0 +1,103 @@
+name: M1.09.05 real Company session revocation and login race PG16 + Chromium
+on:
+  pull_request:
+    paths:
+      - 'src/lib/auth/auth-repository.ts'
+      - 'src/lib/company/company-team-service.ts'
+      - 'scripts/run-company-organization-team-tests.mjs'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'tests/browser/m10905-company-team-session-revocation.browser.test.mjs'
+      - '.github/workflows/m1-09-company-team-existing-session-revoke-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'src/lib/auth/auth-repository.ts'
+      - 'src/lib/company/company-team-service.ts'
+      - 'scripts/run-company-organization-team-tests.mjs'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - 'tests/browser/m10905-company-team-session-revocation.browser.test.mjs'
+      - '.github/workflows/m1-09-company-team-existing-session-revoke-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m10905-company-existing-session-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  company-suspend-revoke-old-tokens-and-new-login-race:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_team_session
+          POSTGRES_PASSWORD: synthetic_team_session_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_team_session -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR HEAD or signed QA merge SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck full Company Team and authentication session source
+        run: npm run typecheck
+      - name: Real PostgreSQL16 both suspend-revoke login race orders, three-role isolation and immutable audit
+        shell: bash
+        env:
+          HSE_M10905_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_team_session:synthetic_team_session_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-organization-team-tests.mjs --test-name-pattern 'M1.09.05 actual PostgreSQL16 cached Company staff session suspension and revocation token cannot revive' 2>&1 | tee .autopilot/artifacts/m10905-company-session-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10905-company-session-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10905-company-session-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10905-company-session-pg16.log
+          for marker in SUSPEND_INVALIDATES_ALL_PREVIOUS_COMPANY_SESSION_TOKENS LOGIN_ISSUANCE_DURING_SUSPENSION_DENIED OLD_SIGNED_SESSIONS_CANNOT_REVIVE_AFTER_REACTIVATION CONCURRENT_LOGIN_REVOKE_ROWLOCK_SERIALIZES_AND_FAILS_CLOSED REVOKE_INVALIDATES_FRESH_TOKEN_FOREIGN_AND_OWNER_UNTOUCHED_AUDITS_EXACT; do
+            grep -q "M10905_REAL_PG16_${marker}" .autopilot/artifacts/m10905-company-session-pg16.log
+          done
+      - name: Changed authentication and Company Team native regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:auth-platform 2>&1 | tee .autopilot/artifacts/m10905-auth-base-regression.log
+          npm run test:authorization-platform 2>&1 | tee .autopilot/artifacts/m10905-authorization-regression.log
+          npm run test:m1-09 2>&1 | tee .autopilot/artifacts/m10905-company-team-native-regression.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10905-company-team-native-regression.log
+          grep -q 'ℹ pass 4' .autopilot/artifacts/m10905-company-team-native-regression.log
+      - name: Install Chromium for real Company Owner and Manager UI
+        run: npx playwright install chromium
+      - name: Real Chromium suspend/reactivate/revoke forms and existing signed cookie replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/browser/m10905-company-team-session-revocation.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10905-company-session-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10905-company-session-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10905-company-session-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10905-company-session-chromium.log
+          for marker in MANAGER_PRE_SUSPEND_AUTHENTICATED_390PX OWNER_SUBMITTED_REAL_SUSPEND_FORM MANAGER_EXISTING_COOKIE_REDIRECTED_TO_LOGIN OLD_COOKIE_STAYS_REVOKED_AFTER_REACTIVATION NEW_TOTP_SESSION_ALLOWED_AFTER_REACTIVATION REVOKE_INVALIDATES_FRESH_COMPANY_COOKIE REAL_DB_TWO_REVOKED_TOKENS_THREE_IMMUTABLE_TEAM_AUDITS; do
+            grep -q "M10905_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m10905-company-session-chromium.log
+          done
+      - name: Preserve exact-SHA PG16/auth/native/browser raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10905-company-revoke-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10905-*.log
+          if-no-files-found: warn
+          retention-days: 30

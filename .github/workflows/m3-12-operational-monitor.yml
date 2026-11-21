@@ -1,0 +1,52 @@
+name: M3.12 operational readiness alert drill
+
+on:
+  pull_request:
+    paths:
+      - "src/app/api/operations/readiness/route.ts"
+      - "scripts/operations/check-release-readiness.mjs"
+      - "tests/platform/m3-12-monitor-alert.test.mjs"
+      - "tests/platform/m3-12-readiness-http-runtime.test.mjs"
+      - "package.json"
+      - ".github/workflows/m3-12-operational-monitor.yml"
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - "src/app/api/operations/readiness/route.ts"
+      - "scripts/operations/check-release-readiness.mjs"
+      - "tests/platform/m3-12-monitor-alert.test.mjs"
+      - "tests/platform/m3-12-readiness-http-runtime.test.mjs"
+      - "package.json"
+      - ".github/workflows/m3-12-operational-monitor.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m312-alert-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  readiness-alert-local-drill:
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact M3.12 source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.VERIFIED_SHA }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Actual local HTTP readiness outage, alert and recovery
+        run: npm run test:m3-12-ops-monitor
+      - name: Strict TypeScript
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint

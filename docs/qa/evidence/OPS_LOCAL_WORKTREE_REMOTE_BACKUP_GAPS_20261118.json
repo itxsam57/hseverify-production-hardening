@@ -1,0 +1,94 @@
+{
+  "warning": "This is only a metadata inventory. SHA presence on remote and private/ignored raw evidence require independent confirmation before deleting a worktree. Do not put files containing secrets into public GitHub.",
+  "total_worktrees": 145,
+  "dirty": 62,
+  "dirty_non_audit": 14,
+  "total_local_evidence_files": 3357,
+  "worktrees_with_local_evidence": 136,
+  "local_code_needing_remote_verification": [
+    {
+      "branch": "main",
+      "sha": "07682b505823d4a61626e23a02ac050a7363ca9c",
+      "worktree": "chatmcpforhandsoffacess",
+      "non_audit_changed_count": 1
+    },
+    {
+      "branch": "qa/a28-eligibility-read-guard-20261107",
+      "sha": "f4628888db95eeeb22a74a884e12a77f7378fae6",
+      "worktree": "hseverify-eligibility-guard-20261107",
+      "non_audit_changed_count": 4
+    },
+    {
+      "branch": "qa/verify-m10402-company-report-bola-20261112",
+      "sha": "51ddc49cb5ab02e2ffd8943e9f4b2ca46d770fe0",
+      "worktree": "hseverify-m10402-company-report-bola-20261112",
+      "non_audit_changed_count": 2
+    },
+    {
+      "branch": "qa/m11103-skill-review-20261118",
+      "sha": "751623ac81144d52c2143ba449578e7404b01db0",
+      "worktree": "hseverify-m11103-skill-review-20261118",
+      "non_audit_changed_count": 1
+    },
+    {
+      "branch": "",
+      "sha": "eb77b70f6584c76169e7d6b849b88e25ae666696",
+      "worktree": "hseverify-m21304-red-20261107",
+      "non_audit_changed_count": 1
+    },
+    {
+      "branch": "qa/m21304-live-credential-status-20261103",
+      "sha": "e57d95a399138ddac175ca4961551348a0f38889",
+      "worktree": "hseverify-m21304-status",
+      "non_audit_changed_count": 11
+    },
+    {
+      "branch": "qa/verify-m312-release-20261109",
+      "sha": "e0d4c4e95827e1529482fa1a342092e90312543a",
+      "worktree": "hseverify-m312-release-audit-20261109",
+      "non_audit_changed_count": 1
+    },
+    {
+      "branch": "qa/masterplan-release-20261016",
+      "sha": "eb77b70f6584c76169e7d6b849b88e25ae666696",
+      "worktree": "hseverify-masterplan-release",
+      "non_audit_changed_count": 3
+    },
+    {
+      "branch": "qa/ops-progress-20261118",
+      "sha": "751623ac81144d52c2143ba449578e7404b01db0",
+      "worktree": "hseverify-ops-progress-20261118",
+      "non_audit_changed_count": 12
+    },
+    {
+      "branch": "",
+      "sha": "fe07ced94384b706b94ee2bebec3195eb8fc1def",
+      "worktree": "hseverify-release-build-20261107",
+      "non_audit_changed_count": 4
+    },
+    {
+      "branch": "qa/release-candidate-20261107",
+      "sha": "bfb790d0a75f368ae6cda53693d6096d4ada3588",
+      "worktree": "hseverify-release-candidate-20261107",
+      "non_audit_changed_count": 2
+    },
+    {
+      "branch": "qa/masterplan-release-squash-20261102",
+      "sha": "4c19feb596cf09c24ef58fcd08653a7a6e323ab8",
+      "worktree": "hseverify-release-squash",
+      "non_audit_changed_count": 1
+    },
+    {
+      "branch": "release/hostinger-v2-candidate-20260824",
+      "sha": "ea4233b7ce4063595b626d0bbde0478b7c6551e7",
+      "worktree": "issued-once-safepay-audit",
+      "non_audit_changed_count": 15
+    },
+    {
+      "branch": "release/hostinger-v2-candidate-20260824",
+      "sha": "1f357bef2260d06142ea2b12af02931e80d28ee8",
+      "worktree": "issued-once-safepay-final-proof",
+      "non_audit_changed_count": 1
+    }
+  ]
+}

@@ -61,6 +61,9 @@ function readCredentialSigningConfiguration(input, issues) {
 export function validateScriptEnvironment(input = process.env) {
   const issues = [];
   const appEnvironment = readAppEnvironment(input);
+  if (input.NODE_ENV === "production" && (appEnvironment === "development" || appEnvironment === "test")) {
+    issues.push("NODE_ENV=production cannot use HSE_APP_ENV=development or test.");
+  }
   const requestedDriver = input.HSE_DATABASE_DRIVER?.trim();
   const databaseDriver = ["pglite", "postgres"].includes(requestedDriver)
     ? requestedDriver
@@ -129,6 +132,39 @@ export function validateScriptEnvironment(input = process.env) {
   }
   if (appEnvironment === "production" && demoDataEnabled) {
     issues.push("HSE_USE_WORKER_DEMO_DATA must be false in production.");
+  }
+
+  // Match the runtime's OTP and public-origin checks before deployment scripts
+  // announce a healthy environment. These are validation-only: no provider calls.
+  const otpEmailKey = input.HSE_OTP_EMAIL_API_KEY?.trim();
+  const otpEmailFrom = input.HSE_OTP_EMAIL_FROM?.trim();
+  const otpSmsSid = input.HSE_OTP_SMS_ACCOUNT_SID?.trim();
+  const otpSmsToken = input.HSE_OTP_SMS_AUTH_TOKEN?.trim();
+  const otpSmsFrom = input.HSE_OTP_SMS_FROM?.trim();
+  const safe = (value, maximum) =>
+    !!value && value.length <= maximum && !/[\x00-\x1f\x7f]/.test(value);
+  if (otpEmailKey || otpEmailFrom) {
+    if (!safe(otpEmailKey, 512) || !safe(otpEmailFrom, 320) ||
+        !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(otpEmailFrom ?? "")) {
+      issues.push("OTP email requires a valid API key and sender email address.");
+    }
+  }
+  if (otpSmsSid || otpSmsToken || otpSmsFrom) {
+    if (!/^AC[0-9a-fA-F]{32}$/.test(otpSmsSid ?? "") ||
+        !safe(otpSmsToken, 512) || !/^\+[1-9][0-9]{7,14}$/.test(otpSmsFrom ?? "")) {
+      issues.push("OTP SMS requires a valid account SID, auth token and sender number.");
+    }
+  }
+  if (input.HSE_PUBLIC_BASE_URL?.trim()) {
+    try {
+      const url = new URL(input.HSE_PUBLIC_BASE_URL.trim());
+      const local = (appEnvironment === "development" || appEnvironment === "test") &&
+        url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+      if ((url.protocol !== "https:" && !local) || url.username || url.password ||
+          url.search || url.hash || url.pathname !== "/") throw new Error();
+    } catch {
+      issues.push("HSE_PUBLIC_BASE_URL must be a clean HTTPS origin, or a local HTTP origin in development/test.");
+    }
   }
 
   if (issues.length > 0) {

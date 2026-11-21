@@ -1,9 +1,9 @@
 "use client";
 
 export function NotificationError({
-  reset
+  retry
 }: {
-  reset: () => void;
+  retry: () => void;
 }): React.JSX.Element {
   return (
     <div className="notification-center-page">
@@ -19,7 +19,7 @@ export function NotificationError({
       <div className="empty-state notification-failure-state" role="alert">
         <h2>Notifications are temporarily unavailable</h2>
         <p>No notification was changed. Try loading this portal view again.</p>
-        <button className="button button-secondary" type="button" onClick={reset}>
+        <button className="button button-secondary" type="button" onClick={retry}>
           Try again
         </button>
       </div>

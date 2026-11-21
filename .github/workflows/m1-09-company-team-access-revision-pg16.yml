@@ -1,0 +1,103 @@
+name: M1.09.04 real PostgreSQL16 stale Company Team access revision denial
+on:
+  pull_request:
+    paths:
+      - 'database/migrations/0133_company_team_access_revision_cas.*.sql'
+      - 'src/lib/company/company-team-service.ts'
+      - 'src/app/company/(portal)/team/actions.ts'
+      - 'src/components/company/company-team-workspace.tsx'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - '.github/workflows/m1-09-company-team-access-revision-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'database/migrations/0133_company_team_access_revision_cas.*.sql'
+      - 'src/lib/company/company-team-service.ts'
+      - 'src/app/company/(portal)/team/actions.ts'
+      - 'src/components/company/company-team-workspace.tsx'
+      - 'tests/platform/company-organization-team.test.mjs'
+      - '.github/workflows/m1-09-company-team-access-revision-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m10904-company-team-cas-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  two-company-admin-sessions-stale-permission-denial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_team_access
+          POSTGRES_PASSWORD: synthetic_team_access_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_team_access -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR HEAD or signed QA merge SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck Company Team server actions and form revision
+        run: npm run typecheck
+      - name: Genuine PG16 two Company staff stale permission replay and committed race
+        shell: bash
+        env:
+          HSE_M10904_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_team_access:synthetic_team_access_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-organization-team-tests.mjs --test-name-pattern 'M1.09.04 actual PostgreSQL16 Company Team same-role stale permission form replay denied' 2>&1 | tee .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'M10904_ACTUAL_PG16_TWO_STAFF_STALE_PERMISSION_REPLAY outcome=DENIED workforce_manage=false' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'M10904_ACTUAL_PG16_TWO_STAFF_CONCURRENT_CAS_WINNER_ONE_STALE_DENIED' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'M10904_ACTUAL_PG16_STATUS_REVISION_RESURRECTION_DENIED_AND_FRESH_GRANT_ALLOWED' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+          grep -q 'M10904_ACTUAL_PG16_MEMBER_AUDIT_DENIES_DUPLICATE_AND_FOREIGN_TENANT' .autopilot/artifacts/m10904-two-company-staff-access-cas-pg16.log
+      - name: Native previous Company Team workflow regression after access API revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/run-company-organization-team-tests.mjs --test-name-pattern 'M1.09 organization and Company Team compose tenant scope' 2>&1 | tee .autopilot/artifacts/m10904-old-team-journey-regression.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10904-old-team-journey-regression.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10904-old-team-journey-regression.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10904-old-team-journey-regression.log
+      - name: Install real Chromium for signed-in Company Team form and receiving-state UI
+        run: npx playwright install chromium
+      - name: Real Chromium desktop Owner and 390px Admin stale Team permission replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/browser/m10904-company-team-stale-permission.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m10904-two-company-chromium-stale-form.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m10904-two-company-chromium-stale-form.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m10904-two-company-chromium-stale-form.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m10904-two-company-chromium-stale-form.log
+          for marker in OWNER_REVOKED_WORKFORCE_PERMISSION STALE_ADMIN_FORM_CONFLICT_390PX FRESH_ADMIN_VERSION2_AUTHORIZED_GRANT OWNER_RECEIVES_FRESH_ADMIN_STATE_RELOAD PERSISTED_DB_REVISION3_AND_TWO_ACTOR_AUDITS; do
+            grep -q "M10904_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m10904-two-company-chromium-stale-form.log
+          done
+      - name: Preserve exact-source raw PG16 and original native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m10904-company-team-access-cas-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m10904-*.log
+          if-no-files-found: warn
+          retention-days: 30

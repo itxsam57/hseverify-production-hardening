@@ -1,0 +1,121 @@
+name: M1.11.05 two Worker employments exact end negative stale and responsive Chromium
+on:
+  pull_request:
+    paths:
+      - 'tests/browser/m1-11-multiple-employments.browser.test.mjs'
+      - 'tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs'
+      - 'src/app/worker/**'
+      - 'src/components/worker/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/lib/secure-files/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-05-multiple-employments-chromium.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/browser/m1-11-multiple-employments.browser.test.mjs'
+      - 'tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs'
+      - 'src/app/worker/**'
+      - 'src/components/worker/**'
+      - 'src/lib/worker-evidence/**'
+      - 'src/lib/secure-files/**'
+      - 'database/migrations/**'
+      - '.github/workflows/m1-11-05-multiple-employments-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11105-multi-employment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker-two-employments-real-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24 pinned dependencies and real Chromium
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact locked dependencies and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Real Worker form invalid date stale second-tab duplicate exact end desktop and mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m1-11-multiple-employments.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          done
+          for marker in INVALID_END_BEFORE_START_BOTH_RECORDS_UNCHANGED STALE_DUPLICATE_END_REJECTED RESPONSIVE_EXACT_END_WORKER_320_390_1440 DB_NEGATIVE_STALE_NO_EXTRA_VERSION_OR_FOREIGN_FILE; do
+            grep -q "M11105_ACTUAL_${marker}" .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          done
+          grep -q 'ACTUAL_M11105_BROWSER Alpha alone ended; Beta unchanged' .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          grep -q 'ACTUAL_M11105_DB two distinct employment records' .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          grep -q 'ACTUAL_M11105_EMPLOYMENT_SUBMITTED Employer Alpha alpha-employment.png' .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          grep -q 'ACTUAL_M11105_EMPLOYMENT_SUBMITTED Employer Beta beta-employment.png' .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+      - name: Retain original exact-SHA Worker two-employment browser proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11105-multiple-employment-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11105-exact-multiple-employment-chromium.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  previous-m11106-leaving-letter-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout same immutable SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24 pinned dependencies and real Chromium
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact locked dependencies and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Original unchanged leaving-letter replacement exact version and private preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test --test-concurrency=1 tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
+          for line in 'ℹ tests 1' 'ℹ pass 1' 'ℹ fail 0' 'ℹ skipped 0'; do
+            grep -q "$line" .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
+          done
+          for marker in ACTUAL_M11106_REPLACEMENT_BROWSER ACTUAL_M11106_PRIVATE_PREVIEW ACTUAL_M11106_BROWSER ACTUAL_M11106_DB; do
+            grep -q "$marker" .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
+          done
+          for marker in FOREIGN_WORKER_COPIED_PREVIEW_DENIED SIGNED_EXPIRED_LETTER_PREVIEW_DENIED WRONG_PURPOSE_AND_TAMPERED_TOKEN_DENIED RESPONSIVE_LETTERS_320_390_1440; do
+            grep -q "M11106_ACTUAL_${marker}" .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
+          done
+      - name: Retain original adjacent M1.11.06 browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11105-original-m11106-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11105-original-m11106-leaving-letter-regression.log
+          if-no-files-found: warn
+          retention-days: 90

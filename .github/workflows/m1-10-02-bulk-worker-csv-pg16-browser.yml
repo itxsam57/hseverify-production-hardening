@@ -1,0 +1,116 @@
+name: M1.10.02 Company Worker bulk CSV real Chromium and PostgreSQL16
+on:
+  pull_request:
+    paths:
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - 'tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs'
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - '.github/workflows/m1-10-02-bulk-worker-csv-pg16-browser.yml'
+  push:
+    branches: [qa/a28-eligibility-read-guard-20261107]
+    paths:
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - 'tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs'
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - '.github/workflows/m1-10-02-bulk-worker-csv-pg16-browser.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11002-bulk-csv-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-postgres16-concurrent-company-bulk-csv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_bulk_csv
+          POSTGRES_PASSWORD: synthetic_bulk_csv_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U synthetic_bulk_csv -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exact lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Independent PostgreSQL16 race, retry and authorization
+        shell: bash
+        env:
+          HSE_M11002_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_bulk_csv:synthetic_bulk_csv_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-worker-invitation-tests.mjs --test-name-pattern 'M1.10.02 actual PostgreSQL16 concurrent Company bulk CSV duplicate recovery blocks stale sessions and cross-tenant units' 2>&1 | tee .autopilot/artifacts/m11002-real-pg16.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11002-real-pg16.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11002-real-pg16.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11002-real-pg16.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11002-real-pg16.log
+          for marker in TWO_AUTHENTICATED_COMPANY_SESSIONS_CONCURRENT_BULK_ONE_WINNER_DUPLICATE_DENIED CORRECTED_RETRY_ONE_NEW_WRONG_ROLE_FOREIGN_SITE_REVOKED_SESSION_DENIED DB_EXACT_FOUR_PENDING_ONE_PER_DISTINCT_VALID_ROW_AND_IMMUTABLE_OWNER_AUDIT; do
+            grep -q "M11002_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11002-real-pg16.log
+          done
+      - name: Archive exact-SHA PostgreSQL16 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11002-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11002-real-pg16.log
+          if-no-files-found: warn
+          retention-days: 30
+  signed-company-worker-actual-chromium-csv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR head or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exact lockfile and real Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: Company bulk mixed CSV, Worker recipient, negative and persistence real browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node --test tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs 2>&1 | tee .autopilot/artifacts/m11002-real-chromium.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11002-real-chromium.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11002-real-chromium.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11002-real-chromium.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11002-real-chromium.log
+          for marker in MIXED_QUOTED_EMPTY_DUPLICATE_ROW_EXPLICIT_2_CREATED_4_ERROR CORRECTED_RETRY_CREATED_ONCE_EXISTING_ROWS_REJECTED_WITH_ORDER OVERFLOW_501_EMPTY_CSV_DENIED_HTML_LIKE_PAYLOAD_INERT_NO_INSERT WRONG_ROLE_ANONYMOUS_DENIED_WORKER_CSV_LINK_ACCEPTED_COMPANY_RECEIVER_390 DB_EXACT_FOUR_INVITES_ONE_WORKER_ACTIVE_THREE_OWNER_AUDITS_ONE_WORKER_AUDIT; do
+            grep -q "M11002_ACTUAL_CHROMIUM_${marker}" .autopilot/artifacts/m11002-real-chromium.log
+          done
+      - name: Archive exact-SHA Chromium role and audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11002-chromium-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11002-real-chromium.log
+          if-no-files-found: warn
+          retention-days: 30

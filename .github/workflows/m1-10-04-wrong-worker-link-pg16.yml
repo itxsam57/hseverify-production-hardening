@@ -1,0 +1,82 @@
+name: M1.10.04 actual PostgreSQL16 wrong Worker copied Company link role tenant race
+on:
+  pull_request:
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'tests/browser/company-dual-employer-isolation.browser.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/authorization/**'
+      - 'src/app/worker/(portal)/company-access/actions.ts'
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - '.github/workflows/m1-10-04-wrong-worker-link-pg16.yml'
+  push:
+    branches:
+      - qa/a28-eligibility-read-guard-20261107
+    paths:
+      - 'tests/platform/company-worker-invitations.test.mjs'
+      - 'tests/browser/company-dual-employer-isolation.browser.test.mjs'
+      - 'src/lib/company/company-workforce-service.ts'
+      - 'src/lib/authorization/**'
+      - 'src/app/worker/(portal)/company-access/actions.ts'
+      - 'src/app/company/(portal)/invitations/actions.ts'
+      - '.github/workflows/m1-10-04-wrong-worker-link-pg16.yml'
+permissions:
+  contents: read
+concurrency:
+  group: m11004-worker-link-security-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  real-postgres16-two-company-two-worker-object-abuse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: synthetic_wrong_worker
+          POSTGRES_PASSWORD: synthetic_wrong_worker_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U synthetic_wrong_worker -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      VERIFIED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout exact PR source or signed merged QA SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VERIFIED_SHA }}
+          fetch-depth: 0
+      - name: Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install exact dependency lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Independent PostgreSQL16 wrong Worker concurrent copied ID, forged role and session, immutable audits
+        shell: bash
+        env:
+          HSE_M11004_POSTGRES_TEST_DATABASE_URL: postgresql://synthetic_wrong_worker:synthetic_wrong_worker_only@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          mkdir -p .autopilot/artifacts
+          node scripts/run-company-worker-invitation-tests.mjs --test-name-pattern 'M1.10.04 actual PostgreSQL16 wrong Worker copied link ID cannot accept during rightful cross-tenant Worker race' 2>&1 | tee .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          grep -q 'ℹ tests 1' .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          grep -q 'ℹ pass 1' .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          grep -q 'ℹ fail 0' .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          grep -q 'ℹ skipped 0' .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          for marker in COPIED_CROSS_TENANT_LINK_IDS_WRONG_ROLE_FORGED_SESSION_AND_INVALID_ID_DENIED_NO_MUTATION WRONG_WORKER_DURING_REAL_UNCOMMITTED_RIGHTFUL_ACCEPT_DENIED_RIGHTFUL_REPLAY_ONE_LINK REVOKED_WORKER_SESSION_DENIED_RECOVERED_RIGHTFUL_WORKER_ACCEPTS_NO_TENANT_CROSSOVER TWO_COMPANIES_TWO_RIGHTFUL_WORKERS_ONE_SUCCESS_AUDIT_EACH_ZERO_FORGED_PERSISTED_STATES; do
+            grep -q "M11004_ACTUAL_PG16_${marker}" .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          done
+      - name: Preserve exact-SHA PostgreSQL16 copied worker ID abuse evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m11004-wrong-worker-pg16-${{ env.VERIFIED_SHA }}
+          path: .autopilot/artifacts/m11004-real-postgres16-wrong-worker.log
+          if-no-files-found: warn
+          retention-days: 30

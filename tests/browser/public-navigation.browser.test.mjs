@@ -16,7 +16,7 @@ test("Public home exposes usable primary routes, registrations and six role dest
   const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:base,projectRoot:process.cwd(),environment:env,probe:async()=>{
    const browser=await chromium.launch({headless:true});
    try{
-    for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
+    for(const viewport of [{width:1440,height:1000},{width:390,height:844},{width:320,height:740}]){
      const page=await browser.newPage({viewport});page.setDefaultTimeout(5000);
      for(const [label,path] of [["How it works","/how-it-works"],["For Workers","/workers"],["For Companies","/companies"],["Verify","/verify"],["Contact","/contact"],["Sign in","/auth/select"]]){
       await page.goto(base);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),"Public home must fit the viewport");const nav=page.getByRole("navigation",{name:"Public navigation",exact:true});

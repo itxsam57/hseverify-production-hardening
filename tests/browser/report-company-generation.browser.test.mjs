@@ -41,6 +41,32 @@ async function login(page, baseUrl, identity) {
   await page.getByRole("button", {name:"Sign in", exact:true}).click();
   await page.waitForURL("**/company/dashboard");
 }
+const FOREIGN_REPORT_COMPANY={
+  accountId:"account_m10402_report_foreign_company",
+  email:"m10402.report.foreign@example.test",
+  tenantId:"tenant_"+"J".repeat(24),
+  membershipId:"membership_"+"J".repeat(24),
+  factorId:"factor_m10402_report_foreign"
+};
+async function seedIndependentReportCompany(db, owner) {
+  const now=new Date().toISOString(),foreign=FOREIGN_REPORT_COMPANY;
+  await db.query(`INSERT INTO auth_accounts
+    (account_id,email_normalized,display_name,account_status,password_hash,email_verified_at,password_set_at,created_at,updated_at)
+    SELECT $1,$2,'Independent Report Tenant','active',password_hash,$3,$3,$3,$3 FROM auth_accounts WHERE account_id=$4`,
+    [foreign.accountId,foreign.email,now,owner.accountId]);
+  await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'company',$2)",[foreign.accountId,now]);
+  await db.query(`INSERT INTO auth_mfa_factors(factor_id,account_id,factor_type,encrypted_secret,factor_status,last_accepted_counter,created_at,activated_at)
+    SELECT $1,$2,'totp',encrypted_secret,'active',NULL,$3,$3 FROM auth_mfa_factors WHERE account_id=$4 AND factor_type='totp'`,
+    [foreign.factorId,foreign.accountId,now,owner.accountId]);
+  await db.query(`INSERT INTO platform_tenants
+    (tenant_id,tenant_type,display_name,tenant_status,created_by_account_id,created_at,updated_at,activated_at)
+    VALUES($1,'company','Independent Report Tenant','active',$2,$3,$3,$3)`,
+    [foreign.tenantId,foreign.accountId,now]);
+  await db.query(`INSERT INTO auth_tenant_memberships
+    (membership_id,tenant_id,account_id,portal_role,membership_role,membership_status,created_by_account_id,created_at,updated_at,activated_at)
+    VALUES($1,$2,$3,'company','owner','active',$3,$4,$4,$4)`,
+    [foreign.membershipId,foreign.tenantId,foreign.accountId,now]);
+}
 test("Company HTTP export must refuse a queue item with no generated private artifact", {timeout:240000}, async () => {
   const fixture = await reportCompanyFixture(), port = await freePort(), baseUrl = "http://127.0.0.1:" + port;
   const browser = await chromium.launch({headless:true}), page = await browser.newPage();
@@ -82,6 +108,7 @@ test("An authenticated Company can request, generate and download actual scoped 
   let database;
   page.on("pageerror", error => browserErrors.push(error.message));
   try {
+    await seedIndependentReportCompany(fixture.database,fixture.credentials.company);
     await fixture.database.close();
     await reportBrowserPhase(fixture, port, async baseUrl => {
       await login(page, baseUrl, fixture.credentials.company);
@@ -145,7 +172,23 @@ test("An authenticated Company can request, generate and download actual scoped 
         assert.equal(headers["referrer-policy"], "no-referrer");
         assert.deepEqual(new Set(headers["content-security-policy"].split(";").map(value => value.trim()).filter(Boolean)),
           new Set(["default-src 'none'", "style-src 'unsafe-inline'", "base-uri 'none'", "form-action 'none'", "frame-ancestors 'none'", "sandbox"]));
-        assert.equal(Number(headers["content-length"]), bytes.byteLength);
+        // Next may gzip report bytes and use chunked HTTP/1.1 framing. Playwright
+        // returns the decoded body, so its size must not be compared with the
+        // compressed wire length (or an absent Content-Length).
+        const wireLength = headers["content-length"];
+        const encoding = headers["content-encoding"] ?? "identity";
+        assert.ok(["identity", "gzip", "br", "deflate"].includes(encoding),
+          "Report exports must use a recognized HTTP content encoding");
+        if (wireLength === undefined) {
+          assert.equal(headers["transfer-encoding"], "chunked",
+            "HTTP/1.1 export without Content-Length requires chunked transfer framing");
+        } else {
+          assert.match(wireLength, /^[1-9]\d*$/,
+            "Report export Content-Length must be a positive integer");
+          assert.equal(headers["transfer-encoding"], undefined,
+            "Report exports must not mix Content-Length and Transfer-Encoding");
+          if (encoding === "identity") assert.equal(Number(wireLength), bytes.byteLength);
+        }
         assert.deepEqual(bytes, artifacts[reports[format]]);
         if (format !== "print") {
           const downloadPromise = page.waitForEvent("download", { timeout: 10000 });
@@ -181,6 +224,51 @@ test("An authenticated Company can request, generate and download actual scoped 
           await popup.close();
         }
       }
+      // M10402_REPORT_FOREIGN_COMPANY_DENIED: replay exact existing
+      // delivered report IDs through an independent MFA Company session.
+      // This must fail at the HTTP boundary, not only by hiding owner links.
+      const foreignPage=await browser.newPage({viewport:{width:390,height:844}});
+      const anonymous=await browser.newPage();
+      try {
+        await login(foreignPage,baseUrl,{
+          email:FOREIGN_REPORT_COMPANY.email,
+          password:fixture.credentials.company.password,
+          totpSecret:fixture.credentials.company.totpSecret
+        });
+        await foreignPage.goto(baseUrl+"/company/reports",{waitUntil:"domcontentloaded"});
+        assert.equal(await foreignPage.locator("[data-report-id]").count(),0,
+          "Independent Company saw other tenant's generated report listing");
+        for(const format of ["csv","pdf","print"]) {
+          const exportUrl=baseUrl+"/api/company/reports/"+reports[format]+"/export";
+          const stolen=await foreignPage.request.get(exportUrl,{maxRedirects:0});
+          assert.ok([403,404].includes(stolen.status()),
+            "Foreign Company accessed real "+format+" export: "+stolen.status());
+          assert.equal((await stolen.body()).equals(artifacts[reports[format]]),false,
+            "Foreign Company received private "+format+" artifact bytes");
+          const spoofed=await foreignPage.request.get(
+            exportUrl+"?tenantId="+encodeURIComponent(fixture.credentials.company.tenantId)+
+              "&accountId="+encodeURIComponent(fixture.credentials.company.accountId),
+            {maxRedirects:0,headers:{
+              "x-hse-tenant-id":fixture.credentials.company.tenantId,
+              "x-hse-account-id":fixture.credentials.company.accountId,
+              "x-hse-active-role":"root"
+            }}
+          );
+          assert.ok([403,404].includes(spoofed.status()),
+            "Forged identity headers changed report tenant authority: "+spoofed.status());
+          assert.equal((await spoofed.body()).equals(artifacts[reports[format]]),false,
+            "Forged Company received private "+format+" artifact bytes");
+          const guest=await anonymous.request.get(exportUrl,{maxRedirects:0});
+          assert.ok([302,303,307,308,401,403,404].includes(guest.status()),
+            "Anonymous report download did not deny: "+guest.status());
+          assert.equal((await guest.body()).equals(artifacts[reports[format]]),false);
+          console.log("M10402_REPORT_FOREIGN_COMPANY_DENIED",format,
+            "owner 200, foreign",stolen.status(),"forged",spoofed.status(),"anonymous",guest.status());
+        }
+      } finally {
+        await foreignPage.close();
+        await anonymous.close();
+      }
       assert.equal((await page.request.get(baseUrl + "/api/company/reports/report_missing_private_export/export")).status(), 404);
     });
     database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
@@ -197,6 +285,17 @@ test("An authenticated Company can request, generate and download actual scoped 
       if (denied.status() === 307) assert.ok(denied.headers().location.endsWith("/access-denied"));
       assert.equal((await denied.body()).equals(artifacts[reports.csv]), false);
     });
+    database = await PGlite.create(fixture.environment.HSE_PGLITE_DATA_DIR);
+    try {
+      const tenantDeliveries=await database.query(
+        "SELECT tenant_id,COUNT(*)::int AS n FROM report_deliveries WHERE tenant_id=ANY($1::text[]) GROUP BY tenant_id",
+        [[fixture.credentials.company.tenantId,FOREIGN_REPORT_COMPANY.tenantId]]
+      );
+      assert.equal(tenantDeliveries.rows.length,1,"Foreign report requests wrote a report in the second Company");
+      assert.equal(tenantDeliveries.rows[0].tenant_id,fixture.credentials.company.tenantId);
+      assert.equal(tenantDeliveries.rows[0].n,3,"Owner generated report count changed unexpectedly");
+      console.log("M10402_REPORT_FOREIGN_TENANT_DB","3 owner deliveries, 0 foreign deliveries, exact generated artifact hashes unchanged");
+    } finally {await database.close();}
     assert.deepEqual(browserErrors, []);
   } finally {
     if (database && !database.closed) await database.close();

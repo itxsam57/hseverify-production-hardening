@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {openScriptDatabase} from "../../scripts/lib/database.mjs";
 import {applyMigrationsThrough} from "../helpers/migration-ceiling.mjs";
-import {prepareSubmittedWorker,advanceThroughAutomatedChecks,markVerified} from "../helpers/duplicate-identity-fixture.mjs";
+import {prepareSubmittedWorker,advanceThroughAutomatedChecks,markVerified,seedPrincipal} from "../helpers/duplicate-identity-fixture.mjs";
 import {loadWorkerRegistrationTs} from "../helpers/worker-registration-runtime-loader.mjs";
 
 const {DatabaseWorkerIdentityRepository}=loadWorkerRegistrationTs("src/lib/identity/worker-identity-repository.ts");
@@ -134,4 +134,127 @@ test("actual PostgreSQL 16: verified identity remains a duplicate candidate thro
     try{await admin.execute('DROP DATABASE "'+correctionDatabaseName+'"');}
     finally{await admin.close();}
   }
+});
+
+
+test("M1.07.07 two genuine Admins racing duplicate dispositions serialize and stale loser cannot issue Worker ID", {timeout:180000}, async () => {
+ const url=new URL(base);
+ const supervisor=await openScriptDatabase({...env,databaseUrl:url.href});
+ const isolatedName="hse_m10707_admin_race_"+process.pid;
+ let first,second,created=false,releaseFirst,pendingFirst,pendingSecond;
+ try {
+  await supervisor.execute('CREATE DATABASE "'+isolatedName+'"');
+  created=true;
+  url.pathname="/"+isolatedName;
+  const config={...env,databaseUrl:url.href,releaseSha:"m10707-admin-race-"+process.pid};
+  first=await openScriptDatabase(config);
+  await applyMigrationsThrough(first,config.releaseSha,"0130_verified_identity_correction_notices");
+  second=await openScriptDatabase(config);
+  const target=await prepareSubmittedWorker(first,"admin-race-target",{documentNumber:"CONCURRENT-ADMIN-DOC-931"});
+  const matching=await prepareSubmittedWorker(first,"admin-race-match",{documentNumber:"CONCURRENTADMINDOC931"});
+  await advanceThroughAutomatedChecks(target);
+  await advanceThroughAutomatedChecks(matching);
+  await markVerified(first,target.submitted.identity.identityId);
+  const check=await target.eligibilityService.evaluate(target.submitted.identity.identityId);
+  assert.equal(check.checkStatus,"review_required");
+  const firstAdmin=await seedPrincipal(first,"admin-race-first","admin");
+  const secondAdmin=await seedPrincipal(first,"admin-race-second","admin");
+  const {AuthAccessRepository}=loadWorkerRegistrationTs("src/lib/auth/auth-access-repository.ts");
+  const auth=new AuthAccessRepository(first);
+  const now=new Date().toISOString();
+  for(const [i,actor] of [firstAdmin,secondAdmin].entries()){
+    const mfaId="duplicate-race-mfa-"+i;
+    await auth.authentication.insertSecurityEvent({
+      eventId:mfaId,accountId:actor.accountId,eventType:"mfa_succeeded",activeRole:"admin",occurredAt:now
+    });
+    await auth.authentication.insertSecurityEvent({
+      eventId:"duplicate-race-login-"+i,accountId:actor.accountId,eventType:"login_succeeded",
+      activeRole:"admin",metadata:{sessionId:actor.sessionId,mfaEventId:mfaId},occurredAt:now
+    });
+  }
+  const {DuplicateIdentityReviewService}=loadWorkerRegistrationTs("src/lib/identity/duplicate-identity-review-service.ts");
+  const input={identityId:check.identityId,identityVersionId:check.identityVersionId,checkId:check.checkId,expectedRevision:0};
+  let signal;
+  const heldAfterWrites=new Promise(resolve=>signal=resolve);
+  const blocked=new Promise(resolve=>releaseFirst=resolve);
+  const heldTransaction={
+    ...first,
+    async transaction(callback){
+      return first.transaction(async tx=>{
+        const result=await callback(tx);
+        signal();
+        await blocked;
+        return result;
+      });
+    }
+  };
+  const primary=new DuplicateIdentityReviewService(heldTransaction);
+  const competing=new DuplicateIdentityReviewService(second);
+  pendingFirst=primary.decide(firstAdmin,{...input,disposition:"duplicate_review",
+    reason:"Independent matching documents require a second human comparison before any Worker ID may be issued."});
+  await heldAfterWrites;
+  pendingSecond=competing.decide(secondAdmin,{...input,disposition:"continue",
+    reason:"An independent contrary decision must not bypass a locked earlier review."})
+    .then(()=>({accepted:true}),error=>({accepted:false,name:error.name,message:error.message}));
+  const early=await Promise.race([
+    pendingSecond.then(()=> "returned_before_first_commit"),
+    new Promise(resolve=>setTimeout(()=>resolve("blocked_on_first_commit"),1100))
+  ]);
+  assert.equal(early,"blocked_on_first_commit",
+    "A second genuine independent Admin connection must wait while the first duplicate disposition is uncommitted.");
+  releaseFirst();
+  await pendingFirst;
+  const stale=await pendingSecond;
+  assert.equal(stale.accepted,false,"Both competing Admins cannot finalize the same revision.");
+  assert.match(stale.message,/changed|reload|stale|issued/i);
+  const recorded=(await first.query(
+    "SELECT disposition,disposition_sequence FROM worker_identity_duplicate_dispositions WHERE check_id=$1",
+    [check.checkId]
+  )).rows;
+  assert.deepEqual(recorded,[{disposition:"duplicate_review",disposition_sequence:1}]);
+  assert.equal((await first.query(
+    "SELECT count(*)::int n FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+    [target.worker.accountId]
+  )).rows[0].n,0,
+  "Stale competing continue request cannot issue an independent Worker ID.");
+  assert.equal((await first.query(
+    "SELECT count(*)::int n FROM platform_audit_events WHERE metadata->>'duplicateReviewCheckId'=$1",
+    [check.checkId]
+  )).rows[0].n,1);
+  console.log("M10707_REAL_POSTGRES_CONCURRENT_ADMIN_DECISION_WINNER",
+    "two authenticated MFA Admins and independent PG16 sessions; second decision waits for first commit then stale loser denied, exact one disposition/audit and zero Worker IDs");
+
+  await competing.decide(secondAdmin,{
+    ...input,expectedRevision:1,disposition:"continue",
+    reason:"Independent signed documentary review confirms separate people despite coincident matching signals."
+  });
+  const issued=(await first.query(
+    "SELECT permanent_worker_id,worker_account_id FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+    [target.worker.accountId]
+  )).rows;
+  assert.equal(issued.length,1);
+  assert.equal(issued[0].worker_account_id,target.worker.accountId);
+  assert.match(issued[0].permanent_worker_id,/^worker_id_[A-Za-z0-9_-]{24}$/);
+  assert.equal((await first.query(
+    "SELECT count(*)::int n FROM worker_identity_worker_ids WHERE worker_account_id=$1",
+    [matching.worker.accountId]
+  )).rows[0].n,0,"Matched separate account must not inherit the cleared Worker ID.");
+  assert.deepEqual((await first.query(
+    "SELECT disposition,disposition_sequence FROM worker_identity_duplicate_dispositions WHERE check_id=$1 ORDER BY disposition_sequence",
+    [check.checkId]
+  )).rows,[{disposition:"duplicate_review",disposition_sequence:1},{disposition:"continue",disposition_sequence:2}]);
+  assert.equal((await first.query(
+    "SELECT count(*)::int n FROM platform_audit_events WHERE metadata->>'duplicateReviewCheckId'=$1",
+    [check.checkId]
+  )).rows[0].n,2);
+  console.log("M10707_REAL_POSTGRES_STALE_RETRY_ONLY_FRESH_REVISION",
+    "independent second Admin after refresh from revision1 records one reasoned continue and issues only target unique Worker ID; matched second account still blocked");
+ }finally{
+  releaseFirst?.();
+  await Promise.allSettled([pendingFirst,pendingSecond]);
+  await second?.close();
+  await first?.close();
+  try{if(created)await supervisor.execute('DROP DATABASE "'+isolatedName+'"');}
+  finally{await supervisor.close();}
+ }
 });

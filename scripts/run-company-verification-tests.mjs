@@ -151,17 +151,26 @@ writeFileSync(
   "utf8"
 );
 
+// Focused mode prevents rerunning already-passed Company browser/native suites
+// when reproducing a new version-boundary defect. Ordinary file and full-suite
+// invocation semantics remain unchanged.
 const requestedTests = process.argv.slice(2);
-const testFiles = requestedTests.length > 0
-  ? requestedTests.map((testFile) => resolve(testFile))
-  : [
-      resolve("tests", "platform", "company-verification.test.mjs"),
-      resolve("tests", "platform", "company-verification-latest-schema-regression.test.mjs")
-    ];
+const focus = requestedTests[0] === "--test-name-pattern" ? requestedTests[1] : null;
+if (requestedTests[0] === "--test-name-pattern" && (!focus || requestedTests.length !== 2)) {
+  fail("Pass exactly one non-empty test name pattern for focused Company verification.");
+}
+const testFiles = focus
+  ? [resolve("tests", "platform", "company-verification.test.mjs")]
+  : requestedTests.length > 0
+    ? requestedTests.map((testFile) => resolve(testFile))
+    : [
+        resolve("tests", "platform", "company-verification.test.mjs"),
+        resolve("tests", "platform", "company-verification-latest-schema-regression.test.mjs")
+      ];
 
 const tests = spawnSync(
   process.execPath,
-  ["--test", ...testFiles],
+  ["--test", ...(focus ? ["--test-name-pattern", focus] : []), ...testFiles],
   {
     stdio: "inherit",
     env: {

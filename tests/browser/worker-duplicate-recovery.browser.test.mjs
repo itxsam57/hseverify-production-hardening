@@ -105,6 +105,7 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
   const port=await freePort(), baseUrl="http://127.0.0.1:"+port;
   const environment={...process.env,HSE_APP_ENV:"development",HSE_DATABASE_DRIVER:"pglite",HSE_PGLITE_DATA_DIR:directory,HSE_RELEASE_SHA:"worker-duplicate-recovery-browser",
     HSE_SESSION_SECRET:"duplicate-recovery-session-secret-with-more-than-thirty-two",HSE_AUTH_PEPPER:"duplicate-recovery-pepper-with-more-than-thirty-two",
+    HSE_AUDIT_CREDENTIALS_PATH:join(directory,"independent-audit-credentials.json"),
     HSE_ENABLE_AUTH_SANDBOX:"true",HSE_AUTH_SANDBOX_ACCESS_KEY:SANDBOX_KEY,HSE_ENABLE_WORKER_DEMO_AUTH:"false",HSE_USE_WORKER_DEMO_DATA:"false"};
   let browser, baseline, passwordBefore, code;
   async function phase(probe) {await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:root,environment,probe});}
@@ -112,7 +113,7 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
     for(const script of ["scripts/db-migrate.mjs","scripts/independent-audit-seed.mjs"]) {
       const r=spawnSync(process.execPath,[script],{cwd:root,env:environment,encoding:"utf8"});assert.equal(r.status,0,r.stderr||r.stdout);
     }
-    const credentials=JSON.parse(await readFile("/tmp/independent-audit-credentials.json","utf8")), worker=credentials.worker;
+    const credentials=JSON.parse(await readFile(environment.HSE_AUDIT_CREDENTIALS_PATH,"utf8")), worker=credentials.worker;
     browser=await chromium.launch({headless:true});
     const oldContext=await browser.newContext();let oldPage=await oldContext.newPage();
     const recoveryContext=await browser.newContext(), inbox=await recoveryContext.newPage();let page=await recoveryContext.newPage();
@@ -132,10 +133,90 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
     });
     {const db=new PGlite(directory);try{baseline=await identitySnapshot(db,worker.accountId);passwordBefore=(await db.query("SELECT password_hash FROM auth_accounts WHERE account_id=$1",[worker.accountId])).rows[0].password_hash;assert.equal(baseline.identities.length,1);assert.equal(baseline.evidence.length,1);assert.equal(baseline.skills[0].skill_name,"Recovery preserved safety skill");}finally{await db.close();}}
     await phase(async()=>{
-      for(const [email,phone] of [[worker.email,"+923008884401"],["duplicate.new.contact@example.test","+923009876540"],[worker.email,"+923009876540"]]) await duplicate(page,baseUrl,email,phone);
+      const duplicateAttempts=[[worker.email,"+923008884401"],["duplicate.new.contact@example.test","+923009876540"],[worker.email,"+923009876540"]];
+      for(const [index,[email,phone]] of duplicateAttempts.entries()) {
+        const width=[320,390,1280][index];
+        await page.setViewportSize({width,height:844});
+        await duplicate(page,baseUrl,email,phone);
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+          "Rejected duplicate Worker registration overflows "+width+"px");
+      }
       console.log("ACTUAL_DUPLICATE_WORKER_BROWSER: three contact conflicts denied");
+
+      // M10303_CONCURRENT_DUPLICATE_BROWSER: the old exact-green case tested
+      // sequential duplicates. Two genuinely separate signed-out browser
+      // contexts now hold their Worker-registration POSTs at the browser
+      // transport, then release both together to the same real Next/DB.
+      // Email collision and phone collision must each fail closed without
+      // creating another Worker or merging the existing identity/evidence.
+      const raceContexts = await Promise.all([
+        browser.newContext({viewport:{width:320,height:844}}),
+        browser.newContext({viewport:{width:390,height:844}})
+      ]);
+      const racePages = await Promise.all(raceContexts.map(context=>context.newPage()));
+      const raceResponses = [[],[]];
+      for(const [index,racePage] of racePages.entries()) {
+        racePage.on("response",response=>{
+          if(response.request().method()==="POST" && new URL(response.url()).pathname==="/worker/register")
+            raceResponses[index].push(response.status());
+        });
+        await racePage.addInitScript(()=>{
+          const normalFetch=window.fetch.bind(window);
+          let release;
+          const gate=new Promise(resolve=>{release=resolve;});
+          window.__hseDuplicateRace={pending:0,release:()=>release()};
+          window.fetch=async(...args)=>{
+            const request=args[0];
+            const method=(args[1]?.method??(request instanceof Request?request.method:"GET")).toUpperCase();
+            const url=new URL(typeof request==="string"?request:request.url,location.href);
+            if(method!=="POST"||url.pathname!=="/worker/register")return normalFetch(...args);
+            window.__hseDuplicateRace.pending++;
+            await gate;
+            return normalFetch(...args);
+          };
+        });
+      }
+      const raceAttempts=[
+        duplicate(racePages[0],baseUrl,worker.email,"+923008884409"),
+        duplicate(racePages[1],baseUrl,"other.duplicate.race@example.test",baseline.account[0].phone_e164)
+      ];
+      try {
+        await Promise.all(racePages.map(racePage=>racePage.waitForFunction(
+          ()=>window.__hseDuplicateRace?.pending===1,null,{timeout:20000}
+        )));
+        assert.deepEqual(await Promise.all(racePages.map(racePage=>racePage.evaluate(
+          ()=>window.__hseDuplicateRace.pending
+        ))),[1,1],"Both independent browser submissions must be held before either reaches the server");
+        await Promise.all(racePages.map(racePage=>racePage.evaluate(()=>window.__hseDuplicateRace.release())));
+        await Promise.all(raceAttempts);
+        for(const [index,racePage] of racePages.entries()) {
+          assert.deepEqual(raceResponses[index],[200],
+            "Each conflict must complete as one handled Server Action POST (never HTTP 500 or duplicate requests)");
+          assert.equal(await racePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+            "Denied concurrent registration must preserve usable 320/390px browser layout");
+        }
+        console.log("M10303_CONCURRENT_DUPLICATE_BROWSER: both held real POSTs released together and denied, no unauthorized account or identity merge");
+      } finally {
+        await Promise.all(racePages.map(racePage=>racePage.evaluate(
+          ()=>window.__hseDuplicateRace?.release()
+        ).catch(()=>{})));
+        await Promise.allSettled(raceAttempts);
+        await Promise.all(raceContexts.map(context=>context.close()));
+      }
+
+      await page.setViewportSize({width:320,height:844});
       await page.goto(baseUrl+"/auth/recover?portal=worker");
       await page.getByLabel("Account email").fill(worker.email);
+      await page.getByLabel("Account email").focus();
+      await page.keyboard.press("Tab");
+      const focus=await page.evaluate(()=>{
+        const element=document.activeElement,style=getComputedStyle(element);
+        return {tag:element?.tagName,outline:style.outlineStyle,shadow:style.boxShadow};
+      });
+      assert(["BUTTON","A","INPUT","SELECT"].includes(focus.tag),"Recovery keyboard focus escaped usable controls: "+JSON.stringify(focus));
+      assert(focus.outline!=="none"||focus.shadow!=="none","Recovery keyboard focus indicator is not visible: "+JSON.stringify(focus));
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+        "320px Worker recovery request overflows");
       await page.getByRole("button",{name:"Continue securely"}).click();
       await page.waitForURL("**/auth/recover/verify?portal=worker");
       await inbox.goto(baseUrl+"/worker/register/sandbox");
@@ -145,8 +226,11 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
       await inbox.getByRole("button",{name:"Open latest sandbox delivery"}).click();
       const status=inbox.getByRole("status",{name:"Latest sandbox verification code"});await status.waitFor();
       code=(await status.locator("strong").innerText()).trim();
+      await page.setViewportSize({width:390,height:844});
       await reset(page,String((Number(code)+1)%1000000).padStart(6,"0"));
       await page.getByRole("alert").getByText("The verification code is incorrect. 4 attempt(s) remain.",{exact:true}).waitFor();
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,
+        "390px Worker wrong-recovery-code feedback overflows");
       await oldPage.goto(baseUrl+"/worker/dashboard");
       assert.equal(new URL(oldPage.url()).pathname,"/worker/dashboard","Wrong recovery code revoked a session");
     });
@@ -200,7 +284,7 @@ test("Duplicate Worker contacts deny identity merging; recovery persists failure
       const flows=(await db.query("SELECT active_role,consumed_at FROM auth_recovery_flows WHERE account_id=$1",[worker.accountId])).rows;
       assert.equal(flows.length,1);assert.equal(flows[0].active_role,"worker");assert.ok(flows[0].consumed_at);
       assert.equal((await db.query("SELECT count(*)::int AS count FROM platform_audit_events WHERE action_key='authentication.password_reset.completed' AND actor_account_id=$1 AND actor_role='worker'",[worker.accountId])).rows[0].count,1);
-      assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_security_events WHERE event_type='access_denied' AND metadata->>'reason'='contact_conflict'")).rows[0].count,3);
+      assert.equal((await db.query("SELECT count(*)::int AS count FROM auth_security_events WHERE event_type='access_denied' AND metadata->>'reason'='contact_conflict'")).rows[0].count,5);
       console.log("ACTUAL_WORKER_RECOVERY_DB: unchanged identity/evidence, consumed flow/challenge, remaining attempts, exact immutable failure/completion audit and session revocation");
     }finally{await db.close();}
   }finally{if(browser)await browser.close();await rm(directory,{recursive:true,force:true});}

@@ -74,6 +74,19 @@ const ROUTES = {
   ]
 };
 
+// M10204_DENSE_320_VIEWPORT: previous 320/390 suite covered shell navigation
+// and native sign-out dialogs, while this existing 49-route suite only checked
+// page contents at 390/1440. Focus the missing 320 check on actual form/table
+// content across six distinct roles rather than duplicate passing nav tests.
+const DENSE_320_ROUTES = new Set([
+  "/worker/profile", "/worker/identity", "/worker/evidence", "/worker/passport",
+  "/company/team", "/company/assurance-orders", "/company/billing", "/company/reports",
+  "/verifier/reviews", "/verifier/reviews/scoring",
+  "/assessor/interviews",
+  "/admin/company-verifications", "/admin/decisions", "/admin/operations", "/admin/question-bank",
+  "/root/staff"
+]);
+
 const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function decodeBase32(value) {
@@ -215,6 +228,7 @@ test("all role portal pages keep usable proportions, navigation and notification
   const outputDirectory = join(root, "artifacts", "all-role-ui-layout");
   await mkdir(join(outputDirectory, "desktop"), { recursive: true });
   await mkdir(join(outputDirectory, "mobile"), { recursive: true });
+  await mkdir(join(outputDirectory, "narrow320"), { recursive: true });
 
   const environment = {
     ...process.env,
@@ -285,6 +299,35 @@ test("all role portal pages keep usable proportions, navigation and notification
                 path: join(outputDirectory, "mobile", `${role}--${route.replace(/^\//, "").replaceAll("/", "__")}.png`),
                 fullPage: true
               });
+
+              if (DENSE_320_ROUTES.has(route)) {
+                await page.setViewportSize({ width: 320, height: 844 });
+                await page.waitForTimeout(80);
+                const narrow = await layoutProblems(page, true);
+                assert(narrow.documentOverflow <= 1, `${role} ${route} 320px document overflow: ${JSON.stringify(narrow)}`);
+                assert.deepEqual(narrow.offscreen, [], `${role} ${route} 320px offscreen controls: ${JSON.stringify(narrow.offscreen)}`);
+                assert.deepEqual(narrow.overlaps, [], `${role} ${route} 320px overlapping controls: ${JSON.stringify(narrow.overlaps)}`);
+                assert.deepEqual(narrow.clipped, [], `${role} ${route} 320px clipped controls: ${JSON.stringify(narrow.clipped)}`);
+                // Wide tables may scroll in their own container, not force
+                // the entire document offscreen. Prove their overflow is
+                // actually user-scrollable instead of clipped by CSS.
+                const wideTables = await page.evaluate(() => [...document.querySelectorAll(".table-scroll")]
+                  .filter(element => element.scrollWidth > element.clientWidth + 2)
+                  .map(element => {
+                    const overflowX = getComputedStyle(element).overflowX;
+                    const old = element.scrollLeft;
+                    element.scrollLeft = element.scrollWidth;
+                    const reachable = element.scrollLeft > old;
+                    element.scrollLeft = old;
+                    return { overflowX, reachable };
+                  }));
+                assert(wideTables.every(table => ["auto", "scroll"].includes(table.overflowX) && table.reachable),
+                  `${role} ${route} 320px table overflow is clipped: ${JSON.stringify(wideTables)}`);
+                await page.screenshot({
+                  path: join(outputDirectory, "narrow320", `${role}--${route.replace(/^\//, "").replaceAll("/", "__")}.png`),
+                  fullPage: true
+                });
+              }
               await page.setViewportSize({ width: 1440, height: 1000 });
             }
 

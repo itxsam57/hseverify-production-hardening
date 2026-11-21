@@ -18,6 +18,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify fail-closed compliance range selection
         run: node --test tests/engineering/autopilot-compliance-range.test.mjs
+      - name: Verify signed GitHub PR merges and reject forged merges
+        run: python3 -m unittest discover -s tests/engineering -p 'test_autopilot_signed_merge.py'
       - name: Verify guarded commits
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -26,6 +28,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_SHA: ${{ github.sha }}
           CANONICAL_BRANCH: qa/masterplan-completion-20260926
+          VERIFIED_QA_BRANCH: qa/a28-eligibility-read-guard-20261107
         run: |
           base="$BEFORE_SHA"
           head="$HEAD_SHA"
@@ -42,5 +45,18 @@ jobs:
              git merge-base --is-ancestor "$base" "$canonical" &&
              git merge-base --is-ancestor "$canonical" "$head"; then
             base="$canonical"
+          fi
+          # The verified signed release QA branch is the trusted base for a NEW
+          # feature branch, only when its exact tip is a proper ancestor of head.
+          # Otherwise fall back to historical canonical selection and fail closed.
+          # Existing branch pushes and pull requests keep their exact event range.
+          if [ "$EVENT_NAME" = "push" ] &&
+             [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            qa_tip="$(git ls-remote --exit-code origin "refs/heads/$VERIFIED_QA_BRANCH" 2>/dev/null | cut -f1 || true)"
+            if [ -n "$canonical" ] && [ -n "$qa_tip" ] && [ "$qa_tip" != "$head" ] &&
+               git merge-base --is-ancestor "$canonical" "$qa_tip" &&
+               git merge-base --is-ancestor "$qa_tip" "$head"; then
+              base="$qa_tip"
+            fi
           fi
           python .autopilot/guard.py ci --root . --base-sha "$base" --head-sha "$head"

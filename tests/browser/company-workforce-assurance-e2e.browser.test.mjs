@@ -20,6 +20,18 @@ const PNG_FILE = {
     "base64"
   )
 };
+// Distinct valid one-pixel RGB PNG so the corrected employment reviewer cannot
+// accidentally receive the old version's bytes and still pass this HTTP test.
+const EMPLOYMENT_CORRECTED_PNG = {
+  ...PNG_FILE,
+  name: "employment-corrected.png",
+  buffer: Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYPgPAAEDAQAIicLsAAAAAElFTkSuQmCC",
+    "base64"
+  )
+};
+assert.notDeepEqual(EMPLOYMENT_CORRECTED_PNG.buffer,PNG_FILE.buffer,
+  "Employment v1/v2 proof fixtures must not have identical bytes");
 
 function decode32(value) {
   let bits = 0;
@@ -115,11 +127,63 @@ async function submitQualification(page, baseUrl) {
   await page.getByText("active · submitted", { exact: true }).first().waitFor({ timeout: 15_000 });
 }
 
+async function submitSkill(page, baseUrl) {
+  await page.goto(`${baseUrl}/worker/evidence`, {waitUntil:"domcontentloaded"});
+  await page.getByLabel("Record type").selectOption("skill");
+  await Promise.all([
+    page.waitForResponse(r=>r.request().method()==="POST"),
+    page.getByRole("button",{name:"Create draft"}).click()
+  ]);
+  await page.reload({waitUntil:"domcontentloaded"});
+  const card=page.locator("article").filter({hasText:"Skill record"}).first();
+  for(const [label,value] of [
+    ["Skill","Permit to Work"],["Category","Safety systems"],
+    ["Proficiency claim","Advanced"],["Experience (months)","48"],["Related trade","HSE"]
+  ]) await card.getByLabel(label,{exact:label!=="Related trade"}).fill(value);
+  await card.getByRole("button",{name:"Save metadata"}).click();
+  await card.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor();
+  await card.getByLabel("Evidence file",{exact:true}).setInputFiles({...PNG_FILE,name:"skill-proof.png"});
+  await card.getByRole("button",{name:"Upload file"}).click();
+  await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({timeout:15000});
+  await card.getByRole("button",{name:"Submit this version"}).click();
+  await card.getByText("active · submitted",{exact:true}).waitFor({timeout:15000});
+}
+
+// The current Company-linked browser path is extended rather than duplicated.
+async function submitEmployment(page,baseUrl) {
+  await page.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+  await page.getByLabel("Record type").selectOption("employment");
+  await Promise.all([
+    page.waitForResponse(r=>r.request().method()==="POST"&&r.url().includes("/worker/evidence")),
+    page.getByRole("button",{name:"Create draft"}).click()
+  ]);
+  await page.reload({waitUntil:"domcontentloaded"});
+  const card=page.locator("article").filter({hasText:"Employment record"}).first();
+  for(const [label,value] of [
+    ["Employer","Independent Audit Employer"],["Role title","HSE Coordinator"],
+    ["Country","Pakistan"],["Start date","2023-01-01"],
+    ["Duties","Coordinate risk assessments and safe systems of work."]
+  ]) await card.getByLabel(label,{exact:label!=="Duties"}).fill(value);
+  await card.getByRole("button",{name:"Save metadata"}).click();
+  await card.getByText("Draft metadata saved with its current version.",{exact:true}).waitFor();
+  await card.getByLabel("Evidence file",{exact:true}).setInputFiles({...PNG_FILE,name:"employment-original.png"});
+  await card.getByRole("button",{name:"Upload file",exact:true}).click();
+  await card.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({timeout:15000});
+  await card.getByRole("button",{name:"Submit this version"}).click();
+  await card.getByText("active · submitted",{exact:true}).waitFor({timeout:15000});
+}
+
 test(
   "Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end",
   { timeout: 300_000 },
   async () => {
     const root = process.cwd();
+    const skillOnly=process.env.HSE_M11103_COMPANY_SKILL_ONLY==="true";
+    const employmentOnly=process.env.HSE_M11104_COMPANY_EMPLOYMENT_ONLY==="true";
+    assert.ok(!(skillOnly&&employmentOnly),"Independent focused browser modes must not overlap.");
+    const evidenceKind=employmentOnly?"employment":skillOnly?"skill":"qualification";
+    const orderName=employmentOnly?"Linked Worker Employment Assurance":
+      skillOnly?"Linked Worker Skill Assurance":"Linked Worker Qualification Assurance";
     const databaseDirectory = await mkdtemp(join(tmpdir(), "hse-company-assurance-"));
     const port = await freePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -167,7 +231,9 @@ test(
           const admin = await adminContext.newPage();
           try {
             await login(worker, baseUrl, credentials.worker, "worker");
-            await submitQualification(worker, baseUrl);
+            if(employmentOnly)await submitEmployment(worker,baseUrl);
+            else if(skillOnly)await submitSkill(worker,baseUrl);
+            else await submitQualification(worker, baseUrl);
 
             await login(company, baseUrl, credentials.company, "company");
             await company.goto(`${baseUrl}/company/organization`, { waitUntil: "domcontentloaded" });
@@ -244,9 +310,9 @@ test(
             await company.getByText("revoked", { exact: true }).first().waitFor({ timeout: 15_000 });
 
             await company.goto(`${baseUrl}/company/assurance-orders/new`, { waitUntil: "domcontentloaded" });
-            await company.getByLabel("Order name").fill("Linked Worker Qualification Assurance");
+            await company.getByLabel("Order name").fill(orderName);
             await company.getByLabel("Order reference", { exact: true }).fill("ASSURE-LINK-001");
-            await company.getByLabel("Requested evidence checks").fill("qualification");
+            await company.getByLabel("Requested evidence checks").fill(evidenceKind);
             await company.getByRole("checkbox", { name: /audit_worker_account_20260901/i }).check();
             await company.getByRole("button", { name: "Save Draft" }).click();
             await company.waitForURL(/\/company\/assurance-orders\/.+/, { timeout: 15_000 });
@@ -263,7 +329,7 @@ test(
             await verifier.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
             const caseReviewRow = verifier.locator("tbody tr")
               .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
-              .filter({ has: verifier.locator("td", { hasText: "qualification" }) })
+              .filter({ has: verifier.locator("td", { hasText: evidenceKind }) })
               .last();
             await caseReviewRow.getByRole("link", { name: "Review", exact: true }).click();
             await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
@@ -281,15 +347,57 @@ test(
             await verifier.reload({ waitUntil: "domcontentloaded" });
             const claimButton = verifier.getByRole("button", { name: "Claim review" });
             if (!(await claimButton.count())) throw new Error(`Claim review unavailable after explicit governance setup: ${await verifier.locator("main").innerText()}`);
+            if (employmentOnly) {
+              const unclaimed = await verifierContext.request.get(
+                `${baseUrl}/verifier/reviews/${taskId}/preview`,{maxRedirects:0});
+              assert.equal(unclaimed.status(),404,"Unclaimed employment task cannot disclose Worker proof");
+              assert.notDeepEqual(Buffer.from(await unclaimed.body()),PNG_FILE.buffer,
+                "Unclaimed task returned original private employment proof bytes");
+              assert.match(unclaimed.headers()["cache-control"]??"",/private.*no-store/i);
+              console.log("M11104_EMPLOYMENT_HTTP_UNCLAIMED_PREVIEW_DENIED");
+            }
             await claimButton.click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
+            if (employmentOnly) {
+              const previewUrl=`${baseUrl}/verifier/reviews/${taskId}/preview`;
+              const authorized=await verifierContext.request.get(previewUrl);
+              assert.equal(authorized.status(),200,"Assigned Verifier cannot preview exact Worker employment evidence");
+              assert.deepEqual(Buffer.from(await authorized.body()),PNG_FILE.buffer,
+                "Authorized preview did not return exact uploaded employment proof bytes");
+              assert.match(authorized.headers()["cache-control"]??"",/private.*no-store/i,
+                "Authorized employment proof response must not be shared/cacheable");
+              console.log("M11104_EMPLOYMENT_HTTP_ASSIGNED_VERIFIER_EXACT_PROOF_200_NO_STORE");
+              const attempts=[
+                ["Worker",workerContext.request,{}],
+                ["Company",companyContext.request,{}],
+                ["Company-forged-tenant",companyContext.request,{
+                  "x-hse-tenant-id":credentials.company.tenantId,
+                  "x-hse-account-id":credentials.verifier.accountId,
+                  "x-hse-role":"verifier"
+                }]
+              ];
+              const anonymousContext=await browser.newContext();
+              try {
+                attempts.push(["signed-out",anonymousContext.request,{}]);
+                for(const [name,request,headers] of attempts) {
+                  const denied=await request.get(previewUrl,{maxRedirects:0,headers});
+                  assert.notEqual(denied.status(),200,
+                    name+" accessed assigned Verifier's private employment HTTP proof");
+                  assert.notDeepEqual(Buffer.from(await denied.body()),PNG_FILE.buffer,
+                    name+" received private employment proof bytes");
+                }
+              }finally{await anonymousContext.close();}
+              console.log("M11104_EMPLOYMENT_HTTP_WORKER_COMPANY_ANON_FORGED_VERIFIER_HEADER_DENIED");
+            }
             const terminalReject = process.env.HSE_M20106_REJECTED_ONLY === "true";
             const verdict = terminalReject ? "REJECTED" : "CHANGES_REQUESTED";
             await verifier.getByLabel("Decision").selectOption(verdict);
             await verifier.getByLabel("Reason", { exact: true }).fill(
               terminalReject
                 ? "Original qualification document was proven invalid; do not accept this submitted version."
-                : "Correct the certificate number before this Company case can proceed."
+                : (employmentOnly?"Provide corrected employment duties and attributable evidence before this Company case can proceed.":
+                  skillOnly?"Provide corrected skill proficiency evidence before this Company case can proceed.":
+                  "Correct the certificate number before this Company case can proceed.")
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText(verdict, { exact: true }).waitFor({ timeout: 15_000 });
@@ -309,18 +417,25 @@ test(
               return;
             }
             await worker.getByText("Evidence pending", { exact: true }).first().waitFor({ timeout: 15_000 });
+            if(skillOnly)console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_LINKED_WORKER_COMPANY_RECEIVING");
+            if(employmentOnly)console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_LINKED_WORKER_COMPANY_CHANGES_RECEIVING");
             await worker.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
-            const qualification = worker.locator("article").filter({ hasText: "Qualification record" }).first();
-            await qualification.getByRole("button", { name: "Start a new revision" }).click();
-            await qualification.getByText("active · draft", { exact: true }).waitFor({ timeout: 15_000 });
-            await qualification.getByLabel("Certificate / candidate number").fill("IOSH-LINK-002");
-            await qualification.getByRole("button", { name: "Save metadata" }).click();
-            await qualification.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
-            await qualification.getByLabel("Primary certificate file").setInputFiles(PNG_FILE);
-            await qualification.getByRole("button", { name: "Upload file" }).click();
-            await qualification.getByText(/uploaded, security-scanned and bound/).waitFor({ timeout: 15_000 });
-            await qualification.getByRole("button", { name: "Submit this version" }).click();
-            await qualification.getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
+            const record=worker.locator("article").filter({hasText:
+              employmentOnly?"Employment record":skillOnly?"Skill record":"Qualification record"}).first();
+            await record.getByRole("button", { name: "Start a new revision" }).click();
+            await record.getByText("active · draft", { exact: true }).waitFor({ timeout: 15_000 });
+            await record.getByLabel(employmentOnly?"Duties":skillOnly?"Proficiency claim":"Certificate / candidate number").fill(
+              employmentOnly?"Corrected attributable HSE coordination, field permits and inspection records.":
+              skillOnly?"Observed independent skill competence supported by corrected training record.":"IOSH-LINK-002");
+            await record.getByRole("button", { name: "Save metadata" }).click();
+            await record.getByText("Draft metadata saved with its current version.", { exact: true }).waitFor({ timeout: 15_000 });
+            await record.getByLabel(skillOnly||employmentOnly?"Evidence file":"Primary certificate file").setInputFiles(
+              employmentOnly ? EMPLOYMENT_CORRECTED_PNG :
+                {...PNG_FILE,name:skillOnly?"skill-corrected.png":"qualification.png"});
+            await record.getByRole("button", { name: "Upload file" }).click();
+            await record.getByText(/uploaded.*(?:bound|queued for security scanning)/).waitFor({ timeout: 15_000 });
+            await record.getByRole("button", { name: "Submit this version" }).click();
+            await record.getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
 
             await company.goto(orderUrl, { waitUntil: "domcontentloaded" });
             await company.getByRole("button", { name: "Queue evidence review" }).click();
@@ -328,7 +443,7 @@ test(
             await verifier.goto(`${baseUrl}/verifier/reviews`, { waitUntil: "domcontentloaded" });
             const correctedReview = verifier.locator("tbody tr")
               .filter({ has: verifier.locator("td", { hasText: "audit_worker_account_20260901" }) })
-              .filter({ has: verifier.locator("td", { hasText: "qualification" }) }).last();
+              .filter({ has: verifier.locator("td", { hasText: evidenceKind }) }).last();
             await correctedReview.getByRole("link", { name: "Review", exact: true }).click();
             await verifier.waitForURL(/\/verifier\/reviews\/[^/]+$/, { timeout: 15_000 });
             const correctedTaskId = new URL(verifier.url()).pathname.split("/").filter(Boolean).at(-1);
@@ -342,20 +457,145 @@ test(
             await verifier.reload({ waitUntil: "domcontentloaded" });
             await verifier.getByRole("button", { name: "Claim review" }).click();
             await verifier.getByText("ASSIGNED", { exact: true }).waitFor({ timeout: 15_000 });
+            if (employmentOnly) {
+              const v2Url=`${baseUrl}/verifier/reviews/${correctedTaskId}/preview`;
+              const corrected=await verifierContext.request.get(v2Url);
+              assert.equal(corrected.status(),200,"Assigned corrected employment review cannot preview submitted v2");
+              assert.deepEqual(Buffer.from(await corrected.body()),EMPLOYMENT_CORRECTED_PNG.buffer,
+                "Corrected employment preview did not return distinct actual v2 uploaded proof bytes");
+              assert.notDeepEqual(Buffer.from(await corrected.body()),PNG_FILE.buffer,
+                "Corrected employment preview returned stale v1 proof bytes");
+              assert.match(corrected.headers()["cache-control"]??"",/private.*no-store/i);
+              const denied=await workerContext.request.get(v2Url,{maxRedirects:0});
+              assert.notEqual(denied.status(),200,"Worker copied corrected Verifier preview task");
+              console.log("M11104_EMPLOYMENT_HTTP_CORRECTED_ASSIGNED_V2_PREVIEW_AND_WORKER_DENIAL");
+            }
             await verifier.getByLabel("Decision").selectOption("APPROVED");
             await verifier.getByLabel("Reason", { exact: true }).fill(
+              employmentOnly?"Case-scoped employment review confirms the corrected duties and attributable evidence.":
+              skillOnly?"Case-scoped skill review confirms the corrected proficiency and attached evidence.":
               "Case-scoped qualification review confirms the submitted certificate for this Assurance Order."
             );
             await verifier.getByRole("button", { name: "Finalize review" }).click();
             await verifier.getByText("APPROVED", { exact: true }).waitFor({ timeout: 15_000 });
 
             await worker.goto(`${baseUrl}/worker/dashboard`, { waitUntil: "domcontentloaded" });
-            await worker.getByText("Linked Worker Qualification Assurance", { exact: true }).waitFor({ timeout: 15_000 });
+            await worker.getByText(orderName, { exact: true }).waitFor({ timeout: 15_000 });
             await worker.getByText("Assessment pending", { exact: true }).first().waitFor({ timeout: 15_000 });
 
             await company.goto(`${baseUrl}/company/dashboard`, { waitUntil: "domcontentloaded" });
-            await company.getByRole("heading", { name: "Linked Worker Qualification Assurance", exact: true }).first().waitFor({ timeout: 15_000 });
+            await company.getByRole("heading", { name: orderName, exact: true }).first().waitFor({ timeout: 15_000 });
             await company.getByText("1", { exact: true }).first().waitFor();
+            if (skillOnly) {
+              // Company-assurance case, Worker receiving and review history must persist after reload.
+              await worker.goto(`${baseUrl}/worker/evidence`, {waitUntil:"domcontentloaded"});
+              const skill=worker.locator("article").filter({hasText:"Skill record"}).first();
+              await skill.getByText(/Independent verification: approved/).waitFor({timeout:15000});
+              const skillHistory=skill.getByRole("region",{name:"skill history"});
+              for(const n of [1,2])await skillHistory.getByText(new RegExp("Version "+n)).first().waitFor();
+              await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor({timeout:15000});
+              await worker.reload({waitUntil:"domcontentloaded"});
+              await skill.getByText(/Independent verification: approved/).waitFor();
+              await company.reload({waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor();
+              console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_CORRECTION_REVIEW_AND_TWO_PORTAL_HISTORY");
+
+              for(const width of [320,390,1440]) {
+                await worker.setViewportSize({width,height:900});
+                await company.setViewportSize({width,height:900});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+                await worker.locator("article").filter({hasText:"Skill record"}).first()
+                  .getByText(/Independent verification: approved/).waitFor({timeout:15000});
+                await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                  .getByText("Assessment pending",{exact:true}).waitFor({timeout:15000});
+                for(const [role,page] of [["worker",worker],["company",company]]) {
+                  const measured=await page.evaluate(()=>{
+                    const viewport=window.innerWidth;
+                    // Wide table cells may be outside the viewport *inside*
+                    // the intentional .table-scroll container. Exclude those
+                    // while finding elements that actually widen the page.
+                    const all=[...document.querySelectorAll("body *")].map(el=>{
+                      const rect=el.getBoundingClientRect();
+                      const style=getComputedStyle(el);
+                      return {tag:el.tagName.toLowerCase(),
+                        cls:typeof el.className==="string"?el.className.slice(0,100):"",
+                        left:Math.round(rect.left),right:Math.round(rect.right),
+                        width:Math.round(rect.width),
+                        minWidth:style.minWidth,
+                        gridCols:style.gridTemplateColumns,
+                        overflowX:style.overflowX,
+                        inTableScroll:Boolean(el.closest(".table-scroll")&& !el.matches(".table-scroll"))};
+                    });
+                    const unclipped=all.filter(item=>item.right>viewport+2 && !item.inTableScroll)
+                      .sort((a,b)=>a.right-b.right).slice(0,22);
+                    const frames=["html","body",".portal-shell",".portal-header",".header-actions",
+                      ".portal-main-column",".portal-content",".page-stack",".detail-card",".table-scroll"]
+                      .flatMap(selector=>[...document.querySelectorAll(selector)].slice(0,3).map(el=>{
+                        const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
+                        return {selector,cls:typeof el.className==="string"?el.className.slice(0,90):"",
+                          left:Math.round(rect.left),right:Math.round(rect.right),
+                          clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,
+                          gridCols:style.gridTemplateColumns,overflowX:style.overflowX};
+                      }));
+                    return {viewport,scroll:document.documentElement.scrollWidth,unclipped,frames};
+                  });
+                  assert.ok(measured.scroll<=measured.viewport+2,
+                    role+" linked skill receiving page overflow at "+width+"px: "+JSON.stringify(measured));
+                }
+              }
+              console.log("M11103_COMPANY_SKILL_ACTUAL_CHROME_RESPONSIVE_320_390_1440");
+            }
+            if (employmentOnly) {
+              // Positive Company-linked case: receiving state is the authorized
+              // case status, not an unrestricted raw Worker employment document.
+              await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor();
+              await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+              const employment=worker.locator("article").filter({hasText:"Employment record"}).first();
+              await employment.getByText(/Independent verification: approved/).waitFor();
+              const history=employment.getByRole("region",{name:"employment history"});
+              for(const n of [1,2])await history.getByText(new RegExp("Version "+n)).first().waitFor();
+              await company.reload({waitUntil:"domcontentloaded"});
+              await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                .getByText("Assessment pending",{exact:true}).waitFor();
+              await worker.reload({waitUntil:"domcontentloaded"});
+              await employment.getByText(/Independent verification: approved/).waitFor();
+              console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_CORRECTED_APPROVED_WORKER_AND_COMPANY_RELOADED");
+
+              for(const width of [320,390,1440]) {
+                await worker.setViewportSize({width,height:900});
+                await company.setViewportSize({width,height:900});
+                await worker.goto(`${baseUrl}/worker/evidence`,{waitUntil:"domcontentloaded"});
+                await company.goto(orderUrl,{waitUntil:"domcontentloaded"});
+                await worker.locator("article").filter({hasText:"Employment record"}).first()
+                  .getByText(/Independent verification: approved/).waitFor();
+                await company.locator("tbody tr").filter({hasText:"audit_worker_account_20260901"})
+                  .getByText("Assessment pending",{exact:true}).waitFor();
+                for(const [role,page] of [["worker",worker],["company",company]]) {
+                  const measured=await page.evaluate(()=>({viewport:window.innerWidth,page:document.documentElement.scrollWidth}));
+                  assert.ok(measured.page<=measured.viewport+2,
+                    role+" Company-linked employment page horizontal overflow "+width+": "+JSON.stringify(measured));
+                }
+              }
+              console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_RESPONSIVE_WORKER_COMPANY_320_390_1440");
+              // Being a linked Company is not consent to fetch private Worker
+              // evidence or to impersonate the independently assigned Verifier.
+              const companyRaw=await companyContext.request.get(`${baseUrl}/worker/evidence`,{maxRedirects:0});
+              assert.notEqual(companyRaw.status(),200,"Company saw private raw Worker employment evidence");
+              const workerReview=await workerContext.request.get(`${baseUrl}/verifier/reviews`,{maxRedirects:0});
+              assert.notEqual(workerReview.status(),200,"Worker saw private Verifier review queue");
+              const anonymousContext=await browser.newContext();
+              try {
+                const anon=await anonymousContext.request.get(`${baseUrl}/worker/evidence`,{maxRedirects:0});
+                assert.notEqual(anon.status(),200,"Signed-out user saw private Worker employment evidence");
+              } finally { await anonymousContext.close(); }
+              console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_CHROME_ROLE_AND_SIGNEDOUT_RAW_EVIDENCE_DENIAL");
+            }
           } finally {
             await companyContext.close();
             await workerContext.close();
@@ -402,16 +642,39 @@ test(
           assert.equal(reviewed[0].source_version_id,original[0].version_id);
           console.log("ACTUAL_M20106_REJECTED_DB one retained original Worker qualification version, terminal Verifier REJECTED exact source-linked task and Company case with no owner; Company order remains SUBMITTED");
         } else {
-          const versions=(await database.query("SELECT versions.version_id,versions.version_number,versions.version_status FROM worker_evidence_versions versions JOIN worker_evidence_records records ON records.record_id=versions.record_id WHERE records.worker_account_id='audit_worker_account_20260901' AND records.record_kind='qualification' ORDER BY versions.version_number")).rows;
+          const versions=(await database.query("SELECT versions.version_id,versions.version_number,versions.version_status FROM worker_evidence_versions versions JOIN worker_evidence_records records ON records.record_id=versions.record_id WHERE records.worker_account_id='audit_worker_account_20260901' AND records.record_kind=$1 ORDER BY versions.version_number",[evidenceKind])).rows;
           assert.equal(versions.length,2,"Worker must retain both original and corrected qualification versions.");
           assert.deepEqual(versions.map(version=>version.version_number),[1,2]);
           assert.deepEqual(versions.map(version=>version.version_status),["superseded","submitted"],
             "Corrected qualification must preserve the old immutable submitted evidence as superseded and retain new active submitted evidence.");
-          const decisions=(await database.query("SELECT decisions.outcome,decisions.source_version_id FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id IN (SELECT cases.case_id FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id WHERE orders.order_reference='ASSURE-LINK-001') AND tasks.evidence_kind='qualification' ORDER BY decisions.decided_at")).rows;
+          const decisions=(await database.query("SELECT decisions.outcome,decisions.source_version_id FROM evidence_review_decisions decisions JOIN evidence_review_tasks tasks ON tasks.task_id=decisions.task_id WHERE tasks.case_id IN (SELECT cases.case_id FROM assurance_cases cases JOIN assurance_orders orders ON orders.order_id=cases.order_id WHERE orders.order_reference='ASSURE-LINK-001') AND tasks.evidence_kind=$1 ORDER BY decisions.decided_at",[evidenceKind])).rows;
           assert.equal(decisions.length,2,"Both independent final Verifier decisions must remain source-linked.");
           assert.ok(decisions.some(decision=>decision.outcome==="CHANGES_REQUESTED"&&decision.source_version_id===versions[0].version_id),"Original correction decision source lost.");
           assert.ok(decisions.some(decision=>decision.outcome==="APPROVED"&&decision.source_version_id===versions[1].version_id),"Corrected accepted decision source lost.");
-          console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
+          if(skillOnly)console.log("M11103_COMPANY_SKILL_ACTUAL_DB_TWO_VERSIONS_TWO_DECISIONS_ONE_CASE");
+          else if(employmentOnly) {
+            const records=(await database.query(
+              "SELECT record_id,current_version_id FROM worker_evidence_records WHERE worker_account_id=$1 AND record_kind='employment'",
+              ["audit_worker_account_20260901"])).rows;
+            assert.equal(records.length,1);
+            assert.equal(records[0].current_version_id,versions[1].version_id);
+            const attachments=(await database.query(
+              "SELECT version_id,display_filename FROM worker_evidence_attachments WHERE record_id=$1",
+              [records[0].record_id])).rows;
+            for(const version of versions) {
+              assert.ok(attachments.some(a=>a.version_id===version.version_id),
+                "Missing original/corrected linked Company employment proof: "+version.version_number);
+            }
+            const caseBound=(await database.query(
+              "SELECT t.task_status,t.source_version_id,t.case_id,c.tenant_id FROM evidence_review_tasks t JOIN assurance_cases c ON c.case_id=t.case_id WHERE t.worker_account_id=$1 AND t.evidence_kind='employment' ORDER BY t.created_at",
+              ["audit_worker_account_20260901"])).rows;
+            assert.equal(caseBound.length,2);
+            assert.equal(new Set(caseBound.map(t=>t.case_id)).size,1);
+            assert.equal(new Set(caseBound.map(t=>t.tenant_id)).size,1);
+            assert.ok(caseBound.some(t=>t.task_status==="CHANGES_REQUESTED"&&t.source_version_id===versions[0].version_id));
+            assert.ok(caseBound.some(t=>t.task_status==="APPROVED"&&t.source_version_id===versions[1].version_id));
+            console.log("M11104_COMPANY_EMPLOYMENT_ACTUAL_DB_ONE_LINKED_TENANT_CASE_TWO_IMMUTABLE_VERSIONS_DECISIONS_AND_PROOFS");
+          } else console.log("ACTUAL_M20106_CHANGES_APPROVAL_DB two immutable original/corrected qualification versions; original CHANGES_REQUESTED and corrected APPROVED independent review events bound to distinct sources; case advanced to Assessment pending");
         }
       } finally {
         await database.close();

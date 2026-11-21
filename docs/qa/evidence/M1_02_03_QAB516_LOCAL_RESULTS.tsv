@@ -1,0 +1,8 @@
+source_sha	suite	passed_tests	exit_code	log_file
+b516e41bccb0c370da33c9ec39e300775688539b	consumer-validation	1	0	.autopilot/artifacts/M10203_QAB516_consumer-validation.log
+b516e41bccb0c370da33c9ec39e300775688539b	error-recovery-controls	1	0	.autopilot/artifacts/M10203_QAB516_error-recovery-controls.log
+b516e41bccb0c370da33c9ec39e300775688539b	worker-file-upload-validation	1	0	.autopilot/artifacts/M10203_QAB516_worker-file-upload-validation.log
+b516e41bccb0c370da33c9ec39e300775688539b	company-billing-validation	1	0	.autopilot/artifacts/M10203_QAB516_company-billing-validation.log
+b516e41bccb0c370da33c9ec39e300775688539b	six-role-desktop-mobile-ui-layout	1	0	.autopilot/artifacts/M10203_QAB516_ALL_ROLE_UI_LAYOUT.log
+b516e41bccb0c370da33c9ec39e300775688539b	typecheck	0	0	.autopilot/artifacts/M10203_QAB516_typecheck.log
+b516e41bccb0c370da33c9ec39e300775688539b	lint	0	0	.autopilot/artifacts/M10203_QAB516_lint.log

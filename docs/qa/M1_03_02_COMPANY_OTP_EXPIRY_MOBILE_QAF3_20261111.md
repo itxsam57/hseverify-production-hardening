@@ -1,0 +1,29 @@
+# M1.03.02 — Company expired OTP real-browser security and 320px auth layout defect
+
+**2026-11-11 · scoped local QA only · FULLY VERIFIED 0/218 · PENTEST INCOMPLETE · RELEASE NO-GO.**
+
+## Exact source and isolation
+
+- Base signed active QA: `f3fd2d4ba0a8b23ba84efdb799d96479c8b5e552`, following signed PR #76. Independent worktree: `hseverify-m10302-company-expiry-20261111`, branch: `qa/verify-m10302-company-expiry-20261111`. All work uses synthetic Company/Worker accounts and throwaway local PGlite/Chromium/Next. No production DB, SMS, email provider, real PII, live staging or other worktree modified.
+- Frozen Masterplan `M1.03.02`: Worker email and phone + Company OTP wrong/expired/resend/verified. Historical evidence exists on older commits, but **none qualifies as FULLY_VERIFIED on the final staging SHA**.
+
+## Actual defect RED → root fix → GREEN
+
+- New actual Chromium test `tests/browser/company-registration-expired-otp.browser.test.mjs` creates a Company through its real form, reads synthetic sandbox code, then **stops Next before changing only the disposable challenge's expiry/cooldown timestamps**. On restart it enters the *correct expired code* and confirms the backend rejects it with no verification/activation.
+- **Proven 320px UI defect**: before the fix, the Company verification page's document width expanded from 320px to **514px**. Browser DOM box evidence found `.auth-page`'s auto-min-content grid track expanded panels; changing to `minmax(0,1fr)` and setting grid-child `min-width:0` eliminated that cause but left width ~**497px**. A second browser DOM text-Range probe isolated the **unbroken application reference** (`company_verification_...`) extending outside the 320px viewport.
+- **Root CSS corrections** in `src/app/globals.css`: mobile auth grid uses `minmax(0,1fr)` and min-width zero for brand/card panels, and the auth brand reference paragraph uses `overflow-wrap:anywhere` when needed. **No CSS overflow clipping/hidden workaround.**
+- Original failed-browser logs: `.autopilot/artifacts/M10302_COMPANY_EXPIRED_OTP_BROWSER.log` (first RED), `M10302_COMPANY_EXPIRED_OTP_OVERFLOW_ROOT_RED.log` (514px panel diagnostics), `M10302_COMPANY_OVERFLOW_TEXT_PROBE_RED.log` (497px long-reference text diagnostics). Full amended test **1/1 PASS**: `.autopilot/artifacts/M10302_COMPANY_OTP_CSS_AND_EXPIRY_GREEN.log`. A later additional browser assertion initially expected a stale-specific error, but the actual Company form has no challenge ID; an old code is treated as one invalid guess against the new challenge. The test now explicitly asserts that observed behavior rather than inventing a stale-specific message.
+
+## Security, receiving authority and persistence
+
+Actual post-fix browser asserts: correct expired email code rejected without consuming its five attempts; foreign Origin and absent Origin requests to `POST /company/register/verify/resend` each return **403**; authorized form resend rotates the challenge; replay of old code cannot verify Company, counts one incorrect attempt on new challenge (four remain); **fresh code** advances only to Company MFA setup with no logged-in session. Persistent DB: exactly two challenges (old invalidated/unconsumed, fresh consumed), one immutable OTP verification audit, verified email, Company flow `pending_mfa`, Company tenant pending, membership invited and zero auth sessions. This is **local controlled API abuse**, not the complete cross-role pentest or real provider signoff.
+
+## Existing adjacent evidence and gating
+
+- Source `66a997130d503083b74bfd930f0422fb411b738c` (incorporated in QA f3): 13/13 Worker+Company native OTP boundary tests (early resend/cooldown, five failed attempts, expiry, audit-trigger rollback) and 4/4 real Chromium cases (Worker wrong/expired/resend/replay and five-attempt recovery; Company email/MFA negatives; queued provider transport **with intercepted HTTP**, not actual provider acceptance). Logs in the distinct `hseverify-m10302-otp-20261110` worktree.
+- Current exact QA f3 after CSS root fix: **13/13 native Worker+Company tests PASS**, consumer form Chromium **1/1**, Worker OTP Chromium **2/2**, Company registration/MFA Chromium **1/1**, newly added expired/forged/replayed Company OTP Chromium **1/1** — **5/5 distinct actual Chromium cases PASS**. Corrected command receipts `.autopilot/artifacts/M10302_F3_BROWSER_ADJACENT.tsv` and `M10302_F3_ADJACENT_REGRESSION.tsv` (first two native rows). An earlier runner typo assembled `tests/browser/*.test.mjs` rather than `tests/browser/*.browser.test.mjs`; that command failed before executing the consumer browser and was corrected. It is **not an application regression**. Strict TypeScript PASS, ESLint exit0 with nine inherited warnings, actionlint of new CI passes. Exact machine receipt `docs/qa/evidence/M1_03_02_QAF3_LOCAL_RESULTS.tsv`.
+- New exact-PR-SHA `.github/workflows/m1-03-company-otp-expiry.yml` has isolated real Chromium and native OTP jobs, retains logs; actionlint v1.7.12 validates YAML and action contexts locally. **GitHub job and signed merge results not yet certified.**
+
+**Still blocked/incomplete:** Real delivered email/SMS from Resend/Twilio with actual credentials, staff OTP, protected final same-SHA staging, full authenticated cross-role/tenant/API attack matrix, genuine delivery delay/interruption/retry/race, realistic load/restore and Owner UAT. Never promote M1.03.02 or overall project into FULLY_VERIFIED from sandbox and local tests.
+
+**NEXT:** Finish adjacent Company browser; strict TypeScript/lint and actionlint; checkpoint exact SHA and exit logs; guarded commit/push PR; require both GitHub jobs + all required CI and exact signed QA merge. Resume next actionable M1.03.02 uncovered OTP dimension, mark external dependencies BLOCKED_EXTERNAL and keep release NO-GO.
