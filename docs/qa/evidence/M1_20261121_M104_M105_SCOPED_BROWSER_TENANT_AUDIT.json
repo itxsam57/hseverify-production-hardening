@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-21",
+  "first_not_fully_certified_scenario": "M1.01.01",
+  "overall_verdict": "FULL 0/218 M1 FULL 0/67 FINAL 0/4975, independent pentest incomplete, 10 known external blockers, HIGH/CRITICAL unknown, NO-GO",
+  "provider_signoff": "NOT_PERFORMED real email and SMS deferred by owner; full provider acceptance still required",
+  "revision_of_browser_test_run": "5239adff877def442b74ffd001f0e39d18b4462e",
+  "runtime_product_tree_identical": true,
+  "signed_qa_runtime_code_baseline": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "software_action_next": "M1.06.01 PDF/PNG/JPEG Worker scan browser currently running",
+  "source_mode": "synthetic disposable PGlite and real Chromium tests on exact product source tree; repo commit is evidence-only ahead of signed QA HEAD, not final exact release signoff",
+  "stage_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "test_evidence_receipts": [
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 1,
+      "scenario_scoped": "M1.04.01",
+      "scope": "Root real UI to five role isolation and published question workflow",
+      "sha256": "09557a496bf4574c7dad16591b8a720eeb32ed8cdbabdb0976fe5cf460f1d2e9",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10401-owner-approved-root-to-five-staff-normal-ui-20261121.log",
+      "total": 1
+    },
+    {
+      "classification": "WRONG_NATIVE_RUNNER_FIXTURE_FAIL_RETEST_OFFICIAL_GREEN",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 1,
+      "passed": 3,
+      "scenario_scoped": "M1.04.02",
+      "scope": "Tenant SQL repository scopes/revalidates 3 and secure access missing explicit build env 1 RED",
+      "sha256": "abe4fbf2dc61c650206fce3150e59bc3c0bc51689c833e0359a47d45d71428e4",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10402-03-owner-approved-tenancy-file-authorization-native-20261121.log",
+      "total": 4
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 5,
+      "scenario_scoped": "M1.04.02/M1.04.03",
+      "scope": "Official compiled secure access Worker/Company lease/revocation/audit native",
+      "sha256": "46a973f0950dea1d428a9c6182022acc081dd0fca5808a6c8c73d9d68161cc18",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10402-03-owner-approved-secure-file-access-proper-runner-20261121.log",
+      "total": 5
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 1,
+      "scenario_scoped": "M1.04.02",
+      "scope": "Two Company real browser private PDF cross tenant token replay and audit",
+      "sha256": "8eabba5417239bd9bcf454a19329a8f98fe26d7307ff5d0d6692f23ab832c5c3",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10402-owner-approved-company-private-files-cross-tenant-browser-20261121.log",
+      "total": 1
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 1,
+      "scenario_scoped": "M1.04.03",
+      "scope": "Two Worker real browser private PDF copied capability wrong owner and record mutation denial",
+      "sha256": "34454112068ac8225a61888cc2dc0c9582eeb47648d266b4a448db425d6c1720",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10403-owner-approved-worker-file-cross-account-browser-20261121.log",
+      "total": 1
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 1,
+      "scenario_scoped": "M1.04.04",
+      "scope": "Two Company staff real browser stale same role permission revoke/regrant and immutable DB",
+      "sha256": "f7a763f420dd7080c6c6213b6b00ccbb96903ea22fb3514a020b6d4ee160ab38",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10404-owner-approved-stale-company-permission-actual-browser-20261121.log",
+      "total": 1
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 1,
+      "scenario_scoped": "M1.04.04",
+      "scope": "Company owner real full organization/workforce/team/assurance/policy/billing/report/tenant scoped browser",
+      "sha256": "d46cbb21538808f38c2514d20df98cc0aea48732c35deea68203a9c34a8057b9",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10404-owner-approved-company-full-journey-browser-20261121.log",
+      "total": 1
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 1,
+      "scenario_scoped": "M1.05.01",
+      "scope": "Two Company tenant actor/resource/reason audit immutable history real browser",
+      "sha256": "7cbde3572e5fa3ede4fff80d41a7bec3f004d3f53759b194030b32e8e830798d",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10501-owner-approved-two-tenant-immutable-audit-browser-20261121.log",
+      "total": 1
+    },
+    {
+      "classification": "SCOPED_SOFTWARE_PASS_NOT_FULLY_VERIFIED",
+      "command": "original project native/browser source test - see raw log first lines",
+      "failed": 0,
+      "passed": 9,
+      "scenario_scoped": "M1.05.03/M1.05.04",
+      "scope": "Bulk read exact current-role/company tenant permission and outbox rollback/outage/idempotency native",
+      "sha256": "0883cf1e1bf060d2086b4dc2e288a59c28c2966640839daf18ecbdf21abc6709",
+      "test_log": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10503-04-owner-approved-notification-outbox-isolation-native-20261121.log",
+      "total": 9
+    }
+  ],
+  "test_failures_preserved": "First native secure-file direct invocation lacked compiled HSE_SECURE_ACCESS_RUNTIME_DIST, initial 3 pass1 fail; official npm run test:secure-access-runtime after compile 5/5 success, no app source change"
+}

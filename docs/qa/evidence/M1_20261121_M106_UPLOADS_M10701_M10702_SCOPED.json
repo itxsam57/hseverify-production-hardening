@@ -1,0 +1,79 @@
+{
+  "controlled_scope": "synthetic disposable browser/PGlite, localhost only; no production user data; no real mail/SMS deliveries",
+  "current_software_scenario": "M1.07.03 pending crossrole browser and review native results",
+  "date": "2026-11-21",
+  "evidence": [
+    {
+      "actual_scope": "actual Worker PNG/JPEG/PDF scan exact version private preview",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.06.01",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10601-owner-approved-worker-three-formats-scan-browser-20261121.log",
+      "passing_source_tests": 1,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "428d1a46982174fd84744e1e5f9b05425d5872096ccafe65be0b6a9558b7f303"
+    },
+    {
+      "actual_scope": "actual Worker oversize/spoof/unsafe test and clean retry",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.06.02",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10602-owner-approved-worker-invalid-multipart-browser-20261121.log",
+      "passing_source_tests": 1,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "2d5fbf0450d3948d563316b22249ca7f95813cd7360e1aba57e9181813ccc789"
+    },
+    {
+      "actual_scope": "actual Worker scanner outage same-object quarantine and retry",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.06.03",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10603-owner-approved-worker-scanner-outage-retry-browser-20261121.log",
+      "passing_source_tests": 1,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "7689e832c893e0f5486f65530e87bdc14744e6506a47e6d3b555d9d15eced3db"
+    },
+    {
+      "actual_scope": "actual two independent Worker attachment replacement, stale conflict and private previews",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.06.04",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10604-owner-approved-worker-attachment-version-replacement-browser-20261121.log",
+      "passing_source_tests": 2,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "f9236210f1fd569b90ab2b0a8520885444e5d4fa648e864d04fe927214ce309c"
+    },
+    {
+      "actual_scope": "pending and authentic expired signed private preview denial, audit read",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.06.05",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10605-owner-approved-pending-expired-private-file-browser-20261121.log",
+      "passing_source_tests": 1,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "895426d66eb6d4407084629892763da53990227d35c1a6224c1c393fbf66b466"
+    },
+    {
+      "actual_scope": "signed Worker incomplete profile and identity submission blocked across Verifier/Admin state",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.07.01",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10701-owner-approved-worker-incomplete-identity-real-browser-20261121.log",
+      "passing_source_tests": 1,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "d9523a6f72958686f20780020c759dd26d050727ec94c8656ab73f4c59373cd0"
+    },
+    {
+      "actual_scope": "Worker three-section drafts, invalid submit, cold reload, stale independent sessions and retry",
+      "failed_source_tests": 0,
+      "frozen_scenario_scoped": "M1.07.02",
+      "log_workstation": "/home/ubuntu/work/hseverify-m10101-stage-signed-7ff30e-20261121/.autopilot/artifacts/m10702-owner-approved-worker-profile-draft-navigation-real-browser-20261121.log",
+      "passing_source_tests": 1,
+      "result": "SCOPED_SOFTWARE_PASS_NOT_FINAL_CERTIFICATION",
+      "sha256": "5a7e683ab68a8b3e8278609f56abd53e2b6081f3a28dc2f973b47eff4ea46db7"
+    }
+  ],
+  "evidence_only_commit_base": "5239adff877def442b74ffd001f0e39d18b4462e",
+  "final_check_certified": 0,
+  "first_uncertified_release_scenario": "M1.01.01",
+  "frozen_full_count": 0,
+  "frozen_total_count": 218,
+  "last_completed_software_scenario": "M1.07.02",
+  "notes": "All recorded passes are actual successful existing test executions. They are not complete independent security tests, real external provider checks or Owner UAT. Original check identity and source unchanged.",
+  "release": "NO-GO",
+  "source_runtime_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+}
