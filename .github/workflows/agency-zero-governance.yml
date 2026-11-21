@@ -1,0 +1,48 @@
+name: ZERO — Agency QA rules and batch integrity
+
+on:
+  push:
+    paths:
+      - "AGENTS.md"
+      - "docs/qa/AGENCY_ZERO*"
+      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md"
+      - "docs/qa/CURRENT_218_LEDGER_PROCEDURE.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
+      - "scripts/agency_zero_control.py"
+      - "tests/engineering/test_agency_zero_control.py"
+      - ".github/workflows/agency-zero-*.yml"
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "docs/qa/AGENCY_ZERO*"
+      - "docs/qa/PROJECT_MISSION_218_FULL_VERIFICATION_PENTEST.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md"
+      - "docs/qa/CURRENT_218_LEDGER_PROCEDURE.md"
+      - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
+      - "scripts/agency_zero_control.py"
+      - "tests/engineering/test_agency_zero_control.py"
+      - ".github/workflows/agency-zero-*.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zero-policy:
+    name: Preserve 218 original scenarios and five-case limit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+      - name: Zero batch manifest matches immutable Masterplan
+        run: python3 scripts/agency_zero_control.py --check
+      - name: Independent schema and tamper tests
+        run: python3 -m unittest discover -s tests/engineering -p "test_agency_zero_control.py" -v
+      - name: Report immutable exact-SHA technical progress
+        run: python3 scripts/agency_zero_control.py --status
+      - name: Confirm no whitespace corruption
+        run: git diff --check HEAD^ HEAD

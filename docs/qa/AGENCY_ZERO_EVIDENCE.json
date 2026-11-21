@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Evidence attestations only; the 218 canonical Masterplan rows are not duplicated here. Technical status is derived at exact SHA by scripts/agency_zero_control.py.",
+  "technical_attestations": []
+}
