@@ -172,7 +172,23 @@ test("An authenticated Company can request, generate and download actual scoped 
         assert.equal(headers["referrer-policy"], "no-referrer");
         assert.deepEqual(new Set(headers["content-security-policy"].split(";").map(value => value.trim()).filter(Boolean)),
           new Set(["default-src 'none'", "style-src 'unsafe-inline'", "base-uri 'none'", "form-action 'none'", "frame-ancestors 'none'", "sandbox"]));
-        assert.equal(Number(headers["content-length"]), bytes.byteLength);
+        // Next may gzip report bytes and use chunked HTTP/1.1 framing. Playwright
+        // returns the decoded body, so its size must not be compared with the
+        // compressed wire length (or an absent Content-Length).
+        const wireLength = headers["content-length"];
+        const encoding = headers["content-encoding"] ?? "identity";
+        assert.ok(["identity", "gzip", "br", "deflate"].includes(encoding),
+          "Report exports must use a recognized HTTP content encoding");
+        if (wireLength === undefined) {
+          assert.equal(headers["transfer-encoding"], "chunked",
+            "HTTP/1.1 export without Content-Length requires chunked transfer framing");
+        } else {
+          assert.match(wireLength, /^[1-9]\d*$/,
+            "Report export Content-Length must be a positive integer");
+          assert.equal(headers["transfer-encoding"], undefined,
+            "Report exports must not mix Content-Length and Transfer-Encoding");
+          if (encoding === "identity") assert.equal(Number(wireLength), bytes.byteLength);
+        }
         assert.deepEqual(bytes, artifacts[reports[format]]);
         if (format !== "print") {
           const downloadPromise = page.waitForEvent("download", { timeout: 10000 });
