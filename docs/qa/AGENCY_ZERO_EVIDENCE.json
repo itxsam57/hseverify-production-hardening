@@ -975,6 +975,174 @@
           "sha256": "66d09406028bf5e69b9a1883a88ec184063616b2fe36af1b68c2360314b2fc6a"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.07.01",
+      "batch_id": "ZERO-008",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "c58857c3ec9099233a0f72d81e269f6389aec7da",
+      "configuration_fingerprint": "706c76f5c58ac91b273ea966efdb7a0a15b87777666cef5727174282450801d5",
+      "observed_at_utc": "2026-11-22T18:17:22.971410+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.07.01 incomplete Worker identity remains editable and cannot enter verification"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Incomplete profile and identity submission blocked with input retained. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.01.log",
+          "sha256": "0821eef9cf1d713342b50b55e2d2a6c9e0665c1d6dfd4ef7adcbf9ca8af84a44"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.07.02",
+      "batch_id": "ZERO-008",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "c58857c3ec9099233a0f72d81e269f6389aec7da",
+      "configuration_fingerprint": "706c76f5c58ac91b273ea966efdb7a0a15b87777666cef5727174282450801d5",
+      "observed_at_utc": "2026-11-22T18:17:22.971410+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.07.02 Worker all three profile section drafts survive rejected save, navigation and retry"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Profile drafts persist through navigation, validation and retry. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.02.log",
+          "sha256": "fc92ee1f238c84e91ad9898b076b621e1b43799367e7ac23578f4143e2f7423c"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.07.03",
+      "batch_id": "ZERO-008",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "c58857c3ec9099233a0f72d81e269f6389aec7da",
+      "configuration_fingerprint": "706c76f5c58ac91b273ea966efdb7a0a15b87777666cef5727174282450801d5",
+      "observed_at_utc": "2026-11-22T18:17:22.971410+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.07.03 rejected initial identity routes one immutable Worker notification without duplicate recipients"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Initial identity approved, rejected and changes requested. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.03.log",
+          "sha256": "cd1cf7014501ac2f38c3108c08c8d89840bb4b2472abd4858d0c794ba07479c7"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.07.04",
+      "batch_id": "ZERO-008",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "c58857c3ec9099233a0f72d81e269f6389aec7da",
+      "configuration_fingerprint": "706c76f5c58ac91b273ea966efdb7a0a15b87777666cef5727174282450801d5",
+      "observed_at_utc": "2026-11-22T18:17:22.971410+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Initial identity rejection preserves submitted version, reason and terminal policy"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Initial rejection/changes requested corrected and resubmitted. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.04.log",
+          "sha256": "e54623ba7d8a7e4aa6bc6b19bf771b3ca074a6b2839d6def7b152c966b205813"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.07.05",
+      "batch_id": "ZERO-008",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "c58857c3ec9099233a0f72d81e269f6389aec7da",
+      "configuration_fingerprint": "706c76f5c58ac91b273ea966efdb7a0a15b87777666cef5727174282450801d5",
+      "observed_at_utc": "2026-11-22T18:17:22.971410+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "S6 accepted and rejected corrections preserve immutable history and never reuse a rejected version number"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Verified correction accepted, rejected and changes requested. Selected check only; missing applicable full role/security/independent evidence. Initial attempt exited 1 before execution because HSE_WORKER_IDENTITY_CORRECTION_RUNTIME_DIST was absent; original approved runtime bootstrap used for one targeted retry which passed. Both logs preserved.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.05.log",
+          "sha256": "e5da92dc23545685cf513886d7875a2600eefcad33fd65a890228dc69f8d74d1"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.05.initial-harness-fail.log",
+          "sha256": "da224de8f853fdd8b721d9d68ffc8545b87f8338667f6e3ee0e538f38ba4e149"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-008/M1.07.05.bootstrap.log",
+          "sha256": "38b6d73e0bfb0a4f01cc4ca748d51e3a15b69df14a9feb15eaf795edab95e19a"
+        }
+      ]
     }
   ]
 }
