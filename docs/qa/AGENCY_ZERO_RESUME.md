@@ -59,6 +59,14 @@ Previously parked M1.07.07 actual PG16 Admin duplicate review race **PASS 1/1** 
 
 [Batch report](AGENCY_ZERO_BATCH_011_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-012; no prod code changes.
 
+## ZERO-012 second security check and code review
+
+Original M1.09.06 browser live Owner/Admin/Manager permission-ceiling check **PASS 1/1**, independent second real disposable PG16 two-transaction race/forged-Invite/tenant/audit check **PASS 1/1**. Source authorization service inspected read-only. Raw 2 case logs plus PG16 start/stop log hashed in Batch 012 report. No provider adapter applicable. Only one original scenario, two selected related checks (<=5); not technically FULL due incomplete whole-scope pentest/reviewer. Next **ZERO-013**.
+
+## ZERO-012 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_012_REPORT.md): selected cases 1/1 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-013; no prod code changes.
+
 ## ZERO-006 actual executed batch (2026-11-22)
 
 [Batch ZERO-006 report](AGENCY_ZERO_BATCH_006_REPORT.md): **4/4 selected scoped tests PASS** — two-tenant audit history, review resolution notifications and guarded role links, all-role bell/open/deeplink/read state, durable outbox approval surviving provider outage with idempotent retry. 3 real browser source cases + 1 isolated PGlite platform source case, one PASS each. **0/4 TECH FULL** pending full authorized security review, all workflow variants and independent reviewer. Exact raw logs SHA256 recorded in same original scenario evidence register; production unchanged. Cursor now **ZERO-007**, previously attempted ZERO-001..006 retained for revisits.

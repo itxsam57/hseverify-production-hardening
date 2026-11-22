@@ -176,9 +176,21 @@
       "scheduled_source_cases_pass": 5,
       "scheduled_source_cases_fail": 0,
       "recorded_utc": "2026-11-22T18:26:34.440332+00:00"
+    },
+    {
+      "batch_id": "ZERO-012",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_012_REPORT.md",
+      "original_scenario_ids": [
+        "M1.09.06"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 1,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T18:34:55.313054+00:00"
     }
   ],
-  "next_batch_id": "ZERO-012",
+  "next_batch_id": "ZERO-013",
   "revisit_batches": [
     "ZERO-001",
     "ZERO-002",
@@ -190,8 +202,9 @@
     "ZERO-008",
     "ZERO-009",
     "ZERO-010",
-    "ZERO-011"
+    "ZERO-011",
+    "ZERO-012"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Advance to ZERO-012 with <=5 related cases; revisit unresolved ZERO-001..ZERO-011 full security/UI/adapter/independent-review evidence"
+  "next_action": "Advance to ZERO-013 with <=5 related cases; revisit unresolved ZERO-001..ZERO-012 full security/UI/adapter/independent-review evidence"
 }

@@ -1572,6 +1572,49 @@
           "sha256": "85afd53c58e3994d7b68119875ba4ce8787b2ee6a30775365a93725b90aae45a"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.09.06",
+      "batch_id": "ZERO-012",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "3b4e70c4b39f09bb1cbcac137721e1c2fd998d76",
+      "configuration_fingerprint": "e2dbaa73c5e19dcb28666c626b521370358ffb87fb9dff7c4a93705bce465d47",
+      "observed_at_utc": "2026-11-22T18:34:55.313054+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.09.06 actual Chromium Owner removes Admin live grant while stale Admin Manager and invitation forms cannot delegate it",
+        "Real PostgreSQL16 two independent Company Admin/Owner transaction overlap, permission ceiling, invite/Manager stale attempt and cross-tenant checks PASS 1/1",
+        "Read-only code review: liveActor row FOR UPDATE, livePermissions and assertGrantAuthority within tenant-scoped atomic invite/updateMember commands"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Company staff cannot grant permissions above own ceiling. Selected check only; missing applicable full role/security/independent evidence. Second independent-source security test on disposable PostgreSQL16 PASSED 1/1, as did Chromium original source. App service code spot-check confirms live tenant/permission bounds and transaction/row-lock/compare-and-set. No complete system-wide pentest or independent human reviewer.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full feature-wide adversarial test inventory and independent specialist security signoff not completed",
+        "Independent reviewer must sign off complete intended UI/mobile/role workflow and source maintainability; scoped tests are not full technical verification"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-012/M1.09.06.log",
+          "sha256": "ff787edcbb7a4660d28c2bbe68e3a9a887dd81e6d3f14c91724622b01fd97869"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-012/M1.09.06.security-PG16.log",
+          "sha256": "178d3a037ae573db8f8a6e01cb5d1bde7cd4c81ee4c6a50383ac548e8d378588"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-012/PG16-bootstrap.log",
+          "sha256": "a5b672257363985ae7798b513177d66a0e095ee101663aa5e9ae3c6a049c126f"
+        }
+      ],
+      "adapter_not_applicable_reason": "Permission ceiling and staff grants are internal database/authorization contracts, not an intentionally unconnected external email/SMS/video/identity/payment adapter."
     }
   ]
 }
