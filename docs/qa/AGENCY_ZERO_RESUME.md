@@ -99,9 +99,33 @@ Original M1.09.06 browser live Owner/Admin/Manager permission-ceiling check **PA
 
 [AGENCY_ZERO_SUMMARY_013_020.md](AGENCY_ZERO_SUMMARY_013_020.md) — **8/8 batches attempted**, 32 original workflow scenarios, **31 scoped selected PASS, 1 TIMEOUT** (`M1.11.02`, 465 seconds, no final assertion), **0 technical FULL**, app pinned SHA `7ff30ea...`. Explicit source-versus-original requirements gaps preserved for 17 scenario IDs; raw workstation logs SHA256 in receipt register. Cursor now **ZERO-021**, earlier ZERO-001–020 remain in revisit queue. No product code/stage writes, final provider-live and independent review pending.
 
+## Requested five-batch audit ZERO-021–025
+
+[Consolidated report](AGENCY_ZERO_SUMMARY_021_025.md): 5/5 batches attempted, **17/17 selected scoped cases PASS**, 17 original distinct workflow IDs, **0 fully verified**. Frozen app SHA `7ff30ea...`; one browser source plus isolated platform cases; source-vs-full-requirement gaps explicitly added per ID in evidence ledger and individual batch reports. Earlier M1.11.02 timeout remains unresolved. Cursor **ZERO-026**; 001–025 open for independent expert/security UI closure. No product/stage/prod changes.
+
 ## ZERO-020 actually executed
 
 [Batch report](AGENCY_ZERO_BATCH_020_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-021; no prod code changes.
+
+## ZERO-021 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_021_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-022; no prod code changes.
+
+## ZERO-022 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_022_REPORT.md): selected cases 1/1 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-023; no prod code changes.
+
+## ZERO-023 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_023_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-024; no prod code changes.
+
+## ZERO-024 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_024_REPORT.md): selected cases 1/1 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-025; no prod code changes.
+
+## ZERO-025 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_025_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-026; no prod code changes.
 
 ## ZERO-006 actual executed batch (2026-11-22)
 
