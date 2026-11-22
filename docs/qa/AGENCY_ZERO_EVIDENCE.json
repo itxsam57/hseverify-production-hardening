@@ -452,6 +452,105 @@
           "sha256": "86c00a303599f87f4355b46ad1c8f677ce3e688b4f010f886784ddc7edb1396c"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.03.06",
+      "batch_id": "ZERO-004",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "11eb67ecfdc50b4215b06ce0777b348a91fc4750",
+      "configuration_fingerprint": "90a75c44c9644e87148e524b291423c3caa9740400a55aac48a6f8a954ca0996",
+      "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB"
+      ],
+      "result_summary": "Actual browser test 1/1 PASS: M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "This batch tests active authentication and sessions, not an intentionally disconnected provider integration itself.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original scenario variants and receiving roles not independently fully verified",
+        "Comprehensive authenticated penetration tests and independent UI/code reviewer evidence remain"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.06.log",
+          "sha256": "61c33eb8dfda674ee405d31a62e90bb7be0a348271ad8d049085e604851d31a8"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.03.07",
+      "batch_id": "ZERO-004",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "11eb67ecfdc50b4215b06ce0777b348a91fc4750",
+      "configuration_fingerprint": "90a75c44c9644e87148e524b291423c3caa9740400a55aac48a6f8a954ca0996",
+      "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay"
+      ],
+      "result_summary": "Actual browser test 1/1 PASS: M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "This batch tests active authentication and sessions, not an intentionally disconnected provider integration itself.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original scenario variants and receiving roles not independently fully verified",
+        "Comprehensive authenticated penetration tests and independent UI/code reviewer evidence remain"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.07.log",
+          "sha256": "964b3d12b9823d368da46591e8b1bc4c40904e4f9d5626ae5de039ad9a63d434"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.03.08",
+      "batch_id": "ZERO-004",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "11eb67ecfdc50b4215b06ce0777b348a91fc4750",
+      "configuration_fingerprint": "90a75c44c9644e87148e524b291423c3caa9740400a55aac48a6f8a954ca0996",
+      "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "All six roles change passwords with reauthentication, keep current sessions and revoke other sessions"
+      ],
+      "result_summary": "Actual browser test 1/1 PASS: All six roles change passwords with reauthentication, keep current sessions and revoke other sessions. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "This batch tests active authentication and sessions, not an intentionally disconnected provider integration itself.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original scenario variants and receiving roles not independently fully verified",
+        "Comprehensive authenticated penetration tests and independent UI/code reviewer evidence remain"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.08.log",
+          "sha256": "3ce4e28913f82eb4ab50d974b2edcbeb02a68c152bfe0ebf25e72ff47578f4bd"
+        }
+      ]
     }
   ]
 }

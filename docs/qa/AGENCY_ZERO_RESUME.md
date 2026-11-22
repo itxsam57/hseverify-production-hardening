@@ -35,6 +35,10 @@
 
 Hosted PR branch `f821e623b01359dfc5f61665f4a693fc222fb5c0` had 218/4975 release evidence and V4 compliance green, but new ZERO integrity CI 10/11 tests passed and one failed because the **test itself hardcoded the previous next-batch ID `ZERO-002`**. The actual cursor was correctly advanced to `ZERO-003` after 5 successful scoped UI cases. Updated only the governance test to derive the next batch from its attempted count, preserving the frozen 218 order and fail-closed skips. Local ZERO governance **11/11 PASS**. Confirm new hosted checks on the guarded fix commit. No app source changes; no evidence credit added.
 
+## ZERO-004 actual executed batch (2026-11-22)
+
+[Batch ZERO-004 report](AGENCY_ZERO_BATCH_004_REPORT.md): **3/3 original exact scoped Chromium cases PASS** for six-role login/negative MFA/cross-portal responsive checks, six-role copied-cookie replay after signout, six-role password reauthentication and other-session revocation. Real isolated PGlite, source pinned `7ff30ea...`, no prod/stage edits. **0/3 technical complete**: deep pentest, role coverage, independent reviewer still needed. Cursor now **ZERO-005**, prior ZERO-001..004 remain open and recorded; raw 3 source logs hashed in evidence register.
+
 ## ZERO-003 actual executed batch (2026-11-22)
 
 Five actual synthetic browser source cases PASS: Worker signup policy, email and phone OTP, duplicate Worker and recovery, Company pending MFA, and staff invitation cancel/retry/role isolation. [Full report](AGENCY_ZERO_BATCH_003_REPORT.md). Scoped 5/5, technical FULL 0/5. Raw private logs hashed; no provider-live or production mutation. Cursor advanced to ZERO-004; ZERO-001/002/003 remain in revisit queue for deeper security, workflow and independent reviewer evidence.

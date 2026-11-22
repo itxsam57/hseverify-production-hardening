@@ -46,14 +46,29 @@
       "scheduled_source_cases_pass": 5,
       "scheduled_source_cases_fail": 0,
       "recorded_utc": "2026-11-22T17:32:10.831625+00:00"
+    },
+    {
+      "batch_id": "ZERO-004",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_004_REPORT.md",
+      "original_scenario_ids": [
+        "M1.03.06",
+        "M1.03.07",
+        "M1.03.08"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 3,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T17:42:02.661138+00:00"
     }
   ],
-  "next_batch_id": "ZERO-004",
+  "next_batch_id": "ZERO-005",
   "revisit_batches": [
     "ZERO-001",
     "ZERO-002",
-    "ZERO-003"
+    "ZERO-003",
+    "ZERO-004"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "ZERO-004 remaining authentication workflows, max five cases; later close ZERO-001/002/003 pentest/adapter/reviewer gaps with evidence"
+  "next_action": "Start ZERO-005 Authorization original scenario batch in isolated environment <=5 cases, preserve 001-004 missing specialist/attestation evidence without repeating clean scoped checks"
 }
