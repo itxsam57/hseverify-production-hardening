@@ -127,6 +127,30 @@ Original M1.09.06 browser live Owner/Admin/Manager permission-ceiling check **PA
 
 [Batch report](AGENCY_ZERO_BATCH_025_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-026; no prod code changes.
 
+## ZERO-026 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_026_REPORT.md): selected cases 0/1 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-027; no prod code changes.
+
+## ZERO-027 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_027_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-028; no prod code changes.
+
+## ZERO-028 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_028_REPORT.md): selected cases 2/2 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-029; no prod code changes.
+
+## ZERO-029 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_029_REPORT.md): selected cases 1/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-030; no prod code changes.
+
+## Requested agency batches ZERO-026–030, scoped green after harness-only retest
+
+[Consolidated summary](AGENCY_ZERO_SUMMARY_026_030.md): **5/5 requested batches attempted**, 15 distinct original workflow IDs, **15/15 scoped source tests PASS**, **0 technically full**. `M2.05.06` + `M2.07.02–05` first failed to import approved runtime test modules; isolated approved compiler used for one targeted rerun each, passed 1/1, original failure and new logs both sha256 preserved. B029 Controlled Review selected test is only timing, so actual flag/revision UI is explicitly NOT verified. B030 human-review handoff and real technical/emergency exit remain NOT verified. Earlier M1.11.02 465s timeout also open. Cursor **ZERO-031**; app SHA pinned `7ff30ea...`; production untouched.
+
+## ZERO-030 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_030_REPORT.md): selected cases 2/2 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-031; no prod code changes.
+
 ## ZERO-006 actual executed batch (2026-11-22)
 
 [Batch ZERO-006 report](AGENCY_ZERO_BATCH_006_REPORT.md): **4/4 selected scoped tests PASS** — two-tenant audit history, review resolution notifications and guarded role links, all-role bell/open/deeplink/read state, durable outbox approval surviving provider outage with idempotent retry. 3 real browser source cases + 1 isolated PGlite platform source case, one PASS each. **0/4 TECH FULL** pending full authorized security review, all workflow variants and independent reviewer. Exact raw logs SHA256 recorded in same original scenario evidence register; production unchanged. Cursor now **ZERO-007**, previously attempted ZERO-001..006 retained for revisits.

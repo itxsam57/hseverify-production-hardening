@@ -380,9 +380,104 @@
       "scheduled_source_cases_pass": 5,
       "scheduled_source_cases_fail": 0,
       "recorded_utc": "2026-11-22T19:23:03.275378+00:00"
+    },
+    {
+      "batch_id": "ZERO-026",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_026_REPORT.md",
+      "original_scenario_ids": [
+        "M2.05.06"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 1,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T19:28:56.866023+00:00",
+      "scoped_revalidation_history": [
+        {
+          "original_ids": [
+            "M2.05.06"
+          ],
+          "observed_at_utc": "2026-11-22T19:37:49.814474+00:00",
+          "previous": "TEST_HARNESS_BOOTSTRAP_NOT_SET",
+          "new": "SELECTED_SOURCE_CASES_PASS",
+          "fully_verified_awarded": 0
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-027",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_027_REPORT.md",
+      "original_scenario_ids": [
+        "M2.06.01",
+        "M2.06.02",
+        "M2.06.03",
+        "M2.06.04",
+        "M2.06.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T19:31:18.574505+00:00"
+    },
+    {
+      "batch_id": "ZERO-028",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_028_REPORT.md",
+      "original_scenario_ids": [
+        "M2.06.06",
+        "M2.06.07"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 2,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T19:32:43.847790+00:00"
+    },
+    {
+      "batch_id": "ZERO-029",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_029_REPORT.md",
+      "original_scenario_ids": [
+        "M2.07.01",
+        "M2.07.02",
+        "M2.07.03",
+        "M2.07.04",
+        "M2.07.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T19:35:07.821117+00:00",
+      "scoped_revalidation_history": [
+        {
+          "original_ids": [
+            "M2.07.02",
+            "M2.07.03",
+            "M2.07.04",
+            "M2.07.05"
+          ],
+          "observed_at_utc": "2026-11-22T19:37:49.814474+00:00",
+          "previous": "TEST_HARNESS_BOOTSTRAP_NOT_SET",
+          "new": "SELECTED_SOURCE_CASES_PASS",
+          "fully_verified_awarded": 0
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-030",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_030_REPORT.md",
+      "original_scenario_ids": [
+        "M2.07.06",
+        "M2.07.07"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 2,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T19:35:16.606226+00:00"
     }
   ],
-  "next_batch_id": "ZERO-026",
+  "next_batch_id": "ZERO-031",
   "revisit_batches": [
     "ZERO-001",
     "ZERO-002",
@@ -408,8 +503,13 @@
     "ZERO-022",
     "ZERO-023",
     "ZERO-024",
-    "ZERO-025"
+    "ZERO-025",
+    "ZERO-026",
+    "ZERO-027",
+    "ZERO-028",
+    "ZERO-029",
+    "ZERO-030"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Advance to ZERO-026 with <=5 related cases; revisit unresolved ZERO-001..ZERO-025 full security/UI/adapter/independent-review evidence"
+  "next_action": "Advance to ZERO-031 with <=5 related cases; revisit unresolved ZERO-001..ZERO-030 full security/UI/adapter/independent-review evidence"
 }
