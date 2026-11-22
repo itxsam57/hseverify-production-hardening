@@ -89,7 +89,7 @@ def save_batch(batch_id):
         if run_filter is not None and run_filter != "NONE" and has_one_exact_case:
             if not re.search(run_filter, passed[0]):
                 has_one_exact_case = False
-        status = "SCOPED_PASS_NOT_FULL" if has_one_exact_case else ("TIMEOUT" if code in (124, 137) else "FAIL_OR_UNPROVEN")
+        status = "SCOPED_PASS_NOT_FULL" if has_one_exact_case else ("TIMEOUT" if code in (124, 137) else ("BLOCKED_TEST_ENVIRONMENT" if code == 125 else "FAIL_OR_UNPROVEN"))
         existing = unit.get("sample_existing_case")
         old_link = bool(existing and existing.get("path") == file)
         details.append({
@@ -180,7 +180,7 @@ def save_batch(batch_id):
             "result_summary": f"{d['status']} ({d['metrics']}); original workflow: {d['original_requirement']}. "
                               "Selected check only; missing applicable full role/security/independent evidence.",
             "gates": {
-                "engineering": "PASS" if passed else "FAIL",
+                "engineering": "PASS" if passed else ("BLOCKED" if d["status"] == "BLOCKED_TEST_ENVIRONMENT" else "FAIL"),
                 "functional_workflow": "BLOCKED",
                 "ui_accessibility": "BLOCKED",
                 "cybersecurity": "BLOCKED",

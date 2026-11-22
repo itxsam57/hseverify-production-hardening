@@ -1143,6 +1143,82 @@
           "sha256": "38b6d73e0bfb0a4f01cc4ca748d51e3a15b69df14a9feb15eaf795edab95e19a"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.07.06",
+      "batch_id": "ZERO-009",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "52b5b7bad67dc9b276d0e23e1d4d1f331baea9cf",
+      "configuration_fingerprint": "2339f434dc51d599e192cf5c5b6663a98fdfbc848a0bda52c90e7bfb5d778f57",
+      "observed_at_utc": "2026-11-22T18:20:45.146554+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "actual two authenticated Workers: correction preserves original ID; matching second account requires Admin duplicate review"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Permanent Worker ID and original evidence retained across corrections. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-009/M1.07.06.log",
+          "sha256": "54ffd0b7666aab154903402cba10c32b120caa12081eba71627834c8c88d0bd4"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.07.07",
+      "batch_id": "ZERO-009",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "52b5b7bad67dc9b276d0e23e1d4d1f331baea9cf",
+      "configuration_fingerprint": "2339f434dc51d599e192cf5c5b6663a98fdfbc848a0bda52c90e7bfb5d778f57",
+      "observed_at_utc": "2026-11-22T18:20:45.146554+00:00",
+      "technical_verdict": "BLOCKED_TEST_ENVIRONMENT",
+      "tested_actions": [
+        "NO CONFIRMED TITLE"
+      ],
+      "result_summary": "BLOCKED_TEST_ENVIRONMENT ({'tests': None, 'pass': None, 'fail': None, 'skipped': None}); original workflow: Duplicate document/contact signals require independent resolution. Selected check only; missing applicable full role/security/independent evidence. No PostgreSQL attack assertions were executed: first ephemeral cluster creation failed, then a setup retry also failed to start. Likely local socket path configuration, not yet confirmed. Stop after two attempts per ZERO protocol.",
+      "gates": {
+        "engineering": "BLOCKED",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Isolated PostgreSQL16 could not start; no race test executed. Two setup attempts recorded and parked.",
+        "Full cybersecurity and reviewer attestations missing."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-009/M1.07.07.log",
+          "sha256": "bb5282204d32c33f9967b231b386d11014cbfd05c764a2aa4d82ee562507e2ca"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-009/M1.07.07.pg-bootstrap.log",
+          "sha256": "5eca42465c81a5de4d4c5f54f71517a699cf8e4d6f8da7d87c8e5faf131181fe"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-009/M1.07.07.pg-bootstrap-retry.log",
+          "sha256": "34248c285fe50f97ccc0e9b7679c2b462e0166c780ccafce8873f41b280007af"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-009/M1.07.07.retry.log",
+          "sha256": "206a75962e17b0e6fc17e50f39ea15a4f60581bf6f8b3f8647bf7d2f59d2a15e"
+        }
+      ]
     }
   ]
 }
