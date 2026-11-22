@@ -5122,6 +5122,790 @@
           "sha256": "341421ecb2eb11fd7f10221f4d59943ce8568203a06f2e7672189456ac17a87a"
         }
       ]
+    },
+    {
+      "scenario_id": "M2.13.06",
+      "batch_id": "ZERO-041",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "b83a95a017f492bc6ac8dbe64562f74f13941f510c8807747538964bf1e1beab",
+      "observed_at_utc": "2026-11-22T20:31:08.972345+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "decision override runtime keeps tenant boundary and rejects cross-tenant mutation"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Repeated/unauthorized/stale decision or issuance denied. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Selected security service rejects cross-tenant override. Repeat issuance, replayed/stale decision updates, duplicate credential issuance and simultaneous privileged actors remain unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-041/M2.13.06.log",
+          "sha256": "40d2e3419477f3e88bf4652a3bb9d89085d335d33a51179c91eaf0bf7cee964b"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M2.13.07",
+      "batch_id": "ZERO-041",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "b83a95a017f492bc6ac8dbe64562f74f13941f510c8807747538964bf1e1beab",
+      "observed_at_utc": "2026-11-22T20:31:08.972345+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Browser, public API and actual PDF show the decision-pinned expiry and preserved live lifecycle"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Company, Worker, public, share and certification display agree. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Real Worker/browser/public API/PDF pin expiry agrees in the selected lifecycle. Complete Company, share, certification and all current conditional/revoked/suspended states are not compared in one cross-role matrix."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-041/M2.13.07.log",
+          "sha256": "15fa7ec8f584a04729c2b4891ba6dd14c60e1afdc6f4e500853c591ab76d4c35"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.01.01",
+      "batch_id": "ZERO-042",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "855ad218e82a27fcb090974f45c17a5fe4536019587949f636ba5ebd2427b207",
+      "observed_at_utc": "2026-11-22T20:31:49.095940+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual decision producer pins configured UTC validity into credential, Living Record, signed payload and public/PDF consumers"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Signed credential/QR/PDF issuance derives policy issue/expiry. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Actual issuance service pins configured UTC validity in credential, signed payload, Living Record and public/PDF. Live signing-key rotation, provider PDF byte/signature trust, delivery and historical policy edge cases remain unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-042/M3.01.01.log",
+          "sha256": "6aaa315c8d789b38110af65e34dd68890f32f1945d3af1c7cb3b7b537378aea2"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.01.02",
+      "batch_id": "ZERO-042",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "855ad218e82a27fcb090974f45c17a5fe4536019587949f636ba5ebd2427b207",
+      "observed_at_utc": "2026-11-22T20:31:49.095940+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual signed issuance JSON is consumed by the real scanner component as a bounded lookup, with camera cleanup"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Download/copy/view credential and live public status. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Actual scanner consumes signed issuance JSON and cleans up camera resources. Worker browser credential view/download/copy, public scanner hardware permissions, offline QR and tampered-file retry are not fully tested."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-042/M3.01.02.log",
+          "sha256": "a0345041eb3f5862a325fa1675c5d605e48a27399f3eeebb4c1b84ece2aca267"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.01.03",
+      "batch_id": "ZERO-042",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "855ad218e82a27fcb090974f45c17a5fe4536019587949f636ba5ebd2427b207",
+      "observed_at_utc": "2026-11-22T20:31:49.095940+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual completed assessment and interview conditional issuance discloses conditions through public, PDF and Living Record consumers"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Conditional/expired/suspended/revoked display across page/API/PDF. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Actual completed conditional issuance appears in public, PDF and Living Record consumers. Expired/suspended/revoked status agreement across all browser/page/API/PDF/cache variants remains unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-042/M3.01.03.log",
+          "sha256": "c60c4aeb98fd12f65e4f732dbadbbd172962d14d6f2e2f7796f04076b22e6c00"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.01.04",
+      "batch_id": "ZERO-042",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "855ad218e82a27fcb090974f45c17a5fe4536019587949f636ba5ebd2427b207",
+      "observed_at_utc": "2026-11-22T20:31:49.095940+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual positive issuer finalizes only the explicitly associated accepted reassessment and retains old signed history"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Duplicate issuance returns original; replacement retains old credential. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Actual accepted reassessment issuance preserves old signed history. Repeated duplicate issuance idempotency and simultaneous retry/first-issue transaction consistency are not tested by the selected case."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-042/M3.01.04.log",
+          "sha256": "87ff65895d9769792e0706baa91359266cf5cee56c6c9b68f3edde554f16cb5d"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.01.05",
+      "batch_id": "ZERO-042",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "855ad218e82a27fcb090974f45c17a5fe4536019587949f636ba5ebd2427b207",
+      "observed_at_utc": "2026-11-22T20:31:49.095940+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "public credential projection does not expose worker identity or private issuance payload"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Public credential contains permitted display facts and disclaimer. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Public projection does not leak Worker identity or private issuance payload. Every permitted display field, no-accreditation disclaimer wording, QR consumers and public SEO caches are not validated in this selected test."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-042/M3.01.05.log",
+          "sha256": "362585a8e05f292759ed78003e6555aba3a46016d14589b83ce7ae54b8bc83a0"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.02.01",
+      "batch_id": "ZERO-043",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "ecdaef4382fba0e27e5b5475da4131e2cfd82c94299a0b0edd853f0912453a9d",
+      "observed_at_utc": "2026-11-22T20:32:11.708017+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Digital Passport projects qualifications, competencies, restrictions, expiry, reassessment and history"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Verified qualification vs competency assessment clearly distinct. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Digital Passport domain projects qualification, competency, restrictions and history. The Worker/Company rendered interface must still prove verified qualification is visually and semantically distinct from independently assessed competency."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-043/M3.02.01.log",
+          "sha256": "4b4526800adeaa2fea4cd76a2829dfbd80a8c10e4e543daba1f3fc9e31d7821a"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.02.02",
+      "batch_id": "ZERO-043",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "ecdaef4382fba0e27e5b5475da4131e2cfd82c94299a0b0edd853f0912453a9d",
+      "observed_at_utc": "2026-11-22T20:32:11.708017+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual issued Living Record is expired in Passport and scoped-share projections while stored history stays valid"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Restrictions/conditions/status/expiry and previous versions displayed. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Issued credential expiry appears in Passport and scoped-share projections without erasing stored history. All live condition/restriction/suspension/revocation branches and prior version UI remain unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-043/M3.02.02.log",
+          "sha256": "7cf5dc41ef291ddeb8bacb8a99c9417da46712f3e557141a2322e0a284cd6518"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.02.03",
+      "batch_id": "ZERO-043",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "ecdaef4382fba0e27e5b5475da4131e2cfd82c94299a0b0edd853f0912453a9d",
+      "observed_at_utc": "2026-11-22T20:32:11.708017+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "accepted credential appeal preserves reasoned review history and appends a Living Record reassessment version"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Suspension/revocation/reassessment retain original history. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Accepted appeal appends reasoned reassessment Living Record history. Separate suspension, revocation, denial/replacement outcomes and all consumers retaining originals are not shown by this test."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-043/M3.02.03.log",
+          "sha256": "744d76950d1f3de9c8e744e412f5624514050355b9a47bea9a3d47fdd624da9d"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.02.04",
+      "batch_id": "ZERO-043",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "ecdaef4382fba0e27e5b5475da4131e2cfd82c94299a0b0edd853f0912453a9d",
+      "observed_at_utc": "2026-11-22T20:32:11.708017+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual appeal renew after expiry produces a distinct configured renewal without erasing original signed history"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Renewal/replacement updates current credential without erasing former. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Expired credential renewal produces a distinct valid version while preserving original signed history. Worker download/public QR/current Company share consistency and renewal races remain unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-043/M3.02.04.log",
+          "sha256": "a6a949cfd61717af969e1b8b95ccec264cb7193577a23dac118f7c0ac3d90d3c"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.02.05",
+      "batch_id": "ZERO-043",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "ecdaef4382fba0e27e5b5475da4131e2cfd82c94299a0b0edd853f0912453a9d",
+      "observed_at_utc": "2026-11-22T20:32:11.708017+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "tests/platform/company-worker-invitations.test.mjs",
+        "Focused actual source (real service): Company transfer after termination creates only a new consented link, retaining the previous employer history"
+      ],
+      "result_summary": "FAIL_OR_UNPROVEN ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Company changes never remove permanent identity/exposure. Selected check only; missing applicable full role/security/independent evidence. Approved original source runtime now executed and PASS 1/1; first direct Node invocation did not reach original test: missing official compiled bundle (045) or recursive node:test wrapper (043). Both attempts preserved. Full scenario still unverified.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Initial direct source invocation was a TEST ENVIRONMENT/HARNESS setup error (original log retained)",
+        "Full exact role/UI/security/provider/independent reviewer workflow validation not signed off",
+        "ORIGINAL REQUIREMENT GAP (not passed): The actual Company transfer-after-termination service retained Worker history and required new consent. It did not prove permanent Worker ID, question exposure, identity data, or all browser/Company scope projections remain unchanged."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-043/M3.02.05.log",
+          "sha256": "099446eb991aba8ca3f73ee0ead3dc095bfdf1e31767d534279c00ae5b963c3a"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-043/M3.02.05.revalidated.log",
+          "sha256": "f5a7326d179bfca5cb231f656fd67ebd8305318620e779142d6769318b589320"
+        }
+      ],
+      "revalidation_events": [
+        {
+          "observed_at_utc": "2026-11-22T20:37:41.793717+00:00",
+          "prior_status": "FAIL_OR_UNPROVEN_TEST_SETUP",
+          "new_status": "SCOPED_PASS_NOT_FULL",
+          "reason": "Correct official repository runner/compiled runtime loaded; exact selected source 1/1 pass",
+          "app_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.03.01",
+      "batch_id": "ZERO-044",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "926a9d3f7cfea4abd2b5ad0c93574f0356524b3fc31a31af0cba526fc1fb15a2",
+      "observed_at_utc": "2026-11-22T20:32:15.020370+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M3.03 worker creates a signed scoped link with purpose, expiry and selected safe fields"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Each approved field selection matches actual recipient output. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Signed scoped link captures purpose/expiry/selected safe fields. Actual recipient browsers must still verify field-by-field output, subject consent, purpose display and expiration under real network flow."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-044/M3.03.01.log",
+          "sha256": "2cf7c1ca538040056930e55b413e437e708357c175aa9ee9ceadfbb4b151a99b"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.03.02",
+      "batch_id": "ZERO-044",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "926a9d3f7cfea4abd2b5ad0c93574f0356524b3fc31a31af0cba526fc1fb15a2",
+      "observed_at_utc": "2026-11-22T20:32:15.020370+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M3.03 projection omits unselected passport, employment, history, reassessment and private source fields"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Scope never reveals unselected/private fields or other employers. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Backend projection removes unselected employment/history/reassessment/private source fields. Real recipient HTML/PDF/JSON, nested file URLs, other employers and timing/cache leak tests remain outstanding."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-044/M3.03.02.log",
+          "sha256": "c190359412a8efa23b11a6e648ecaba67494dc377669cb1cb46bb89866555b12"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.03.03",
+      "batch_id": "ZERO-044",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "926a9d3f7cfea4abd2b5ad0c93574f0356524b3fc31a31af0cba526fc1fb15a2",
+      "observed_at_utc": "2026-11-22T20:32:15.020370+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M3.03 enforces Worker ownership for revocation, access-log reads and passport resolution"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Purpose/recipient/expiry preserved; access logged. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Worker-owned revocation, access-log reads and passport resolution are gated. Purpose/recipient/expiry preservation, each successful and denied access log event and user-facing audit presentation are not completely verified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-044/M3.03.03.log",
+          "sha256": "f644ae89eb53cc480137958ea88cbca0afeb92bf663340c619aa23c845de85cb"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.03.04",
+      "batch_id": "ZERO-044",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "926a9d3f7cfea4abd2b5ad0c93574f0356524b3fc31a31af0cba526fc1fb15a2",
+      "observed_at_utc": "2026-11-22T20:32:15.020370+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M3.03 expiry and revocation deny future access and remain access logged"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Revoke or expire link denies previously working recipient access. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Service denies expired/revoked tokens and keeps access records. An initially working recipient URL, after revoke/expiration in actual browser, forwarded token, replay and cache invalidation require further independent checks."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-044/M3.03.04.log",
+          "sha256": "ff977c9e1ef89a54ce3449ef9b5f068668311366feec1f673240c7040386ba6f"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.03.05",
+      "batch_id": "ZERO-044",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "926a9d3f7cfea4abd2b5ad0c93574f0356524b3fc31a31af0cba526fc1fb15a2",
+      "observed_at_utc": "2026-11-22T20:32:15.020370+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M3.03 rejects tampered tokens and fails closed without disclosing link state"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Tampered token and enumeration attempt fail neutrally. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Tampered token fails closed without disclosing its state in service. Exhaustive token enumeration rate limits, metadata side-channels, replay from foreign device and public endpoint penetration testing remain open."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-044/M3.03.05.log",
+          "sha256": "c1247e752872324ce0f3f67ff5f8c93aec200ac1e4c3651312ad4f121107f29f"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.04.01",
+      "batch_id": "ZERO-045",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "c842db376f8ec5af6b9089bdcbfc1502414358dfac01414942ab9c540e713529",
+      "observed_at_utc": "2026-11-22T20:36:21.486604+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Company filtered directory preserves status through Next, refresh and Previous"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Search/filter/pagination show only authorized workforce. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Real Company workforce directory preserves active filters across pagination/refresh. Cross-tenant isolation, mixed-status counts, all role-specific filters, empty state and every pagination boundary remain unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.01.log",
+          "sha256": "77eb1e79f873256e0afe835fdd7b3eb8d68c08410a0d391f3f15ff7fc67922f9"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.04.02",
+      "batch_id": "ZERO-045",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "c842db376f8ec5af6b9089bdcbfc1502414358dfac01414942ab9c540e713529",
+      "observed_at_utc": "2026-11-22T20:36:21.486604+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.10.05 real Chromium Company moves active Worker Site Department, rejects forged unit and Worker receives fresh scoped history"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Placement/update/end relationship actions synchronize Worker and Company. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Real Company Site/Department move rejects forged units and updates Worker receiver. End relationship/relink, all Company Action Centre source deep links and concurrent updates were not tested within this case."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.02.log",
+          "sha256": "e4d11207da1185364112cacd84160505877863a2890394c0db2fd4d11dc0ba89"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.04.03",
+      "batch_id": "ZERO-045",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "c842db376f8ec5af6b9089bdcbfc1502414358dfac01414942ab9c540e713529",
+      "observed_at_utc": "2026-11-22T20:36:21.486604+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "tests/platform/company-action-centre-analytics.test.mjs (99.952263ms)",
+        "Focused actual source (real service): M3.04 projects live workflow, approvals, readiness and competency gaps inside the trusted tenant"
+      ],
+      "result_summary": "FAIL_OR_UNPROVEN ({'tests': 1, 'pass': 0, 'fail': 1, 'skipped': 0}); original workflow: Case funding/evidence/assessment/interview/decision feeds next exact action. Selected check only; missing applicable full role/security/independent evidence. Approved original source runtime now executed and PASS 1/1; first direct Node invocation did not reach original test: missing official compiled bundle (045) or recursive node:test wrapper (043). Both attempts preserved. Full scenario still unverified.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Initial direct source invocation was a TEST ENVIRONMENT/HARNESS setup error (original log retained)",
+        "Full exact role/UI/security/provider/independent reviewer workflow validation not signed off",
+        "ORIGINAL REQUIREMENT GAP (not passed): Real analytics service projects live workflows, approvals, readiness and competency gaps within trusted tenant. Exact next action across each funding/evidence/assessment/interview/decision state and all role recipients remain unverified."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.03.log",
+          "sha256": "b13467257269473937078605aa37492b7549d7356dc333446d52fb8a84079c48"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.03.revalidated.log",
+          "sha256": "9d23c410f4ded2f26e3862382ef96834be2d83cfdbf0f5ed89051150e220bee7"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/official-bootstrap-preparation.log",
+          "sha256": "33a47ce33f788b4f5554713154ef62eb9a54c61263184dd69892c11641141ea0"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/assurance-bootstrap.log",
+          "sha256": "8eb654fdd4ff6a493df61f6e2e974fa41dde893c6505b9a69706f1bc1c977f41"
+        }
+      ],
+      "revalidation_events": [
+        {
+          "observed_at_utc": "2026-11-22T20:37:41.793717+00:00",
+          "prior_status": "FAIL_OR_UNPROVEN_TEST_SETUP",
+          "new_status": "SCOPED_PASS_NOT_FULL",
+          "reason": "Correct official repository runner/compiled runtime loaded; exact selected source 1/1 pass",
+          "app_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.04.04",
+      "batch_id": "ZERO-045",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "c842db376f8ec5af6b9089bdcbfc1502414358dfac01414942ab9c540e713529",
+      "observed_at_utc": "2026-11-22T20:36:21.486604+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Assign owner/snooze/acknowledge source deep links without false completion. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated",
+        "ORIGINAL REQUIREMENT GAP (not passed): Full real Company browser journey exercises assignment, invalid/valid snooze and acknowledge plus many tenant controls. Every exact source deep link, no false final completion, external notifications, independent recipient and accessibility signoff remain open."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.04.log",
+          "sha256": "73c8855353bcc19c0d189cd3f8f9baf0eaf321bbf723d73e0ba88f102e5a81a5"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M3.04.05",
+      "batch_id": "ZERO-045",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e87b900993dff7d8ad9e5422e3ea7dc8755aa7f5",
+      "configuration_fingerprint": "c842db376f8ec5af6b9089bdcbfc1502414358dfac01414942ab9c540e713529",
+      "observed_at_utc": "2026-11-22T20:36:21.486604+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "tests/platform/company-action-centre-analytics.test.mjs (103.656367ms)",
+        "Focused actual source (real service): M3.04 excludes cancelled/closed work from live readiness and fails closed on the wrong permission"
+      ],
+      "result_summary": "FAIL_OR_UNPROVEN ({'tests': 1, 'pass': 0, 'fail': 1, 'skipped': 0}); original workflow: Readiness/gaps/expiry totals reflect real live credential state. Selected check only; missing applicable full role/security/independent evidence. Approved original source runtime now executed and PASS 1/1; first direct Node invocation did not reach original test: missing official compiled bundle (045) or recursive node:test wrapper (043). Both attempts preserved. Full scenario still unverified.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Initial direct source invocation was a TEST ENVIRONMENT/HARNESS setup error (original log retained)",
+        "Full exact role/UI/security/provider/independent reviewer workflow validation not signed off",
+        "ORIGINAL REQUIREMENT GAP (not passed): Service excludes closed/cancelled work and denies wrong permissions. Real Company readiness/expiry totals over mixed approved/pending/suspended/revoked/expired credentials and across refresh/notifications are not proven."
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.05.log",
+          "sha256": "1288c85ee79a3ffc4489b930ca3980e5068cd7923a74bb47f793e1fd9d1a32f3"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/M3.04.05.revalidated.log",
+          "sha256": "375402155552f0193f6146cd020ca8033def6ebaae56be15f3eaa4c5872e3cf9"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/official-bootstrap-preparation.log",
+          "sha256": "33a47ce33f788b4f5554713154ef62eb9a54c61263184dd69892c11641141ea0"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-045/assurance-bootstrap.log",
+          "sha256": "8eb654fdd4ff6a493df61f6e2e974fa41dde893c6505b9a69706f1bc1c977f41"
+        }
+      ],
+      "revalidation_events": [
+        {
+          "observed_at_utc": "2026-11-22T20:37:41.793717+00:00",
+          "prior_status": "FAIL_OR_UNPROVEN_TEST_SETUP",
+          "new_status": "SCOPED_PASS_NOT_FULL",
+          "reason": "Correct official repository runner/compiled runtime loaded; exact selected source 1/1 pass",
+          "app_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+        }
+      ]
     }
   ]
 }
