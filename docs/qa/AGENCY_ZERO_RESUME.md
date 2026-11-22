@@ -47,6 +47,10 @@ Hosted PR branch `f821e623b01359dfc5f61665f4a693fc222fb5c0` had 218/4975 release
 
 [Batch report](AGENCY_ZERO_BATCH_009_REPORT.md): selected cases 1/2 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-010; no prod code changes.
 
+## ZERO-010 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_010_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-011; no prod code changes.
+
 ## ZERO-006 actual executed batch (2026-11-22)
 
 [Batch ZERO-006 report](AGENCY_ZERO_BATCH_006_REPORT.md): **4/4 selected scoped tests PASS** — two-tenant audit history, review resolution notifications and guarded role links, all-role bell/open/deeplink/read state, durable outbox approval surviving provider outage with idempotent retry. 3 real browser source cases + 1 isolated PGlite platform source case, one PASS each. **0/4 TECH FULL** pending full authorized security review, all workflow variants and independent reviewer. Exact raw logs SHA256 recorded in same original scenario evidence register; production unchanged. Cursor now **ZERO-007**, previously attempted ZERO-001..006 retained for revisits.

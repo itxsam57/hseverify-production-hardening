@@ -1219,6 +1219,170 @@
           "sha256": "206a75962e17b0e6fc17e50f39ea15a4f60581bf6f8b3f8647bf7d2f59d2a15e"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.08.01",
+      "batch_id": "ZERO-010",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "5d98938fb48b6e6dc13845c2cd1d1b8c5e172199",
+      "configuration_fingerprint": "0f8027c60c2209bf65f1867d545220092f1a9edc15c800af677ed806017089ea",
+      "observed_at_utc": "2026-11-22T18:23:45.766777+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.08 pending Company evidence requires an immutable application claim while generic tenant authority stays closed"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Registration to pending dashboard and submitted scanned evidence. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-010/M1.08.01.log",
+          "sha256": "dc3f33f0f9f26f6e05e910e777cf1ceeb28a93d4879d21fa4437441173005e72"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.08.02",
+      "batch_id": "ZERO-010",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "5d98938fb48b6e6dc13845c2cd1d1b8c5e172199",
+      "configuration_fingerprint": "0f8027c60c2209bf65f1867d545220092f1a9edc15c800af677ed806017089ea",
+      "observed_at_utc": "2026-11-22T18:23:45.766777+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.08.02 pending Company remains signed in for verification but cannot invite, issue orders or purchase credits"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Pending tenant high-risk actions denied. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-010/M1.08.02.log",
+          "sha256": "aba3cc20883b06d3c9bcc3772322ec7b85344edbe309b952958626390dd7015c"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.08.03",
+      "batch_id": "ZERO-010",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "5d98938fb48b6e6dc13845c2cd1d1b8c5e172199",
+      "configuration_fingerprint": "0f8027c60c2209bf65f1867d545220092f1a9edc15c800af677ed806017089ea",
+      "observed_at_utc": "2026-11-22T18:23:45.766777+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.08.03 stale Admin version one review cannot decide a corrected version two without re-review"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Admin changes requested to corrected version to verification. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-010/M1.08.03.log",
+          "sha256": "852f654db9b1601aff21f6b323b3b8abccd47614cfe24a8c3e8f69a361ec44aa"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.08.04",
+      "batch_id": "ZERO-010",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "5d98938fb48b6e6dc13845c2cd1d1b8c5e172199",
+      "configuration_fingerprint": "0f8027c60c2209bf65f1867d545220092f1a9edc15c800af677ed806017089ea",
+      "observed_at_utc": "2026-11-22T18:23:45.766777+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.08.04 terminal Company rejection preserves pending tenant, original evidence and denies stale resurrection"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Admin rejection remains pending and preserves original history. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-010/M1.08.04.log",
+          "sha256": "b2938e6cfcf61fce2f8ffb411e7c9c4247b76f96090d665dc8a6d1d1b0dc7dad"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.08.05",
+      "batch_id": "ZERO-010",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "5d98938fb48b6e6dc13845c2cd1d1b8c5e172199",
+      "configuration_fingerprint": "0f8027c60c2209bf65f1867d545220092f1a9edc15c800af677ed806017089ea",
+      "observed_at_utc": "2026-11-22T18:23:45.766777+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.08.05 two Admins race Company final approval or rejection on real PostgreSQL16"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Approval activates tenant; stale/double decision denied. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-010/M1.08.05.log",
+          "sha256": "6bafce6e5c538631ef9e464dcca1fe065276f406d2f24c7d2e7e55d559a63e16"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-010/M1.08.05.pg-bootstrap.log",
+          "sha256": "2de05797fdf1adf0ddebe6ad496e5a6d64705dd6a29b8eb0d695dd619b08c4de"
+        }
+      ]
     }
   ]
 }
