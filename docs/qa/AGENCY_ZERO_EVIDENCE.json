@@ -136,6 +136,167 @@
           "sha256": "63eea0f18dee5e45992fbaa9abac6f267e4870ef936224f719f3cc8a9bc7dd09"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.02.01",
+      "batch_id": "ZERO-002",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9f9ec46ae037f343d4d2e301d145e162c92ed5bc",
+      "configuration_fingerprint": "db426298afe51890aa8a46307492f991c45969360aebc033b2721c56481dea98",
+      "observed_at_utc": "2026-11-22T17:21:09.569248+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Public home exposes usable primary routes, registrations and six role destinations on desktop/mobile"
+      ],
+      "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: Public home exposes usable primary routes, registrations and six role destinations on desktop/mobile",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Global UI-specific case; provider adapters are separately checked in related scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Missing complete original scenario functional/abuse/independent review evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.01.log",
+          "sha256": "e33f837bd81134d11c21d5d91c62b36382f897b4dcfb2ded176882c034826dc3"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.02.02",
+      "batch_id": "ZERO-002",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9f9ec46ae037f343d4d2e301d145e162c92ed5bc",
+      "configuration_fingerprint": "db426298afe51890aa8a46307492f991c45969360aebc033b2721c56481dea98",
+      "observed_at_utc": "2026-11-22T17:21:09.569275+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "All six role account menus reach support at desktop and mobile widths without ending the session"
+      ],
+      "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: All six role account menus reach support at desktop and mobile widths without ending the session",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Global UI-specific case; provider adapters are separately checked in related scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Missing complete original scenario functional/abuse/independent review evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.02.log",
+          "sha256": "6615f98f65d420c764726042ac7b09a7cee47e0925b869599a4053f0359a8c0c"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.02.03",
+      "batch_id": "ZERO-002",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9f9ec46ae037f343d4d2e301d145e162c92ed5bc",
+      "configuration_fingerprint": "db426298afe51890aa8a46307492f991c45969360aebc033b2721c56481dea98",
+      "observed_at_utc": "2026-11-22T17:21:09.569282+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "real error boundaries retry Worker Dashboard and global route requests without exposing internals"
+      ],
+      "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: real error boundaries retry Worker Dashboard and global route requests without exposing internals",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Global UI-specific case; provider adapters are separately checked in related scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Missing complete original scenario functional/abuse/independent review evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.03.log",
+          "sha256": "037320ca27b7da9dab16bc75727f677130d13cd419fcbaffd8a17d94595a9e51"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.02.04",
+      "batch_id": "ZERO-002",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9f9ec46ae037f343d4d2e301d145e162c92ed5bc",
+      "configuration_fingerprint": "db426298afe51890aa8a46307492f991c45969360aebc033b2721c56481dea98",
+      "observed_at_utc": "2026-11-22T17:21:09.569286+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation"
+      ],
+      "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Global UI-specific case; provider adapters are separately checked in related scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Missing complete original scenario functional/abuse/independent review evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.04.log",
+          "sha256": "d56759fa06e84c48236983f96f72e4fe7f4d4311497d6dc3713541ae0713432f"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.02.05",
+      "batch_id": "ZERO-002",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9f9ec46ae037f343d4d2e301d145e162c92ed5bc",
+      "configuration_fingerprint": "db426298afe51890aa8a46307492f991c45969360aebc033b2721c56481dea98",
+      "observed_at_utc": "2026-11-22T17:21:09.569290+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Unsaved evidence metadata is protected through navigation; history fallback=false"
+      ],
+      "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: Unsaved evidence metadata is protected through navigation; history fallback=false",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Global UI-specific case; provider adapters are separately checked in related scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Missing complete original scenario functional/abuse/independent review evidence",
+        "Unsaved form navigation history-fallback=true variant not run in this five-case batch"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.05.log",
+          "sha256": "631dc9da677a3b82dd444b2986ba0ee05c73e12578bff977702d054052e0140b"
+        }
+      ]
     }
   ]
 }
