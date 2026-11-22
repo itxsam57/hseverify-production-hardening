@@ -41,3 +41,10 @@ M1.07.06 real browser case **PASS 1/1**. M1.07.07 **BLOCKED_ENVIRONMENT**: one i
 - `M1.07.07.pg-bootstrap.log` SHA256 `5eca42465c81a5de4d4c5f54f71517a699cf8e4d6f8da7d87c8e5faf131181fe`
 - `M1.07.07.pg-bootstrap-retry.log` SHA256 `34248c285fe50f97ccc0e9b7679c2b462e0166c780ccafce8873f41b280007af`
 - `M1.07.07.retry.log` SHA256 `206a75962e17b0e6fc17e50f39ea15a4f60581bf6f8b3f8647bf7d2f59d2a15e`
+
+## Resolved test-environment blocker — targeted revalidation
+
+**2026-11-22T18:28:08.090173+00:00**: After later independent ZERO-010 and ZERO-011 PostgreSQL16 tests proved a working isolated short Unix socket (`-k /tmp`), re-ran **only** the original unexecuted M1.07.07 case on fresh localhost PostgreSQL16. **PASS 1/1**: two genuine Admins' duplicate disposition race serialized, the stale loser could not issue a Worker ID. Test fixture was shut down; no app code changed. This confirms initial 1/2 result was an **environment problem**, not a demonstrated application bug. The original two failed PG setup attempts and all their logs remain preserved. **Updated selected scoped results: 2/2 PASS; TECH FULLY VERIFIED still 0/2.**
+
+- Revalidated source log SHA256 `ad85eafeabdbca12f35883b09d03792b598839a79e6ac5b51452d53f31034537`
+- PG bootstrap/start/stop log SHA256 `304839212d01df2447bac76d635faf55f001c9c65e28e353a64326d92e010407`

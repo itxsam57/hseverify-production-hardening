@@ -51,6 +51,10 @@ Hosted PR branch `f821e623b01359dfc5f61665f4a693fc222fb5c0` had 218/4975 release
 
 [Batch report](AGENCY_ZERO_BATCH_010_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-011; no prod code changes.
 
+## ZERO-009 environment-only issue now resolved (after ZERO-011)
+
+Previously parked M1.07.07 actual PG16 Admin duplicate review race **PASS 1/1** after correcting isolated socket path based on proven ZERO-010/011 environment. Original two bootstrap failures remain hashed; new source log and bootstrap hashes added. ZERO-009 updated scoped **2/2 PASS**, but 0 technically full (independent expert/real entire workflow still missing). Exact cursor remains ZERO-012.
+
 ## ZERO-011 actually executed
 
 [Batch report](AGENCY_ZERO_BATCH_011_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-012; no prod code changes.

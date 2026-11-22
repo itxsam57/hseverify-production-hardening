@@ -132,9 +132,18 @@
         "M1.07.07"
       ],
       "technical_fully_verified_awarded": 0,
-      "scheduled_source_cases_pass": 1,
-      "scheduled_source_cases_fail": 1,
-      "recorded_utc": "2026-11-22T18:20:45.146554+00:00"
+      "scheduled_source_cases_pass": 2,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T18:20:45.146554+00:00",
+      "scoped_revalidation_history": [
+        {
+          "case_id": "M1.07.07",
+          "observed_at_utc": "2026-11-22T18:28:08.090173+00:00",
+          "initial_setup_blocker": "PostgreSQL local Unix socket path configuration",
+          "successful_rerun": true,
+          "technical_fully_verified_awarded": 0
+        }
+      ]
     },
     {
       "batch_id": "ZERO-010",
