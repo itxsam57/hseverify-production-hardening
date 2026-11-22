@@ -551,6 +551,138 @@
           "sha256": "3ce4e28913f82eb4ab50d974b2edcbeb02a68c152bfe0ebf25e72ff47578f4bd"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.04.01",
+      "batch_id": "ZERO-005",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "24ec42dc46b7fffd06a4a6bcaf727be16e98f9ac",
+      "configuration_fingerprint": "116579faa00c45f082241e53012a1a162c75b5e60528d70f0f791c1d97a45d20",
+      "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay"
+      ],
+      "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "These authorization workflows exercise built-in session, tenant and secure file boundaries, not a disconnected third-party provider adapter. Storage/scanning provider readiness is audited in its own original batch.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Technical coverage/reviewer signoff not complete for original scenario",
+        "Full authenticated active pentest and code-quality/visual assessment not independently completed"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.01.log",
+          "sha256": "ed3319c5cf1c33091ccd53d90d4008fc675f3fd149c5b465b56f26e1ab78300c"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.04.02",
+      "batch_id": "ZERO-005",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "24ec42dc46b7fffd06a4a6bcaf727be16e98f9ac",
+      "configuration_fingerprint": "116579faa00c45f082241e53012a1a162c75b5e60528d70f0f791c1d97a45d20",
+      "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers"
+      ],
+      "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "These authorization workflows exercise built-in session, tenant and secure file boundaries, not a disconnected third-party provider adapter. Storage/scanning provider readiness is audited in its own original batch.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Technical coverage/reviewer signoff not complete for original scenario",
+        "Full authenticated active pentest and code-quality/visual assessment not independently completed"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.02.log",
+          "sha256": "3f6e75a1db616244a7b99a681d9fb73f3bc66e36073a7fd79d084e1a003e8aef"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.04.03",
+      "batch_id": "ZERO-005",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "24ec42dc46b7fffd06a4a6bcaf727be16e98f9ac",
+      "configuration_fingerprint": "116579faa00c45f082241e53012a1a162c75b5e60528d70f0f791c1d97a45d20",
+      "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access"
+      ],
+      "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "These authorization workflows exercise built-in session, tenant and secure file boundaries, not a disconnected third-party provider adapter. Storage/scanning provider readiness is audited in its own original batch.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Technical coverage/reviewer signoff not complete for original scenario",
+        "Full authenticated active pentest and code-quality/visual assessment not independently completed"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.03.log",
+          "sha256": "347fb5894c9beb6776fa8cf7b2f9bcfe168c4443a4e3166488e355b61e8449a2"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.04.04",
+      "batch_id": "ZERO-005",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "24ec42dc46b7fffd06a4a6bcaf727be16e98f9ac",
+      "configuration_fingerprint": "116579faa00c45f082241e53012a1a162c75b5e60528d70f0f791c1d97a45d20",
+      "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium"
+      ],
+      "result_summary": "Actual original scoped Chromium test PASSED 1/1: Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "These authorization workflows exercise built-in session, tenant and secure file boundaries, not a disconnected third-party provider adapter. Storage/scanning provider readiness is audited in its own original batch.",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Technical coverage/reviewer signoff not complete for original scenario",
+        "Full authenticated active pentest and code-quality/visual assessment not independently completed"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.04.log",
+          "sha256": "cdee9318cf970e15ab4ce3d24feb302e44e66220ba8e5c8b602ac97d78631a0b"
+        }
+      ]
     }
   ]
 }
