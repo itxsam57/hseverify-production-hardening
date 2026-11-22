@@ -97,7 +97,10 @@ class AgencyZeroPlanContract(unittest.TestCase):
 
     def test_attempted_batch_cursor_advances_without_claiming_pass(self):
         cursor = CONTROL.active_batch_cursor(self.plan)
-        self.assertEqual(cursor["next_batch_id"], "ZERO-002")
+        next_index = len(cursor["attempted_batches"])
+        expected_next = (self.plan["batches"][next_index]["batch_id"]
+                         if next_index < len(self.plan["batches"]) else None)
+        self.assertEqual(cursor["next_batch_id"], expected_next)
         self.assertEqual(cursor["attempted_batches"][0]["batch_id"], "ZERO-001")
         self.assertIn("ZERO-001", cursor["revisit_batches"])
         self.assertFalse(any(c.get("technical_verdict") == "FULLY_VERIFIED"
@@ -105,7 +108,7 @@ class AgencyZeroPlanContract(unittest.TestCase):
 
     def test_cursor_does_not_skip_untested_batches(self):
         cursor = CONTROL.load_json(CONTROL.CURSOR)
-        cursor["next_batch_id"] = "ZERO-004"
+        cursor["next_batch_id"] = "ZERO-999"
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "cursor.json"
             path.write_text(json.dumps(cursor))
