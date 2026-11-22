@@ -1,5 +1,141 @@
 {
   "schema_version": 1,
   "description": "Evidence attestations only; the 218 canonical Masterplan rows are not duplicated here. Technical status is derived at exact SHA by scripts/agency_zero_control.py.",
-  "technical_attestations": []
+  "technical_attestations": [
+    {
+      "scenario_id": "M1.01.01",
+      "batch_id": "ZERO-001",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
+      "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
+      "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
+      "technical_verdict": "INCONCLUSIVE_TEST_TIMING_OR_BROWSER_EVENT",
+      "tested_actions": [
+        "Real Chromium GET worker/company login, asserted response CSP/HSTS/no-sniff/redirect; initial assert failed on script-src-attr event",
+        "Same original assertion instrumented and rerun: inline onerror remained blocked, script-src-attr events observed on worker AND company login"
+      ],
+      "result_summary": "FAIL initial strict CSP browser event expectation, then same assertion PASS in isolated one-time diagnostic retry; no unsafe inline JS execution observed; flaky signal not yet resolved; no full role workflow proof",
+      "gates": {
+        "engineering": "BLOCKED",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full three-discipline review evidence and/or uncovered cases remain"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10101-browser.log",
+          "sha256": "e968b8f0e73ba81a4ee8bd3a0b003491ffd1d3fa2c37b8758668b4fdf2b5bddf"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10101-browser-diagnostic.log",
+          "sha256": "ef34d970157c4275448df300a5a62b69c0e5d86cb56ce869f3a05f1ec99a4441"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.01.02",
+      "batch_id": "ZERO-001",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
+      "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
+      "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Real separate PostgreSQL 16 applies 139 migration records once/idempotent and preserves history, rejects injected unknown migration",
+        "Prod/preview rollback forbidden and intentionally wrong checksum blocks apply and rollback, database checksum restored"
+      ],
+      "result_summary": "2/2 explicitly selected PG16 test cases PASSED against disposable loopback PostgreSQL, 139 migrations applied twice idempotently, rogue applied migration denied, bad checksum rejected and prod/preview rollback prohibited; two other original migration cases not executed this batch",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "NOT_APPLICABLE",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full three-discipline review evidence and/or uncovered cases remain"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10102-postgres.log",
+          "sha256": "43b55221e0f7411fffcc76716084c2dd3863f0ff473666c688364f3512d1f22e"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.01.03",
+      "batch_id": "ZERO-001",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
+      "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
+      "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
+      "technical_verdict": "INCONCLUSIVE_CI_GREEN_NOT_ALL",
+      "tested_actions": [
+        "Read-only authenticated GitHub Actions exact pinned SHA run inventory, 92 total, 91 success, 1 failed"
+      ],
+      "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance",
+      "gates": {
+        "engineering": "BLOCKED",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "NOT_APPLICABLE",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full three-discipline review evidence and/or uncovered cases remain"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10103-ci-summary.json",
+          "sha256": "9f1399ccb11be56d38556a5c9762b66d8b18327207c378b81299232f7254ebc0"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.01.04",
+      "batch_id": "ZERO-001",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
+      "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
+      "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
+      "technical_verdict": "BLOCKED_CANDIDATE_STAGE_PARITY",
+      "tested_actions": [
+        "Read-only HTTPS localhost GET /worker/login 200 and headers CSP/HSTS/X-Frame-Options",
+        "Read-only stage-metadata SHA inspected, no provider/DB mutation, exact candidate not matched"
+      ],
+      "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
+      "gates": {
+        "engineering": "BLOCKED",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "NOT_APPLICABLE",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "No exact candidate stage / rollback proof"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10104-stage-readonly.json",
+          "sha256": "63eea0f18dee5e45992fbaa9abac6f267e4870ef936224f719f3cc8a9bc7dd09"
+        }
+      ]
+    }
+  ]
 }

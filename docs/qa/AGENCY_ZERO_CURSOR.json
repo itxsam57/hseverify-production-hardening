@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "application_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "attempted_batches": [
+    {
+      "batch_id": "ZERO-001",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_001_REPORT.md",
+      "original_scenario_ids": [
+        "M1.01.01",
+        "M1.01.02",
+        "M1.01.03",
+        "M1.01.04"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "recorded_utc": "2026-11-22T17:13:27.228165+00:00"
+    }
+  ],
+  "next_batch_id": "ZERO-002",
+  "revisit_batches": [
+    "ZERO-001"
+  ],
+  "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
+  "next_action": "Preflight ZERO-002 Global UI, review historical evidence, execute bounded real browser cases while repairing ZERO-001 failures independently"
+}

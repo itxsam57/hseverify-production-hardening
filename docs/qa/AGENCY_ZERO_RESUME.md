@@ -31,6 +31,10 @@
 - Draft [PR #206](https://github.com/itxsam57/hseverify-production-hardening/pull/206) adds independent QA checks; **unmerged and undeployed**. This ZERO protocol/batch plan is appended only in its isolated branch, and must pass Autopilot V4 and CI before any merge.
 - Other old chat and its worktrees/processes: **do not restart governors or start duplicate environments**. Existing signed staging PG16 and all other active/private work remain untouched. Owner UAT/provider-live final verification comes later.
 
+## ZERO-001 actual executed batch (2026-11-22)
+
+Evidence/report: [AGENCY_ZERO_BATCH_001_REPORT.md](AGENCY_ZERO_BATCH_001_REPORT.md). **0/4 TECH FULL**. Real disposable PG16 original migration checks **2/2 PASS**; Chromium CSP original assertion **FAIL** then diagnostic retry **PASS** with blocked inline handler, still unstable; pinned exact-commit CI 91/92 green with one failed audit; previously running loopback TLS stage GET200 with security headers but stage metadata not pinned SHA. High/critical whole-app count **UNKNOWN**, not zero. No code/production/staging writes. All four scenarios recorded as partial/unresolved in the original scenario receipt registry with raw local artifact SHA256s. Active attempted-batch cursor is `docs/qa/AGENCY_ZERO_CURSOR.json`: **next ZERO-002**, previous ZERO-001 stays in revisit list. This is a real executed batch, not a full feature certification. Separate independent engineering/security/reviewer attestations not yet awarded.
+
 ## Exact next action
 1. Verify current GitHub branch, SHA, active tests and V4 guard. Run:
    `python3 scripts/agency_zero_control.py --check && python3 scripts/agency_zero_control.py --status && python3 scripts/agency_zero_control.py --batch ZERO-001`

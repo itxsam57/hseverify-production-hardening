@@ -95,6 +95,24 @@ class AgencyZeroPlanContract(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "runtime drift"):
                 CONTROL.pinned_candidate_sha()
 
+    def test_attempted_batch_cursor_advances_without_claiming_pass(self):
+        cursor = CONTROL.active_batch_cursor(self.plan)
+        self.assertEqual(cursor["next_batch_id"], "ZERO-002")
+        self.assertEqual(cursor["attempted_batches"][0]["batch_id"], "ZERO-001")
+        self.assertIn("ZERO-001", cursor["revisit_batches"])
+        self.assertFalse(any(c.get("technical_verdict") == "FULLY_VERIFIED"
+                             for c in CONTROL.load_json(CONTROL.EVIDENCE)["technical_attestations"]))
+
+    def test_cursor_does_not_skip_untested_batches(self):
+        cursor = CONTROL.load_json(CONTROL.CURSOR)
+        cursor["next_batch_id"] = "ZERO-004"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cursor.json"
+            path.write_text(json.dumps(cursor))
+            with patch.object(CONTROL, "CURSOR", path):
+                with self.assertRaisesRegex(ValueError, "skips or restarts"):
+                    CONTROL.active_batch_cursor(self.plan)
+
     def test_matrix_only_existing_batches(self):
         selected = CONTROL.find_batch(self.plan, "ZERO-001")
         self.assertEqual(selected["batch_id"], "ZERO-001")

@@ -25,6 +25,7 @@ HISTORICAL = ROOT / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"
 MANIFEST = ROOT / "docs/qa/AGENCY_ZERO_BATCHES.json"
 EVIDENCE = ROOT / "docs/qa/AGENCY_ZERO_EVIDENCE.json"
 CANDIDATE = ROOT / "docs/qa/AGENCY_ZERO_CANDIDATE.json"
+CURSOR = ROOT / "docs/qa/AGENCY_ZERO_CURSOR.json"
 MAX_ITEMS = 5
 SHA_PATTERN = re.compile(r"^[a-f0-9]{40}$")
 TEST_CASE_PATTERN = re.compile(r"^tests/[A-Za-z0-9_./-]+[.]test[.]mjs#[a-f0-9]+$")
@@ -138,7 +139,36 @@ def validate_manifest(document):
     if any(not (1 <= batch["unit_count"] <= MAX_ITEMS)
            or batch["unit_count"] != len(batch["units"]) for batch in document["batches"]):
         raise ValueError("Batch exceeds 5 cases or does not match the registered count")
+    active_batch_cursor(document)
     return document
+
+
+def active_batch_cursor(manifest):
+    """Progress of *attempted batches* is separate from fully verified outcomes.
+
+    Failed or blocked cases remain parked and reviewable while the queue advances.
+    """
+    state = load_json(CURSOR)
+    if state.get("schema_version") != 1 or state.get("application_source_sha") != pinned_candidate_sha():
+        raise ValueError("ZERO batch cursor source candidate or schema mismatch")
+    batches = manifest["batches"]
+    attempted = state.get("attempted_batches")
+    if not isinstance(attempted, list) or len(attempted) > len(batches):
+        raise ValueError("Invalid ZERO attempted batch list")
+    for i, receipt in enumerate(attempted):
+        if not isinstance(receipt, dict) or receipt.get("batch_id") != batches[i]["batch_id"]:
+            raise ValueError("Attempted batch sequence differs from frozen queue")
+        if receipt.get("state") not in ("EVIDENCE_RECORDED_INCOMPLETE", "TECHNICALLY_CONFIRMED"):
+            raise ValueError("Batch requires an honest recorded state")
+        if not receipt.get("report_file") or not (ROOT / receipt["report_file"]).is_file():
+            raise ValueError("Missing attempted batch evidence report")
+    next_batch = batches[len(attempted)]["batch_id"] if len(attempted) < len(batches) else None
+    if state.get("next_batch_id") != next_batch:
+        raise ValueError("ZERO next batch cursor skips or restarts queued work")
+    held = state.get("revisit_batches", [])
+    if not isinstance(held, list) or any(x not in [r["batch_id"] for r in attempted] for x in held):
+        raise ValueError("Unresolved batches must refer to actually attempted ones")
+    return state
 
 
 def current_evidence(manifest):
@@ -208,10 +238,9 @@ def status(manifest):
     total = manifest["original_scenario_count"]
     cells = round(20 * len(passed) / total)
     bar = "█" * cells + "░" * (20 - cells)
-    pending = next((unit for batch in manifest["batches"]
-                    for unit in batch["units"] if unit["scenario_id"] not in passed), None)
+    cursor = active_batch_cursor(manifest)
     print(f"ZERO | TECH FULLY VERIFIED {len(passed)}/{total} [{bar}] | LEFT {total-len(passed)} | OWNER TEST READY {'YES' if len(passed)==total else 'NO'}")
-    print(f"ZERO | BATCHES {len(manifest['batches'])} (MAX 5) | APP SHA {sha[:8]} PINNED | NEXT {pending['scenario_id'] if pending else 'NONE'} | RELEASE APPROVAL SEPARATE")
+    print(f"ZERO | BATCHES ATTEMPTED {len(cursor['attempted_batches'])}/{len(manifest['batches'])} (MAX 5) | APP SHA {sha[:8]} PINNED | NEXT {cursor['next_batch_id'] or 'REVISIT OPEN ISSUES'} | OPEN PRIOR BATCHES {len(cursor['revisit_batches'])}")
     older = {sid for (sid, prior_sha) in accepted if prior_sha != sha and sid not in passed}
     print(f"ZERO | PRIOR-SHA TECH RECEIPTS {len(older)} (targeted revalidation needed) | Historic source test greens do NOT count")
 
