@@ -683,6 +683,138 @@
           "sha256": "cdee9318cf970e15ab4ce3d24feb302e44e66220ba8e5c8b602ac97d78631a0b"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.05.01",
+      "batch_id": "ZERO-006",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "75367cc11f3e819bb616931ee3563daca4db2c15",
+      "configuration_fingerprint": "3a89b96ee9554c5d97b9586e3fbbbbe167bc0d2fafa0e7c717c65a2c2f2c7b2b",
+      "observed_at_utc": "2026-11-22T18:06:03.175379+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.05.01 real two-tenant Company audit shows actor, resource, reason and immutable lifecycle history"
+      ],
+      "result_summary": "One real isolated original scoped case PASS (1/1): M1.05.01 real two-tenant Company audit shows actor, resource, reason and immutable lifecycle history. Further original-scenario edge cases, full security testing and independent reviewer signoff pending.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Other disconnected SMS/email provider adapters are audited under provider contract scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original workflow/role/negative coverage and separate cybersecurity/reviewer signoff not yet evidenced",
+        "Authentication, cross-tenant, concurrency, adapter integration and UI/a11y adversarial checks require remaining independent evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-006/M1.05.01.log",
+          "sha256": "28b3c45ec63ee60e30e00ed4979aca5b32c37f2d32b2d89c7f900ca0b60eb08e"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.05.02",
+      "batch_id": "ZERO-006",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "75367cc11f3e819bb616931ee3563daca4db2c15",
+      "configuration_fingerprint": "3a89b96ee9554c5d97b9586e3fbbbbe167bc0d2fafa0e7c717c65a2c2f2c7b2b",
+      "observed_at_utc": "2026-11-22T18:06:03.175379+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Actual resolution forms reach native CLI, role bells and guarded record links"
+      ],
+      "result_summary": "One real isolated original scoped case PASS (1/1): Actual resolution forms reach native CLI, role bells and guarded record links. Further original-scenario edge cases, full security testing and independent reviewer signoff pending.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Other disconnected SMS/email provider adapters are audited under provider contract scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original workflow/role/negative coverage and separate cybersecurity/reviewer signoff not yet evidenced",
+        "Authentication, cross-tenant, concurrency, adapter integration and UI/a11y adversarial checks require remaining independent evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-006/M1.05.02.log",
+          "sha256": "6dbfd007f21c9a237d5cd600a12171effd0d6140859b9afb085dc76e1ded61be"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.05.03",
+      "batch_id": "ZERO-006",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "75367cc11f3e819bb616931ee3563daca4db2c15",
+      "configuration_fingerprint": "3a89b96ee9554c5d97b9586e3fbbbbe167bc0d2fafa0e7c717c65a2c2f2c7b2b",
+      "observed_at_utc": "2026-11-22T18:06:03.175379+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "every portal notification bell creates, opens, deep-links and marks persisted notifications read"
+      ],
+      "result_summary": "One real isolated original scoped case PASS (1/1): every portal notification bell creates, opens, deep-links and marks persisted notifications read. Further original-scenario edge cases, full security testing and independent reviewer signoff pending.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "NOT_APPLICABLE"
+      },
+      "adapter_not_applicable_reason": "Other disconnected SMS/email provider adapters are audited under provider contract scenarios",
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original workflow/role/negative coverage and separate cybersecurity/reviewer signoff not yet evidenced",
+        "Authentication, cross-tenant, concurrency, adapter integration and UI/a11y adversarial checks require remaining independent evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-006/M1.05.03.log",
+          "sha256": "aca278afbde089eaeed37d240136bc67d9e91b775623f93ffd85e1943d95741f"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.05.04",
+      "batch_id": "ZERO-006",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "75367cc11f3e819bb616931ee3563daca4db2c15",
+      "configuration_fingerprint": "3a89b96ee9554c5d97b9586e3fbbbbe167bc0d2fafa0e7c717c65a2c2f2c7b2b",
+      "observed_at_utc": "2026-11-22T18:06:03.175379+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.05 notification delivery outage does not roll back committed business state, duplicate, or erase retry attempts"
+      ],
+      "result_summary": "One real isolated original scoped case PASS (1/1): M1.05 notification delivery outage does not roll back committed business state, duplicate, or erase retry attempts. Further original-scenario edge cases, full security testing and independent reviewer signoff pending.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "adapter_not_applicable_reason": null,
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full original workflow/role/negative coverage and separate cybersecurity/reviewer signoff not yet evidenced",
+        "Authentication, cross-tenant, concurrency, adapter integration and UI/a11y adversarial checks require remaining independent evidence"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-006/M1.05.04.log",
+          "sha256": "73a14ff1b997826dfc60d0d6c28a0ab898f8ade48097a7f0e21edcbd33d6fd5d"
+        }
+      ]
     }
   ]
 }
