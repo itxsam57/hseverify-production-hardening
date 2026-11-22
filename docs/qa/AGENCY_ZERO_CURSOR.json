@@ -90,17 +90,34 @@
       "scheduled_source_cases_pass": 4,
       "scheduled_source_cases_fail": 0,
       "recorded_utc": "2026-11-22T18:06:27.371843+00:00"
+    },
+    {
+      "batch_id": "ZERO-007",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_007_REPORT.md",
+      "original_scenario_ids": [
+        "M1.06.01",
+        "M1.06.02",
+        "M1.06.03",
+        "M1.06.04",
+        "M1.06.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T18:13:01.203708+00:00"
     }
   ],
-  "next_batch_id": "ZERO-007",
+  "next_batch_id": "ZERO-008",
   "revisit_batches": [
     "ZERO-001",
     "ZERO-002",
     "ZERO-003",
     "ZERO-004",
     "ZERO-005",
-    "ZERO-006"
+    "ZERO-006",
+    "ZERO-007"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Start ZERO-007 after preflight, <=5 related scenario units, preserve all ZERO-001..006 expert and security evidence gaps"
+  "next_action": "Advance to ZERO-008 with <=5 related cases; revisit unresolved ZERO-001..ZERO-007 full security/UI/adapter/independent-review evidence"
 }

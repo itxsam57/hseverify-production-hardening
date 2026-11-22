@@ -815,6 +815,166 @@
           "sha256": "73a14ff1b997826dfc60d0d6c28a0ab898f8ade48097a7f0e21edcbd33d6fd5d"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.06.01",
+      "batch_id": "ZERO-007",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "0f19eb42145fab43ae9148c63220e88b623f56ae",
+      "configuration_fingerprint": "1b0f0a91309aef59833e008b8ab0596a28ee3ea1322b6bc5abcb08e2343d2a41",
+      "observed_at_utc": "2026-11-22T18:13:01.203708+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.06.01 real PDF PNG JPEG Worker uploads scan and bind exact record and version with private previews"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: PDF/PNG/JPEG accepted through scan and exact record binding. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-007/M1.06.01.log",
+          "sha256": "633cc791256574c8a46d593f8b937dba1bfb77eceb2eef8e4eb1e449084982ad"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.06.02",
+      "batch_id": "ZERO-007",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "0f19eb42145fab43ae9148c63220e88b623f56ae",
+      "configuration_fingerprint": "1b0f0a91309aef59833e008b8ab0596a28ee3ea1322b6bc5abcb08e2343d2a41",
+      "observed_at_utc": "2026-11-22T18:13:01.203708+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.06 Worker upload browser rejects oversized, MIME-spoofed, and unsupported files without reservations"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Missing, oversize, mismatched MIME and unsafe file denied. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-007/M1.06.02.log",
+          "sha256": "8734b1a1bcf7a8fc1379731c2ce6108267b0632f14a90481d86b9ee05da42b15"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.06.03",
+      "batch_id": "ZERO-007",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "0f19eb42145fab43ae9148c63220e88b623f56ae",
+      "configuration_fingerprint": "1b0f0a91309aef59833e008b8ab0596a28ee3ea1322b6bc5abcb08e2343d2a41",
+      "observed_at_utc": "2026-11-22T18:13:01.203708+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.06.03 actual Worker scanner retry retains safe file until same-object successful scan"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Scanner unavailable remains quarantined; retry cannot replace safe file. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-007/M1.06.03.log",
+          "sha256": "1024de29495773da2829c86f39b1aa8f706d6dd2ff83af309b78cb6a2f8c0fac"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.06.04",
+      "batch_id": "ZERO-007",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "0f19eb42145fab43ae9148c63220e88b623f56ae",
+      "configuration_fingerprint": "1b0f0a91309aef59833e008b8ab0596a28ee3ea1322b6bc5abcb08e2343d2a41",
+      "observed_at_utc": "2026-11-22T18:13:01.203708+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.06.04 Worker replacement keeps prior private bytes, current version and signed preview scoped"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Replace attachment: prior version retained, correct preview context. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-007/M1.06.04.log",
+          "sha256": "ef73fb0eaafeed8ef4b8e208d9ed8fa9e60ded594ddea2654fcac9e8c3b401c6"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.06.05",
+      "batch_id": "ZERO-007",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "0f19eb42145fab43ae9148c63220e88b623f56ae",
+      "configuration_fingerprint": "1b0f0a91309aef59833e008b8ab0596a28ee3ea1322b6bc5abcb08e2343d2a41",
+      "observed_at_utc": "2026-11-22T18:13:01.203708+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.06.05 actual Worker pending preview denial and authentic signed expired URL HTTP 404"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Preview denied before claim and across worker/tenant; expired token. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-007/M1.06.05.log",
+          "sha256": "66d09406028bf5e69b9a1883a88ec184063616b2fe36af1b68c2360314b2fc6a"
+        }
+      ]
     }
   ]
 }
