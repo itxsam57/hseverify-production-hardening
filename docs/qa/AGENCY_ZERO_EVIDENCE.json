@@ -1779,6 +1779,42 @@
           "sha256": "41dc85af108770a9d5fad2f666337e8356769cf63d95077d432ccbc3c4c18cb2"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.10.06",
+      "batch_id": "ZERO-014",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "ee74ef1490a743262036d20d0399a5e442b2bad4",
+      "configuration_fingerprint": "2b4fee2cd856cf058ab36032f8a12c413ce1c4cd5e966af97fbc055b422f90d2",
+      "observed_at_utc": "2026-11-22T18:44:26.454231+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.10.06 actual PostgreSQL16 two simultaneously active employers retain independent Worker scope during cross-company end and placement"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Second company link preserves first employer's history and isolation. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-014/M1.10.06.log",
+          "sha256": "4c30dd0c2155a53c9366b0eaa6c33408491af9cc577808d0fe9047ada745c3f2"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-014/M1.10.06.bootstrap.log",
+          "sha256": "07d090b35c50aef7edca92db05ce2ea209c279480a18e4aa10f29adae8ec01ab"
+        }
+      ]
     }
   ]
 }
