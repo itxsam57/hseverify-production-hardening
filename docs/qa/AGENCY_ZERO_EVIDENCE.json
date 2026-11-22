@@ -1615,6 +1615,170 @@
         }
       ],
       "adapter_not_applicable_reason": "Permission ceiling and staff grants are internal database/authorization contracts, not an intentionally unconnected external email/SMS/video/identity/payment adapter."
+    },
+    {
+      "scenario_id": "M1.10.01",
+      "batch_id": "ZERO-013",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e2d83553a3f4645cddd290b2345459a4bce8f9f0",
+      "configuration_fingerprint": "4c711d432723fb0aca3c099905005b933e82e3758f89e684ca1a87bf543f33db",
+      "observed_at_utc": "2026-11-22T18:42:32.381818+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.10.01 real Chromium Company Worker invitation acceptance resend revocation expiry wrong role email and replay"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Single invitation accepted, resent, revoked, expired and replayed. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-013/M1.10.01.log",
+          "sha256": "a71504e0c228f442592db5fb6bdfb65869382f990883b97789aa5f75a4479382"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.10.02",
+      "batch_id": "ZERO-013",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e2d83553a3f4645cddd290b2345459a4bce8f9f0",
+      "configuration_fingerprint": "4c711d432723fb0aca3c099905005b933e82e3758f89e684ca1a87bf543f33db",
+      "observed_at_utc": "2026-11-22T18:42:32.381818+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.10.02 real Chromium bulk CSV quoted valid, malformed, duplicate, empty-first-cell, retry and Worker receiver persist per row"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Bulk CSV mixed valid/invalid rows and duplicate recovery. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-013/M1.10.02.log",
+          "sha256": "11cb64d74befc11d3083487b54c38a5080c35bc629510d48681ca050ba2781b7"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.10.03",
+      "batch_id": "ZERO-013",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e2d83553a3f4645cddd290b2345459a4bce8f9f0",
+      "configuration_fingerprint": "4c711d432723fb0aca3c099905005b933e82e3758f89e684ca1a87bf543f33db",
+      "observed_at_utc": "2026-11-22T18:42:32.381818+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.10.03 actual PostgreSQL16 Worker last-slot race enforces code expiry usage/default Site Department and immutable cross-role audit"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Company code expiry/usage limit/default site and department. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-013/M1.10.03.log",
+          "sha256": "60e7c85b6a8054552476953f7da158e4b6746deb24798d674267aea3366f40f5"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-013/M1.10.03.bootstrap.log",
+          "sha256": "3bbbe44123ffe8d57868428fe7544e8c0e056ccf18739f8842f4d5eddfc7658a"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.10.04",
+      "batch_id": "ZERO-013",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e2d83553a3f4645cddd290b2345459a4bce8f9f0",
+      "configuration_fingerprint": "4c711d432723fb0aca3c099905005b933e82e3758f89e684ca1a87bf543f33db",
+      "observed_at_utc": "2026-11-22T18:42:32.381818+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.10 dual-employer browser protects each tenant while preserving Worker history"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Unlinked/wrong Worker cannot accept another person's invitation. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-013/M1.10.04.log",
+          "sha256": "95a1ec440d807009e46a011dd4fdaa3b1809b5b64b6d0a3004c4729aee381e13"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.10.05",
+      "batch_id": "ZERO-013",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "e2d83553a3f4645cddd290b2345459a4bce8f9f0",
+      "configuration_fingerprint": "4c711d432723fb0aca3c099905005b933e82e3758f89e684ca1a87bf543f33db",
+      "observed_at_utc": "2026-11-22T18:42:32.381818+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Company ends active Worker relationship while Worker retains identity and prior Company history"
+      ],
+      "result_summary": "SCOPED_PASS_NOT_FULL ({'tests': 1, 'pass': 1, 'fail': 0, 'skipped': 0}); original workflow: Worker joins, moves placement, ends relationship and retains identity. Selected check only; missing applicable full role/security/independent evidence.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Complete end-to-end scenario and three independent review artifacts not yet signed off",
+        "Full manual/adversarial pentest and provider adapter contracts not demonstrated"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-013/M1.10.05.log",
+          "sha256": "41dc85af108770a9d5fad2f666337e8356769cf63d95077d432ccbc3c4c18cb2"
+        }
+      ]
     }
   ]
 }
