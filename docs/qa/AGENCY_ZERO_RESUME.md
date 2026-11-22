@@ -35,6 +35,10 @@
 
 Hosted PR branch `f821e623b01359dfc5f61665f4a693fc222fb5c0` had 218/4975 release evidence and V4 compliance green, but new ZERO integrity CI 10/11 tests passed and one failed because the **test itself hardcoded the previous next-batch ID `ZERO-002`**. The actual cursor was correctly advanced to `ZERO-003` after 5 successful scoped UI cases. Updated only the governance test to derive the next batch from its attempted count, preserving the frozen 218 order and fail-closed skips. Local ZERO governance **11/11 PASS**. Confirm new hosted checks on the guarded fix commit. No app source changes; no evidence credit added.
 
+## ZERO-003 actual executed batch (2026-11-22)
+
+Five actual synthetic browser source cases PASS: Worker signup policy, email and phone OTP, duplicate Worker and recovery, Company pending MFA, and staff invitation cancel/retry/role isolation. [Full report](AGENCY_ZERO_BATCH_003_REPORT.md). Scoped 5/5, technical FULL 0/5. Raw private logs hashed; no provider-live or production mutation. Cursor advanced to ZERO-004; ZERO-001/002/003 remain in revisit queue for deeper security, workflow and independent reviewer evidence.
+
 ## ZERO-002 actual executed batch (2026-11-22)
 
 [AGENCY_ZERO_BATCH_002_REPORT.md](AGENCY_ZERO_BATCH_002_REPORT.md): **5/5 original scoped real Chromium cases PASS**: public nav all role destinations, all six role support menus, error retry boundaries, mobile six-role responsive nav, unsaved metadata keyboard/focus/navigation (history fallback=false). **0/5 TECH FULL** until full connected workflow, deeper attack tests, independent reviewer; no assumed pass. Raw 5 logs SHA256 in the report and original case receipts. `docs/qa/AGENCY_ZERO_CURSOR.json` advances to **ZERO-003**, retaining both ZERO-001 and ZERO-002 for missing final technical evidence. Application source pinned unchanged, no production/stage mutations. Historic QA full regression red remains open; never call this release-approved.

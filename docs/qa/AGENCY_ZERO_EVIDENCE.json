@@ -297,6 +297,161 @@
           "sha256": "631dc9da677a3b82dd444b2986ba0ee05c73e12578bff977702d054052e0140b"
         }
       ]
+    },
+    {
+      "scenario_id": "M1.03.01",
+      "batch_id": "ZERO-003",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9062cee8fb28e9982619a629f1e6aa4be22f2341",
+      "configuration_fingerprint": "f228864876839cbd5398ad4a64565b00a984550e5b7c71c0116db86a18e41833",
+      "observed_at_utc": "2026-11-22T17:31:52.245846+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance"
+      ],
+      "result_summary": "One real browser source case PASS 1/1: Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance. Remaining scenarios, adversarial review and independent signoff not complete.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full scenario coverage and independent specialist review outstanding"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.01.log",
+          "sha256": "eaefcb39a1a35363f16d6937c0b143a7933c08270a1cf3df01ebd7e4736149bf"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.03.02",
+      "batch_id": "ZERO-003",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9062cee8fb28e9982619a629f1e6aa4be22f2341",
+      "configuration_fingerprint": "f228864876839cbd5398ad4a64565b00a984550e5b7c71c0116db86a18e41833",
+      "observed_at_utc": "2026-11-22T17:31:52.245974+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts"
+      ],
+      "result_summary": "One real browser source case PASS 1/1: Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts. Remaining scenarios, adversarial review and independent signoff not complete.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full scenario coverage and independent specialist review outstanding"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.02.log",
+          "sha256": "5645ceb4e550b50444edbc406b7d104a9cac0e42f94f8a333639bc2a785cf83e"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.03.03",
+      "batch_id": "ZERO-003",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9062cee8fb28e9982619a629f1e6aa4be22f2341",
+      "configuration_fingerprint": "f228864876839cbd5398ad4a64565b00a984550e5b7c71c0116db86a18e41833",
+      "observed_at_utc": "2026-11-22T17:31:52.246075+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions"
+      ],
+      "result_summary": "One real browser source case PASS 1/1: Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions. Remaining scenarios, adversarial review and independent signoff not complete.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full scenario coverage and independent specialist review outstanding"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.03.log",
+          "sha256": "8889100d17eb0965f697f216baa5ba59bec0468239f6b846188127496991e319"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.03.04",
+      "batch_id": "ZERO-003",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9062cee8fb28e9982619a629f1e6aa4be22f2341",
+      "configuration_fingerprint": "f228864876839cbd5398ad4a64565b00a984550e5b7c71c0116db86a18e41833",
+      "observed_at_utc": "2026-11-22T17:31:52.246182+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "Company registration commits email/MFA denials and activates only a Company owner in a pending tenant"
+      ],
+      "result_summary": "One real browser source case PASS 1/1: Company registration commits email/MFA denials and activates only a Company owner in a pending tenant. Remaining scenarios, adversarial review and independent signoff not complete.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full scenario coverage and independent specialist review outstanding"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.04.log",
+          "sha256": "5bbfc35def7e3f9aba48a5227780aa3296b4f74670ec4f16decbd580877fc6a8"
+        }
+      ]
+    },
+    {
+      "scenario_id": "M1.03.05",
+      "batch_id": "ZERO-003",
+      "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+      "qa_tooling_sha": "9062cee8fb28e9982619a629f1e6aa4be22f2341",
+      "configuration_fingerprint": "f228864876839cbd5398ad4a64565b00a984550e5b7c71c0116db86a18e41833",
+      "observed_at_utc": "2026-11-22T17:31:52.246259+00:00",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "tested_actions": [
+        "M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role"
+      ],
+      "result_summary": "One real browser source case PASS 1/1: M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role. Remaining scenarios, adversarial review and independent signoff not complete.",
+      "gates": {
+        "engineering": "PASS",
+        "functional_workflow": "BLOCKED",
+        "ui_accessibility": "BLOCKED",
+        "cybersecurity": "BLOCKED",
+        "independent_review": "BLOCKED",
+        "adapter_contracts": "BLOCKED"
+      },
+      "open_high_or_critical": null,
+      "blocking_defects": [
+        "Full scenario coverage and independent specialist review outstanding"
+      ],
+      "raw_evidence_refs": [
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.05.log",
+          "sha256": "86c00a303599f87f4355b46ad1c8f677ce3e688b4f010f886784ddc7edb1396c"
+        }
+      ]
     }
   ]
 }

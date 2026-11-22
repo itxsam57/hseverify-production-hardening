@@ -30,13 +30,30 @@
       "scheduled_source_cases_pass": 5,
       "scheduled_source_cases_fail": 0,
       "recorded_utc": "2026-11-22T17:21:09.570488+00:00"
+    },
+    {
+      "batch_id": "ZERO-003",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_003_REPORT.md",
+      "original_scenario_ids": [
+        "M1.03.01",
+        "M1.03.02",
+        "M1.03.03",
+        "M1.03.04",
+        "M1.03.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-22T17:32:10.831625+00:00"
     }
   ],
-  "next_batch_id": "ZERO-003",
+  "next_batch_id": "ZERO-004",
   "revisit_batches": [
     "ZERO-001",
-    "ZERO-002"
+    "ZERO-002",
+    "ZERO-003"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Start ZERO-003 Authentication five-case batch with protected synthetic accounts and deep role/security tests; revisit ZERO-001/002 gaps before owner signoff"
+  "next_action": "ZERO-004 remaining authentication workflows, max five cases; later close ZERO-001/002/003 pentest/adapter/reviewer gaps with evidence"
 }
