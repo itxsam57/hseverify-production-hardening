@@ -45,3 +45,10 @@ Recorded UTC: 2026-11-22T18:42:32.381818+00:00
 ## Isolated PostgreSQL16 proof
 
 M1.10.03 selected real PostgreSQL16 test passed last-slot registration-code race, expiry, usage limit, Site/Department scope, and Worker/Company audit. Dedicated database started and stopped; bootstrap log SHA256 `3bbbe44123ffe8d57868428fe7544e8c0e056ccf18739f8842f4d5eddfc7658a`.
+
+## Original-Masterplan coverage mismatches: explicit unverified requirements
+
+- `M1.10.04`: The selected dual-employer browser case does NOT explicitly demonstrate a wrong/unlinked Worker accepting another person’s invitation; perform that attack independently.
+- `M1.10.05`: Selected relationship ending test does not establish every site/department transfer, invite and Worker recipient variant.
+
+These gaps remain **NOT VERIFIED** even if the selected related source test passed. The 218 numerator is unchanged.

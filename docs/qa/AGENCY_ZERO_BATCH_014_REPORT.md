@@ -33,3 +33,9 @@ Recorded UTC: 2026-11-22T18:44:26.454231+00:00
 ## Dedicated PostgreSQL16 proof
 
 Two simultaneous employers retained separate Worker scope through the cross-company termination/placement race. Real isolated PG16 startup and shutdown log SHA256 `07d090b35c50aef7edca92db05ce2ea209c279480a18e4aa10f29adae8ec01ab`. The already-tested prior browser two-employer source case in ZERO-013 was **not rerun**.
+
+## Original-Masterplan coverage mismatches: explicit unverified requirements
+
+- `M1.10.06`: Real PostgreSQL concurrency checks passed; full second-company invite UI lifecycle and history receiving actor still require independent review.
+
+These gaps remain **NOT VERIFIED** even if the selected related source test passed. The 218 numerator is unchanged.

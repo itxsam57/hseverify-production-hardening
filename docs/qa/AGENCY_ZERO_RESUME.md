@@ -79,6 +79,30 @@ Original M1.09.06 browser live Owner/Admin/Manager permission-ceiling check **PA
 
 [Batch report](AGENCY_ZERO_BATCH_015_REPORT.md): selected cases 4/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-016; no prod code changes.
 
+## ZERO-016 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_016_REPORT.md): selected cases 3/3 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-017; no prod code changes.
+
+## ZERO-017 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_017_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-018; no prod code changes.
+
+## ZERO-018 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_018_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-019; no prod code changes.
+
+## ZERO-019 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_019_REPORT.md): selected cases 3/3 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-020; no prod code changes.
+
+## Consolidated requested eight batches (2026-11-22)
+
+[AGENCY_ZERO_SUMMARY_013_020.md](AGENCY_ZERO_SUMMARY_013_020.md) — **8/8 batches attempted**, 32 original workflow scenarios, **31 scoped selected PASS, 1 TIMEOUT** (`M1.11.02`, 465 seconds, no final assertion), **0 technical FULL**, app pinned SHA `7ff30ea...`. Explicit source-versus-original requirements gaps preserved for 17 scenario IDs; raw workstation logs SHA256 in receipt register. Cursor now **ZERO-021**, earlier ZERO-001–020 remain in revisit queue. No product code/stage writes, final provider-live and independent review pending.
+
+## ZERO-020 actually executed
+
+[Batch report](AGENCY_ZERO_BATCH_020_REPORT.md): selected cases 5/5 PASS; 0 technical full. Frozen app SHA 7ff30ea140; full security/role/UI/independent review still pending. Exact raw hashes in receipt and report. Next ZERO-021; no prod code changes.
+
 ## ZERO-006 actual executed batch (2026-11-22)
 
 [Batch ZERO-006 report](AGENCY_ZERO_BATCH_006_REPORT.md): **4/4 selected scoped tests PASS** — two-tenant audit history, review resolution notifications and guarded role links, all-role bell/open/deeplink/read state, durable outbox approval surviving provider outage with idempotent retry. 3 real browser source cases + 1 isolated PGlite platform source case, one PASS each. **0/4 TECH FULL** pending full authorized security review, all workflow variants and independent reviewer. Exact raw logs SHA256 recorded in same original scenario evidence register; production unchanged. Cursor now **ZERO-007**, previously attempted ZERO-001..006 retained for revisits.
