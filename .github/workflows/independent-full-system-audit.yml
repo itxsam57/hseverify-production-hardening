@@ -39,7 +39,7 @@ permissions:
 jobs:
   independent-audit:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       HSE_APP_ENV: test
       HSE_RELEASE_SHA: independent-audit
@@ -243,7 +243,10 @@ jobs:
         shell: bash
         run: |
           set +e
-          npm run verify:full > artifacts/independent-audit/existing_full_regression_crosscheck.log 2>&1
+          # The full regression can exceed the former 60-minute job ceiling.
+          # Bound it to 90 minutes and keep exit 124 as a REAL failing gate
+          # so FINAL-AUDIT and raw logs are still uploaded on timeout.
+          timeout -k 10s 5400s npm run verify:full > artifacts/independent-audit/existing_full_regression_crosscheck.log 2>&1
           code=$?
           set -e
           printf '%s\t%s\n' existing_full_regression_crosscheck "$code" >> artifacts/independent-audit/commands.tsv
