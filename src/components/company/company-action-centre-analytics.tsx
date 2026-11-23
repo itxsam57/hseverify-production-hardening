@@ -16,7 +16,7 @@ function ReadinessTable({
       {rows.length === 0 ? (
         <p>No active scoped assurance cases yet.</p>
       ) : (
-        <div className="table-wrap">
+        <div className="table-scroll">
           <table>
             <thead>
               <tr>
@@ -80,7 +80,7 @@ export function CompanyActionCentreAnalyticsPanel({
       <section className="detail-card">
         <h2>Competency gaps</h2>
         {analytics.competencyGaps.length === 0 ? <p>No active credential-target gaps are recorded.</p> : (
-          <div className="table-wrap">
+          <div className="table-scroll">
             <table>
               <thead><tr><th>Target</th><th>Assured</th><th>Gap</th><th>Gap rate</th></tr></thead>
               <tbody>
