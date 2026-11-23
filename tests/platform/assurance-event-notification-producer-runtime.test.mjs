@@ -312,3 +312,112 @@ test("0099 rollback refuses retained original event delivery history without alt
   assert.ok((await x.database.query("SELECT job_id FROM platform_outbox_jobs WHERE job_type='notification.assurance.event'")).rows.length>0);
  }finally{await x.cleanup();}
 });
+
+
+test("R32 terminal rejected appeal removes obsolete independent Admin notice without deleting retained history",async()=>{
+  const x=await notificationFixture();
+  try{
+    const {credentialId,workerId}=await approvedDecision(x);
+    const reviewerId="account_r32_independent_terminal_appeal";
+    await x.database.query(
+      "INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,email_verified_at,password_hash,password_set_at,created_at,updated_at) SELECT $1,'r32-independent-terminal@example.test','R32 Independent Reviewer','active',CURRENT_TIMESTAMP,password_hash,password_set_at,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP FROM auth_accounts WHERE account_id=$2",
+      [reviewerId,x.fixture.credentials.admin.accountId]
+    );
+    await x.database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[reviewerId]);
+    const admin=await fundingPrincipal(x.database,{accountId:reviewerId},"admin");
+    const worker=await fundingPrincipal(x.database,x.fixture.credentials.worker);
+    const company=await fundingPrincipal(x.database,x.fixture.credentials.company,"company");
+    const service=new CredentialAppealsService(Promise.resolve(x.database));
+    const original=await service.submit({
+      credentialId,workerId,reason:"The original source evidence requires an independent verification outcome.",
+      createdAt:new Date().toISOString()
+    },"r32-real-worker-submitted-appeal");
+    const job=await eventJob(x,"appeal.submitted");
+    assert.deepEqual(await projectAssuranceEventNotification(job,x.database),{kind:"succeeded"});
+    const notices=new DatabaseNotificationRepository(Promise.resolve(x.database));
+    const originalNotice=(await notices.listForPrincipal(admin)).find(n=>n.sourceJobId===job.jobId);
+    assert.ok(originalNotice,"Current independent Admin must initially see this actual submitted appeal.");
+    assert.equal(originalNotice.target,"appeal.record");
+    assert.equal(originalNotice.targetReference,original.appealId);
+    const originalCount=await notices.unreadCountForPrincipal(admin);
+    assert.ok(originalCount>=1);
+    assert.equal((await notices.listForPrincipal(company)).some(n=>n.notificationType==="appeal.submitted"),false);
+    await assert.rejects(
+      service.reviewOutcome(original,{
+        status:"rejected",reviewerId:x.admin.accountId,
+        reason:"The original decision issuer cannot review this appeal.",outcomeAction:"none"
+      }),/independent reviewer outside the original decision/
+    );
+    assert.equal((await notices.listForPrincipal(admin)).some(n=>n.notificationId===originalNotice.notificationId),true);
+    const result=await service.reviewOutcome(original,{
+      status:"rejected",reviewerId,
+      reason:"Independent review completed; submitted evidence does not warrant changing the original outcome.",
+      outcomeAction:"none",reviewedAt:new Date().toISOString()
+    });
+    assert.equal(result.appeal.status,"rejected");
+    assert.equal(result.appeal.version,2);
+    assert.equal((await notices.listForPrincipal(admin)).some(n=>n.notificationId===originalNotice.notificationId),false);
+    assert.equal(await notices.unreadCountForPrincipal(admin),originalCount-1);
+    assert.equal(await notices.findForPrincipal(admin,originalNotice.notificationId),null);
+    assert.equal(await notices.markReadForPrincipal(admin,originalNotice.notificationId),null);
+    const stored=(await x.database.query(
+      "SELECT read_at,notification_type,body FROM platform_notifications WHERE notification_id=$1",
+      [originalNotice.notificationId]
+    )).rows[0];
+    assert.equal(stored.read_at,null);
+    assert.equal(stored.notification_type,"appeal.submitted");
+    const history=(await x.database.query(
+      "SELECT version,status FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",
+      [original.appealId]
+    )).rows;
+    assert.deepEqual(history.map(r=>r.status),["submitted","rejected"]);
+    const updated=await eventJob(x,"appeal.updated");
+    assert.deepEqual(await projectAssuranceEventNotification(updated,x.database),{kind:"succeeded"});
+    const workerUpdated=(await notices.listForPrincipal(worker)).find(n=>n.sourceJobId===updated.jobId);
+    assert.ok(workerUpdated);
+    assert.equal(workerUpdated.notificationType,"appeal.updated");
+    assert.equal((await notices.listForPrincipal(company)).some(n=>n.notificationType.startsWith("appeal.")),false);
+    console.log("R32_TERMINAL_REJECTED_ADMIN_PENDING_NOTICE_HIDDEN_AND_UNREAD_UNCHANGED_WITH_WORKER_UPDATE");
+  }finally{await x.cleanup();}
+});
+
+test("R32 revoked Admin session cannot list, count, Open or read submitted appeal notification",async()=>{
+  const x=await notificationFixture();
+  try{
+    const {credentialId,workerId}=await approvedDecision(x);
+    const admin=await fundingPrincipal(x.database,x.fixture.credentials.admin,"admin");
+    const worker=await fundingPrincipal(x.database,x.fixture.credentials.worker);
+    const service=new CredentialAppealsService(Promise.resolve(x.database));
+    const original=await service.submit({
+      credentialId,workerId,reason:"Please independently review the retained Worker evidence and resulting credential.",
+      createdAt:new Date().toISOString()
+    },"r32-real-worker-revoked-admin-session");
+    const job=await eventJob(x,"appeal.submitted");
+    assert.deepEqual(await projectAssuranceEventNotification(job,x.database),{kind:"succeeded"});
+    const notices=new DatabaseNotificationRepository(Promise.resolve(x.database));
+    const owned=(await notices.listForPrincipal(admin)).find(n=>n.sourceJobId===job.jobId);
+    assert.ok(owned);
+    assert.equal(owned.targetReference,original.appealId);
+    assert.ok(await notices.unreadCountForPrincipal(admin)>=1);
+    assert.ok(await notices.findForPrincipal(admin,owned.notificationId));
+    await x.database.query(
+      "UPDATE auth_sessions SET revoked_at=clock_timestamp(),revocation_reason='R32 stale Admin appeal security' WHERE session_id=$1",
+      [admin.sessionId]
+    );
+    await assert.rejects(()=>notices.listForPrincipal(admin),/access|session|principal/i);
+    await assert.rejects(()=>notices.unreadCountForPrincipal(admin),/access|session|principal/i);
+    await assert.rejects(()=>notices.findForPrincipal(admin,owned.notificationId),/access|session|principal/i);
+    await assert.rejects(()=>notices.markReadForPrincipal(admin,owned.notificationId),/access|session|principal/i);
+    const persisted=(await x.database.query(
+      "SELECT read_at FROM platform_notifications WHERE notification_id=$1",
+      [owned.notificationId]
+    )).rows[0];
+    assert.equal(persisted.read_at,null);
+    assert.equal((await x.database.query(
+      "SELECT status,version FROM credential_appeals WHERE appeal_id=$1",
+      [original.appealId]
+    )).rows[0].status,"submitted");
+    assert.ok((await notices.listForPrincipal(worker)).some(n=>n.sourceJobId===job.jobId));
+    console.log("R32_REVOKED_ADMIN_APPEAL_NOTICE_LIST_COUNT_OPEN_READ_DENIED_SOURCE_PRESERVED");
+  }finally{await x.cleanup();}
+});
