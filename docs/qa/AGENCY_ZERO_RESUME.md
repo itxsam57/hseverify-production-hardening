@@ -325,3 +325,10 @@ BATCH ZERO-001/058 | 4 units | PASS 0 | FAIL 0 | BLOCKED 0 | NEEDS EVIDENCE 4
 ENGINEER: NOT RUN | CYBERSECURITY: NOT RUN | REVIEWER: NOT RUN
 NEXT: reconcile M1.01.01 legacy artifacts | SHA: see git HEAD | EVIDENCE: this file
 ```
+
+## 2026-11-23 — independent audit final-red and protected R06 rollback test correction
+
+- GitHub [audit 45104121464](https://github.com/itxsam57/hseverify-production-hardening/actions/runs/45104121464) **COMPLETED FAILURE** on QA HEAD 2c100783 (pinned app 7ff30ea unchanged); one critical CI classification due full regression runner exit1, 0 high; not evidence of exploited vulnerability. Full FINAL-AUDIT raw SHA256 73ad248c551540544e5f01945bec1a07261ee84710cd152cb5784da39809ada7. Scoped signed-out axe/ZAP green does NOT certify full pentest.
+- R06 root cause: original migration 0111 rollback test omitted newer 0130 notification wrapper rollback before 0121; database correctly fail-closed. One-line guarded QA-only test fix isolated branch qa/zero-r06-rollback-contract-20261123, focused 1/1 PASS; four immutable index verifiers PASS and frozen 218/1,610/1,436/4,975 unchanged. Exact detailed report `AGENCY_ZERO_R06_HOSTED_AUDIT_45104121464.md`; no application/runtime/staging source changes. PR/new hosted CI pending.
+- Other R02-R08 scoped prior receipts and reports are retained without overwrite in separate workstation QA worktree `hseverify-free-qa-security-20261121` and its private evidence directories; no original scenario technical FULL signoff.
+- NEXT: protected commit/push/PR and fresh exact-SHA full audit after test-only correction; classify any new red and continue <=5 case cross-role receiving/security/adapter/reviewer workflows. OWNER TESTING READY NO / 0 of 218.
