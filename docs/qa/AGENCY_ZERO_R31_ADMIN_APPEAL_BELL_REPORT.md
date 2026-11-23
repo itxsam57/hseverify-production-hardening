@@ -1,0 +1,28 @@
+# ZERO-R31 — Real independent Admin appeal notification bell after Worker submission
+
+**Original related scenario:** M3.07.03/M3.07.04 (appeal submission and authorized recipient notification). **Batch R31 contains ONE distinct real Chromium + PGlite workflow test; 1/1 SCOPED PASS, outer process exit 0; 0/218 TECH FULL.** Original production application SHA remains **7ff30ea140a5145e5d5ba761f7c7aef24c895269**. Isolated QA-only branch `qa/zero-r31-admin-appeal-bell-browser-20261123` from QA source baseline `752d4cfc37f9f4e82b1cab9bc08cfef6783af70e`. No source product, security, migration, deployment or staging mutation.
+
+## Real tested workflow
+- Created actual issued credential through genuine decision + credential issuance repositories, for the actual current Worker account with a **real seeded permanent Worker ID**. A separate original issuer Admin is not the independent signed-in reviewing Admin.
+- Worker signed in via actual browser, selected the issued credential, submitted private appeal grounds via real Worker appeal form. Independent Admin separately signed in and could see the submitted appeal.
+- After stopping first Next server, reopened actual PGlite and found **one immutable original `appeal.submitted` outbox job**; executed the real `platform_project_assurance_event_notification(job_id)` production SQL function. Persisted notice recipients included the genuine Worker and current independent Admin, **no Company**. Admin notice had exact target `appeal.record#appealId` and fixed safe title/body with no private Worker appeal grounds. This is a genuine SQL projection of an original event, **not a live asynchronous job-worker dispatch or external email provider delivery**.
+- Restarted a new Next server on the same persisted DB, restored **original signed-in Admin and Worker browser session cookies** (no forged auth or reused TOTP).
+- Admin dashboard bell showed **1 unread**. The actual `Unread: Appeal submitted` button triggered its Server Action, redirected to `/admin/appeals#<appealId>`, displayed the exact submitted appeal and marked the notice read. **0 unread** persisted after reload and after another PGlite reopen; underlying appeal stayed submitted with exact original reason.
+- Worker session's direct `GET /admin/appeals` was **not 200**, and denied response did not expose private grounds. Admin browser viewport **390px** checked for horizontal overflow.
+
+## Genuine red/green history
+First source test failed with **0 matching appeal notification outbox jobs** despite valid Worker submission. Retained red log SHA256 **dcbb5eee5df0391bf7c9276757f46110b1ca19d8bd4a70dfce198b474dc2f49b**. A second diagnostic failure, SHA256 **10355e33eb49c0afd293ec0592fad0c43a98178d31fceb67a4ae8699dfc9f62f**, showed the fixture credential used a literal permanent Worker ID absent from `worker_identity_worker_ids`. The actual SQL producer correctly rejected this **orphan identity's delivery authority** and did not enqueue a notification. **Fixture error, not product bug.** Fixed only the test fixture to call existing `seedPermanentWorkerId(db, fixture.credentials.worker, "r")`, then reran unchanged security/role assertions.
+
+**Final TAP:** `/home/ubuntu/work/.hse-qa-tmp/agency-zero-r31/R31-admin-appeal-bell-mapped-worker.log`, SHA256 **2141e7cc6e83f51d6d370be4bca43cbd6f617e30e82c1fcc9db6017e25a4c467**, **PASS 1, FAIL 0, SKIP 0, process exit 0**, ~46.2 seconds. Test source `tests/browser/m3-07-admin-original-appeal-notification.browser.test.mjs` SHA256 **424cd76baf370c34091258091ee926c66e4b5b92f6fabfbc43f4c4bcc8530b7a**. Private receipt `R31.mapped-worker.receipt.json`. No prior successful source test rerun or scenario FULL award.
+
+## Three discipline reviews (bounded only)
+**ENGINEER — SCOPED PASS:** Genuine Worker UI submission, original signed decision/appeal, Admin login and bell Server Action, persisted SQL projection, next-server restart and durable read-state. No app source change; TypeScript, source ESLint/syntax, 218 mission control and `npm run qa:preflight-218` PASS.
+
+**CYBERSECURITY — SCOPED PASS:** Independent Admin role, real signed sessions, Worker-to-Admin route denied, Company excluded from private appeal notices, no grounds in notification body, orphan ID fail-closed source producer. Full pentest, live email/SMS, production providers, and protected HTTPS staging remain unverified.
+
+**REVIEWER — SCOPED PASS, NOT TECH FULL:** One unique original-related workflow under five-case cap; exact initial failing fixture logs, root cause, final successful TAP and SHA. Only Admin viewport 390px tested; other viewport, bell retry/offline, full lifecycle, all role recipient outcomes/adapter contracts and independent full reviewer release signoff still open. No historical evidence/source index rewritten. **TECH FULL 0/218, OWNER TESTING READY NO.**
+
+## Parallel independent hosted audit
+[Run 45213941977](https://github.com/itxsam57/hseverify-production-hardening/actions/runs/45213941977) is a **different R28 CI-only QA SHA `0328698b5ca01a9f1c8568d7d7515a90638055c6`**, **still IN_PROGRESS in full regression** at R31 checkpoint. It does **not include R31**. Never call that audit green before terminal `FINAL-AUDIT.json`, regression log and exact severe/fail ledger are inspected.
+
+**NEXT:** Guarded commit/push of this isolated R31 QA test/evidence and a draft PR, not merge. Inspect hosted audit terminal evidence, continue unfinished original batches <=5 and full independent verification. Reconciling newly added source tests after an approved protected QA candidate integration must preserve all original 218 scenario IDs and older historical source-test proof. Production unchanged.
