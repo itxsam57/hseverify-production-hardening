@@ -148,6 +148,7 @@ test("R18 actual signed-in Company Action Centre derives mixed cases and a cold 
     // Verify durable DB update first; then start a fresh Next process and confirm
     // its actual signed-in Company UI reads the new durable state.
     const db2=new PGlite(fixture.environment.HSE_PGLITE_DATA_DIR);
+    let lastAcceptedCompanyTotpCounter;
     try{
       const updated=await db2.query(
         "UPDATE assurance_cases SET case_status='Approved',owner_kind=NULL,next_action=NULL,updated_at=clock_timestamp() WHERE case_id=$1",
@@ -160,7 +161,22 @@ test("R18 actual signed-in Company Action Centre derives mixed cases and a cold 
       assert.equal((await db2.query("SELECT case_status FROM assurance_cases WHERE case_id=$1",[pending.caseId])).rows[0].case_status,"Approved");
       assert.equal((await db2.query("SELECT action_status FROM assurance_action_items WHERE action_id=$1",[pending.actionId])).rows[0].action_status,"resolved");
       console.log("R18_DB_ACTUAL_DURABLE_CASE_APPROVED_ACTION_RESOLVED_AFTER_FIRST_NEXT_SERVER_STOPS");
+      // The first real Company login consumed its TOTP time step. Read the
+      // persisted counter rather than replaying the same code after a restart.
+      const usedFactor=(await db2.query(
+        "SELECT last_accepted_counter FROM auth_mfa_factors WHERE account_id=$1 AND factor_type='totp' AND factor_status='active'",
+        [fixture.credentials.company.accountId]
+      )).rows[0];
+      assert.notEqual(usedFactor?.last_accepted_counter,null,"First Company login must consume a genuine TOTP counter");
+      lastAcceptedCompanyTotpCounter=Number(usedFactor.last_accepted_counter);
+      assert.ok(Number.isSafeInteger(lastAcceptedCompanyTotpCounter));
     } finally {await db2.close();}
+    const nextUnusedStep=(lastAcceptedCompanyTotpCounter+1)*30_000;
+    const freshCodeDelay=Math.max(0,nextUnusedStep-Date.now()+300);
+    if(freshCodeDelay>0)await new Promise(resolve=>setTimeout(resolve,freshCodeDelay));
+    assert.ok(Math.floor(Date.now()/30_000)>lastAcceptedCompanyTotpCounter,
+      "The second real login must generate a fresh MFA code, without weakening replay protection");
+    console.log("R18_AUTH_FRESH_TOTP_COUNTER_AFTER_PERSISTED_FIRST_LOGIN");
     const secondPort=await port(), secondBase="http://127.0.0.1:"+secondPort;
     await runDevelopmentServer({
       args:["--hostname","127.0.0.1","--port",String(secondPort)],
