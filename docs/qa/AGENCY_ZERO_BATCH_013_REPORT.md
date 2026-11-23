@@ -52,3 +52,7 @@ M1.10.03 selected real PostgreSQL16 test passed last-slot registration-code race
 - `M1.10.05`: Selected relationship ending test does not establish every site/department transfer, invite and Worker recipient variant.
 
 These gaps remain **NOT VERIFIED** even if the selected related source test passed. The 218 numerator is unchanged.
+
+## 2026-11-23 ZERO-R10 source-and-raw-log correction
+
+The earlier *M1.10.04 copied foreign Worker link not demonstrated* scope note is **superseded for that single edge** after exact original source and retained log inspection (not a new execution). The source `tests/browser/company-dual-employer-isolation.browser.test.mjs` actually logs in two distinct Workers, tampers the real hidden linkId to the other Worker's offer, observes denial, has each rightful Worker accept, and validates exact actor-bound PostgreSQL-compatible PGlite DB/audit rows. The frozen ZERO-013 raw `M1.10.04.log` SHA256 `95a1ec440d807009e46a011dd4fdaa3b1809b5b64b6d0a3004c4729aee381e13` includes `ACTUAL_M11004_FORGED_INVITE_BROWSER` and `ACTUAL_M11004_DB`; TAP 1/1 PASS. **No new test or TECH FULL result added.** Other auth/security/reviewer gates remain open. See [AGENCY_ZERO_R10_INVITATION_EVIDENCE_RECONCILIATION.md](AGENCY_ZERO_R10_INVITATION_EVIDENCE_RECONCILIATION.md).
