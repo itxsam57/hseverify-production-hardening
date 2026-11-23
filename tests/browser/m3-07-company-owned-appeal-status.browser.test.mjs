@@ -117,12 +117,12 @@ const companyStatus=async(page,link)=>{
   await page.getByText("Latest case credential",{exact:true}).waitFor();
   return (await page.locator("dt").filter({hasText:"Latest case credential"}).locator("xpath=following-sibling::dd").innerText()).trim();
 };
-test("R27 actual Worker appeal and independent Admin suspension update only authorized Company credential status, not grounds",{
-  timeout:255000
+test("R30 actual Worker bell opens persisted appeal update after cold server restart and denies Company event",{
+  timeout:320000
 },async()=>{
   const fixture=await workerAssessmentSearchFixture();
   const portNumber=await port(),base="http://127.0.0.1:"+portNumber;
-  let browser;
+  let browser,workerState,companyState,acceptedAppealId;
   try{
     const database=await openScriptDatabase({databaseDriver:"pglite",databaseUrl:null,pgliteDataDir:fixture.environment.HSE_PGLITE_DATA_DIR});
     let issued;
@@ -207,6 +207,8 @@ test("R27 actual Worker appeal and independent Admin suspension update only auth
             }
           }
           console.log("R27_CHROME_COMPANY_A_SUSPENDED_COMPANY_B_NO_FOREIGN_CASE_NO_APPEAL_GROUNDS_320_390_1440");
+          workerState=await worker.context().storageState();
+          companyState=await companyA.context().storageState();
           assert.deepEqual(exceptions,[]);
         }catch(error){
           console.error("R27_DIAGNOSTIC",error.message,"WORKER",worker.url(),"ADMIN",admin.url(),
@@ -220,12 +222,72 @@ test("R27 actual Worker appeal and independent Admin suspension update only auth
     try{
       const credential=(await db.query("SELECT status FROM credential_issuances WHERE credential_id=$1",[issued.credentialId])).rows[0];
       assert.equal(credential.status,"suspended");
-      const appeal=(await db.query("SELECT status,outcome_action,review_reason,reviewer_account_id FROM credential_appeals WHERE credential_id=$1",[issued.credentialId])).rows[0];
+      const appeal=(await db.query("SELECT appeal_id,status,outcome_action,review_reason,reviewer_account_id FROM credential_appeals WHERE credential_id=$1",[issued.credentialId])).rows[0];
+      acceptedAppealId=appeal.appeal_id;
       assert.equal(appeal.status,"accepted");assert.equal(appeal.outcome_action,"suspend");
       assert.equal(appeal.reviewer_account_id,fixture.credentials.admin.accountId);
       assert.equal(appeal.review_reason,REVIEW_REASON);
       const scoped=(await db.query("SELECT tenant_id,credential_reference FROM assurance_cases WHERE case_id=$1",[CASE])).rows[0];
       assert.equal(scoped.tenant_id,fixture.credentials.company.tenantId);assert.equal(scoped.credential_reference,issued.credentialId);
+      // First Next server stopped. Project real, immutable appeal jobs through
+      // the production SQL projection used by the actual outbox handler.
+      const pending=(await db.query(
+        "SELECT job_id,payload->>'eventType' AS event_type FROM platform_outbox_jobs WHERE job_type='notification.assurance.event' AND payload->>'eventType' IN ('appeal.submitted','appeal.updated') ORDER BY job_sequence"
+      )).rows;
+      assert.deepEqual(pending.map(j=>j.event_type),["appeal.submitted","appeal.updated"]);
+      for(const item of pending){
+        const projection=(await db.query("SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",[item.job_id])).rows[0];
+        assert.equal(projection.suppressed,false);
+        assert.ok(Number(projection.created)>=1);
+      }
+      const notices=(await db.query(
+        "SELECT recipient_account_id,recipient_role,notification_type,body,target_key,target_reference,read_at FROM platform_notifications WHERE notification_type IN ('appeal.submitted','appeal.updated') ORDER BY notification_type,recipient_role"
+      )).rows;
+      const workerNotices=notices.filter(n=>n.recipient_role==="worker");
+      assert.equal(workerNotices.length,2);
+      assert.ok(workerNotices.every(n=>n.recipient_account_id===fixture.credentials.worker.accountId));
+      assert.ok(notices.every(n=>n.recipient_role!=="company"));
+      assert.ok(notices.every(n=>n.target_key==="appeal.record"&&n.target_reference===acceptedAppealId));
+      assert.ok(notices.every(n=>!n.body.includes(PRIVATE_GROUNDS)&&!n.body.includes(REVIEW_REASON)&&n.read_at===null));
+      console.log("R30_REAL_APPEAL_OUTBOX_PROJECTED_TWO_WORKER_NOTICES_NO_COMPANY_PRIVATE_FIELDS");
     }finally{await db.close();}
+    assert.ok(workerState?.cookies?.length&&companyState?.cookies?.length,"Must reuse genuine original signed-in role browser sessions");
+    await runDevelopmentServer({
+      args:["--hostname","127.0.0.1","--port",String(portNumber)],
+      probeUrl:base+"/worker/login",projectRoot:process.cwd(),
+      environment:{...fixture.environment,HSE_CREDENTIAL_SIGNING_SECRET:"r27-only-fixture-signature-32-characters-minimum"},
+      probe:async()=>{
+        const workerContext=await browser.newContext({viewport:{width:390,height:844},storageState:workerState});
+        const companyContext=await browser.newContext({viewport:{width:320,height:844},storageState:companyState});
+        const worker=await workerContext.newPage(),company=await companyContext.newPage();
+        try{
+          await worker.goto(base+"/worker/dashboard",{waitUntil:"domcontentloaded"});
+          const bell=worker.locator("details.notification-menu"),summary=bell.locator("summary");
+          await summary.waitFor({state:"visible"});
+          assert.equal(await summary.getAttribute("aria-label"),"2 unread notifications");
+          await summary.click();
+          const updated=bell.getByRole("button",{name:/Unread: Appeal review updated/});
+          await updated.waitFor({state:"visible"});
+          assert.ok(!(await updated.innerText()).includes(PRIVATE_GROUNDS));
+          assert.ok(!(await updated.innerText()).includes(REVIEW_REASON));
+          await updated.click();
+          await worker.waitForURL(new RegExp("/worker/appeals#"+acceptedAppealId+"$"),{timeout:20000});
+          await worker.locator('[id="'+acceptedAppealId+'"]').waitFor();
+          await worker.getByText(/Status: accepted/i).first().waitFor();
+          await worker.locator('details.notification-menu > summary[aria-label="1 unread notifications"]').waitFor();
+          await worker.reload({waitUntil:"domcontentloaded"});
+          assert.equal(await worker.locator('details.notification-menu > summary').getAttribute("aria-label"),"1 unread notifications");
+          await company.goto(base+"/company/dashboard",{waitUntil:"domcontentloaded"});
+          assert.equal(await company.locator('details.notification-menu > summary').getAttribute("aria-label"),"0 unread notifications");
+          const body=await company.locator("main").innerText();
+          assert.ok(!body.includes(PRIVATE_GROUNDS)&&!body.includes(REVIEW_REASON));
+          assert.equal(await company.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2),false);
+          console.log("R30_REAL_WORKER_BELL_OPEN_DEEPLINK_MARK_READ_AFTER_COLD_RESTART_NO_COMPANY_APPEAL");
+        }catch(error){
+          console.error("R30_REAL_BELL_FAILURE",error.message,"WORKER",worker.url(),"COMPANY",company.url());
+          throw error;
+        }finally{await workerContext.close();await companyContext.close();}
+      }
+    });
   }finally{if(browser)await browser.close();await fixture.cleanup();}
 });
