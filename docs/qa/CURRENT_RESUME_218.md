@@ -1,3 +1,5 @@
+> **HISTORICAL release-stage handoff only (superseded for active agency testing 2026-11-21).** Do not follow any old M1-first stop rule or its stale NEXT command. Live testing cursor and all current owner-readiness instructions are in [AGENCY_ZERO_RESUME.md](AGENCY_ZERO_RESUME.md). Preserve all evidence below as historical source-SHA observations.
+
 # HSE Verify — current QA continuation checkpoint
 
 ## 2026-11-21 — QA96 CI Company report compressed-response assertion RED → real browser BOLA GREEN (M1.01.01 release security prerequisite)

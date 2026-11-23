@@ -18,7 +18,8 @@ test("hosted connected-browser splits every real journey into exactly one of fou
   assert.match(shardedSteps,/strategy:[\s\S]*?fail-fast: false[\s\S]*?shard: \[1, 2, 3, 4\]/);
   const steps=[...shardedSteps.matchAll(allTests)].map(m=>({name:m[1],shard:Number(m[2])}));
   const allCommands=shardedSteps.match(/^      - name: /gm)||[];
-  assert.equal(steps.length,allCommands.length-3,"Every test step after PDF/Chromium and shared outbox build must be assigned to one shard");
+  assert.match(shardedSteps, /- name: Show Case Replay progress on error\n        if: \$\{\{ failure\(\) && matrix\.shard == 4 \}\}/, "The extra unsharded step must be the bounded shard-4 failure diagnostic");
+  assert.equal(steps.length,allCommands.length-4,"Every real browser test step must be assigned to one shard; three setup steps and one bounded failure diagnostic are exempt");
   assert.ok(steps.length>=50,"Do not silently drop previously required browser journeys");
   for(let shard=1;shard<=4;shard++){
     const selected=steps.filter(step=>step.shard===shard);

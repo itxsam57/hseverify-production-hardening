@@ -67,10 +67,22 @@ test("real HTTP login and signed-out redirects enforce CSP, HSTS, frame and cont
             const onViolation = (event) => violations.push(event.violatedDirective);
             document.addEventListener("securitypolicyviolation", onViolation);
             const image = document.createElement("img");
+            // Wait for the real resource error rather than assuming that the dev
+            // server and the browser finish this request within 300 ms. Keep the
+            // strict script-src-attr violation assertion below unchanged.
+            const resourceError = new Promise((resolve) => image.addEventListener("error", resolve, { once: true }));
             image.setAttribute("onerror", 'document.documentElement.dataset.hseCspTest = "ran"');
-            image.src = "/hse-nonce-csp-harmless-missing-image.png";
+            image.src = "/hse-nonce-csp-harmless-missing-image.png?csp-probe=" + encodeURIComponent(location.pathname);
             document.body.appendChild(image);
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await Promise.race([
+              (async () => {
+                await resourceError;
+                for (let i = 0; i < 30 && !violations.includes("script-src-attr"); i += 1) {
+                  await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+              })(),
+              new Promise((resolve) => setTimeout(resolve, 5000))
+            ]);
             const executed = document.documentElement.dataset.hseCspTest === "ran";
             delete document.documentElement.dataset.hseCspTest;
             image.remove();
@@ -78,7 +90,7 @@ test("real HTTP login and signed-out redirects enforce CSP, HSTS, frame and cont
             return { executed, violations };
           });
           assert.equal(proof.executed, false, "non-nonced inline event handler must not execute");
-          assert.ok(proof.violations.includes("script-src-attr"), "browser must enforce script-src-attr");
+          assert.ok(proof.violations.includes("script-src-attr"), `browser must enforce script-src-attr; observed=${JSON.stringify(proof.violations)}`);
         }
         const deniedFile = await page.request.get(baseUrl + "/api/secure-files/preview", { maxRedirects: 0 });
         assert.equal(deniedFile.status(), 404);
