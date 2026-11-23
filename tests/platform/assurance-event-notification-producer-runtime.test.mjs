@@ -312,3 +312,126 @@ test("0099 rollback refuses retained original event delivery history without alt
   assert.ok((await x.database.query("SELECT job_id FROM platform_outbox_jobs WHERE job_type='notification.assurance.event'")).rows.length>0);
  }finally{await x.cleanup();}
 });
+
+
+test("R29 actual retained appeal jobs project current Worker/Admin roles, deny Company and replay",async()=>{
+  const x=await notificationFixture();
+  try {
+    const {credentialId,workerId}=await approvedDecision(x);
+    const worker=await fundingPrincipal(x.database,x.fixture.credentials.worker);
+    const company=await fundingPrincipal(x.database,x.fixture.credentials.company,"company");
+    const reviewerId="account_r29_independent_appeal_notice";
+    await x.database.query(
+      "INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,email_verified_at,password_hash,password_set_at,created_at,updated_at) SELECT $1,'r29-independent-notices@example.test','R29 independent appeal recipient','active',CURRENT_TIMESTAMP,password_hash,password_set_at,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP FROM auth_accounts WHERE account_id=$2",
+      [reviewerId,x.fixture.credentials.admin.accountId]
+    );
+    await x.database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[reviewerId]);
+    const independentAdmin=await fundingPrincipal(x.database,{accountId:reviewerId},"admin");
+    const foreign=await fundingPrincipal(x.database,x.fixture.credentials.verifier,"verifier");
+    const notices=new DatabaseNotificationRepository(Promise.resolve(x.database));
+    const service=new CredentialAppealsService(Promise.resolve(x.database));
+    const privateGrounds="R29_PRIVATE_WORKER_GROUNDS_NEVER_IN_NOTIFICATION";
+    const privateReview="R29_PRIVATE_ADMIN_REASON_NEVER_IN_NOTIFICATION";
+    const appeal=await service.submit({
+      credentialId,workerId,reason:privateGrounds+" — verify the actual retained assurance decision.",
+      createdAt:new Date().toISOString()
+    },"r29-original-real-appeal-event");
+    const submittedJob=await eventJob(x,"appeal.submitted");
+    assert.deepEqual(await projectAssuranceEventNotification(submittedJob,x.database),{kind:"succeeded"});
+    const submittedRows=(await x.database.query(
+      "SELECT recipient_account_id,recipient_role,tenant_id,notification_type,title,body,target_key,target_reference FROM platform_notifications WHERE source_job_id=$1",
+      [submittedJob.jobId]
+    )).rows;
+    assert.ok(submittedRows.some(r=>r.recipient_role==="worker"&&r.recipient_account_id===worker.accountId));
+    assert.ok(submittedRows.some(r=>r.recipient_role==="admin"&&r.recipient_account_id===reviewerId));
+    assert.ok(!submittedRows.some(r=>r.recipient_role==="company"),"Appeal private reason must not be an employer notification");
+    assert.ok(submittedRows.every(r=>r.target_key==="appeal.record" && r.target_reference===appeal.appealId));
+    assert.ok(submittedRows.every(r=>!JSON.stringify(r).includes(privateGrounds)));
+    const visibleSubmitted=(await notices.listForPrincipal(worker)).filter(r=>r.sourceJobId===submittedJob.jobId);
+    assert.equal(visibleSubmitted.length,1);
+    assert.equal(visibleSubmitted[0].title,"Appeal submitted");
+    assert.equal(resolveNotificationHref({
+      role:"worker",target:visibleSubmitted[0].target,targetReference:visibleSubmitted[0].targetReference
+    }),"/worker/appeals#"+appeal.appealId);
+    const adminSubmitted=(await notices.listForPrincipal(independentAdmin)).filter(r=>r.sourceJobId===submittedJob.jobId);
+    assert.equal(adminSubmitted.length,1,"Unconflicted current Admin can receive a valid original Worker appeal");
+    assert.equal(resolveNotificationHref({
+      role:"admin",target:adminSubmitted[0].target,targetReference:adminSubmitted[0].targetReference
+    }),"/admin/appeals#"+appeal.appealId);
+    assert.equal((await notices.listForPrincipal(company)).filter(r=>r.notificationType.startsWith("appeal.")).length,0);
+    assert.equal((await notices.listForPrincipal(foreign)).filter(r=>r.notificationType.startsWith("appeal.")).length,0);
+    assert.equal(await notices.findForPrincipal(foreign,visibleSubmitted[0].notificationId),null);
+
+    const outcome=await service.reviewOutcome(appeal,{
+      status:"under_review",reviewerId,reason:privateReview+" — independent evidence check.",
+      outcomeAction:"none",reviewedAt:new Date().toISOString()
+    });
+    assert.equal(outcome.appeal.status,"under_review");
+    const updatedJob=await eventJob(x,"appeal.updated");
+    assert.deepEqual(await projectAssuranceEventNotification(updatedJob,x.database),{kind:"succeeded"});
+    const updatedRows=(await x.database.query(
+      "SELECT recipient_account_id,recipient_role,notification_type,title,body,target_key,target_reference FROM platform_notifications WHERE source_job_id=$1",
+      [updatedJob.jobId]
+    )).rows;
+    assert.deepEqual(updatedRows.map(r=>r.recipient_role),["worker"],"Reasoned appeal update notifies the Worker, not Company or Admin");
+    assert.equal(updatedRows[0].recipient_account_id,worker.accountId);
+    assert.equal(updatedRows[0].title,"Appeal review updated");
+    assert.ok(!JSON.stringify(updatedRows).includes(privateReview));
+    assert.ok(!JSON.stringify(updatedRows).includes(privateGrounds));
+    assert.equal((await notices.listForPrincipal(worker)).filter(r=>r.notificationType.startsWith("appeal.")).length,2);
+    assert.equal((await notices.listForPrincipal(company)).filter(r=>r.notificationType.startsWith("appeal.")).length,0);
+    assert.equal((await notices.listForPrincipal(independentAdmin)).filter(r=>r.notificationType==="appeal.updated").length,0);
+    assert.deepEqual(await projectAssuranceEventNotification(submittedJob,x.database),{kind:"succeeded"});
+    assert.deepEqual(await projectAssuranceEventNotification(updatedJob,x.database),{kind:"succeeded"});
+    assert.equal((await x.database.query(
+      "SELECT count(*)::int AS n FROM platform_notifications WHERE source_job_id IN ($1,$2)",
+      [submittedJob.jobId,updatedJob.jobId]
+    )).rows[0].n,submittedRows.length+updatedRows.length);
+    await assert.rejects(()=>projectAssuranceEventNotification({...updatedJob,idempotencyKey:"e".repeat(64)},x.database),/retained source/);
+    assert.equal((await notices.markReadForPrincipal(worker,visibleSubmitted[0].notificationId)).changed,true);
+    assert.equal((await notices.markReadForPrincipal(worker,visibleSubmitted[0].notificationId)).changed,false);
+    console.log("R29_APPEAL_PROJECTED_WORKER_ADMIN_FIXED_LINK_NO_COMPANY_PRIVATE_REASON_REPLAY_DENIED");
+  } finally {
+    await x.cleanup();
+  }
+});
+
+
+test("R29 revoked Worker session loses projected appeal notification read and Open without deleting source",async()=>{
+  const x=await notificationFixture();
+  try{
+    const {credentialId,workerId}=await approvedDecision(x);
+    const worker=await fundingPrincipal(x.database,x.fixture.credentials.worker);
+    const company=await fundingPrincipal(x.database,x.fixture.credentials.company,"company");
+    const grounds="R29 private retained evidence cannot be exposed on a stale session.";
+    const service=new CredentialAppealsService(Promise.resolve(x.database));
+    const appeal=await service.submit({
+      credentialId,workerId,reason:grounds,createdAt:new Date().toISOString()
+    },"r29-revoked-worker-appeal");
+    const job=await eventJob(x,"appeal.submitted");
+    const notices=new DatabaseNotificationRepository(Promise.resolve(x.database));
+    assert.deepEqual(await projectAssuranceEventNotification(job,x.database),{kind:"succeeded"});
+    const visible=(await notices.listForPrincipal(worker)).filter(n=>n.sourceJobId===job.jobId);
+    assert.equal(visible.length,1);
+    assert.equal(visible[0].target,"appeal.record");
+    assert.equal(await notices.findForPrincipal(worker,visible[0].notificationId)?.then(v=>v.notificationId),visible[0].notificationId);
+    assert.equal((await notices.listForPrincipal(company)).some(n=>n.notificationType.startsWith("appeal.")),false);
+    await x.database.query(
+      "UPDATE auth_sessions SET revoked_at=clock_timestamp(),revocation_reason='R29 appeal access regression' WHERE session_id=$1",
+      [worker.sessionId]
+    );
+    await assert.rejects(()=>notices.listForPrincipal(worker),/access|session|principal/i);
+    await assert.rejects(()=>notices.unreadCountForPrincipal(worker),/access|session|principal/i);
+    await assert.rejects(()=>notices.markReadForPrincipal(worker,visible[0].notificationId),/access|session|principal/i);
+    const stored=(await x.database.query(
+      "SELECT read_at FROM platform_notifications WHERE notification_id=$1",
+      [visible[0].notificationId]
+    )).rows[0];
+    assert.equal(stored.read_at,null);
+    const original=(await x.database.query(
+      "SELECT status,version FROM credential_appeals WHERE appeal_id=$1",[appeal.appealId]
+    )).rows[0];
+    assert.equal(original.status,"submitted");assert.equal(Number(original.version),1);
+    console.log("R29_REVOKED_WORKER_APPEAL_NOTICE_HIDDEN_UNREAD_RETENTION_AND_ORIGINAL_APPEAL_INTACT");
+  }finally{await x.cleanup();}
+});
