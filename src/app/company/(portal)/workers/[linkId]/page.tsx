@@ -38,7 +38,7 @@ export default async function CompanyWorkerDetailPage({
         <Link className="button button-secondary" href="/company/workers">Back to directory</Link>
       </header>
       <section className="surface-card">
-        <dl className="detail-list">
+        <dl className="detail-list company-worker-assurance-details">
           <div><dt>Worker ID</dt><dd>{worker.workerId ?? "Pending"}</dd></div>
           <div><dt>Email</dt><dd>{worker.email}</dd></div>
           <div><dt>Relationship</dt><dd>{worker.status.replaceAll("_", " ")}</dd></div>
