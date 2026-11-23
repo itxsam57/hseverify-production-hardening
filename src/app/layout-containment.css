@@ -131,6 +131,16 @@ body {
   overscroll-behavior-inline: contain;
 }
 
+/* Company Worker detail exposes long permanent IDs and emails. Keep the
+   complete authorized values readable without expanding a 320px viewport. */
+.company-worker-assurance-details,
+.company-worker-assurance-details > div,
+.company-worker-assurance-details dd {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 /* The Company policy summary contains long opaque Worker/Version IDs and
    serialized policy values. Wrap visibly instead of widening a 320px page. */
 .effective-policy-summary li,
