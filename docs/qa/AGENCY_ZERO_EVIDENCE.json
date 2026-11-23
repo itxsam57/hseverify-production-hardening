@@ -9,14 +9,15 @@
       "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
       "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
       "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
-      "technical_verdict": "INCONCLUSIVE_TEST_TIMING_OR_BROWSER_EVENT",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
         "Real Chromium GET worker/company login, asserted response CSP/HSTS/no-sniff/redirect; initial assert failed on script-src-attr event",
-        "Same original assertion instrumented and rerun: inline onerror remained blocked, script-src-attr events observed on worker AND company login"
+        "Same original assertion instrumented and rerun: inline onerror remained blocked, script-src-attr events observed on worker AND company login",
+        "Real Chromium signed-out Worker/Company CSP/HSTS/no-sniff/frame/referrer permissions and strict script-src-attr violation both, denied URL and no secret leak \u2014 current exact source recheck passed; no full original verification award"
       ],
-      "result_summary": "FAIL initial strict CSP browser event expectation, then same assertion PASS in isolated one-time diagnostic retry; no unsafe inline JS execution observed; flaky signal not yet resolved; no full role workflow proof",
+      "result_summary": "FAIL initial strict CSP browser event expectation, then same assertion PASS in isolated one-time diagnostic retry; no unsafe inline JS execution observed; flaky signal not yet resolved; no full role workflow proof REVISIT R01: genuine original selected source result PASS against pinned unchanged application SHA. Prior failure/timing/obsolete-mock evidence is preserved and not silently discarded. Full engineer/security/reviewer/adapter gates remain open.",
       "gates": {
-        "engineering": "BLOCKED",
+        "engineering": "PASS",
         "functional_workflow": "BLOCKED",
         "ui_accessibility": "BLOCKED",
         "cybersecurity": "BLOCKED",
@@ -26,7 +27,8 @@
       "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
       "open_high_or_critical": null,
       "blocking_defects": [
-        "Full three-discipline review evidence and/or uncovered cases remain"
+        "Full original requirement remains unverified: need complete receiving-role and UI/a11y acceptance, independent authenticated pentest, code review, audit, adapter contracts and external live-provider/physical stage where applicable.",
+        "No complete independent reviewer approval; no TECH_FULLY_VERIFIED award, no production launch authority."
       ],
       "raw_evidence_refs": [
         {
@@ -36,6 +38,30 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10101-browser-diagnostic.log",
           "sha256": "ef34d970157c4275448df300a5a62b69c0e5d86cb56ce869f3a05f1ec99a4441"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.01.robust-event-revisit.log",
+          "sha256": "28198892b8e20afe83b822fee8ced834c7b498ae53641dffbe9c4d4f2a8a6e62"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.01.revisit.log",
+          "sha256": "9a452d2b33994eb85ed8091f612f66da3f4deb0cd6a3759cbc8ad8ca1d8a46a7"
+        }
+      ],
+      "revalidation_events": [
+        {
+          "revisited_utc": "2026-11-23T03:03:48.650566+00:00",
+          "previous_technical_verdict": "INCONCLUSIVE_TEST_TIMING_OR_BROWSER_EVENT",
+          "current_technical_verdict": "SCOPED_PASS_NOT_FULL",
+          "previous_blocking_defects": [
+            "Full three-discipline review evidence and/or uncovered cases remain"
+          ],
+          "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+          "qa_source_sha256": "1e4b29d71369d785ea547ab055fc691b56b6a587cbaa9539d3ad167d602309c9",
+          "current_source_log": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.01.robust-event-revisit.log",
+          "current_source_log_sha256": "28198892b8e20afe83b822fee8ced834c7b498ae53641dffbe9c4d4f2a8a6e62",
+          "scoped_only": true,
+          "technical_full_awarded": 0
         }
       ]
     },
@@ -81,9 +107,10 @@
       "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
       "technical_verdict": "INCONCLUSIVE_CI_GREEN_NOT_ALL",
       "tested_actions": [
-        "Read-only authenticated GitHub Actions exact pinned SHA run inventory, 92 total, 91 success, 1 failed"
+        "Read-only authenticated GitHub Actions exact pinned SHA run inventory, 92 total, 91 success, 1 failed",
+        "R01 current isolated exact source probe: all five historical HTTP 500 paths responded without 500, current browser-shard policy regression 2/2 PASS; original exact-SHA independent hosted audit still FAILED with 6 critical and 20 high findings"
       ],
-      "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance",
+      "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
         "engineering": "BLOCKED",
         "functional_workflow": "BLOCKED",
@@ -95,12 +122,33 @@
       "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
       "open_high_or_critical": null,
       "blocking_defects": [
-        "Full three-discipline review evidence and/or uncovered cases remain"
+        "Original exact app SHA independent audit CI job remains RED: six critical and twenty high historically recorded. Severity and reproducibility on protected final candidate need current full independent re-audit; 5 local route checks and 2 sharding QA cases cannot replace it.",
+        "Live verified staging/production end-to-end startup and authenticated security matrix, independent reviewer, load and recovery certification still NOT demonstrated."
       ],
       "raw_evidence_refs": [
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10103-ci-summary.json",
           "sha256": "9f1399ccb11be56d38556a5c9762b66d8b18327207c378b81299232f7254ebc0"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.03.original-hosted-ci.json",
+          "sha256": "387718274f4df5454fcf65579af72f614afc2c8457c6610780eb23a1a8eaa269"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.03.historical-audit-findings-classification.json",
+          "sha256": "c4cc18b9e7cb93cb310baec1f88341a05834afb2e9aba6b6b4bedbf5f1ab792f"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.03.historical-audit-500-route-smoke.log",
+          "sha256": "0b44abc98c30bfd1626514f48276ebd86e672e70b34c36c0c11e03bb8fe5fd7c"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.03.current-shard-regression.log",
+          "sha256": "ac56e6eca5276ef4f4963a4d3ade3fa4df751f10a97b80cefc7427a7820f8552"
+        },
+        {
+          "uri": "private-workstation:artifacts/qa-first-audit-7ff/FINAL-AUDIT.json",
+          "sha256": "78302e0c0bd000681eb6e7982e7b19390d0f863ce285ceb45c4e68e1e2609b92"
         }
       ]
     },
@@ -114,7 +162,8 @@
       "technical_verdict": "BLOCKED_CANDIDATE_STAGE_PARITY",
       "tested_actions": [
         "Read-only HTTPS localhost GET /worker/login 200 and headers CSP/HSTS/X-Frame-Options",
-        "Read-only stage-metadata SHA inspected, no provider/DB mutation, exact candidate not matched"
+        "Read-only stage-metadata SHA inspected, no provider/DB mutation, exact candidate not matched",
+        "R01 source/hash read-only parity reconciliation with the prior stage-metadata read: no approved exact pinned candidate staging and trusted rollback proof; not an executed deployment or staging request"
       ],
       "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
       "gates": {
@@ -128,12 +177,17 @@
       "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
       "open_high_or_critical": null,
       "blocking_defects": [
-        "No exact candidate stage / rollback proof"
+        "Protected HTTPS staging available in prior snapshot is DIFFERENT SHA from frozen application. Do NOT infer exact-candidate parity; deploy only to approved isolated stage and prove server/DB/asset image SHA together.",
+        "Trusted TLS chain, safe migrations/downward rollback, monitoring and operable recovery have not been demonstrated for this candidate; no live stage altered."
       ],
       "raw_evidence_refs": [
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10104-stage-readonly.json",
           "sha256": "63eea0f18dee5e45992fbaa9abac6f267e4870ef936224f719f3cc8a9bc7dd09"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.04.stage-parity-revisit.json",
+          "sha256": "9710fa0f0d1012c9568043b2d1c32a8b18de99ecc1418069a64657cc5104a6eb"
         }
       ]
     },
@@ -1858,13 +1912,14 @@
       "qa_tooling_sha": "b023940c283d203586772699127b9ae4ff1084a7",
       "configuration_fingerprint": "04345f0ed3e4d46460fee2fb36cd383b0f16318c2b0a9fa1a659e473ff6e8e80",
       "observed_at_utc": "2026-11-22T18:56:11.841268+00:00",
-      "technical_verdict": "TIMEOUT",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "tests/browser/independent-worker-review-e2e.browser.test.mjs (464959.821243ms)"
+        "tests/browser/independent-worker-review-e2e.browser.test.mjs (464959.821243ms)",
+        "Original complete real Chromium Worker\u2192Verifier evidence review journey, qualification/experience/skill/employment three outcomes each, Worker corrections/identity/history and DB \u2014 current exact source recheck passed; no full original verification award"
       ],
-      "result_summary": "TIMEOUT ({'tests': 1, 'pass': 0, 'fail': 0, 'skipped': 0}); original workflow: Experience approval/rejection/changes requested to correction and re-review. Selected check only; missing applicable full role/security/independent evidence. Browser journey reached qualification, experience, skill and employment REJECTED/CHANGES_REQUESTED/APPROVED checkpoints but was killed after 465 seconds before final all-case assertion; not a pass. Separate M1.11.01 full Company->Verifier journey passed, no substitution permitted.",
+      "result_summary": "TIMEOUT ({'tests': 1, 'pass': 0, 'fail': 0, 'skipped': 0}); original workflow: Experience approval/rejection/changes requested to correction and re-review. Selected check only; missing applicable full role/security/independent evidence. Browser journey reached qualification, experience, skill and employment REJECTED/CHANGES_REQUESTED/APPROVED checkpoints but was killed after 465 seconds before final all-case assertion; not a pass. Separate M1.11.01 full Company->Verifier journey passed, no substitution permitted. REVISIT R01: genuine original selected source result PASS against pinned unchanged application SHA. Prior failure/timing/obsolete-mock evidence is preserved and not silently discarded. Full engineer/security/reviewer/adapter gates remain open.",
       "gates": {
-        "engineering": "FAIL",
+        "engineering": "PASS",
         "functional_workflow": "BLOCKED",
         "ui_accessibility": "BLOCKED",
         "cybersecurity": "BLOCKED",
@@ -1873,13 +1928,34 @@
       },
       "open_high_or_critical": null,
       "blocking_defects": [
-        "Selected source test failed, timed out or produced invalid result",
-        "Complete end-to-end scenario and expert reviews not yet signed off"
+        "Full original requirement remains unverified: need complete receiving-role and UI/a11y acceptance, independent authenticated pentest, code review, audit, adapter contracts and external live-provider/physical stage where applicable.",
+        "No complete independent reviewer approval; no TECH_FULLY_VERIFIED award, no production launch authority."
       ],
       "raw_evidence_refs": [
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-015/M1.11.02.log",
           "sha256": "100829033477a103107150bd50401d1e6d0c50e67c72b4abc8b17bda8ec2b948"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.11.02.revisit.log",
+          "sha256": "195608fc4234dad9435e500010ee7b8d81b27916e93f4d07ab3bb2056db2b097"
+        }
+      ],
+      "revalidation_events": [
+        {
+          "revisited_utc": "2026-11-23T03:03:48.650566+00:00",
+          "previous_technical_verdict": "TIMEOUT",
+          "current_technical_verdict": "SCOPED_PASS_NOT_FULL",
+          "previous_blocking_defects": [
+            "Selected source test failed, timed out or produced invalid result",
+            "Complete end-to-end scenario and expert reviews not yet signed off"
+          ],
+          "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+          "qa_source_sha256": "b2edf7f39903f8a8012026cc9780f0772738d532ead3cecdd5a41bc56c4a3ba9",
+          "current_source_log": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.11.02.revisit.log",
+          "current_source_log_sha256": "195608fc4234dad9435e500010ee7b8d81b27916e93f4d07ab3bb2056db2b097",
+          "scoped_only": true,
+          "technical_full_awarded": 0
         }
       ]
     },
@@ -4322,14 +4398,15 @@
       "qa_tooling_sha": "7e506a5bed84e9e1ae3141697efb2a9749843eb3",
       "configuration_fingerprint": "00119a9f62d30681965f43a3fab3161792f7f5c2fae4564aa46bbd333c8852d8",
       "observed_at_utc": "2026-11-22T19:55:11.236521+00:00",
-      "technical_verdict": "FAIL_OR_UNPROVEN",
+      "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
         "written scoring runtime completes a real review lifecycle through service boundary (1.48433ms)",
-        "Independent substitute real PGlite source: written scoring runtime enforces calibrated ownership and final persistence \u2014 PASS 1/1; original mocked test still FAIL"
+        "Independent substitute real PGlite source: written scoring runtime enforces calibrated ownership and final persistence \u2014 PASS 1/1; original mocked test still FAIL",
+        "Modernized original source 2/2 PGlite live-calibrated reviewer cases: PASS/FAIL/ADDITIONAL_REVIEW next owner and tenant/reviewer isolation \u2014 current exact source recheck passed; no full original verification award"
       ],
-      "result_summary": "FAIL_OR_UNPROVEN ({'tests': 1, 'pass': 0, 'fail': 1, 'skipped': 0}); original workflow: PASS/FAIL/ADDITIONAL_REVIEW flows reach correct next owner. Selected check only; missing applicable full role/security/independent evidence. Legacy query-only fake database harness fails at this.database.transaction; current production service requires transaction, while a distinct official real PGlite scoring lifecycle source test PASS 1/1 proves actual rubric marks/calibration/decision/final persistence. Original mocked source FAIL retained, not reclassified as a pass. Test maintenance and complete human workflow review remain open.",
+      "result_summary": "FAIL_OR_UNPROVEN ({'tests': 1, 'pass': 0, 'fail': 1, 'skipped': 0}); original workflow: PASS/FAIL/ADDITIONAL_REVIEW flows reach correct next owner. Selected check only; missing applicable full role/security/independent evidence. Legacy query-only fake database harness fails at this.database.transaction; current production service requires transaction, while a distinct official real PGlite scoring lifecycle source test PASS 1/1 proves actual rubric marks/calibration/decision/final persistence. Original mocked source FAIL retained, not reclassified as a pass. Test maintenance and complete human workflow review remain open. REVISIT R01: genuine original selected source result PASS against pinned unchanged application SHA. Prior failure/timing/obsolete-mock evidence is preserved and not silently discarded. Full engineer/security/reviewer/adapter gates remain open.",
       "gates": {
-        "engineering": "BLOCKED",
+        "engineering": "PASS",
         "functional_workflow": "BLOCKED",
         "ui_accessibility": "BLOCKED",
         "cybersecurity": "BLOCKED",
@@ -4338,10 +4415,8 @@
       },
       "open_high_or_critical": null,
       "blocking_defects": [
-        "LEGACY QA MOCK FAILURE: original selected source test implements only database.query, but WrittenScoringService.publish requires database.transaction. Original test fails; do not count its selected case as PASS.",
-        "CURRENT REAL-DB INTEGRATION: separate test using the actual transaction interface passed 1/1. Not a proven current product failure.",
-        "Full linked submitted case, owner/assessor review and appeal/credential handoffs, independent expert signoff and broad pentest not completed.",
-        "AGENCY ORIGINAL-SCOPE GAP: Original selected legacy mocked scoring lifecycle FAILED because query-only test double lacks required transaction interface. A different real PGlite scoring workflow PASSED 1/1, but that does not repair the old test or prove all next-owner case routing. Keep original FAIL pending harness modernization and full human review."
+        "Full original requirement remains unverified: need complete receiving-role and UI/a11y acceptance, independent authenticated pentest, code review, audit, adapter contracts and external live-provider/physical stage where applicable.",
+        "No complete independent reviewer approval; no TECH_FULLY_VERIFIED award, no production launch authority."
       ],
       "raw_evidence_refs": [
         {
@@ -4351,6 +4426,22 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-034/M2.10.03.alternate-real-db.log",
           "sha256": "73cd0ff25650c3524a84a4e90f83ba7303a19fad88fab4fd702c6b63d447ca82"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M2.10.03.full-modernized-suite.log",
+          "sha256": "e858c1d6151db6ae084082e7325b681cec8bc388a7b9b36af2a738f6290c3927"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M2.10.03.modernized-original.log",
+          "sha256": "a7eaf2dee14d3cffd456b6d41bb84720f741691d2d89eb4057f046afbbf31f3b"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M2.10.03.current-migration-source.log",
+          "sha256": "4269a101f8c5726eff7ef5209da19a2fb26887027affb814aa8c696b5e2e7a4d"
+        },
+        {
+          "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M2.10.03.original-legacy-source.mjs",
+          "sha256": "41a77fdec306c6b1a8aa7b7455da85bd1d9ed6c4efccb944f914c4669e9790de"
         }
       ],
       "supporting_validation": [
@@ -4361,6 +4452,25 @@
           "test_title": "written scoring runtime enforces calibrated ownership and final persistence",
           "log_sha256": "73cd0ff25650c3524a84a4e90f83ba7303a19fad88fab4fd702c6b63d447ca82",
           "app_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269"
+        }
+      ],
+      "revalidation_events": [
+        {
+          "revisited_utc": "2026-11-23T03:03:48.650566+00:00",
+          "previous_technical_verdict": "FAIL_OR_UNPROVEN",
+          "current_technical_verdict": "SCOPED_PASS_NOT_FULL",
+          "previous_blocking_defects": [
+            "LEGACY QA MOCK FAILURE: original selected source test implements only database.query, but WrittenScoringService.publish requires database.transaction. Original test fails; do not count its selected case as PASS.",
+            "CURRENT REAL-DB INTEGRATION: separate test using the actual transaction interface passed 1/1. Not a proven current product failure.",
+            "Full linked submitted case, owner/assessor review and appeal/credential handoffs, independent expert signoff and broad pentest not completed.",
+            "AGENCY ORIGINAL-SCOPE GAP: Original selected legacy mocked scoring lifecycle FAILED because query-only test double lacks required transaction interface. A different real PGlite scoring workflow PASSED 1/1, but that does not repair the old test or prove all next-owner case routing. Keep original FAIL pending harness modernization and full human review."
+          ],
+          "source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+          "qa_source_sha256": "1f05e52f981e9fa42976f7decbcd0ae67ac8af874ec907f15cd9da985596df13",
+          "current_source_log": "private-workstation:artifacts/agency-zero/ZERO-R01/M2.10.03.full-modernized-suite.log",
+          "current_source_log_sha256": "e858c1d6151db6ae084082e7325b681cec8bc388a7b9b36af2a738f6290c3927",
+          "scoped_only": true,
+          "technical_full_awarded": 0
         }
       ]
     },

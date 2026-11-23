@@ -1011,5 +1011,5 @@
     "ZERO-058"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Advance to None with <=5 related cases; revisit unresolved ZERO-001..ZERO-058 full security/UI/adapter/independent-review evidence"
+  "next_action": "R02: Re-run full independent audit on frozen exact app candidate and reconcile historic 6 critical/20 high with current source; establish approved isolated matching-SHA HTTPS stage/rollback. Then review original 218 in <=5 related workflows per full ENGINEER/CYBERSECURITY/REVIEWER gate batch. Never redo the 216 scoped-pass source receipts without a reason."
 }
