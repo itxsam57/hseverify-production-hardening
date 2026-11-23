@@ -222,7 +222,24 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
    assert.match(await attention.innerText(),/3 case\(s\) currently require attention or have an adverse state/);
    const workforceResponse=await page.goto(baseUrl+"/company/workers",{waitUntil:"domcontentloaded"});
    assert.equal(workforceResponse?.status(),200,"Active verified Company may access its linked Worker directory");
-   await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   // Keep the exact 15s UI assertion. On hosted failure, capture the
+   // rendered directory shape without treating slow or empty output as PASS.
+   try {
+     await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   } catch (error) {
+     const diagnostic={
+       url:page.url(),
+       status:workforceResponse?.status(),
+       headingTexts:await page.locator("main h1,main h2").allTextContents().catch(()=>[]),
+       tableCount:await page.locator("main table.data-table").count().catch(()=>-1),
+       tableHeaders:await page.locator("main table.data-table th").allTextContents().catch(()=>[]),
+       emptyDirectory:await page.getByText("No Workers match these filters.",{exact:true}).count().catch(()=>-1),
+       pageErrorOverlay:await page.locator("nextjs-portal").count().catch(()=>-1),
+       documentReadyState:await page.evaluate(()=>document.readyState).catch(()=>"<unavailable>")
+     };
+     console.error("R34_CREDENTIAL_COMPANY_WORKER_DIRECTORY_RENDER_DIAGNOSTIC",JSON.stringify(diagnostic));
+     throw error;
+   }
    assert((await page.locator(".data-table").innerText()).includes("Latest case credential: valid"));
    const csv=await page.request.get(baseUrl+"/api/company/workers/export");
    assert.equal(csv.status(),200);
