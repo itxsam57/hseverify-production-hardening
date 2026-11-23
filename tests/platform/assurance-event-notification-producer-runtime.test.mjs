@@ -421,3 +421,130 @@ test("R32 revoked Admin session cannot list, count, Open or read submitted appea
     console.log("R32_REVOKED_ADMIN_APPEAL_NOTICE_LIST_COUNT_OPEN_READ_DENIED_SOURCE_PRESERVED");
   }finally{await x.cleanup();}
 });
+
+
+async function r33IndependentAdmin(x) {
+  const reviewerId="account_r33_independent_original_appeal_reviewer";
+  await x.database.query(
+    "INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,email_verified_at,password_hash,password_set_at,created_at,updated_at) SELECT $1,'r33-independent@example.test','R33 independent appeal reviewer','active',CURRENT_TIMESTAMP,password_hash,password_set_at,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP FROM auth_accounts WHERE account_id=$2",
+    [reviewerId,x.fixture.credentials.admin.accountId]
+  );
+  await x.database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[reviewerId]);
+  return {reviewerId,principal:await fundingPrincipal(x.database,{accountId:reviewerId},"admin")};
+}
+
+test("R33 accepted suspension removes stale Admin appeal notice and delivers Worker-only outcome",async()=>{
+  const x=await notificationFixture();
+  try {
+    const {credentialId,workerId}=await approvedDecision(x);
+    const {reviewerId,principal:admin}=await r33IndependentAdmin(x);
+    const worker=await fundingPrincipal(x.database,x.fixture.credentials.worker);
+    const company=await fundingPrincipal(x.database,x.fixture.credentials.company,"company");
+    const service=new CredentialAppealsService(Promise.resolve(x.database));
+    const privateGrounds="R33_PRIVATE_WORKER_GROUNDS_UNAVAILABLE_TO_COMPANY";
+    const privateReason="R33_PRIVATE_ADMIN_REVIEW_REASON_UNAVAILABLE_TO_COMPANY";
+    const original=await service.submit({
+      credentialId,workerId,reason:privateGrounds+" — unsafe evidence is disputed.",
+      createdAt:new Date().toISOString()
+    },"r33-suspend-original-worker-appeal");
+    const job=await eventJob(x,"appeal.submitted");
+    assert.deepEqual(await projectAssuranceEventNotification(job,x.database),{kind:"succeeded"});
+    const notices=new DatabaseNotificationRepository(Promise.resolve(x.database));
+    const pending=(await notices.listForPrincipal(admin)).find(n=>n.sourceJobId===job.jobId);
+    assert.ok(pending);assert.equal(pending.targetReference,original.appealId);
+    const adminBefore=await notices.unreadCountForPrincipal(admin);
+    assert.ok(adminBefore>=1);
+    const accepted=await service.reviewOutcome(original,{
+      status:"accepted",reviewerId,reason:privateReason+" — independent determination.",
+      outcomeAction:"suspend",reviewedAt:new Date().toISOString()
+    });
+    assert.equal(accepted.appeal.status,"accepted");
+    assert.equal(accepted.appeal.outcomeAction,"suspend");
+    assert.equal(accepted.appeal.version,2);
+    assert.equal((await x.database.query("SELECT status FROM credential_issuances WHERE credential_id=$1",[credentialId])).rows[0].status,"suspended");
+    assert.equal((await notices.listForPrincipal(admin)).some(n=>n.notificationId===pending.notificationId),false);
+    assert.equal(await notices.unreadCountForPrincipal(admin),adminBefore-1);
+    assert.equal(await notices.findForPrincipal(admin,pending.notificationId),null);
+    assert.equal(await notices.markReadForPrincipal(admin,pending.notificationId),null);
+    assert.equal((await x.database.query("SELECT read_at FROM platform_notifications WHERE notification_id=$1",[pending.notificationId])).rows[0].read_at,null);
+    const updateJob=await eventJob(x,"appeal.updated");
+    assert.deepEqual(await projectAssuranceEventNotification(updateJob,x.database),{kind:"succeeded"});
+    const update=(await notices.listForPrincipal(worker)).find(n=>n.sourceJobId===updateJob.jobId);
+    assert.ok(update);assert.equal(update.notificationType,"appeal.updated");
+    assert.equal(update.targetReference,original.appealId);
+    assert.ok(!JSON.stringify(update).includes(privateReason));
+    assert.ok(!JSON.stringify(update).includes(privateGrounds));
+    assert.equal((await notices.listForPrincipal(company)).some(n=>n.notificationType.startsWith("appeal.")),false);
+    assert.deepEqual((await x.database.query(
+      "SELECT status FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",
+      [original.appealId]
+    )).rows.map(r=>r.status),["submitted","accepted"]);
+    await assert.rejects(()=>service.reviewOutcome(original,{
+      status:"accepted",reviewerId,reason:"Stale duplicate acceptance",outcomeAction:"suspend"
+    }),/conflict|completed/i);
+    assert.equal((await x.database.query("SELECT status FROM credential_issuances WHERE credential_id=$1",[credentialId])).rows[0].status,"suspended");
+    console.log("R33_ACCEPTED_SUSPEND_REMOVES_ADMIN_PENDING_WORKER_UPDATED_COMPANY_PRIVATE_DENIED");
+  }finally{await x.cleanup();}
+});
+
+test("R33 under-review appeal keeps Admin source notice until accepted reassessment then removes it",async()=>{
+  const x=await notificationFixture();
+  try {
+    const {credentialId,workerId}=await approvedDecision(x);
+    const {reviewerId,principal:admin}=await r33IndependentAdmin(x);
+    const worker=await fundingPrincipal(x.database,x.fixture.credentials.worker);
+    const company=await fundingPrincipal(x.database,x.fixture.credentials.company,"company");
+    const service=new CredentialAppealsService(Promise.resolve(x.database));
+    const original=await service.submit({
+      credentialId,workerId,
+      reason:"R33_PRIVATE_REASSESSMENT_GROUNDS_NEVER_TO_COMPANY",
+      createdAt:new Date().toISOString()
+    },"r33-under-review-then-reassessment");
+    const submittedJob=await eventJob(x,"appeal.submitted");
+    assert.deepEqual(await projectAssuranceEventNotification(submittedJob,x.database),{kind:"succeeded"});
+    const notices=new DatabaseNotificationRepository(Promise.resolve(x.database));
+    const pending=(await notices.listForPrincipal(admin)).find(n=>n.sourceJobId===submittedJob.jobId);
+    assert.ok(pending);
+    const interim=await service.reviewOutcome(original,{
+      status:"under_review",reviewerId,reason:"R33 independent review started; original decision evidence remains unchanged.",
+      outcomeAction:"none",reviewedAt:new Date().toISOString()
+    });
+    assert.equal(interim.appeal.status,"under_review");
+    assert.equal(interim.appeal.version,2);
+    assert.ok((await notices.listForPrincipal(admin)).some(n=>n.notificationId===pending.notificationId),
+      "Current under-review appeal remains eligible for independent Admin work");
+    assert.ok(await notices.findForPrincipal(admin,pending.notificationId));
+    const accepted=await service.reviewOutcome(interim.appeal,{
+      status:"accepted",reviewerId,reason:"Independent reviewer requires a new actual competency reassessment.",
+      outcomeAction:"reassessment",reviewedAt:new Date().toISOString()
+    });
+    assert.equal(accepted.appeal.status,"accepted");
+    assert.equal(accepted.appeal.outcomeAction,"reassessment");
+    assert.equal(accepted.appeal.version,3);
+    assert.equal(accepted.livingRecordAction,"reassessment_required");
+    assert.equal((await notices.listForPrincipal(admin)).some(n=>n.notificationId===pending.notificationId),false);
+    assert.equal(await notices.findForPrincipal(admin,pending.notificationId),null);
+    assert.equal(await notices.markReadForPrincipal(admin,pending.notificationId),null);
+    const updatedEvents=(await x.database.query(
+      "SELECT job_id,payload->>'eventRef' AS ref FROM platform_outbox_jobs WHERE job_type='notification.assurance.event' AND payload->>'eventType'='appeal.updated' AND payload->>'eventRef' IN ($1,$2) ORDER BY job_sequence",
+      ["appeal:"+original.appealId+":2","appeal:"+original.appealId+":3"]
+    )).rows;
+    assert.deepEqual(updatedEvents.map(j=>j.ref),["appeal:"+original.appealId+":2","appeal:"+original.appealId+":3"]);
+    for(const event of updatedEvents){
+      const projection=(await x.database.query(
+        "SELECT created,suppressed FROM platform_project_assurance_event_notification($1)",[event.job_id]
+      )).rows[0];
+      assert.equal(projection.suppressed,false);
+      assert.ok(Number(projection.created)>=1);
+    }
+    const updates=(await notices.listForPrincipal(worker)).filter(n=>n.notificationType==="appeal.updated");
+    assert.equal(updates.length,2);
+    assert.ok(updates.every(n=>n.targetReference===original.appealId));
+    assert.ok(updates.every(n=>!JSON.stringify(n).includes("R33_PRIVATE_REASSESSMENT_GROUNDS")));
+    assert.equal((await notices.listForPrincipal(company)).some(n=>n.notificationType.startsWith("appeal.")),false);
+    assert.deepEqual((await x.database.query(
+      "SELECT status FROM credential_appeal_events WHERE appeal_id=$1 ORDER BY version",[original.appealId]
+    )).rows.map(r=>r.status),["submitted","under_review","accepted"]);
+    console.log("R33_UNDER_REVIEW_ADMIN_PENDING_REASSESSMENT_ACCEPTED_HIDES_OLD_WORKER_TWO_UPDATES");
+  }finally{await x.cleanup();}
+});
