@@ -41,3 +41,14 @@ Recorded UTC: 2026-11-22T19:01:12.528155+00:00
 - `M1.11.08`: The test proves inactive Skill cannot be reopened, not that all report/competency calculations exclude inactive Skill. Verify actual Worker/Company skill counts.
 
 These gaps remain **NOT VERIFIED** even if the selected related source test passed. The 218 numerator is unchanged.
+
+## Follow-up exact-SHA evidence (R12 and R14; original results preserved)
+
+- **M1.11.08 follow-up R12 (new tests, 2/2 scoped pass):** Independent real Chromium Worker/Verifier after an approved Skill shows 1 verified → 0 verified on Worker dashboard after mark inactive and cold reload. Three versions/old review decisions retained in PGlite; explicit trade-based Worker assessment availability becomes TRADE_REQUIRED and apply denied. Company workforce screens **do not display a verified-skill counter**, so no Company counter is proven. See [AGENCY_ZERO_R12_INACTIVE_SKILL_REPORT.md](AGENCY_ZERO_R12_INACTIVE_SKILL_REPORT.md). Original one-test history in this report unchanged.
+- **M1.11.07 follow-up R14 (new tests, 5/5 scoped pass):** False signer, revoked Company session, revoked Worker read/acknowledgement, SQL overwrite/replay of signed/acknowledged source, and unacknowledged review queue bypass denied in real PGlite/service, with private SHA256 receipts. See [AGENCY_ZERO_R14_SUPERVISOR_SECURITY_REPORT.md](AGENCY_ZERO_R14_SUPERVISOR_SECURITY_REPORT.md). Prior full signed Company→Worker→Verifier 218-second browser historical result preserved, **not rerun**.
+- **Still TECH FULLY VERIFIED 0/218.** Full independent scope penetration/a11y/adapter/reviewer signoff and candidate-final common gates pending. No numerator promotion.
+
+## R15 scoped leaving-letter and Verifier handoff follow-up (source SHA unchanged)
+
+- `M1.11.06` R15 **5/5 extra service/DB/security/adapter-handoff cases PASS** (one original scenario, five related test-case units): exact employment version SQL guard, foreign Worker copied-ID denial, pending replacement retention, clean-scan-only binding, Verifier queue exact-file identity. Raw TAP SHA256 `81fa59edc977ad24b2091224a7064fae77663309a3bbf94330683cff715946fe`; no rerun of prior real browser test. See `AGENCY_ZERO_R15_LEAVING_LETTER_SECURITY_REPORT.md`.
+- TECH FULL 0/218; isolated DB/scan/queue tests are not full independent browser + security + provider/adapter review.

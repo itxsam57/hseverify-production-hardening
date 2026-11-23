@@ -60,3 +60,11 @@ No scenario earns TECH FULL. The original setup-result `results.tsv` remains imm
 - `M3.04.05`: Service excludes closed/cancelled work and denies wrong permissions. Real Company readiness/expiry totals over mixed approved/pending/suspended/revoked/expired credentials and across refresh/notifications are not proven.
 
 **ENGINEER:** selected source PASS only. **CYBERSECURITY:** limited targeted checks; whole attack surface, adapters and staging pen still pending. **REVIEWER:** independent original workflow/visual/code acceptance pending. **TECH FULL: NO.**
+
+## R17 exact-SHA scoped Action Centre revisit
+
+M3.04.03/.05 related R17 **four distinct runtime/contract/anonymous Chromium tests SCOPED PASS 4/4**, with no true authenticated Company journey certification, per `AGENCY_ZERO_R17_COMPANY_ACTION_CENTRE_REPORT.md`. Original frozen result counts and previous raw evidence unchanged; 0 TECH FULL.
+
+## R18 authenticated mixed-status Company browser case
+
+- Related `M3.04.03/M3.04.05` R18 **ONE** actual signed-in Company Chromium workflow SCOPED PASS 1/1, permanent tested source `tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs`. Four orders, 3 active mixed status cases, 1 closed case excluded, one Company action/overdue, Forklift gap 50%; responsive 320/390/1440. After authoritative PGlite change and **cold test-server restart**, Approved2, action/overdue0, Forklift gap0%. TAP process exit0, log SHA256 `d34f91cf077b9aff7aaf60d992075ac190f9b0d69d2c129cd4450381d2e55315`. First PGlite cross-process visibility red preserved. See `AGENCY_ZERO_R18_COMPANY_MIXED_STATUS_BROWSER_REPORT.md`. Live in-process PostgreSQL updates and full receiving/security workflow not proven, so **0 TECH FULL**.
