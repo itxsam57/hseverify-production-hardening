@@ -60,3 +60,7 @@ No scenario earns TECH FULL. The original setup-result `results.tsv` remains imm
 - `M3.04.05`: Service excludes closed/cancelled work and denies wrong permissions. Real Company readiness/expiry totals over mixed approved/pending/suspended/revoked/expired credentials and across refresh/notifications are not proven.
 
 **ENGINEER:** selected source PASS only. **CYBERSECURITY:** limited targeted checks; whole attack surface, adapters and staging pen still pending. **REVIEWER:** independent original workflow/visual/code acceptance pending. **TECH FULL: NO.**
+
+## R17 exact-SHA scoped Action Centre revisit
+
+M3.04.03/.05 related R17 **four distinct runtime/contract/anonymous Chromium tests SCOPED PASS 4/4**, with no true authenticated Company journey certification, per `AGENCY_ZERO_R17_COMPANY_ACTION_CENTRE_REPORT.md`. Original frozen result counts and previous raw evidence unchanged; 0 TECH FULL.
