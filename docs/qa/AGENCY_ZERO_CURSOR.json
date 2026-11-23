@@ -809,9 +809,147 @@
       "scheduled_source_cases_pass": 5,
       "scheduled_source_cases_fail": 0,
       "recorded_utc": "2026-11-23T02:09:49.951388+00:00"
+    },
+    {
+      "batch_id": "ZERO-051",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_051_REPORT.md",
+      "original_scenario_ids": [
+        "M3.07.06"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 1,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:24:54.949138+00:00"
+    },
+    {
+      "batch_id": "ZERO-052",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_052_REPORT.md",
+      "original_scenario_ids": [
+        "M3.08.01",
+        "M3.08.02",
+        "M3.08.03",
+        "M3.08.04",
+        "M3.08.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:26:49.267871+00:00"
+    },
+    {
+      "batch_id": "ZERO-053",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_053_REPORT.md",
+      "original_scenario_ids": [
+        "M3.08.06"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 1,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:28:16.257138+00:00"
+    },
+    {
+      "batch_id": "ZERO-054",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_054_REPORT.md",
+      "original_scenario_ids": [
+        "M3.09.01",
+        "M3.09.02",
+        "M3.09.03",
+        "M3.09.04",
+        "M3.09.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:32:09.195769+00:00"
+    },
+    {
+      "batch_id": "ZERO-055",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_055_REPORT.md",
+      "original_scenario_ids": [
+        "M3.09.06",
+        "M3.09.07"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 2,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:34:37.022958+00:00"
+    },
+    {
+      "batch_id": "ZERO-056",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_056_REPORT.md",
+      "original_scenario_ids": [
+        "M3.10.01",
+        "M3.10.02",
+        "M3.10.03",
+        "M3.10.04",
+        "M3.10.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:34:43.939615+00:00",
+      "scoped_revalidation_history": [
+        {
+          "original_ids": [
+            "M3.10.01"
+          ],
+          "observed_at_utc": "2026-11-23T02:38:56.129874+00:00",
+          "before": "TEST_ENVIRONMENT_COMPILATION_OR_SOCKET_PATH_BLOCKED",
+          "after": "EXACT_SELECTED_SOURCE_TEST_PASS_1_OF_1",
+          "technical_fully_verified_awarded": 0
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-057",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_057_REPORT.md",
+      "original_scenario_ids": [
+        "M3.11.01",
+        "M3.11.02",
+        "M3.11.03",
+        "M3.11.04",
+        "M3.11.05"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 5,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:35:44.317735+00:00"
+    },
+    {
+      "batch_id": "ZERO-058",
+      "state": "EVIDENCE_RECORDED_INCOMPLETE",
+      "report_file": "docs/qa/AGENCY_ZERO_BATCH_058_REPORT.md",
+      "original_scenario_ids": [
+        "M3.12.01",
+        "M3.12.02",
+        "M3.12.03",
+        "M3.12.04"
+      ],
+      "technical_fully_verified_awarded": 0,
+      "scheduled_source_cases_pass": 4,
+      "scheduled_source_cases_fail": 0,
+      "recorded_utc": "2026-11-23T02:36:33.042870+00:00",
+      "scoped_revalidation_history": [
+        {
+          "original_ids": [
+            "M3.12.04"
+          ],
+          "observed_at_utc": "2026-11-23T02:38:56.129874+00:00",
+          "before": "TEST_ENVIRONMENT_COMPILATION_OR_SOCKET_PATH_BLOCKED",
+          "after": "EXACT_SELECTED_SOURCE_TEST_PASS_1_OF_1",
+          "technical_fully_verified_awarded": 0
+        }
+      ]
     }
   ],
-  "next_batch_id": "ZERO-051",
+  "next_batch_id": null,
   "revisit_batches": [
     "ZERO-001",
     "ZERO-002",
@@ -862,8 +1000,16 @@
     "ZERO-047",
     "ZERO-048",
     "ZERO-049",
-    "ZERO-050"
+    "ZERO-050",
+    "ZERO-051",
+    "ZERO-052",
+    "ZERO-053",
+    "ZERO-054",
+    "ZERO-055",
+    "ZERO-056",
+    "ZERO-057",
+    "ZERO-058"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Advance to ZERO-051 with <=5 related cases; revisit unresolved ZERO-001..ZERO-050 full security/UI/adapter/independent-review evidence"
+  "next_action": "Advance to None with <=5 related cases; revisit unresolved ZERO-001..ZERO-058 full security/UI/adapter/independent-review evidence"
 }
