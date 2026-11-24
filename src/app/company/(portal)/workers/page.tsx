@@ -98,7 +98,7 @@ export default async function CompanyWorkersPage({
         {result.rows.length === 0 ? <p>No Workers match these filters.</p> : (
           <div className="data-table-wrap">
             <table className="data-table">
-              <thead><tr><th>Worker</th><th>Worker ID</th><th>Site / department</th><th>Link</th><th>Assurance</th><th>Action</th></tr></thead>
+              <thead><tr><th scope="col">Worker</th><th scope="col">Worker ID</th><th scope="col">Site / department</th><th scope="col">Link</th><th scope="col">Assurance</th><th scope="col">Action</th></tr></thead>
               <tbody>{result.rows.map((row) => (
                 <tr key={row.linkId}>
                   <td><strong>{row.name}</strong><br /><span className="muted-copy">{row.email}</span></td>
