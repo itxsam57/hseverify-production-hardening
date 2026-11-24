@@ -24,3 +24,9 @@ The exact prior R35 hosted full independent audit [run 45361516452](https://gith
 Private raw logs reside `/home/ubuntu/work/.hse-qa-tmp/agency-zero-r40/`. DO NOT publish raw synthetic credentials; only SHA fingerprints in repository. Candidate SHA7ff remains pinned elsewhere, so this unmerged proposed product patch **requires explicit candidate integration/repin and affected scenario revalidation**, preserving old receipts.
 
 **NEXT exact:** V4 guard commit/push isolated R40 source patch and report, open **draft PR targeting R35 QA** without merge; review/apply candidate repin only after integration approval, then re-execute the original full credential browser and hosted independent full audit on the exact new app/config SHA. If still red, inspect AX tree with `scope`, and treat as host-specific accessibility root defect. Continue unrelated original batches <=5. **TECH FULL 0/218, OWNER TESTING READY NO.**
+
+## Post-commit app-source pin drift — expected governance gate RED
+
+- V4 guarded QA-only source/document commit **`5ae0d3f0dae690ef46f5b1e76e54e9829f8c1ebb`** preserves tested JSX Git blob `5f6e8f8a9d772aa95af36e4441d186654122974e`.
+- Exact postcommit `python3 scripts/agency_zero_control.py --check` returned **exit2**, not PASS: `Pinned application candidate has runtime drift; retarget candidate and selectively recheck: src/app/company/(portal)/workers/page.tsx`. This is an *expected correctly enforced source pin guard*, not permission to change the 218 statuses or claim the new code source was certified.
+- R40 fix is a **draft-source proposal only** until protected candidate repin and selective regression happen. Do not dispatch a hosted full audit expecting a valid candidate attestation while the source pin rejects it; preserve the original R35 hosted RED.
