@@ -440,3 +440,10 @@ NEXT: reconcile M1.01.01 legacy artifacts | SHA: see git HEAD | EVIDENCE: this f
 - THREE ROLES: ENGINEER scoped PASS; CYBERSECURITY incomplete full pentest; REVIEWER scoped local, hosted red. No scenario certified. Follow-up in `AGENCY_ZERO_R40_COMPANY_WORKFORCE_TABLE_ACCESSIBILITY_REPORT.md`. NEXT guarded draft PR R40 and fresh exact new SHA hosted audit after candidate-integration review; no production/staging.
 
 - R40 guarded QA-only source SHA `5ae0d3f0dae690ef46f5b1e76e54e9829f8c1ebb`. Exact postcommit ZERO control `--check` **EXPECTED FAIL exit2** due pinned 7ff app runtime drift at Company Workers page. Do NOT repin silently, award M2.13.04 TECH FULL, or dispatch full hosted QA while candidate mismatch is unaddressed. Next guarded draft PR and reviewed integration/repin + affected retests.
+
+
+## 2026-11-24 — ZERO-R41–R45 five actual bounded cases (catalog/Company credential)
+
+- R41 original source archive 1610 vs actual 1611 had genuine RED exit1; appended exactly one new R18 case UNcredited, preserving ALL 1610 historical proof objects, 218 scenario rows, 1436 greens; source verifier GREEN. R42 legacy 216 old map SHA pointer updated only, verifier GREEN; M1.01.03/.04 old gaps remain.
+- R43 4975 exact CSV unchanged, only summary source case total 1610→1611; original 4975 verifier RED then GREEN. R44 ZERO source-pin guard **correctly exit2 BLOCKS** R40 proposed Company header change vs immutable 7ff app. R45 real single foreign-tenant credential policy issuance denial **1/1 TAP PASS**, actual DB credential_issuances stays zero.
+- ENGINEER scoped PASS x5 checks (R44 negative expected denial); CYBERSECURITY scoped integrity/foreign-tenant one negative, full pentest incomplete; REVIEWER scoped evidence checks, product integration STILL BLOCKED. Details/raw hashes AGENCY_ZERO_R41_R45_FIVE_CASE_BATCH_REPORT.md. **TECH 0/218, 58 prior batches open, no production/stage touched.** NEXT guarded draft PR stacked R40 and inspect CI, then source repin only after reviewed integration.

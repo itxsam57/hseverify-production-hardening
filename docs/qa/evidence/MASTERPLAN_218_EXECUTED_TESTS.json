@@ -47091,6 +47091,19 @@
       "scenario_link_kind": "unmapped",
       "test_execution": "HISTORICAL_LOG_PASSED",
       "title": "stored confirmation fails when the private object is missing or inconsistent"
+    },
+    {
+      "case_id": "tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs#f30fb16967693ac0",
+      "direct_scenarios": [],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [],
+      "scenario_link_kind": "unmapped",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "R18 actual signed-in Company Action Centre derives mixed cases and a cold PGlite server sees resolved values"
     }
   ],
   "counts": {
@@ -47098,8 +47111,8 @@
     "ambiguous_or_changed_unique_titles": 241,
     "clean_pass_summary_logs": 1200,
     "current_reference_CI_green_distinct_cases": 232,
-    "current_source_test_files": 561,
-    "current_test_source_content_sha256": "b8baf14690975f404b8ae33cce20e8c7c164a7c1c1986b9a0a16fef622465bc1",
+    "current_source_test_files": 562,
+    "current_test_source_content_sha256": "be0af81b737902afbb69cb3f8d69cc6b47e8dc5986b971c1654547a0cd869703",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -47121,8 +47134,8 @@
     "previous_green_distinct_source_matched_cases": 1436,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 198,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 174,
-    "static_existing_distinct_test_cases": 1610,
+    "source_tests_without_green_execution_proof": 175,
+    "static_existing_distinct_test_cases": 1611,
     "unique_source_matched_historical_green_cases": 1397,
     "worktrees_scanned": 180
   },
