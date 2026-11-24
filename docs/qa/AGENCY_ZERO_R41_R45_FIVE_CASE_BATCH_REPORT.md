@@ -63,3 +63,10 @@ Postfix CI release guard receipts (2026-11-24T11:27:22.683391+00:00 UTC):
 - `.autopilot/artifacts/zero-r41-postfix-guard-slots4975_test_suites.log` SHA256 `6774981d4146a2dfe0f35082e724b80e7c6dd11dc0a51265c9845e87796186fb`
 - `.autopilot/artifacts/zero-r41-postfix-guard-unassigned_triage.log` SHA256 `444963e65ddfdfd1de43226762647df1944885b660c6b8850372e4c22021fa04`
 - `.autopilot/artifacts/zero-r41-postfix-guard-vertical218_test_suites.log` SHA256 `daa2bf1708ef1eec6951cfb75a7298035ad901b872024249d15c15a168c07202`
+
+## Terminal hosted CI receipt at 8ab68a5 (previous full source/current QA head)
+
+- Exact draft [PR #225](https://github.com/itxsam57/hseverify-production-hardening/pull/225), QA source HEAD `8ab68a555ab82de449df346142dd60962990e43b`: **4/6 checks SUCCESS** — two compliance, `fail-closed-ledger`, and `reconcile-provisional-inventory`. They now really succeed in hosted GitHub CI, not merely locally.
+- **2/6 checks FAIL deliberately** — ZERO agency candidate integrity check rejects the pending R40 proposed Company Worker JSX source against frozen original app SHA `7ff30ea140a5145e5d5ba761f7c7aef24c895269`. That is an unresolved integration/same-SHA revalidation blocker and a correctly protective fail-closed guard, not permission to waive it. **Overall CI NOT GREEN.**
+- Exact GitHub check record private `.autopilot/artifacts/zero-r41-r45-hosted-ci-8ab68a5.json` SHA256 `0f221a615d3a664ce988fcd80cb51591d199483c00b8fa209ec02b7cc1eeaa20`. This evidence is about the 8ab68a5 source; later docs-only commits may create new pending CI but do not alter the actual tested application/test sources. No production/staging changes, no original TECH FULL promotions.
+- **NEXT R46:** inspect safe integrated QA source-candidate options (R40 accessible header, R36 separate CSV hardening, legacy 218 source mapping), review and explicitly repin only a protected frozen candidate with strict affected-case retests; run exact-SHA hosted full audit and continue remaining original 58 batch closures. Do not merge/deploy.
