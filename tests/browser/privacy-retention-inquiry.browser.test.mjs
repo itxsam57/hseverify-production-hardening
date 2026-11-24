@@ -78,7 +78,7 @@ test("Worker retention inquiry reaches an actual Admin response and returns the 
   );
   await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'worker')",[foreignWorker.accountId]);
   await db.close();
-  await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:process.cwd(),environment:fixture.environment,probe:async({output})=>{
+  await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:process.cwd(),environment:fixture.environment,probe:async()=>{
    const worker=await browser.newPage({viewport:{width:390,height:844}}),admin=await browser.newPage(),errors=[];
    worker.on("pageerror",error=>errors.push(error.message));admin.on("pageerror",error=>errors.push(error.message));
    await login(worker,baseUrl,fixture.credentials.worker,"worker");
@@ -113,13 +113,6 @@ test("Worker retention inquiry reaches an actual Admin response and returns the 
     const forged=new URLSearchParams({workerId:fixture.credentials.worker.accountId,
       accountId:fixture.credentials.worker.accountId,requestId});
     const foreignResponse=await foreign.goto(baseUrl+"/worker/privacy?"+forged,{waitUntil:"domcontentloaded"});
-    if(foreignResponse.status()!==200){
-     console.error("R37_FOREIGN_PRIVACY_RESPONSE_DIAGNOSTIC",JSON.stringify({
-      status:foreignResponse.status(),url:foreign.url(),
-      page:(await foreign.locator("body").innerText().catch(()=>"<unavailable>")).slice(0,1600),
-      serverOutput:output().slice(-5200)
-     }));
-    }
     assert.equal(foreignResponse.status(),200);
     await foreign.getByLabel("Privacy request type").waitFor();
     const foreignBody=await foreign.locator("main").innerText();
