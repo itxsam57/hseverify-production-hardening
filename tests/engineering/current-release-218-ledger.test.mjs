@@ -134,9 +134,15 @@ test("scoped historical test executions appear inside the SAME 218 ledger withou
   const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
   const report = buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence });
   assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1436);
-  // The M2.01.02 repeat-READY regression adds one executable source case.
-  // This is inventory only; it does NOT increase historical green or 218 passes.
-  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1610);
+  // The R18 Company Action Centre browser adds one uncredited source case.
+  // Source-case inventory is 1611; old 1436 greens and 218 FULL 0 remain fixed.
+  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1611);
+  const r18 = priorTestEvidence.cases.find(row =>
+    row.case_id === "tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs#f30fb16967693ac0");
+  assert(r18, "New R18 source-case identity must exist in the original index");
+  assert.equal(r18.test_execution, "NO_PASS_LOG_EVIDENCE");
+  assert.deepEqual(r18.evidence, []);
+  assert.deepEqual(r18.scenario_ids, []);
   assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 232);
   assert.equal(report.scoped_test_progress.older_historical_green_cases, 1204);
   assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1254);
