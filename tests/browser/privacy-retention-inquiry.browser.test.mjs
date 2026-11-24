@@ -68,9 +68,17 @@ test("Worker retention inquiry reaches an actual Admin response and returns the 
  const browser=await chromium.launch({headless:true});
  const answer="Assessment evidence and audit history follow their applicable retention policy; active appeal or legal holds prevent purge. This inquiry response does not delete records.";
  let requestId;
+ const foreignWorker={accountId:"account_r37_foreign_retention_worker",
+   email:"r37-foreign-retention@example.test",password:fixture.credentials.worker.password};
  try{
-  await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[fixture.credentials.assessor.accountId]);await db.close();
-  await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:process.cwd(),environment:fixture.environment,probe:async()=>{
+  await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'admin')",[fixture.credentials.assessor.accountId]);
+  await db.query(
+   "INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,worker_reference,email_verified_at,password_set_at,created_at,updated_at) SELECT $1,$2,'R37 Foreign Worker','active',password_hash,$4,CURRENT_TIMESTAMP,password_set_at,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP FROM auth_accounts WHERE account_id=$3",
+   [foreignWorker.accountId,foreignWorker.email,fixture.credentials.worker.accountId,"HSE-REG-R37-FOREIGN-WORKER"]
+  );
+  await db.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'worker')",[foreignWorker.accountId]);
+  await db.close();
+  await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/worker/login",projectRoot:process.cwd(),environment:fixture.environment,probe:async({output})=>{
    const worker=await browser.newPage({viewport:{width:390,height:844}}),admin=await browser.newPage(),errors=[];
    worker.on("pageerror",error=>errors.push(error.message));admin.on("pageerror",error=>errors.push(error.message));
    await login(worker,baseUrl,fixture.credentials.worker,"worker");
@@ -97,6 +105,32 @@ test("Worker retention inquiry reaches an actual Admin response and returns the 
    await worker.getByText("Review outcome: "+answer,{exact:true}).waitFor();
    await worker.reload();await worker.getByText("Review outcome: "+answer,{exact:true}).waitFor();
    assert.equal(await worker.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+   // R37: second real Worker authenticated independently of the original owner.
+   const foreign=await browser.newPage({viewport:{width:390,height:844}});
+   foreign.on("pageerror",error=>errors.push(error.message));
+   try{
+    await login(foreign,baseUrl,foreignWorker,"worker");
+    const forged=new URLSearchParams({workerId:fixture.credentials.worker.accountId,
+      accountId:fixture.credentials.worker.accountId,requestId});
+    const foreignResponse=await foreign.goto(baseUrl+"/worker/privacy?"+forged,{waitUntil:"domcontentloaded"});
+    if(foreignResponse.status()!==200){
+     console.error("R37_FOREIGN_PRIVACY_RESPONSE_DIAGNOSTIC",JSON.stringify({
+      status:foreignResponse.status(),url:foreign.url(),
+      page:(await foreign.locator("body").innerText().catch(()=>"<unavailable>")).slice(0,1600),
+      serverOutput:output().slice(-5200)
+     }));
+    }
+    assert.equal(foreignResponse.status(),200);
+    await foreign.getByLabel("Privacy request type").waitFor();
+    const foreignBody=await foreign.locator("main").innerText();
+    assert.equal(foreignBody.includes(answer),false,"Foreign Worker accessed another Worker's private Admin retention review");
+    assert.equal(foreignBody.includes("retention inquiry: COMPLETED"),false,"Foreign Worker saw another Worker's completed request");
+    await foreign.reload({waitUntil:"domcontentloaded"});
+    assert.equal((await foreign.locator("main").innerText()).includes(answer),false);
+    await worker.goto(baseUrl+"/worker/privacy",{waitUntil:"domcontentloaded"});
+    await worker.getByText("Review outcome: "+answer,{exact:true}).waitFor();
+    console.log("R37_REAL_TWO_WORKER_PRIVACY_RETENTION_OWNER_ONLY_FORGED_IDS_UNAVAILABLE_AFTER_RELOAD");
+   }finally{await foreign.close();}
    await worker.goto(baseUrl+"/admin/privacy",{waitUntil:"domcontentloaded"});assert.equal(new URL(worker.url()).pathname,"/access-denied");
    assert.equal(errors.length,0);
   }});
