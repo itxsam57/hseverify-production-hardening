@@ -41,3 +41,9 @@ One separate narrow regression `node --test --test-concurrency=1 --test-name-pat
 Independent full hosted [R35 run 45361516452](https://github.com/itxsam57/hseverify-production-hardening/actions/runs/45361516452) is on separate SHA `e61e69fa0962bd6f8aa5ae9f2bd3a4a203a5ab95` and was **IN_PROGRESS** in `Existing full regression gate cross-check` at R36 test checkpoint. It does not include this R36 fix. Previous full audits 45213941977 and 45229745087 **FAILED** for intermittent `Assurance` columnheader visibility, still under R35 investigation; do not infer green.
 
 **NEXT:** Guarded QA-only commit/push R36 source fix + browser test + report, open separate DRAFT QA PR. Independently integrate reviewed QA fixes into an isolated common staging candidate (not prod), reconcile original 218 source-test identities and rerun complete full regression and real browser/adapter/pentest/recovery gates. If R35 hosted CI reaches terminal, inspect exact `FINAL-AUDIT.json`, `commands.tsv`, full regression log and accessible-header diagnostic. **TECH FULL 0/218 | OWNER TESTING READY NO.**
+
+## Guarded QA review artifact and source-pin control
+
+- Guarded QA source commit a16198479fd18eef07a5ff297a445389c20befb5 pushed; **[draft PR #222](https://github.com/itxsam57/hseverify-production-hardening/pull/222) OPEN**, unmerged, targeting QA review.
+- **Post-commit pinned-app control correctly RED**: agency_zero_control.py --check exit **2**, reports committed app source drift specifically src/app/api/company/workers/export/route.ts. Private receipt .autopilot/artifacts/zero-r36-pinned-app-source-drift-expected-red.log SHA256 47ea5f5afd77ab1bbc2483d37a3afd7535cd437dcaa1dfae883c0f91b5a1f9b4. This is an unmerged QA security fix, not authorization to re-pin or waive the original control.
+- Next protected QA integration must independently review new application-source delta and original 218 evidence source digest before changing any pinned candidate. No production merge.
