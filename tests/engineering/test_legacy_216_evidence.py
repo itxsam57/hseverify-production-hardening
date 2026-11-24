@@ -54,12 +54,16 @@ class LegacyScopedEvidenceTest(unittest.TestCase):
         import csv
         with (ROOT / 'docs/qa/evidence/MASTERPLAN_218_UNATTRIBUTED_CASE_REVIEW_20261114.csv').open(newline='') as fp:
             rows=list(csv.DictReader(fp))
-        self.assertEqual(len(rows),1109)
-        self.assertEqual(len({x['case_id'] for x in rows}),1109)
+        self.assertEqual(len(rows),1110)
+        self.assertEqual(len({x['case_id'] for x in rows}),1110)
         self.assertEqual(sum(x['previous_execution_evidence']!='NO_PASS_LOG_EVIDENCE' for x in rows),942)
-        self.assertEqual(sum(x['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for x in rows),167)
-        self.assertEqual(sum(bool(x['suggested_frozen_ids_UNREVIEWED']) for x in rows),1101)
+        self.assertEqual(sum(x['previous_execution_evidence']=='NO_PASS_LOG_EVIDENCE' for x in rows),168)
+        self.assertEqual(sum(bool(x['suggested_frozen_ids_UNREVIEWED']) for x in rows),1102)
         self.assertTrue(all(x['full_masterplan_verification']=='NOT_FULLY_VERIFIED' for x in rows))
+        appended=next(x for x in rows if x['case_id']=='tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs#f30fb16967693ac0')
+        self.assertEqual(appended['previous_execution_evidence'],'NO_PASS_LOG_EVIDENCE')
+        self.assertTrue(appended['suggested_frozen_ids_UNREVIEWED'])
+        self.assertEqual(appended['full_masterplan_verification'],'NOT_FULLY_VERIFIED')
 
     def test_no_old_reconciliation_claims_exact_release_signoff(self):
         old_sha="eb77b70f6584c76169e7d6b849b88e25ae666696"
