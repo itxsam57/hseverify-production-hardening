@@ -75,13 +75,13 @@ test("Company filtered directory preserves status through Next, refresh and Prev
   try {
    const now=new Date().toISOString(), expiry=new Date(Date.now()+86400000).toISOString();
    const passwordHash=(await db.query("SELECT password_hash FROM auth_accounts WHERE account_id=$1",[credentials.worker.accountId])).rows[0].password_hash;
-   for(let n=0;n<28;n++){
+   for(let n=0;n<30;n++){
     const suffix=String(n).padStart(24,"0"), accountId="pagination_worker_"+suffix, email="pagination."+n+"@example.test", invitationId="worker_invitation_"+suffix;
-    await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,worker_reference,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$3,'active',$4,$5,$6,$6,$6,$6)",[accountId,email,"Safety & Operations "+String(n===27?25:n).padStart(2,"0"),passwordHash,"HSE-REG-PAGINATION"+suffix,now]);
+    await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,worker_reference,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$3,'active',$4,$5,$6,$6,$6,$6)",[accountId,email,n===28?"=SUM(1,2)":n===29?" \t+SUM(4,5)":"Safety & Operations "+String(n===27?25:n).padStart(2,"0"),passwordHash,"HSE-REG-PAGINATION"+suffix,now]);
     await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",[accountId,now]);
     if(n===27) continue; // Matching foreign Worker has no authorized Company link.
     await db.query("INSERT INTO company_worker_invitations(invitation_id,tenant_id,email_normalized,token_hash,invitation_status,invited_by_membership_id,accepted_by_worker_account_id,resend_available_at,expires_at,accepted_at,created_at,updated_at) VALUES($1,$2,$3,$4,'accepted',$5,$6,$7,$8,$7,$7,$7)",[invitationId,credentials.company.tenantId,email,"pagination_token_hash_"+suffix,credentials.company.membershipId,accountId,now,expiry]);
-    await db.query("INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,link_source,invitation_id,link_status,worker_accepted_at,activated_at,revoked_at,created_at,updated_at) VALUES($1,$2,$3,'invitation',$4,$5,$6,$6,$7,$6,$6)",["company_worker_link_"+suffix,credentials.company.tenantId,accountId,invitationId,n===26?"revoked":"active",now,n===26?now:null]);
+    await db.query("INSERT INTO company_worker_links(link_id,tenant_id,worker_account_id,link_source,invitation_id,link_status,worker_accepted_at,activated_at,revoked_at,created_at,updated_at) VALUES($1,$2,$3,'invitation',$4,$5,$6,$6,$7,$6,$6)",["company_worker_link_"+suffix,credentials.company.tenantId,accountId,invitationId,(n===26||n>=28)?"revoked":"active",now,(n===26||n>=28)?now:null]);
    }
   } finally {await db.close();}
   const result=await runDevelopmentServer({args:["--hostname","127.0.0.1","--port",String(port)],probeUrl:baseUrl+"/company/login",projectRoot:process.cwd(),environment,probe:async()=>{
@@ -136,6 +136,21 @@ test("Company filtered directory preserves status through Next, refresh and Prev
     assert.equal(activeText.trimEnd().split("\n").length,27,"CSV must include header and 26 active owner workers, not paginate away records");
     assert.ok(!activeText.includes("pagination.26@example.test"),"Revoked Worker leaked in active-only export");
     assert.ok(!activeText.includes("pagination.27@example.test"),"Foreign Worker leaked in active-only export");
+    // R36: two real Worker names begin with spreadsheet-executable formula
+    // syntax. CSV quoting alone is insufficient; the signed-in Company
+    // endpoint must neutralize the actual cell contents before download.
+    const workforceCsv=await page.request.get(baseUrl+"/api/company/workers/export");
+    assert.equal(workforceCsv.status(),200);
+    const exportText=await workforceCsv.text();
+    assert.match(workforceCsv.headers()["content-type"]??"",/^text\/csv/i);
+    assert.ok(exportText.includes('"\'=SUM(1,2)"'),"Untrusted = formula must be apostrophe-neutralized in real CSV export");
+    assert.ok(exportText.includes('"\' \t+SUM(4,5)"'),"Whitespace-prefixed + formula must be neutralized in real CSV export");
+    assert.equal(exportText.includes('"=SUM(1,2)"'),false,"Raw = formula must not survive CSV encoding");
+    assert.equal(exportText.includes('" \t+SUM(4,5)"'),false,"Raw whitespace-plus formula must not survive CSV encoding");
+    assert.ok(exportText.includes("pagination.28@example.test"));
+    assert.ok(exportText.includes("pagination.29@example.test"));
+    assert.ok(!exportText.includes("pagination.27@example.test"),"Unlinked foreign Worker must remain excluded");
+    console.log("R36_ACTUAL_COMPANY_CSV_FORMULA_NEUTRALIZED_TENANT_BOUND_AND_REVOKED_WORKERS_INCLUDED");
     const injectionCsv=await page.request.get(baseUrl+"/api/company/workers/export?"+
       new URLSearchParams({q:"' OR 1=1 --"}));
     assert.equal(injectionCsv.status(),200);
