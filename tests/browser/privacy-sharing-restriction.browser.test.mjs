@@ -61,6 +61,25 @@ async function login(page, baseUrl, identity, role) {
   await page.waitForURL("**/" + role + "/dashboard", { timeout: 20_000 });
 }
 
+// Obtain the real no-JS Server Action form identity before forging a request.
+ // A hydrated React form can serialize without its progressive-enhancement
+ // $ACTION_ID_ field; replaying that malformed body tests HTTP 400, not RBAC.
+async function privacySsrActionFields(browser, adminContext, baseUrl, requestType) {
+ const context = await browser.newContext({ javaScriptEnabled: false });
+ try {
+  await context.addCookies(await adminContext.cookies());
+  const page = await context.newPage();
+  await page.goto(baseUrl + '/admin/privacy', { waitUntil: 'domcontentloaded' });
+  const card = page.locator('article').filter({ hasText: 'Request type: ' + requestType });
+  await card.getByText('Status: OPEN', { exact: true }).waitFor();
+  const fields = await card.locator('form').evaluate(
+   form => Object.fromEntries([...new FormData(form).entries()].map(([key,value])=>[key,String(value)]))
+  );
+  assert.ok(Object.keys(fields).some(key=>key.startsWith('$ACTION_ID_')), 'A real Admin SSR action marker is required to test authorization rather than malformed action 400');
+  return fields;
+ } finally { await context.close(); }
+}
+
 test('Worker optional sharing restriction reaches Admin fulfilment, recipient denial and server-enforced new-link refusal', {timeout:180_000}, async()=>{
  const directory=await mkdtemp(join(tmpdir(),'hse-sharing-restriction-')),databaseDirectory=join(directory,'db'),port=await freePort(),baseUrl='http://127.0.0.1:'+port;
  const environment={...process.env,HSE_APP_ENV:'development',HSE_DATABASE_DRIVER:'pglite',HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_RELEASE_SHA:'privacy-sharing-restriction-browser',HSE_SESSION_SECRET:'restriction-browser-session-secret-more-than-thirty-two',HSE_AUTH_PEPPER:'restriction-browser-auth-pepper-more-than-thirty-two',HSE_ENABLE_WORKER_DEMO_AUTH:'false',HSE_USE_WORKER_DEMO_DATA:'false',HSE_AUDIT_CREDENTIALS_PATH:join(directory,'credentials.json')};
@@ -81,7 +100,7 @@ test('Worker optional sharing restriction reaches Admin fulfilment, recipient de
  await worker.getByText('restriction: OPEN',{exact:true}).waitFor();
  await admin.goto(baseUrl+'/admin/privacy');const card=admin.locator('article').filter({hasText:'Request type: restriction'});
  await card.getByText('Status: OPEN',{exact:true}).waitFor();
- const actionFields=await card.locator('form').evaluate(form=>Object.fromEntries([...new FormData(form).entries()].map(([key,value])=>[key,String(value)])));
+ const actionFields=await privacySsrActionFields(browser,adminContext,baseUrl,'restriction');
  const denied=await worker.request.post(baseUrl+'/admin/privacy',{multipart:{...actionFields,decision:'COMPLETED',reason:'Unauthorized Worker must never complete a privacy restriction.'},maxRedirects:0});assert.equal(denied.status(),303);assert.equal(new URL(denied.headers().location,baseUrl).pathname,'/access-denied');
  await admin.reload();await card.getByText('Status: OPEN',{exact:true}).waitFor();
  await card.getByLabel('Request decision').selectOption('COMPLETED');await card.getByLabel('Request review reason').fill('Restrict optional sharing while preserving required case processing and retained evidence.');
@@ -93,7 +112,7 @@ test('Worker optional sharing restriction reaches Admin fulfilment, recipient de
  const refused=await worker.request.post(baseUrl+'/api/share-links',{data:{fields:['worker_id'],purpose:'Forged client bypass',createdAt:new Date().toISOString(),expiresAt:null}});assert.equal(refused.status(),403);assert.deepEqual(await refused.json(),{error:'optional_sharing_restricted'});
  await worker.goto(baseUrl+'/worker/privacy');await worker.getByLabel('Privacy request type').selectOption('correction');await worker.getByRole('button',{name:'Submit privacy request',exact:true}).click();await worker.getByText('correction: OPEN',{exact:true}).waitFor();
  await admin.goto(baseUrl+'/admin/privacy');const staleCard=admin.locator('article').filter({hasText:'Request type: correction'});await staleCard.getByText('Status: OPEN',{exact:true}).waitFor();
- const staleFields=await staleCard.locator('form').evaluate(form=>Object.fromEntries([...new FormData(form).entries()].map(([key,value])=>[key,String(value)])));
+ const staleFields=await privacySsrActionFields(browser,adminContext,baseUrl,'correction');
  const staleCookies=await adminContext.cookies();await admin.goto(baseUrl+'/account/sessions');await admin.getByRole('button',{name:'Sign out this session',exact:true}).click();await admin.waitForURL(url=>url.pathname==='/admin/login');
  await adminContext.addCookies(staleCookies);const staleResponse=await admin.request.post(baseUrl+'/admin/privacy',{multipart:{...staleFields,decision:'REJECTED',reason:'Revoked Admin session must not record a review decision.'},maxRedirects:0});assert.equal(staleResponse.status(),303);const deniedLogin=new URL(staleResponse.headers().location,baseUrl);assert.equal(deniedLogin.pathname,'/admin/login');assert.equal(deniedLogin.searchParams.get('reason'),'session-required');
  await worker.reload();await worker.getByText('correction: OPEN',{exact:true}).waitFor();
