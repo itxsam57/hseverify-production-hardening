@@ -22,6 +22,7 @@ jobs:
     env:
       NODE_ENV: production
       HSE_APP_ENV: production
+      HSE_RELEASE_ENV: production
       HSE_DATABASE_DRIVER: postgres
       DATABASE_URL: postgresql://offline:offline@127.0.0.1:9/provenance_no_db
       HSE_SESSION_SECRET: zero001-ephemeral-synthetic-only-session-secret-64-chars-long
@@ -70,6 +71,7 @@ jobs:
           release_manifest_source_commit=${GITHUB_SHA}
           EOF
           grep -F "$GITHUB_SHA" release-manifest.json >/dev/null
+          grep -F '"applicationEnvironment": "production"' release-manifest.json >/dev/null
           cp release-manifest.json artifacts/zero001-review-build/release-manifest.json
           sha256sum .next/standalone/server.js >> artifacts/zero001-review-build/source-metadata.txt
           sha256sum artifacts/zero001-review-build/compiled-files.sha256 >> artifacts/zero001-review-build/source-metadata.txt
