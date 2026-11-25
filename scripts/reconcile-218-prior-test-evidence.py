@@ -354,6 +354,88 @@ def build(root: Path, ci: dict, scan_historical: bool = True) -> dict:
     }
 
 
+
+def verify_explicit_source_delta(root: Path, archived: dict, actual_source_digest: str, catalog: list[dict]) -> dict:
+    """Fail closed on changed test source without mutating immutable old green proofs.
+
+    Historical passing tests are never promoted to the new application SHA.
+    A separate reviewed file records exact changed test paths, current bytes,
+    and every newly defined source case without runtime green credit.
+    """
+    delta_path = root / "docs/qa/evidence/MASTERPLAN_218_ZERO001_SOURCE_DELTA_20261125.json"
+    delta = json.loads(delta_path.read_text())
+    old_path = root / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"
+    old_blob = old_path.read_bytes()
+    sha = lambda content: hashlib.sha256(content).hexdigest()
+    approved = json.loads((root / "docs/qa/AGENCY_ZERO_CANDIDATE.json").read_text())["source_commit_sha"]
+    assert delta["schema_version"] == 1
+    assert delta["original_approved_source_sha"] == approved
+    assert delta["eligible_to_repin_approved_source"] is False
+    assert delta["authoritative_release_attestation"] is False
+    assert delta["local_archived_evidence_sha256"] == sha(old_blob), "Archived historical report was modified"
+    original_blob = subprocess.check_output(
+        ["git", "show", approved + ":docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json"],
+        cwd=root,
+    )
+    assert delta["baseline_archived_evidence_sha256"] == sha(original_blob), "Immutable pinned archive mismatch"
+    base = json.loads(original_blob)
+    assert archived["frozen_scenarios"] == base["frozen_scenarios"] == 218
+    assert [row["id"] for row in archived["scenarios"]] == [row["id"] for row in base["scenarios"]]
+    assert archived["counts"]["frozen_full_release_verified"] == delta["current_full_verified_count"] == 0
+    assert archived["counts"]["static_existing_distinct_test_cases"] == delta["baseline_historical_source_cases"] == 1610
+    assert archived["counts"]["previous_green_distinct_source_matched_cases"] == delta["baseline_historical_green_distinct_cases"] == 1436
+    assert delta["candidate_current_test_source_content_sha256"] == actual_source_digest, "Current test bytes changed"
+    tests = sorted((root / "tests").rglob("*.test.mjs"))
+    assert len(tests) == delta["candidate_current_test_file_count"]
+    old_case_ids = {case["case_id"] for case in archived["cases"]}
+    current_ids = {case["case_id"] for case in catalog}
+    assert len(old_case_ids) == 1610
+    assert len(current_ids) == delta["candidate_current_unique_literal_source_cases"]
+    assert old_case_ids.issubset(current_ids), "Historical test identity removed or renamed"
+    assert delta["existing_historical_case_ids_removed"] == 0
+    new_cases = sorted(
+        [
+            {
+                "case_id": row["case_id"],
+                "file": row["file"],
+                "title": row["title"],
+                "direct_scenarios": row["direct_scenarios"],
+                "source_only_NOT_PREVIOUSLY_GREEN": True,
+            }
+            for row in catalog if row["case_id"] not in old_case_ids
+        ],
+        key=lambda row: row["case_id"],
+    )
+    # Different wording must not be accepted as a waiver of the no-new-green rule.
+    expected = delta["new_source_cases_NOT_PREVIOUSLY_GREEN"]
+    assert len(new_cases) == len(expected)
+    for got, prior in zip(new_cases, expected):
+        assert got["case_id"] == prior["case_id"] and got["file"] == prior["file"]
+        assert got["title"] == prior["title"] and got["direct_scenarios"] == prior["direct_scenarios"]
+        assert prior["source_only_NOT_CREDITED"] is True
+    listed = subprocess.check_output(
+        ["git", "diff", "--name-status", approved, "--", "tests"],
+        cwd=root, text=True,
+    ).splitlines()
+    changed = []
+    for line in listed:
+        status, relative = line.split("\t", 1)
+        assert status in {"A", "M"}, "Deleted historical tests demand full source reconciliation"
+        assert relative.startswith("tests/")
+        file = root / relative
+        assert file.is_file(), "Tracked changed test path missing"
+        changed.append({"status": status, "path": relative, "sha256": sha(file.read_bytes())})
+    assert changed == delta["known_changed_test_paths_sha256"], "Unrecorded test source drift"
+    return {
+        "index": "HISTORICAL_ARCHIVE_PRESERVED_SOURCE_DELTA_VERIFIED",
+        "previous_green_historical_not_final_sha": 1436,
+        "new_source_cases_without_previous_green": len(new_cases),
+        "current_case_definitions_not_green": len(current_ids),
+        "changed_test_files_reviewed": len(changed),
+        "frozen_scenarios": 218,
+        "full_verified": 0,
+    }
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--verify-index", action="store_true", help="Offline fail-closed verification; never rewrite report")
@@ -412,8 +494,14 @@ def main() -> None:
             digest.update(hashlib.sha256(path.read_bytes()).digest())
         c = archived["counts"]
         assert archived["frozen_scenarios"] == 218 and len(archived["scenarios"]) == 218
-        assert len(archived["cases"]) == c["static_existing_distinct_test_cases"] == len(catalog)
-        assert digest.hexdigest() == c["current_test_source_content_sha256"], "Test source changed: regenerate unique-case evidence without rewriting historical passes"
+        assert len(archived["cases"]) == c["static_existing_distinct_test_cases"]
+        if digest.hexdigest() != c["current_test_source_content_sha256"]:
+            # Preserve the prior raw evidence archive byte-for-byte. A reviewed
+            # candidate source-delta manifest MUST match every changed test file
+            # and give new case identities NO automatic passing credit.
+            print(json.dumps(verify_explicit_source_delta(ROOT, archived, digest.hexdigest(), catalog), sort_keys=True))
+            return
+        assert len(catalog) == c["static_existing_distinct_test_cases"]
         assert c["previous_green_distinct_source_matched_cases"] + c["source_tests_without_green_execution_proof"] == len(catalog)
         assert c["previous_green_distinct_source_matched_cases"] == c["current_reference_CI_green_distinct_cases"] + c["historical_only_green_distinct_cases"]
         assert c["frozen_full_release_verified"] == 0

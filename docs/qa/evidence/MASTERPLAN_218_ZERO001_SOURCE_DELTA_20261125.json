@@ -1,0 +1,108 @@
+{
+  "authoritative_release_attestation": false,
+  "baseline_archived_evidence_sha256": "29e0dc76ac3aabc7ce35cffb6d68c01d0fda773998aa01b58f7f4e659a4fe184",
+  "baseline_historical_green_distinct_cases": 1436,
+  "baseline_historical_source_cases": 1610,
+  "candidate_218_IDs_identical_to_pin": true,
+  "candidate_current_test_file_count": 563,
+  "candidate_current_test_source_content_sha256": "a75e9cb0bf8ede7f3538db26c78623b855ec8ee131fc0ff960a963ee73e27d02",
+  "candidate_current_unique_literal_source_cases": 1612,
+  "current_full_verified_count": 0,
+  "eligible_to_repin_approved_source": false,
+  "existing_historical_case_ids_removed": 0,
+  "known_changed_test_paths_sha256": [
+    {
+      "path": "tests/browser/credential-validity.browser.test.mjs",
+      "sha256": "c7dfe5a3f3d7afd7ccc77f72ae1c9b7174d69948664794402ade20b6fce72272",
+      "status": "M"
+    },
+    {
+      "path": "tests/browser/evidence-review-resolution.browser.test.mjs",
+      "sha256": "5dc9df1d7b5b450b95c61665a5ec06ee8e54f0504b576de5300eaf384158ffde",
+      "status": "M"
+    },
+    {
+      "path": "tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs",
+      "sha256": "997731ec0d41353b4c63cd37020bdc91a567637682ad7c49fe63c469b1a62bdd",
+      "status": "A"
+    },
+    {
+      "path": "tests/browser/report-worker.browser.test.mjs",
+      "sha256": "76561483a045ec9ff38abbdfa31aa8680f69ebf608fe5ee14078e407358b3e56",
+      "status": "M"
+    },
+    {
+      "path": "tests/browser/security-response-headers.browser.test.mjs",
+      "sha256": "1e4b29d71369d785ea547ab055fc691b56b6a587cbaa9539d3ad167d602309c9",
+      "status": "M"
+    },
+    {
+      "path": "tests/engineering/masterplan-browser-shards.test.mjs",
+      "sha256": "fd514b01361bcfd6f6eaffa0f74a742b9950755d379c1294862af2e1c736b3a4",
+      "status": "M"
+    },
+    {
+      "path": "tests/engineering/test_agency_zero_control.py",
+      "sha256": "cb0d41d7e595a3f129bb832fb6999c6f18c1ba54592f0c5055abe46bc8c9d078",
+      "status": "A"
+    },
+    {
+      "path": "tests/engineering/test_prior_test_evidence.py",
+      "sha256": "3f65ca6f06f101d1a0c9d3b828291b0928141f69875a794ad1b347164eb683fc",
+      "status": "M"
+    },
+    {
+      "path": "tests/engineering/test_vertical_218_progress.py",
+      "sha256": "2b78fcba6d8733b18eea55b1805ddb9d4a718d65dbbae1d52213c7e855250698",
+      "status": "M"
+    },
+    {
+      "path": "tests/platform/assessment-funding-notification-security.test.mjs",
+      "sha256": "9fb19d4f4998f6ed141984860af595441a2509709b4cf479f25751104e07cc4e",
+      "status": "M"
+    },
+    {
+      "path": "tests/platform/interview-finalization-runtime.test.mjs",
+      "sha256": "81806452e32eda7f42adf8b2b7a95a15bfb8a3a77804315571e73c2324b65e61",
+      "status": "M"
+    },
+    {
+      "path": "tests/platform/m1-01-pg16-concurrent-startup.test.mjs",
+      "sha256": "fc0e0ca9324f24a7032415bf2de350d6727d58f6949867c47b9f4b38e1eff68e",
+      "status": "A"
+    },
+    {
+      "path": "tests/platform/written-review-assignment-runtime.test.mjs",
+      "sha256": "7323a5a879a8961fd7504db131850425d768abf04c45db2aec67333680f2cbc7",
+      "status": "M"
+    },
+    {
+      "path": "tests/platform/written-scoring-end-to-end-runtime.test.mjs",
+      "sha256": "1f05e52f981e9fa42976f7decbcd0ae67ac8af874ec907f15cd9da985596df13",
+      "status": "M"
+    }
+  ],
+  "local_archived_evidence_sha256": "db8b68c1e388d5264f85c5b1639490f0afaeacaec8bd8b936df9aee9a92d94ae",
+  "new_source_cases_NOT_PREVIOUSLY_GREEN": [
+    {
+      "case_id": "tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs#f30fb16967693ac0",
+      "direct_scenarios": [],
+      "file": "tests/browser/m3-04-company-action-centre-mixed-status.browser.test.mjs",
+      "source_only_NOT_CREDITED": true,
+      "title": "R18 actual signed-in Company Action Centre derives mixed cases and a cold PGlite server sees resolved values"
+    },
+    {
+      "case_id": "tests/platform/m1-01-pg16-concurrent-startup.test.mjs#205753ceca7c9450",
+      "direct_scenarios": [
+        "M1.01.02"
+      ],
+      "file": "tests/platform/m1-01-pg16-concurrent-startup.test.mjs",
+      "source_only_NOT_CREDITED": true,
+      "title": "M1.01.02 fresh PostgreSQL16 database serializes two simultaneous migration deploy processes"
+    }
+  ],
+  "original_approved_source_sha": "7ff30ea140a5145e5d5ba761f7c7aef24c895269",
+  "purpose": "Strict fail-closed overlay: frozen 218 historical case evidence is immutable and previous greens never represent passes on the changed candidate SHA",
+  "review_note": "Source-only cases and historical case references are not new green observations. Changed test bodies invalidate prior current-SHA proof while keeping historical log hash evidence. Full technical verification remains 0.",
+  "schema_version": 1
+}
