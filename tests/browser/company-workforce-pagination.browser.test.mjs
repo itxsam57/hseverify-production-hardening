@@ -77,7 +77,9 @@ test("Company filtered directory preserves status through Next, refresh and Prev
    const passwordHash=(await db.query("SELECT password_hash FROM auth_accounts WHERE account_id=$1",[credentials.worker.accountId])).rows[0].password_hash;
    for(let n=0;n<28;n++){
     const suffix=String(n).padStart(24,"0"), accountId="pagination_worker_"+suffix, email="pagination."+n+"@example.test", invitationId="worker_invitation_"+suffix;
-    await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,worker_reference,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$3,'active',$4,$5,$6,$6,$6,$6)",[accountId,email,"Safety & Operations "+String(n===27?25:n).padStart(2,"0"),passwordHash,"HSE-REG-PAGINATION"+suffix,now]);
+    // A revoked owned Worker deliberately starts with a spreadsheet formula.
+    const workerName=n===26?'=HYPERLINK("https://example.invalid","Safety & Operations 26")':"Safety & Operations "+String(n===27?25:n).padStart(2,"0");
+    await db.query("INSERT INTO auth_accounts(account_id,email_normalized,display_name,account_status,password_hash,worker_reference,email_verified_at,password_set_at,created_at,updated_at) VALUES($1,$2,$3,'active',$4,$5,$6,$6,$6,$6)",[accountId,email,workerName,passwordHash,"HSE-REG-PAGINATION"+suffix,now]);
     await db.query("INSERT INTO auth_account_roles(account_id,role,created_at) VALUES($1,'worker',$2)",[accountId,now]);
     if(n===27) continue; // Matching foreign Worker has no authorized Company link.
     await db.query("INSERT INTO company_worker_invitations(invitation_id,tenant_id,email_normalized,token_hash,invitation_status,invited_by_membership_id,accepted_by_worker_account_id,resend_available_at,expires_at,accepted_at,created_at,updated_at) VALUES($1,$2,$3,$4,'accepted',$5,$6,$7,$8,$7,$7,$7)",[invitationId,credentials.company.tenantId,email,"pagination_token_hash_"+suffix,credentials.company.membershipId,accountId,now,expiry]);
@@ -141,6 +143,20 @@ test("Company filtered directory preserves status through Next, refresh and Prev
     assert.equal(injectionCsv.status(),200);
     assert.equal((await injectionCsv.text()).trimEnd().split("\n").length,1,
       "SQL-like search caused unfiltered CSV data disclosure");
+    // A genuine authorized CSV download must neutralize an injected formula.
+    const formulaCsv=await page.request.get(baseUrl+"/api/company/workers/export?"+
+      new URLSearchParams({q:"Safety & Operations 26",status:"revoked"}));
+    assert.equal(formulaCsv.status(),200,"Company must access an owned revoked Worker row");
+    const formulaText=await formulaCsv.text();
+    assert.equal(formulaText.trimEnd().split(String.fromCharCode(10)).length,2,
+      "Formula test must exercise exactly one actual owned Worker row");
+    assert.ok(formulaText.includes(String.fromCharCode(34,39)+"=HYPERLINK"),
+      "Executable spreadsheet formula must be neutralized by leading apostrophe");
+    assert.ok(formulaText.includes(String.fromCharCode(34,34)+"https://example.invalid"),
+      "Unsafe CSV quotes must be escaped");
+    assert.ok(!formulaText.includes(String.fromCharCode(34)+"=HYPERLINK"),
+      "Unneutralized formula must not reach Company CSV download");
+    console.log("M10402_REAL_WORKFORCE_CSV_FORMULA_NEUTRALIZED private tenant row and hostile formula text");
     const anonymous=await browser.newPage();
     try {
       const anonymousCsv=await anonymous.request.get(filteredCsvUrl,{maxRedirects:0});

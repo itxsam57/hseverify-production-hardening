@@ -5,7 +5,7 @@
   "baseline_historical_source_cases": 1610,
   "candidate_218_IDs_identical_to_pin": true,
   "candidate_current_test_file_count": 563,
-  "candidate_current_test_source_content_sha256": "1a8e657b9918a5434c4ecfcf7e5599f75eab15eccccbe2610f91bf7b35f55cb7",
+  "candidate_current_test_source_content_sha256": "13a407e7f8eca08f0282a3e21d878bf6a3b6490121944f9fd81c413994d4ed5d",
   "candidate_current_unique_literal_source_cases": 1612,
   "current_full_verified_count": 0,
   "eligible_to_repin_approved_source": false,
@@ -14,6 +14,11 @@
     {
       "path": "tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs",
       "sha256": "ff5e26b59d242abd57011756ea3e11b142fd47560364f6ff7a3848b22dcb377e",
+      "status": "M"
+    },
+    {
+      "path": "tests/browser/company-workforce-pagination.browser.test.mjs",
+      "sha256": "e18bcf912d838a0fdedf78a7bce5e6b7581b1dc047e2b8065de93f8b9d197ff5",
       "status": "M"
     },
     {
