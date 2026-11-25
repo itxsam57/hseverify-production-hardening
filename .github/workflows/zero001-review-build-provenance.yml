@@ -5,7 +5,20 @@ on:
     branches:
       - qa/zero001-candidate-modern-audit-20261125
     paths:
-      - .github/workflows/zero001-review-build-provenance.yml
+      # Match the full-system audit on every actual application/test change,
+      # so no review-only source commit can silently keep an old signed build.
+      - "src/**"
+      - "database/**"
+      - "scripts/**"
+      - "tests/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.*"
+      - "tsconfig*.json"
+      - "eslint.config.*"
+      - ".github/workflows/**"
+      - ".engineering/**"
   # Review-only manual retry; never touches live staging, production or approved source.
   # Sign the source that also contains the Case Replay hydration regression test.
   # Keep signature and full-system audit matched to this exact isolated QA candidate commit.
