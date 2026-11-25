@@ -183,3 +183,13 @@ CYBERSECURITY: Original approved app source7ff had quote-only CSV and thus a sou
 REVIEWER: AI reviewer source/log+hash proof only, not independent outside approval. Draft PR244 candidate SHA85a9e4cbcb3ce3219c693f273f35ce7017de7528, original pinned source remains7ff30ea; the new exact-source full independent CI #45663571236 and OIDC-signed review-only production build #45663571774 STARTED, terminal verdict pending. No protected staging/production modifications. Original active batch ZERO001 remains0/4 TECH FULL, overall 0/218, ZERO002 forbidden.
 
 Private E/C/R evidence SHA256 78452d0b0a6595af9c48630377a40bfb92031f2462931064a6551db2abbbe014, raw real Company browser SHA256 20486ca657082036a31ec2ce89bf6e089cde63d6f8851d0004fbe5b0676f4017.
+
+### Exact source85a9e4c GitHub OIDC signed production build after Company CSV correction
+
+ENGINEER: Source85a9e4cbcb3ce3219c693f273f35ce7017de7528 unmerged protected PR244, newly imported canonical QA Company workforce CSV formula neutralization, one real Company Chromium test TAP1PASS0FAIL0SKIP exit0, strict TypeScript and 218 historical-source identity guard PASS. The GitHub review-only production build for the exact same source commit, run #45663571774, completed SUCCESS.
+
+CYBERSECURITY: Independently downloaded all three signed output artifacts and verified Sigstore certificate with official checksum-verified GH CLI2.105.0, attested exact Git SHA + repo/branch/workflow, every subject SHA256 digest, generated production release manifest and compiled file list. New signed build has 3716 compiled assets (one more than previous source6a 3715) and metadata accurately records 3716; not a hash mismatch. This is a signed review build only, not actual running staged bytes or operator-held backup/rollback evidence.
+
+REVIEWER: AI cross-matched raw real browser and signed source receipts. Separate independent reviewer remains open, newest full hosted system audit #45663571236 on same exact SHA not terminal at capture. Original pin7ff source not repinned, original M1.01.02 concurrency defect remains confirmed FAIL. ZERO001 FULL0/4 and overall TECH FULL0/218; no ZERO002.
+
+Private matched 3-discipline receipt SHA256 a79cbf4f079cc583b7fa573e481fb8e5d8d73010e3057f3e924d50108467144d, private independently signed build receipt SHA256 7af9fd7e0a91a7bf15239108222e6a4ca889fbd87b7c79fe33ee13c313a195b4.
