@@ -327,7 +327,8 @@
         "2026-11-25 ZERO-001 original M1.01.04: live synthetic stage read-only fresh private AES256-GCM encrypted retained backup and separate key; decrypt and restore same ciphertext isolated PostgreSQL16, 193 tables/979 rows exact per-table hashes, live unchanged. Frozen7ff isolated standalone boots restored DB, 6 public portal login GET200, readiness anonymous401 authorized200, 2 anonymous protected redirects307; one isolated pg_ctl failure due Unix pathname length preserved and one corrected short-path retry pass. NOT signed build, offsite backup, authenticated cross-role journeys or approved shared stage rollback.",
         "2026-11-25 exact pin7ff isolated fresh production build exit0 with independent dependencies after first symlink workspace test failure; release manifest with 3715 generated files hashed. Disposable PG16 fresh 139 migrations and production standalone boot, six public role login GET200, readiness anonymous401/auth200 with pin7ff and signed-out private paths denied; app and PG cleanly stopped. Untrusted self-generated build not owner-signed, real stage binary not attested, no approved live rollback or offsite encrypted backup.",
         "2026-11-25 one isolated combined release candidate SHAdecec20 prepared as draft PR243 without altering stage or official candidate pin7ff, for exact-SHA independent hosted full audit run45636196385. No signed source-to-running-stage build, owner approval, offsite backup/approved rollback or full six-role authenticated UAT yet. Remains BLOCKED.",
-        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Exact unapproved source22db production standalone built exit0, 3715 generated binary file inventory and self-computed release manifest, fresh PG16 139 applied; six PUBLIC role login pages and readiness/role access served; stage signed binary and authorized real rollback absent. CYBERSECURITY Self-computed manifest and private SHA tree are not owner-trusted release signature; no trusted exact stage served artifact, independent offsite backup/key or approved rollback. REVIEWER AI reviewed source/binary hash and clean disposable DB stop; operator attestation, stage HTTPS proof and recovery signoff missing. Original frozen source pin7ff and verdict unchanged."
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Exact unapproved source22db production standalone built exit0, 3715 generated binary file inventory and self-computed release manifest, fresh PG16 139 applied; six PUBLIC role login pages and readiness/role access served; stage signed binary and authorized real rollback absent. CYBERSECURITY Self-computed manifest and private SHA tree are not owner-trusted release signature; no trusted exact stage served artifact, independent offsite backup/key or approved rollback. REVIEWER AI reviewed source/binary hash and clean disposable DB stop; operator attestation, stage HTTPS proof and recovery signoff missing. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 GitHub attested build PRIVATE OIDC security review: workflow run45647968729 failed at production build because npm ci NODE_ENV=production omitted TypeScript dev dependency; corrected npm ci --include=dev and run45648287237 SUCCESS signed 3715-file fingerprint and three artifacts. Independently downloaded artifact and verified GitHub Sigstore OIDC signature using checksum-verified GH CLI 2.105.0: crypto valid and all three file digest matches; BUT signed release-manifest.json says applicationEnvironment development while actual build was NODE_ENV=production/HSE_APP_ENV=production, because HSE_RELEASE_ENV unset and manifest generator defaulted development. Production provenance acceptance FAIL, not FULL. Strict fix on review-only PR244 source head a278644 declares HSE_RELEASE_ENV production and asserts manifest environment production prior to signature; no new signed run for corrected head available at capture (manual workflow dispatch returned GitHub HTTP500). No stage/prod writes, no official source repin or trusted running-stage binary attestation."
       ],
       "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
       "gates": {
@@ -342,7 +343,8 @@
       "open_high_or_critical": null,
       "blocking_defects": [
         "Protected HTTPS staging available in prior snapshot is DIFFERENT SHA from frozen application. Do NOT infer exact-candidate parity; deploy only to approved isolated stage and prove server/DB/asset image SHA together.",
-        "Trusted TLS chain, safe migrations/downward rollback, monitoring and operable recovery have not been demonstrated for this candidate; no live stage altered."
+        "Trusted TLS chain, safe migrations/downward rollback, monitoring and operable recovery have not been demonstrated for this candidate; no live stage altered.",
+        "2026-11-25 GitHub OIDC cryptographic signature existed for review build11741c6 but semantic release manifest was invalid (applicationEnvironment development instead of production); corrected a278644 is unverified by a new signed run, and no signed exact running protected HTTPS staging binary parity or operator rollback exists."
       ],
       "raw_evidence_refs": [
         {
@@ -420,6 +422,18 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
           "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-old-signature-verified-but-semantic-red-a278-fix-pending.json",
+          "sha256": "40b74db4e6fb19a0de2a25e50eaceaa9556cd3524247ea27ac0045783e97e848"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-run45648287237-signed-but-bad-environment.json",
+          "sha256": "0d624fa9f8f1cb697cedeb8c8a3dcce0ae809e289478460ed59b0b697781a8cb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-first-run-45647968729-red.json",
+          "sha256": "28b739be10fa79110157a35d4be2d92f94e2b65cfa170f54fdb08309ba1363f4"
         }
       ]
     },
