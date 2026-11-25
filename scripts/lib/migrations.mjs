@@ -182,6 +182,16 @@ async function normalizeApprovedChecksumRepair(database, migration) {
 }
 
 export async function applyPendingMigrations(database, releaseSha) {
+  if (database.driver === "postgres" && typeof database.withMigrationLock !== "function") {
+    throw new Error("PostgreSQL migration lock support is required.");
+  }
+  const apply = () => applyPendingMigrationsUnlocked(database, releaseSha);
+  return typeof database.withMigrationLock === "function"
+    ? database.withMigrationLock(apply)
+    : apply();
+}
+
+async function applyPendingMigrationsUnlocked(database, releaseSha) {
   const status = await migrationStatus(database);
   const mismatched = status.filter((migration) => !migration.checksumMatches);
   if (mismatched.length > 0) {
