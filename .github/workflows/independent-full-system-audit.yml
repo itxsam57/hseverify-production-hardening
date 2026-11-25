@@ -2,7 +2,7 @@ name: Independent full-system audit
 
 on:
   push:
-    branches: [main, qa/masterplan-completion-20260926]
+    branches: [main, qa/masterplan-completion-20260926, qa/zero001-candidate-modern-audit-20261125]
     paths:
       - "src/**"
       - "database/**"
