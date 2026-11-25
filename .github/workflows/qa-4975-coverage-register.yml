@@ -92,6 +92,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ env.VERIFIED_SHA }}
+          # The fail-closed historical-source verifier must inspect the pinned
+          # original Git object; default depth=1 cannot prove that archive.
+          fetch-depth: 0
       - name: Python tests for frozen 218 and 4975 conservative counts
         run: python3 tests/engineering/test_verification_4975_coverage.py
       - name: Generate candidate planning register and fail on scope drift
