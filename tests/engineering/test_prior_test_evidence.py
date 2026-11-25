@@ -108,8 +108,14 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         previous = prior.build(ROOT, offline_ci, scan_historical=False)
         counts = previous["counts"]
         self.assertEqual(counts["previous_green_distinct_source_matched_cases"], 1436)
-        self.assertEqual(counts["static_existing_distinct_test_cases"], 1610)
+        self.assertEqual(counts["static_existing_distinct_test_cases"], 1612)
+        self.assertEqual(counts["source_tests_without_green_execution_proof"], 176)
         self.assertEqual(counts["frozen_full_release_verified"], 0)
+        # The immutable archive is still 1610 historical definitions and 1436
+        # past greens; the two new source cases get NO retroactive green credit.
+        archived = json.loads((ROOT / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json").read_text())
+        self.assertEqual(archived["counts"]["static_existing_distinct_test_cases"], 1610)
+        self.assertEqual(archived["counts"]["previous_green_distinct_source_matched_cases"], 1436)
         old = next(c for c in previous["cases"] if c["title"].startswith(
             "independent Worker submissions reach Verifier and approve"))
         self.assertEqual(old["test_execution"], "HISTORICAL_LOG_PASSED")
@@ -118,6 +124,23 @@ class PreviousTestEvidenceTests(unittest.TestCase):
             "M1.11.03 skill correction retains old review"))
         self.assertEqual(skill["test_execution"], "HISTORICAL_LOG_PASSED")
         self.assertTrue(any(proof.get("status") == "clean_green_summary_historical_worktree" for proof in skill["evidence"]))
+
+    def test_changed_source_delta_guard_is_fail_closed(self):
+        archived = json.loads((ROOT / "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json").read_text())
+        catalog, _ = prior.source_catalog(ROOT, {s["id"] for s in prior.frozen_rows(ROOT)})
+        self.assertEqual(len(catalog), 1612)
+        delta = json.loads(
+            (ROOT / "docs/qa/evidence/MASTERPLAN_218_ZERO001_SOURCE_DELTA_20261125.json").read_text()
+        )
+        self.assertEqual(len(delta["new_source_cases_NOT_PREVIOUSLY_GREEN"]), 2)
+        with self.assertRaisesRegex(AssertionError, "Current test bytes changed"):
+            prior.verify_explicit_source_delta(ROOT, archived, "0" * 64, catalog)
+        forged = json.loads(json.dumps(archived))
+        forged["counts"]["previous_green_distinct_source_matched_cases"] = 1437
+        with self.assertRaises(AssertionError):
+            prior.verify_explicit_source_delta(
+                ROOT, forged, delta["candidate_current_test_source_content_sha256"], catalog
+            )
 
     def test_existing_case_lookup_is_read_only_and_clearly_uncredited(self):
         result = subprocess.run(["python3", "scripts/reconcile-218-prior-test-evidence.py",

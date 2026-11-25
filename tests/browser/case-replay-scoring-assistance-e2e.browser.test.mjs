@@ -214,6 +214,13 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           }
           await row.waitFor({ state: "visible", timeout: 15_000 });
           replayProgress("review-row-visible");
+          // Server-rendered rubric forms are inert until the client hydrates.
+          // A visible table row does not prove its controls are interactive:
+          // Playwright's role locator correctly excludes inert spinbuttons.
+          // Wait for the actual user-interactive form, not a timer or mock.
+          await row.locator('form[aria-label="Rubric mark Q1:C0"][aria-busy="false"]')
+            .waitFor({ state: "visible", timeout: 25_000 });
+          replayProgress("rubric-form-hydrated");
 
           const criterionInputs = row.getByRole("spinbutton", { name: "Criterion mark", exact: true });
           assert.equal(await criterionInputs.count(),2);

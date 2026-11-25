@@ -222,7 +222,77 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
    assert.match(await attention.innerText(),/3 case\(s\) currently require attention or have an adverse state/);
    const workforceResponse=await page.goto(baseUrl+"/company/workers",{waitUntil:"domcontentloaded"});
    assert.equal(workforceResponse?.status(),200,"Active verified Company may access its linked Worker directory");
-   await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   // Keep the exact 15s UI assertion. On hosted failure, capture the
+   // rendered directory shape without treating slow or empty output as PASS.
+   try {
+     await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   } catch (error) {
+     const diagnostic={
+       url:page.url(),
+       status:workforceResponse?.status(),
+       headingTexts:await page.locator("main h1,main h2").allTextContents().catch(()=>[]),
+       tableCount:await page.locator("main table.data-table").count().catch(()=>-1),
+       tableHeaders:await page.locator("main table.data-table th").allTextContents().catch(()=>[]),
+       emptyDirectory:await page.getByText("No Workers match these filters.",{exact:true}).count().catch(()=>-1),
+       pageErrorOverlay:await page.locator("nextjs-portal").count().catch(()=>-1),
+       documentReadyState:await page.evaluate(()=>document.readyState).catch(()=>"<unavailable>")
+     };
+     const assuranceRole=page.getByRole("columnheader",{name:"Assurance"});
+     const nativeHeader=page.locator("table.data-table thead th").filter({hasText:"Assurance"});
+     const accessibility={
+       roleCount:await assuranceRole.count().catch(()=>-1),
+       allRoleHeaders:await page.getByRole("columnheader").allTextContents().catch(()=>[]),
+       nativeHeaderCount:await nativeHeader.count().catch(()=>-1),
+       nativeHeaderVisible:await nativeHeader.first().isVisible().catch(()=>false),
+       nativeHeaderBox:await nativeHeader.first().boundingBox().catch(()=>null),
+       roleVisible:await assuranceRole.first().isVisible().catch(()=>false),
+       headerAria:await page.locator("table.data-table thead").ariaSnapshot().catch(()=>"<unavailable>"),
+       dom:await page.evaluate(()=>{
+         const th=[...document.querySelectorAll("table.data-table thead th")]
+           .find(el=>el.textContent?.trim()==="Assurance");
+         if(!th)return null;
+         const table=th.closest("table"),rect=th.getBoundingClientRect();
+         const ancestry=[];
+         for(let node=th;node && ancestry.length<20;node=node.parentElement){
+           const css=getComputedStyle(node),r=node.getBoundingClientRect();
+           ancestry.push({tag:node.tagName,role:node.getAttribute("role"),ariaHidden:node.getAttribute("aria-hidden"),
+             inert:node.inert,hidden:node.hidden,display:css.display,visibility:css.visibility,opacity:css.opacity,
+             contentVisibility:css.contentVisibility,overflowX:css.overflowX,
+             left:Math.round(r.left),right:Math.round(r.right),width:Math.round(r.width),height:Math.round(r.height)});
+         }
+         return {outerHtml:th.outerHTML.slice(0,250),scope:th.getAttribute("scope"),
+           viewport:window.innerWidth,scrollLeft:table?.parentElement?.scrollLeft??null,
+           documentVisibility:document.visibilityState,
+           activeNextOverlay:(()=>{
+             const portal=document.querySelector("nextjs-portal");
+             const shadow=portal?.shadowRoot;
+             return {portal:!!portal,openDialogs:shadow?.querySelectorAll('dialog[open], [role="dialog"][open]').length??0};
+           })(),
+           rect:{left:Math.round(rect.left),right:Math.round(rect.right),width:Math.round(rect.width),height:Math.round(rect.height)},
+           ancestry};
+       }).catch(()=>null)
+     };
+     // Preserve failure, but distinguish mobile clipping from role removal:
+     // switching width is diagnostics only and never replaces the 390px gate.
+     const desktopProbe=await (async()=>{
+       try {
+         await page.setViewportSize({width:1440,height:844});
+         return {roleCount:await page.getByRole("columnheader",{name:"Assurance"}).count(),
+           roleVisible:await page.getByRole("columnheader",{name:"Assurance"}).first().isVisible(),
+           nativeVisible:await nativeHeader.first().isVisible()};
+       } catch {return {error:"desktop probe unavailable"};}
+       finally {await page.setViewportSize({width:390,height:844}).catch(()=>{});}
+     })();
+     console.error("R35_ASSURANCE_HEADER_ACCESSIBILITY_DIAGNOSTIC",JSON.stringify({...accessibility,desktopProbe}));
+     console.error("R34_CREDENTIAL_COMPANY_WORKER_DIRECTORY_RENDER_DIAGNOSTIC",JSON.stringify(diagnostic));
+     throw error;
+   }
+   console.log("R35_ASSURANCE_HEADER_REAL_BROWSER_VISIBLE",JSON.stringify({
+     roleCount:await page.getByRole("columnheader",{name:"Assurance"}).count(),
+     nativeVisible:await page.locator("table.data-table thead th").filter({hasText:"Assurance"}).first().isVisible(),
+     roleVisible:await page.getByRole("columnheader",{name:"Assurance"}).first().isVisible(),
+     viewport:await page.evaluate(()=>window.innerWidth)
+   }));
    assert((await page.locator(".data-table").innerText()).includes("Latest case credential: valid"));
    const csv=await page.request.get(baseUrl+"/api/company/workers/export");
    assert.equal(csv.status(),200);

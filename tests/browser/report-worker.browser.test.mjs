@@ -265,7 +265,12 @@ test("Worker UI captures owned records and versioned settings, schedules and dow
         assert.equal(response.status(), 200);
         assert.equal(response.headers()["cache-control"], "private, no-store, max-age=0");
         assert.equal(response.headers()["x-content-type-options"], "nosniff");
-        assert.equal(response.headers()["content-length"], String(artifacts[id].byteLength));
+        // HTTP/1.1 chunked or compressed transport can omit Content-Length; the
+        // decoded payload equality below is the authoritative byte-integrity check.
+        const lengthHeader = response.headers()["content-length"];
+        if (lengthHeader !== undefined && !response.headers()["content-encoding"]) {
+          assert.equal(lengthHeader, String(artifacts[id].byteLength));
+        }
         assert.deepEqual(await response.body(), artifacts[id]);
         if (format === "print") {
           assert.ok(response.headers()["content-disposition"].startsWith("inline;"));

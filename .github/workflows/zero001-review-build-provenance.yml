@@ -1,0 +1,104 @@
+name: ZERO001 isolated candidate signed build provenance
+
+on:
+  push:
+    branches:
+      - qa/zero001-candidate-modern-audit-20261125
+    paths:
+      # Match the full-system audit on every actual application/test change,
+      # so no review-only source commit can silently keep an old signed build.
+      - "src/**"
+      - "database/**"
+      - "scripts/**"
+      - "tests/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.*"
+      - "tsconfig*.json"
+      - "eslint.config.*"
+      - ".github/workflows/**"
+      - ".engineering/**"
+  # Review-only manual retry; never touches live staging, production or approved source.
+  # Sign the source that also contains the Case Replay hydration regression test.
+  # Keep signature and full-system audit matched to this exact isolated QA candidate commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  attest-independent-production-build:
+    if: github.ref == 'refs/heads/qa/zero001-candidate-modern-audit-20261125'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      HSE_APP_ENV: production
+      HSE_RELEASE_ENV: production
+      HSE_DATABASE_DRIVER: postgres
+      DATABASE_URL: postgresql://offline:offline@127.0.0.1:9/provenance_no_db
+      HSE_SESSION_SECRET: zero001-ephemeral-synthetic-only-session-secret-64-chars-long
+      HSE_AUTH_PEPPER: zero001-ephemeral-synthetic-only-auth-pepper-at-least-64-characters
+      HSE_CREDENTIAL_SIGNING_SECRET: zero001-ephemeral-synthetic-only-credential-key-64-characters
+      HSE_MONITOR_PROBE_TOKEN: zero001-review-only-monitoring-token-64-characters-example
+      HSE_RELEASE_SHA: ${{ github.sha }}
+      HSE_DEPLOYMENT_ID: zero001-review-candidate-not-stage
+      HSE_ENABLE_AUTH_SANDBOX: "false"
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      HSE_PUBLIC_BASE_URL: https://isolated-qa.invalid/
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout exact reviewed source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Install Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Validate fail-closed production environment
+        run: npm run validate:env
+      - name: Compile production standalone without any real database connection
+        run: npm run build
+      - name: Create offline exact-source binary fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .next/standalone/server.js
+          node scripts/create-release-manifest.mjs
+          mkdir -p artifacts/zero001-review-build
+          find .next/standalone .next/static -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > artifacts/zero001-review-build/compiled-files.sha256
+          count=$(wc -l < artifacts/zero001-review-build/compiled-files.sha256)
+          test "$count" -ge 3000
+          cat > artifacts/zero001-review-build/source-metadata.txt <<EOF
+          evidence_scope=unmerged-review-candidate-only
+          source_commit=${GITHUB_SHA}
+          build_environment=NODE_ENV:production,HSE_APP_ENV:production,HSE_DATABASE_DRIVER:postgres
+          live_database_connections=none
+          artifact_file_count=${count}
+          release_manifest_source_commit=${GITHUB_SHA}
+          EOF
+          grep -F "$GITHUB_SHA" release-manifest.json >/dev/null
+          grep -F '"applicationEnvironment": "production"' release-manifest.json >/dev/null
+          cp release-manifest.json artifacts/zero001-review-build/release-manifest.json
+          sha256sum .next/standalone/server.js >> artifacts/zero001-review-build/source-metadata.txt
+          sha256sum artifacts/zero001-review-build/compiled-files.sha256 >> artifacts/zero001-review-build/source-metadata.txt
+      - name: Generate GitHub OIDC signed build provenance for manifest bytes
+        uses: actions/attest@v4
+        with:
+          subject-path: artifacts/zero001-review-build/*
+      - name: Retain exactly signed review-only manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: zero001-review-build-provenance-${{ github.sha }}
+          path: artifacts/zero001-review-build/
+          if-no-files-found: error
+          retention-days: 14
