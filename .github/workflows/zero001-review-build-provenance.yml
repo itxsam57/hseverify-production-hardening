@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/zero001-review-build-provenance.yml
   # Review-only manual retry; never touches live staging, production or approved source.
+  # Sign the source that also contains the Case Replay hydration regression test.
   workflow_dispatch:
 
 permissions:

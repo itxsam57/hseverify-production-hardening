@@ -5,12 +5,17 @@
   "baseline_historical_source_cases": 1610,
   "candidate_218_IDs_identical_to_pin": true,
   "candidate_current_test_file_count": 563,
-  "candidate_current_test_source_content_sha256": "a75e9cb0bf8ede7f3538db26c78623b855ec8ee131fc0ff960a963ee73e27d02",
+  "candidate_current_test_source_content_sha256": "1a8e657b9918a5434c4ecfcf7e5599f75eab15eccccbe2610f91bf7b35f55cb7",
   "candidate_current_unique_literal_source_cases": 1612,
   "current_full_verified_count": 0,
   "eligible_to_repin_approved_source": false,
   "existing_historical_case_ids_removed": 0,
   "known_changed_test_paths_sha256": [
+    {
+      "path": "tests/browser/case-replay-scoring-assistance-e2e.browser.test.mjs",
+      "sha256": "ff5e26b59d242abd57011756ea3e11b142fd47560364f6ff7a3848b22dcb377e",
+      "status": "M"
+    },
     {
       "path": "tests/browser/credential-validity.browser.test.mjs",
       "sha256": "c7dfe5a3f3d7afd7ccc77f72ae1c9b7174d69948664794402ade20b6fce72272",
