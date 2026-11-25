@@ -495,7 +495,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.245846+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance"
+        "Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.01: fresh isolated source case Failure to persist acceptance rolls back the Worker account, flow and OTP, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=029bec8fe661ed7e087aa99b3e3d1d57ece9a557e8a7f79c2b7faeda9321366d. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -514,6 +515,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.01.log",
           "sha256": "eaefcb39a1a35363f16d6937c0b143a7933c08270a1cf3df01ebd7e4736149bf"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.01-fresh-revisit.json",
+          "sha256": "a7ce9519bb44e9738370e869bfa95c8e5c7e7d30b56e79a1a9569de8e186bdf1"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.01-fresh-revisit.log",
+          "sha256": "029bec8fe661ed7e087aa99b3e3d1d57ece9a557e8a7f79c2b7faeda9321366d"
         }
       ]
     },
@@ -526,7 +539,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.245974+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts"
+        "Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.02: fresh isolated source case Real Company browser refuses expired email OTP and cross-origin resend, then allows only fresh resend, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=9cc50bee42f224f4a4f4fc6c31121adcea8442493184e5cda52dd6a5d3ec9339. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -545,6 +559,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.02.log",
           "sha256": "5645ceb4e550b50444edbc406b7d104a9cac0e42f94f8a333639bc2a785cf83e"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.02-fresh-revisit.json",
+          "sha256": "e167838c9583087428fe1bb09c7503f02b6efa1d08f7d5be9a7ee3dca0531c50"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.02-fresh-revisit.log",
+          "sha256": "9cc50bee42f224f4a4f4fc6c31121adcea8442493184e5cda52dd6a5d3ec9339"
         }
       ]
     },
@@ -557,7 +583,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.246075+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions"
+        "Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.03: fresh isolated source case two real Worker registrations verify email+phone OTP and cannot duplicate Worker ID or apply for exams, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=20da9be31832f9c6ebf808c1131acfa845a365146f5e210f6b58ba25bb977543. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -576,6 +603,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.03.log",
           "sha256": "8889100d17eb0965f697f216baa5ba59bec0468239f6b846188127496991e319"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.03-fresh-revisit.json",
+          "sha256": "9c529cd8020f7555085fc4877ee954a820946964f444017db2d77092ae82a777"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.03-fresh-revisit.log",
+          "sha256": "20da9be31832f9c6ebf808c1131acfa845a365146f5e210f6b58ba25bb977543"
         }
       ]
     },
@@ -588,7 +627,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.246182+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Company registration commits email/MFA denials and activates only a Company owner in a pending tenant"
+        "Company registration commits email/MFA denials and activates only a Company owner in a pending tenant",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.04: fresh isolated source case Company email exhaustion commits five rejections and immutable audit; correct exhausted code cannot advance, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=d271aa0f6a668f76c9ae83449b63e62b387b20d0f6952105d3425fef1a10880b. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Company registration commits email/MFA denials and activates only a Company owner in a pending tenant. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -607,6 +647,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.04.log",
           "sha256": "5bbfc35def7e3f9aba48a5227780aa3296b4f74670ec4f16decbd580877fc6a8"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.04-fresh-revisit.json",
+          "sha256": "9075e0c623b3599806aa3f9f3a3e26f735a2e7b8b548270249f9d62f6f6563fd"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.04-fresh-revisit.log",
+          "sha256": "d271aa0f6a668f76c9ae83449b63e62b387b20d0f6952105d3425fef1a10880b"
         }
       ]
     },
@@ -619,7 +671,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.246259+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role"
+        "M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.05: fresh isolated source case Issuer revocation blocks a fresh token and an already-open enrollment, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=ba6fceb456a20e73e40e8c6ec286bbae99e772b912af828666142061447bf1f5. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -638,6 +691,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.05.log",
           "sha256": "86c00a303599f87f4355b46ad1c8f677ce3e688b4f010f886784ddc7edb1396c"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.05-fresh-revisit.json",
+          "sha256": "8fe5e845adc1285b479b3e841e93124084ce9fb0ea6acad19f318ef82374ef05"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.05-fresh-revisit.log",
+          "sha256": "ba6fceb456a20e73e40e8c6ec286bbae99e772b912af828666142061447bf1f5"
         }
       ]
     },
