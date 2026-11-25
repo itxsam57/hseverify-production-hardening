@@ -181,7 +181,8 @@
         "R01 source/hash read-only parity reconciliation with the prior stage-metadata read: no approved exact pinned candidate staging and trusted rollback proof; not an executed deployment or staging request",
         "2026-11-25 post58 safe stage status: env declares7ff, HTTPS200, PG16/outbox live; persisted stage-metadata source d2043b50 conflicts, no signed bundle/retained backup/rollback proof and no operator approval.",
         "2026-11-25 original ZERO-001: active staging HEAD6a src/lockfile/next.config Git blobs match pin7ff but signed source-to-binary unverified, stage metadata d204 mismatches pin, old 2026-11-21 backup not proven latest/restore and no approved operator rollback; stage unchanged.",
-        "2026-11-25 original ZERO-001: actual live next-server cwd active stage standalone, with source, lockfile and next config tracked blobs equal pin7ff, but active Git HEAD6a mismatches release guard pin7ff; stage metadata d204 stale. Signed source-to-binary provenance, latest verified backup and approved rollback still blocked; read only, no live changes."
+        "2026-11-25 original ZERO-001: actual live next-server cwd active stage standalone, with source, lockfile and next config tracked blobs equal pin7ff, but active Git HEAD6a mismatches release guard pin7ff; stage metadata d204 stale. Signed source-to-binary provenance, latest verified backup and approved rollback still blocked; read only, no live changes.",
+        "2026-11-25 ZERO-001 original M1.01.04: live synthetic stage read-only fresh private AES256-GCM encrypted retained backup and separate key; decrypt and restore same ciphertext isolated PostgreSQL16, 193 tables/979 rows exact per-table hashes, live unchanged. Frozen7ff isolated standalone boots restored DB, 6 public portal login GET200, readiness anonymous401 authorized200, 2 anonymous protected redirects307; one isolated pg_ctl failure due Unix pathname length preserved and one corrected short-path retry pass. NOT signed build, offsite backup, authenticated cross-role journeys or approved shared stage rollback."
       ],
       "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
       "gates": {
@@ -218,6 +219,18 @@
         {
           "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-current-process-readonly-20261125.json",
           "sha256": "19b3b50e56015636a8c8a933341e9b5857c2d727115068334453c7b8b4d9c2c3"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-retained-backup-20261125T120151Z-0590235b.json",
+          "sha256": "15a20f080366e4679cab516034d2e1c07bd0540007de8c08924c81d325a92cdf"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-latest-restored-app-20261125T120336Z-7b492726.json",
+          "sha256": "39f9f46f38c19ce94554b09869233e6dd831a8aa659b346e6f70a14aeb684bd3"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-latest-restored-app-20261125T120414Z-60433578.json",
+          "sha256": "f8e84777f44b6bca3b1d84141082316c68632ac314329109fc488c09905783ea"
         }
       ]
     },
