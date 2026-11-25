@@ -715,7 +715,8 @@
       "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB"
+        "M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB",
+        "2026-11-25 original ZERO-004 capped five-source-case revisit, M1.03 M1.03.06 2 independent new exact pin7ff test cases PASS1/1 each; every login page binds one fixed role to one server action, locked-account messaging is available only after password and role proof. Raw hash verified; existing original scoped six-role UI cases not rerun. Full manual security, UI/keyboard/accessibility, complete cross-role/adapter contracts and independent Reviewer not closed. TECH FULL not awarded."
       ],
       "result_summary": "Actual browser test 1/1 PASS: M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
       "gates": {
@@ -736,6 +737,26 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.06.log",
           "sha256": "61c33eb8dfda674ee405d31a62e90bb7be0a348271ad8d049085e604851d31a8"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero004-auth/ZERO004-three-scenarios-five-tests-three-review.json",
+          "sha256": "f729a16a3b00144fb166987221433ac216f313b95adde7cab59fa3b38796d8b0"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/role_login_binds_action.json",
+          "sha256": "d7eddaa306f348eab6ceb5489df50e15e90e4b73d47db0f58dff64ea9b74c1e5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/role_login_binds_action.log",
+          "sha256": "fadff086a7635b2ae99783ed0a4f62fa5f38d3a28b7f1b300fe35ff85eb507f3"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/locked_message_proof.json",
+          "sha256": "16d354a8f1ef493907e2aeb31aa94508aeda29955ac83ef2d9782f02976e22b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/locked_message_proof.log",
+          "sha256": "1cb50d491d8601099d4df801e3f30b62e339e1ca2f2d00352dc64b78b44eab85"
         }
       ]
     },
@@ -748,7 +769,8 @@
       "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay"
+        "M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay",
+        "2026-11-25 original ZERO-004 capped five-source-case revisit, M1.03 M1.03.07 1 independent new exact pin7ff test cases PASS1/1 each; Six-role active sessions preserve foreign accounts, revoke owned other and current sessions. Raw hash verified; existing original scoped six-role UI cases not rerun. Full manual security, UI/keyboard/accessibility, complete cross-role/adapter contracts and independent Reviewer not closed. TECH FULL not awarded."
       ],
       "result_summary": "Actual browser test 1/1 PASS: M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
       "gates": {
@@ -769,6 +791,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.07.log",
           "sha256": "964b3d12b9823d368da46591e8b1bc4c40904e4f9d5626ae5de039ad9a63d434"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero004-auth/ZERO004-three-scenarios-five-tests-three-review.json",
+          "sha256": "f729a16a3b00144fb166987221433ac216f313b95adde7cab59fa3b38796d8b0"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_active_sessions.json",
+          "sha256": "e72f2ac683fd9071de8f18d42f39e9a1d5e0a440422e5e0ba3be1781d684aa54"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_active_sessions.log",
+          "sha256": "31a9a33845fc7ac9ec8d51441e59bbd3ea6261911be9abf397c575101a49097d"
         }
       ]
     },
@@ -781,7 +815,8 @@
       "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "All six roles change passwords with reauthentication, keep current sessions and revoke other sessions"
+        "All six roles change passwords with reauthentication, keep current sessions and revoke other sessions",
+        "2026-11-25 original ZERO-004 capped five-source-case revisit, M1.03 M1.03.08 2 independent new exact pin7ff test cases PASS1/1 each; Six-role email recovery preserves MFA policy, revokes sessions and denies replay, Required queue failure rolls back actual recovery password, sessions, challenge, flow and completion audit. Raw hash verified; existing original scoped six-role UI cases not rerun. Full manual security, UI/keyboard/accessibility, complete cross-role/adapter contracts and independent Reviewer not closed. TECH FULL not awarded."
       ],
       "result_summary": "Actual browser test 1/1 PASS: All six roles change passwords with reauthentication, keep current sessions and revoke other sessions. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
       "gates": {
@@ -802,6 +837,26 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.08.log",
           "sha256": "3ce4e28913f82eb4ab50d974b2edcbeb02a68c152bfe0ebf25e72ff47578f4bd"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero004-auth/ZERO004-three-scenarios-five-tests-three-review.json",
+          "sha256": "f729a16a3b00144fb166987221433ac216f313b95adde7cab59fa3b38796d8b0"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_recovery_replay.json",
+          "sha256": "c9fade4b4c2ecfc3afb708031cbcaf2a25bda9f4ef010b00eedefd443ac2c356"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_recovery_replay.log",
+          "sha256": "712268c0af4077a606af3fca9797165a6460e3586977f72ea88ca24a2ea00daa"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/recovery_queue_rollback.json",
+          "sha256": "be0f78d2c6661b9680671c394b232445ee99ad3c3d6df2c201bc5cee982d7a5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/recovery_queue_rollback.log",
+          "sha256": "b7951d132035d989e0e01bf999740ece7734a170f49ec6ebfae7aac2e3f86b85"
         }
       ]
     },
