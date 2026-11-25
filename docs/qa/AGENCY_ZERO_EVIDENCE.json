@@ -13,7 +13,13 @@
       "tested_actions": [
         "Real Chromium GET worker/company login, asserted response CSP/HSTS/no-sniff/redirect; initial assert failed on script-src-attr event",
         "Same original assertion instrumented and rerun: inline onerror remained blocked, script-src-attr events observed on worker AND company login",
-        "Real Chromium signed-out Worker/Company CSP/HSTS/no-sniff/frame/referrer permissions and strict script-src-attr violation both, denied URL and no secret leak \u2014 current exact source recheck passed; no full original verification award"
+        "Real Chromium signed-out Worker/Company CSP/HSTS/no-sniff/frame/referrer permissions and strict script-src-attr violation both, denied URL and no secret leak \u2014 current exact source recheck passed; no full original verification award",
+        "2026-11-25 frozen7ff production env fail-closed five identities PASS: valid production accepted; unsafe PGlite, sandbox, demo, NODE_ENV=production/HSE_APP_ENV=test rejected (two initial matcher issues reconciled without changing product). Isolated new production standalone 6 public role HTTP200 and 139 real PG16 migrations; full authenticated/UX/pentest/reviewer remains blocked.",
+        "2026-11-25 exact approved source pin7ff fresh independent production standalone+PG16 isolated HTTP route security: Root bootstrap, Worker registration sandbox inbox, Company registration sandbox inbox all returned404 even with correct production mode; no secrets in bodies; anti-frame deny on all, 3 scoped positive isolation assertions. Not full manual pentest, authenticated roles, UX or owner approval.",
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER On UNAPPROVED 22db exact build, six production-mode authenticated role portal logins (Worker, Company, Assessor, Verifier, Admin, Root) passed on real Chromium + disposable PostgreSQL16; invalid Worker password rejected without auth cookie. CYBERSECURITY All six logged-in cross-role dashboard attempts redirect to access-denied; invalid password creates no session; additional production sandbox entrypoints 404 on earlier approved pin7ff. This is scoped adversarial negative checking, not comprehensive OWASP/manual penetration. REVIEWER AI inspected seven real Chromium role outcomes and raw JSON hash; not separate independent final reviewer or owner UI/UX acceptance. Scoping explicitly unmerged source22db. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 unmerged source6a4d7a8 pre-final independent automated axe accessibility scan of 21 signed-out page/width combinations (320,390,1280px) found0 recorded violations/serious/critical, but 21 incomplete checks and NO authenticated keyboard/screen-reader review. Scope remains SCOPED, not owner-ready. Automated scanner pre-final artifact SHA 8c827401336aa3aa50a680f79d4004d5613682a51914ad3000cfb8202dd90a03.",
+        "2026-11-25 exact UNMERGED source6a4d7a8 manual Worker login CSRF Origin challenge with genuine raw HTTP: captured valid-credentials live Next Server Action form payload in isolated browser, first verified Node transport sends foreign Origin to independent localhost echo, then replayed with Origin https://foreign.invalid; actual backend HTTP500, NO session cookie, NO Worker dashboard redirect. Same genuine credentials from normal browser origin HTTP200, session cookie and Worker dashboard pass; single selected real Node+Chromium test TAP1PASS0FAIL0SKIP exit0. Earlier two test-only Playwright route.continue Origin overrides were IGNORED by browser transport, causing false harness FAILs; original logs preserved, not app vulnerability. This is one scoped manual auth-CSRF check, not full pen/UI/role clearance. ENGINEER PASS scoped; CYBERSECURITY PASS scoped; REVIEWER AI evidence triage scoped only.",
+        "2026-11-25 Exact unmerged source85a9 PRODUCTION mode real HTTP test (NO protected stage): ENGINEER Exact review-only source85a9 NEXT production standalone built successfully (real NODE_ENV production HSE_APP_ENV production HSE_RELEASE_ENV production and failclosed validated offline PostgreSQL URL; source bundle hash ddcb54...), and three actual public role/login GET HTTP200 in isolated localhost. First valid production build reused only after exact hash assertion on retry, no unnecessary recompilation, isolated server stopped clean. CYBERSECURITY Three real production HTTP role login document responses Worker, Company, Root contained strict per-request nonce script CSP, no script-src unsafe-eval or unsafe-inline, CSP frame-ancestors none/object-src none/form-action self, HSTS max-age31536000 and X-Frame-Options DENY + nosniff. This negates DEV ZAP unsafe-eval finding for these three real production paths. But 404 HTML for excluded /robots.txt and /sitemap.xml still has no CSP and style-src unsafe-inline remains in code; evaluate as separate defense-in-depth risk, do not treat all CSP issues resolved. REVIEWER AI source/runtime/log hash reviewed, not independent outside certification. First header-check harness falsely returned empty CSP due case-sensitive copied HTTP headers despite valid Next login200; preserved failed harness SHA. Retry normalized headers lower-case and reused exact source production build verified unchanged, 4 scoped PASS0FAIL; no real HTTPS staged binary, authenticated UI/a11y/manual pen or final reviewer. Test 4 bounded checks PASS, first false failure retained. SHA 107a309bb109778344e50dfee32245b46bbf82298d9abbfcaf5c09f01ae5d45e. No technical FULL awarded or source pin retarget."
       ],
       "result_summary": "FAIL initial strict CSP browser event expectation, then same assertion PASS in isolated one-time diagnostic retry; no unsafe inline JS execution observed; flaky signal not yet resolved; no full role workflow proof REVISIT R01: genuine original selected source result PASS against pinned unchanged application SHA. Prior failure/timing/obsolete-mock evidence is preserved and not silently discarded. Full engineer/security/reviewer/adapter gates remain open.",
       "gates": {
@@ -46,6 +52,70 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.01.revisit.log",
           "sha256": "9a452d2b33994eb85ed8091f612f66da3f4deb0cd6a3759cbc8ad8ca1d8a46a7"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-production-environment-five-cases-reconciled.json",
+          "sha256": "433f10da19f57042ae6daa9eca4a416efb468a1a0b7fd35fb71ce96461d667ad"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-PG16-exact-standalone-20261125T140008Z-63c79c.json",
+          "sha256": "d41b45ef46e7567aef67096ff3ab58e727c9b88979ce31c85f63bb0e7e91359b"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-production-sandbox-denial-20261125T144247Z-b7cd7f.json",
+          "sha256": "181ad4245097d50f736e925da2e596c601e921b0d465ca67504f9eb21bdc82c5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-modern22db-production-auth-sixroles-retry2-20261125T152239Z-0d2bae.json",
+          "sha256": "e031103578edebf62a4477c4075e5689373274003bc5cd03c6add14362132e0c"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-M10103-medium-audit-source-triage-bc902-425-20261125.json",
+          "sha256": "bcd7bfdaed7e41ab70415075dbfe1115de95d9c5edbdde5e48f840c8de10e3de"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
+          "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-6a4d7a8-pre-crosscheck/axe.json",
+          "sha256": "8c827401336aa3aa50a680f79d4004d5613682a51914ad3000cfb8202dd90a03"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-6a4d7a8-pre-crosscheck/browser.json",
+          "sha256": "7db6a7afb4b564ea15e26c9292bb9a9d0095369287367f56a125b54c872a4c9c"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-latest-6a4d7a8-pre-full-audit-ZAP-axe-triage-20261125.json",
+          "sha256": "5d809d9bf936242993e1d401cde725cce9e61905ff7dac365651522842aea7b9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10101-real-CSRF-raw-Origin-negative-and-false-Playwright-transport-triage-20261125.json",
+          "sha256": "8de8adeda42d25f6b189be034484ee5feb5cc49cc008b3ea8c6e25fa245829b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.json",
+          "sha256": "3afc7edb6f51eb1c863d59d64900326fe297aa3c0945801c27da45a433e038ff"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.tap.log",
+          "sha256": "2c448094873e1bcea3549eb5af0e092e5f40cde33e7a68f767395432b16a33eb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-manual-origin-outcome-retry-20261125T170724Z-77ee.json",
+          "sha256": "849520f2efd0ddcb05d08375d5ecb6558d459f1a7afcbd9c0c7d02f66192f05d"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9-production-CSP-same-source-first-false-negative-retry-ECR.json",
+          "sha256": "107a309bb109778344e50dfee32245b46bbf82298d9abbfcaf5c09f01ae5d45e"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9-prod-CSP-headers-20261125T172640Z-de8ab5.json",
+          "sha256": "127e8fd82ae7661c633f1072a04be87affdf649f21b7b509cefa5f5740f92309"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9-prod-CSP-headers-retry1-20261125T172815Z-fa5938.json",
+          "sha256": "25e0614f165d7ddd559c03416b8ba3ba84a0e00fa0e33589e1ec0616a3206c23"
         }
       ],
       "revalidation_events": [
@@ -72,15 +142,20 @@
       "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
       "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
       "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
-      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "technical_verdict": "FAIL_CONFIRMED_CONCURRENT_PG16_MIGRATION_STARTUP",
       "tested_actions": [
         "Real separate PostgreSQL 16 applies 139 migration records once/idempotent and preserves history, rejects injected unknown migration",
-        "Prod/preview rollback forbidden and intentionally wrong checksum blocks apply and rollback, database checksum restored"
+        "Prod/preview rollback forbidden and intentionally wrong checksum blocks apply and rollback, database checksum restored",
+        "2026-11-25 ZERO-001 original M1.01.02 exact frozen7ff: two previously not-yet-credited source cases in disposable PG16 seeded139, explicitly acknowledged rollback preserves preceding history/reapply and all139 reverse down and up, TAP 2 PASS 0 FAIL 0 SKIP exit0. Source prior two checks in original report scoped only, reviewer and full migration-security/staging still blocked; no shared mutations.",
+        "2026-11-25 NEW PRODUCT FAIL on approved frozen7ff: two concurrent isolated PostgreSQL16 migration processes exit 0 and 1 with SQLSTATE23505 pg_type duplicate relation type hse_schema_migrations; first still writes 139 migration rows. Draft protected PR241 fixed on different source337ec34: two migrators exit0/0 with 139, original PG16 4/4 green, PGlite checksum 3/3 green, targeted lint green. Approved candidate remains buggy and not repinned.",
+        "2026-11-25 reviewed combined source candidate proposal PR243 SHAdecec20 incorporates only already corrected PG16 advisory lock, permanent concurrent startup test and 2 unrelated full-CI acceptance fixes. Candidate PG16 migration-integrity CI successful; no merge and approved source pin7ff still contains confirmed 23505 concurrency failure. Full M10102 stays FAIL.",
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Approved pin7ff CONFIRMED PG16 two-deployer 23505 race; protected fix source337ec34 and modern candidate22db real PG16 startup + migration CI pass, but not approved candidate pin. CYBERSECURITY Original confirmed concurrent deployment startup availability vulnerability remains in approved pin7ff; session advisory lock repair only proposed/CI-tested on other SHA. REVIEWER AI cross-checked original FAIL and protected fix PASS at distinct SHAs; cannot accept M10102 until owner-reviewed integration and target-SHA replay. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 protected UNMERGED source22db PG16 crash recovery scoped 4/4 PASS: session advisory lock blocks waiting actual second migrator before DDL; SIGKILL holder frees lock, waiter applies exactly139 migrations exit0, retry idempotent exit0 still139, no leaked advisory locks, private PG cleanly stopped. Original APPROVED source7ff migration startup defect remains FAIL, no full status, source repin or shared-stage writes."
       ],
       "result_summary": "2/2 explicitly selected PG16 test cases PASSED against disposable loopback PostgreSQL, 139 migrations applied twice idempotently, rogue applied migration denied, bad checksum rejected and prod/preview rollback prohibited; two other original migration cases not executed this batch",
       "gates": {
-        "engineering": "PASS",
-        "functional_workflow": "BLOCKED",
+        "engineering": "FAIL",
+        "functional_workflow": "FAIL",
         "ui_accessibility": "NOT_APPLICABLE",
         "cybersecurity": "BLOCKED",
         "independent_review": "BLOCKED",
@@ -89,12 +164,57 @@
       "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
       "open_high_or_critical": null,
       "blocking_defects": [
-        "Full three-discipline review evidence and/or uncovered cases remain"
+        "Full three-discipline review evidence and/or uncovered cases remain",
+        "RELEASE-BLOCKING PRODUCT DEFECT on approved source7ff: PostgreSQL16 two-process migration startup DDL race with SQLSTATE 23505 (pg_type typname hse_schema_migrations). Review-only unmerged PR241 source337ec34 passes on changed code; final authorized merge/repin/recheck outstanding."
       ],
       "raw_evidence_refs": [
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10102-postgres.log",
           "sha256": "43b55221e0f7411fffcc76716084c2dd3863f0ff473666c688364f3512d1f22e"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-M10102-reverse139-20261125T122220Z-fd8a13.json",
+          "sha256": "cd68671a621d041c79ea53fae4a37532085d24f655deda63a76d6fb2c8c8e97a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-M10102-reverse139-20261125T122220Z-fd8a13.log",
+          "sha256": "2bf88768d5793cec8fee166450b755cf79503ca92d374d9148e7c855ea3c5326"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-original-M10102-complete139-reverse-evidence.json",
+          "sha256": "aa7ff84399e5ac9f6ef575603dc3861e83c8ba36e1c2f935da1cd23139f31899"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-PG16-parallel-migrators-20261125T140258Z-30d656.json",
+          "sha256": "eb045cd5cb06befcfcde701e080223da0bc6d90c315ac3a5e495a0d15330fc89"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-PG16-parallel-migrators-locked-337ec34-20261125T140941Z-82d564.json",
+          "sha256": "e39aabf03cb34d432c287499c906582c0b7e5c35a698e232169aeddbe10d61c7"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-PG16-four-changed-SHA-retry1-337ec34-20261125T141052Z-f21858.json",
+          "sha256": "5c6a873538dd88a2554f167e60490ae84e1357643958654a25db0c924456346a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-sequential-closure-new-defect-release-evidence-combined.json",
+          "sha256": "37409bb531f146df2f9c62596032a41ab46bf66271ec8320a464ff9b56754e5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-consolidated-source-candidate-review-only.json",
+          "sha256": "79dda186e8be62e7dab04468c25072820c9d4d19a8f9d820072ec39cd9974a14"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-modern22db-PG16-exact-standalone-20261125T151704Z-4b4312.json",
+          "sha256": "fd83bf6f88ca4bbc64689b6d7da077cd8f64eaf60c082565de6edbe2e42f4ff9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
+          "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-22db-PG16-crash-advisory-lock-recovery-20261125T153433Z-66e864.json",
+          "sha256": "92fae751ec9e4cd42472f4ee8e2df2c7403aed02f88de3efe2509a478b8930aa"
         }
       ]
     },
@@ -108,7 +228,23 @@
       "technical_verdict": "INCONCLUSIVE_CI_GREEN_NOT_ALL",
       "tested_actions": [
         "Read-only authenticated GitHub Actions exact pinned SHA run inventory, 92 total, 91 success, 1 failed",
-        "R01 current isolated exact source probe: all five historical HTTP 500 paths responded without 500, current browser-shard policy regression 2/2 PASS; original exact-SHA independent hosted audit still FAILED with 6 critical and 20 high findings"
+        "R01 current isolated exact source probe: all five historical HTTP 500 paths responded without 500, current browser-shard policy regression 2/2 PASS; original exact-SHA independent hosted audit still FAILED with 6 critical and 20 high findings",
+        "2026-11-25 post58 full hosted audit #45599663897 started on exact7ff source; current result pending. Real original audit FINAL-AUDIT.json SHA256 78302e0c0bd000681eb6e7982e7b19390d0f863ce285ceb45c4e68e1e2609b92 historic 6 critical and 20 high grouped by source, no current clearance.",
+        "2026-11-25 new exact pinned7ff full audit 45599663897 failed 6 critical/20 high; actual server log confirmed CI production with forbidden test env: fail-closed expected. Existing QA dev-synthetic mode audit 45361516452 17/17 browser PASS 1 critical/0 high, remaining full regression Company Workforce th mapped cell rather than header. Existing source-only draft PR224 scope=col local scoped PASS, hosted 45603019052 pending. Official source pin unchanged and full review/security blocked.",
+        "2026-11-25 original ZERO-001: PR224 QA SHA91702d8 hosted preliminary audit run45603019052 17/17 browser and 8/8 MFA/correction PASS, pre-only critical/high 0; full regression not yet terminal; official pin7ff prior full audit failed and full independent pentest/reviewer blocked.",
+        "2026-11-25 QA91702d8 PR224 GitHub independent full audit #45603019052 terminal FAILED one critical generic regression Verifier AI scoring/Case Replay criterion mark input count0 versus2 at testline219; identical browser source case in isolated frozen7ff 1/1 PASS; different SHA/config, QA CI failure unresolved, no TECH FULL.",
+        "2026-11-25 strict ZERO-001 closure: QA917 hosted full audit attempt1 terminal FAILED Case Replay controls 0 expected2. New one-time same QA source local Chromium TAP1PASS/0FAIL/0SKIP, wrapper crashed after Node run so process rc unrecorded; cannot clear hosted CI. Hosted failed-only rerun attempt2 initiated IN_PROGRESS, source pin7ff unchanged and strict QA runtime drift guard remains RED. No full cybersecurity/reviewer or exact pin CI proof, original scenario stays INCONCLUSIVE.",
+        "2026-11-25 hosted changed QA917 full audit #45603019052 attempt2 TERMINAL FAILURE, critical1 generic full regression exit1, high0. New failing test is Worker evidence resolves without approval and escalation returns through Admin: Playwright page.goto to /worker/evidence interrupted by another navigation to SAME route at evidence-review-resolution.browser.test.mjs:117 after submit. Previous attempt1 separately failed verifier Case Replay controls0 expected2; failure shifted, full gate still RED. This is inconclusive CI browser synchronization vs product behavior; no assertion weakened and NO full approval. Private attempt2 actual FINAL-AUDIT and full regression logs hashed.",
+        "2026-11-25 isolated QA917-based test-only fix PR242 SHAe1c6d03 removed duplicate page.goto to Worker evidence immediately after a real Server Action refresh; preserves existing visible active-submitted state and full Worker/Verifier/Admin escalation assertions. Local targeted real Chromium case passed1/1 exit0 with raw receipt+log; hosted full-system run45635211149 dispatched, status in_progress at snapshot. Independently consolidated source candidate draft PR243 SHAdecec20 includes protected PR241 migration and Company table accessibility and this test fix; full audit run45636196385 launched in_progress. No hosted full green or approved candidate repin.",
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Historical-source delta 1610 old/1612 current source cases, zero new pass credits, original 1436 remain past-only; three named integrity cases passed, hosted 22db full-system terminal still pending as captured. CYBERSECURITY Preliminary independent full audit on earlier app-equivalent bc902 0 critical/0 high but 14 medium triaged; same auth code source unchanged in 425. Full terminal and manual security remain open; production provider adapters not live. REVIEWER AI checks indexed old tests and detected changed new test definitions NOT new green; 2 of 14 medium browser 401 require UX/network trace. Full hosted audit incomplete. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 unmerged review source 1b495f5. ENGINEER: One specifically named Case Replay real Chromium TAP 1 pass / 0 fail / 0 skip, both rubric marks POST200/reload persistence, human decision persisted, Admin Case Replay visible. The prior CI e1c6 failed on inert pre-hydration spinbuttons, minimal test-only hydration readiness added. First local rerun used external symlinked node_modules rejected by Turbopack, raw failure preserved. Physical package installation copied; rerun succeeded. TAP process exit code NOT CAPTURED; do not claim 0. CYBERSECURITY: No new authenticated permission/pentest claims from this Case Replay regression. Prior scope-level role/session negative checks remain, complete manual/adversarial audit outstanding. REVIEWER: AI source/log evidence check: original count assertion2 remains, only added wait on actual aria-busy=false hydrated rubric mark form. One real named browser case TAP PASS, exit code unavailable. Independent signed reviewer verdict not yet obtained; hosted full run on current SHA and comprehensive UX/performance testing outstanding. Original verdict, approved source7ff and 218 numerator not changed.",
+        "2026-11-25 latest protected candidate SHA6a4d7a8 now has exact-source full independent audit run #45652287972 IN PROGRESS; same SHA signed review-only production build #45652288070 GREEN and independently Sigstore verified. This is not a full current CI verdict; retain original M1.01.03 inconclusive until terminal run is inspected.",
+        "2026-11-25 current exact protected UNMERGED QA source6a4d7a8. ENGINEER One previously failed privacy real browser Workflow current6a4d7a8 isolated PGlite+Next+Chromium exact Worker correction/Admin approval/persisted profile/legal hold denied/expired recording erased/session revoked/audit retained: TAP 1/1 pass0fail0skip, subprocess EXIT0. Earlier different SHA bc902 full audit privacy UI timed out, not reproduced on current SHA. Older full22db generic command exit124 90min timeout while Worker report browser cancelled, separate from confirmed product defect. CYBERSECURITY No generic pen approval from one privacy browser case; its relevant legal hold and revoked-session boundary were exercised but additional cross-role/tenant authorization and manual penetration remain open. REVIEWER AI source/log/exit-code review: exact one test TAP PASS process0 with synthetic fixture; separate full GitHub run current6a still in progress at capture; older 22db regression timed out at command budget 5400s (exit124) rather than a verified exploit. Not independent final reviewer signoff. Source pin7ff, original verdict, 218 ledger unchanged.",
+        "2026-11-25 SHA6a4d7a8 pre-crosscheck FINAL-AUDIT before 90minute full regression says 0critical,0high,14medium (11 complexity, 1 scanner pattern matched SQL COMMENT, 2 signed-out root contact401 console). Passive localhost dev ZAP reported four medium alerts: absence anti-CSRF tokens on public Next Server Action forms, CSP unsafe-eval, CSP unsafe-inline style, missing CSP on POST/robots/sitemap. These are UNRESOLVED until manually checked in real production context, not falsely waived. Automated axe21 scanned public signed-out pages no recorded violations, all with incomplete manual review. Full source6a GitHub audit45652287972 NOT terminal at capture. No full certification.",
+        "2026-11-25 ZAP dev scanner alert Absence of Anti-CSRF Tokens on Worker login now manually addressed ONLY for that route: valid Worker credential Server Action replay using real raw cross-site Origin HTTP500 no cookie/dashboard, same origin HTTP200 login; Playwright header interception ignored Origin, two false-harness positives preserved. Other registration/contact/verify forms and all manual penetration still UNVERIFIED. Proof SHA 8de8adeda42d25f6b189be034484ee5feb5cc49cc008b3ea8c6e25fa245829b4.",
+        "2026-11-25 protected review source85a9e4c unmerged PR244 preserves safe Company workforce CSV export from canonical QA branch. Original approved source7ff naive csvCell quotes but does not neutralize spreadsheet formula names. ENGINEER: one real Chromium PGlite Company case passed all preserved pagination, mobile keyboard search, tenant, anonymous deny and permissions; malicious revoked owned Worker =HYPERLINK CSV neutralized leading apostrophe and escaped quotes; TAP1PASS0FAIL0SKIP process exit0. CYBERSECURITY: shared createReportCsv formula protection, company.workforce.manage authorization, tenant-scoped response no-store confirmed by exact source diff and real signed-in Company CSV. REVIEWER: exact canonical QA route blob SHA0f3cd5 imported into review-only PR; 218 original IDs, 1610 archived test definitions, 1436 prior green historical only, 1612 current source cases,16 changed file hashes and 2 new uncredited. New full GitHub audit run45663571236 and signing run45663571774 source85a9 started, not yet terminal. This is ZERO001 source/release regression, not early certification of later M1.04 case. Approved app7ff pin unchanged, zero TECH_FULL.",
+        "2026-11-25 exact unmerged PR244 candidate85a9e4c cross-code proof: ENGINEER One genuine Company workforce CSV real browser test TAP1PASS0FAIL0SKIP exit0, private owner Worker malicious formula neutralized, original tenant+anonymous+permission+search+pagination checks passed. TypeScript strict and frozen 218 source-test hash index passed; on exact same candidate SHA GitHub review-only production build completed success. CYBERSECURITY Canonical QA already present source protection createReportCsv exactly imported, removes quote-only spreadsheet formula risk. Independent trusted GitHub OIDC/Sigstore signature verifies production manifest and three signed artifact digests, exact Git commit and workflow repo/ref, new compiled file tree has 3716 fingerprints; signed digest metadata claims exactly3716. No stage running bytes or manual penetration clearance. REVIEWER Independent evidence consistency read from ECR and Sigstore receipts by AI, not separate human or accredited agency. New signed source85 has not been approved/repinned onto frozen7ff; exact new full GitHub independent audit run45663571236 terminal still pending, no staging binary/rollback proof, no full TECH certification. Original approved pin7ff unchanged and all original technical verdicts stay NOT FULL.",
+        "2026-11-25 Exact unmerged source85a9 PRODUCTION mode real HTTP test (NO protected stage): ENGINEER Exact review-only source85a9 NEXT production standalone built successfully (real NODE_ENV production HSE_APP_ENV production HSE_RELEASE_ENV production and failclosed validated offline PostgreSQL URL; source bundle hash ddcb54...), and three actual public role/login GET HTTP200 in isolated localhost. First valid production build reused only after exact hash assertion on retry, no unnecessary recompilation, isolated server stopped clean. CYBERSECURITY Three real production HTTP role login document responses Worker, Company, Root contained strict per-request nonce script CSP, no script-src unsafe-eval or unsafe-inline, CSP frame-ancestors none/object-src none/form-action self, HSTS max-age31536000 and X-Frame-Options DENY + nosniff. This negates DEV ZAP unsafe-eval finding for these three real production paths. But 404 HTML for excluded /robots.txt and /sitemap.xml still has no CSP and style-src unsafe-inline remains in code; evaluate as separate defense-in-depth risk, do not treat all CSP issues resolved. REVIEWER AI source/runtime/log hash reviewed, not independent outside certification. First header-check harness falsely returned empty CSP due case-sensitive copied HTTP headers despite valid Next login200; preserved failed harness SHA. Retry normalized headers lower-case and reused exact source production build verified unchanged, 4 scoped PASS0FAIL; no real HTTPS staged binary, authenticated UI/a11y/manual pen or final reviewer. Test 4 bounded checks PASS, first false failure retained. SHA 107a309bb109778344e50dfee32245b46bbf82298d9abbfcaf5c09f01ae5d45e. No technical FULL awarded or source pin retarget."
       ],
       "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
@@ -149,6 +285,190 @@
         {
           "uri": "private-workstation:artifacts/qa-first-audit-7ff/FINAL-AUDIT.json",
           "sha256": "78302e0c0bd000681eb6e7982e7b19390d0f863ce285ceb45c4e68e1e2609b92"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-post58-M10103-M10104-security-stage-receipt.json",
+          "sha256": "17cf8bd68521366805e7037e7954daf758050f61f358848dc12037551cfc044a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-terminal-current-rootcause-and-R40-proposal.json",
+          "sha256": "9c954895b6ea5da25bc48157e93c85bf348559bbc27b7a2f14b6850367e500f2"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-precrosscheck-stage-provenance-20261125.json",
+          "sha256": "d9641a8c14c2cfc90bef78db0eb294790e086487eef98db92be94fd633c9546a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/CI-run45603019052-final/FINAL-AUDIT.json",
+          "sha256": "ec2d7b7050dbb023f8d2f2c6ea1b37f9203101f9cf565f3c443d90664127fde6"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/CI-run45603019052-final/existing_full_regression_crosscheck.log",
+          "sha256": "7449dd7be3fa55cf38926ca78ea30ea4fea0d59d344a54e9aa432618b670b309"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO001-CI45603019052-case-replay-isolated-diagnostic.json",
+          "sha256": "92002fb424e95df1c4835f5d1cc496f17aa10f796f9e1e1d78caec3fe5437747"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-owner-sequential-closure-enforced.json",
+          "sha256": "1960a30c2d5ba6fcab3e6ca9124e3eb695205098b908c0dba2cb0f874e60e66a"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-QA91702d8-local-tap-vs-hosted-ci-reconciled.json",
+          "sha256": "7947beed72c625d5358dfc125a795ac53474d7c5b04358448660cd72e28c2edb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/QA91702d8-existing-case-replay-red-check.log",
+          "sha256": "0000ab5514710d1ede6361a5b8423cc2ebc2f0d3290d14e89469369a091e1239"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/audit-run45603019052-attempt2/FINAL-AUDIT.json",
+          "sha256": "473fed7cdb195675bc5116c22701be571e898c585d689e499509295c7ece159f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/audit-run45603019052-attempt2/existing_full_regression_crosscheck.log",
+          "sha256": "b5256fd479a6a42691586b67af470e7aadd453c121a08d818bab55cf76072204"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/audit-run45603019052-attempt2/github-artifact-15030753117.zip",
+          "sha256": "a50816f3a41494000c827a1f0c94a78706c4c0176f419be70189393a98a9d991"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-CI-browser-worker-evidence-navigation-targeted.json",
+          "sha256": "5a21f8b98c810ff5f055b238a571fee0218fad717fd5284ec519685ea6c1a675"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-CI-browser-worker-evidence-navigation-targeted.log",
+          "sha256": "686f9a29ac03a4564aeeb937e273992b23ac4919db7df41b22f66bc3c932fb69"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-consolidated-source-candidate-review-only.json",
+          "sha256": "79dda186e8be62e7dab04468c25072820c9d4d19a8f9d820072ec39cd9974a14"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-PR244-evidence-source-delta-3checks-20261125.json",
+          "sha256": "0f4fd6da7276a4a61508919bf4cf79e179c9c074a88f82c3f4032298cee4945a"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-M10103-medium-audit-source-triage-bc902-425-20261125.json",
+          "sha256": "bcd7bfdaed7e41ab70415075dbfe1115de95d9c5edbdde5e48f840c8de10e3de"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
+          "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10103-CaseReplay-hydrated-real-Chromium-TAP1PASS-20261125.json",
+          "sha256": "12f6d0febbea47d806969f439a6301a61a923ecb1dadd8568bcf56efd28e369b"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10103-case-replay-hydration-symlink-deps-inconclusive.json",
+          "sha256": "4f43de6135544800b9e4802a21a04677d1da9ca0ecb9fcc4064d61020d1c8a7a"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-e1c6d03-terminal/FINAL-AUDIT.json",
+          "sha256": "1192d68f92d59c41b10756e6bc5241e7579abebcf5c93ca2aa6972ce4b842a21"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-bc90296-terminal/FINAL-AUDIT.json",
+          "sha256": "f3c89b8134d93cc3f013dbc94aafabe91a0458d43fad8262a3879760d4b7ed5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-CaseReplay-1b495-signed-22111-CI-triple-discipline-20261125.json",
+          "sha256": "bb31f0ae687d8e277fe81a683531e94d01d0b57ff469a23a220fdd1db776e5f5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-6a4d7a8-exact-source-production-signature.json",
+          "sha256": "252395363da890febd4245bceb1a674dbe7051a570394cd2f1bea99048cfc462"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-worker-privacy-current-6a4d7a8-20261125T165840Z-7786.json",
+          "sha256": "98b812d261281f76a903e646c8de4309bbbac314ae4e8a7435c2d487426b4ded"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-worker-privacy-current-6a4d7a8-20261125T165840Z-7786.tap.log",
+          "sha256": "898dcfa246e780691c4f5182cc6257eeea1238168aec92e0f94895baa02094e9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-22db683-terminal/FINAL-AUDIT.json",
+          "sha256": "ce1ef7282de527af7daee8dacf9eacb8212cb850303289d63a3f1a1d5f3b86e7"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-22db683-terminal/existing_full_regression_crosscheck.log",
+          "sha256": "8afc1f59e618592857cb9af10d5115e14f557d39c54d7b97a889f08aa1116cd5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-privacy-browser-exit0-and-sigstore-tamper-failclosed-and-full22-timeout-20261125.json",
+          "sha256": "c21a2ed64a194a28e7d6837d2d625fbc5a58404fbe54fb8ebedad2d1516ab801"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-6a4d7a8-pre-crosscheck/FINAL-AUDIT.json",
+          "sha256": "9c46a35ac08747ce55c02571989b0d12cd67629cc042697204ee1db978ca73f4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-6a4d7a8-pre-crosscheck/static.json",
+          "sha256": "a4997849b09890ef5f9312f35e7a45b4499634a06a65d43a02404133dfbbf4fd"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-6a4d7a8-pre-crosscheck/zap/zap.json",
+          "sha256": "89cb8b0fc6fa2bce5d1190e62250f976abf9721cab61dbf3a58db6368ed25138"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-6a4d7a8-pre-crosscheck/axe.json",
+          "sha256": "8c827401336aa3aa50a680f79d4004d5613682a51914ad3000cfb8202dd90a03"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-latest-6a4d7a8-pre-full-audit-ZAP-axe-triage-20261125.json",
+          "sha256": "5d809d9bf936242993e1d401cde725cce9e61905ff7dac365651522842aea7b9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10101-real-CSRF-raw-Origin-negative-and-false-Playwright-transport-triage-20261125.json",
+          "sha256": "8de8adeda42d25f6b189be034484ee5feb5cc49cc008b3ea8c6e25fa245829b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.json",
+          "sha256": "3afc7edb6f51eb1c863d59d64900326fe297aa3c0945801c27da45a433e038ff"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.tap.log",
+          "sha256": "2c448094873e1bcea3549eb5af0e092e5f40cde33e7a68f767395432b16a33eb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-manual-origin-outcome-retry-20261125T170724Z-77ee.json",
+          "sha256": "849520f2efd0ddcb05d08375d5ecb6558d459f1a7afcbd9c0c7d02f66192f05d"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-Company-CSV-Formula-security-preserved-85a9e4c-ECR-20261125.json",
+          "sha256": "78452d0b0a6595af9c48630377a40bfb92031f2462931064a6551db2abbbe014"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-workforce-CSV-formula-real-Chromium-20261125T171529Z-8274.json",
+          "sha256": "b1b862c070f8c76a5bdf1d526cc9dd26a7c7a6098733072bd3bdc941e49b066e"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-workforce-CSV-formula-real-Chromium-20261125T171529Z-8274.tap.log",
+          "sha256": "20486ca657082036a31ec2ce89bf6e089cde63d6f8851d0004fbe5b0676f4017"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9e4c-Company-CSV-and-exact-Sigstore-three-discipline-review.json",
+          "sha256": "a79cbf4f079cc583b7fa573e481fb8e5d8d73010e3057f3e924d50108467144d"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-85a9e4c-signed-production-build-verified.json",
+          "sha256": "7af9fd7e0a91a7bf15239108222e6a4ca889fbd87b7c79fe33ee13c313a195b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9-production-CSP-same-source-first-false-negative-retry-ECR.json",
+          "sha256": "107a309bb109778344e50dfee32245b46bbf82298d9abbfcaf5c09f01ae5d45e"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9-prod-CSP-headers-20261125T172640Z-de8ab5.json",
+          "sha256": "127e8fd82ae7661c633f1072a04be87affdf649f21b7b509cefa5f5740f92309"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9-prod-CSP-headers-retry1-20261125T172815Z-fa5938.json",
+          "sha256": "25e0614f165d7ddd559c03416b8ba3ba84a0e00fa0e33589e1ec0616a3206c23"
         }
       ]
     },
@@ -163,7 +483,20 @@
       "tested_actions": [
         "Read-only HTTPS localhost GET /worker/login 200 and headers CSP/HSTS/X-Frame-Options",
         "Read-only stage-metadata SHA inspected, no provider/DB mutation, exact candidate not matched",
-        "R01 source/hash read-only parity reconciliation with the prior stage-metadata read: no approved exact pinned candidate staging and trusted rollback proof; not an executed deployment or staging request"
+        "R01 source/hash read-only parity reconciliation with the prior stage-metadata read: no approved exact pinned candidate staging and trusted rollback proof; not an executed deployment or staging request",
+        "2026-11-25 post58 safe stage status: env declares7ff, HTTPS200, PG16/outbox live; persisted stage-metadata source d2043b50 conflicts, no signed bundle/retained backup/rollback proof and no operator approval.",
+        "2026-11-25 original ZERO-001: active staging HEAD6a src/lockfile/next.config Git blobs match pin7ff but signed source-to-binary unverified, stage metadata d204 mismatches pin, old 2026-11-21 backup not proven latest/restore and no approved operator rollback; stage unchanged.",
+        "2026-11-25 original ZERO-001: actual live next-server cwd active stage standalone, with source, lockfile and next config tracked blobs equal pin7ff, but active Git HEAD6a mismatches release guard pin7ff; stage metadata d204 stale. Signed source-to-binary provenance, latest verified backup and approved rollback still blocked; read only, no live changes.",
+        "2026-11-25 ZERO-001 original M1.01.04: live synthetic stage read-only fresh private AES256-GCM encrypted retained backup and separate key; decrypt and restore same ciphertext isolated PostgreSQL16, 193 tables/979 rows exact per-table hashes, live unchanged. Frozen7ff isolated standalone boots restored DB, 6 public portal login GET200, readiness anonymous401 authorized200, 2 anonymous protected redirects307; one isolated pg_ctl failure due Unix pathname length preserved and one corrected short-path retry pass. NOT signed build, offsite backup, authenticated cross-role journeys or approved shared stage rollback.",
+        "2026-11-25 exact pin7ff isolated fresh production build exit0 with independent dependencies after first symlink workspace test failure; release manifest with 3715 generated files hashed. Disposable PG16 fresh 139 migrations and production standalone boot, six public role login GET200, readiness anonymous401/auth200 with pin7ff and signed-out private paths denied; app and PG cleanly stopped. Untrusted self-generated build not owner-signed, real stage binary not attested, no approved live rollback or offsite encrypted backup.",
+        "2026-11-25 one isolated combined release candidate SHAdecec20 prepared as draft PR243 without altering stage or official candidate pin7ff, for exact-SHA independent hosted full audit run45636196385. No signed source-to-running-stage build, owner approval, offsite backup/approved rollback or full six-role authenticated UAT yet. Remains BLOCKED.",
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Exact unapproved source22db production standalone built exit0, 3715 generated binary file inventory and self-computed release manifest, fresh PG16 139 applied; six PUBLIC role login pages and readiness/role access served; stage signed binary and authorized real rollback absent. CYBERSECURITY Self-computed manifest and private SHA tree are not owner-trusted release signature; no trusted exact stage served artifact, independent offsite backup/key or approved rollback. REVIEWER AI reviewed source/binary hash and clean disposable DB stop; operator attestation, stage HTTPS proof and recovery signoff missing. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 GitHub attested build PRIVATE OIDC security review: workflow run45647968729 failed at production build because npm ci NODE_ENV=production omitted TypeScript dev dependency; corrected npm ci --include=dev and run45648287237 SUCCESS signed 3715-file fingerprint and three artifacts. Independently downloaded artifact and verified GitHub Sigstore OIDC signature using checksum-verified GH CLI 2.105.0: crypto valid and all three file digest matches; BUT signed release-manifest.json says applicationEnvironment development while actual build was NODE_ENV=production/HSE_APP_ENV=production, because HSE_RELEASE_ENV unset and manifest generator defaulted development. Production provenance acceptance FAIL, not FULL. Strict fix on review-only PR244 source head a278644 declares HSE_RELEASE_ENV production and asserts manifest environment production prior to signature; no new signed run for corrected head available at capture (manual workflow dispatch returned GitHub HTTP500). No stage/prod writes, no official source repin or trusted running-stage binary attestation.",
+        "2026-11-25 unmerged review source 1b495f5. ENGINEER: Full local production bundle and PG16 previous evidence; new GitHub exact-commit1b495f5 production build generated 3715 file fingerprints and signed all three artifacts. CI run45651417771 SUCCESS, source committed and no running-stage deployment. CYBERSECURITY: Independently verified Sigstore OIDC signature of current source1b495f5, repository+branch+workflow identity, exact git dependency, and digest matches for compiled tree manifest, release manifest, metadata. Production environment label now production; prior signed development-labeled artifact explicitly rejected. This is an unmerged build attest, NOT evidence any HTTPS stage serves this exact artifact. REVIEWER: AI independently checked signed artifact semantics and exact commit/3 subject digests; stage binary parity, signing promotion custody and operator-approved offsite backup and restore/rollback not performed; independent reviewer final signoff unavailable. Original verdict, approved source7ff and 218 numerator not changed.",
+        "2026-11-25 protected review-only latest SHA6a4d7a8 (same app+test source blob as 1b495f5), GitHub production build #45652288070 completed SUCCESS; independent GitHub Sigstore OIDC verification on three artifact SHA256 digests and exact Git source SHA+workflow identity verified, release manifest production label correct, 3715 compiled binaries. Parallel full independent audit #45652287972 started on SAME exact SHA but not terminal at capture. No protected HTTPS stage running binary parity/owner-approved offsite key and rollback/manual pen/independent reviewer, so original M1.01.04 remains BLOCKED, 0/218 FULL.",
+        "2026-11-25 current exact protected UNMERGED QA source6a4d7a8. ENGINEER Exact source6a4d7a8 signed review-only build previously verified with 3 Sigstore subject digests and production manifest; not tested as running protected stage. CYBERSECURITY One independently executed negative tampering attack against current signed production release-manifest: modified applicationEnvironment production to development, Sigstore repository-bound verify exit1 rejects modified bytes. Original 6a signed manifest valid. This protects artifact integrity only, not stage provenance, key custody or rollback. REVIEWER AI verifies signed current source positive and rejected tampered hash negative; protected stage SHA vs running binary, offsite separately held backup key and authorized operator rollback not completed. No full technical verification. Source pin7ff, original verdict, 218 ledger unchanged.",
+        "2026-11-25 protected review source85a9e4c unmerged PR244 preserves safe Company workforce CSV export from canonical QA branch. Original approved source7ff naive csvCell quotes but does not neutralize spreadsheet formula names. ENGINEER: one real Chromium PGlite Company case passed all preserved pagination, mobile keyboard search, tenant, anonymous deny and permissions; malicious revoked owned Worker =HYPERLINK CSV neutralized leading apostrophe and escaped quotes; TAP1PASS0FAIL0SKIP process exit0. CYBERSECURITY: shared createReportCsv formula protection, company.workforce.manage authorization, tenant-scoped response no-store confirmed by exact source diff and real signed-in Company CSV. REVIEWER: exact canonical QA route blob SHA0f3cd5 imported into review-only PR; 218 original IDs, 1610 archived test definitions, 1436 prior green historical only, 1612 current source cases,16 changed file hashes and 2 new uncredited. New full GitHub audit run45663571236 and signing run45663571774 source85a9 started, not yet terminal. This is ZERO001 source/release regression, not early certification of later M1.04 case. Approved app7ff pin unchanged, zero TECH_FULL.",
+        "2026-11-25 exact unmerged PR244 candidate85a9e4c cross-code proof: ENGINEER One genuine Company workforce CSV real browser test TAP1PASS0FAIL0SKIP exit0, private owner Worker malicious formula neutralized, original tenant+anonymous+permission+search+pagination checks passed. TypeScript strict and frozen 218 source-test hash index passed; on exact same candidate SHA GitHub review-only production build completed success. CYBERSECURITY Canonical QA already present source protection createReportCsv exactly imported, removes quote-only spreadsheet formula risk. Independent trusted GitHub OIDC/Sigstore signature verifies production manifest and three signed artifact digests, exact Git commit and workflow repo/ref, new compiled file tree has 3716 fingerprints; signed digest metadata claims exactly3716. No stage running bytes or manual penetration clearance. REVIEWER Independent evidence consistency read from ECR and Sigstore receipts by AI, not separate human or accredited agency. New signed source85 has not been approved/repinned onto frozen7ff; exact new full GitHub independent audit run45663571236 terminal still pending, no staging binary/rollback proof, no full TECH certification. Original approved pin7ff unchanged and all original technical verdicts stay NOT FULL."
       ],
       "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
       "gates": {
@@ -178,7 +511,8 @@
       "open_high_or_critical": null,
       "blocking_defects": [
         "Protected HTTPS staging available in prior snapshot is DIFFERENT SHA from frozen application. Do NOT infer exact-candidate parity; deploy only to approved isolated stage and prove server/DB/asset image SHA together.",
-        "Trusted TLS chain, safe migrations/downward rollback, monitoring and operable recovery have not been demonstrated for this candidate; no live stage altered."
+        "Trusted TLS chain, safe migrations/downward rollback, monitoring and operable recovery have not been demonstrated for this candidate; no live stage altered.",
+        "2026-11-25 GitHub OIDC cryptographic signature existed for review build11741c6 but semantic release manifest was invalid (applicationEnvironment development instead of production); corrected a278644 is unverified by a new signed run, and no signed exact running protected HTTPS staging binary parity or operator rollback exists."
       ],
       "raw_evidence_refs": [
         {
@@ -188,6 +522,138 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.04.stage-parity-revisit.json",
           "sha256": "9710fa0f0d1012c9568043b2d1c32a8b18de99ecc1418069a64657cc5104a6eb"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-post58-M10103-M10104-security-stage-receipt.json",
+          "sha256": "17cf8bd68521366805e7037e7954daf758050f61f358848dc12037551cfc044a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-precrosscheck-stage-provenance-20261125.json",
+          "sha256": "d9641a8c14c2cfc90bef78db0eb294790e086487eef98db92be94fd633c9546a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-current-process-readonly-20261125.json",
+          "sha256": "19b3b50e56015636a8c8a933341e9b5857c2d727115068334453c7b8b4d9c2c3"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-retained-backup-20261125T120151Z-0590235b.json",
+          "sha256": "15a20f080366e4679cab516034d2e1c07bd0540007de8c08924c81d325a92cdf"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-latest-restored-app-20261125T120336Z-7b492726.json",
+          "sha256": "39f9f46f38c19ce94554b09869233e6dd831a8aa659b346e6f70a14aeb684bd3"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-latest-restored-app-20261125T120414Z-60433578.json",
+          "sha256": "f8e84777f44b6bca3b1d84141082316c68632ac314329109fc488c09905783ea"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-isolated-exact-pin7ff-production-build.json",
+          "sha256": "cc6eaea318046e8524061bdd9f6706afc49130bdb489e93a89afeb55157e4fbd"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-isolated-exact-pin7ff-production-build-retry1.json",
+          "sha256": "58ad08767d31bf8a3a05dd5a4dbdd881a6d89ee41a4609185d1c34903255e515"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-build-provenance-tree-manifest.json",
+          "sha256": "1ed4b88691122afcc9e0c2a12641beaf558153df6dcb3153f6d8ad9049232624"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-PG16-exact-standalone-20261125T140008Z-63c79c.json",
+          "sha256": "d41b45ef46e7567aef67096ff3ab58e727c9b88979ce31c85f63bb0e7e91359b"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-sequential-closure-new-defect-release-evidence-combined.json",
+          "sha256": "37409bb531f146df2f9c62596032a41ab46bf66271ec8320a464ff9b56754e5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-consolidated-source-candidate-review-only.json",
+          "sha256": "79dda186e8be62e7dab04468c25072820c9d4d19a8f9d820072ec39cd9974a14"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-modern22db-exact-production-build.json",
+          "sha256": "82f5d79465e02ac3290f7c39aa78f7b56a0c95b66fc5fd25dc1fc478a368e197"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-modern22db-self-computed-release-manifest.json",
+          "sha256": "16fe60fcc04c7a8ceedce5f2889eda321cc6d7a68b45ae12defdbf5ed17631b6"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-modern22db-PG16-exact-standalone-20261125T151704Z-4b4312.json",
+          "sha256": "fd83bf6f88ca4bbc64689b6d7da077cd8f64eaf60c082565de6edbe2e42f4ff9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-modern22db-production-auth-sixroles-retry2-20261125T152239Z-0d2bae.json",
+          "sha256": "e031103578edebf62a4477c4075e5689373274003bc5cd03c6add14362132e0c"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
+          "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-old-signature-verified-but-semantic-red-a278-fix-pending.json",
+          "sha256": "40b74db4e6fb19a0de2a25e50eaceaa9556cd3524247ea27ac0045783e97e848"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-run45648287237-signed-but-bad-environment.json",
+          "sha256": "0d624fa9f8f1cb697cedeb8c8a3dcce0ae809e289478460ed59b0b697781a8cb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-first-run-45647968729-red.json",
+          "sha256": "28b739be10fa79110157a35d4be2d92f94e2b65cfa170f54fdb08309ba1363f4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-1b495f5-final-source-signature-verified.json",
+          "sha256": "fd8893c3aa93a84e9cd5f3a67d8807d1131c59b62ba939394feb7e6b0137f2fe"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-ab495dd-corrected-production-manifest-SIGSTORE-verified.json",
+          "sha256": "6a31e3cb778bee86e072c14a88c308e67067216a11a8d947796759a3265b3a4d"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-e1c6d03-terminal/FINAL-AUDIT.json",
+          "sha256": "1192d68f92d59c41b10756e6bc5241e7579abebcf5c93ca2aa6972ce4b842a21"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-bc90296-terminal/FINAL-AUDIT.json",
+          "sha256": "f3c89b8134d93cc3f013dbc94aafabe91a0458d43fad8262a3879760d4b7ed5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-CaseReplay-1b495-signed-22111-CI-triple-discipline-20261125.json",
+          "sha256": "bb31f0ae687d8e277fe81a683531e94d01d0b57ff469a23a220fdd1db776e5f5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-6a4d7a8-exact-source-production-signature.json",
+          "sha256": "252395363da890febd4245bceb1a674dbe7051a570394cd2f1bea99048cfc462"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10104-Sigstore-tamper-failclosed-6a4d7a8.json",
+          "sha256": "5dcf4939dc4255c47d47d3335f88a5ba6556920040d2e3768307cb592c3d5997"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-privacy-browser-exit0-and-sigstore-tamper-failclosed-and-full22-timeout-20261125.json",
+          "sha256": "c21a2ed64a194a28e7d6837d2d625fbc5a58404fbe54fb8ebedad2d1516ab801"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-Company-CSV-Formula-security-preserved-85a9e4c-ECR-20261125.json",
+          "sha256": "78452d0b0a6595af9c48630377a40bfb92031f2462931064a6551db2abbbe014"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-workforce-CSV-formula-real-Chromium-20261125T171529Z-8274.json",
+          "sha256": "b1b862c070f8c76a5bdf1d526cc9dd26a7c7a6098733072bd3bdc941e49b066e"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-workforce-CSV-formula-real-Chromium-20261125T171529Z-8274.tap.log",
+          "sha256": "20486ca657082036a31ec2ce89bf6e089cde63d6f8851d0004fbe5b0676f4017"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-85a9e4c-Company-CSV-and-exact-Sigstore-three-discipline-review.json",
+          "sha256": "a79cbf4f079cc583b7fa573e481fb8e5d8d73010e3057f3e924d50108467144d"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-85a9e4c-signed-production-build-verified.json",
+          "sha256": "7af9fd7e0a91a7bf15239108222e6a4ca889fbd87b7c79fe33ee13c313a195b4"
         }
       ]
     },
@@ -200,7 +666,8 @@
       "observed_at_utc": "2026-11-22T17:21:09.569248+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Public home exposes usable primary routes, registrations and six role destinations on desktop/mobile"
+        "Public home exposes usable primary routes, registrations and six role destinations on desktop/mobile",
+        "2026-11-25 original ZERO-002 five-test bounded revisit, scenario M1.02.01 new source tests: contact_demo_staff_inbox; all5 newly run real Chromium cases PASS on pinned7ff, no full E/C/R award; original batch remains open."
       ],
       "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: Public home exposes usable primary routes, registrations and six role destinations on desktop/mobile",
       "gates": {
@@ -220,6 +687,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.01.log",
           "sha256": "e33f837bd81134d11c21d5d91c62b36382f897b4dcfb2ded176882c034826dc3"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-five-fresh-global-ui-crossrole-three-review.json",
+          "sha256": "74d08ee0069f1d30141c83371a224ea0fc1089b812ceb409cdf17d292679a6ab"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10201-contact-demo-staff-inbox.json",
+          "sha256": "f87a2e2b985edefb0a08c431008b2b5e297e7db363be2636aa6fb8c584ac63c7"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10201-contact-demo-staff-inbox.log",
+          "sha256": "216c40e7b1fdc52b3987eff7642ab72fbb7196b6bfface5ffea71e3a747e3728"
         }
       ]
     },
@@ -232,7 +711,8 @@
       "observed_at_utc": "2026-11-22T17:21:09.569275+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "All six role account menus reach support at desktop and mobile widths without ending the session"
+        "All six role account menus reach support at desktop and mobile widths without ending the session",
+        "2026-11-25 original ZERO-002 five-test bounded revisit, scenario M1.02.02 new source tests: admin_header_search,worker_header_search,root_header_search; all5 newly run real Chromium cases PASS on pinned7ff, no full E/C/R award; original batch remains open."
       ],
       "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: All six role account menus reach support at desktop and mobile widths without ending the session",
       "gates": {
@@ -252,6 +732,34 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.02.log",
           "sha256": "6615f98f65d420c764726042ac7b09a7cee47e0925b869599a4053f0359a8c0c"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-five-fresh-global-ui-crossrole-three-review.json",
+          "sha256": "74d08ee0069f1d30141c83371a224ea0fc1089b812ceb409cdf17d292679a6ab"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10202-admin-header-search.json",
+          "sha256": "d4679319ec61241984c76ad36f12a8bdf03a3b68979f1d40bc9ac8e97970e90b"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10202-admin-header-search.log",
+          "sha256": "c9300f89c0d8a548a06cf36daba548d457e6b88715634b1afa0c46fa2826d292"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10202-worker-header-search.json",
+          "sha256": "3bbd3bb8da2c9377a169530a345d7ab702df9b4b1d9ec3886ec5a5c0d1499cb5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10202-worker-header-search.log",
+          "sha256": "b7a5cc0e31243ee59c91ac8b18ab78cf169b4037225062b5f223549e7b51c9ac"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10202-root-header-search.json",
+          "sha256": "15cfd303ed5a510114736da386d810eb4eeb92779aff025703c106e5235430e4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10202-root-header-search.log",
+          "sha256": "058f01a8fa296f0b32184392f06b29b7f04bcdc6bab97f729ab48b92d7746b3b"
         }
       ]
     },
@@ -264,7 +772,8 @@
       "observed_at_utc": "2026-11-22T17:21:09.569282+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "real error boundaries retry Worker Dashboard and global route requests without exposing internals"
+        "real error boundaries retry Worker Dashboard and global route requests without exposing internals",
+        "2026-11-25 original ZERO-002 five-test bounded revisit, scenario M1.02.03 new source tests: NO_NEW_TEST_EXACT_PREVIOUS_ORIGINAL_EVIDENCE_REUSED; all5 newly run real Chromium cases PASS on pinned7ff, no full E/C/R award; original batch remains open."
       ],
       "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: real error boundaries retry Worker Dashboard and global route requests without exposing internals",
       "gates": {
@@ -284,6 +793,10 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.03.log",
           "sha256": "037320ca27b7da9dab16bc75727f677130d13cd419fcbaffd8a17d94595a9e51"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-five-fresh-global-ui-crossrole-three-review.json",
+          "sha256": "74d08ee0069f1d30141c83371a224ea0fc1089b812ceb409cdf17d292679a6ab"
         }
       ]
     },
@@ -296,7 +809,8 @@
       "observed_at_utc": "2026-11-22T17:21:09.569286+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation"
+        "Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation",
+        "2026-11-25 original ZERO-002 five-test bounded revisit, scenario M1.02.04 new source tests: NO_NEW_TEST_EXACT_PREVIOUS_ORIGINAL_EVIDENCE_REUSED; all5 newly run real Chromium cases PASS on pinned7ff, no full E/C/R award; original batch remains open."
       ],
       "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation",
       "gates": {
@@ -316,6 +830,10 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.04.log",
           "sha256": "d56759fa06e84c48236983f96f72e4fe7f4d4311497d6dc3713541ae0713432f"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-five-fresh-global-ui-crossrole-three-review.json",
+          "sha256": "74d08ee0069f1d30141c83371a224ea0fc1089b812ceb409cdf17d292679a6ab"
         }
       ]
     },
@@ -328,7 +846,8 @@
       "observed_at_utc": "2026-11-22T17:21:09.569290+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Unsaved evidence metadata is protected through navigation; history fallback=false"
+        "Unsaved evidence metadata is protected through navigation; history fallback=false",
+        "2026-11-25 original ZERO-002 five-test bounded revisit, scenario M1.02.05 new source tests: unsaved_history_fallback_true; all5 newly run real Chromium cases PASS on pinned7ff, no full E/C/R award; original batch remains open."
       ],
       "result_summary": "Actual Chromium original source case PASSED 1/1, exit0, with real browser interactions; full multi-role behavior, all error permutations, full pen testing and independent attestation remain to be checked: Unsaved evidence metadata is protected through navigation; history fallback=false",
       "gates": {
@@ -349,6 +868,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-002/M1.02.05.log",
           "sha256": "631dc9da677a3b82dd444b2986ba0ee05c73e12578bff977702d054052e0140b"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-five-fresh-global-ui-crossrole-three-review.json",
+          "sha256": "74d08ee0069f1d30141c83371a224ea0fc1089b812ceb409cdf17d292679a6ab"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10205-history-fallback-true.json",
+          "sha256": "de1d4919d11eed92c078e7f54d6a875e6ab4ac8b25dd807f2dd9ab2357d96b7f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO002-M10205-history-fallback-true.log",
+          "sha256": "0bb6a935706cb61b985aa98a07b9cbf80213a59ec24d38eacc00bd001e874779"
         }
       ]
     },
@@ -361,7 +892,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.245846+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance"
+        "Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.01: fresh isolated source case Failure to persist acceptance rolls back the Worker account, flow and OTP, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=029bec8fe661ed7e087aa99b3e3d1d57ece9a557e8a7f79c2b7faeda9321366d. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -380,6 +912,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.01.log",
           "sha256": "eaefcb39a1a35363f16d6937c0b143a7933c08270a1cf3df01ebd7e4736149bf"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.01-fresh-revisit.json",
+          "sha256": "a7ce9519bb44e9738370e869bfa95c8e5c7e7d30b56e79a1a9569de8e186bdf1"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.01-fresh-revisit.log",
+          "sha256": "029bec8fe661ed7e087aa99b3e3d1d57ece9a557e8a7f79c2b7faeda9321366d"
         }
       ]
     },
@@ -392,7 +936,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.245974+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts"
+        "Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.02: fresh isolated source case Real Company browser refuses expired email OTP and cross-origin resend, then allows only fresh resend, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=9cc50bee42f224f4a4f4fc6c31121adcea8442493184e5cda52dd6a5d3ec9339. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Worker email and phone OTP reject wrong/expired codes, resend and activate only after both contacts. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -411,6 +956,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.02.log",
           "sha256": "5645ceb4e550b50444edbc406b7d104a9cac0e42f94f8a333639bc2a785cf83e"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.02-fresh-revisit.json",
+          "sha256": "e167838c9583087428fe1bb09c7503f02b6efa1d08f7d5be9a7ee3dca0531c50"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.02-fresh-revisit.log",
+          "sha256": "9cc50bee42f224f4a4f4fc6c31121adcea8442493184e5cda52dd6a5d3ec9339"
         }
       ]
     },
@@ -423,7 +980,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.246075+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions"
+        "Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.03: fresh isolated source case two real Worker registrations verify email+phone OTP and cannot duplicate Worker ID or apply for exams, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=20da9be31832f9c6ebf808c1131acfa845a365146f5e210f6b58ba25bb977543. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -442,6 +1000,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.03.log",
           "sha256": "8889100d17eb0965f697f216baa5ba59bec0468239f6b846188127496991e319"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.03-fresh-revisit.json",
+          "sha256": "9c529cd8020f7555085fc4877ee954a820946964f444017db2d77092ae82a777"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.03-fresh-revisit.log",
+          "sha256": "20da9be31832f9c6ebf808c1131acfa845a365146f5e210f6b58ba25bb977543"
         }
       ]
     },
@@ -454,7 +1024,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.246182+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Company registration commits email/MFA denials and activates only a Company owner in a pending tenant"
+        "Company registration commits email/MFA denials and activates only a Company owner in a pending tenant",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.04: fresh isolated source case Company email exhaustion commits five rejections and immutable audit; correct exhausted code cannot advance, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=d271aa0f6a668f76c9ae83449b63e62b387b20d0f6952105d3425fef1a10880b. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: Company registration commits email/MFA denials and activates only a Company owner in a pending tenant. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -473,6 +1044,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.04.log",
           "sha256": "5bbfc35def7e3f9aba48a5227780aa3296b4f74670ec4f16decbd580877fc6a8"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.04-fresh-revisit.json",
+          "sha256": "9075e0c623b3599806aa3f9f3a3e26f735a2e7b8b548270249f9d62f6f6563fd"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.04-fresh-revisit.log",
+          "sha256": "d271aa0f6a668f76c9ae83449b63e62b387b20d0f6952105d3425fef1a10880b"
         }
       ]
     },
@@ -485,7 +1068,8 @@
       "observed_at_utc": "2026-11-22T17:31:52.246259+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role"
+        "M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role",
+        "2026-11-25 original ZERO-003 capped five-case revisit, M1.03.05: fresh isolated source case Issuer revocation blocks a fresh token and an already-open enrollment, real Node TAP pass1 fail0 skip0 exit0 on frozen7ff, raw_sha256=ba6fceb456a20e73e40e8c6ec286bbae99e772b912af828666142061447bf1f5. Original previous ZERO-003 one per case scoped pass retained without duplicate. Full functional/UI/security/independent Reviewer and adapter contracts still blocked; no original scenario TECH FULL."
       ],
       "result_summary": "One real browser source case PASS 1/1: M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role. Remaining scenarios, adversarial review and independent signoff not complete.",
       "gates": {
@@ -504,6 +1088,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-003/M1.03.05.log",
           "sha256": "86c00a303599f87f4355b46ad1c8f677ce3e688b4f010f886784ddc7edb1396c"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/ZERO003-five-scenarios-three-discipline.json",
+          "sha256": "f2580689fcbed87f63d05cf4c9ccdcb9bf3fe99629dfc3b21510912974eb9f72"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.05-fresh-revisit.json",
+          "sha256": "8fe5e845adc1285b479b3e841e93124084ce9fb0ea6acad19f318ef82374ef05"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero003-auth/M1.03.05-fresh-revisit.log",
+          "sha256": "ba6fceb456a20e73e40e8c6ec286bbae99e772b912af828666142061447bf1f5"
         }
       ]
     },
@@ -516,7 +1112,8 @@
       "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB"
+        "M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB",
+        "2026-11-25 original ZERO-004 capped five-source-case revisit, M1.03 M1.03.06 2 independent new exact pin7ff test cases PASS1/1 each; every login page binds one fixed role to one server action, locked-account messaging is available only after password and role proof. Raw hash verified; existing original scoped six-role UI cases not rerun. Full manual security, UI/keyboard/accessibility, complete cross-role/adapter contracts and independent Reviewer not closed. TECH FULL not awarded."
       ],
       "result_summary": "Actual browser test 1/1 PASS: M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
       "gates": {
@@ -537,6 +1134,26 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.06.log",
           "sha256": "61c33eb8dfda674ee405d31a62e90bb7be0a348271ad8d049085e604851d31a8"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero004-auth/ZERO004-three-scenarios-five-tests-three-review.json",
+          "sha256": "f729a16a3b00144fb166987221433ac216f313b95adde7cab59fa3b38796d8b0"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/role_login_binds_action.json",
+          "sha256": "d7eddaa306f348eab6ceb5489df50e15e90e4b73d47db0f58dff64ea9b74c1e5"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/role_login_binds_action.log",
+          "sha256": "fadff086a7635b2ae99783ed0a4f62fa5f38d3a28b7f1b300fe35ff85eb507f3"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/locked_message_proof.json",
+          "sha256": "16d354a8f1ef493907e2aeb31aa94508aeda29955ac83ef2d9782f02976e22b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/locked_message_proof.log",
+          "sha256": "1cb50d491d8601099d4df801e3f30b62e339e1ca2f2d00352dc64b78b44eab85"
         }
       ]
     },
@@ -549,7 +1166,8 @@
       "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay"
+        "M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay",
+        "2026-11-25 original ZERO-004 capped five-source-case revisit, M1.03 M1.03.07 1 independent new exact pin7ff test cases PASS1/1 each; Six-role active sessions preserve foreign accounts, revoke owned other and current sessions. Raw hash verified; existing original scoped six-role UI cases not rerun. Full manual security, UI/keyboard/accessibility, complete cross-role/adapter contracts and independent Reviewer not closed. TECH FULL not awarded."
       ],
       "result_summary": "Actual browser test 1/1 PASS: M1.03.07 six-role Exit retains copied cookie; modal Cancel preserves; Sign Out rejects tab and copied cookie replay. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
       "gates": {
@@ -570,6 +1188,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.07.log",
           "sha256": "964b3d12b9823d368da46591e8b1bc4c40904e4f9d5626ae5de039ad9a63d434"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero004-auth/ZERO004-three-scenarios-five-tests-three-review.json",
+          "sha256": "f729a16a3b00144fb166987221433ac216f313b95adde7cab59fa3b38796d8b0"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_active_sessions.json",
+          "sha256": "e72f2ac683fd9071de8f18d42f39e9a1d5e0a440422e5e0ba3be1781d684aa54"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_active_sessions.log",
+          "sha256": "31a9a33845fc7ac9ec8d51441e59bbd3ea6261911be9abf397c575101a49097d"
         }
       ]
     },
@@ -582,7 +1212,8 @@
       "observed_at_utc": "2026-11-22T17:41:38.287840+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "All six roles change passwords with reauthentication, keep current sessions and revoke other sessions"
+        "All six roles change passwords with reauthentication, keep current sessions and revoke other sessions",
+        "2026-11-25 original ZERO-004 capped five-source-case revisit, M1.03 M1.03.08 2 independent new exact pin7ff test cases PASS1/1 each; Six-role email recovery preserves MFA policy, revokes sessions and denies replay, Required queue failure rolls back actual recovery password, sessions, challenge, flow and completion audit. Raw hash verified; existing original scoped six-role UI cases not rerun. Full manual security, UI/keyboard/accessibility, complete cross-role/adapter contracts and independent Reviewer not closed. TECH FULL not awarded."
       ],
       "result_summary": "Actual browser test 1/1 PASS: All six roles change passwords with reauthentication, keep current sessions and revoke other sessions. This is scoped browser evidence, not complete original scenario and adapter/pen test certification.",
       "gates": {
@@ -603,6 +1234,26 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-004/M1.03.08.log",
           "sha256": "3ce4e28913f82eb4ab50d974b2edcbeb02a68c152bfe0ebf25e72ff47578f4bd"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero004-auth/ZERO004-three-scenarios-five-tests-three-review.json",
+          "sha256": "f729a16a3b00144fb166987221433ac216f313b95adde7cab59fa3b38796d8b0"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_recovery_replay.json",
+          "sha256": "c9fade4b4c2ecfc3afb708031cbcaf2a25bda9f4ef010b00eedefd443ac2c356"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/six_role_recovery_replay.log",
+          "sha256": "712268c0af4077a606af3fca9797165a6460e3586977f72ea88ca24a2ea00daa"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/recovery_queue_rollback.json",
+          "sha256": "be0f78d2c6661b9680671c394b232445ee99ad3c3d6df2c201bc5cee982d7a5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero004-auth/recovery_queue_rollback.log",
+          "sha256": "b7951d132035d989e0e01bf999740ece7734a170f49ec6ebfae7aac2e3f86b85"
         }
       ]
     },
@@ -615,7 +1266,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay"
+        "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 1 independently executed source cases every accepted protected endpoint is bound to one fixed portal role; actual TAP 1 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -636,6 +1288,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.01.log",
           "sha256": "ed3319c5cf1c33091ccd53d90d4008fc675f3fd149c5b465b56f26e1ab78300c"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/fixed_portal_role.json",
+          "sha256": "b96dec373aaad1fabdf8b90c9d09b56875e960e8b96f6d196b82f84c86a3217e"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/fixed_portal_role.log",
+          "sha256": "2f9f7a71e4f10465c2438106778e2ccb02a6fb6fe5d63a1fe6ad24f26d3b95be"
         }
       ]
     },
@@ -648,7 +1312,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers"
+        "M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 2 independently executed source cases Member scope, tenant isolation, permission ceiling and fresh session checks hold at the report boundary, A matching digest cannot authorize another tenant's private report object; actual TAP 2 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -669,6 +1334,26 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.02.log",
           "sha256": "3f6e75a1db616244a7b99a681d9fb73f3bc66e36073a7fd79d084e1a003e8aef"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/scoped_report_boundary.json",
+          "sha256": "f89549aa97505db3cf763cd8dc743d01d842b348c64b687215acd70ef771eabb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/scoped_report_boundary.log",
+          "sha256": "e68abd982aac1c86b96aa7dcff476a8fe448cbd825da5ce830a08932cb1f535c"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/foreign_report_artifact_digest.json",
+          "sha256": "6db86b3e7dbfe366c9e9b6c418701f970f95a812d7eed91ca04d334124c33980"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/foreign_report_artifact_digest.log",
+          "sha256": "fc0d63e8698c8dc5a9c6bc2d647dcd109fd09d91cce9c8404741a4a503dc9af3"
         }
       ]
     },
@@ -681,7 +1366,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access"
+        "M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 1 independently executed source cases Worker signed access reuses safely while live and fails after session revocation; actual TAP 1 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -702,6 +1388,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.03.log",
           "sha256": "347fb5894c9beb6776fa8cf7b2f9bcfe168c4443a4e3166488e355b61e8449a2"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/worker_signed_token_revocation.json",
+          "sha256": "11fae7af21119ec1101788428ebc7b88e1ccede91b0193f712a7f1ecc9145ae6"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/worker_signed_token_revocation.log",
+          "sha256": "1a192fc411db895d8293823226632b1b2a996c87d40ef1facab4a99cf1b3b1af"
         }
       ]
     },
@@ -714,7 +1412,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium"
+        "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 1 independently executed source cases transactional authorization revalidation denies every accepted lifecycle and permission race; actual TAP 1 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -735,6 +1434,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.04.log",
           "sha256": "cdee9318cf970e15ab4ce3d24feb302e44e66220ba8e5c8b602ac97d78631a0b"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/transactional_permission_lifecycle.json",
+          "sha256": "c239827e1775f55b98c16f1b8b3afe3d220d585d8118e2004e7a52fe15e9a657"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/transactional_permission_lifecycle.log",
+          "sha256": "3631e8a80ef24084a7c77795f8c50c4450413744f02e6ba6ddd26c652c1ca68b"
         }
       ]
     },

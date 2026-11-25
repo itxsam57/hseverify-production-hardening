@@ -10,6 +10,7 @@ on:
       - "docs/qa/CURRENT_218_LEDGER_PROCEDURE.md"
       - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
       - "scripts/agency_zero_control.py"
+      - "scripts/agency_zero_sequential_closure.py"
       - "tests/engineering/test_agency_zero_control.py"
       - ".github/workflows/agency-zero-*.yml"
   pull_request:
@@ -21,6 +22,7 @@ on:
       - "docs/qa/CURRENT_218_LEDGER_PROCEDURE.md"
       - "docs/qa/218_VERTICAL_EXECUTION_CURSOR.json"
       - "scripts/agency_zero_control.py"
+      - "scripts/agency_zero_sequential_closure.py"
       - "tests/engineering/test_agency_zero_control.py"
       - ".github/workflows/agency-zero-*.yml"
   workflow_dispatch:
@@ -40,6 +42,8 @@ jobs:
           fetch-depth: 0
       - name: Zero batch manifest matches immutable Masterplan
         run: python3 scripts/agency_zero_control.py --check
+      - name: Enforce strict sequential original-batch closure
+        run: python3 scripts/agency_zero_sequential_closure.py --status
       - name: Independent schema and tamper tests
         run: python3 -m unittest discover -s tests/engineering -p "test_agency_zero_control.py" -v
       - name: Report immutable exact-SHA technical progress

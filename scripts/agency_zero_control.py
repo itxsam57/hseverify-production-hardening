@@ -54,7 +54,10 @@ def pinned_candidate_sha():
     found = subprocess.run(git, cwd=ROOT, capture_output=True, text=True, check=False)
     if found.returncode != 0:
         raise ValueError("Pinned application commit missing from checked-out Git history")
-    app_paths = ["src/", "database/", "public/", "config/", "ops/", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "eslint.config.mjs", ".env.example", "scripts/build-production.mjs", "scripts/run-development.mjs"]
+    app_paths = ["src/", "database/", "public/", "config/", "ops/", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "eslint.config.mjs", ".env.example", "scripts/build-production.mjs", "scripts/run-development.mjs",
+                 "scripts/lib/database.mjs", "scripts/lib/migrations.mjs",
+                 "scripts/lib/environment.mjs", "scripts/db-migrate.mjs",
+                 "scripts/db-rollback.mjs", "scripts/record-release.mjs"]
     diff = subprocess.check_output(["git", "diff", "--name-only", sha, "HEAD", "--", *app_paths], cwd=ROOT, text=True)
     if diff.strip():
         raise ValueError("Pinned application candidate has runtime drift; retarget candidate and selectively recheck: " + ", ".join(diff.splitlines()[:10]))
@@ -252,7 +255,31 @@ def find_batch(manifest, batch_id):
     return matches[0]
 
 
+
+def require_active_closure_batch(manifest, requested_batch_id):
+    """No later source test or command dispatch until active original batch is FULL."""
+    cursor = active_batch_cursor(manifest)
+    if cursor.get("closure_policy") != "STRICT_SEQUENTIAL_FULL_ONLY":
+        raise ValueError("Owner sequential full-closure rule absent from cursor")
+    active_id = cursor.get("closure_active_batch_id")
+    if requested_batch_id != active_id:
+        raise ValueError(
+            "ZERO sequential closure BLOCKED: requested " + str(requested_batch_id) +
+            ", but active original batch " + str(active_id) +
+            " must be fully verified before advancing"
+        )
+    accepted = current_evidence(manifest)
+    approved_sha = pinned_candidate_sha()
+    active = find_batch(manifest, active_id)
+    still_open = [unit["scenario_id"] for unit in active["units"]
+                  if (unit["scenario_id"], approved_sha) not in accepted]
+    if not still_open:
+        raise ValueError("Current batch is fully verified; use explicit reviewed --advance-closure")
+    return still_open
+
+
 def run_scoped_smokes(manifest, batch_id, output_dir, max_seconds):
+    require_active_closure_batch(manifest, batch_id)
     batch = find_batch(manifest, batch_id)
     output_dir.mkdir(parents=True, exist_ok=True)
     sha = pinned_candidate_sha()
@@ -345,10 +372,13 @@ def main():
         status(manifest)
         return 0
     if args.matrix:
-        ids = [b["batch_id"] for b in manifest["batches"]] if args.matrix == "ALL" else [find_batch(manifest, args.matrix)["batch_id"]]
-        print(json.dumps(ids, separators=(",", ":")))
+        if args.matrix == "ALL":
+            raise ValueError("ZERO sequential closure forbids ALL or parallel cross-batch execution")
+        require_active_closure_batch(manifest, args.matrix)
+        print(json.dumps([find_batch(manifest, args.matrix)["batch_id"]], separators=(",", ":")))
         return 0
     if args.batch:
+        require_active_closure_batch(manifest, args.batch)
         batch = find_batch(manifest, args.batch)
         print(f"ZERO | {batch['batch_id']} | {batch['family']} | {batch['unit_count']}/5 test units")
         for unit in batch["units"]:
