@@ -1011,5 +1011,5 @@
     "ZERO-058"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "ZERO-001 post58: exact source7ff GitHub audit45599663897 COMPLETED FAIL 6 crit/20 high due confirmed CI environment mismatch production NODE_ENV with HSE_APP_ENV=test, app correctly rejects. Existing QA synthetic dev audit45361516452 17/17 browser PASS, one full regression accessible Company Workforce th role misclassified as cell. Existing narrow proposed PR224 scope=col local test PASS; hosted audit45603019052 QA SHA91702d8 IN_PROGRESS, inspect terminal then review source patch before explicitly approved candidate repin/affected tests. M1.01.04 stage metadata d204 vs pinned7ff, signed provenance/retained backup/rollback blocked. All 58 revisit batches open, TECH FULL0/218. Never resume new R-series."
+  "next_action": "Original ZERO-001 M1.01.03/M1.01.04 ONLY: QA PR224 hosted full audit #45603019052 pre-crosscheck 17/17 browser PASS, 8/8 correction PASS, prelim critical/high0, but verify:full regression RUNNING. Inspect terminal full artifact, no candidate repin or full award. Active stage src/lockfile/config blobs match pinned7ff but Git HEAD6a !=7ff, metadata d204 != pin, signed build latest backup approved rollback absent. TECH FULL0/218, 58 revisit groups open, do not resume R-series."
 }
