@@ -54,7 +54,10 @@ def pinned_candidate_sha():
     found = subprocess.run(git, cwd=ROOT, capture_output=True, text=True, check=False)
     if found.returncode != 0:
         raise ValueError("Pinned application commit missing from checked-out Git history")
-    app_paths = ["src/", "database/", "public/", "config/", "ops/", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "eslint.config.mjs", ".env.example", "scripts/build-production.mjs", "scripts/run-development.mjs"]
+    app_paths = ["src/", "database/", "public/", "config/", "ops/", "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "eslint.config.mjs", ".env.example", "scripts/build-production.mjs", "scripts/run-development.mjs",
+                 "scripts/lib/database.mjs", "scripts/lib/migrations.mjs",
+                 "scripts/lib/environment.mjs", "scripts/db-migrate.mjs",
+                 "scripts/db-rollback.mjs", "scripts/record-release.mjs"]
     diff = subprocess.check_output(["git", "diff", "--name-only", sha, "HEAD", "--", *app_paths], cwd=ROOT, text=True)
     if diff.strip():
         raise ValueError("Pinned application candidate has runtime drift; retarget candidate and selectively recheck: " + ", ".join(diff.splitlines()[:10]))

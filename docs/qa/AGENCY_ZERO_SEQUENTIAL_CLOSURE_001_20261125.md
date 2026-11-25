@@ -34,3 +34,38 @@ Owner directive: do not enter ZERO-002 or any later original batch until ALL FOU
 ### GitHub Actions enforcement update
 
 - The existing governance workflow now invokes the sequential closure gate on each QA policy change; its paths include the new gate script. The manual five-case workflow rejects ALL and later original batch selection, and runs no parallel original batches. The standard matrix command forbids ALL to avoid bypass. These are QA governance changes only; hosted verification of the new workflow on moving QA HEAD is not yet terminal green because source runtime drift is still blocked.
+
+## New confirmed migration defect and independent pinned build evidence
+
+**ZERO-001 remains 0/4 FULL, 0/218 overall; owner ready NO.** All results on frozen source7ff remain scoped or failed.
+
+- **M1.01.02 ENGINEER FAIL:** Two concurrent PostgreSQL16 migration processes on the approved candidate started from empty disposable PG16; one exited 0, the second 1 with SQLSTATE23505 on pg_type duplicate hse_schema_migrations. Final migration table has 139 rows; not evidence of data loss, but simultaneous deployment startup is broken.
+- **M1.01.02 protected FIX:** Draft PR #241 from source commit 337ec340f386de84d8c8e72cf0924b1fc24520d7 acquires reserved PostgreSQL session advisory lock around migration schema checks and per-migration transactions. Exact fixed-source two concurrent migrators exit0/0, 139 records. All four original PG16 cases pass 4/4, PGlite checksum/CRLF/repair 3/3, targeted lint exits0. The PR is UNMERGED; no approved candidate repin and no final independent three-role signoff.
+- **M1.01.01 ENGINEER scoped:** Pinned production env baseline accepts, four unsafe production config combinations reject, with two original output matcher false-reds separately reconciled. No full real role-authenticated security and accessibility testing.
+- **M1.01.04 ENGINEER scoped:** Exact frozen source produced a real production standalone build exit0 with independent private dependencies; release manifest and 3,715 generated files hash inventory. The built exact-source standalone started against a fresh disposable PostgreSQL16 with all 139 migrations, six PUBLIC login pages GET200, readiness unauthorized401 and authorized200 returning pinned release SHA, four signed-out private routes denied. Clean shutdown. First private build symlink error and migration count table test mistake preserved. Self-generated binary hashes are NOT an owner-trusted signature or proof of served live stage provenance.
+- **M1.01.03 ENGINEER blocked:** Hosted independent audit #45603019052 QA source917 attempt1 FAILED Case Replay criterion inputs count 0 expected2. Failed-only attempt2 initiated and still nonterminal at latest evidence capture. Same QA SHA local TAP passing cannot override hosted red. This is NOT an approved pin7ff full audit.
+- **CYBERSECURITY:** New concurrency availability defect confirmed on approved pin. Config isolation checks scoped pass. Full authenticated/manual OWASP WSTG/API pen testing and trusted build-to-stage binary, external backup and actual approved rollback missing. Full severity findings UNKNOWN.
+- **REVIEWER:** AI evidence/source/log reviewer confirmed hash receipts and distinct SHA. No independently attributable complete reviewer approval, signed operator release certificate, actual six-role stage UAT or rollback; NO TECH_FULL award.
+
+### Private evidence digests
+
+Combined receipt: ZERO001-sequential-closure-new-defect-release-evidence-combined.json SHA256 37409bb531f146df2f9c62596032a41ab46bf66271ec8320a464ff9b56754e5f.
+- pinned_defect: M10102-PG16-parallel-migrators-20261125T140258Z-30d656.json SHA256 eb045cd5cb06befcfcde701e080223da0bc6d90c315ac3a5e495a0d15330fc89
+- protected_fix_concurrency: M10102-PG16-parallel-migrators-locked-337ec34-20261125T140941Z-82d564.json SHA256 e39aabf03cb34d432c287499c906582c0b7e5c35a698e232169aeddbe10d61c7
+- protected_fix_four_pg16: M10102-PG16-four-changed-SHA-retry1-337ec34-20261125T141052Z-f21858.json SHA256 5c6a873538dd88a2554f167e60490ae84e1357643958654a25db0c924456346a
+- pinned_initial_build_env_error: M10104-isolated-exact-pin7ff-production-build.json SHA256 cc6eaea318046e8524061bdd9f6706afc49130bdb489e93a89afeb55157e4fbd
+- pinned_build_pass: M10104-isolated-exact-pin7ff-production-build-retry1.json SHA256 58ad08767d31bf8a3a05dd5a4dbdd881a6d89ee41a4609185d1c34903255e515
+- pinned_build_tree_manifest: M10104-build-provenance-tree-manifest.json SHA256 1ed4b88691122afcc9e0c2a12641beaf558153df6dcb3153f6d8ad9049232624
+- pinned_prod_pg16_startup_pass: M10104-PG16-exact-standalone-20261125T140008Z-63c79c.json SHA256 d41b45ef46e7567aef67096ff3ab58e727c9b88979ce31c85f63bb0e7e91359b
+- pinned_prod_env_five: M10101-production-environment-five-cases-reconciled.json SHA256 433f10da19f57042ae6daa9eca4a416efb468a1a0b7fd35fb71ce96461d667ad
+
+Current exact source pin: 7ff30ea140a5145e5d5ba761f7c7aef24c895269. Protected fixed source337ec34 is UNMERGED in draft PR #241. No production or shared stage mutation.
+
+NEXT (ZERO-001 only): independent PR review and approved integration/source retarget with selective regression; terminal CI attempt2 review; protected live-stage signed provenance, offsite encrypted backup with separate key and operator-approved actual rollback; full manual pen, UX and distinct Engineering/Cybersecurity/Reviewer attestations. Never advance ZERO-002 prematurely.
+
+
+### Hosted full-audit attempt2 confirmed RED, separate PR migration CI GREEN
+
+- GitHub full independent audit #45603019052, QA source91702d8, **attempt2 terminal FAILED**, 1 generic critical failed command and 0 high. Its actual existing_full_regression_crosscheck failure shifted to **tests/browser/evidence-review-resolution.browser.test.mjs:117**: Worker submission test attempted page.goto /worker/evidence while an in-flight navigation to the same route interrupted it. In attempt1 Case Replay rubric controls0 vs2 had failed instead; neither failure is cleared by the other run. Product vs synchronization defect needs isolated investigation. No weakening or automatic acceptance.
+- Exact retained attempt2 private FINAL-AUDIT.json SHA256 473fed7cdb195675bc5116c22701be571e898c585d689e499509295c7ece159f; full regression log SHA256 b5256fd479a6a42691586b67af470e7aadd453c121a08d818bab55cf76072204; downloaded hosted ZIP SHA256 a50816f3a41494000c827a1f0c94a78706c4c0176f419be70189393a98a9d991.
+- In contrast, draft PR #241 changed migration fix HEAD 0cdcd3c GitHub migration integrity run #45633240555 completed **SUCCESS**, including new fresh-PG16 concurrent startup test. Protected PR still draft/unmerged, approved candidate pin7ff still fails startup race; this is scoped changed-source engineering evidence, not technical owner approval.

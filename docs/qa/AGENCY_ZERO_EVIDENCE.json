@@ -13,7 +13,8 @@
       "tested_actions": [
         "Real Chromium GET worker/company login, asserted response CSP/HSTS/no-sniff/redirect; initial assert failed on script-src-attr event",
         "Same original assertion instrumented and rerun: inline onerror remained blocked, script-src-attr events observed on worker AND company login",
-        "Real Chromium signed-out Worker/Company CSP/HSTS/no-sniff/frame/referrer permissions and strict script-src-attr violation both, denied URL and no secret leak \u2014 current exact source recheck passed; no full original verification award"
+        "Real Chromium signed-out Worker/Company CSP/HSTS/no-sniff/frame/referrer permissions and strict script-src-attr violation both, denied URL and no secret leak \u2014 current exact source recheck passed; no full original verification award",
+        "2026-11-25 frozen7ff production env fail-closed five identities PASS: valid production accepted; unsafe PGlite, sandbox, demo, NODE_ENV=production/HSE_APP_ENV=test rejected (two initial matcher issues reconciled without changing product). Isolated new production standalone 6 public role HTTP200 and 139 real PG16 migrations; full authenticated/UX/pentest/reviewer remains blocked."
       ],
       "result_summary": "FAIL initial strict CSP browser event expectation, then same assertion PASS in isolated one-time diagnostic retry; no unsafe inline JS execution observed; flaky signal not yet resolved; no full role workflow proof REVISIT R01: genuine original selected source result PASS against pinned unchanged application SHA. Prior failure/timing/obsolete-mock evidence is preserved and not silently discarded. Full engineer/security/reviewer/adapter gates remain open.",
       "gates": {
@@ -46,6 +47,14 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-R01/M1.01.01.revisit.log",
           "sha256": "9a452d2b33994eb85ed8091f612f66da3f4deb0cd6a3759cbc8ad8ca1d8a46a7"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10101-production-environment-five-cases-reconciled.json",
+          "sha256": "433f10da19f57042ae6daa9eca4a416efb468a1a0b7fd35fb71ce96461d667ad"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-PG16-exact-standalone-20261125T140008Z-63c79c.json",
+          "sha256": "d41b45ef46e7567aef67096ff3ab58e727c9b88979ce31c85f63bb0e7e91359b"
         }
       ],
       "revalidation_events": [
@@ -72,16 +81,17 @@
       "qa_tooling_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
       "configuration_fingerprint": "ef09f66e7e52c52bbb4b94076f14b204017983745bfe49256077273c9e49c1ab",
       "observed_at_utc": "2026-11-22T17:11:49.352823+00:00",
-      "technical_verdict": "SCOPED_PASS_NOT_FULL",
+      "technical_verdict": "FAIL_CONFIRMED_CONCURRENT_PG16_MIGRATION_STARTUP",
       "tested_actions": [
         "Real separate PostgreSQL 16 applies 139 migration records once/idempotent and preserves history, rejects injected unknown migration",
         "Prod/preview rollback forbidden and intentionally wrong checksum blocks apply and rollback, database checksum restored",
-        "2026-11-25 ZERO-001 original M1.01.02 exact frozen7ff: two previously not-yet-credited source cases in disposable PG16 seeded139, explicitly acknowledged rollback preserves preceding history/reapply and all139 reverse down and up, TAP 2 PASS 0 FAIL 0 SKIP exit0. Source prior two checks in original report scoped only, reviewer and full migration-security/staging still blocked; no shared mutations."
+        "2026-11-25 ZERO-001 original M1.01.02 exact frozen7ff: two previously not-yet-credited source cases in disposable PG16 seeded139, explicitly acknowledged rollback preserves preceding history/reapply and all139 reverse down and up, TAP 2 PASS 0 FAIL 0 SKIP exit0. Source prior two checks in original report scoped only, reviewer and full migration-security/staging still blocked; no shared mutations.",
+        "2026-11-25 NEW PRODUCT FAIL on approved frozen7ff: two concurrent isolated PostgreSQL16 migration processes exit 0 and 1 with SQLSTATE23505 pg_type duplicate relation type hse_schema_migrations; first still writes 139 migration rows. Draft protected PR241 fixed on different source337ec34: two migrators exit0/0 with 139, original PG16 4/4 green, PGlite checksum 3/3 green, targeted lint green. Approved candidate remains buggy and not repinned."
       ],
       "result_summary": "2/2 explicitly selected PG16 test cases PASSED against disposable loopback PostgreSQL, 139 migrations applied twice idempotently, rogue applied migration denied, bad checksum rejected and prod/preview rollback prohibited; two other original migration cases not executed this batch",
       "gates": {
-        "engineering": "PASS",
-        "functional_workflow": "BLOCKED",
+        "engineering": "FAIL",
+        "functional_workflow": "FAIL",
         "ui_accessibility": "NOT_APPLICABLE",
         "cybersecurity": "BLOCKED",
         "independent_review": "BLOCKED",
@@ -90,7 +100,8 @@
       "adapter_not_applicable_reason": "Foundation/CI/DB/health scenarios do not exercise an external provider adapter",
       "open_high_or_critical": null,
       "blocking_defects": [
-        "Full three-discipline review evidence and/or uncovered cases remain"
+        "Full three-discipline review evidence and/or uncovered cases remain",
+        "RELEASE-BLOCKING PRODUCT DEFECT on approved source7ff: PostgreSQL16 two-process migration startup DDL race with SQLSTATE 23505 (pg_type typname hse_schema_migrations). Review-only unmerged PR241 source337ec34 passes on changed code; final authorized merge/repin/recheck outstanding."
       ],
       "raw_evidence_refs": [
         {
@@ -108,6 +119,22 @@
         {
           "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-original-M10102-complete139-reverse-evidence.json",
           "sha256": "aa7ff84399e5ac9f6ef575603dc3861e83c8ba36e1c2f935da1cd23139f31899"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-PG16-parallel-migrators-20261125T140258Z-30d656.json",
+          "sha256": "eb045cd5cb06befcfcde701e080223da0bc6d90c315ac3a5e495a0d15330fc89"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-PG16-parallel-migrators-locked-337ec34-20261125T140941Z-82d564.json",
+          "sha256": "e39aabf03cb34d432c287499c906582c0b7e5c35a698e232169aeddbe10d61c7"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-PG16-four-changed-SHA-retry1-337ec34-20261125T141052Z-f21858.json",
+          "sha256": "5c6a873538dd88a2554f167e60490ae84e1357643958654a25db0c924456346a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-sequential-closure-new-defect-release-evidence-combined.json",
+          "sha256": "37409bb531f146df2f9c62596032a41ab46bf66271ec8320a464ff9b56754e5f"
         }
       ]
     },
@@ -126,7 +153,8 @@
         "2026-11-25 new exact pinned7ff full audit 45599663897 failed 6 critical/20 high; actual server log confirmed CI production with forbidden test env: fail-closed expected. Existing QA dev-synthetic mode audit 45361516452 17/17 browser PASS 1 critical/0 high, remaining full regression Company Workforce th mapped cell rather than header. Existing source-only draft PR224 scope=col local scoped PASS, hosted 45603019052 pending. Official source pin unchanged and full review/security blocked.",
         "2026-11-25 original ZERO-001: PR224 QA SHA91702d8 hosted preliminary audit run45603019052 17/17 browser and 8/8 MFA/correction PASS, pre-only critical/high 0; full regression not yet terminal; official pin7ff prior full audit failed and full independent pentest/reviewer blocked.",
         "2026-11-25 QA91702d8 PR224 GitHub independent full audit #45603019052 terminal FAILED one critical generic regression Verifier AI scoring/Case Replay criterion mark input count0 versus2 at testline219; identical browser source case in isolated frozen7ff 1/1 PASS; different SHA/config, QA CI failure unresolved, no TECH FULL.",
-        "2026-11-25 strict ZERO-001 closure: QA917 hosted full audit attempt1 terminal FAILED Case Replay controls 0 expected2. New one-time same QA source local Chromium TAP1PASS/0FAIL/0SKIP, wrapper crashed after Node run so process rc unrecorded; cannot clear hosted CI. Hosted failed-only rerun attempt2 initiated IN_PROGRESS, source pin7ff unchanged and strict QA runtime drift guard remains RED. No full cybersecurity/reviewer or exact pin CI proof, original scenario stays INCONCLUSIVE."
+        "2026-11-25 strict ZERO-001 closure: QA917 hosted full audit attempt1 terminal FAILED Case Replay controls 0 expected2. New one-time same QA source local Chromium TAP1PASS/0FAIL/0SKIP, wrapper crashed after Node run so process rc unrecorded; cannot clear hosted CI. Hosted failed-only rerun attempt2 initiated IN_PROGRESS, source pin7ff unchanged and strict QA runtime drift guard remains RED. No full cybersecurity/reviewer or exact pin CI proof, original scenario stays INCONCLUSIVE.",
+        "2026-11-25 hosted changed QA917 full audit #45603019052 attempt2 TERMINAL FAILURE, critical1 generic full regression exit1, high0. New failing test is Worker evidence resolves without approval and escalation returns through Admin: Playwright page.goto to /worker/evidence interrupted by another navigation to SAME route at evidence-review-resolution.browser.test.mjs:117 after submit. Previous attempt1 separately failed verifier Case Replay controls0 expected2; failure shifted, full gate still RED. This is inconclusive CI browser synchronization vs product behavior; no assertion weakened and NO full approval. Private attempt2 actual FINAL-AUDIT and full regression logs hashed."
       ],
       "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
@@ -203,6 +231,18 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/QA91702d8-existing-case-replay-red-check.log",
           "sha256": "0000ab5514710d1ede6361a5b8423cc2ebc2f0d3290d14e89469369a091e1239"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/audit-run45603019052-attempt2/FINAL-AUDIT.json",
+          "sha256": "473fed7cdb195675bc5116c22701be571e898c585d689e499509295c7ece159f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/audit-run45603019052-attempt2/existing_full_regression_crosscheck.log",
+          "sha256": "b5256fd479a6a42691586b67af470e7aadd453c121a08d818bab55cf76072204"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/audit-run45603019052-attempt2/github-artifact-15030753117.zip",
+          "sha256": "a50816f3a41494000c827a1f0c94a78706c4c0176f419be70189393a98a9d991"
         }
       ]
     },
@@ -221,7 +261,8 @@
         "2026-11-25 post58 safe stage status: env declares7ff, HTTPS200, PG16/outbox live; persisted stage-metadata source d2043b50 conflicts, no signed bundle/retained backup/rollback proof and no operator approval.",
         "2026-11-25 original ZERO-001: active staging HEAD6a src/lockfile/next.config Git blobs match pin7ff but signed source-to-binary unverified, stage metadata d204 mismatches pin, old 2026-11-21 backup not proven latest/restore and no approved operator rollback; stage unchanged.",
         "2026-11-25 original ZERO-001: actual live next-server cwd active stage standalone, with source, lockfile and next config tracked blobs equal pin7ff, but active Git HEAD6a mismatches release guard pin7ff; stage metadata d204 stale. Signed source-to-binary provenance, latest verified backup and approved rollback still blocked; read only, no live changes.",
-        "2026-11-25 ZERO-001 original M1.01.04: live synthetic stage read-only fresh private AES256-GCM encrypted retained backup and separate key; decrypt and restore same ciphertext isolated PostgreSQL16, 193 tables/979 rows exact per-table hashes, live unchanged. Frozen7ff isolated standalone boots restored DB, 6 public portal login GET200, readiness anonymous401 authorized200, 2 anonymous protected redirects307; one isolated pg_ctl failure due Unix pathname length preserved and one corrected short-path retry pass. NOT signed build, offsite backup, authenticated cross-role journeys or approved shared stage rollback."
+        "2026-11-25 ZERO-001 original M1.01.04: live synthetic stage read-only fresh private AES256-GCM encrypted retained backup and separate key; decrypt and restore same ciphertext isolated PostgreSQL16, 193 tables/979 rows exact per-table hashes, live unchanged. Frozen7ff isolated standalone boots restored DB, 6 public portal login GET200, readiness anonymous401 authorized200, 2 anonymous protected redirects307; one isolated pg_ctl failure due Unix pathname length preserved and one corrected short-path retry pass. NOT signed build, offsite backup, authenticated cross-role journeys or approved shared stage rollback.",
+        "2026-11-25 exact pin7ff isolated fresh production build exit0 with independent dependencies after first symlink workspace test failure; release manifest with 3715 generated files hashed. Disposable PG16 fresh 139 migrations and production standalone boot, six public role login GET200, readiness anonymous401/auth200 with pin7ff and signed-out private paths denied; app and PG cleanly stopped. Untrusted self-generated build not owner-signed, real stage binary not attested, no approved live rollback or offsite encrypted backup."
       ],
       "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
       "gates": {
@@ -270,6 +311,26 @@
         {
           "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-latest-restored-app-20261125T120414Z-60433578.json",
           "sha256": "f8e84777f44b6bca3b1d84141082316c68632ac314329109fc488c09905783ea"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-isolated-exact-pin7ff-production-build.json",
+          "sha256": "cc6eaea318046e8524061bdd9f6706afc49130bdb489e93a89afeb55157e4fbd"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-isolated-exact-pin7ff-production-build-retry1.json",
+          "sha256": "58ad08767d31bf8a3a05dd5a4dbdd881a6d89ee41a4609185d1c34903255e515"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-build-provenance-tree-manifest.json",
+          "sha256": "1ed4b88691122afcc9e0c2a12641beaf558153df6dcb3153f6d8ad9049232624"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10104-PG16-exact-standalone-20261125T140008Z-63c79c.json",
+          "sha256": "d41b45ef46e7567aef67096ff3ab58e727c9b88979ce31c85f63bb0e7e91359b"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-sequential-closure-new-defect-release-evidence-combined.json",
+          "sha256": "37409bb531f146df2f9c62596032a41ab46bf66271ec8320a464ff9b56754e5f"
         }
       ]
     },
