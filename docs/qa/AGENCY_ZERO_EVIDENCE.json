@@ -869,7 +869,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay"
+        "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 1 independently executed source cases every accepted protected endpoint is bound to one fixed portal role; actual TAP 1 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -890,6 +891,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.01.log",
           "sha256": "ed3319c5cf1c33091ccd53d90d4008fc675f3fd149c5b465b56f26e1ab78300c"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/fixed_portal_role.json",
+          "sha256": "b96dec373aaad1fabdf8b90c9d09b56875e960e8b96f6d196b82f84c86a3217e"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/fixed_portal_role.log",
+          "sha256": "2f9f7a71e4f10465c2438106778e2ccb02a6fb6fe5d63a1fe6ad24f26d3b95be"
         }
       ]
     },
@@ -902,7 +915,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers"
+        "M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 2 independently executed source cases Member scope, tenant isolation, permission ceiling and fresh session checks hold at the report boundary, A matching digest cannot authorize another tenant's private report object; actual TAP 2 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -923,6 +937,26 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.02.log",
           "sha256": "3f6e75a1db616244a7b99a681d9fb73f3bc66e36073a7fd79d084e1a003e8aef"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/scoped_report_boundary.json",
+          "sha256": "f89549aa97505db3cf763cd8dc743d01d842b348c64b687215acd70ef771eabb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/scoped_report_boundary.log",
+          "sha256": "e68abd982aac1c86b96aa7dcff476a8fe448cbd825da5ce830a08932cb1f535c"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/foreign_report_artifact_digest.json",
+          "sha256": "6db86b3e7dbfe366c9e9b6c418701f970f95a812d7eed91ca04d334124c33980"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/foreign_report_artifact_digest.log",
+          "sha256": "fc0d63e8698c8dc5a9c6bc2d647dcd109fd09d91cce9c8404741a4a503dc9af3"
         }
       ]
     },
@@ -935,7 +969,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access"
+        "M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 1 independently executed source cases Worker signed access reuses safely while live and fails after session revocation; actual TAP 1 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -956,6 +991,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.03.log",
           "sha256": "347fb5894c9beb6776fa8cf7b2f9bcfe168c4443a4e3166488e355b61e8449a2"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/worker_signed_token_revocation.json",
+          "sha256": "11fae7af21119ec1101788428ebc7b88e1ccede91b0193f712a7f1ecc9145ae6"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/worker_signed_token_revocation.log",
+          "sha256": "1a192fc411db895d8293823226632b1b2a996c87d40ef1facab4a99cf1b3b1af"
         }
       ]
     },
@@ -968,7 +1015,8 @@
       "observed_at_utc": "2026-11-22T17:51:47.469842+00:00",
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
-        "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium"
+        "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium",
+        "2026-11-25 original ZERO-005 revisited selected exact frozen7ff 1 independently executed source cases transactional authorization revalidation denies every accepted lifecycle and permission race; actual TAP 1 PASS zero FAIL/SKIP. Previous one original real Chromium case scoped PASS retained not rerun. New runtime/static tests cannot close full functional, UI, manual authorization pentest, full linked adapter or independent review; TECH FULL NOT awarded."
       ],
       "result_summary": "Actual original scoped Chromium test PASSED 1/1: Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium. Includes concrete cross-role and tenant attack assertions, but full technical signoff needs complete independent expert review and remaining original scope.",
       "gates": {
@@ -989,6 +1037,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-005/M1.04.04.log",
           "sha256": "cdee9318cf970e15ab4ce3d24feb302e44e66220ba8e5c8b602ac97d78631a0b"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero005-authorization/ZERO005-four-scenarios-five-cases-three-disciplines.json",
+          "sha256": "517158c387d381621d96364ec841d4a54c15feb0978c2d1db5804e3262c6ac97"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/transactional_permission_lifecycle.json",
+          "sha256": "c239827e1775f55b98c16f1b8b3afe3d220d585d8118e2004e7a52fe15e9a657"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-post58-zero005-authorization/transactional_permission_lifecycle.log",
+          "sha256": "3631e8a80ef24084a7c77795f8c50c4450413744f02e6ba6ddd26c652c1ca68b"
         }
       ]
     },
