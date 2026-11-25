@@ -17,7 +17,8 @@
         "2026-11-25 frozen7ff production env fail-closed five identities PASS: valid production accepted; unsafe PGlite, sandbox, demo, NODE_ENV=production/HSE_APP_ENV=test rejected (two initial matcher issues reconciled without changing product). Isolated new production standalone 6 public role HTTP200 and 139 real PG16 migrations; full authenticated/UX/pentest/reviewer remains blocked.",
         "2026-11-25 exact approved source pin7ff fresh independent production standalone+PG16 isolated HTTP route security: Root bootstrap, Worker registration sandbox inbox, Company registration sandbox inbox all returned404 even with correct production mode; no secrets in bodies; anti-frame deny on all, 3 scoped positive isolation assertions. Not full manual pentest, authenticated roles, UX or owner approval.",
         "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER On UNAPPROVED 22db exact build, six production-mode authenticated role portal logins (Worker, Company, Assessor, Verifier, Admin, Root) passed on real Chromium + disposable PostgreSQL16; invalid Worker password rejected without auth cookie. CYBERSECURITY All six logged-in cross-role dashboard attempts redirect to access-denied; invalid password creates no session; additional production sandbox entrypoints 404 on earlier approved pin7ff. This is scoped adversarial negative checking, not comprehensive OWASP/manual penetration. REVIEWER AI inspected seven real Chromium role outcomes and raw JSON hash; not separate independent final reviewer or owner UI/UX acceptance. Scoping explicitly unmerged source22db. Original frozen source pin7ff and verdict unchanged.",
-        "2026-11-25 unmerged source6a4d7a8 pre-final independent automated axe accessibility scan of 21 signed-out page/width combinations (320,390,1280px) found0 recorded violations/serious/critical, but 21 incomplete checks and NO authenticated keyboard/screen-reader review. Scope remains SCOPED, not owner-ready. Automated scanner pre-final artifact SHA 8c827401336aa3aa50a680f79d4004d5613682a51914ad3000cfb8202dd90a03."
+        "2026-11-25 unmerged source6a4d7a8 pre-final independent automated axe accessibility scan of 21 signed-out page/width combinations (320,390,1280px) found0 recorded violations/serious/critical, but 21 incomplete checks and NO authenticated keyboard/screen-reader review. Scope remains SCOPED, not owner-ready. Automated scanner pre-final artifact SHA 8c827401336aa3aa50a680f79d4004d5613682a51914ad3000cfb8202dd90a03.",
+        "2026-11-25 exact UNMERGED source6a4d7a8 manual Worker login CSRF Origin challenge with genuine raw HTTP: captured valid-credentials live Next Server Action form payload in isolated browser, first verified Node transport sends foreign Origin to independent localhost echo, then replayed with Origin https://foreign.invalid; actual backend HTTP500, NO session cookie, NO Worker dashboard redirect. Same genuine credentials from normal browser origin HTTP200, session cookie and Worker dashboard pass; single selected real Node+Chromium test TAP1PASS0FAIL0SKIP exit0. Earlier two test-only Playwright route.continue Origin overrides were IGNORED by browser transport, causing false harness FAILs; original logs preserved, not app vulnerability. This is one scoped manual auth-CSRF check, not full pen/UI/role clearance. ENGINEER PASS scoped; CYBERSECURITY PASS scoped; REVIEWER AI evidence triage scoped only."
       ],
       "result_summary": "FAIL initial strict CSP browser event expectation, then same assertion PASS in isolated one-time diagnostic retry; no unsafe inline JS execution observed; flaky signal not yet resolved; no full role workflow proof REVISIT R01: genuine original selected source result PASS against pinned unchanged application SHA. Prior failure/timing/obsolete-mock evidence is preserved and not silently discarded. Full engineer/security/reviewer/adapter gates remain open.",
       "gates": {
@@ -86,6 +87,22 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-latest-6a4d7a8-pre-full-audit-ZAP-axe-triage-20261125.json",
           "sha256": "5d809d9bf936242993e1d401cde725cce9e61905ff7dac365651522842aea7b9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10101-real-CSRF-raw-Origin-negative-and-false-Playwright-transport-triage-20261125.json",
+          "sha256": "8de8adeda42d25f6b189be034484ee5feb5cc49cc008b3ea8c6e25fa245829b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.json",
+          "sha256": "3afc7edb6f51eb1c863d59d64900326fe297aa3c0945801c27da45a433e038ff"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.tap.log",
+          "sha256": "2c448094873e1bcea3549eb5af0e092e5f40cde33e7a68f767395432b16a33eb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-manual-origin-outcome-retry-20261125T170724Z-77ee.json",
+          "sha256": "849520f2efd0ddcb05d08375d5ecb6558d459f1a7afcbd9c0c7d02f66192f05d"
         }
       ],
       "revalidation_events": [
@@ -210,7 +227,8 @@
         "2026-11-25 unmerged review source 1b495f5. ENGINEER: One specifically named Case Replay real Chromium TAP 1 pass / 0 fail / 0 skip, both rubric marks POST200/reload persistence, human decision persisted, Admin Case Replay visible. The prior CI e1c6 failed on inert pre-hydration spinbuttons, minimal test-only hydration readiness added. First local rerun used external symlinked node_modules rejected by Turbopack, raw failure preserved. Physical package installation copied; rerun succeeded. TAP process exit code NOT CAPTURED; do not claim 0. CYBERSECURITY: No new authenticated permission/pentest claims from this Case Replay regression. Prior scope-level role/session negative checks remain, complete manual/adversarial audit outstanding. REVIEWER: AI source/log evidence check: original count assertion2 remains, only added wait on actual aria-busy=false hydrated rubric mark form. One real named browser case TAP PASS, exit code unavailable. Independent signed reviewer verdict not yet obtained; hosted full run on current SHA and comprehensive UX/performance testing outstanding. Original verdict, approved source7ff and 218 numerator not changed.",
         "2026-11-25 latest protected candidate SHA6a4d7a8 now has exact-source full independent audit run #45652287972 IN PROGRESS; same SHA signed review-only production build #45652288070 GREEN and independently Sigstore verified. This is not a full current CI verdict; retain original M1.01.03 inconclusive until terminal run is inspected.",
         "2026-11-25 current exact protected UNMERGED QA source6a4d7a8. ENGINEER One previously failed privacy real browser Workflow current6a4d7a8 isolated PGlite+Next+Chromium exact Worker correction/Admin approval/persisted profile/legal hold denied/expired recording erased/session revoked/audit retained: TAP 1/1 pass0fail0skip, subprocess EXIT0. Earlier different SHA bc902 full audit privacy UI timed out, not reproduced on current SHA. Older full22db generic command exit124 90min timeout while Worker report browser cancelled, separate from confirmed product defect. CYBERSECURITY No generic pen approval from one privacy browser case; its relevant legal hold and revoked-session boundary were exercised but additional cross-role/tenant authorization and manual penetration remain open. REVIEWER AI source/log/exit-code review: exact one test TAP PASS process0 with synthetic fixture; separate full GitHub run current6a still in progress at capture; older 22db regression timed out at command budget 5400s (exit124) rather than a verified exploit. Not independent final reviewer signoff. Source pin7ff, original verdict, 218 ledger unchanged.",
-        "2026-11-25 SHA6a4d7a8 pre-crosscheck FINAL-AUDIT before 90minute full regression says 0critical,0high,14medium (11 complexity, 1 scanner pattern matched SQL COMMENT, 2 signed-out root contact401 console). Passive localhost dev ZAP reported four medium alerts: absence anti-CSRF tokens on public Next Server Action forms, CSP unsafe-eval, CSP unsafe-inline style, missing CSP on POST/robots/sitemap. These are UNRESOLVED until manually checked in real production context, not falsely waived. Automated axe21 scanned public signed-out pages no recorded violations, all with incomplete manual review. Full source6a GitHub audit45652287972 NOT terminal at capture. No full certification."
+        "2026-11-25 SHA6a4d7a8 pre-crosscheck FINAL-AUDIT before 90minute full regression says 0critical,0high,14medium (11 complexity, 1 scanner pattern matched SQL COMMENT, 2 signed-out root contact401 console). Passive localhost dev ZAP reported four medium alerts: absence anti-CSRF tokens on public Next Server Action forms, CSP unsafe-eval, CSP unsafe-inline style, missing CSP on POST/robots/sitemap. These are UNRESOLVED until manually checked in real production context, not falsely waived. Automated axe21 scanned public signed-out pages no recorded violations, all with incomplete manual review. Full source6a GitHub audit45652287972 NOT terminal at capture. No full certification.",
+        "2026-11-25 ZAP dev scanner alert Absence of Anti-CSRF Tokens on Worker login now manually addressed ONLY for that route: valid Worker credential Server Action replay using real raw cross-site Origin HTTP500 no cookie/dashboard, same origin HTTP200 login; Playwright header interception ignored Origin, two false-harness positives preserved. Other registration/contact/verify forms and all manual penetration still UNVERIFIED. Proof SHA 8de8adeda42d25f6b189be034484ee5feb5cc49cc008b3ea8c6e25fa245829b4."
       ],
       "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
@@ -387,6 +405,22 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-latest-6a4d7a8-pre-full-audit-ZAP-axe-triage-20261125.json",
           "sha256": "5d809d9bf936242993e1d401cde725cce9e61905ff7dac365651522842aea7b9"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10101-real-CSRF-raw-Origin-negative-and-false-Playwright-transport-triage-20261125.json",
+          "sha256": "8de8adeda42d25f6b189be034484ee5feb5cc49cc008b3ea8c6e25fa245829b4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.json",
+          "sha256": "3afc7edb6f51eb1c863d59d64900326fe297aa3c0945801c27da45a433e038ff"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-raw-foreign-Origin-action-replay-20261125T170857Z-5713.tap.log",
+          "sha256": "2c448094873e1bcea3549eb5af0e092e5f40cde33e7a68f767395432b16a33eb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-manual-origin-outcome-retry-20261125T170724Z-77ee.json",
+          "sha256": "849520f2efd0ddcb05d08375d5ecb6558d459f1a7afcbd9c0c7d02f66192f05d"
         }
       ]
     },
