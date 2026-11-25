@@ -109,7 +109,8 @@
       "tested_actions": [
         "Read-only authenticated GitHub Actions exact pinned SHA run inventory, 92 total, 91 success, 1 failed",
         "R01 current isolated exact source probe: all five historical HTTP 500 paths responded without 500, current browser-shard policy regression 2/2 PASS; original exact-SHA independent hosted audit still FAILED with 6 critical and 20 high findings",
-        "2026-11-25 post58 full hosted audit #45599663897 started on exact7ff source; current result pending. Real original audit FINAL-AUDIT.json SHA256 78302e0c0bd000681eb6e7982e7b19390d0f863ce285ceb45c4e68e1e2609b92 historic 6 critical and 20 high grouped by source, no current clearance."
+        "2026-11-25 post58 full hosted audit #45599663897 started on exact7ff source; current result pending. Real original audit FINAL-AUDIT.json SHA256 78302e0c0bd000681eb6e7982e7b19390d0f863ce285ceb45c4e68e1e2609b92 historic 6 critical and 20 high grouped by source, no current clearance.",
+        "2026-11-25 new exact pinned7ff full audit 45599663897 failed 6 critical/20 high; actual server log confirmed CI production with forbidden test env: fail-closed expected. Existing QA dev-synthetic mode audit 45361516452 17/17 browser PASS 1 critical/0 high, remaining full regression Company Workforce th mapped cell rather than header. Existing source-only draft PR224 scope=col local scoped PASS, hosted 45603019052 pending. Official source pin unchanged and full review/security blocked."
       ],
       "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
@@ -154,6 +155,10 @@
         {
           "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-post58-M10103-M10104-security-stage-receipt.json",
           "sha256": "17cf8bd68521366805e7037e7954daf758050f61f358848dc12037551cfc044a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO-001-terminal-current-rootcause-and-R40-proposal.json",
+          "sha256": "9c954895b6ea5da25bc48157e93c85bf348559bbc27b7a2f14b6850367e500f2"
         }
       ]
     },
