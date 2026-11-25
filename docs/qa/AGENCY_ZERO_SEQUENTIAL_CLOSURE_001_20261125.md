@@ -193,3 +193,13 @@ CYBERSECURITY: Independently downloaded all three signed output artifacts and ve
 REVIEWER: AI cross-matched raw real browser and signed source receipts. Separate independent reviewer remains open, newest full hosted system audit #45663571236 on same exact SHA not terminal at capture. Original pin7ff source not repinned, original M1.01.02 concurrency defect remains confirmed FAIL. ZERO001 FULL0/4 and overall TECH FULL0/218; no ZERO002.
 
 Private matched 3-discipline receipt SHA256 a79cbf4f079cc583b7fa573e481fb8e5d8d73010e3057f3e924d50108467144d, private independently signed build receipt SHA256 7af9fd7e0a91a7bf15239108222e6a4ca889fbd87b7c79fe33ee13c313a195b4.
+
+### Exact85a9 standalone production CSP / ZAP development-mode false positives
+
+ENGINEER: Exact unmerged PR244 source85a9e4c production config NODE_ENV/HSE_APP_ENV/HSE_RELEASE_ENV production, offline synthetic database URL, build EXIT0, source standalone binary SHA256 ddcb54abfe2903586e262e9f732539985b9ef5cac90886fae63b1db1a4bcd861, localhost HTTP public login Worker/Company/Root status200. Initial probe incorrectly used case-sensitive HTTP header dict keys and marked CSP missing; raw red evidence preserved. Retried with case-insensitive lowercase normalization while asserting exact previous compiled standalone hash, reusing build without repeat; 4 scoped PASS0FAIL, local process stopped clean. Neither protected staging nor production was touched.
+
+CYBERSECURITY: Real production responses on three role login pages return strict per-request CSP script nonces and strict-dynamic, no script-src unsafe-eval or unsafe-inline scripts, form-action self, object-src none, frame-ancestors none, HSTS one year, X-Frame-Options DENY, nosniff. This refutes DEV-only ZAP unsafe-eval finding for these real production paths. However /robots.txt and /sitemap.xml explicitly bypass proxy and return HTML404 with no CSP; these and style-src unsafe-inline still require reviewer risk assessment. No blanket full OWASP manual penetration pass.
+
+REVIEWER: AI reviewed original failed and corrected raw evidence, not separate final independent reviewer. Current GitHub exact SHA85a9 full independent audit #45663571236 in full regression crosscheck remains in progress at capture; signed review-only GitHub build success does not mean protected staging serves these bytes. ZERO001 TECH FULL0/4 and overall 0/218. No ZERO002.
+
+Private E/C/R receipt SHA256 107a309bb109778344e50dfee32245b46bbf82298d9abbfcaf5c09f01ae5d45e; original failed harness SHA256 127e8fd82ae7661c633f1072a04be87affdf649f21b7b509cefa5f5740f92309; corrected scoped PASS SHA256 25e0614f165d7ddd559c03416b8ba3ba84a0e00fa0e33589e1ec0616a3206c23.
