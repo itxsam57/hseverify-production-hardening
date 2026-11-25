@@ -6,6 +6,7 @@ on:
       - qa/zero001-candidate-modern-audit-20261125
     paths:
       - .github/workflows/zero001-review-build-provenance.yml
+  # Review-only manual retry; never touches live staging, production or approved source.
   workflow_dispatch:
 
 permissions:
