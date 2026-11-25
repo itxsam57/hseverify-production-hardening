@@ -52,6 +52,8 @@ To see current state:
     python3 scripts/agency_zero_sequential_closure.py --status
 Only explicit --advance-closure after all original units are FULL may change closure_active_batch_id, with source-drift guard approval. The standard agency_zero_control.py --batch and --run-scoped-smoke paths must reject inactive batch dispatch.
 
+GitHub Actions agency-zero-batch.yml now rejects ALL and only resolves the recorded active original batch, with max-parallel=1. GitHub Actions agency-zero-governance.yml checks the sequential closure contract. Direct agency_zero_control.py --matrix ALL is forbidden. No remote CI workflow may bypass active-batch closure by requesting a later original batch.
+
 The existing 218 IDs and 58 historically attempted batches remain intact; prior scoped results are not removed or mindlessly repeated. Older reports directing a move to ZERO-002/006 while ZERO-001 remained incomplete are superseded. The prior no-stall rule applies to independent work **within the active batch**, not to cross-batch advancement.
 
 ## Bounded sequential-closure testing algorithm

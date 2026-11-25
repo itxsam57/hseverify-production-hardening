@@ -369,8 +369,10 @@ def main():
         status(manifest)
         return 0
     if args.matrix:
-        ids = [b["batch_id"] for b in manifest["batches"]] if args.matrix == "ALL" else [find_batch(manifest, args.matrix)["batch_id"]]
-        print(json.dumps(ids, separators=(",", ":")))
+        if args.matrix == "ALL":
+            raise ValueError("ZERO sequential closure forbids ALL or parallel cross-batch execution")
+        require_active_closure_batch(manifest, args.matrix)
+        print(json.dumps([find_batch(manifest, args.matrix)["batch_id"]], separators=(",", ":")))
         return 0
     if args.batch:
         require_active_closure_batch(manifest, args.batch)

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       batch:
-        description: "ZERO-001 through ZERO-058, or ALL (58 batches, two parallel)"
+        description: "ONLY the current active ZERO batch; later batches and ALL forbidden"
         required: true
         default: "ZERO-001"
         type: string
@@ -31,6 +31,7 @@ jobs:
         shell: bash
         run: |
           python3 scripts/agency_zero_control.py --check
+          python3 scripts/agency_zero_sequential_closure.py --assert-batch "$REQUESTED_BATCH"
           matrix="$(python3 scripts/agency_zero_control.py --matrix "$REQUESTED_BATCH")"
           printf 'batches=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
           echo "ZERO batch matrix: $matrix"
@@ -42,7 +43,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         batch_id: ${{ fromJSON(needs.plan.outputs.batches) }}
     concurrency:
@@ -94,6 +95,6 @@ jobs:
         run: |
           code="$(cat "artifacts/agency-zero/${SELECTED_BATCH}.exit-code")"
           if [ "$code" != "0" ]; then
-            echo "ZERO | Batch needs further evidence or has a failed scoped test. Other batches continue."
+            echo "ZERO | Batch remains OPEN and the sequential gate blocks advancement until every original unit is fully verified."
             exit 1
           fi
