@@ -252,7 +252,31 @@ def find_batch(manifest, batch_id):
     return matches[0]
 
 
+
+def require_active_closure_batch(manifest, requested_batch_id):
+    """No later source test or command dispatch until active original batch is FULL."""
+    cursor = active_batch_cursor(manifest)
+    if cursor.get("closure_policy") != "STRICT_SEQUENTIAL_FULL_ONLY":
+        raise ValueError("Owner sequential full-closure rule absent from cursor")
+    active_id = cursor.get("closure_active_batch_id")
+    if requested_batch_id != active_id:
+        raise ValueError(
+            "ZERO sequential closure BLOCKED: requested " + str(requested_batch_id) +
+            ", but active original batch " + str(active_id) +
+            " must be fully verified before advancing"
+        )
+    accepted = current_evidence(manifest)
+    approved_sha = pinned_candidate_sha()
+    active = find_batch(manifest, active_id)
+    still_open = [unit["scenario_id"] for unit in active["units"]
+                  if (unit["scenario_id"], approved_sha) not in accepted]
+    if not still_open:
+        raise ValueError("Current batch is fully verified; use explicit reviewed --advance-closure")
+    return still_open
+
+
 def run_scoped_smokes(manifest, batch_id, output_dir, max_seconds):
+    require_active_closure_batch(manifest, batch_id)
     batch = find_batch(manifest, batch_id)
     output_dir.mkdir(parents=True, exist_ok=True)
     sha = pinned_candidate_sha()
@@ -349,6 +373,7 @@ def main():
         print(json.dumps(ids, separators=(",", ":")))
         return 0
     if args.batch:
+        require_active_closure_batch(manifest, args.batch)
         batch = find_batch(manifest, args.batch)
         print(f"ZERO | {batch['batch_id']} | {batch['family']} | {batch['unit_count']}/5 test units")
         for unit in batch["units"]:

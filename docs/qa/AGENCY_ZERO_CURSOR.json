@@ -1011,5 +1011,13 @@
     "ZERO-058"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "Original ZERO-005 Authorization M1.04.01-.04 revisited: FIVE distinct new exact frozen7ff source cases 5/5 SCOPED PASS 0FAIL/0SKIP, four original workflow units. New role layout fixed guard STRUCTURAL check, Company reports tenant/site scope and fresh session denial, corrupted cross-tenant private object digest failclosed, Worker signed file token replay denied after session revoked before storage read (compiled 13 source modules in private vault), transactional authorization rechecks account/session/tenant/membership/role status at lock. Original four real Chromium browser cases in ZERO-005 report reused not repeated. All four remain SCOPED_PASS_NOT_FULL due complete UI/accessibility, broad manual authenticated OWASP attack matrix, all cross-worker resources, production adapter contract and independent Reviewer gates missing; full risk critical/high UNKNOWN. All 58 original batches remain OPEN, TECH FULL 0/218, candidate app SHA7ff unchanged. Separate changed QA PR224 audit #45603019052 FAILED scorer Case Replay, signed stage/rollback unapproved. NEXT original ZERO-006 audit/notifications M1.05.01-.04, inspect historical exact source evidence then <=5 new related tests; no new R-series or prod/stage edit."
+  "next_action": "MANDATORY OWNER SEQUENTIAL CLOSURE: ONLY ZERO-001 ACTIVE. M1.01.01-.04 must all receive three uniquely attributable E/C/R PASS plus full functional/accessibility/penetration/adapter contracts, exact pin7ff CI and stage provenance/rollback before any ZERO-002 dispatch. The guarded --assert-batch ZERO-002 currently returns exit2; official source guard reports inherited QA branch Company export and workforce UI source drift vs pin7ff. M1.01.03 hosted audit45603019052 attempt1 FAILED Case Replay rubric inputs0 versus2; isolated same SHA91702d8 test TAP 1PASS but wrapper lost process exit code (preserved error), so CI red not cleared. Allowed one hosted failed-jobs retry attempt2 IN_PROGRESS on same QA SHA; terminal outcome not known. Stage signed binary provenance, TLS, full authenticated staging workflows, manual pentest, approved rollback/offsite backup still NOT demonstrated; no staging/production operations approved. Continue ONLY ZERO-001; exact next check terminal hosted attempt2 and diagnose hosted failure or stage source-to-binary/restore proofs without touching running service. All historical 58 attempts and 218 original IDs preserved; FULL 0/218.",
+  "closure_policy": "STRICT_SEQUENTIAL_FULL_ONLY",
+  "closure_active_batch_id": "ZERO-001",
+  "closure_required_current_original_scenarios": [
+    "M1.01.01",
+    "M1.01.02",
+    "M1.01.03",
+    "M1.01.04"
+  ]
 }

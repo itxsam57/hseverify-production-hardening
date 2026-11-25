@@ -125,7 +125,8 @@
         "2026-11-25 post58 full hosted audit #45599663897 started on exact7ff source; current result pending. Real original audit FINAL-AUDIT.json SHA256 78302e0c0bd000681eb6e7982e7b19390d0f863ce285ceb45c4e68e1e2609b92 historic 6 critical and 20 high grouped by source, no current clearance.",
         "2026-11-25 new exact pinned7ff full audit 45599663897 failed 6 critical/20 high; actual server log confirmed CI production with forbidden test env: fail-closed expected. Existing QA dev-synthetic mode audit 45361516452 17/17 browser PASS 1 critical/0 high, remaining full regression Company Workforce th mapped cell rather than header. Existing source-only draft PR224 scope=col local scoped PASS, hosted 45603019052 pending. Official source pin unchanged and full review/security blocked.",
         "2026-11-25 original ZERO-001: PR224 QA SHA91702d8 hosted preliminary audit run45603019052 17/17 browser and 8/8 MFA/correction PASS, pre-only critical/high 0; full regression not yet terminal; official pin7ff prior full audit failed and full independent pentest/reviewer blocked.",
-        "2026-11-25 QA91702d8 PR224 GitHub independent full audit #45603019052 terminal FAILED one critical generic regression Verifier AI scoring/Case Replay criterion mark input count0 versus2 at testline219; identical browser source case in isolated frozen7ff 1/1 PASS; different SHA/config, QA CI failure unresolved, no TECH FULL."
+        "2026-11-25 QA91702d8 PR224 GitHub independent full audit #45603019052 terminal FAILED one critical generic regression Verifier AI scoring/Case Replay criterion mark input count0 versus2 at testline219; identical browser source case in isolated frozen7ff 1/1 PASS; different SHA/config, QA CI failure unresolved, no TECH FULL.",
+        "2026-11-25 strict ZERO-001 closure: QA917 hosted full audit attempt1 terminal FAILED Case Replay controls 0 expected2. New one-time same QA source local Chromium TAP1PASS/0FAIL/0SKIP, wrapper crashed after Node run so process rc unrecorded; cannot clear hosted CI. Hosted failed-only rerun attempt2 initiated IN_PROGRESS, source pin7ff unchanged and strict QA runtime drift guard remains RED. No full cybersecurity/reviewer or exact pin CI proof, original scenario stays INCONCLUSIVE."
       ],
       "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
@@ -190,6 +191,18 @@
         {
           "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero002-global-ui/ZERO001-CI45603019052-case-replay-isolated-diagnostic.json",
           "sha256": "92002fb424e95df1c4835f5d1cc496f17aa10f796f9e1e1d78caec3fe5437747"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-owner-sequential-closure-enforced.json",
+          "sha256": "1960a30c2d5ba6fcab3e6ca9124e3eb695205098b908c0dba2cb0f874e60e66a"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-QA91702d8-local-tap-vs-hosted-ci-reconciled.json",
+          "sha256": "7947beed72c625d5358dfc125a795ac53474d7c5b04358448660cd72e28c2edb"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/QA91702d8-existing-case-replay-red-check.log",
+          "sha256": "0000ab5514710d1ede6361a5b8423cc2ebc2f0d3290d14e89469369a091e1239"
         }
       ]
     },
