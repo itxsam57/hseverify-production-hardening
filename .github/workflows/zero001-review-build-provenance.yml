@@ -46,7 +46,7 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --include=dev --no-audit --no-fund
       - name: Validate fail-closed production environment
         run: npm run validate:env
       - name: Compile production standalone without any real database connection
