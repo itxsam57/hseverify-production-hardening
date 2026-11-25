@@ -106,7 +106,8 @@
         "2026-11-25 ZERO-001 original M1.01.02 exact frozen7ff: two previously not-yet-credited source cases in disposable PG16 seeded139, explicitly acknowledged rollback preserves preceding history/reapply and all139 reverse down and up, TAP 2 PASS 0 FAIL 0 SKIP exit0. Source prior two checks in original report scoped only, reviewer and full migration-security/staging still blocked; no shared mutations.",
         "2026-11-25 NEW PRODUCT FAIL on approved frozen7ff: two concurrent isolated PostgreSQL16 migration processes exit 0 and 1 with SQLSTATE23505 pg_type duplicate relation type hse_schema_migrations; first still writes 139 migration rows. Draft protected PR241 fixed on different source337ec34: two migrators exit0/0 with 139, original PG16 4/4 green, PGlite checksum 3/3 green, targeted lint green. Approved candidate remains buggy and not repinned.",
         "2026-11-25 reviewed combined source candidate proposal PR243 SHAdecec20 incorporates only already corrected PG16 advisory lock, permanent concurrent startup test and 2 unrelated full-CI acceptance fixes. Candidate PG16 migration-integrity CI successful; no merge and approved source pin7ff still contains confirmed 23505 concurrency failure. Full M10102 stays FAIL.",
-        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Approved pin7ff CONFIRMED PG16 two-deployer 23505 race; protected fix source337ec34 and modern candidate22db real PG16 startup + migration CI pass, but not approved candidate pin. CYBERSECURITY Original confirmed concurrent deployment startup availability vulnerability remains in approved pin7ff; session advisory lock repair only proposed/CI-tested on other SHA. REVIEWER AI cross-checked original FAIL and protected fix PASS at distinct SHAs; cannot accept M10102 until owner-reviewed integration and target-SHA replay. Original frozen source pin7ff and verdict unchanged."
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Approved pin7ff CONFIRMED PG16 two-deployer 23505 race; protected fix source337ec34 and modern candidate22db real PG16 startup + migration CI pass, but not approved candidate pin. CYBERSECURITY Original confirmed concurrent deployment startup availability vulnerability remains in approved pin7ff; session advisory lock repair only proposed/CI-tested on other SHA. REVIEWER AI cross-checked original FAIL and protected fix PASS at distinct SHAs; cannot accept M10102 until owner-reviewed integration and target-SHA replay. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 protected UNMERGED source22db PG16 crash recovery scoped 4/4 PASS: session advisory lock blocks waiting actual second migrator before DDL; SIGKILL holder frees lock, waiter applies exactly139 migrations exit0, retry idempotent exit0 still139, no leaked advisory locks, private PG cleanly stopped. Original APPROVED source7ff migration startup defect remains FAIL, no full status, source repin or shared-stage writes."
       ],
       "result_summary": "2/2 explicitly selected PG16 test cases PASSED against disposable loopback PostgreSQL, 139 migrations applied twice idempotently, rogue applied migration denied, bad checksum rejected and prod/preview rollback prohibited; two other original migration cases not executed this batch",
       "gates": {
@@ -167,6 +168,10 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
           "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/M10102-22db-PG16-crash-advisory-lock-recovery-20261125T153433Z-66e864.json",
+          "sha256": "92fae751ec9e4cd42472f4ee8e2df2c7403aed02f88de3efe2509a478b8930aa"
         }
       ]
     },

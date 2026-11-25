@@ -109,3 +109,8 @@ Evidence composite SHA256 5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31
 - preliminary_fourteen_medium_findings_triage: M10101-M10103-medium-audit-source-triage-bc902-425-20261125.json SHA256 bcd7bfdaed7e41ab70415075dbfe1115de95d9c5edbdde5e48f840c8de10e3de
 
 Remaining non-negotiable for original ZERO001: approved frozen app SHA repin and affected exact SHA retests; terminal full hosted independent audit green; trusted signature proving exact running protected HTTPS stage binary; actual authorized offsite encrypted backup, independently held key and stage rollback/restore; targeted full manual penetration/real UI/accessibility/adapters, attributable independent Reviewer approval. No launch or owner-ready certification yet. NO ZERO-002.
+
+### M1.01.02 crash-lock recovery on unapproved source22db (scoped only)
+
+Fresh disposable PG16 test: a dedicated process held migration advisory session lock (1213418033,10102), second real db-migrate waited without creating schema. SIGKILL holder released lock; waiting migrator exited0 and applied139 migrations; retry migrated0 additional records, stayed139, zero leaked advisory locks, private PG shutdown. Four scoped pass checks. Approved pin7ff has confirmed concurrent startup 23505 defect and still FAIL. No stage/prod mutation, full reviewer/manual pen/HTTPS stage/rollback remains open.
+Private receipt M10102-22db-PG16-crash-advisory-lock-recovery-20261125T153433Z-66e864.json SHA256 92fae751ec9e4cd42472f4ee8e2df2c7403aed02f88de3efe2509a478b8930aa; raw log SHA256 fc7d993ec43fb4b8e2dedaa52ed3940c4b9f75df1fabe5928eb2341ac6697cd9.
