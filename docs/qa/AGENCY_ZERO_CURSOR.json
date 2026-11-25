@@ -1011,5 +1011,5 @@
     "ZERO-058"
   ],
   "last_observed_qa_head_sha": "b458bafe63b897437d7f3b9e7b300caf0b01d5d9",
-  "next_action": "R02: Re-run full independent audit on frozen exact app candidate and reconcile historic 6 critical/20 high with current source; establish approved isolated matching-SHA HTTPS stage/rollback. Then review original 218 in <=5 related workflows per full ENGINEER/CYBERSECURITY/REVIEWER gate batch. Never redo the 216 scoped-pass source receipts without a reason."
+  "next_action": "ZERO-001 post58 M1.01.03/M1.01.04 TWO original scenario units: fresh hosted exact app SHA7ff audit run45599663897 in progress at capture, inspect terminal artifact and reconcile historic 6 critical/20 high. Stage read-only HTTPS200 PG16 outbox running but stage-metadata d2043b50 differs from pinned7ff; signed bundle provenance/verified retained backup/authorized rollback blocked. Do not resume R-series; keep all 58 original batches in revisit queue, TECH FULL0/218."
 }
