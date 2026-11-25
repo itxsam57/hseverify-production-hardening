@@ -193,7 +193,8 @@
         "2026-11-25 strict ZERO-001 closure: QA917 hosted full audit attempt1 terminal FAILED Case Replay controls 0 expected2. New one-time same QA source local Chromium TAP1PASS/0FAIL/0SKIP, wrapper crashed after Node run so process rc unrecorded; cannot clear hosted CI. Hosted failed-only rerun attempt2 initiated IN_PROGRESS, source pin7ff unchanged and strict QA runtime drift guard remains RED. No full cybersecurity/reviewer or exact pin CI proof, original scenario stays INCONCLUSIVE.",
         "2026-11-25 hosted changed QA917 full audit #45603019052 attempt2 TERMINAL FAILURE, critical1 generic full regression exit1, high0. New failing test is Worker evidence resolves without approval and escalation returns through Admin: Playwright page.goto to /worker/evidence interrupted by another navigation to SAME route at evidence-review-resolution.browser.test.mjs:117 after submit. Previous attempt1 separately failed verifier Case Replay controls0 expected2; failure shifted, full gate still RED. This is inconclusive CI browser synchronization vs product behavior; no assertion weakened and NO full approval. Private attempt2 actual FINAL-AUDIT and full regression logs hashed.",
         "2026-11-25 isolated QA917-based test-only fix PR242 SHAe1c6d03 removed duplicate page.goto to Worker evidence immediately after a real Server Action refresh; preserves existing visible active-submitted state and full Worker/Verifier/Admin escalation assertions. Local targeted real Chromium case passed1/1 exit0 with raw receipt+log; hosted full-system run45635211149 dispatched, status in_progress at snapshot. Independently consolidated source candidate draft PR243 SHAdecec20 includes protected PR241 migration and Company table accessibility and this test fix; full audit run45636196385 launched in_progress. No hosted full green or approved candidate repin.",
-        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Historical-source delta 1610 old/1612 current source cases, zero new pass credits, original 1436 remain past-only; three named integrity cases passed, hosted 22db full-system terminal still pending as captured. CYBERSECURITY Preliminary independent full audit on earlier app-equivalent bc902 0 critical/0 high but 14 medium triaged; same auth code source unchanged in 425. Full terminal and manual security remain open; production provider adapters not live. REVIEWER AI checks indexed old tests and detected changed new test definitions NOT new green; 2 of 14 medium browser 401 require UX/network trace. Full hosted audit incomplete. Original frozen source pin7ff and verdict unchanged."
+        "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Historical-source delta 1610 old/1612 current source cases, zero new pass credits, original 1436 remain past-only; three named integrity cases passed, hosted 22db full-system terminal still pending as captured. CYBERSECURITY Preliminary independent full audit on earlier app-equivalent bc902 0 critical/0 high but 14 medium triaged; same auth code source unchanged in 425. Full terminal and manual security remain open; production provider adapters not live. REVIEWER AI checks indexed old tests and detected changed new test definitions NOT new green; 2 of 14 medium browser 401 require UX/network trace. Full hosted audit incomplete. Original frozen source pin7ff and verdict unchanged.",
+        "2026-11-25 unmerged review source 1b495f5. ENGINEER: One specifically named Case Replay real Chromium TAP 1 pass / 0 fail / 0 skip, both rubric marks POST200/reload persistence, human decision persisted, Admin Case Replay visible. The prior CI e1c6 failed on inert pre-hydration spinbuttons, minimal test-only hydration readiness added. First local rerun used external symlinked node_modules rejected by Turbopack, raw failure preserved. Physical package installation copied; rerun succeeded. TAP process exit code NOT CAPTURED; do not claim 0. CYBERSECURITY: No new authenticated permission/pentest claims from this Case Replay regression. Prior scope-level role/session negative checks remain, complete manual/adversarial audit outstanding. REVIEWER: AI source/log evidence check: original count assertion2 remains, only added wait on actual aria-busy=false hydrated rubric mark form. One real named browser case TAP PASS, exit code unavailable. Independent signed reviewer verdict not yet obtained; hosted full run on current SHA and comprehensive UX/performance testing outstanding. Original verdict, approved source7ff and 218 numerator not changed."
       ],
       "result_summary": "Exact pinned source SHA 7ff30ea: GitHub Actions 91 SUCCESS, 1 FAILED independent audit (run 44915185823); no full candidate CI acceptance REVISIT R01 historical-audit classification: the six critical findings were five signed-out HTTP 500 route responses and one legacy sharding command failure; 20 high findings were 14 role login/navigation timeouts and six fresh-counter TOTP-correction timeouts. Current isolated app smoke 5/5 formerly-500 routes return non500; current sharding spec 2/2 PASS. Neither can retroactively turn the exact-SHA historical hosted audit green, nor certify all role security.",
       "gates": {
@@ -306,6 +307,26 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-modern22db-candidate-real-six-role-and-provenance-three-disciplines-20261125.json",
           "sha256": "5a307a09c83125a0b1aa943795000ad2e49955a4d8ca4a1740fa31e28cbe6018"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10103-CaseReplay-hydrated-real-Chromium-TAP1PASS-20261125.json",
+          "sha256": "12f6d0febbea47d806969f439a6301a61a923ecb1dadd8568bcf56efd28e369b"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-M10103-case-replay-hydration-symlink-deps-inconclusive.json",
+          "sha256": "4f43de6135544800b9e4802a21a04677d1da9ca0ecb9fcc4064d61020d1c8a7a"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-e1c6d03-terminal/FINAL-AUDIT.json",
+          "sha256": "1192d68f92d59c41b10756e6bc5241e7579abebcf5c93ca2aa6972ce4b842a21"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-bc90296-terminal/FINAL-AUDIT.json",
+          "sha256": "f3c89b8134d93cc3f013dbc94aafabe91a0458d43fad8262a3879760d4b7ed5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-CaseReplay-1b495-signed-22111-CI-triple-discipline-20261125.json",
+          "sha256": "bb31f0ae687d8e277fe81a683531e94d01d0b57ff469a23a220fdd1db776e5f5"
         }
       ]
     },
@@ -328,7 +349,8 @@
         "2026-11-25 exact pin7ff isolated fresh production build exit0 with independent dependencies after first symlink workspace test failure; release manifest with 3715 generated files hashed. Disposable PG16 fresh 139 migrations and production standalone boot, six public role login GET200, readiness anonymous401/auth200 with pin7ff and signed-out private paths denied; app and PG cleanly stopped. Untrusted self-generated build not owner-signed, real stage binary not attested, no approved live rollback or offsite encrypted backup.",
         "2026-11-25 one isolated combined release candidate SHAdecec20 prepared as draft PR243 without altering stage or official candidate pin7ff, for exact-SHA independent hosted full audit run45636196385. No signed source-to-running-stage build, owner approval, offsite backup/approved rollback or full six-role authenticated UAT yet. Remains BLOCKED.",
         "2026-11-25 MODERN UNMERGED PR244 APP SOURCE22db HEAD425e, source blob parity; ENGINEER Exact unapproved source22db production standalone built exit0, 3715 generated binary file inventory and self-computed release manifest, fresh PG16 139 applied; six PUBLIC role login pages and readiness/role access served; stage signed binary and authorized real rollback absent. CYBERSECURITY Self-computed manifest and private SHA tree are not owner-trusted release signature; no trusted exact stage served artifact, independent offsite backup/key or approved rollback. REVIEWER AI reviewed source/binary hash and clean disposable DB stop; operator attestation, stage HTTPS proof and recovery signoff missing. Original frozen source pin7ff and verdict unchanged.",
-        "2026-11-25 GitHub attested build PRIVATE OIDC security review: workflow run45647968729 failed at production build because npm ci NODE_ENV=production omitted TypeScript dev dependency; corrected npm ci --include=dev and run45648287237 SUCCESS signed 3715-file fingerprint and three artifacts. Independently downloaded artifact and verified GitHub Sigstore OIDC signature using checksum-verified GH CLI 2.105.0: crypto valid and all three file digest matches; BUT signed release-manifest.json says applicationEnvironment development while actual build was NODE_ENV=production/HSE_APP_ENV=production, because HSE_RELEASE_ENV unset and manifest generator defaulted development. Production provenance acceptance FAIL, not FULL. Strict fix on review-only PR244 source head a278644 declares HSE_RELEASE_ENV production and asserts manifest environment production prior to signature; no new signed run for corrected head available at capture (manual workflow dispatch returned GitHub HTTP500). No stage/prod writes, no official source repin or trusted running-stage binary attestation."
+        "2026-11-25 GitHub attested build PRIVATE OIDC security review: workflow run45647968729 failed at production build because npm ci NODE_ENV=production omitted TypeScript dev dependency; corrected npm ci --include=dev and run45648287237 SUCCESS signed 3715-file fingerprint and three artifacts. Independently downloaded artifact and verified GitHub Sigstore OIDC signature using checksum-verified GH CLI 2.105.0: crypto valid and all three file digest matches; BUT signed release-manifest.json says applicationEnvironment development while actual build was NODE_ENV=production/HSE_APP_ENV=production, because HSE_RELEASE_ENV unset and manifest generator defaulted development. Production provenance acceptance FAIL, not FULL. Strict fix on review-only PR244 source head a278644 declares HSE_RELEASE_ENV production and asserts manifest environment production prior to signature; no new signed run for corrected head available at capture (manual workflow dispatch returned GitHub HTTP500). No stage/prod writes, no official source repin or trusted running-stage binary attestation.",
+        "2026-11-25 unmerged review source 1b495f5. ENGINEER: Full local production bundle and PG16 previous evidence; new GitHub exact-commit1b495f5 production build generated 3715 file fingerprints and signed all three artifacts. CI run45651417771 SUCCESS, source committed and no running-stage deployment. CYBERSECURITY: Independently verified Sigstore OIDC signature of current source1b495f5, repository+branch+workflow identity, exact git dependency, and digest matches for compiled tree manifest, release manifest, metadata. Production environment label now production; prior signed development-labeled artifact explicitly rejected. This is an unmerged build attest, NOT evidence any HTTPS stage serves this exact artifact. REVIEWER: AI independently checked signed artifact semantics and exact commit/3 subject digests; stage binary parity, signing promotion custody and operator-approved offsite backup and restore/rollback not performed; independent reviewer final signoff unavailable. Original verdict, approved source7ff and 218 numerator not changed."
       ],
       "result_summary": "Existing isolated loopback TLS stage /worker/login GET returned HTTP200, CSP and HSTS present; local certificate not trusted by default; stage-metadata source SHA d2043b... differs from frozen candidate 7ff30ea..., signed-855 stage evidence files coexist; cannot prove exact candidate stage or rollback on this visit",
       "gates": {
@@ -434,6 +456,26 @@
         {
           "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-first-run-45647968729-red.json",
           "sha256": "28b739be10fa79110157a35d4be2d92f94e2b65cfa170f54fdb08309ba1363f4"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-1b495f5-final-source-signature-verified.json",
+          "sha256": "fd8893c3aa93a84e9cd5f3a67d8807d1131c59b62ba939394feb7e6b0137f2fe"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-GitHub-OIDC-ab495dd-corrected-production-manifest-SIGSTORE-verified.json",
+          "sha256": "6a31e3cb778bee86e072c14a88c308e67067216a11a8d947796759a3265b3a4d"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-e1c6d03-terminal/FINAL-AUDIT.json",
+          "sha256": "1192d68f92d59c41b10756e6bc5241e7579abebcf5c93ca2aa6972ce4b842a21"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/github-full-audit-bc90296-terminal/FINAL-AUDIT.json",
+          "sha256": "f3c89b8134d93cc3f013dbc94aafabe91a0458d43fad8262a3879760d4b7ed5f"
+        },
+        {
+          "uri": "private-workstation:/home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZERO001-CaseReplay-1b495-signed-22111-CI-triple-discipline-20261125.json",
+          "sha256": "bb31f0ae687d8e277fe81a683531e94d01d0b57ff469a23a220fdd1db776e5f5"
         }
       ]
     },
