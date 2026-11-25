@@ -281,6 +281,13 @@ test("Verifier AI guidance remains advisory and Admin Case Replay reconstructs t
           replayProgress("decision-reload-done");
           const refreshed = verifier.locator("tbody tr").filter({ hasText: fixture.caseId }).first();
           await refreshed.waitFor({ state: "visible", timeout: 15_000 });
+          // DOM readiness does not mean a Next client form is hydrated.
+          // The actual mark controls are inert until each form is interactive.
+          for (const criterion of ["Q1:C0", "Q1:C1"]) {
+            await refreshed.locator(`form[aria-label="Rubric mark ${criterion}"][aria-busy="false"]`)
+              .waitFor({ state: "visible", timeout: 25_000 });
+          }
+          replayProgress("decision-rubric-forms-hydrated");
           assert.deepEqual(await refreshed.getByRole("spinbutton",{name:"Criterion mark",exact:true}).evaluateAll(inputs=>inputs.map(input=>input.value)),["84","84"]);
           await refreshed.getByText("Overall score: 84",{exact:true}).waitFor();
           assert.equal(await refreshed.getByRole("combobox", { name: "Decision", exact: true }).inputValue(), "PASS");
