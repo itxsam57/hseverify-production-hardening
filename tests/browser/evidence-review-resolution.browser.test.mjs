@@ -114,7 +114,8 @@ async function createEvidence(page, baseUrl, kind, fields) {
     page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/worker/evidence")),
     ready.getByRole("button", { name: "Submit this version" }).click()
   ]);
-  await page.goto(`${baseUrl}/worker/evidence`, { waitUntil: "domcontentloaded" });
+  // A Server Action refreshes this route; avoid a duplicate goto race.
+  // Keep the strict visible submitted-state assertion below unchanged.
   await page.locator("article").filter({ hasText: title }).first()
     .getByText("active · submitted", { exact: true }).waitFor({ timeout: 15_000 });
 }
