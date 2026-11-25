@@ -75,7 +75,8 @@
       "technical_verdict": "SCOPED_PASS_NOT_FULL",
       "tested_actions": [
         "Real separate PostgreSQL 16 applies 139 migration records once/idempotent and preserves history, rejects injected unknown migration",
-        "Prod/preview rollback forbidden and intentionally wrong checksum blocks apply and rollback, database checksum restored"
+        "Prod/preview rollback forbidden and intentionally wrong checksum blocks apply and rollback, database checksum restored",
+        "2026-11-25 ZERO-001 original M1.01.02 exact frozen7ff: two previously not-yet-credited source cases in disposable PG16 seeded139, explicitly acknowledged rollback preserves preceding history/reapply and all139 reverse down and up, TAP 2 PASS 0 FAIL 0 SKIP exit0. Source prior two checks in original report scoped only, reviewer and full migration-security/staging still blocked; no shared mutations."
       ],
       "result_summary": "2/2 explicitly selected PG16 test cases PASSED against disposable loopback PostgreSQL, 139 migrations applied twice idempotently, rogue applied migration denied, bad checksum rejected and prod/preview rollback prohibited; two other original migration cases not executed this batch",
       "gates": {
@@ -95,6 +96,18 @@
         {
           "uri": "private-workstation:artifacts/agency-zero/ZERO-001/m10102-postgres.log",
           "sha256": "43b55221e0f7411fffcc76716084c2dd3863f0ff473666c688364f3512d1f22e"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-M10102-reverse139-20261125T122220Z-fd8a13.json",
+          "sha256": "cd68671a621d041c79ea53fae4a37532085d24f655deda63a76d6fb2c8c8e97a"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-M10102-reverse139-20261125T122220Z-fd8a13.log",
+          "sha256": "2bf88768d5793cec8fee166450b755cf79503ca92d374d9148e7c855ea3c5326"
+        },
+        {
+          "uri": "private-workstation:.hse-qa-tmp/agency-zero-post58-zero001-security-stage/ZERO001-original-M10102-complete139-reverse-evidence.json",
+          "sha256": "aa7ff84399e5ac9f6ef575603dc3861e83c8ba36e1c2f935da1cd23139f31899"
         }
       ]
     },
