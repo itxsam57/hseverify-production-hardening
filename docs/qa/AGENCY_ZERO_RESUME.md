@@ -569,3 +569,12 @@ NEXT: reconcile M1.01.01 legacy artifacts | SHA: see git HEAD | EVIDENCE: this f
 - ENGINEER named source tests passed; CYBERSECURITY relevant assertions scoped, full pen and adapters pending; REVIEWER original/command/log SHA checked but full independent accreditation and original workflow signoff not done.
 - Application source 7ff30ea140a5145e5d5ba761f7c7aef24c895269 tracked clean; private raw receipts /home/ubuntu/work/.hse-qa-tmp/agency-zero-r199-r218 with hashes in report. Production/stage unchanged; R178 and candidate/stage blockers preserved.
 - Report docs/qa/AGENCY_ZERO_R199_R218_DECISIONS_CREDENTIALS_SHARING_TWENTY_CASE_REPORT.md. NEXT R219 original M3.03.04, M3.03.05 then M3.04; full cross-role/UI/pen/adapter/reviewer work all 58 original batches still outstanding before TECH_FULL.
+
+
+## 2026-11-25 - ZERO R219-R238 four five-case scoped batches
+
+- Four related strictly five-case groups R219-223, R224-228, R229-233 and R234-238. Twenty distinct immutable original IDs M3.03.04-.05, M3.04.01-.05, M3.05.01-.06, M3.06.01-.06 and M3.07.01; 18/20 first-run named PASS, 2 first-run non-passes fully preserved, exactly one approved targeted retry each; final 20/20 SCOPED_PASS, 0 TECH_FULL.
+- R223 ENV missing approved compiled Company Action Centre service, one focused original-source compiler retest PASS 1/1. R237 selector used incomplete original test title and only logged file-level green; complete exact title retry PASS 1/1. Neither first misleading result was credited. Both original/retry SHA logs retained.
+- ENGINEER 20 source-selected case PASS; CYBERSECURITY targeted asserted boundary checks only, full penetration/adapters incomplete; REVIEWER case/source/log hashes reconciled internally but independent complete original feature signoff outstanding. Full 0/218 and original 58 groups OPEN; prior R178 scoring mock red, inherited R36/R40 strict source-pin guard and protected stage provenance/rollback blockers remain.
+- Frozen application 7ff30ea140a5145e5d5ba761f7c7aef24c895269 tracked clean; production and shared stage unchanged. Report docs/qa/AGENCY_ZERO_R219_R238_SHARE_COMPANY_BILLING_REPORTS_APPEALS_REPORT.md; private complete receipt /home/ubuntu/work/.hse-qa-tmp/agency-zero-r219-r238/R219-R238-private-three-discipline-reconciled-receipts.json SHA256 5c86a496764501d13e4bef6fb86874e0a79c01dd1df8cf02c2ec8b5124d7cd28.
+- NEXT R239 M3.07.02 independent appeal claim/review then M3.07.03-...; <=5 cases/batch, no unnecessary repeat and no technical full award without actual all-role/UI/security/adapter/reviewer evidence.
