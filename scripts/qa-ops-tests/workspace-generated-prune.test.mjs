@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync, symlinkSync, readlinkSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync, symlinkSync, readlinkSync, rmSync, utimesSync } from "node:fs";
 import { join, relative } from "node:path";
 import test from "node:test";
 
@@ -22,6 +22,11 @@ function worktree(root, name, dirty = false) {
   writeFileSync(join(dir, "node_modules", "generated.bin"), "disposable");
   mkdirSync(join(dir, ".next"));
   writeFileSync(join(dir, ".next", "generated.bin"), "disposable");
+  // The prune eligibility gate requires generated caches older than the scan clock. Keep the
+  // fixture deterministic across CI filesystem timestamp precision / clock skew.
+  const oldGeneratedTime = new Date(Date.now() - 120_000);
+  utimesSync(join(dir, "node_modules"), oldGeneratedTime, oldGeneratedTime);
+  utimesSync(join(dir, ".next"), oldGeneratedTime, oldGeneratedTime);
   return dir;
 }
 test("dry-run never destroys ignored modules, build output, or evidence", () => {
@@ -32,7 +37,7 @@ test("dry-run never destroys ignored modules, build output, or evidence", () => 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const report = JSON.parse(result.stdout);
     assert.equal(report.applied, false);
-    assert(report.eligible.some(item => item === "clean/node_modules"));
+    assert(report.eligible.some(item => item === "clean/node_modules"), JSON.stringify(report));
     assert(existsSync(join(clean, "node_modules", "generated.bin")));
     assert(existsSync(join(clean, ".next", "generated.bin")));
     assert(existsSync(join(clean, "evidence.txt")));
