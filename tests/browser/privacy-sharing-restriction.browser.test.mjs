@@ -80,6 +80,34 @@ async function privacySsrActionFields(browser, adminContext, baseUrl, requestTyp
  } finally { await context.close(); }
 }
 
+// A malformed/stale Server Action is rejected *before* RBAC is evaluated.
+// One explicitly evidenced refresh is permitted only for Next's exact
+// action-not-found response; the final forged request MUST reach 303 denial.
+async function postForgedPrivacyReview(browser,adminContext,baseUrl,requestType,requester,body){
+ for(let attempt=0;attempt<2;attempt++){
+  const fields=await privacySsrActionFields(browser,adminContext,baseUrl,requestType);
+  if(process.env.HSE_QA_INJECT_STALE_ACTION_ONCE==='true' && attempt===0 && requestType==='restriction'){
+   const genuine=Object.keys(fields).find(key=>key.startsWith('$ACTION_ID_'));
+   assert.ok(genuine,'Test fixture requires a real Server Action to simulate a stale ID');
+   delete fields[genuine];
+   fields['$ACTION_ID_'+'0'.repeat(40)]='';
+  }
+  const reply=await requester.request.post(baseUrl+'/admin/privacy',{
+   multipart:{...fields,...body},
+   headers:{origin:baseUrl},
+   maxRedirects:0
+  });
+  if(reply.status()!==400)return reply;
+  const marker=reply.headers()['x-nextjs-action-not-found'];
+  const text=await reply.text();
+  assert.equal(marker,'1','Unexpected HTTP400 is not an unrecognized Server Action');
+  assert.equal(text.trim(),'Invalid Server Action request.','Unexpected HTTP400 body');
+  console.log('ACTION_ID_REJECTED_BEFORE_AUTHORIZATION',requestType,'attempt',attempt+1);
+  if(attempt===1)assert.fail('A fresh Server Action also returned HTTP400; cannot verify RBAC denial');
+ }
+ assert.fail('Server Action authorization path was never reached');
+}
+
 test('Worker optional sharing restriction reaches Admin fulfilment, recipient denial and server-enforced new-link refusal', {timeout:180_000}, async()=>{
  const directory=await mkdtemp(join(tmpdir(),'hse-sharing-restriction-')),databaseDirectory=join(directory,'db'),port=await freePort(),baseUrl='http://127.0.0.1:'+port;
  const environment={...process.env,HSE_APP_ENV:'development',HSE_DATABASE_DRIVER:'pglite',HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_RELEASE_SHA:'privacy-sharing-restriction-browser',HSE_SESSION_SECRET:'restriction-browser-session-secret-more-than-thirty-two',HSE_AUTH_PEPPER:'restriction-browser-auth-pepper-more-than-thirty-two',HSE_ENABLE_WORKER_DEMO_AUTH:'false',HSE_USE_WORKER_DEMO_DATA:'false',HSE_AUDIT_CREDENTIALS_PATH:join(directory,'credentials.json')};
@@ -100,8 +128,9 @@ test('Worker optional sharing restriction reaches Admin fulfilment, recipient de
  await worker.getByText('restriction: OPEN',{exact:true}).waitFor();
  await admin.goto(baseUrl+'/admin/privacy');const card=admin.locator('article').filter({hasText:'Request type: restriction'});
  await card.getByText('Status: OPEN',{exact:true}).waitFor();
- const actionFields=await privacySsrActionFields(browser,adminContext,baseUrl,'restriction');
- const denied=await worker.request.post(baseUrl+'/admin/privacy',{multipart:{...actionFields,decision:'COMPLETED',reason:'Unauthorized Worker must never complete a privacy restriction.'},maxRedirects:0});assert.equal(denied.status(),303);assert.equal(new URL(denied.headers().location,baseUrl).pathname,'/access-denied');
+ const denied=await postForgedPrivacyReview(browser,adminContext,baseUrl,'restriction',worker,{
+  decision:'COMPLETED',reason:'Unauthorized Worker must never complete a privacy restriction.'
+ });assert.equal(denied.status(),303);assert.equal(new URL(denied.headers().location,baseUrl).pathname,'/access-denied');
  await admin.reload();await card.getByText('Status: OPEN',{exact:true}).waitFor();
  await card.getByLabel('Request decision').selectOption('COMPLETED');await card.getByLabel('Request review reason').fill('Restrict optional sharing while preserving required case processing and retained evidence.');
  await card.getByRole('button',{name:'Save privacy request decision',exact:true}).click();await card.getByText('Status: COMPLETED',{exact:true}).waitFor();
@@ -114,7 +143,13 @@ test('Worker optional sharing restriction reaches Admin fulfilment, recipient de
  await admin.goto(baseUrl+'/admin/privacy');const staleCard=admin.locator('article').filter({hasText:'Request type: correction'});await staleCard.getByText('Status: OPEN',{exact:true}).waitFor();
  const staleFields=await privacySsrActionFields(browser,adminContext,baseUrl,'correction');
  const staleCookies=await adminContext.cookies();await admin.goto(baseUrl+'/account/sessions');await admin.getByRole('button',{name:'Sign out this session',exact:true}).click();await admin.waitForURL(url=>url.pathname==='/admin/login');
- await adminContext.addCookies(staleCookies);const staleResponse=await admin.request.post(baseUrl+'/admin/privacy',{multipart:{...staleFields,decision:'REJECTED',reason:'Revoked Admin session must not record a review decision.'},maxRedirects:0});assert.equal(staleResponse.status(),303);const deniedLogin=new URL(staleResponse.headers().location,baseUrl);assert.equal(deniedLogin.pathname,'/admin/login');assert.equal(deniedLogin.searchParams.get('reason'),'session-required');
+ await adminContext.addCookies(staleCookies);
+ // Keep the revoked-session attack independent of any accidental dev action-ID
+ // recompilation; it also needs one *validly encoded* action to assess RBAC.
+ const staleResponse=await admin.request.post(baseUrl+'/admin/privacy',{
+  multipart:{...staleFields,decision:'REJECTED',reason:'Revoked Admin session must not record a review decision.'},
+  headers:{origin:baseUrl},maxRedirects:0
+ });assert.equal(staleResponse.status(),303);const deniedLogin=new URL(staleResponse.headers().location,baseUrl);assert.equal(deniedLogin.pathname,'/admin/login');assert.equal(deniedLogin.searchParams.get('reason'),'session-required');
  await worker.reload();await worker.getByText('correction: OPEN',{exact:true}).waitFor();
  console.log('ACTUAL_RESTRICTION_BROWSER valid link -> trusted request -> unauthorized Worker review denied -> Admin completion -> recipient denial -> disabled form and real403 issuance refusal');
  }finally{await workerContext.close();await adminContext.close();await publicContext.close();await browser.close();}

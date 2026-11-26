@@ -5,7 +5,7 @@
   "baseline_historical_source_cases": 1610,
   "candidate_218_IDs_identical_to_pin": true,
   "candidate_current_test_file_count": 563,
-  "candidate_current_test_source_content_sha256": "720703d69e4c81abef4e94c28ad64732bf6f3fdefbfb4d2b6f2faceafeda59e3",
+  "candidate_current_test_source_content_sha256": "118b88d190e342a3a1bc925b7a1fce1a544172dc791c70ffcb71c365162503f4",
   "candidate_current_unique_literal_source_cases": 1612,
   "current_full_verified_count": 0,
   "eligible_to_repin_approved_source": false,
@@ -39,7 +39,7 @@
     {
       "status": "M",
       "path": "tests/browser/privacy-sharing-restriction.browser.test.mjs",
-      "sha256": "b40eb01c7d8e0c705791393082eb82f7f5420e4e4b544085605b98bca1303003"
+      "sha256": "f24e70d6c1a2e880692ca4579fedcce4d167b8185c899ddd6679dfdce237335b"
     },
     {
       "status": "M",
