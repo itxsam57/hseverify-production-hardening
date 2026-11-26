@@ -153,7 +153,7 @@ jobs:
           echo "HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
           echo "HSE_BROWSER_BASE_URL=${audit_base}" >> "$GITHUB_ENV"
           echo development-synthetic > artifacts/independent-audit/server-mode.txt
-          PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
+          PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --no-server-fast-refresh --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
           echo $! > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid
           for attempt in $(seq 1 150); do
             if ! kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)" 2>/dev/null; then
