@@ -1,3 +1,9 @@
+<!-- HSEVERIFY-AGENCY-ZERO-58-OVERRIDE:BEGIN -->
+## Owner-approved Agency ZERO verification override (2026-11-21)
+
+For this HSE Verify agency testing work, read docs/qa/AGENCY_ZERO_PROTOCOL.md, docs/qa/AGENCY_ZERO_BATCHES.json and docs/qa/AGENCY_ZERO_CURSOR.json before continuing. Use only the 58 original ZERO-001 through ZERO-058 batches mapping exactly 218 frozen scenarios and no more than five independent cases/workflows per batch; do not invent additional batch series or forget unresolved earlier batches. The owner-approved later policy supersedes earlier M1-only scheduling and the owner-UAT-before-technical-FULL meaning. TECH FULLY VERIFIED means independently ENGINEER, CYBERSECURITY and REVIEWER evidence sufficient for OWNER TESTING READY; final launch still requires owner UAT, live provider and release approval. Never automatically promote historic scoped cases, bypass V4 guarding, change approved source pin7ff without explicit reviewed app change, or modify production.
+<!-- HSEVERIFY-AGENCY-ZERO-58-OVERRIDE:END -->
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
