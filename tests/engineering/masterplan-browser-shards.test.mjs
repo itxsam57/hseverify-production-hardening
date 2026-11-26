@@ -17,9 +17,19 @@ const allTests=/^      - name: ([^\n]+)\n        if: \$\{\{ matrix\.shard == ([1
 test("hosted connected-browser splits every real journey into exactly one of four bounded shards",()=>{
   assert.match(shardedSteps,/strategy:[\s\S]*?fail-fast: false[\s\S]*?shard: \[1, 2, 3, 4\]/);
   const steps=[...shardedSteps.matchAll(allTests)].map(m=>({name:m[1],shard:Number(m[2])}));
-  const allCommands=shardedSteps.match(/^      - name: /gm)||[];
-  assert.equal(steps.length,allCommands.length-3,"Every test step after PDF/Chromium and shared outbox build must be assigned to one shard");
-  assert.ok(steps.length>=50,"Do not silently drop previously required browser journeys");
+  const allCommands=[...shardedSteps.matchAll(/^      - name: ([^\n]+)/gm)].map(match=>match[1]);
+  // The Case Replay failure-log reader is not a browser test. It deliberately
+  // runs only after a failure in shard 4; retain it without counting it as a
+  // fifth unsharded browser journey or dropping a genuine coverage gate.
+  const nonTestSteps=allCommands.filter(name=>!steps.some(step=>step.name===name));
+  assert.deepEqual(nonTestSteps,[
+    "Install PDF text verifier for real credential assertions",
+    "Install Chromium",
+    "Build compiled outbox worker for isolated browser shards",
+    "Show Case Replay progress on error"
+  ],"Every unsharded command must be an explicitly reviewed setup/diagnostic step");
+  assert.match(shardedSteps,/Show Case Replay progress on error\n        if: \$\{\{ failure\(\) && matrix\.shard == 4 \}\}\n        run: \|/,"Case Replay diagnostic must be conditional on shard-4 failure");
+  assert.equal(steps.length,64,"Preserve all 64 existing hosted browser test steps");
   for(let shard=1;shard<=4;shard++){
     const selected=steps.filter(step=>step.shard===shard);
     assert.ok(selected.length>=12&&selected.length<=16,"Unbalanced or missing hosted browser shard "+shard);
