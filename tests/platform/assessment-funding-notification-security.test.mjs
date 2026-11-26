@@ -27,9 +27,15 @@ async function addMember(database, fixture, seed, options = {}) {
     [accountId, seed + "@funding.example.test", "Funding " + seed, "active", now, fixture.company.accountId]);
   await database.query("INSERT INTO auth_account_roles(account_id,role) VALUES($1,'company')", [accountId]);
   await database.query("INSERT INTO auth_tenant_memberships(membership_id,tenant_id,account_id,membership_role,membership_status,activated_at,revoked_at,created_by_account_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
-    [membershipId, tenantId, accountId, role, options.revoked ? "revoked" : "active", now, options.revoked ? now : null, fixture.credentials.admin.accountId]);
+    [membershipId, tenantId, accountId, role, "active", now, null, fixture.credentials.admin.accountId]);
   if (options.deny) await deny(database, { membershipId, membershipRole: role }, options.deny);
   const principal = await fundingPrincipal(database, { accountId, membershipId, tenantId, membershipRole: role }, "company");
+  // A real session can only be issued while membership is active. Revoke AFTER
+  // sign-in to verify that an earlier valid session loses billing authority.
+  if (options.revoked) await database.query(
+    "UPDATE auth_tenant_memberships SET membership_status='revoked',revoked_at=$2 WHERE membership_id=$1",
+    [membershipId, now]
+  );
   if (options.disabled) await database.query("UPDATE auth_accounts SET account_status='disabled' WHERE account_id=$1", [accountId]);
   return principal;
 }
