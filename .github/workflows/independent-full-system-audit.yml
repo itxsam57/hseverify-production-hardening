@@ -196,12 +196,66 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      # Stop the synthetic Chromium audit server before the full regression
+      # launches its own Next.js browser sessions. Preserve final cleanup too.
+      - name: Stop only the synthetic audit server before complete regression
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_pid_file="/tmp/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-independent-audit-server.pid"
+          if [ ! -f "$audit_pid_file" ]; then
+            echo "No synthetic audit server was launched; no cleanup needed."
+            exit 0
+          fi
+          audit_pid=$(cat "$audit_pid_file")
+          if ! [[ "$audit_pid" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid synthetic audit PID; do not stop an unrelated process."
+            exit 1
+          fi
+          if ! kill -0 "$audit_pid" 2>/dev/null; then
+            echo "Synthetic audit server already stopped."
+            exit 0
+          fi
+          process_command=$(ps -p "$audit_pid" -o args= || true)
+          if [[ "$process_command" != *"scripts/run-development.mjs"* ]]; then
+            echo "::error::Synthetic audit PID was reused; refuse to signal unrelated process."
+            exit 1
+          fi
+          kill -TERM -- "-$audit_pid"
+          for attempt in $(seq 1 60); do
+            if ! kill -0 "$audit_pid" 2>/dev/null; then
+              echo "Synthetic audit server stopped before full regression."
+              exit 0
+            fi
+            sleep 0.2
+          done
+          echo "::error::Synthetic audit server did not stop; do not run concurrent regression."
+          exit 1
+
       - name: Existing full regression gate cross-check after independent audit
         if: always()
         shell: bash
         run: |
           set +e
           # Bounded; an actual timeout remains a failing regression gate.
+          # Fail closed if the preceding audit server has not actually stopped.
+          fail_closed_regression() {
+            printf '%s\t%s\n' existing_full_regression_crosscheck 1 >> artifacts/independent-audit/commands.tsv
+            printf '%s\n' "$1" > artifacts/independent-audit/existing_full_regression_crosscheck.log
+            node scripts/independent-audit-finalize.mjs
+            exit 1
+          }
+          audit_pid_file="/tmp/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-independent-audit-server.pid"
+          if [ -f "$audit_pid_file" ]; then
+            audit_pid=$(cat "$audit_pid_file")
+            if ! [[ "$audit_pid" =~ ^[0-9]+$ ]]; then
+              fail_closed_regression "Invalid audit-server PID prevents safe full-regression isolation."
+            fi
+            if kill -0 "$audit_pid" 2>/dev/null; then
+              fail_closed_regression "Full regression cannot start while synthetic audit server PID $audit_pid remains running."
+            fi
+          fi
           timeout -k 10s 5400s npm run verify:full > artifacts/independent-audit/existing_full_regression_crosscheck.log 2>&1
           code=$?
           set -e

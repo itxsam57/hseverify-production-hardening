@@ -222,7 +222,24 @@ test("Browser, public API and actual PDF show the decision-pinned expiry and pre
    assert.match(await attention.innerText(),/3 case\(s\) currently require attention or have an adverse state/);
    const workforceResponse=await page.goto(baseUrl+"/company/workers",{waitUntil:"domcontentloaded"});
    assert.equal(workforceResponse?.status(),200,"Active verified Company may access its linked Worker directory");
-   await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   // Keep the original 15-second browser assertion. If hosted CI fails,
+   // emit only page status and booleans/counts, never Company or Worker PII.
+   try {
+    await page.getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000});
+   } catch (error) {
+    const safeDiagnostic={
+     status:workforceResponse?.status() ?? null,
+     route:new URL(page.url()).pathname,
+     workersHeading:(await page.getByRole("heading",{name:"Workers",exact:true}).count())>0,
+     emptyDirectory:(await page.getByText("No Workers match these filters.",{exact:true}).count())>0,
+     directoryTableCount:await page.locator("table.data-table").count(),
+     directoryRowCount:await page.locator("table.data-table tbody tr").count(),
+     pageErrorCount:errors.length,
+     requestFailureCount:failed.length
+    };
+    console.error("M21304_COMPANY_WORKFORCE_FAILURE_DIAGNOSTIC",JSON.stringify(safeDiagnostic));
+    throw error;
+   }
    assert((await page.locator(".data-table").innerText()).includes("Latest case credential: valid"));
    const csv=await page.request.get(baseUrl+"/api/company/workers/export");
    assert.equal(csv.status(),200);
