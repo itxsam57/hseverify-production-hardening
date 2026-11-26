@@ -33,6 +33,10 @@ Full protocol and 37 brick order: `docs/qa/218_VERTICAL_EXECUTION_PROTOCOL.md`. 
 
 <!-- HSEVERIFY-PERMANENT-218-VERTICAL:END -->
 
+## Safe synthetic QA evidence retention (2026-11-18)
+
+The private evidence vault is `itxsam57/hseverify-qa-evidence-vault`. Automatic cleanup is enabled only for worktree-generated raw files after private Release download SHA256 proof, clean/idle original worktree, and exact source SHA independently retrievable on GitHub. Never delete frozen ledgers, pending/unpushed code, PostgreSQL, V4 audit or active/unsafe evidence. Run `npm run qa:archive-evidence-regressions` after changes and inspect `docs/qa/QA_PRIVATE_EVIDENCE_VAULT_AUTO_CLEANUP_20261118.md` for restore and monitoring. The 218/218 release gate remains NO-GO.
+
 <!-- UNIVERSAL-AUTOPILOT-V3:BEGIN -->
 ## Universal Project Autopilot V4 — mandatory and observable
 
@@ -49,7 +53,3 @@ This repository is guarded. For every coding, debugging, continuation, CI, UI, d
 
 Routine continuation never requires the owner to type `continue`. A response boundary is not a work boundary.
 <!-- UNIVERSAL-AUTOPILOT-V3:END -->
-
-## Safe synthetic QA evidence retention (2026-11-18)
-
-The private evidence vault is `itxsam57/hseverify-qa-evidence-vault`. Automatic cleanup is enabled only for worktree-generated raw files after private Release download SHA256 proof, clean/idle original worktree, and exact source SHA independently retrievable on GitHub. Never delete frozen ledgers, pending/unpushed code, PostgreSQL, V4 audit or active/unsafe evidence. Run `npm run qa:archive-evidence-regressions` after changes and inspect `docs/qa/QA_PRIVATE_EVIDENCE_VAULT_AUTO_CLEANUP_20261118.md` for restore and monitoring. The 218/218 release gate remains NO-GO.
