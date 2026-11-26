@@ -1,0 +1,3193 @@
+{
+  "schema_version": 1,
+  "purpose": "Owner testing readiness, not final provider-live/production release authorization",
+  "canonical_scenario_source": "docs/qa/evidence/MASTERPLAN_218_ALL_PREVIOUS_EVIDENCE_ACTIONS_20261114.csv",
+  "historical_case_source": "docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json",
+  "max_scenarios_or_scheduled_cases_per_batch": 5,
+  "original_scenario_count": 218,
+  "original_brick_count": 37,
+  "batch_count": 58,
+  "historical_scenarios_with_direct_source_case_link": 68,
+  "historical_scenarios_without_direct_source_case_link": 150,
+  "batches": [
+    {
+      "batch_id": "ZERO-001",
+      "brick": "M1.01",
+      "family": "Environment and release foundation",
+      "unit_count": 4,
+      "units": [
+        {
+          "scenario_id": "M1.01.01",
+          "workflow": "Runtime environments/secrets/demo isolation and startup",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/security-response-headers.browser.test.mjs#41d4ef77f550ff46",
+            "path": "tests/browser/security-response-headers.browser.test.mjs",
+            "test_title": "real HTTP login and signed-out redirects enforce CSP, HSTS, frame and content protections"
+          }
+        },
+        {
+          "scenario_id": "M1.01.02",
+          "workflow": "All migrations apply, preserve history and rollback safely",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/m1-01-exact-postgres-migrations.test.mjs#5a06ce438e5dcf4e",
+            "path": "tests/platform/m1-01-exact-postgres-migrations.test.mjs",
+            "test_title": "M1.01.02 production and preview forbid destructive rollback, and corrupted checksums deny apply"
+          }
+        },
+        {
+          "scenario_id": "M1.01.03",
+          "workflow": "GitHub CI verifies exact canonical candidate",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.01.04",
+          "workflow": "Production configuration/health/rollback evidence corresponds to candidate",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-002",
+      "brick": "M1.02",
+      "family": "Global UI",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.02.01",
+          "workflow": "Public navigation, contact/demo/sign-in and role destinations",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.02.02",
+          "workflow": "Every role header/search/bell/help/account/language/Exit/Sign Out",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.02.03",
+          "workflow": "Empty/loading/validation/denial/error/retry/success states across scenario pages",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/error-recovery-controls.browser.test.mjs#b77370d385f76074",
+            "path": "tests/browser/error-recovery-controls.browser.test.mjs",
+            "test_title": "real error boundaries retry Worker Dashboard and global route requests without exposing internals"
+          }
+        },
+        {
+          "scenario_id": "M1.02.04",
+          "workflow": "Responsive desktop/mobile forms/tables/dialogs and route transitions",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/portal-navigation-responsive.browser.test.mjs#6c01fac2da3d4244",
+            "path": "tests/browser/portal-navigation-responsive.browser.test.mjs",
+            "test_title": "Every portal exposes usable mobile navigation at 320/390 pixels and preserves desktop navigation"
+          }
+        },
+        {
+          "scenario_id": "M1.02.05",
+          "workflow": "Keyboard focus/navigation/labels and unsaved-input protection",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-003",
+      "brick": "M1.03",
+      "family": "Authentication",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.03.01",
+          "workflow": "Worker registration: invalid fields, terms and password confirmation",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 4,
+          "sample_existing_case": {
+            "case_id": "tests/browser/worker-registration-policy-e2e.browser.test.mjs#6bf0eb7284f218be",
+            "path": "tests/browser/worker-registration-policy-e2e.browser.test.mjs",
+            "test_title": "Worker registration denies missing policies/country and password mismatch, then cancels the same signup while retaining server-dated acceptance"
+          }
+        },
+        {
+          "scenario_id": "M1.03.02",
+          "workflow": "Email and phone OTP: wrong, expired, resend and verified",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-registration-expired-otp.browser.test.mjs#d4dfdc3668af7902",
+            "path": "tests/browser/company-registration-expired-otp.browser.test.mjs",
+            "test_title": "Real Company browser refuses expired email OTP and cross-origin resend, then allows only fresh resend"
+          }
+        },
+        {
+          "scenario_id": "M1.03.03",
+          "workflow": "Duplicate Worker registration: recovery without identity merge",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 7,
+          "sample_existing_case": {
+            "case_id": "tests/browser/worker-duplicate-recovery.browser.test.mjs#8f2f9e0761585760",
+            "path": "tests/browser/worker-duplicate-recovery.browser.test.mjs",
+            "test_title": "Duplicate Worker contacts deny identity merging; recovery persists failures and revokes old sessions"
+          }
+        },
+        {
+          "scenario_id": "M1.03.04",
+          "workflow": "Company registration: pending account, email OTP and MFA activation",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 7,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-registration-boundaries.browser.test.mjs#0d917434f52078c7",
+            "path": "tests/browser/company-registration-boundaries.browser.test.mjs",
+            "test_title": "Company registration commits email/MFA denials and activates only a Company owner in a pending tenant"
+          }
+        },
+        {
+          "scenario_id": "M1.03.05",
+          "workflow": "Staff invitation: role-bound activation, used/expired/revoked token",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 18,
+          "sample_existing_case": {
+            "case_id": "tests/browser/staff-invitation-cancel-retry.browser.test.mjs#dccf27d6958535c2",
+            "path": "tests/browser/staff-invitation-cancel-retry.browser.test.mjs",
+            "test_title": "M1.03.05 real 320px staff cancel after pending MFA then reopen, activate and isolate portal role"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-004",
+      "brick": "M1.03",
+      "family": "Authentication",
+      "unit_count": 3,
+      "units": [
+        {
+          "scenario_id": "M1.03.06",
+          "workflow": "Every portal: wrong role, wrong password/MFA and signed-out redirect",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 11,
+          "sample_existing_case": {
+            "case_id": "tests/browser/six-role-mobile-auth-boundaries.browser.test.mjs#3cedd7f2859057ef",
+            "path": "tests/browser/six-role-mobile-auth-boundaries.browser.test.mjs",
+            "test_title": "M1.03.06 all-six mobile 320/390 role login, generic bad credentials/MFA, cross-portal and DB"
+          }
+        },
+        {
+          "scenario_id": "M1.03.07",
+          "workflow": "Exit Portal preserves session; Sign Out revokes it",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 6,
+          "sample_existing_case": {
+            "case_id": "tests/browser/active-session-boundaries.browser.test.mjs#43e0a12f6994e72a",
+            "path": "tests/browser/active-session-boundaries.browser.test.mjs",
+            "test_title": "Six-role active sessions preserve foreign accounts, revoke owned other and current sessions"
+          }
+        },
+        {
+          "scenario_id": "M1.03.08",
+          "workflow": "Password change, other-session revocation and privileged recovery",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Root",
+            "Admin",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 11,
+          "sample_existing_case": {
+            "case_id": "tests/browser/password-change-boundaries.browser.test.mjs#22f42e379ac9bfd9",
+            "path": "tests/browser/password-change-boundaries.browser.test.mjs",
+            "test_title": "All six roles change passwords with reauthentication, keep current sessions and revoke other sessions"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-005",
+      "brick": "M1.04",
+      "family": "Authorization",
+      "unit_count": 4,
+      "units": [
+        {
+          "scenario_id": "M1.04.01",
+          "workflow": "Role-bound session rejects every cross-portal combination",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 5,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10401-crossportal-server-action.browser.test.mjs#e1ae6883d32ddd4c",
+            "path": "tests/browser/m10401-crossportal-server-action.browser.test.mjs",
+            "test_title": "M1.04.01 real Admin Server Action POST rejects five foreign role sessions and unauthenticated replay"
+          }
+        },
+        {
+          "scenario_id": "M1.04.02",
+          "workflow": "Tenant-scoped resources, filters, files and exports do not disclose other tenant",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 22,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-secure-files-cross-tenant.browser.test.mjs#a9d536adbe0acf82",
+            "path": "tests/browser/company-secure-files-cross-tenant.browser.test.mjs",
+            "test_title": "M1.04.02 two real Company browser sessions isolate secure PDF issue, preview, download, copied tokens and tenant headers"
+          }
+        },
+        {
+          "scenario_id": "M1.04.03",
+          "workflow": "Cross-worker IDs, copied capabilities and direct actions denied",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 3,
+          "sample_existing_case": {
+            "case_id": "tests/browser/worker-secure-files-cross-account.browser.test.mjs#840d8ce98948d2ec",
+            "path": "tests/browser/worker-secure-files-cross-account.browser.test.mjs",
+            "test_title": "M1.04.03 two real Worker sessions isolate secure file IDs, signed tokens, forged account hints and revoked access"
+          }
+        },
+        {
+          "scenario_id": "M1.04.04",
+          "workflow": "Role elevation, stale permissions, revoked session and membership fail closed",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-complete-journey.browser.test.mjs#1311deb571f6486d",
+            "path": "tests/browser/company-complete-journey.browser.test.mjs",
+            "test_title": "Company owner completes organization, workforce, Team, assurance, policy, report and tenant-scope workflows in Chromium"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-006",
+      "brick": "M1.05",
+      "family": "Audit and notifications",
+      "unit_count": 4,
+      "units": [
+        {
+          "scenario_id": "M1.05.01",
+          "workflow": "Every material transition retains actor, resource, reason and immutable history",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10501-company-audit-actor-history.browser.test.mjs#5e01bc1e296138ab",
+            "path": "tests/browser/m10501-company-audit-actor-history.browser.test.mjs",
+            "test_title": "M1.05.01 real two-tenant Company audit shows actor, resource, reason and immutable lifecycle history"
+          }
+        },
+        {
+          "scenario_id": "M1.05.02",
+          "workflow": "New submission/decision/assignment sends next actor correct authorized deep link",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.05.03",
+          "workflow": "Read/unread/mark-all and unread badge synchronize across roles",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.05.04",
+          "workflow": "Outbox retry/idempotency/outage does not roll back underlying business state",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-007",
+      "brick": "M1.06",
+      "family": "Uploads",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.06.01",
+          "workflow": "PDF/PNG/JPEG accepted through scan and exact record binding",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10601-three-format-scan-binding.browser.test.mjs#472f34e29cd46211",
+            "path": "tests/browser/m10601-three-format-scan-binding.browser.test.mjs",
+            "test_title": "M1.06.01 real PDF PNG JPEG Worker uploads scan and bind exact record and version with private previews"
+          }
+        },
+        {
+          "scenario_id": "M1.06.02",
+          "workflow": "Missing, oversize, mismatched MIME and unsafe file denied",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.06.03",
+          "workflow": "Scanner unavailable remains quarantined; retry cannot replace safe file",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10603-worker-scanner-outage.browser.test.mjs#3b19c9013be1617a",
+            "path": "tests/browser/m10603-worker-scanner-outage.browser.test.mjs",
+            "test_title": "M1.06.03 actual Worker scanner retry retains safe file until same-object successful scan"
+          }
+        },
+        {
+          "scenario_id": "M1.06.04",
+          "workflow": "Replace attachment: prior version retained, correct preview context",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m1-06-attachment-replacement-preview.browser.test.mjs#c653ab2c40b1fd58",
+            "path": "tests/browser/m1-06-attachment-replacement-preview.browser.test.mjs",
+            "test_title": "M1.06.04 Worker replacement keeps prior private bytes, current version and signed preview scoped"
+          }
+        },
+        {
+          "scenario_id": "M1.06.05",
+          "workflow": "Preview denied before claim and across worker/tenant; expired token",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10605-pending-expired-private-preview.browser.test.mjs#07a3abf2e2ef4c67",
+            "path": "tests/browser/m10605-pending-expired-private-preview.browser.test.mjs",
+            "test_title": "M1.06.05 actual Worker pending preview denial and authentic signed expired URL HTTP 404"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-008",
+      "brick": "M1.07",
+      "family": "Identity",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.07.01",
+          "workflow": "Incomplete profile and identity submission blocked with input retained",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs#abc866290ccaa06a",
+            "path": "tests/browser/m1-07-incomplete-identity-submission.browser.test.mjs",
+            "test_title": "M1.07.01 incomplete Worker identity remains editable and cannot enter verification"
+          }
+        },
+        {
+          "scenario_id": "M1.07.02",
+          "workflow": "Profile drafts persist through navigation, validation and retry",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m1-07-profile-draft-navigation.browser.test.mjs#96e1fb799b5c3169",
+            "path": "tests/browser/m1-07-profile-draft-navigation.browser.test.mjs",
+            "test_title": "M1.07.02 Worker all three profile section drafts survive rejected save, navigation and retry"
+          }
+        },
+        {
+          "scenario_id": "M1.07.03",
+          "workflow": "Initial identity approved, rejected and changes requested",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/independent-evidence-review-runtime.test.mjs#6c5da037cee2df12",
+            "path": "tests/platform/independent-evidence-review-runtime.test.mjs",
+            "test_title": "M1.07.03 rejected initial identity routes one immutable Worker notification without duplicate recipients"
+          }
+        },
+        {
+          "scenario_id": "M1.07.04",
+          "workflow": "Initial rejection/changes requested corrected and resubmitted",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.07.05",
+          "workflow": "Verified correction accepted, rejected and changes requested",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-009",
+      "brick": "M1.07",
+      "family": "Identity",
+      "unit_count": 2,
+      "units": [
+        {
+          "scenario_id": "M1.07.06",
+          "workflow": "Permanent Worker ID and original evidence retained across corrections",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.07.07",
+          "workflow": "Duplicate document/contact signals require independent resolution",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/worker-identity-issuance-race-postgres.test.mjs#63f04d435cdf9435",
+            "path": "tests/platform/worker-identity-issuance-race-postgres.test.mjs",
+            "test_title": "M1.07.07 two genuine Admins racing duplicate dispositions serialize and stale loser cannot issue Worker ID"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-010",
+      "brick": "M1.08",
+      "family": "Company verification",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.08.01",
+          "workflow": "Registration to pending dashboard and submitted scanned evidence",
+          "required_roles": [
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.08.02",
+          "workflow": "Pending tenant high-risk actions denied",
+          "required_roles": [
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-pending-tenant-high-risk.browser.test.mjs#dfeca330c369fa52",
+            "path": "tests/browser/company-pending-tenant-high-risk.browser.test.mjs",
+            "test_title": "M1.08.02 pending Company remains signed in for verification but cannot invite, issue orders or purchase credits"
+          }
+        },
+        {
+          "scenario_id": "M1.08.03",
+          "workflow": "Admin changes requested to corrected version to verification",
+          "required_roles": [
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-verification.test.mjs#4360d331a4ee6bd5",
+            "path": "tests/platform/company-verification.test.mjs",
+            "test_title": "M1.08.03 stale Admin version one review cannot decide a corrected version two without re-review"
+          }
+        },
+        {
+          "scenario_id": "M1.08.04",
+          "workflow": "Admin rejection remains pending and preserves original history",
+          "required_roles": [
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-verification.test.mjs#e161462bcf8433c4",
+            "path": "tests/platform/company-verification.test.mjs",
+            "test_title": "M1.08.04 terminal Company rejection preserves pending tenant, original evidence and denies stale resurrection"
+          }
+        },
+        {
+          "scenario_id": "M1.08.05",
+          "workflow": "Approval activates tenant; stale/double decision denied",
+          "required_roles": [
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-verification.test.mjs#368f642f16b2dbf2",
+            "path": "tests/platform/company-verification.test.mjs",
+            "test_title": "M1.08.05 two Admins race Company final approval or rejection on real PostgreSQL16"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-011",
+      "brick": "M1.09",
+      "family": "Organization and Team",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.09.01",
+          "workflow": "Site and department create, edit, archive and restore",
+          "required_roles": [
+            "Company",
+            "Company staff",
+            "Worker"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-organization-team.test.mjs#88037bb4d476f2c1",
+            "path": "tests/platform/company-organization-team.test.mjs",
+            "test_title": "M1.09.01 actual PostgreSQL16 two Company staff race site archive and department edit with strict unit revision"
+          }
+        },
+        {
+          "scenario_id": "M1.09.02",
+          "workflow": "Archive assigned units unassigns placements and retains history",
+          "required_roles": [
+            "Company",
+            "Company staff",
+            "Worker"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-organization-team.test.mjs#e6c42d07045b98fb",
+            "path": "tests/platform/company-organization-team.test.mjs",
+            "test_title": "M1.09.02 actual PostgreSQL16 concurrent archive versus new Worker placement retains Worker receiving state and immutable audit"
+          }
+        },
+        {
+          "scenario_id": "M1.09.03",
+          "workflow": "Archived units cannot receive new placements",
+          "required_roles": [
+            "Company",
+            "Company staff",
+            "Worker"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-organization-team.test.mjs#6ef8070e006629fd",
+            "path": "tests/platform/company-organization-team.test.mjs",
+            "test_title": "M1.09.03 actual PostgreSQL16 Company Team placement and invite acceptance race against archived units"
+          }
+        },
+        {
+          "scenario_id": "M1.09.04",
+          "workflow": "Team invitation, MFA enrollment, role permission update",
+          "required_roles": [
+            "Company",
+            "Company staff",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10904-company-team-stale-permission.browser.test.mjs#577d2c179b7ecdab",
+            "path": "tests/browser/m10904-company-team-stale-permission.browser.test.mjs",
+            "test_title": "M1.09.04 actual Chromium two Company staff stale same-role permission forms cannot resurrect revoked access"
+          }
+        },
+        {
+          "scenario_id": "M1.09.05",
+          "workflow": "Suspension/revocation removes existing-session access",
+          "required_roles": [
+            "Company",
+            "Company staff",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10905-company-team-session-revocation.browser.test.mjs#7454121947b0f156",
+            "path": "tests/browser/m10905-company-team-session-revocation.browser.test.mjs",
+            "test_title": "M1.09.05 actual Chromium owner suspends Company Team and old worker-scope session cannot reenter after reactivation"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-012",
+      "brick": "M1.09",
+      "family": "Organization and Team",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M1.09.06",
+          "workflow": "Company staff cannot grant permissions above own ceiling",
+          "required_roles": [
+            "Company",
+            "Company staff",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs#d1824276588593d1",
+            "path": "tests/browser/m10906-company-team-live-grant-ceiling.browser.test.mjs",
+            "test_title": "M1.09.06 actual Chromium Owner removes Admin live grant while stale Admin Manager and invitation forms cannot delegate it"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-013",
+      "brick": "M1.10",
+      "family": "Invitations and employment links",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.10.01",
+          "workflow": "Single invitation accepted, resent, revoked, expired and replayed",
+          "required_roles": [
+            "Company",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs#d7f101a38efcfbaa",
+            "path": "tests/browser/m11001-company-worker-invitation-lifecycle.browser.test.mjs",
+            "test_title": "M1.10.01 real Chromium Company Worker invitation acceptance resend revocation expiry wrong role email and replay"
+          }
+        },
+        {
+          "scenario_id": "M1.10.02",
+          "workflow": "Bulk CSV mixed valid/invalid rows and duplicate recovery",
+          "required_roles": [
+            "Company",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs#ad67a5f6cddd2dec",
+            "path": "tests/browser/m11002-company-bulk-worker-csv.browser.test.mjs",
+            "test_title": "M1.10.02 real Chromium bulk CSV quoted valid, malformed, duplicate, empty-first-cell, retry and Worker receiver persist per row"
+          }
+        },
+        {
+          "scenario_id": "M1.10.03",
+          "workflow": "Company code expiry/usage limit/default site and department",
+          "required_roles": [
+            "Company",
+            "Worker"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/company-worker-invitations.test.mjs#48c267ef65b732ad",
+            "path": "tests/platform/company-worker-invitations.test.mjs",
+            "test_title": "M1.10.03 actual PostgreSQL16 Worker last-slot race enforces code expiry usage/default Site Department and immutable cross-role audit"
+          }
+        },
+        {
+          "scenario_id": "M1.10.04",
+          "workflow": "Unlinked/wrong Worker cannot accept another person's invitation",
+          "required_roles": [
+            "Company",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-dual-employer-isolation.browser.test.mjs#b5c81033cd6e0ac2",
+            "path": "tests/browser/company-dual-employer-isolation.browser.test.mjs",
+            "test_title": "M1.10 dual-employer browser protects each tenant while preserving Worker history"
+          }
+        },
+        {
+          "scenario_id": "M1.10.05",
+          "workflow": "Worker joins, moves placement, ends relationship and retains identity",
+          "required_roles": [
+            "Company",
+            "Worker"
+          ],
+          "historical_linked_case_count": 4,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-worker-end-relationship.browser.test.mjs#3dbefe777030c1dd",
+            "path": "tests/browser/company-worker-end-relationship.browser.test.mjs",
+            "test_title": "Company ends active Worker relationship while Worker retains identity and prior Company history"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-014",
+      "brick": "M1.10",
+      "family": "Invitations and employment links",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M1.10.06",
+          "workflow": "Second company link preserves first employer's history and isolation",
+          "required_roles": [
+            "Company",
+            "Worker"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-dual-employer-isolation.browser.test.mjs#b5c81033cd6e0ac2",
+            "path": "tests/browser/company-dual-employer-isolation.browser.test.mjs",
+            "test_title": "M1.10 dual-employer browser protects each tenant while preserving Worker history"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-015",
+      "brick": "M1.11",
+      "family": "Evidence and supervisor observation",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.11.01",
+          "workflow": "Qualification approval/rejection/changes requested to correction and re-review",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 3,
+          "sample_existing_case": {
+            "case_id": "tests/browser/company-workforce-assurance-e2e.browser.test.mjs#4b8dc691cf976402",
+            "path": "tests/browser/company-workforce-assurance-e2e.browser.test.mjs",
+            "test_title": "Company organization, Worker invitation/link, Assurance Order and case-scoped Verifier review work end-to-end"
+          }
+        },
+        {
+          "scenario_id": "M1.11.02",
+          "workflow": "Experience approval/rejection/changes requested to correction and re-review",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/independent-worker-review-e2e.browser.test.mjs#3a38443c403dd7a9",
+            "path": "tests/browser/independent-worker-review-e2e.browser.test.mjs",
+            "test_title": "independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI"
+          }
+        },
+        {
+          "scenario_id": "M1.11.03",
+          "workflow": "Skill approval/rejection/changes requested to correction and re-review",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 3,
+          "sample_existing_case": {
+            "case_id": "tests/browser/independent-worker-review-e2e.browser.test.mjs#3a38443c403dd7a9",
+            "path": "tests/browser/independent-worker-review-e2e.browser.test.mjs",
+            "test_title": "independent Worker submissions reach Verifier and approve/reject/changes-requested outcomes return to Worker UI"
+          }
+        },
+        {
+          "scenario_id": "M1.11.04",
+          "workflow": "Employment approval/rejection/changes requested to correction and re-review",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/independent-evidence-review-runtime.test.mjs#b7879bbd18eb6f27",
+            "path": "tests/platform/independent-evidence-review-runtime.test.mjs",
+            "test_title": "M1.11.04 employment correction retains old review and rejects stale, foreign and simultaneous Verifier decisions on actual PostgreSQL16"
+          }
+        },
+        {
+          "scenario_id": "M1.11.05",
+          "workflow": "Multiple employment records; end exact employment without deleting history",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m1-11-multiple-employments.browser.test.mjs#96c06f2ba05e2834",
+            "path": "tests/browser/m1-11-multiple-employments.browser.test.mjs",
+            "test_title": "M1.11.05 ending one of two submitted employments retains other active record and both immutable histories"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-016",
+      "brick": "M1.11",
+      "family": "Evidence and supervisor observation",
+      "unit_count": 3,
+      "units": [
+        {
+          "scenario_id": "M1.11.06",
+          "workflow": "Leaving-letter replacement and preview bound to exact employment",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs#6f10a08e5798f267",
+            "path": "tests/browser/m1-11-leaving-letter-replacement-preview.browser.test.mjs",
+            "test_title": "M1.11.06 leaving letter replacement preserves versioned exact employment binding and per-file private previews"
+          }
+        },
+        {
+          "scenario_id": "M1.11.07",
+          "workflow": "Supervisor assignment, signed observation, Worker acknowledgement and independent review",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.11.08",
+          "workflow": "Inactive skill/history never falsely counted as current competency",
+          "required_roles": [
+            "Worker",
+            "Company supervisor",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-017",
+      "brick": "M1.12",
+      "family": "Public verification and concerns",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M1.12.01",
+          "workflow": "Worker and credential lookup through safe opaque capabilities",
+          "required_roles": [
+            "Public visitor",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.12.02",
+          "workflow": "Missing, malformed, tampered and expired identifiers fail neutrally",
+          "required_roles": [
+            "Public visitor",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.12.03",
+          "workflow": "Private identity/answers/reviewer notes absent from public response",
+          "required_roles": [
+            "Public visitor",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.12.04",
+          "workflow": "Concern form validation, evidence upload, staff intake and reasoned resolution",
+          "required_roles": [
+            "Public visitor",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M1.12.05",
+          "workflow": "Abuse/rate limit and expired signed preview deny safely",
+          "required_roles": [
+            "Public visitor",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-018",
+      "brick": "M2.01",
+      "family": "Assurance Orders and Cases",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.01.01",
+          "workflow": "Draft save/edit, add linked Workers, validate and submit",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.01.02",
+          "workflow": "Invalid/unlinked/ineligible Worker and missing funding explained",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/assurance-order-case-runtime.test.mjs#385c7c3a57ac092c",
+            "path": "tests/platform/assurance-order-case-runtime.test.mjs",
+            "test_title": "M2.01 repeated READY validation is idempotent but still rejects subsequently revoked Worker links"
+          }
+        },
+        {
+          "scenario_id": "M2.01.03",
+          "workflow": "Multi-worker cases created once with correct scope/site/deadline",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.01.04",
+          "workflow": "Duplicate submission and competing credit reservations stay idempotent",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/assessment-funding-notification-runtime.test.mjs#f110deb8e9692a76",
+            "path": "tests/platform/assessment-funding-notification-runtime.test.mjs",
+            "test_title": "M2.01.04 competing funded Worker approvals never overreserve one purchased Company credit"
+          }
+        },
+        {
+          "scenario_id": "M2.01.05",
+          "workflow": "Worker/company/mixed funding reaches assessment and final credential",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-019",
+      "brick": "M2.01",
+      "family": "Assurance Orders and Cases",
+      "unit_count": 3,
+      "units": [
+        {
+          "scenario_id": "M2.01.06",
+          "workflow": "Changes requested and rejection propagate to Company and Worker",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.01.07",
+          "workflow": "Draft/submitted cancellation preserves cases, payments and decisions",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.01.08",
+          "workflow": "Completed order readiness and reports derive from actual case outcomes",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-020",
+      "brick": "M2.02",
+      "family": "Evidence review handoffs",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.02.01",
+          "workflow": "All submitted evidence kinds queue with correct identity/source file context",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.02.02",
+          "workflow": "Claim/conflict/reassignment/finalization preserve source and history",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.02.03",
+          "workflow": "Approve/reject/changes/unable/escalate return exact next action to Worker/Company",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.02.04",
+          "workflow": "Correction resubmission supersedes stale open task but keeps terminal decisions",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/evidence-review-queue-runtime.test.mjs#59b086d9f2c53731",
+            "path": "tests/platform/evidence-review-queue-runtime.test.mjs",
+            "test_title": "M2.02.04 corrected case evidence supersedes assigned stale work but preserves terminal decision history"
+          }
+        },
+        {
+          "scenario_id": "M2.02.05",
+          "workflow": "Second review/calibration/scope/workload govern sensitive task access",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-021",
+      "brick": "M2.03",
+      "family": "Frameworks and Effective Policy",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.03.01",
+          "workflow": "Create versioned framework and publish policy",
+          "required_roles": [
+            "Admin",
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.03.02",
+          "workflow": "Weaker company override denied; valid override snapshotted",
+          "required_roles": [
+            "Admin",
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.03.03",
+          "workflow": "Case policy remains pinned after later publication",
+          "required_roles": [
+            "Admin",
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.03.04",
+          "workflow": "Waiting period, attempt limits, jurisdiction and risk eligibility",
+          "required_roles": [
+            "Admin",
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.03.05",
+          "workflow": "Accommodation changes delivery without lowering score standards",
+          "required_roles": [
+            "Admin",
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-022",
+      "brick": "M2.03",
+      "family": "Frameworks and Effective Policy",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M2.03.06",
+          "workflow": "Credential validity and renewal derive from pinned rule",
+          "required_roles": [
+            "Admin",
+            "Company",
+            "Worker",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-023",
+      "brick": "M2.04",
+      "family": "Question Bank",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.04.01",
+          "workflow": "MCQ and written authoring validate answers/rubrics",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.04.02",
+          "workflow": "Draft/review/changes/approval/publication workflow",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.04.03",
+          "workflow": "Published revision preserves exact old question and rubric",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.04.04",
+          "workflow": "Pause/retire/archive excludes future forms, preserves prior attempts",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.04.05",
+          "workflow": "Bulk import reports invalid rows without partial corruption",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-024",
+      "brick": "M2.04",
+      "family": "Question Bank",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M2.04.06",
+          "workflow": "Capacity metrics update after publication/exposure",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-025",
+      "brick": "M2.05",
+      "family": "Randomized forms and exposure",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.05.01",
+          "workflow": "Unseen randomized blueprint-equivalent MCQ-only, written-only and combined forms",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/randomized-assessment-form-runtime.test.mjs#712dd41adb596bd2",
+            "path": "tests/platform/randomized-assessment-form-runtime.test.mjs",
+            "test_title": "M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real generation, permanent exposure and exhaustion"
+          }
+        },
+        {
+          "scenario_id": "M2.05.02",
+          "workflow": "Permanent non-repetition across exit, device change, retake and company change",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/randomized-assessment-form-runtime.test.mjs#712dd41adb596bd2",
+            "path": "tests/platform/randomized-assessment-form-runtime.test.mjs",
+            "test_title": "M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real generation, permanent exposure and exhaustion"
+          }
+        },
+        {
+          "scenario_id": "M2.05.03",
+          "workflow": "Exposure families and displayed unanswered questions excluded",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 3,
+          "sample_existing_case": {
+            "case_id": "tests/browser/masterplan-worker-exposure-family-e2e.browser.test.mjs#407b20b0d0d57607",
+            "path": "tests/browser/masterplan-worker-exposure-family-e2e.browser.test.mjs",
+            "test_title": "M2.05.03 real Worker displays an unanswered question, emergency exits, and another device cannot obtain its Exposure Family"
+          }
+        },
+        {
+          "scenario_id": "M2.05.04",
+          "workflow": "Insufficient unseen capacity blocks cleanly without entitlement corruption",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/randomized-assessment-form-runtime.test.mjs#712dd41adb596bd2",
+            "path": "tests/platform/randomized-assessment-form-runtime.test.mjs",
+            "test_title": "M2.05.01 M2.05.02 M2.05.04 canonical MCQ-only written-only mixed real generation, permanent exposure and exhaustion"
+          }
+        },
+        {
+          "scenario_id": "M2.05.05",
+          "workflow": "Option order and question versions pinned across refresh",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-026",
+      "brick": "M2.05",
+      "family": "Randomized forms and exposure",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M2.05.06",
+          "workflow": "Future questions, answer keys and rubrics absent from candidate payload",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-027",
+      "brick": "M2.06",
+      "family": "Eligibility, applications and funding",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.06.01",
+          "workflow": "Verified/unverified qualification eligibility and unavailable reasons",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.06.02",
+          "workflow": "Self sandbox payment to funded case, safe duplicate confirmation",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.06.03",
+          "workflow": "Company request approved, rejected and retried/self-funded",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.06.04",
+          "workflow": "Insufficient credits to checkout/capture to approved assessment",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.06.05",
+          "workflow": "Link revoked before approval prevents funding and case creation",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-028",
+      "brick": "M2.06",
+      "family": "Eligibility, applications and funding",
+      "unit_count": 2,
+      "units": [
+        {
+          "scenario_id": "M2.06.06",
+          "workflow": "Waiting/attempt limits/current credential/reassessment affect availability",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.06.07",
+          "workflow": "Fresh reapplication after terminal case preserves earlier records",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-029",
+      "brick": "M2.07",
+      "family": "Assessment delivery",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.07.01",
+          "workflow": "Browser/device/media/consent prechecks deny or allow truthfully",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.07.02",
+          "workflow": "Strict progression: required answer, confirmed save, no backtracking",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.07.03",
+          "workflow": "Controlled Review: prior answer revisit, flag and versioned change",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.07.04",
+          "workflow": "Section Review: within-section navigation and final section lock",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.07.05",
+          "workflow": "Timer expiry/auto-submit and no duplicate final outcomes",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-030",
+      "brick": "M2.07",
+      "family": "Assessment delivery",
+      "unit_count": 2,
+      "units": [
+        {
+          "scenario_id": "M2.07.06",
+          "workflow": "Technical issue and Emergency Exit never trap candidate",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.07.07",
+          "workflow": "Successful MCQ/written completion reaches human review",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-031",
+      "brick": "M2.08",
+      "family": "Interruption and recovery",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.08.01",
+          "workflow": "Ordinary save/exit/resume preserves committed answer",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.08.02",
+          "workflow": "Offline MCQ and written buffer/reconnect persist latest permitted answer",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.08.03",
+          "workflow": "Refresh/navigation/crash preserve answer and authoritative timer",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.08.04",
+          "workflow": "Second device/session cannot mutate active bound attempt",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.08.05",
+          "workflow": "Emergency Exit to recovery request to Verifier allow-resume",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-032",
+      "brick": "M2.08",
+      "family": "Interruption and recovery",
+      "unit_count": 3,
+      "units": [
+        {
+          "scenario_id": "M2.08.06",
+          "workflow": "Emergency Exit to approved replacement to unseen form and completed case",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.08.07",
+          "workflow": "Exposure and original attempt/answers retained after replacement",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.08.08",
+          "workflow": "Lost/repeated submit response returns same receipt",
+          "required_roles": [
+            "Worker",
+            "Verifier"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-033",
+      "brick": "M2.09",
+      "family": "Integrity",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.09.01",
+          "workflow": "Green/Yellow/Red signals reach correct human queue without automatic guilt",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.09.02",
+          "workflow": "Fullscreen/tab/paste/network/device events preserve authoritative timeline",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.09.03",
+          "workflow": "Media/liveness failure is degraded evidence, never clean integrity",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.09.04",
+          "workflow": "Human review pass/additional evidence/fail reaches case decision",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.09.05",
+          "workflow": "Accommodation privacy and controls survive monitoring",
+          "required_roles": [
+            "Worker",
+            "Verifier",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-034",
+      "brick": "M2.10",
+      "family": "Written scoring and review",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.10.01",
+          "workflow": "Candidate answer/version/rubric displayed only to authorized reviewer",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.10.02",
+          "workflow": "Criterion marks save, finalize and amendment preserve originals",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.10.03",
+          "workflow": "PASS/FAIL/ADDITIONAL_REVIEW flows reach correct next owner",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.10.04",
+          "workflow": "Claim race, stale source, conflict declaration and reassignment",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.10.05",
+          "workflow": "Expired/failed calibration blocks live tasks",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-10-calibration-live.browser.test.mjs#993da409b1738b1b",
+            "path": "tests/browser/m2-10-calibration-live.browser.test.mjs",
+            "test_title": "M2.10.05 real Admin calibration FAILED and time-expired CURRENT block Verifier and show Worker holding state; live renewal restores review"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-035",
+      "brick": "M2.10",
+      "family": "Written scoring and review",
+      "unit_count": 2,
+      "units": [
+        {
+          "scenario_id": "M2.10.06",
+          "workflow": "AI available/unavailable advisory never overrides human outcome",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.10.07",
+          "workflow": "Unable-to-verify, escalation and draft notes remain reasoned and auditable",
+          "required_roles": [
+            "Verifier",
+            "Admin",
+            "Worker",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-10-reasoned-escalation.browser.test.mjs#cabe1cf6b0b90b9c",
+            "path": "tests/browser/m2-10-reasoned-escalation.browser.test.mjs",
+            "test_title": "M2.10.07 two live source tasks: Unable/attempted methods, private draft, Admin escalation, independent return and auditable resolution"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-036",
+      "brick": "M2.11",
+      "family": "Interview scheduling",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.11.01",
+          "workflow": "Scope/calibration/language/workload match and assignment",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-11-assessor-matching-live.browser.test.mjs#f55771074c98b448",
+            "path": "tests/browser/m2-11-assessor-matching-live.browser.test.mjs",
+            "test_title": "M2.11.01 real Admin profile and automatic match reject mismatched language and filled workload; corrected profile assigns Assessor"
+          }
+        },
+        {
+          "scenario_id": "M2.11.02",
+          "workflow": "Worker availability selection and timezone-safe scheduling",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.11.03",
+          "workflow": "Reschedule with reason and downstream notification/deep link",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.11.04",
+          "workflow": "Assessor conflict to reassignment without disclosure",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-11-conflict-private-reassignment.browser.test.mjs#c70ae7e6734e6ef9",
+            "path": "tests/browser/m2-11-conflict-private-reassignment.browser.test.mjs",
+            "test_title": "M2.11.04 real Assessor conflict form releases original to separately signed-in successor without leaking notes to Worker or Company"
+          }
+        },
+        {
+          "scenario_id": "M2.11.05",
+          "workflow": "No-show/late/technical failure to review/reschedule",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 1,
+          "sample_existing_case": {
+            "case_id": "tests/platform/m2-11-late-no-show-recovery-runtime.test.mjs#eca7b533f298108a",
+            "path": "tests/platform/m2-11-late-no-show-recovery-runtime.test.mjs",
+            "test_title": "M2.11.05 early no-show rejected; late ready Worker protected; genuine no-show and technical hold retain history and request fresh schedule"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-037",
+      "brick": "M2.11",
+      "family": "Interview scheduling",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M2.11.06",
+          "workflow": "Outside-window/unready/unassigned Worker cannot join",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-11-worker-join-gates.browser.test.mjs#59d688224d5aa8cb",
+            "path": "tests/browser/m2-11-worker-join-gates.browser.test.mjs",
+            "test_title": "M2.11.06 real Worker 390px cannot join unscheduled or future; in-window entry then actual device readiness gates independent Assessor admission"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-038",
+      "brick": "M2.12",
+      "family": "Interview console",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.12.01",
+          "workflow": "Consent/readiness to claim/admit/start with live case context",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.12.02",
+          "workflow": "Mandatory/playbook/follow-up questions retained with versions",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-12-versioned-playbook.browser.test.mjs#5bc53aa20fc2b786",
+            "path": "tests/browser/m2-12-versioned-playbook.browser.test.mjs",
+            "test_title": "M2.12.02 real mobile Assessor approved follow-up creates new question version, survives reload, Worker cannot access console"
+          }
+        },
+        {
+          "scenario_id": "M2.12.03",
+          "workflow": "Draft scores/notes survive tabs, refresh and media reconnect",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-12-reconnect-draft.browser.test.mjs#6b5d0bdc81bb12cd",
+            "path": "tests/browser/m2-12-reconnect-draft.browser.test.mjs",
+            "test_title": "M2.12.03 independent Worker/Assessor live media disconnect and reconnect preserves unsaved then persisted draft notes and partial scores across tabs and reload"
+          }
+        },
+        {
+          "scenario_id": "M2.12.04",
+          "workflow": "Pause/resume/technical issue/reconnect/reschedule preserve evidence",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-12-interrupted-replacement-evidence.browser.test.mjs#7bbafb0762647eea",
+            "path": "tests/browser/m2-12-interrupted-replacement-evidence.browser.test.mjs",
+            "test_title": "M2.12.04 Assessor browser pause/resume technical hold recovery then replacement and Worker new schedule preserve archived score and notes"
+          }
+        },
+        {
+          "scenario_id": "M2.12.05",
+          "workflow": "Missing scorecard/recommendation cannot finalize",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-12-finalization-missing-fields.browser.test.mjs#a079e7fd2e23d35e",
+            "path": "tests/browser/m2-12-finalization-missing-fields.browser.test.mjs",
+            "test_title": "M2.12.05 390px real Assessor incomplete saved scorecard End denied, pending recommendation submission denied, complete submission advances exactly once"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-039",
+      "brick": "M2.12",
+      "family": "Interview console",
+      "unit_count": 3,
+      "units": [
+        {
+          "scenario_id": "M2.12.06",
+          "workflow": "Each recommendation: Pass, Conditional, Evidence, Reassessment, Second Interview, Fail",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.12.07",
+          "workflow": "Final recommendation locks, stops media and advances actual case",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-12-end-stops-media.browser.test.mjs#34816067aca10dd4",
+            "path": "tests/browser/m2-12-end-stops-media.browser.test.mjs",
+            "test_title": "M2.12.07 Assessor End stops own media and remote Worker camera/mic without Worker reload; final submission locks and advances case"
+          }
+        },
+        {
+          "scenario_id": "M2.12.08",
+          "workflow": "Recording policy/jurisdiction/withdrawal stays truthful and scoped",
+          "required_roles": [
+            "Worker",
+            "Assessor",
+            "Admin"
+          ],
+          "historical_linked_case_count": 5,
+          "sample_existing_case": {
+            "case_id": "tests/browser/m2-12-recording-consent.browser.test.mjs#d7b5c15264d2dea8",
+            "path": "tests/browser/m2-12-recording-consent.browser.test.mjs",
+            "test_title": "M2.12.08 real Worker required audio consent and two-party browser audio recording final chunk is retained privately on End"
+          }
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-040",
+      "brick": "M2.13",
+      "family": "Decisions",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M2.13.01",
+          "workflow": "Approved and Conditional issuance require completed inputs",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 2,
+          "sample_existing_case": {
+            "case_id": "tests/platform/decision-assurance-progression-runtime.test.mjs#db96c00ff6072e56",
+            "path": "tests/platform/decision-assurance-progression-runtime.test.mjs",
+            "test_title": "M2.13.01 denies APPROVED when a mandatory assessment or interview has not completed"
+          }
+        },
+        {
+          "scenario_id": "M2.13.02",
+          "workflow": "Pending Review, Additional Evidence and Interview Pending route next responsible actor",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 3,
+          "sample_existing_case": {
+            "case_id": "tests/platform/decision-assurance-progression-runtime.test.mjs#f1129e6046523ae8",
+            "path": "tests/platform/decision-assurance-progression-runtime.test.mjs",
+            "test_title": "M2.13.02 refuses to create an unassignable additional-review queue"
+          }
+        },
+        {
+          "scenario_id": "M2.13.03",
+          "workflow": "Rejected and Reassessment Required route permitted correction/appeal",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.13.04",
+          "workflow": "Suspended, Revoked and Expired synchronize current downstream status",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.13.05",
+          "workflow": "Privileged override: recent MFA, reason, evidence and preserved original",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-041",
+      "brick": "M2.13",
+      "family": "Decisions",
+      "unit_count": 2,
+      "units": [
+        {
+          "scenario_id": "M2.13.06",
+          "workflow": "Repeated/unauthorized/stale decision or issuance denied",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M2.13.07",
+          "workflow": "Company, Worker, public, share and certification display agree",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-042",
+      "brick": "M3.01",
+      "family": "Credentials",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.01.01",
+          "workflow": "Signed credential/QR/PDF issuance derives policy issue/expiry",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.01.02",
+          "workflow": "Download/copy/view credential and live public status",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.01.03",
+          "workflow": "Conditional/expired/suspended/revoked display across page/API/PDF",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.01.04",
+          "workflow": "Duplicate issuance returns original; replacement retains old credential",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.01.05",
+          "workflow": "Public credential contains permitted display facts and disclaimer",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-043",
+      "brick": "M3.02",
+      "family": "Passport and Living Record",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.02.01",
+          "workflow": "Verified qualification vs competency assessment clearly distinct",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.02.02",
+          "workflow": "Restrictions/conditions/status/expiry and previous versions displayed",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.02.03",
+          "workflow": "Suspension/revocation/reassessment retain original history",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.02.04",
+          "workflow": "Renewal/replacement updates current credential without erasing former",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.02.05",
+          "workflow": "Company changes never remove permanent identity/exposure",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Public visitor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-044",
+      "brick": "M3.03",
+      "family": "Scoped sharing",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.03.01",
+          "workflow": "Each approved field selection matches actual recipient output",
+          "required_roles": [
+            "Worker",
+            "Public recipient",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.03.02",
+          "workflow": "Scope never reveals unselected/private fields or other employers",
+          "required_roles": [
+            "Worker",
+            "Public recipient",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.03.03",
+          "workflow": "Purpose/recipient/expiry preserved; access logged",
+          "required_roles": [
+            "Worker",
+            "Public recipient",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.03.04",
+          "workflow": "Revoke or expire link denies previously working recipient access",
+          "required_roles": [
+            "Worker",
+            "Public recipient",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.03.05",
+          "workflow": "Tampered token and enumeration attempt fail neutrally",
+          "required_roles": [
+            "Worker",
+            "Public recipient",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-045",
+      "brick": "M3.04",
+      "family": "Company Action Centre and directory",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.04.01",
+          "workflow": "Search/filter/pagination show only authorized workforce",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.04.02",
+          "workflow": "Placement/update/end relationship actions synchronize Worker and Company",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.04.03",
+          "workflow": "Case funding/evidence/assessment/interview/decision feeds next exact action",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.04.04",
+          "workflow": "Assign owner/snooze/acknowledge source deep links without false completion",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.04.05",
+          "workflow": "Readiness/gaps/expiry totals reflect real live credential state",
+          "required_roles": [
+            "Company",
+            "Worker",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-046",
+      "brick": "M3.05",
+      "family": "Billing",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.05.01",
+          "workflow": "Sandbox checkout, capture, credit allocation and duplicate capture",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.05.02",
+          "workflow": "Funding approval/rejection and concurrent overspend prevention",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.05.03",
+          "workflow": "Invoice/receipt/usage scoped to right Company",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.05.04",
+          "workflow": "Partial/full refund and reconciliation preserve immutable money history",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.05.05",
+          "workflow": "Subscription/enterprise invoice/payment unavailable states truthful",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-047",
+      "brick": "M3.05",
+      "family": "Billing",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M3.05.06",
+          "workflow": "Signed webhook/replay/forgery cannot grant duplicate or unpaid entitlement",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-048",
+      "brick": "M3.06",
+      "family": "Reports",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.06.01",
+          "workflow": "Worker identity/qualification/assessment/interview/credential/history reports",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.06.02",
+          "workflow": "Company workforce/readiness/gaps/expiry/completion/failed/billing reports",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.06.03",
+          "workflow": "Preview/PDF/CSV/print/download respect filters and permissions",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.06.04",
+          "workflow": "Queue/process/complete/fail/retry produces genuine report file",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.06.05",
+          "workflow": "Email/saved definition/schedule triggers authorized delivery",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-049",
+      "brick": "M3.06",
+      "family": "Reports",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M3.06.06",
+          "workflow": "Cross-tenant/report/path/CSV-formula manipulation denied",
+          "required_roles": [
+            "Worker",
+            "Company",
+            "Admin"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-050",
+      "brick": "M3.07",
+      "family": "Appeals and continuing assurance",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.07.01",
+          "workflow": "Eligible/ineligible/duplicate appeal and evidence validation",
+          "required_roles": [
+            "Worker",
+            "Independent reviewer",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.07.02",
+          "workflow": "Independent claim/review cannot be original conflicted decision maker",
+          "required_roles": [
+            "Worker",
+            "Independent reviewer",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.07.03",
+          "workflow": "Accepted/rejected/further-evidence/further-interview reasoned outcomes",
+          "required_roles": [
+            "Worker",
+            "Independent reviewer",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.07.04",
+          "workflow": "Appeal changes synchronize credential/Living Record and Company/public",
+          "required_roles": [
+            "Worker",
+            "Independent reviewer",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.07.05",
+          "workflow": "Complete reassessment through new assessment/interview/replacement credential",
+          "required_roles": [
+            "Worker",
+            "Independent reviewer",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-051",
+      "brick": "M3.07",
+      "family": "Appeals and continuing assurance",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M3.07.06",
+          "workflow": "Renewal/reverification respects rules, waiting and permanent exposure",
+          "required_roles": [
+            "Worker",
+            "Independent reviewer",
+            "Admin",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-052",
+      "brick": "M3.08",
+      "family": "Operational administration",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.08.01",
+          "workflow": "Worker/company/staff search and scoped management",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.08.02",
+          "workflow": "Question/policy/catalogue/calibration administration persists",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.08.03",
+          "workflow": "Assignments/decisions/appeals/billing/notifications operations",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.08.04",
+          "workflow": "Case Replay reconstructs exact versions without changing source",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.08.05",
+          "workflow": "Integrations/health/queue retry cannot falsely mark live delivery",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-053",
+      "brick": "M3.08",
+      "family": "Operational administration",
+      "unit_count": 1,
+      "units": [
+        {
+          "scenario_id": "M3.08.06",
+          "workflow": "Root invitation/permissions/MFA/recovery remain separate from routine case work",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-054",
+      "brick": "M3.09",
+      "family": "Privacy and accessibility",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.09.01",
+          "workflow": "Each privacy request kind reaches staff intake and reasoned completion",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.09.02",
+          "workflow": "Restriction/withdrawal/revocation has operative future-sharing effect",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.09.03",
+          "workflow": "Accommodation approved/rejected with reason and Worker outcome",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.09.04",
+          "workflow": "Approved adjustment reaches actual assessment/interview delivery",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.09.05",
+          "workflow": "Consent grant/withdraw history remains versioned and need-to-know",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-055",
+      "brick": "M3.09",
+      "family": "Privacy and accessibility",
+      "unit_count": 2,
+      "units": [
+        {
+          "scenario_id": "M3.09.06",
+          "workflow": "Keyboard, responsive layouts, inline errors and screen-reader labels",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.09.07",
+          "workflow": "Retention/holds preserve lawful history and appeals",
+          "required_roles": [
+            "Worker",
+            "Admin",
+            "Company",
+            "Verifier",
+            "Assessor"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-056",
+      "brick": "M3.10",
+      "family": "Production adapters",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.10.01",
+          "workflow": "Email/SMS sandbox/outage/retry and live delivery accurately distinguished",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.10.02",
+          "workflow": "Payment forgery/failure never creates paid entitlement",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.10.03",
+          "workflow": "Built-in media handshake/reconnect and optional TURN/provider failure",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.10.04",
+          "workflow": "Liveness/scan/storage failure remains safely pending",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.10.05",
+          "workflow": "Provider health/credentials/webhook/circuit-breaker state accurate",
+          "required_roles": [
+            "Admin",
+            "Worker",
+            "Company"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-057",
+      "brick": "M3.11",
+      "family": "Certification",
+      "unit_count": 5,
+      "units": [
+        {
+          "scenario_id": "M3.11.01",
+          "workflow": "Concurrent registration/save/claim/submit/payment/issuance isolation",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.11.02",
+          "workflow": "Cross-worker/tenant/role/direct-endpoint adversarial journeys",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.11.03",
+          "workflow": "Malicious file/input/XSS/CSRF/signed-token abuse denied",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.11.04",
+          "workflow": "Authorized physical database/object restore and incident recovery",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.11.05",
+          "workflow": "Baseline latency/load does not lose active answers or handoffs",
+          "required_roles": [
+            "All roles"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    },
+    {
+      "batch_id": "ZERO-058",
+      "brick": "M3.12",
+      "family": "Launch and operations",
+      "unit_count": 4,
+      "units": [
+        {
+          "scenario_id": "M3.12.01",
+          "workflow": "Candidate build/start/migrations/health correspond to exact SHA",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.12.02",
+          "workflow": "Monitoring/alerts/support/rollback runbooks match executable operations",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.12.03",
+          "workflow": "Production provider disabled/sandbox or genuinely activated",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        },
+        {
+          "scenario_id": "M3.12.04",
+          "workflow": "Backup/incident/rollback preserves active consumer cases",
+          "required_roles": [
+            "Admin",
+            "Root"
+          ],
+          "historical_linked_case_count": 0,
+          "sample_existing_case": null
+        }
+      ]
+    }
+  ]
+}

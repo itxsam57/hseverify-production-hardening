@@ -1,0 +1,99 @@
+name: ZERO — Agency QA five-case batch (scoped starting evidence)
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: "ZERO-001 through ZERO-058, or ALL (58 batches, two parallel)"
+        required: true
+        default: "ZERO-001"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Validate batch selection and five-case guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      batches: ${{ steps.resolve.outputs.batches }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - id: resolve
+        name: Enforce frozen 218 and resolve requested batches
+        env:
+          REQUESTED_BATCH: ${{ inputs.batch }}
+        shell: bash
+        run: |
+          python3 scripts/agency_zero_control.py --check
+          matrix="$(python3 scripts/agency_zero_control.py --matrix "$REQUESTED_BATCH")"
+          printf 'batches=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+          echo "ZERO batch matrix: $matrix"
+
+  scoped-cases:
+    name: ${{ matrix.batch_id }} — up to five scoped checks
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        batch_id: ${{ fromJSON(needs.plan.outputs.batches) }}
+    concurrency:
+      group: zero-batch-${{ github.sha }}-${{ matrix.batch_id }}
+      cancel-in-progress: false
+    env:
+      HSE_APP_ENV: test
+      HSE_DATABASE_DRIVER: pglite
+      HSE_PGLITE_DATA_DIR: "memory://"
+      HSE_ENABLE_AUTH_SANDBOX: "false"
+      HSE_ENABLE_WORKER_DEMO_AUTH: "false"
+      HSE_USE_WORKER_DEMO_DATA: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install existing locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run at most five selected existing scoped source cases
+        env:
+          SELECTED_BATCH: ${{ matrix.batch_id }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/agency-zero
+          set +e
+          python3 scripts/agency_zero_control.py --run-scoped-smoke "$SELECTED_BATCH" --max-seconds-per-test 120
+          code=$?
+          set -e
+          printf '%s\n' "$code" > "artifacts/agency-zero/${SELECTED_BATCH}.exit-code"
+          echo "ZERO | Scoped cases exit $code. This is NOT full workflow or pentest certification."
+      - name: Save partial and failed evidence even on interrupted cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agency-zero-${{ matrix.batch_id }}-${{ github.sha }}
+          path: artifacts/agency-zero/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Fail closed on missing/multiple/failing scoped cases
+        env:
+          SELECTED_BATCH: ${{ matrix.batch_id }}
+        shell: bash
+        run: |
+          code="$(cat "artifacts/agency-zero/${SELECTED_BATCH}.exit-code")"
+          if [ "$code" != "0" ]; then
+            echo "ZERO | Batch needs further evidence or has a failed scoped test. Other batches continue."
+            exit 1
+          fi
