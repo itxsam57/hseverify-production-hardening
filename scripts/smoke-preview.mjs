@@ -1,33 +1,47 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 
 import { buildPortablePreviewBundle } from "./lib/preview-bundle.mjs";
 
 const { bundleRoot: bundle, pgliteManifest } = await buildPortablePreviewBundle();
-console.log(`Portable preview bundle created with PGlite at ${pgliteManifest}.`);
+console.log(`Portable preview bundle assembled (bundled PGlite dependency at ${pgliteManifest}; preview runtime uses PostgreSQL).`);
 
 const port = 3107;
-const sessionSecret =
-  process.env.HSE_SESSION_SECRET ||
-  "preview-smoke-session-secret-with-at-least-thirty-two-characters";
+const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], {
+  encoding: "utf8", timeout: 10_000
+}).trim();
+if (!/^[a-f0-9]{40}$/.test(sourceSha)) {
+  throw new Error("Portable preview smoke requires an exact Git source commit.");
+}
+// Next standalone forces NODE_ENV=production. Running it in HSE_APP_ENV=test
+// with PGlite would violate the intentional production safety checks. This
+// is only a public-route/denied-route offline smoke, NOT a database workflow,
+// so the PostgreSQL URL points at a deliberately unavailable localhost port.
+const isolatedEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) =>
+    !key.startsWith("HSE_") && key !== "DATABASE_URL"
+  )
+);
 const server = spawn(process.execPath, [resolve(bundle, "server.js")], {
   cwd: bundle,
   stdio: ["ignore", "pipe", "pipe"],
   windowsHide: true,
   env: {
-    ...process.env,
+    ...isolatedEnvironment,
     PORT: String(port),
     HOSTNAME: "127.0.0.1",
-    HSE_APP_ENV: "test",
-    HSE_DATABASE_DRIVER: "pglite",
-    HSE_PGLITE_DATA_DIR: "memory://",
-    HSE_SESSION_SECRET: sessionSecret,
-    HSE_AUTH_PEPPER:
-      process.env.HSE_AUTH_PEPPER || `${sessionSecret}-registration-pepper`,
+    HSE_APP_ENV: "preview",
+    HSE_DATABASE_DRIVER: "postgres",
+    DATABASE_URL: "postgresql://offline-smoke:offline-smoke@127.0.0.1:9/no_db",
+    HSE_RELEASE_SHA: sourceSha,
+    HSE_SESSION_SECRET: randomBytes(32).toString("hex"),
+    HSE_AUTH_PEPPER: randomBytes(32).toString("hex"),
     HSE_ENABLE_AUTH_SANDBOX: "false",
     HSE_AUTH_SANDBOX_ACCESS_KEY: "",
     HSE_ENABLE_WORKER_DEMO_AUTH: "false",
-    HSE_USE_WORKER_DEMO_DATA: "false"
+    HSE_USE_WORKER_DEMO_DATA: "false",
+    NEXT_TELEMETRY_DISABLED: "1"
   }
 });
 
@@ -117,7 +131,7 @@ try {
   }
 
   console.log(
-    `Preview smoke passed: / ${root.status}; logins ${loginStatuses.join(", ")}; registration ${registration.status}; recovery ${recovery.status}; sandboxes closed ${registrationSandbox.status}/${rootBootstrapSandbox.status}; protected portals and Company tenant demonstration redirect.`
+    `Offline preview public/redirect smoke passed (no database attached): / ${root.status}; logins ${loginStatuses.join(", ")}; registration ${registration.status}; recovery ${recovery.status}; sandboxes closed ${registrationSandbox.status}/${rootBootstrapSandbox.status}; protected portals and Company tenant demonstration redirect.`
   );
 } catch (error) {
   console.error(output);
