@@ -39,7 +39,7 @@ permissions:
 jobs:
   independent-audit:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && vars.HSE_CI_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       HSE_APP_ENV: test
       HSE_RELEASE_SHA: independent-audit
@@ -127,7 +127,10 @@ jobs:
       - name: Install Chromium runtime
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
-      - name: Start application in production mode when build passed, otherwise development fallback for continued bug discovery
+      # Production compilation is tested independently above. Synthetic PGlite
+      # role fixtures must not run under NODE_ENV=production; the app correctly
+      # rejects the test driver in production. Do not weaken that protection.
+      - name: Start isolated synthetic role browser audit in supported development mode
         shell: bash
         run: |
           audit_port=$(node --input-type=module -e 'import net from "node:net"; const server=net.createServer(); server.listen(0,"127.0.0.1",()=>{const port=server.address().port; server.close(()=>console.log(port));}); server.on("error",()=>process.exit(1));')
@@ -135,14 +138,8 @@ jobs:
           echo "PORT=${audit_port}" >> "$GITHUB_ENV"
           echo "HOSTNAME=127.0.0.1" >> "$GITHUB_ENV"
           echo "HSE_BROWSER_BASE_URL=${audit_base}" >> "$GITHUB_ENV"
-          build_code=$(awk -F '\t' '$1=="production_build" {print $2}' artifacts/independent-audit/commands.tsv | tail -1)
-          if [ "$build_code" = "0" ]; then
-            echo production > artifacts/independent-audit/server-mode.txt
-            PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/start-production.mjs > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
-          else
-            echo development-fallback > artifacts/independent-audit/server-mode.txt
-            PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
-          fi
+          echo development-synthetic > artifacts/independent-audit/server-mode.txt
+          PORT="$audit_port" HOSTNAME=127.0.0.1 setsid node scripts/run-development.mjs --hostname 127.0.0.1 --port "$audit_port" > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.log 2>&1 &
           echo $! > /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid
           for attempt in $(seq 1 150); do
             if ! kill -0 "$(cat /tmp/${{ github.run_id }}-${{ github.run_attempt }}-independent-audit-server.pid)" 2>/dev/null; then
@@ -190,7 +187,8 @@ jobs:
         shell: bash
         run: |
           set +e
-          npm run verify:full > artifacts/independent-audit/existing_full_regression_crosscheck.log 2>&1
+          # Bounded; an actual timeout remains a failing regression gate.
+          timeout -k 10s 5400s npm run verify:full > artifacts/independent-audit/existing_full_regression_crosscheck.log 2>&1
           code=$?
           set -e
           printf '%s\t%s\n' existing_full_regression_crosscheck "$code" >> artifacts/independent-audit/commands.tsv
