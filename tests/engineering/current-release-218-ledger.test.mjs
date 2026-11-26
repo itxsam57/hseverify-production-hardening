@@ -134,9 +134,14 @@ test("scoped historical test executions appear inside the SAME 218 ledger withou
   const priorTestEvidence = JSON.parse(readFileSync("docs/qa/evidence/MASTERPLAN_218_EXECUTED_TESTS.json", "utf8"));
   const report = buildCurrentReleaseLedger({ source, commitSha: SOURCE_SHA, priorTestEvidence });
   assert.equal(report.scoped_test_progress.previous_distinct_green_cases, 1436);
-  // The M2.01.02 repeat-READY regression adds one executable source case.
-  // This is inventory only; it does NOT increase historical green or 218 passes.
-  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1610);
+  // One M1.01.02 PostgreSQL concurrency source case was appended after the 1610-case archive.
+  // This is inventory only: 1436 historic green and 0/218 FULL remain unchanged.
+  assert.equal(report.scoped_test_progress.existing_static_source_cases, 1611);
+  const appended = priorTestEvidence.cases.find(row => row.case_id === "tests/platform/m1-01-pg16-concurrent-startup.test.mjs#205753ceca7c9450");
+  assert(appended, "New PG16 source case must remain explicitly indexed");
+  assert.equal(appended.test_execution, "NO_PASS_LOG_EVIDENCE");
+  assert.deepEqual(appended.evidence, []);
+  assert.equal(appended.exact_ci_pass_count_runs, 0);
   assert.equal(report.scoped_test_progress.prior_ci_reference_sha_green_cases, 232);
   assert.equal(report.scoped_test_progress.older_historical_green_cases, 1204);
   assert.equal(report.scoped_test_progress.green_cases_awaiting_exact_scenario_link, 1254);
