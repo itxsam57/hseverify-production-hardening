@@ -29,3 +29,8 @@ Private ECR /home/ubuntu/work/.hse-qa-tmp/agency-zero-sequential-closure-001/ZER
 ## Next
 
 Guarded QA-only stacked draft PR and workflow_dispatch on exact commit. Preserve all positive, negative, retry, permission, cross-role and adapter requirements and 58 original batches, do not repin app source silently or alter shared staging.
+
+
+## 2026-11-26 historical test-source correction (newer stacked draft)
+
+The original credential-validity browser test failure-only inline diagnostic from this earlier QA-only patch was **reverted** because changing the test changed a frozen historical source-case hash and broke the actual 218/4975 evidence index. The audited synthetic Next server **early shutdown remains**, and original Assurance 15-second assertion remains intact. This section supersedes the earlier statement that failure-only DOM counters remain in the browser source. See docs/qa/AGENCY_ZERO_ZERO001_FROZEN_CREDENTIAL_TEST_INDEX_REPAIR_20261126.md for true RED/7 GREEN source/hash evidence. Do not remove source integrity checks, rewrite historical passes or claim full readiness.
