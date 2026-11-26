@@ -54,11 +54,15 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         self.assertEqual(c["previous_green_distinct_source_matched_cases"], 1436)
         self.assertEqual(c["current_reference_CI_green_distinct_cases"], 232)
         self.assertEqual(c["historical_only_green_distinct_cases"], 1204)
-        self.assertEqual(c["static_existing_distinct_test_cases"], 1610)
-        self.assertEqual(c["source_tests_without_green_execution_proof"], 174)
+        self.assertEqual(c["static_existing_distinct_test_cases"], 1611)
+        self.assertEqual(c["source_tests_without_green_execution_proof"], 175)
         self.assertEqual(c["frozen_full_release_verified"], 0)
         self.assertEqual(len(index["scenarios"]), 218)
-        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1610)
+        self.assertEqual(len({x["case_id"] for x in index["cases"]}), 1611)
+        appended = next(x for x in index["cases"] if x["case_id"] == "tests/platform/m1-01-pg16-concurrent-startup.test.mjs#205753ceca7c9450")
+        self.assertEqual(appended["test_execution"], "NO_PASS_LOG_EVIDENCE")
+        self.assertEqual(appended["evidence"], [])
+        self.assertEqual(appended["exact_ci_pass_count_runs"], 0)
 
     def test_archived_old_green_provenance_survives_local_cache_removal_without_new_pass(self):
         prior_reviewed = {
@@ -108,7 +112,7 @@ class PreviousTestEvidenceTests(unittest.TestCase):
         previous = prior.build(ROOT, offline_ci, scan_historical=False)
         counts = previous["counts"]
         self.assertEqual(counts["previous_green_distinct_source_matched_cases"], 1436)
-        self.assertEqual(counts["static_existing_distinct_test_cases"], 1610)
+        self.assertEqual(counts["static_existing_distinct_test_cases"], 1611)
         self.assertEqual(counts["frozen_full_release_verified"], 0)
         old = next(c for c in previous["cases"] if c["title"].startswith(
             "independent Worker submissions reach Verifier and approve"))

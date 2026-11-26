@@ -29910,6 +29910,23 @@
       "title": "M1.01.02 all 139 reverse down migrations are executable in disposable PG16 and completely reapply"
     },
     {
+      "case_id": "tests/platform/m1-01-pg16-concurrent-startup.test.mjs#205753ceca7c9450",
+      "direct_scenarios": [
+        "M1.01.02"
+      ],
+      "evidence": [],
+      "exact_ci_pass_count_runs": 0,
+      "file": "tests/platform/m1-01-pg16-concurrent-startup.test.mjs",
+      "is_security_related_title": false,
+      "prior_log_pass_repetition_count": 0,
+      "scenario_ids": [
+        "M1.01.02"
+      ],
+      "scenario_link_kind": "explicit_case_or_filename",
+      "test_execution": "NO_PASS_LOG_EVIDENCE",
+      "title": "M1.01.02 fresh PostgreSQL16 database serializes two simultaneous migration deploy processes"
+    },
+    {
       "case_id": "tests/platform/m1-02-design-system-runtime.test.mjs#4f9c0bf52478fd23",
       "direct_scenarios": [],
       "evidence": [
@@ -47098,8 +47115,8 @@
     "ambiguous_or_changed_unique_titles": 241,
     "clean_pass_summary_logs": 1200,
     "current_reference_CI_green_distinct_cases": 232,
-    "current_source_test_files": 561,
-    "current_test_source_content_sha256": "7a88af9705b8297ff65106df2eae60dc00cf22ccac83df7c688431450a97edca",
+    "current_source_test_files": 562,
+    "current_test_source_content_sha256": "94e1ef305895ae1a111f7aec91566878de35779911f171f6c9643bebf4539731",
     "exact_ci": {
       "case_pass_occurrences": 316,
       "distinct_observed_names_any_source": 267,
@@ -47107,7 +47124,7 @@
       "matched_unique_exact_CI_SHA_green_cases": 232,
       "unmatched_or_ambiguous_distinct_CI_names": 35
     },
-    "existing_source_cases_linked_to_an_exact_218_id": 189,
+    "existing_source_cases_linked_to_an_exact_218_id": 190,
     "frozen_full_release_verified": 0,
     "frozen_ids_with_at_least_one_sourced_green_case": 68,
     "historical_log_files_scanned": 2630,
@@ -47121,8 +47138,8 @@
     "previous_green_distinct_source_matched_cases": 1436,
     "previous_green_security_titled_cases_NOT_PENTEST_COVERAGE": 198,
     "prior_result_TSV_files": 26,
-    "source_tests_without_green_execution_proof": 174,
-    "static_existing_distinct_test_cases": 1610,
+    "source_tests_without_green_execution_proof": 175,
+    "static_existing_distinct_test_cases": 1611,
     "unique_source_matched_historical_green_cases": 1397,
     "worktrees_scanned": 180
   },
@@ -47158,7 +47175,7 @@
     },
     {
       "brick": "M1.01",
-      "existing_source_cases_linked": 4,
+      "existing_source_cases_linked": 5,
       "family": "Environment and release foundation",
       "full_scenario_verification": "NOT_FULLY_VERIFIED",
       "green_exact_reference_CI_cases_linked": 1,
