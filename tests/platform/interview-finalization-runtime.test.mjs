@@ -4,6 +4,8 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { PGlite } from "@electric-sql/pglite";
+import { openScriptDatabase } from "../../scripts/lib/database.mjs";
+import { applyMigrationsThrough } from "../helpers/migration-ceiling.mjs";
 import { assessorInterviewSearchFixture } from "../helpers/assessor-interview-search-fixture.mjs";
 import { assessorSchedulingPrincipal } from "../helpers/assessor-scheduling-native-principal.mjs";
 import { loadWorkerRegistrationTs } from "../helpers/worker-registration-runtime-loader.mjs";
@@ -331,28 +333,32 @@ for (const [recommendation, status, owner, action] of [
 }
 
 test("Empty 0111 rollback restores exact preceding functions and constraints; drift is refused",async()=>{
- const x=await activeInterview();
+ // This test is about historical schema rollback, not the current
+ // interview journey. Later notification wrappers correctly prohibit
+ // dropping 0121 before their dependent migrations have been removed.
+ const db=await openScriptDatabase({databaseDriver:"pglite",pgliteDataDir:"memory://"});
  try{
+   await applyMigrationsThrough(db,"interview-0111-rollback-fixture","0121_appeal_response_notifications");
    // Later notification wrappers deliberately reject an out-of-order rollback.
-   await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
+   await assert.rejects(db.execute(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
    for (const migration of ["0121_appeal_response_notifications", "0120_review_recovery_notifications", "0118_scoring_assignment_notifications", "0117_integrity_review_notifications"]) {
-     await x.database.exec(readFileSync("database/migrations/"+migration+".down.sql","utf8"));
+     await db.execute(readFileSync("database/migrations/"+migration+".down.sql","utf8"));
    }
 
-  const old=(await x.database.query("SELECT platform_interview_recommendation_notification_rollback_contract() value")).rows[0].value;
-  await x.database.exec("CREATE OR REPLACE FUNCTION platform_assurance_notification_title(p_type text) RETURNS text LANGUAGE sql AS $$ SELECT 'drift'::text $$");
-  await assert.rejects(x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
+  const old=(await db.query("SELECT platform_interview_recommendation_notification_rollback_contract() value")).rows[0].value;
+  await db.execute("CREATE OR REPLACE FUNCTION platform_assurance_notification_title(p_type text) RETURNS text LANGUAGE sql AS $$ SELECT 'drift'::text $$");
+  await assert.rejects(db.execute(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8")),/drift prevents rollback/);
   const original=old.find(row=>row.kind==="function"&&row.reference.startsWith("platform_assurance_notification_title("));
   const current=original.definition.replace("WHEN 'evidence.reviewed'","WHEN 'interview.recommended' THEN 'Interview recommendation submitted' WHEN 'evidence.reviewed'");
-  await x.database.exec(current);
-  await x.database.exec(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8"));
+  await db.execute(current);
+  await db.execute(readFileSync("database/migrations/0111_interview_recommendation_notifications.down.sql","utf8"));
   for(const item of old){
    let rows;
-   if(item.kind==="function")rows=(await x.database.query("SELECT pg_get_functiondef($1::regprocedure) definition",[item.reference])).rows;
-   else if(item.kind==="constraint")rows=(await x.database.query("SELECT pg_get_constraintdef(oid) definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[item.table,item.name])).rows;
-   else if(item.kind==="index")rows=(await x.database.query("SELECT pg_get_indexdef($1::regclass) definition",[item.name])).rows;
-   else rows=(await x.database.query("SELECT pg_get_triggerdef(oid) definition FROM pg_trigger WHERE tgrelid=$1::regclass AND tgname=$2",[item.table,item.name])).rows;
+   if(item.kind==="function")rows=(await db.query("SELECT pg_get_functiondef($1::regprocedure) definition",[item.reference])).rows;
+   else if(item.kind==="constraint")rows=(await db.query("SELECT pg_get_constraintdef(oid) definition FROM pg_constraint WHERE conrelid=$1::regclass AND conname=$2",[item.table,item.name])).rows;
+   else if(item.kind==="index")rows=(await db.query("SELECT pg_get_indexdef($1::regclass) definition",[item.name])).rows;
+   else rows=(await db.query("SELECT pg_get_triggerdef(oid) definition FROM pg_trigger WHERE tgrelid=$1::regclass AND tgname=$2",[item.table,item.name])).rows;
    assert.equal(rows[0].definition,item.definition);
   }
- }finally{await x.cleanup();}
+ }finally{await db.close();}
 });
