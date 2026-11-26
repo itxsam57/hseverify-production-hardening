@@ -124,6 +124,20 @@ jobs:
       - name: Install pinned Playwright without changing the repository lockfile
         run: npm install --no-save --package-lock=false playwright@1.55.0
 
+      # Credential/PDF regressions call actual Poppler CLI to verify
+      # signed Unicode, expiry, status and historical credential consumers.
+      # Never waive assertions when the pdftotext binary is unavailable.
+      - name: Install and verify PDF text extractor for signed credential checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends poppler-utils
+          fi
+          command -v pdftotext
+          pdftotext -v
+
       - name: Install Chromium runtime
         run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
 
