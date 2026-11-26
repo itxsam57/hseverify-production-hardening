@@ -26,19 +26,18 @@ class CIIsolationContract(unittest.TestCase):
         self.assertIn("Stop only this audit's server process group",text)
         self.assertEqual(text.count("name: Existing full regression gate cross-check after independent audit"),1)
 
-    def test_credential_failure_diagnostics_keep_original_timeout_and_no_personal_info(self):
-        text=BROWSER.read_text()
-        anchor="M21304_COMPANY_WORKFORCE_FAILURE_DIAGNOSTIC"
-        self.assertEqual(text.count(anchor),1)
-        section=text[text.index("// Keep the original 15-second browser assertion."):text.index("    throw error;",text.index(anchor))]
-        self.assertIn('waitFor({timeout:15000})',section)
-        self.assertIn('directoryTableCount',section)
-        self.assertIn('emptyDirectory',section)
-        self.assertIn('requestFailureCount',section)
-        self.assertNotIn("page.content()",section)
-        self.assertNotIn("email",section)
-        self.assertNotIn("password",section)
-        self.assertNotIn("cookie",section)
+    def test_original_credential_browser_assertion_is_frozen_and_strong(self):
+        import subprocess
+        import json
+        pin=json.loads((ROOT/"docs/qa/AGENCY_ZERO_CANDIDATE.json").read_text())["source_commit_sha"]
+        approved=subprocess.check_output(
+            ["git","show",pin+":tests/browser/credential-validity.browser.test.mjs"],cwd=ROOT
+        )
+        actual=BROWSER.read_bytes()
+        self.assertEqual(actual,approved,"Historic case source changed; preserve evidence instead of modifying the test")
+        source=actual.decode()
+        self.assertEqual(source.count('getByRole("columnheader",{name:"Assurance"}).waitFor({timeout:15000})'),1)
+        self.assertNotIn("M21304_COMPANY_WORKFORCE_FAILURE_DIAGNOSTIC",source)
 
 if __name__=="__main__":
     unittest.main()
