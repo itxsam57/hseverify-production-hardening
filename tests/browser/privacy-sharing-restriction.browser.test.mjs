@@ -61,6 +61,53 @@ async function login(page, baseUrl, identity, role) {
   await page.waitForURL("**/" + role + "/dashboard", { timeout: 20_000 });
 }
 
+// Obtain the real no-JS Server Action form identity before forging a request.
+ // A hydrated React form can serialize without its progressive-enhancement
+ // $ACTION_ID_ field; replaying that malformed body tests HTTP 400, not RBAC.
+async function privacySsrActionFields(browser, adminContext, baseUrl, requestType) {
+ const context = await browser.newContext({ javaScriptEnabled: false });
+ try {
+  await context.addCookies(await adminContext.cookies());
+  const page = await context.newPage();
+  await page.goto(baseUrl + '/admin/privacy', { waitUntil: 'domcontentloaded' });
+  const card = page.locator('article').filter({ hasText: 'Request type: ' + requestType });
+  await card.getByText('Status: OPEN', { exact: true }).waitFor();
+  const fields = await card.locator('form').evaluate(
+   form => Object.fromEntries([...new FormData(form).entries()].map(([key,value])=>[key,String(value)]))
+  );
+  assert.ok(Object.keys(fields).some(key=>key.startsWith('$ACTION_ID_')), 'A real Admin SSR action marker is required to test authorization rather than malformed action 400');
+  return fields;
+ } finally { await context.close(); }
+}
+
+// A malformed/stale Server Action is rejected *before* RBAC is evaluated.
+// One explicitly evidenced refresh is permitted only for Next's exact
+// action-not-found response; the final forged request MUST reach 303 denial.
+async function postForgedPrivacyReview(browser,adminContext,baseUrl,requestType,requester,body){
+ for(let attempt=0;attempt<2;attempt++){
+  const fields=await privacySsrActionFields(browser,adminContext,baseUrl,requestType);
+  if(process.env.HSE_QA_INJECT_STALE_ACTION_ONCE==='true' && attempt===0 && requestType==='restriction'){
+   const genuine=Object.keys(fields).find(key=>key.startsWith('$ACTION_ID_'));
+   assert.ok(genuine,'Test fixture requires a real Server Action to simulate a stale ID');
+   delete fields[genuine];
+   fields['$ACTION_ID_'+'0'.repeat(40)]='';
+  }
+  const reply=await requester.request.post(baseUrl+'/admin/privacy',{
+   multipart:{...fields,...body},
+   headers:{origin:baseUrl},
+   maxRedirects:0
+  });
+  if(reply.status()!==400)return reply;
+  const marker=reply.headers()['x-nextjs-action-not-found'];
+  const text=await reply.text();
+  assert.equal(marker,'1','Unexpected HTTP400 is not an unrecognized Server Action');
+  assert.equal(text.trim(),'Invalid Server Action request.','Unexpected HTTP400 body');
+  console.log('ACTION_ID_REJECTED_BEFORE_AUTHORIZATION',requestType,'attempt',attempt+1);
+  if(attempt===1)assert.fail('A fresh Server Action also returned HTTP400; cannot verify RBAC denial');
+ }
+ assert.fail('Server Action authorization path was never reached');
+}
+
 test('Worker optional sharing restriction reaches Admin fulfilment, recipient denial and server-enforced new-link refusal', {timeout:180_000}, async()=>{
  const directory=await mkdtemp(join(tmpdir(),'hse-sharing-restriction-')),databaseDirectory=join(directory,'db'),port=await freePort(),baseUrl='http://127.0.0.1:'+port;
  const environment={...process.env,HSE_APP_ENV:'development',HSE_DATABASE_DRIVER:'pglite',HSE_PGLITE_DATA_DIR:databaseDirectory,HSE_RELEASE_SHA:'privacy-sharing-restriction-browser',HSE_SESSION_SECRET:'restriction-browser-session-secret-more-than-thirty-two',HSE_AUTH_PEPPER:'restriction-browser-auth-pepper-more-than-thirty-two',HSE_ENABLE_WORKER_DEMO_AUTH:'false',HSE_USE_WORKER_DEMO_DATA:'false',HSE_AUDIT_CREDENTIALS_PATH:join(directory,'credentials.json')};
@@ -81,8 +128,9 @@ test('Worker optional sharing restriction reaches Admin fulfilment, recipient de
  await worker.getByText('restriction: OPEN',{exact:true}).waitFor();
  await admin.goto(baseUrl+'/admin/privacy');const card=admin.locator('article').filter({hasText:'Request type: restriction'});
  await card.getByText('Status: OPEN',{exact:true}).waitFor();
- const actionFields=await card.locator('form').evaluate(form=>Object.fromEntries([...new FormData(form).entries()].map(([key,value])=>[key,String(value)])));
- const denied=await worker.request.post(baseUrl+'/admin/privacy',{multipart:{...actionFields,decision:'COMPLETED',reason:'Unauthorized Worker must never complete a privacy restriction.'},maxRedirects:0});assert.equal(denied.status(),303);assert.equal(new URL(denied.headers().location,baseUrl).pathname,'/access-denied');
+ const denied=await postForgedPrivacyReview(browser,adminContext,baseUrl,'restriction',worker,{
+  decision:'COMPLETED',reason:'Unauthorized Worker must never complete a privacy restriction.'
+ });assert.equal(denied.status(),303);assert.equal(new URL(denied.headers().location,baseUrl).pathname,'/access-denied');
  await admin.reload();await card.getByText('Status: OPEN',{exact:true}).waitFor();
  await card.getByLabel('Request decision').selectOption('COMPLETED');await card.getByLabel('Request review reason').fill('Restrict optional sharing while preserving required case processing and retained evidence.');
  await card.getByRole('button',{name:'Save privacy request decision',exact:true}).click();await card.getByText('Status: COMPLETED',{exact:true}).waitFor();
@@ -93,9 +141,15 @@ test('Worker optional sharing restriction reaches Admin fulfilment, recipient de
  const refused=await worker.request.post(baseUrl+'/api/share-links',{data:{fields:['worker_id'],purpose:'Forged client bypass',createdAt:new Date().toISOString(),expiresAt:null}});assert.equal(refused.status(),403);assert.deepEqual(await refused.json(),{error:'optional_sharing_restricted'});
  await worker.goto(baseUrl+'/worker/privacy');await worker.getByLabel('Privacy request type').selectOption('correction');await worker.getByRole('button',{name:'Submit privacy request',exact:true}).click();await worker.getByText('correction: OPEN',{exact:true}).waitFor();
  await admin.goto(baseUrl+'/admin/privacy');const staleCard=admin.locator('article').filter({hasText:'Request type: correction'});await staleCard.getByText('Status: OPEN',{exact:true}).waitFor();
- const staleFields=await staleCard.locator('form').evaluate(form=>Object.fromEntries([...new FormData(form).entries()].map(([key,value])=>[key,String(value)])));
+ const staleFields=await privacySsrActionFields(browser,adminContext,baseUrl,'correction');
  const staleCookies=await adminContext.cookies();await admin.goto(baseUrl+'/account/sessions');await admin.getByRole('button',{name:'Sign out this session',exact:true}).click();await admin.waitForURL(url=>url.pathname==='/admin/login');
- await adminContext.addCookies(staleCookies);const staleResponse=await admin.request.post(baseUrl+'/admin/privacy',{multipart:{...staleFields,decision:'REJECTED',reason:'Revoked Admin session must not record a review decision.'},maxRedirects:0});assert.equal(staleResponse.status(),303);const deniedLogin=new URL(staleResponse.headers().location,baseUrl);assert.equal(deniedLogin.pathname,'/admin/login');assert.equal(deniedLogin.searchParams.get('reason'),'session-required');
+ await adminContext.addCookies(staleCookies);
+ // Keep the revoked-session attack independent of any accidental dev action-ID
+ // recompilation; it also needs one *validly encoded* action to assess RBAC.
+ const staleResponse=await admin.request.post(baseUrl+'/admin/privacy',{
+  multipart:{...staleFields,decision:'REJECTED',reason:'Revoked Admin session must not record a review decision.'},
+  headers:{origin:baseUrl},maxRedirects:0
+ });assert.equal(staleResponse.status(),303);const deniedLogin=new URL(staleResponse.headers().location,baseUrl);assert.equal(deniedLogin.pathname,'/admin/login');assert.equal(deniedLogin.searchParams.get('reason'),'session-required');
  await worker.reload();await worker.getByText('correction: OPEN',{exact:true}).waitFor();
  console.log('ACTUAL_RESTRICTION_BROWSER valid link -> trusted request -> unauthorized Worker review denied -> Admin completion -> recipient denial -> disabled form and real403 issuance refusal');
  }finally{await workerContext.close();await adminContext.close();await publicContext.close();await browser.close();}
